@@ -11,7 +11,6 @@
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:social_flutter/core/api/api_client.dart';
-import 'package:social_flutter/core/storage/secure_storage.dart';
 import 'package:social_flutter/features/auth/data/auth_repository.dart';
 
 /// Provides the AuthRepository — the single instance for the app lifetime.

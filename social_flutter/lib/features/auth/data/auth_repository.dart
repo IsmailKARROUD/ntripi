@@ -5,7 +5,6 @@
 // This makes it easy to swap implementations (e.g., for testing with mocks).
 
 import 'package:dio/dio.dart';
-import 'package:social_flutter/core/api/api_client.dart';
 import 'package:social_flutter/core/api/api_endpoints.dart';
 import 'package:social_flutter/core/storage/secure_storage.dart';
 
