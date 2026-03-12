@@ -1,0 +1,36 @@
+name: social_flutter
+description: Ntripi — social media app frontend (Flutter)
+publish_to: 'none'
+
+version: 0.1.0+1
+
+environment:
+  sdk: '>=3.3.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # State management: Riverpod — compile-safe, testable, no BuildContext required
+  flutter_riverpod: ^2.5.1
+  riverpod_annotation: ^2.3.5
+
+  # HTTP client with interceptor support — used for the auth token injection
+  dio: ^5.4.3
+
+  # Secure token storage — uses iOS Keychain / Android Keystore under the hood
+  flutter_secure_storage: ^9.0.0
+
+  # Declarative navigation with type-safe routes
+  go_router: ^13.2.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+  # Code generation for Riverpod providers (@riverpod annotation)
+  riverpod_generator: ^2.3.9
+  build_runner: ^2.4.9
+
+flutter:
+  uses-material-design: true

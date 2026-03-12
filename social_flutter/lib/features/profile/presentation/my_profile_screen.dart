@@ -1,0 +1,278 @@
+// features/profile/presentation/my_profile_screen.dart — Own profile screen.
+//
+// Shows the current user's profile with:
+//   - Avatar, display name, username, bio, follower/following counts.
+//   - Inline edit mode (toggled by an icon, no separate screen needed).
+//   - Privacy toggle (public/private account switch).
+//   - "Follow Requests (N)" banner if private and there are pending requests.
+
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:social_flutter/features/follows/providers/follow_provider.dart';
+import 'package:social_flutter/features/profile/providers/profile_provider.dart';
+import 'package:social_flutter/shared/models/user.dart';
+import 'package:social_flutter/shared/widgets/user_avatar.dart';
+
+class MyProfileScreen extends ConsumerStatefulWidget {
+  const MyProfileScreen({super.key});
+
+  @override
+  ConsumerState<MyProfileScreen> createState() => _MyProfileScreenState();
+}
+
+class _MyProfileScreenState extends ConsumerState<MyProfileScreen> {
+  bool _isEditing = false;
+  final _displayNameController = TextEditingController();
+  final _bioController = TextEditingController();
+  final _avatarUrlController = TextEditingController();
+  bool? _editIsPrivate;
+
+  @override
+  void dispose() {
+    _displayNameController.dispose();
+    _bioController.dispose();
+    _avatarUrlController.dispose();
+    super.dispose();
+  }
+
+  void _startEditing(User user) {
+    _displayNameController.text = user.displayName ?? '';
+    _bioController.text = user.bio ?? '';
+    _avatarUrlController.text = user.avatarUrl ?? '';
+    _editIsPrivate = user.isPrivate;
+    setState(() => _isEditing = true);
+  }
+
+  Future<void> _saveEdits() async {
+    await ref.read(myProfileProvider.notifier).updateProfile(
+          displayName: _displayNameController.text.trim().isEmpty
+              ? null
+              : _displayNameController.text.trim(),
+          bio: _bioController.text.trim().isEmpty
+              ? null
+              : _bioController.text.trim(),
+          avatarUrl: _avatarUrlController.text.trim().isEmpty
+              ? null
+              : _avatarUrlController.text.trim(),
+          isPrivate: _editIsPrivate,
+        );
+    if (mounted) {
+      setState(() => _isEditing = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final profileAsync = ref.watch(myProfileProvider);
+    final followRequestsAsync = ref.watch(followRequestsProvider);
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('My Profile'),
+        actions: [
+          profileAsync.when(
+            data: (user) => IconButton(
+              icon: Icon(_isEditing ? Icons.close : Icons.edit_outlined),
+              tooltip: _isEditing ? 'Cancel editing' : 'Edit profile',
+              onPressed: () {
+                if (_isEditing) {
+                  setState(() => _isEditing = false);
+                } else {
+                  _startEditing(user);
+                }
+              },
+            ),
+            loading: () => const SizedBox.shrink(),
+            error: (_, __) => const SizedBox.shrink(),
+          ),
+        ],
+      ),
+      body: profileAsync.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (error, _) => Center(child: Text('Error: $error')),
+        data: (user) => _isEditing
+            ? _buildEditForm(user)
+            : _buildProfileView(user, followRequestsAsync),
+      ),
+    );
+  }
+
+  Widget _buildProfileView(User user, AsyncValue followRequestsAsync) {
+    final pendingCount = followRequestsAsync.valueOrNull?.length ?? 0;
+
+    return RefreshIndicator(
+      onRefresh: () => ref.read(myProfileProvider.notifier).refresh(),
+      child: ListView(
+        padding: const EdgeInsets.all(24),
+        children: [
+          // Avatar + display name
+          Center(
+            child: Column(
+              children: [
+                UserAvatar(avatarUrl: user.avatarUrl, radius: 48),
+                const SizedBox(height: 12),
+                Text(
+                  user.displayName ?? user.username,
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '@${user.username}',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: Colors.grey,
+                      ),
+                ),
+                if (user.isPrivate) ...[
+                  const SizedBox(height: 4),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.lock, size: 14, color: Colors.grey.shade600),
+                      const SizedBox(width: 4),
+                      Text(
+                        'Private account',
+                        style: TextStyle(
+                            color: Colors.grey.shade600, fontSize: 12),
+                      ),
+                    ],
+                  ),
+                ],
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // Follow counts
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              _StatBox(label: 'Followers', count: user.followersCount),
+              const SizedBox(width: 40),
+              _StatBox(label: 'Following', count: user.followingCount),
+            ],
+          ),
+          const SizedBox(height: 16),
+
+          // Bio
+          if (user.bio != null && user.bio!.isNotEmpty) ...[
+            Text(
+              user.bio!,
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+            const SizedBox(height: 16),
+          ],
+
+          // Follow requests banner (only for private accounts with pending requests)
+          if (user.isPrivate && pendingCount > 0) ...[
+            Card(
+              color: Theme.of(context).colorScheme.primaryContainer,
+              child: ListTile(
+                leading: const Icon(Icons.person_add),
+                title: Text('Follow Requests ($pendingCount)'),
+                subtitle: const Text('Tap to review'),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => context.push('/follow-requests'),
+              ),
+            ),
+            const SizedBox(height: 8),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEditForm(User user) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Center(child: UserAvatar(avatarUrl: user.avatarUrl, radius: 48)),
+          const SizedBox(height: 24),
+
+          TextFormField(
+            controller: _displayNameController,
+            decoration: const InputDecoration(
+              labelText: 'Display Name',
+              border: OutlineInputBorder(),
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          TextFormField(
+            controller: _bioController,
+            maxLines: 3,
+            decoration: const InputDecoration(
+              labelText: 'Bio',
+              border: OutlineInputBorder(),
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          TextFormField(
+            controller: _avatarUrlController,
+            decoration: const InputDecoration(
+              labelText: 'Avatar URL',
+              border: OutlineInputBorder(),
+              hintText: 'https://...',
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // Privacy toggle
+          SwitchListTile(
+            title: const Text('Private Account'),
+            subtitle: const Text(
+                'When private, people must request to follow you.'),
+            value: _editIsPrivate ?? user.isPrivate,
+            onChanged: (value) {
+              setState(() => _editIsPrivate = value);
+            },
+          ),
+          const SizedBox(height: 24),
+
+          FilledButton(
+            onPressed: _saveEdits,
+            style: FilledButton.styleFrom(
+              padding: const EdgeInsets.symmetric(vertical: 16),
+            ),
+            child: const Text('Save Changes'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _StatBox extends StatelessWidget {
+  final String label;
+  final int count;
+
+  const _StatBox({required this.label, required this.count});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Text(
+          count.toString(),
+          style: Theme.of(context)
+              .textTheme
+              .titleLarge
+              ?.copyWith(fontWeight: FontWeight.bold),
+        ),
+        Text(
+          label,
+          style: Theme.of(context)
+              .textTheme
+              .bodySmall
+              ?.copyWith(color: Colors.grey),
+        ),
+      ],
+    );
+  }
+}
