@@ -1,18 +1,3 @@
-"""
-routers/auth.py — Authentication endpoints (register and login).
-
-Route prefix: /auth
-No authentication required for any route in this file (they produce tokens).
-
-Design notes:
-  - Registration immediately returns a JWT so the client can proceed without
-    a separate login step. This is common in mobile apps.
-  - Login uses constant-time password comparison to prevent timing attacks
-    (see services/auth.py for the explanation).
-  - We return separate 409 errors for duplicate username vs duplicate email,
-    so the client can show a precise error message to the user.
-"""
-
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -20,14 +5,17 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models.user import User
 from app.schemas.auth import LoginRequest, RegisterRequest, TokenResponse
-from app.services.auth import (
-    create_access_token,
-    hash_password,
-    verify_password,
-    verify_password_against_dummy,
-)
+from app.services.auth import create_access_token, hash_password, verify_password
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
+
+# A real bcrypt hash computed once at startup, used as a timing-attack stand-in.
+# When a login attempt uses an email that doesn't exist, we still call
+# verify_password() against this hash so the response time is identical whether
+# the email was wrong or the password was wrong.
+# We can't hardcode a hash string because bcrypt will raise ValueError on an
+# invalid hash format — so we generate it once here at module load time.
+_DUMMY_HASH = hash_password("dummy_timing_placeholder_password1")
 
 
 @router.post(
@@ -37,41 +25,24 @@ router = APIRouter(prefix="/auth", tags=["Authentication"])
     summary="Create a new account",
 )
 def register(payload: RegisterRequest, db: Session = Depends(get_db)) -> TokenResponse:
-    """
-    Register a new user and return an access token immediately.
-
-    Steps:
-      1. Check for duplicate username (409 if taken).
-      2. Check for duplicate email (409 if taken).
-      3. Hash the password.
-      4. Create the user record.
-      5. Issue and return a JWT token.
-    """
-    # Step 1: Check duplicate username.
-    # We use select() (SQLAlchemy 2.0 style) instead of db.query() (legacy style).
     existing_user = db.execute(
         select(User).where(User.username == payload.username)
     ).scalar_one_or_none()
-
     if existing_user:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail="This username is already taken.",
         )
 
-    # Step 2: Check duplicate email.
     existing_email = db.execute(
         select(User).where(User.email == payload.email)
     ).scalar_one_or_none()
-
     if existing_email:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail="An account with this email already exists.",
         )
 
-    # Step 3 & 4: Hash the password and create the user.
-    # We never touch the plain password after this point.
     new_user = User(
         username=payload.username,
         email=payload.email,
@@ -80,11 +51,9 @@ def register(payload: RegisterRequest, db: Session = Depends(get_db)) -> TokenRe
     )
     db.add(new_user)
     db.commit()
-    db.refresh(new_user)  # Reload the record to get DB-generated values (id, created_at, etc.)
+    db.refresh(new_user)
 
-    # Step 5: Issue a JWT token.
     token = create_access_token(subject=str(new_user.id))
-
     return TokenResponse(
         access_token=token,
         user_id=str(new_user.id),
@@ -98,29 +67,18 @@ def register(payload: RegisterRequest, db: Session = Depends(get_db)) -> TokenRe
     summary="Log in with email and password",
 )
 def login(payload: LoginRequest, db: Session = Depends(get_db)) -> TokenResponse:
-    """
-    Authenticate a user and return an access token.
-
-    Security: constant-time comparison.
-      If the user is not found, we still call bcrypt.verify (against a dummy hash)
-      to ensure the response time is the same whether the email exists or not.
-      This prevents an attacker from enumerating valid email addresses by measuring
-      response times (timing side-channel attack).
-    """
     user = db.execute(
         select(User).where(User.email == payload.email)
     ).scalar_one_or_none()
 
-    if user is None:
-        # Call dummy verify to keep response time constant.
-        verify_password_against_dummy(payload.password)
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect email or password.",
-        )
+    # Always call verify_password — if user doesn't exist, we verify against
+    # the dummy hash so the response time is identical in both failure cases.
+    password_matches = verify_password(
+        payload.password,
+        user.password_hash if user else _DUMMY_HASH,
+    )
 
-    # Verify against the real hash.
-    if not verify_password(payload.password, user.password_hash):
+    if not user or not password_matches:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect email or password.",
@@ -133,7 +91,6 @@ def login(payload: LoginRequest, db: Session = Depends(get_db)) -> TokenResponse
         )
 
     token = create_access_token(subject=str(user.id))
-
     return TokenResponse(
         access_token=token,
         user_id=str(user.id),

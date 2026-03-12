@@ -22,7 +22,6 @@ Any route that needs an authenticated user just declares:
 import uuid
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from jose import JWTError
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -30,42 +29,43 @@ from app.models.user import User
 from app.services.auth import decode_access_token
 
 # HTTPBearer extracts the token from the "Authorization: Bearer <token>" header.
-# auto_error=True means FastAPI automatically returns 403 if the header is missing.
-bearer_scheme = HTTPBearer(auto_error=True)
+# auto_error=False so we can raise 403 manually when the header is missing.
+bearer_scheme = HTTPBearer(auto_error=False)
 
 
 def get_current_user(
-    credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme),
+    credentials: HTTPAuthorizationCredentials | None = Depends(bearer_scheme),
     db: Session = Depends(get_db),
 ) -> User:
     """
     Validate the JWT and return the authenticated User object.
 
-    This dependency is the authentication gate for all protected routes.
-    It is designed to fail fast with appropriate HTTP errors:
+    Fails fast with appropriate HTTP errors:
+      - 403 if the Authorization header is missing entirely.
       - 401 if the token is invalid or expired.
       - 401 if the user no longer exists.
       - 403 if the user's account is deactivated.
-
-    Why check is_active?
-      A suspended user's token may still be technically valid (not expired),
-      so we must explicitly check the flag on every request.
     """
+    if credentials is None:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not authenticated.",
+        )
+
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials.",
         headers={"WWW-Authenticate": "Bearer"},
     )
 
+    # decode_access_token returns the user ID string directly (or None).
+    user_id_str = decode_access_token(credentials.credentials)
+    if user_id_str is None:
+        raise credentials_exception
     try:
-        payload = decode_access_token(credentials.credentials)
-        user_id_str: str | None = payload.get("sub")
-        if user_id_str is None:
-            raise credentials_exception
         user_id = uuid.UUID(user_id_str)
-    except (JWTError, ValueError):
-        # JWTError: invalid/expired token.
-        # ValueError: 'sub' is not a valid UUID string.
+    except ValueError:
+        # The 'sub' claim exists but is not a valid UUID string.
         raise credentials_exception
 
     user = db.get(User, user_id)

@@ -1,0 +1,142 @@
+"""
+conftest.py — Pytest configuration and shared fixtures.
+
+This file is special: pytest automatically discovers and loads it before
+running any tests. Everything defined here is available to all test files
+without needing to import it explicitly.
+
+Architecture of the test setup:
+
+  Real FastAPI app
+       ↓
+  TestClient (httpx)         ← makes HTTP requests in-memory (no network)
+       ↓
+  SQLAlchemy ORM
+       ↓
+  SQLite in-memory database  ← isolated, fast, destroyed after each test
+
+Why SQLite instead of PostgreSQL for tests?
+  - SQLite runs entirely in RAM, so each test run is fast (< 1 second setup).
+  - Each test gets a completely fresh database — no data leaks between tests.
+  - No PostgreSQL server required to run tests in CI/CD.
+  - The downside: SQLite doesn't support every PostgreSQL feature. If you
+    ever use PostgreSQL-specific types (like JSONB or ARRAY), you'd need to
+    run tests against a real PostgreSQL instance. For now, SQLite is perfect.
+
+Why 'function' scope for fixtures?
+  Fixtures with scope='function' (the default) are created fresh for each
+  individual test function. This means every test starts with an empty
+  database and a clean state — tests can't interfere with each other.
+"""
+
+import pytest
+from fastapi.testclient import TestClient
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy.pool import StaticPool
+
+from app.database import Base, get_db
+from app.main import app
+
+# ---------------------------------------------------------------------------
+# Database setup
+# ---------------------------------------------------------------------------
+
+# SQLite in-memory database URL.
+# 'check_same_thread=False' is required for SQLite when used with FastAPI
+# because requests may be handled on different threads.
+SQLITE_URL = "sqlite://"
+
+# StaticPool ensures all connections share the same in-memory database.
+# Without this, each connection would get its own isolated SQLite instance,
+# and your tables would appear to be empty after creation.
+engine = create_engine(
+    SQLITE_URL,
+    connect_args={"check_same_thread": False},
+    poolclass=StaticPool,
+)
+
+TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+
+def override_get_db():
+    """
+    A replacement for the real get_db() dependency.
+    FastAPI's dependency injection system lets us swap this in during tests
+    so the app uses our SQLite test database instead of the real PostgreSQL.
+    """
+    db = TestingSessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
+
+# ---------------------------------------------------------------------------
+# Fixtures
+# ---------------------------------------------------------------------------
+
+@pytest.fixture()
+def client():
+    """
+    The main test fixture — provides a TestClient connected to a fresh database.
+
+    The sequence is:
+    1. Create all tables in the SQLite in-memory database.
+    2. Override FastAPI's get_db dependency to use the test database.
+    3. Yield the TestClient for the test to use.
+    4. After the test completes, drop all tables and restore the original dependency.
+
+    This 'setup → yield → teardown' pattern is the standard pytest fixture structure.
+    Everything before yield runs before the test; everything after yield is cleanup.
+    """
+    # Create all tables fresh for this test
+    Base.metadata.create_all(bind=engine)
+
+    # Override the database dependency
+    app.dependency_overrides[get_db] = override_get_db
+
+    # Yield the test client — this is what the test receives
+    with TestClient(app) as test_client:
+        yield test_client
+
+    # Teardown: drop all tables so the next test starts clean
+    Base.metadata.drop_all(bind=engine)
+
+    # Restore original dependency
+    app.dependency_overrides.clear()
+
+
+# ---------------------------------------------------------------------------
+# Helper factories — reusable functions for creating test data
+# ---------------------------------------------------------------------------
+
+def register_user(client: TestClient, username: str, email: str,
+                  password: str = "test1234", display_name: str | None = None) -> dict:
+    """
+    Registers a user and returns the full response body as a dict.
+    This includes the access_token, user_id, and username.
+
+    Having this as a helper avoids repeating the same register code
+    across dozens of tests — if the register endpoint changes, you
+    only need to update this one function.
+    """
+    response = client.post("/auth/register", json={
+        "username": username,
+        "email": email,
+        "password": password,
+        "display_name": display_name,
+    })
+    assert response.status_code == 201, (
+        f"Registration failed for {username}: {response.json()}"
+    )
+    return response.json()
+
+
+def auth_headers(token: str) -> dict:
+    """
+    Returns the Authorization header dict that the TestClient needs
+    to make authenticated requests. This mirrors exactly what the
+    Flutter app will send on every protected request.
+    """
+    return {"Authorization": f"Bearer {token}"}

@@ -1,0 +1,30 @@
+# ─── Python / FastAPI ───────────────────────────────────────────────
+venv/
+.venv/
+__pycache__/
+*.py[cod]
+.env
+.env.*
+!.env.example
+.pytest_cache/
+.coverage
+dist/
+build/
+*.egg-info/
+
+# ─── Flutter / Dart ─────────────────────────────────────────────────
+social_flutter/.dart_tool/
+social_flutter/.flutter-plugins
+social_flutter/.flutter-plugins-dependencies
+social_flutter/build/
+social_flutter/.pub-cache/
+social_flutter/.packages
+
+# ─── macOS ──────────────────────────────────────────────────────────
+.DS_Store
+._*
+
+# ─── IDEs ───────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp

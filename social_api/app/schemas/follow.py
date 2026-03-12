@@ -4,7 +4,7 @@ schemas/follow.py — Pydantic schemas for follow-related responses.
 
 import uuid
 from datetime import datetime
-from pydantic import BaseModel, model_config
+from pydantic import BaseModel, ConfigDict
 
 
 class FollowResponse(BaseModel):
@@ -15,7 +15,7 @@ class FollowResponse(BaseModel):
     status: str  # 'pending' or 'accepted'
     created_at: datetime
 
-    model_config = model_config(from_attributes=True)
+    model_config = ConfigDict(from_attributes=True)
 
 
 class FollowRequestItem(BaseModel):
@@ -32,7 +32,7 @@ class FollowRequestItem(BaseModel):
     avatar_url: str | None     # follower's avatar (nullable)
     requested_at: datetime     # when the request was sent (follow.created_at)
 
-    model_config = model_config(from_attributes=True)
+    model_config = ConfigDict(from_attributes=True)
 
 
 class FollowerListItem(BaseModel):
@@ -46,4 +46,4 @@ class FollowerListItem(BaseModel):
     avatar_url: str | None
     is_private: bool
 
-    model_config = model_config(from_attributes=True)
+    model_config = ConfigDict(from_attributes=True)

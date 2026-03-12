@@ -11,7 +11,7 @@ Schema hierarchy:
 
 import uuid
 from datetime import datetime
-from pydantic import BaseModel, EmailStr, Field, field_validator, model_config
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 import re
 
 
@@ -30,7 +30,7 @@ class UserBase(BaseModel):
     # model_config replaces class Config in Pydantic v2.
     # from_attributes=True (was orm_mode=True in v1) allows creating
     # a Pydantic model directly from a SQLAlchemy ORM object.
-    model_config = model_config(from_attributes=True)
+    model_config = ConfigDict(from_attributes=True)
 
 
 class UserPublicProfile(UserBase):
@@ -82,4 +82,4 @@ class UserSearchResult(BaseModel):
     is_private: bool
     followers_count: int
 
-    model_config = model_config(from_attributes=True)
+    model_config = ConfigDict(from_attributes=True)

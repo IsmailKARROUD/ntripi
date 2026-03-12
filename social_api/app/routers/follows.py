@@ -23,7 +23,7 @@ Security note on follow request routes:
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy import select, func
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -102,17 +102,8 @@ def follow_user(
 
     # Only update counters if the follow is immediately accepted.
     if initial_status == FollowStatus.accepted:
-        # Use SQL expression to avoid stale reads in concurrent requests.
-        db.execute(
-            User.__table__.update()
-            .where(User.id == current_user.id)
-            .values(following_count=func.greatest(0, User.following_count + 1))
-        )
-        db.execute(
-            User.__table__.update()
-            .where(User.id == user_id)
-            .values(followers_count=func.greatest(0, User.followers_count + 1))
-        )
+        current_user.following_count = max(0, current_user.following_count + 1)
+        target_user.followers_count = max(0, target_user.followers_count + 1)
 
     db.commit()
     db.refresh(new_follow)
@@ -158,18 +149,10 @@ def unfollow_user(
     db.delete(follow)
 
     if was_accepted:
-        # Decrement counters. func.greatest(0, ...) prevents negative values
-        # in case of any race condition or data inconsistency.
-        db.execute(
-            User.__table__.update()
-            .where(User.id == current_user.id)
-            .values(following_count=func.greatest(0, User.following_count - 1))
-        )
-        db.execute(
-            User.__table__.update()
-            .where(User.id == user_id)
-            .values(followers_count=func.greatest(0, User.followers_count - 1))
-        )
+        unfollowed_user = db.get(User, user_id)
+        current_user.following_count = max(0, current_user.following_count - 1)
+        if unfollowed_user:
+            unfollowed_user.followers_count = max(0, unfollowed_user.followers_count - 1)
 
     db.commit()
 
@@ -246,10 +229,11 @@ def accept_follow_request(
         )
 
     # Security check: only the target user can accept.
+    # Return 404 (not 403) to avoid leaking the existence of other users' requests.
     if follow.following_id != current_user.id:
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="You cannot accept this follow request.",
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Follow request not found.",
         )
 
     if follow.status != FollowStatus.pending:
@@ -261,16 +245,10 @@ def accept_follow_request(
     # Accept the request and update counters.
     follow.status = FollowStatus.accepted
 
-    db.execute(
-        User.__table__.update()
-        .where(User.id == follow.follower_id)
-        .values(following_count=func.greatest(0, User.following_count + 1))
-    )
-    db.execute(
-        User.__table__.update()
-        .where(User.id == current_user.id)
-        .values(followers_count=func.greatest(0, User.followers_count + 1))
-    )
+    requester = db.get(User, follow.follower_id)
+    if requester:
+        requester.following_count = max(0, requester.following_count + 1)
+    current_user.followers_count = max(0, current_user.followers_count + 1)
 
     db.commit()
     db.refresh(follow)

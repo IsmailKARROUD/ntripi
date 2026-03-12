@@ -14,7 +14,7 @@ Endpoints:
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy import select, or_, func
+from sqlalchemy import select, or_
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -89,12 +89,10 @@ def update_my_profile(
 
         for follow in pending_follows:
             follow.status = FollowStatus.accepted
-            # Update counters for each newly accepted follower.
-            # The follower's following_count goes up, our followers_count goes up.
             follower = db.get(User, follow.follower_id)
             if follower:
-                follower.following_count = func.greatest(0, follower.following_count + 1)
-            current_user.followers_count = func.greatest(0, current_user.followers_count + 1)
+                follower.following_count = max(0, follower.following_count + 1)
+            current_user.followers_count = max(0, current_user.followers_count + 1)
 
     db.commit()
     db.refresh(current_user)
@@ -129,7 +127,7 @@ def search_users(
     results = db.execute(
         select(User)
         .where(
-            User.id != current_user.id,  # Exclude self
+            User.id != current_user.id,
             User.is_active == True,
             or_(
                 User.username.ilike(search_term),

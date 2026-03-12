@@ -21,99 +21,74 @@ Why JWT?
     happen in this same service.
 """
 
-from datetime import datetime, timedelta, timezone
-from typing import Any
+from datetime import datetime, timedelta
+from typing import Optional
 
+import bcrypt
 from jose import JWTError, jwt
-from passlib.context import CryptContext
 
 from app.config import get_settings
 
 settings = get_settings()
 
-# CryptContext manages the hashing algorithm(s).
-# schemes=["bcrypt"] means we only use bcrypt.
-# deprecated="auto" means if we ever add a new algorithm, old hashes
-# (using the previous algorithm) are still verified correctly.
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
-# A precomputed dummy hash used in constant-time login comparisons.
-# See verify_password_dummy() below.
-DUMMY_HASH = pwd_context.hash("dummy_password_for_timing_attack_prevention")
-
 
 def hash_password(plain_password: str) -> str:
     """
-    Hash a plain-text password using bcrypt.
-    The result is safe to store in the database.
+    Converts a plain-text password into a bcrypt hash.
+    
+    bcrypt.hashpw() requires bytes, not a string, so we encode first.
+    gensalt() generates a random salt and embeds the cost factor (default=12)
+    directly into the resulting hash string — so we never need to store
+    the salt separately. It's all in the hash.
     """
-    return pwd_context.hash(plain_password)
+    password_bytes = plain_password.encode("utf-8")
+    salt = bcrypt.gensalt()
+    hashed = bcrypt.hashpw(password_bytes, salt)
+    # Decode back to a string for storage in PostgreSQL VARCHAR column
+    return hashed.decode("utf-8")
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """
-    Verify a plain password against a stored bcrypt hash.
-    Returns True if they match, False otherwise.
-    This function takes constant time regardless of whether the hash matches,
-    which prevents timing side-channel attacks.
+    Verifies a plain-text password against a stored bcrypt hash.
+    
+    bcrypt.checkpw() is a constant-time comparison — it always takes
+    roughly the same amount of time regardless of whether the password
+    matches or not. This prevents timing attacks where an attacker could
+    measure response time to guess how many characters they got right.
     """
-    return pwd_context.verify(plain_password, hashed_password)
-
-
-def verify_password_against_dummy(plain_password: str) -> bool:
-    """
-    Run a bcrypt verification against a precomputed dummy hash.
-
-    WHY: Timing attack prevention in login.
-    If the login endpoint returns immediately when the email is not found
-    (skipping the bcrypt verify), an attacker can distinguish "user does
-    not exist" from "wrong password" by measuring response time. With bcrypt's
-    intentional slowness, this difference would be hundreds of milliseconds.
-    By always calling bcrypt.verify (even for non-existent users), both
-    code paths take the same amount of time. The result is always False.
-    """
-    return pwd_context.verify(plain_password, DUMMY_HASH)
+    password_bytes = plain_password.encode("utf-8")
+    hashed_bytes = hashed_password.encode("utf-8")
+    return bcrypt.checkpw(password_bytes, hashed_bytes)
 
 
 def create_access_token(subject: str) -> str:
     """
-    Create a signed JWT access token.
-
-    Args:
-        subject: The user's UUID as a string. This becomes the 'sub' claim.
-
-    Returns:
-        A signed JWT string to be sent to the client.
-
-    Token payload:
-        sub: user UUID string (the "subject" of the token)
-        exp: expiry timestamp (UTC)
-        iat: issued-at timestamp (UTC)
+    Creates a signed JWT token identifying a user by their UUID.
+    The 'sub' (subject) claim holds the user's UUID string.
+    The 'exp' (expiry) claim is set based on ACCESS_TOKEN_EXPIRE_MINUTES.
     """
-    now = datetime.now(timezone.utc)
-    expire = now + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
-
-    payload: dict[str, Any] = {
+    expire = datetime.utcnow() + timedelta(
+        minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES
+    )
+    payload = {
         "sub": subject,
         "exp": expire,
-        "iat": now,
+        "iat": datetime.utcnow(),
     }
-
-    # jose.jwt.encode signs the payload with our secret key.
-    # The result is a base64url-encoded string: header.payload.signature
     return jwt.encode(payload, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
 
 
-def decode_access_token(token: str) -> dict[str, Any]:
+def decode_access_token(token: str) -> Optional[str]:
     """
-    Decode and validate a JWT token.
-
-    Raises:
-        JWTError: if the token is invalid, expired, or has a bad signature.
-
-    Returns:
-        The decoded payload dict (containing 'sub', 'exp', 'iat').
+    Decodes and validates a JWT, returning the user UUID string (subject).
+    Returns None if the token is expired, tampered with, or malformed.
     """
-    # jose automatically validates the signature and expiry.
-    # If the token is expired or tampered with, JWTError is raised.
-    return jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+    try:
+        payload = jwt.decode(
+            token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM]
+        )
+        subject: str = payload.get("sub")
+        return subject if subject else None
+    except JWTError:
+        return None
