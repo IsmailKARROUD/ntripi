@@ -20,7 +20,8 @@ A full-stack social media application with a **FastAPI** backend and a **Flutter
 7. [API Reference](#api-reference)
 8. [Follow System](#follow-system)
 9. [Database Schema](#database-schema)
-10. [Security Notes](#security-notes)
+10. [Testing](#testing)
+11. [Security Notes](#security-notes)
 
 ---
 
@@ -34,6 +35,8 @@ Ntripi is a social platform where users can:
 - Follow / unfollow other users
 - Switch between **public** accounts (follows are accepted instantly) and **private** accounts (follows require approval)
 - Manage incoming follow requests (accept / reject)
+- View the full followers and following list for any user
+- Log out securely (token cleared from device storage)
 
 ---
 
@@ -105,15 +108,26 @@ Ntripi/
         ├── shared/
         │   ├── models/
         │   │   ├── user.dart            ← User Dart model
-        │   │   └── follow.dart          ← Follow + FollowRequestItem models
+        │   │   └── follow.dart          ← Follow, FollowRequestItem, FollowerListItem models
         │   └── widgets/
         │       ├── follow_button.dart   ← 3-state Follow/Following/Requested button
         │       └── user_avatar.dart     ← Circular avatar with placeholder
         └── features/
             ├── auth/                    ← Login & Register screens + providers
-            ├── profile/                 ← My Profile + User Profile screens
+            ├── profile/                 ← My Profile + User Profile screens (with logout)
             ├── search/                  ← Search screen + debounced provider
-            └── follows/                 ← Follow Requests screen + provider
+            └── follows/                 ← Follow Requests + Followers/Following list screens
+                └── presentation/
+                    ├── follow_requests_screen.dart
+                    └── follow_list_screen.dart  ← Shared screen for followers & following lists
+
+social_flutter/test/              ← Flutter unit tests (44 tests total)
+    ├── models/
+    │   ├── user_test.dart        ← User.fromJson / toJson / copyWith (10 tests)
+    │   └── follow_test.dart      ← Follow, FollowRequestItem, FollowerListItem (9 tests)
+    └── repositories/
+        ├── auth_repository_test.dart   ← register / login / logout (8 tests)
+        └── follow_repository_test.dart ← followUser, getFollowers, etc. (13 tests + 4 follow)
 ```
 
 ---
@@ -236,7 +250,12 @@ Create `social_api/.env` (copy from `.env.example`):
 ```env
 # PostgreSQL connection URL
 # Format: postgresql://user:password@host:port/dbname
-DATABASE_URL=postgresql://postgres:password@localhost:5432/ntripi_db
+#
+# macOS (Homebrew PostgreSQL): the default superuser is your system username,
+# not "postgres". No password is needed for local connections.
+#   Example: postgresql://yourname@localhost:5432/ntripi_db
+# Linux / Docker: typically postgresql://postgres:password@localhost:5432/ntripi_db
+DATABASE_URL=postgresql://yourname@localhost:5432/ntripi_db
 
 # JWT signing secret — generate a strong one with:
 #   openssl rand -hex 32
@@ -360,7 +379,7 @@ User A clicks Follow on User B
 | display_name    | VARCHAR(100) | Nullable                                      |
 | bio             | TEXT         | Nullable                                      |
 | avatar_url      | TEXT         | Nullable                                      |
-| is_private      | BOOLEAN      | Default false                                 |
+| is_private      | BOOLEAN      | Default **true** — accounts are private by default |
 | followers_count | INTEGER      | Denormalized counter (default 0)              |
 | following_count | INTEGER      | Denormalized counter (default 0)              |
 | is_active       | BOOLEAN      | Default true — soft delete / suspension flag  |
@@ -384,6 +403,38 @@ User A clicks Follow on User B
 
 ---
 
+## Testing
+
+### Backend (pytest)
+
+```bash
+cd social_api
+source venv/bin/activate
+pytest -v
+```
+
+Tests run against an **in-memory SQLite** database — no PostgreSQL instance required. All 16 tests cover registration, login, protected routes, and logout token invalidation.
+
+### Flutter (unit tests)
+
+```bash
+cd social_flutter
+flutter test test/models/ test/repositories/
+```
+
+44 tests across four files — pure Dart, no emulator or device needed:
+
+| File | What it tests | Tests |
+|------|---------------|-------|
+| `test/models/user_test.dart` | `User.fromJson`, `toJson`, `copyWith` | 10 |
+| `test/models/follow_test.dart` | `Follow`, `FollowRequestItem`, `FollowerListItem` | 9 |
+| `test/repositories/auth_repository_test.dart` | `register`, `login`, `logout` (with mocked Dio + secure storage) | 8 |
+| `test/repositories/follow_repository_test.dart` | `followUser`, `unfollowUser`, `getFollowers`, `getFollowing`, etc. | 17 |
+
+HTTP calls are intercepted by `http_mock_adapter` — no real network is used. Secure storage is replaced by an in-memory stub via `FlutterSecureStorage.setMockInitialValues({})`.
+
+---
+
 ## Security Notes
 
 - **Passwords** are hashed with bcrypt (cost factor 12). The plain-text password is never stored or logged.
@@ -391,4 +442,5 @@ User A clicks Follow on User B
 - **JWT tokens** are signed with HS256, expire after 24 hours (configurable), and are stored in the device's secure storage (iOS Keychain / Android Keystore).
 - **401 auto-logout** — the Dio interceptor clears the stored token and redirects to `/login` on any 401 response.
 - **Follow request ownership** — accept/reject endpoints verify the `following_id` equals the current user, returning 404 (not 403) to avoid leaking other users' request IDs.
-- **CORS** is restricted to the configured frontend domain in production (`DEBUG=False`).
+- **Private by default** — new accounts are private (`is_private = true`) both in the database and in the Flutter model. Content is never exposed accidentally; users must explicitly make their account public.
+- **CORS** is restricted to the configured frontend domain in production (`DEBUG=False`). In development, `allow_origin_regex=".*"` is used instead of `allow_origins=["*"]` because the browser CORS spec forbids the wildcard when `credentials: true`.
