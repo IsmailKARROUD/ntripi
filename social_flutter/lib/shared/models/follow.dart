@@ -88,3 +88,41 @@ class FollowRequestItem {
     };
   }
 }
+
+/// A single item in the followers or following list.
+/// Matches the backend's FollowerListItem schema returned by
+/// GET /users/{id}/followers and GET /users/{id}/following.
+///
+/// This is a compact profile view — it only contains the fields needed
+/// to render a list row (avatar, name, privacy badge). It does NOT include
+/// follower counts or bio; those are loaded separately on the full profile screen.
+class FollowerListItem {
+  final String id;
+  final String username;
+  final String? displayName;
+  final String? avatarUrl;
+
+  /// Whether this user's account is private.
+  /// Used to show the lock icon next to their name in the list.
+  final bool isPrivate;
+
+  const FollowerListItem({
+    required this.id,
+    required this.username,
+    this.displayName,
+    this.avatarUrl,
+    required this.isPrivate,
+  });
+
+  factory FollowerListItem.fromJson(Map<String, dynamic> json) {
+    return FollowerListItem(
+      id: json['id'] as String,
+      username: json['username'] as String,
+      displayName: json['display_name'] as String?,
+      avatarUrl: json['avatar_url'] as String?,
+      // Default to false if the field is unexpectedly absent — safe fallback
+      // since the worst outcome is not showing a lock icon.
+      isPrivate: json['is_private'] as bool? ?? false,
+    );
+  }
+}

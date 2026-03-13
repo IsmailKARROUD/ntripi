@@ -182,13 +182,21 @@ class _MyProfileScreenState extends ConsumerState<MyProfileScreen> {
           ),
           const SizedBox(height: 16),
 
-          // Follow counts
+          // Follow counts — tappable to open the full list.
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              _StatBox(label: 'Followers', count: user.followersCount),
+              _StatBox(
+                label: 'Followers',
+                count: user.followersCount,
+                onTap: () => context.push('/profile/${user.id}/followers'),
+              ),
               const SizedBox(width: 40),
-              _StatBox(label: 'Following', count: user.followingCount),
+              _StatBox(
+                label: 'Following',
+                count: user.followingCount,
+                onTap: () => context.push('/profile/${user.id}/following'),
+              ),
             ],
           ),
           const SizedBox(height: 16),
@@ -285,31 +293,40 @@ class _MyProfileScreenState extends ConsumerState<MyProfileScreen> {
   }
 }
 
+/// Displays a single statistic (count + label) on the profile screen.
+///
+/// [onTap] is optional — when provided, the whole widget becomes tappable
+/// (wrapped in a GestureDetector). This is used to navigate to the
+/// followers / following list when the user taps the count.
 class _StatBox extends StatelessWidget {
   final String label;
   final int count;
+  final VoidCallback? onTap;
 
-  const _StatBox({required this.label, required this.count});
+  const _StatBox({required this.label, required this.count, this.onTap});
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Text(
-          count.toString(),
-          style: Theme.of(context)
-              .textTheme
-              .titleLarge
-              ?.copyWith(fontWeight: FontWeight.bold),
-        ),
-        Text(
-          label,
-          style: Theme.of(context)
-              .textTheme
-              .bodySmall
-              ?.copyWith(color: Colors.grey),
-        ),
-      ],
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        children: [
+          Text(
+            count.toString(),
+            style: Theme.of(context)
+                .textTheme
+                .titleLarge
+                ?.copyWith(fontWeight: FontWeight.bold),
+          ),
+          Text(
+            label,
+            style: Theme.of(context)
+                .textTheme
+                .bodySmall
+                ?.copyWith(color: Colors.grey),
+          ),
+        ],
+      ),
     );
   }
 }

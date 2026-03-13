@@ -8,6 +8,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:social_flutter/features/profile/providers/profile_provider.dart';
 import 'package:social_flutter/shared/models/user.dart';
 import 'package:social_flutter/shared/widgets/follow_button.dart';
@@ -81,13 +82,21 @@ class UserProfileScreen extends ConsumerWidget {
           ),
           const SizedBox(height: 16),
 
-          // Follow counts
+          // Follow counts — tappable to open the full list.
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              _StatBox(label: 'Followers', count: user.followersCount),
+              _StatBox(
+                label: 'Followers',
+                count: user.followersCount,
+                onTap: () => context.push('/profile/${user.id}/followers'),
+              ),
               const SizedBox(width: 40),
-              _StatBox(label: 'Following', count: user.followingCount),
+              _StatBox(
+                label: 'Following',
+                count: user.followingCount,
+                onTap: () => context.push('/profile/${user.id}/following'),
+              ),
             ],
           ),
           const SizedBox(height: 16),
@@ -147,31 +156,39 @@ class UserProfileScreen extends ConsumerWidget {
   }
 }
 
+/// Displays a single statistic (count + label) on the profile screen.
+///
+/// [onTap] is optional — when provided, wraps the widget in a GestureDetector
+/// so the user can tap it to navigate to the followers / following list.
 class _StatBox extends StatelessWidget {
   final String label;
   final int count;
+  final VoidCallback? onTap;
 
-  const _StatBox({required this.label, required this.count});
+  const _StatBox({required this.label, required this.count, this.onTap});
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Text(
-          count.toString(),
-          style: Theme.of(context)
-              .textTheme
-              .titleLarge
-              ?.copyWith(fontWeight: FontWeight.bold),
-        ),
-        Text(
-          label,
-          style: Theme.of(context)
-              .textTheme
-              .bodySmall
-              ?.copyWith(color: Colors.grey),
-        ),
-      ],
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        children: [
+          Text(
+            count.toString(),
+            style: Theme.of(context)
+                .textTheme
+                .titleLarge
+                ?.copyWith(fontWeight: FontWeight.bold),
+          ),
+          Text(
+            label,
+            style: Theme.of(context)
+                .textTheme
+                .bodySmall
+                ?.copyWith(color: Colors.grey),
+          ),
+        ],
+      ),
     );
   }
 }

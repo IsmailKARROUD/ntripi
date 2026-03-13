@@ -43,4 +43,22 @@ class FollowRepository {
   Future<void> rejectFollowRequest(String followId) async {
     await _dio.delete(rejectFollowRequestEndpoint(followId));
   }
+
+  /// GET /users/{userId}/followers — accepted followers of a user.
+  Future<List<FollowerListItem>> getFollowers(String userId) async {
+    final response = await _dio.get(followersEndpoint(userId));
+    final list = response.data as List<dynamic>;
+    return list
+        .map((item) => FollowerListItem.fromJson(item as Map<String, dynamic>))
+        .toList();
+  }
+
+  /// GET /users/{userId}/following — users that this user follows.
+  Future<List<FollowerListItem>> getFollowing(String userId) async {
+    final response = await _dio.get(followingEndpoint(userId));
+    final list = response.data as List<dynamic>;
+    return list
+        .map((item) => FollowerListItem.fromJson(item as Map<String, dynamic>))
+        .toList();
+  }
 }

@@ -23,6 +23,7 @@ import 'package:social_flutter/core/api/api_client.dart';
 import 'package:social_flutter/core/storage/secure_storage.dart';
 import 'package:social_flutter/features/auth/presentation/login_screen.dart';
 import 'package:social_flutter/features/auth/presentation/register_screen.dart';
+import 'package:social_flutter/features/follows/presentation/follow_list_screen.dart';
 import 'package:social_flutter/features/follows/presentation/follow_requests_screen.dart';
 import 'package:social_flutter/features/profile/presentation/my_profile_screen.dart';
 import 'package:social_flutter/features/profile/presentation/user_profile_screen.dart';
@@ -97,6 +98,24 @@ final appRouter = GoRouter(
         GoRoute(
           path: '/follow-requests',
           builder: (context, state) => const FollowRequestsScreen(),
+        ),
+
+        // Followers list for any user
+        GoRoute(
+          path: '/profile/:userId/followers',
+          builder: (context, state) => FollowListScreen(
+            userId: state.pathParameters['userId']!,
+            type: FollowListType.followers,
+          ),
+        ),
+
+        // Following list for any user
+        GoRoute(
+          path: '/profile/:userId/following',
+          builder: (context, state) => FollowListScreen(
+            userId: state.pathParameters['userId']!,
+            type: FollowListType.following,
+          ),
         ),
       ],
     ),
