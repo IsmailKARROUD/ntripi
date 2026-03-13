@@ -120,9 +120,9 @@ class FollowerListItem {
       username: json['username'] as String,
       displayName: json['display_name'] as String?,
       avatarUrl: json['avatar_url'] as String?,
-      // Default to false if the field is unexpectedly absent — safe fallback
-      // since the worst outcome is not showing a lock icon.
-      isPrivate: json['is_private'] as bool? ?? false,
+      // Default to true if the field is unexpectedly absent — fail-safe:
+      // better to show a lock icon when unsure than to expose private content.
+      isPrivate: json['is_private'] as bool? ?? true,
     );
   }
 }

@@ -68,7 +68,9 @@ class User(Base):
     # When False (public):
     #   - Follow requests are immediately accepted.
     #   - All content is visible.
-    is_private: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    # Default is True — new accounts are private until the user explicitly
+    # switches to public. This protects user data by default.
+    is_private: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
 
     # Denormalized counters for fast profile reads.
     # These are incremented/decremented in the follow service — never directly here.

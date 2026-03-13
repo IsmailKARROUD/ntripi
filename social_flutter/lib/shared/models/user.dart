@@ -56,7 +56,7 @@ class User {
       displayName: json['display_name'] as String?,
       bio: json['bio'] as String?,
       avatarUrl: json['avatar_url'] as String?,
-      isPrivate: json['is_private'] as bool? ?? false,
+      isPrivate: json['is_private'] as bool? ?? true,
       followersCount: json['followers_count'] as int? ?? 0,
       followingCount: json['following_count'] as int? ?? 0,
       isFollowing: json['is_following'] as bool? ?? false,
