@@ -196,3 +196,75 @@ class TestLogin:
         """
         response = client.get("/users/me")
         assert response.status_code == 403
+
+
+class TestLogout:
+    """
+    Logout on this API is client-side only: the Flutter app deletes the stored
+    JWT from secure storage. There is no /auth/logout endpoint because JWTs are
+    stateless — the server cannot invalidate them.
+
+    What we CAN test here is the server-side behavior that makes logout secure:
+      1. A request with no token is rejected (what happens immediately after logout).
+      2. A request with a tampered token is rejected (token cannot be forged).
+      3. A request with a completely fake token string is rejected.
+
+    These tests verify that once the client discards a token, the server will
+    refuse any further access — which is the security guarantee we rely on.
+    """
+
+    def test_no_token_after_logout_returns_403(self, client: TestClient):
+        """
+        After logout the client sends no token at all.
+        Protected endpoints must return 403 Forbidden.
+        """
+        register_user(client, "alice1", "alice@test.com")
+
+        # Simulate a logged-out client: make a request with no Authorization header.
+        response = client.get("/users/me")
+
+        assert response.status_code == 403
+
+    def test_tampered_token_after_logout_returns_401(self, client: TestClient):
+        """
+        A valid token whose signature has been tampered with must be rejected.
+        This ensures a malicious user cannot modify the token payload (e.g.,
+        change the user ID) after the real token has been discarded on logout.
+        """
+        data = register_user(client, "alice1", "alice@test.com")
+        token = data["access_token"]
+
+        # Corrupt the signature: replace the last 10 characters with 'x'.
+        # A JWT has three base64 parts separated by '.'. Changing the signature
+        # part makes the token invalid without changing the readable payload.
+        tampered_token = token[:-10] + "x" * 10
+
+        response = client.get("/users/me", headers=auth_headers(tampered_token))
+
+        assert response.status_code == 401
+
+    def test_fake_token_returns_401(self, client: TestClient):
+        """
+        A completely fabricated token string must be rejected.
+        This covers the case where someone tries to forge a token from scratch.
+        """
+        response = client.get(
+            "/users/me",
+            headers=auth_headers("this.is.not.a.real.jwt"),
+        )
+
+        assert response.status_code == 401
+
+    def test_valid_token_still_works_before_logout(self, client: TestClient):
+        """
+        Sanity check: a freshly issued token must grant access to protected
+        endpoints. This ensures the rejection tests above are meaningful —
+        if all tokens were rejected, those tests would pass for the wrong reason.
+        """
+        data = register_user(client, "alice1", "alice@test.com")
+        token = data["access_token"]
+
+        response = client.get("/users/me", headers=auth_headers(token))
+
+        assert response.status_code == 200
+        assert response.json()["username"] == "alice1"
