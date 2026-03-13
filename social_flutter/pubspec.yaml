@@ -31,6 +31,8 @@ dev_dependencies:
   # Code generation for Riverpod providers (@riverpod annotation)
   riverpod_generator: ^2.3.9
   build_runner: ^2.4.9
+  # Intercepts Dio HTTP calls in unit tests — no real network needed.
+  http_mock_adapter: ^0.6.1
 
 flutter:
   uses-material-design: true
