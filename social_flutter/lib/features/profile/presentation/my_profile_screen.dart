@@ -9,6 +9,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:social_flutter/features/auth/providers/auth_provider.dart';
 import 'package:social_flutter/features/follows/providers/follow_provider.dart';
 import 'package:social_flutter/features/profile/providers/profile_provider.dart';
 import 'package:social_flutter/shared/models/user.dart';
@@ -42,6 +43,36 @@ class _MyProfileScreenState extends ConsumerState<MyProfileScreen> {
     _avatarUrlController.text = user.avatarUrl ?? '';
     _editIsPrivate = user.isPrivate;
     setState(() => _isEditing = true);
+  }
+
+  Future<void> _logout() async {
+    // Ask for confirmation before logging out.
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Log out'),
+        content: const Text('Are you sure you want to log out?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Log out'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    // Delete the stored token and clear auth state.
+    await ref.read(authNotifierProvider.notifier).logout();
+
+    // Replace the entire navigation stack with the login screen.
+    if (mounted) context.go('/login');
   }
 
   Future<void> _saveEdits() async {
@@ -85,6 +116,12 @@ class _MyProfileScreenState extends ConsumerState<MyProfileScreen> {
             ),
             loading: () => const SizedBox.shrink(),
             error: (_, __) => const SizedBox.shrink(),
+          ),
+          // Logout button — always visible regardless of edit state.
+          IconButton(
+            icon: const Icon(Icons.logout),
+            tooltip: 'Log out',
+            onPressed: _logout,
           ),
         ],
       ),
