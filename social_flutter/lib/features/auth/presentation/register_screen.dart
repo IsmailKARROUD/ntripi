@@ -35,11 +35,13 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   }
 
   Future<void> _register() async {
+    // Run all form validators. If any field is invalid, stop here.
+    // The validators provide inline error messages below each field.
     if (!_formKey.currentState!.validate()) return;
 
     setState(() {
       _isLoading = true;
-      _errorMessage = null;
+      _errorMessage = null; // Clear any previous API error
     });
 
     try {
@@ -48,17 +50,23 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
         username: _usernameController.text.trim(),
         email: _emailController.text.trim(),
         password: _passwordController.text,
+        // Send null if display name is blank — the API treats null as "not set".
         displayName: _displayNameController.text.trim().isEmpty
             ? null
             : _displayNameController.text.trim(),
       );
 
+      // Mark the user as authenticated in the Riverpod state.
+      // The router redirect will see the stored token on next navigation.
       ref.read(authNotifierProvider.notifier).setAuthenticated(result.userId);
 
+      // Navigate to the main app. context.go() replaces the entire navigation
+      // stack, so the user can't press Back to return to the register screen.
       if (mounted) {
         context.go('/profile/me');
       }
     } on DioException catch (e) {
+      // API returned an error (e.g., 409 username taken). Display the message.
       setState(() {
         _errorMessage = extractErrorMessage(e);
       });

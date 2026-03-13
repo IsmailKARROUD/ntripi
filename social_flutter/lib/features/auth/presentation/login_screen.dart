@@ -31,12 +31,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   Future<void> _login() async {
-    // Validate all form fields before making an API call.
+    // Run all form validators. If any field is invalid, show inline errors and stop.
     if (!_formKey.currentState!.validate()) return;
 
     setState(() {
       _isLoading = true;
-      _errorMessage = null;
+      _errorMessage = null; // Clear any previous API error
     });
 
     try {
@@ -46,13 +46,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         password: _passwordController.text,
       );
 
-      // Update auth state and navigate to the main app.
+      // Persist the JWT (done inside AuthRepository.login) then update the
+      // Riverpod auth state so the rest of the app knows who is logged in.
       ref.read(authNotifierProvider.notifier).setAuthenticated(result.userId);
 
+      // context.go() replaces the stack — the user can't go back to login.
       if (mounted) {
         context.go('/profile/me');
       }
     } on DioException catch (e) {
+      // API error (e.g., 401 wrong password). Extract and display the message.
       setState(() {
         _errorMessage = extractErrorMessage(e);
       });
