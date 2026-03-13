@@ -61,7 +61,11 @@ final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 /// Interceptor that:
 /// 1. Attaches the Bearer token to every outgoing request.
-/// 2. On 401: clears the token and redirects to login.
+/// 2. On 401 from a protected route: clears the token and redirects to login.
+///    Auth endpoints (/auth/login, /auth/register) are excluded — they can
+///    legitimately return 401 (wrong credentials) and the screen handles that
+///    error inline. Redirecting here would rebuild the screen before the
+///    catch block can display the message.
 class AuthInterceptor extends Interceptor {
   @override
   Future<void> onRequest(
@@ -80,15 +84,22 @@ class AuthInterceptor extends Interceptor {
   @override
   void onError(DioException err, ErrorInterceptorHandler handler) async {
     if (err.response?.statusCode == 401) {
-      // The token is invalid or expired.
-      // 1. Clear the stored token so we don't keep retrying with bad credentials.
-      await deleteToken();
+      // Skip the redirect for auth endpoints — their 401 means "wrong credentials"
+      // and the LoginScreen / RegisterScreen will display the error themselves.
+      final path = err.requestOptions.path;
+      final isAuthEndpoint = path == kLoginEndpoint || path == kRegisterEndpoint;
 
-      // 2. Redirect to the login screen.
-      // We use the navigator key because we're outside the widget tree here.
-      final context = navigatorKey.currentContext;
-      if (context != null && context.mounted) {
-        context.go('/login');
+      if (!isAuthEndpoint) {
+        // A protected route returned 401: the stored token is invalid or expired.
+        // 1. Clear it so we don't keep sending a bad token.
+        await deleteToken();
+
+        // 2. Force the user back to the login screen.
+        // We use the navigator key because we're outside the widget tree here.
+        final context = navigatorKey.currentContext;
+        if (context != null && context.mounted) {
+          context.go('/login');
+        }
       }
     }
     // Pass the error along — the calling code can still inspect it.

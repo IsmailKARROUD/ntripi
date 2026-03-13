@@ -51,19 +51,28 @@ app = FastAPI(
 #   By restricting to only our known frontend domain, we limit exposure.
 
 if settings.DEBUG:
-    # Development: allow everything.
-    allowed_origins = ["*"]
+    # Development: allow all origins via regex.
+    # We cannot use allow_origins=["*"] together with allow_credentials=True —
+    # the CORS spec forbids a wildcard origin with credentials, so browsers
+    # block the request and the server sends no Allow-Origin header at all.
+    # allow_origin_regex=".*" matches every origin while still letting
+    # Starlette echo the actual request origin back, which satisfies the browser.
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origin_regex=".*",
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
 else:
-    # Production: restrict to the configured frontend domain.
-    allowed_origins = [settings.ALLOWED_ORIGINS]
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=allowed_origins,
-    allow_credentials=True,   # Allow cookies and Authorization headers
-    allow_methods=["*"],      # Allow all HTTP methods (GET, POST, PUT, DELETE, etc.)
-    allow_headers=["*"],      # Allow all headers (including Authorization)
-)
+    # Production: restrict to the single configured frontend domain.
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=[settings.ALLOWED_ORIGINS],
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
 
 # ---------------------------------------------------------------------------
 # Routers
