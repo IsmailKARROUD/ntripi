@@ -17,7 +17,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import get_settings
-from app.routers import auth, users, follows
+from app.routers import auth, users, follows, itineraries
 
 settings = get_settings()
 
@@ -83,6 +83,7 @@ else:
 app.include_router(auth.router)    # /auth/register, /auth/login
 app.include_router(users.router)   # /users/me, /users/search, /users/{id}
 app.include_router(follows.router) # /users/{id}/follow, /users/me/follow-requests, etc.
+app.include_router(itineraries.router, prefix="/itineraries")  # /itineraries/...
 
 
 # ---------------------------------------------------------------------------

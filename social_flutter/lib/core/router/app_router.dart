@@ -7,15 +7,21 @@
 //   /profile/:id    → UserProfileScreen (requires auth)
 //   /search         → SearchScreen (requires auth) [tab: Search]
 //   /follow-requests → FollowRequestsScreen (requires auth)
+//   /itineraries    → ItineraryListScreen (requires auth) [tab: Itineraries]
+//   /itineraries/new             → ItineraryFormScreen (create)
+//   /itineraries/:id             → ItineraryDetailScreen
+//   /itineraries/:id/edit        → ItineraryFormScreen (edit)
+//   /itineraries/:id/stops/new         → StopFormScreen (create)
+//   /itineraries/:id/stops/:stopId/edit → StopFormScreen (edit)
+//   /map-picker     → MapPickerScreen (lat/lng picker, returns PlaceSuggestion)
 //
 // Auth guard:
 //   The redirect callback checks for a stored token.
 //   Protected routes redirect to /login if no token is found.
 //
 // ShellRoute + BottomNavigationBar:
-//   The three main tabs (Search, My Profile, Feed placeholder) share
-//   a persistent BottomNavigationBar using go_router's ShellRoute.
-//   Navigating between tabs preserves each tab's scroll position and state.
+//   Four main tabs (Search, Profile, Itineraries, Feed) share a persistent
+//   BottomNavigationBar using go_router's ShellRoute.
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -25,6 +31,11 @@ import 'package:social_flutter/features/auth/presentation/login_screen.dart';
 import 'package:social_flutter/features/auth/presentation/register_screen.dart';
 import 'package:social_flutter/features/follows/presentation/follow_list_screen.dart';
 import 'package:social_flutter/features/follows/presentation/follow_requests_screen.dart';
+import 'package:social_flutter/features/itineraries/presentation/itinerary_detail_screen.dart';
+import 'package:social_flutter/features/itineraries/presentation/itinerary_form_screen.dart';
+import 'package:social_flutter/features/itineraries/presentation/itinerary_list_screen.dart';
+import 'package:social_flutter/features/itineraries/presentation/map_picker_screen.dart';
+import 'package:social_flutter/features/itineraries/presentation/stop_form_screen.dart';
 import 'package:social_flutter/features/profile/presentation/my_profile_screen.dart';
 import 'package:social_flutter/features/profile/presentation/user_profile_screen.dart';
 import 'package:social_flutter/features/search/presentation/search_screen.dart';
@@ -117,6 +128,68 @@ final appRouter = GoRouter(
             type: FollowListType.following,
           ),
         ),
+
+        // ----------------------------------------------------------------
+        // Itinerary routes
+        // ----------------------------------------------------------------
+
+        // My itineraries list (tab)
+        GoRoute(
+          path: '/itineraries',
+          builder: (context, state) => const ItineraryListScreen(),
+        ),
+
+        // Create a new itinerary — must be BEFORE /itineraries/:id so
+        // the literal 'new' is matched before the parameterized segment.
+        GoRoute(
+          path: '/itineraries/new',
+          builder: (context, state) => const ItineraryFormScreen(),
+        ),
+
+        // Full itinerary detail
+        GoRoute(
+          path: '/itineraries/:id',
+          builder: (context, state) => ItineraryDetailScreen(
+            itineraryId: state.pathParameters['id']!,
+          ),
+        ),
+
+        // Edit itinerary header
+        GoRoute(
+          path: '/itineraries/:id/edit',
+          builder: (context, state) => ItineraryFormScreen(
+            itineraryId: state.pathParameters['id']!,
+          ),
+        ),
+
+        // Add a new stop — must be BEFORE stops/:stopId/edit
+        GoRoute(
+          path: '/itineraries/:id/stops/new',
+          builder: (context, state) => StopFormScreen(
+            itineraryId: state.pathParameters['id']!,
+          ),
+        ),
+
+        // Edit an existing stop
+        GoRoute(
+          path: '/itineraries/:id/stops/:stopId/edit',
+          builder: (context, state) => StopFormScreen(
+            itineraryId: state.pathParameters['id']!,
+            stopId: state.pathParameters['stopId']!,
+          ),
+        ),
+
+        // Map picker — receives optional initial lat/lng via `extra`
+        GoRoute(
+          path: '/map-picker',
+          builder: (context, state) {
+            final extra = state.extra as Map<String, dynamic>?;
+            return MapPickerScreen(
+              initialLat: extra?['lat'] as double?,
+              initialLng: extra?['lng'] as double?,
+            );
+          },
+        ),
       ],
     ),
   ],
@@ -132,8 +205,9 @@ class _AppShell extends StatelessWidget {
     final location = GoRouterState.of(context).matchedLocation;
     if (location.startsWith('/search')) return 0;
     if (location.startsWith('/profile/me')) return 1;
-    // Feed tab (placeholder) = index 2
-    return 1; // Default to profile tab for unknown routes
+    if (location.startsWith('/itineraries')) return 2;
+    // Feed tab (placeholder) = index 3
+    return 1; // Default to profile for unknown routes
   }
 
   @override
@@ -142,6 +216,7 @@ class _AppShell extends StatelessWidget {
       body: child,
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex(context),
+        type: BottomNavigationBarType.fixed, // Required for 4+ items
         onTap: (index) {
           switch (index) {
             case 0:
@@ -151,6 +226,9 @@ class _AppShell extends StatelessWidget {
               context.go('/profile/me');
               break;
             case 2:
+              context.go('/itineraries');
+              break;
+            case 3:
               // Feed tab — placeholder for future implementation
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text('Feed coming soon!')),
@@ -166,6 +244,11 @@ class _AppShell extends StatelessWidget {
           BottomNavigationBarItem(
             icon: Icon(Icons.person),
             label: 'Profile',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.map_outlined),
+            activeIcon: Icon(Icons.map),
+            label: 'Itineraries',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.home_outlined),

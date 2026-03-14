@@ -24,6 +24,11 @@ dependencies:
   # Declarative navigation with type-safe routes
   go_router: ^13.2.0
 
+  # Map rendering using OpenStreetMap tiles — no API key required.
+  # ODbL license: coordinates from Nominatim are legal to store and display.
+  flutter_map: ^6.0.0
+  latlong2: ^0.9.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

@@ -45,6 +45,37 @@ String followingEndpoint(String userId) => '/users/$userId/following';
 // ---------------------------------------------------------------------------
 const kFollowRequestsEndpoint = '/users/me/follow-requests';
 
+// ---------------------------------------------------------------------------
+// Itinerary endpoints
+// ---------------------------------------------------------------------------
+
+/// List the authenticated user's itineraries.
+const kMyItinerariesEndpoint = '/itineraries/me';
+
+/// Create a new itinerary.
+const kItinerariesEndpoint = '/itineraries';
+
+/// CRUD for a single itinerary.
+String itineraryEndpoint(String id) => '/itineraries/$id';
+
+/// Add a stop to an itinerary / list stops.
+String itineraryStopsEndpoint(String id) => '/itineraries/$id/stops';
+
+/// Reorder all stops in an itinerary.
+String itineraryStopsReorderEndpoint(String id) => '/itineraries/$id/stops/reorder';
+
+/// Update or delete a single stop.
+String itineraryStopEndpoint(String id, String stopId) =>
+    '/itineraries/$id/stops/$stopId';
+
+/// Add an annotation to a stop.
+String stopAnnotationsEndpoint(String id, String stopId) =>
+    '/itineraries/$id/stops/$stopId/annotations';
+
+/// Delete a single annotation.
+String stopAnnotationEndpoint(String id, String stopId, String annotationId) =>
+    '/itineraries/$id/stops/$stopId/annotations/$annotationId';
+
 /// Accept a specific follow request.
 String acceptFollowRequestEndpoint(String followId) =>
     '/users/me/follow-requests/$followId/accept';
