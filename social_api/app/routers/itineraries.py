@@ -1,5 +1,5 @@
 """
-routers/itineraries.py — Itinerary, stop, and annotation endpoints.
+routers/itineraries.py — Itinerary, stop, annotation, and allowlist endpoints.
 
 All routes require Bearer token authentication (get_current_user dependency).
 The router prefix '/itineraries' is added in main.py.
@@ -9,7 +9,9 @@ Ownership rule:
   user owns the itinerary. Unauthorized access returns 403.
 
 Visibility rule:
-  GET /itineraries/{id} returns 403 for non-owners if is_public=False.
+  GET /itineraries/{id} delegates to can_view_itinerary() in
+  services/itinerary_access.py — the single source of truth for visibility
+  logic. Logic is never duplicated inline here.
 
 Total recalculation:
   After every stop add/update/delete, _recalculate_totals() recomputes
@@ -28,9 +30,12 @@ from app.database import get_db
 from app.dependencies import get_current_user
 from app.models.annotation import Annotation
 from app.models.itinerary import Itinerary
+from app.models.itinerary_allowed_user import ItineraryAllowedUser
 from app.models.stop import Stop
 from app.models.user import User
 from app.schemas.itinerary import (
+    AllowedUserAdd,
+    AllowedUserResponse,
     AnnotationCreate,
     AnnotationResponse,
     ItineraryCreate,
@@ -42,8 +47,13 @@ from app.schemas.itinerary import (
     StopResponse,
     StopUpdate,
 )
+from app.services.itinerary_access import can_view_itinerary
 
 router = APIRouter(tags=["Itineraries"])
+
+# Second router mounted under /users in main.py.
+# Kept separate to avoid prefix conflicts with the /itineraries router.
+user_itineraries_router = APIRouter(tags=["Itineraries"])
 
 
 # ---------------------------------------------------------------------------
@@ -154,7 +164,7 @@ def create_itinerary(
     """
     Create a new empty itinerary owned by the authenticated user.
     total_duration_min and total_cost start at 0 — they are updated as stops
-    are added.
+    are added. visibility defaults to 'only_me'.
     """
     itinerary = Itinerary(
         user_id=current_user.id,
@@ -162,7 +172,7 @@ def create_itinerary(
         description=body.description,
         currency=body.currency,
         safety_rating=body.safety_rating,
-        is_public=body.is_public,
+        visibility=body.visibility,
         total_duration_min=0,
         total_cost=Decimal("0.00"),
     )
@@ -211,16 +221,15 @@ def get_itinerary(
     """
     Return the full itinerary including all stops (with annotations).
 
-    Visibility rule:
-      - If is_public=False, only the owner can view. Others receive 403.
-      - If is_public=True, any authenticated user can view.
+    Visibility is enforced by can_view_itinerary() — the single source of truth.
+    Non-owners who fail the visibility check receive 403.
     """
     itinerary = _load_itinerary_detail(itinerary_id, db)
 
-    if not itinerary.is_public and itinerary.user_id != current_user.id:
+    if not can_view_itinerary(itinerary, current_user.id, db):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="This itinerary is private.",
+            detail="You don't have access to this itinerary",
         )
 
     return itinerary  # type: ignore[return-value]
@@ -241,7 +250,11 @@ def update_itinerary(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> ItinerarySummary:
-    """Partial update — only the fields present in the body are changed."""
+    """
+    Partial update — only the fields present in the body are changed.
+    When visibility changes away from 'restricted', the allowlist rows are
+    preserved so they can be reused if the owner switches back.
+    """
     itinerary = _get_itinerary_or_404(itinerary_id, db)
     _require_owner(itinerary, current_user)
 
@@ -269,13 +282,151 @@ def delete_itinerary(
     current_user: User = Depends(get_current_user),
 ) -> None:
     """
-    Permanently delete the itinerary. All stops and annotations are removed
-    via ON DELETE CASCADE at the database level.
+    Permanently delete the itinerary. All stops, annotations, and allowlist
+    entries are removed via ON DELETE CASCADE at the database level.
     """
     itinerary = _get_itinerary_or_404(itinerary_id, db)
     _require_owner(itinerary, current_user)
 
     db.delete(itinerary)
+    db.commit()
+
+
+# ---------------------------------------------------------------------------
+# Allowlist endpoints — /itineraries/{id}/allowed-users
+# ---------------------------------------------------------------------------
+# These three endpoints are defined BEFORE the stop endpoints to ensure
+# FastAPI matches '/allowed-users' as a literal path segment, not a stop_id.
+
+@router.post(
+    "/{itinerary_id}/allowed-users",
+    response_model=AllowedUserResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Add a user to the restricted allowlist",
+)
+def add_allowed_user(
+    itinerary_id: uuid.UUID,
+    body: AllowedUserAdd,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> AllowedUserResponse:
+    """
+    Grant a specific user access to a restricted itinerary.
+
+    Only the owner can call this endpoint.
+    The itinerary must have visibility='restricted'; otherwise 400 is returned.
+    """
+    itinerary = _get_itinerary_or_404(itinerary_id, db)
+    _require_owner(itinerary, current_user)
+
+    if itinerary.visibility != 'restricted':
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Allowlist only applies to restricted itineraries",
+        )
+
+    target_user = db.get(User, body.user_id)
+    if not target_user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found.",
+        )
+
+    existing = db.execute(
+        select(ItineraryAllowedUser).where(
+            ItineraryAllowedUser.itinerary_id == itinerary_id,
+            ItineraryAllowedUser.user_id == body.user_id,
+        )
+    ).scalar_one_or_none()
+    if existing:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="User already has access",
+        )
+
+    entry = ItineraryAllowedUser(
+        itinerary_id=itinerary_id,
+        user_id=body.user_id,
+    )
+    db.add(entry)
+    db.commit()
+    db.refresh(entry)
+
+    return AllowedUserResponse(
+        user_id=entry.user_id,
+        username=target_user.username,
+        display_name=target_user.display_name,
+        created_at=entry.created_at,
+    )
+
+
+@router.get(
+    "/{itinerary_id}/allowed-users",
+    response_model=list[AllowedUserResponse],
+    summary="List users in the restricted allowlist",
+)
+def get_allowed_users(
+    itinerary_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> list[AllowedUserResponse]:
+    """
+    Return all users currently in the allowlist for this itinerary.
+    Only the owner can call this endpoint.
+    """
+    itinerary = _get_itinerary_or_404(itinerary_id, db)
+    _require_owner(itinerary, current_user)
+
+    results = db.execute(
+        select(ItineraryAllowedUser, User)
+        .join(User, ItineraryAllowedUser.user_id == User.id)
+        .where(ItineraryAllowedUser.itinerary_id == itinerary_id)
+        .order_by(ItineraryAllowedUser.created_at.asc())
+    ).all()
+
+    return [
+        AllowedUserResponse(
+            user_id=allowed.user_id,
+            username=user.username,
+            display_name=user.display_name,
+            created_at=allowed.created_at,
+        )
+        for allowed, user in results
+    ]
+
+
+@router.delete(
+    "/{itinerary_id}/allowed-users/{user_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Remove a user from the restricted allowlist",
+)
+def remove_allowed_user(
+    itinerary_id: uuid.UUID,
+    user_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> None:
+    """
+    Revoke a specific user's access to a restricted itinerary.
+    Only the owner can call this endpoint.
+    """
+    itinerary = _get_itinerary_or_404(itinerary_id, db)
+    _require_owner(itinerary, current_user)
+
+    entry = db.execute(
+        select(ItineraryAllowedUser).where(
+            ItineraryAllowedUser.itinerary_id == itinerary_id,
+            ItineraryAllowedUser.user_id == user_id,
+        )
+    ).scalar_one_or_none()
+
+    if not entry:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found in allowlist",
+        )
+
+    db.delete(entry)
     db.commit()
 
 
@@ -532,3 +683,44 @@ def delete_annotation(
 
     db.delete(annotation)
     db.commit()
+
+
+# ---------------------------------------------------------------------------
+# GET /users/{user_id}/itineraries  (mounted on user_itineraries_router)
+# ---------------------------------------------------------------------------
+
+@user_itineraries_router.get(
+    "/{user_id}/itineraries",
+    response_model=list[ItinerarySummary],
+    summary="List a user's itineraries visible to the current user",
+)
+def get_user_itineraries(
+    user_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> list[ItinerarySummary]:
+    """
+    Return the itineraries owned by user_id that the current user is allowed
+    to see, filtered by can_view_itinerary() — no visibility logic is
+    duplicated here.
+
+    When user_id == current_user.id the owner always passes can_view, so
+    all of their own itineraries are returned.
+    """
+    target_user = db.get(User, user_id)
+    if not target_user or not target_user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found.",
+        )
+
+    itineraries = db.execute(
+        select(Itinerary)
+        .where(Itinerary.user_id == user_id)
+        .order_by(Itinerary.created_at.desc())
+    ).scalars().all()
+
+    return [
+        i for i in itineraries
+        if can_view_itinerary(i, current_user.id, db)
+    ]  # type: ignore[return-value]

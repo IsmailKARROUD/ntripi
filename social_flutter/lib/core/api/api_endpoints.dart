@@ -83,3 +83,22 @@ String acceptFollowRequestEndpoint(String followId) =>
 /// Reject a specific follow request.
 String rejectFollowRequestEndpoint(String followId) =>
     '/users/me/follow-requests/$followId';
+
+// ---------------------------------------------------------------------------
+// Allowlist endpoints (restricted visibility)
+// ---------------------------------------------------------------------------
+
+/// List or add users to the restricted allowlist.
+String itineraryAllowedUsersEndpoint(String id) =>
+    '/itineraries/$id/allowed-users';
+
+/// Remove a specific user from the restricted allowlist.
+String itineraryAllowedUserEndpoint(String id, String userId) =>
+    '/itineraries/$id/allowed-users/$userId';
+
+// ---------------------------------------------------------------------------
+// User itinerary endpoints
+// ---------------------------------------------------------------------------
+
+/// List itineraries visible to the authenticated user on another user's profile.
+String userItinerariesEndpoint(String userId) => '/users/$userId/itineraries';

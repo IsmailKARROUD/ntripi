@@ -8,7 +8,8 @@ Design decisions:
     stop add/update/delete — never modified directly by callers.
   - safety_rating is nullable (user may skip it) and constrained to 1–5
     at the DB level with a CHECK constraint.
-  - is_public=False by default: itineraries are private until explicitly published.
+  - visibility defaults to 'only_me': safest option. Users explicitly open
+    up access; they never accidentally expose content.
   - cover_image_url is stored as a plain URL to a file hosted on our own server.
     No external provider URLs are persisted here.
 """
@@ -18,7 +19,7 @@ from decimal import Decimal
 from datetime import datetime
 
 from sqlalchemy import (
-    Boolean, CheckConstraint, DateTime, ForeignKey, Integer,
+    CheckConstraint, DateTime, ForeignKey, Integer,
     Numeric, SmallInteger, String, Text, func,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -76,9 +77,11 @@ class Itinerary(Base):
 
     safety_rating: Mapped[int | None] = mapped_column(SmallInteger, nullable=True)
 
-    # Private by default — the user must explicitly publish.
-    is_public: Mapped[bool] = mapped_column(
-        Boolean, default=False, server_default="false", nullable=False
+    # Four-level visibility system. Defaults to 'only_me' — the safest option.
+    # Valid values: 'public' | 'followers' | 'restricted' | 'only_me'
+    # Logic is enforced by can_view_itinerary() in services/itinerary_access.py.
+    visibility: Mapped[str] = mapped_column(
+        String(20), default="only_me", server_default="'only_me'", nullable=False
     )
 
     created_at: Mapped[datetime] = mapped_column(

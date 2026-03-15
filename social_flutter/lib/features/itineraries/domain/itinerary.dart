@@ -1,6 +1,10 @@
 // features/itineraries/domain/itinerary.dart — Itinerary Dart model.
 
+import 'package:flutter/material.dart';
 import 'package:social_flutter/features/itineraries/domain/stop.dart';
+
+/// Four-level visibility for an itinerary.
+enum ItineraryVisibility { public, followers, restricted, onlyMe }
 
 /// A travel itinerary owned by a user.
 ///
@@ -17,7 +21,7 @@ class Itinerary {
   final double totalCost;
   final String currency;
   final int? safetyRating;
-  final bool isPublic;
+  final ItineraryVisibility visibility;
   final DateTime createdAt;
 
   /// Empty in summary views, populated in detail views.
@@ -33,7 +37,7 @@ class Itinerary {
     required this.totalCost,
     required this.currency,
     this.safetyRating,
-    required this.isPublic,
+    required this.visibility,
     required this.createdAt,
     this.stops = const [],
   });
@@ -49,7 +53,7 @@ class Itinerary {
       totalCost: (json['total_cost'] as num?)?.toDouble() ?? 0.0,
       currency: json['currency'] as String? ?? 'EUR',
       safetyRating: json['safety_rating'] as int?,
-      isPublic: json['is_public'] as bool? ?? false,
+      visibility: _parseVisibility(json['visibility'] as String? ?? 'only_me'),
       createdAt: DateTime.parse(json['created_at'] as String),
       stops: (json['stops'] as List<dynamic>?)
               ?.map((s) => Stop.fromJson(s as Map<String, dynamic>))
@@ -58,7 +62,23 @@ class Itinerary {
     );
   }
 
+  static ItineraryVisibility _parseVisibility(String raw) {
+    const map = {
+      'public': ItineraryVisibility.public,
+      'followers': ItineraryVisibility.followers,
+      'restricted': ItineraryVisibility.restricted,
+      'only_me': ItineraryVisibility.onlyMe,
+    };
+    return map[raw] ?? ItineraryVisibility.onlyMe;
+  }
+
   Map<String, dynamic> toJson() {
+    const reverseMap = {
+      ItineraryVisibility.public: 'public',
+      ItineraryVisibility.followers: 'followers',
+      ItineraryVisibility.restricted: 'restricted',
+      ItineraryVisibility.onlyMe: 'only_me',
+    };
     return {
       'id': id,
       'user_id': userId,
@@ -69,7 +89,7 @@ class Itinerary {
       'total_cost': totalCost,
       'currency': currency,
       if (safetyRating != null) 'safety_rating': safetyRating,
-      'is_public': isPublic,
+      'visibility': reverseMap[visibility],
       'created_at': createdAt.toIso8601String(),
     };
   }
@@ -84,7 +104,7 @@ class Itinerary {
     double? totalCost,
     String? currency,
     int? safetyRating,
-    bool? isPublic,
+    ItineraryVisibility? visibility,
     DateTime? createdAt,
     List<Stop>? stops,
   }) {
@@ -98,14 +118,34 @@ class Itinerary {
       totalCost: totalCost ?? this.totalCost,
       currency: currency ?? this.currency,
       safetyRating: safetyRating ?? this.safetyRating,
-      isPublic: isPublic ?? this.isPublic,
+      visibility: visibility ?? this.visibility,
       createdAt: createdAt ?? this.createdAt,
       stops: stops ?? this.stops,
     );
   }
 
   // ---------------------------------------------------------------------------
-  // Helper getters
+  // Visibility helpers
+  // ---------------------------------------------------------------------------
+
+  /// Human-readable label for the current visibility level.
+  String get visibilityLabel => switch (visibility) {
+        ItineraryVisibility.public => 'Public',
+        ItineraryVisibility.followers => 'Followers',
+        ItineraryVisibility.restricted => 'Restricted',
+        ItineraryVisibility.onlyMe => 'Only Me',
+      };
+
+  /// Icon representing the current visibility level.
+  IconData get visibilityIcon => switch (visibility) {
+        ItineraryVisibility.public => Icons.public,
+        ItineraryVisibility.followers => Icons.people,
+        ItineraryVisibility.restricted => Icons.lock_outline,
+        ItineraryVisibility.onlyMe => Icons.lock,
+      };
+
+  // ---------------------------------------------------------------------------
+  // Duration / cost helpers
   // ---------------------------------------------------------------------------
 
   /// Human-readable duration: "2h 30min", "45min", or "—" if zero.

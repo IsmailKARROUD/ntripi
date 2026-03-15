@@ -184,11 +184,13 @@ class ItineraryDetailScreen extends ConsumerWidget {
                         label: '${itinerary.safetyRating}/5',
                         iconColor: Colors.amber,
                       ),
-                    _SummaryChip(
-                      icon: itinerary.isPublic
-                          ? Icons.public
-                          : Icons.lock_outline,
-                      label: itinerary.isPublic ? 'Public' : 'Private',
+                    GestureDetector(
+                      onTap: () => context.push(
+                          '/itineraries/$itineraryId/edit'),
+                      child: _SummaryChip(
+                        icon: itinerary.visibilityIcon,
+                        label: itinerary.visibilityLabel,
+                      ),
                     ),
                   ],
                 ),

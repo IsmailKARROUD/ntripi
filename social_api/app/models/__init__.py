@@ -4,7 +4,12 @@
 from app.models.user import User
 from app.models.follow import Follow, FollowStatus
 from app.models.itinerary import Itinerary
+from app.models.itinerary_allowed_user import ItineraryAllowedUser
 from app.models.stop import Stop
 from app.models.annotation import Annotation
 
-__all__ = ["User", "Follow", "FollowStatus", "Itinerary", "Stop", "Annotation"]
+__all__ = [
+    "User", "Follow", "FollowStatus",
+    "Itinerary", "ItineraryAllowedUser",
+    "Stop", "Annotation",
+]

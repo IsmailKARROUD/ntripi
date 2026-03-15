@@ -1,13 +1,15 @@
 // features/itineraries/providers/itinerary_providers.dart — Riverpod state management.
 //
-// Three providers:
-//   myItinerariesProvider — list of the current user's itineraries (create/delete)
-//   itineraryDetailProvider — full detail for one itinerary (stop/annotation mutations)
-//   placeSearchProvider — Nominatim search suggestions for the stop form
+// Providers:
+//   myItinerariesProvider      — list of current user's itineraries
+//   itineraryDetailProvider    — full detail for one itinerary (family by ID)
+//   allowedUsersProvider       — restricted allowlist for one itinerary (family by ID)
+//   placeSearchProvider        — Nominatim suggestions for the stop form
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:social_flutter/core/services/geocoding_service.dart';
 import 'package:social_flutter/features/itineraries/data/itinerary_repository.dart';
+import 'package:social_flutter/features/itineraries/domain/allowed_user.dart';
 import 'package:social_flutter/features/itineraries/domain/itinerary.dart';
 
 // ---------------------------------------------------------------------------
@@ -55,11 +57,6 @@ final myItinerariesProvider =
 // ---------------------------------------------------------------------------
 // ItineraryDetailNotifier — full detail for one itinerary (family by ID)
 // ---------------------------------------------------------------------------
-//
-// Why FamilyAsyncNotifier?
-//   Same reason as followersProvider: one independent Riverpod instance per
-//   itinerary ID so opening two different itineraries doesn't share state.
-//   The `arg` property gives access to the ID in all methods.
 
 class ItineraryDetailNotifier
     extends FamilyAsyncNotifier<Itinerary, String> {
@@ -122,7 +119,7 @@ class ItineraryDetailNotifier
     });
   }
 
-  /// Update itinerary header fields (title, description, etc.) via PATCH.
+  /// Update itinerary header fields (title, description, visibility, etc.).
   /// Returns the updated Itinerary so callers can redirect if needed.
   Future<Itinerary> updateHeader(Map<String, dynamic> data) async {
     final updated = await ref
@@ -131,7 +128,7 @@ class ItineraryDetailNotifier
     state.whenData((current) {
       state = AsyncData(current.copyWith(
         title: updated.title,
-        isPublic: updated.isPublic,
+        visibility: updated.visibility,
         currency: updated.currency,
         safetyRating: updated.safetyRating,
       ));
@@ -166,6 +163,68 @@ class ItineraryDetailNotifier
 final itineraryDetailProvider =
     AsyncNotifierProviderFamily<ItineraryDetailNotifier, Itinerary, String>(
   () => ItineraryDetailNotifier(),
+);
+
+// ---------------------------------------------------------------------------
+// AllowedUsersNotifier — restricted allowlist for one itinerary (family by ID)
+// ---------------------------------------------------------------------------
+
+class AllowedUsersNotifier
+    extends FamilyAsyncNotifier<List<AllowedUser>, String> {
+  @override
+  Future<List<AllowedUser>> build(String itineraryId) {
+    return ref.read(itineraryRepositoryProvider).getAllowedUsers(itineraryId);
+  }
+
+  /// Add a user to the allowlist and update local state.
+  Future<void> addUser(String userId) async {
+    final added = await ref
+        .read(itineraryRepositoryProvider)
+        .addAllowedUser(arg, userId);
+    state.whenData((list) {
+      state = AsyncData([...list, added]);
+    });
+  }
+
+  /// Remove a user from the allowlist and update local state.
+  Future<void> removeUser(String userId) async {
+    await ref
+        .read(itineraryRepositoryProvider)
+        .removeAllowedUser(arg, userId);
+    state.whenData((list) {
+      state = AsyncData(list.where((u) => u.userId != userId).toList());
+    });
+  }
+}
+
+final allowedUsersProvider =
+    AsyncNotifierProviderFamily<AllowedUsersNotifier, List<AllowedUser>, String>(
+  () => AllowedUsersNotifier(),
+);
+
+// ---------------------------------------------------------------------------
+// UserItinerariesNotifier — itineraries on another user's profile (family by userId)
+// ---------------------------------------------------------------------------
+
+class UserItinerariesNotifier
+    extends FamilyAsyncNotifier<List<Itinerary>, String> {
+  @override
+  Future<List<Itinerary>> build(String userId) {
+    return ref.read(itineraryRepositoryProvider).getUserItineraries(userId);
+  }
+
+  /// Re-fetch from the server.
+  Future<void> refresh() async {
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(
+      () => ref.read(itineraryRepositoryProvider).getUserItineraries(arg),
+    );
+  }
+}
+
+final userItinerariesProvider = AsyncNotifierProviderFamily<
+    UserItinerariesNotifier, List<Itinerary>, String>(
+  () => UserItinerariesNotifier(),
 );
 
 // ---------------------------------------------------------------------------

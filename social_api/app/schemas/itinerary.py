@@ -5,13 +5,14 @@ Hierarchy:
   AnnotationCreate / AnnotationResponse
   StopCreate / StopUpdate / StopResponse
   ItineraryCreate / ItineraryUpdate / ItinerarySummary / ItineraryDetail
+  AllowedUserAdd / AllowedUserResponse
   ReorderRequest
 """
 
 import uuid
 from datetime import datetime
 from decimal import Decimal
-from typing import Optional
+from typing import Literal, Optional
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -131,7 +132,7 @@ class ItineraryCreate(BaseModel):
     description: Optional[str] = None
     currency: str = Field(default="EUR", max_length=3, min_length=3)
     safety_rating: Optional[int] = Field(None, ge=1, le=5)
-    is_public: bool = False
+    visibility: Literal['public', 'followers', 'restricted', 'only_me'] = 'only_me'
 
 
 class ItineraryUpdate(BaseModel):
@@ -140,7 +141,7 @@ class ItineraryUpdate(BaseModel):
     description: Optional[str] = None
     currency: Optional[str] = Field(None, max_length=3, min_length=3)
     safety_rating: Optional[int] = Field(None, ge=1, le=5)
-    is_public: Optional[bool] = None
+    visibility: Optional[Literal['public', 'followers', 'restricted', 'only_me']] = None
 
 
 class ItinerarySummary(BaseModel):
@@ -156,7 +157,7 @@ class ItinerarySummary(BaseModel):
     total_cost: float    # Decimal → float for JSON serialization
     currency: str
     safety_rating: Optional[int]
-    is_public: bool
+    visibility: Literal['public', 'followers', 'restricted', 'only_me']
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
@@ -169,6 +170,23 @@ class ItineraryDetail(ItinerarySummary):
     """
     description: Optional[str]
     stops: list[StopResponse] = []
+
+
+# ---------------------------------------------------------------------------
+# Allowlist schemas
+# ---------------------------------------------------------------------------
+
+class AllowedUserAdd(BaseModel):
+    """Input for POST /itineraries/{id}/allowed-users."""
+    user_id: uuid.UUID
+
+
+class AllowedUserResponse(BaseModel):
+    """A user in the restricted allowlist, as returned by the API."""
+    user_id: uuid.UUID
+    username: str
+    display_name: Optional[str]
+    created_at: datetime
 
 
 # ---------------------------------------------------------------------------

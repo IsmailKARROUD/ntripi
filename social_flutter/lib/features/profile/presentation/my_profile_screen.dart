@@ -11,6 +11,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:social_flutter/features/auth/providers/auth_provider.dart';
 import 'package:social_flutter/features/follows/providers/follow_provider.dart';
+import 'package:social_flutter/features/itineraries/presentation/widgets/itinerary_summary_card.dart';
+import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
 import 'package:social_flutter/features/profile/providers/profile_provider.dart';
 import 'package:social_flutter/shared/models/user.dart';
 import 'package:social_flutter/shared/widgets/user_avatar.dart';
@@ -137,94 +139,187 @@ class _MyProfileScreenState extends ConsumerState<MyProfileScreen> {
 
   Widget _buildProfileView(User user, AsyncValue followRequestsAsync) {
     final pendingCount = followRequestsAsync.valueOrNull?.length ?? 0;
+    final itinerariesAsync = ref.watch(myItinerariesProvider);
 
     return RefreshIndicator(
-      onRefresh: () => ref.read(myProfileProvider.notifier).refresh(),
-      child: ListView(
-        padding: const EdgeInsets.all(24),
-        children: [
-          // Avatar + display name
-          Center(
-            child: Column(
-              children: [
-                UserAvatar(avatarUrl: user.avatarUrl, radius: 48),
-                const SizedBox(height: 12),
-                Text(
-                  user.displayName ?? user.username,
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  '@${user.username}',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Colors.grey,
-                      ),
-                ),
-                if (user.isPrivate) ...[
-                  const SizedBox(height: 4),
+      onRefresh: () async {
+        ref.read(myProfileProvider.notifier).refresh();
+        ref.read(myItinerariesProvider.notifier).refresh();
+      },
+      child: CustomScrollView(
+        slivers: [
+          // ----------------------------------------------------------------
+          // Profile header
+          // ----------------------------------------------------------------
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                children: [
+                  // Avatar + display name
+                  Center(
+                    child: Column(
+                      children: [
+                        UserAvatar(avatarUrl: user.avatarUrl, radius: 48),
+                        const SizedBox(height: 12),
+                        Text(
+                          user.displayName ?? user.username,
+                          style:
+                              Theme.of(context).textTheme.titleLarge?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          '@${user.username}',
+                          style: Theme.of(context)
+                              .textTheme
+                              .bodyMedium
+                              ?.copyWith(color: Colors.grey),
+                        ),
+                        if (user.isPrivate) ...[
+                          const SizedBox(height: 4),
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.lock,
+                                  size: 14, color: Colors.grey.shade600),
+                              const SizedBox(width: 4),
+                              Text(
+                                'Private account',
+                                style: TextStyle(
+                                    color: Colors.grey.shade600, fontSize: 12),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Follow counts — tappable to open the full list.
                   Row(
-                    mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.lock, size: 14, color: Colors.grey.shade600),
-                      const SizedBox(width: 4),
-                      Text(
-                        'Private account',
-                        style: TextStyle(
-                            color: Colors.grey.shade600, fontSize: 12),
+                      _StatBox(
+                        label: 'Followers',
+                        count: user.followersCount,
+                        onTap: () =>
+                            context.push('/profile/${user.id}/followers'),
+                      ),
+                      const SizedBox(width: 40),
+                      _StatBox(
+                        label: 'Following',
+                        count: user.followingCount,
+                        onTap: () =>
+                            context.push('/profile/${user.id}/following'),
                       ),
                     ],
                   ),
+                  const SizedBox(height: 16),
+
+                  // Bio
+                  if (user.bio != null && user.bio!.isNotEmpty) ...[
+                    Text(
+                      user.bio!,
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.bodyMedium,
+                    ),
+                    const SizedBox(height: 16),
+                  ],
+
+                  // Follow requests banner
+                  if (user.isPrivate && pendingCount > 0) ...[
+                    Card(
+                      color: Theme.of(context).colorScheme.primaryContainer,
+                      child: ListTile(
+                        leading: const Icon(Icons.person_add),
+                        title: Text('Follow Requests ($pendingCount)'),
+                        subtitle: const Text('Tap to review'),
+                        trailing: const Icon(Icons.chevron_right),
+                        onTap: () => context.push('/follow-requests'),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                  ],
+
+                  // Itineraries section header
+                  const Divider(),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'My Itineraries',
+                          style:
+                              Theme.of(context).textTheme.titleMedium?.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                        ),
+                        TextButton(
+                          onPressed: () => context.push('/itineraries'),
+                          child: const Text('See all'),
+                        ),
+                      ],
+                    ),
+                  ),
                 ],
-              ],
+              ),
             ),
           ),
-          const SizedBox(height: 16),
 
-          // Follow counts — tappable to open the full list.
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              _StatBox(
-                label: 'Followers',
-                count: user.followersCount,
-                onTap: () => context.push('/profile/${user.id}/followers'),
+          // ----------------------------------------------------------------
+          // Itinerary cards
+          // ----------------------------------------------------------------
+          itinerariesAsync.when(
+            loading: () => const SliverToBoxAdapter(
+              child: Padding(
+                padding: EdgeInsets.all(24),
+                child: Center(child: CircularProgressIndicator()),
               ),
-              const SizedBox(width: 40),
-              _StatBox(
-                label: 'Following',
-                count: user.followingCount,
-                onTap: () => context.push('/profile/${user.id}/following'),
+            ),
+            error: (_, __) => const SliverToBoxAdapter(
+              child: Padding(
+                padding: EdgeInsets.all(24),
+                child: Center(child: Text('Could not load itineraries.')),
               ),
-            ],
+            ),
+            data: (itineraries) {
+              if (itineraries.isEmpty) {
+                return SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+                    child: Column(
+                      children: [
+                        Icon(Icons.map_outlined,
+                            size: 48, color: Colors.grey.shade400),
+                        const SizedBox(height: 12),
+                        const Text('No itineraries yet.'),
+                        const SizedBox(height: 8),
+                        TextButton(
+                          onPressed: () => context.push('/itineraries/new'),
+                          child: const Text('Create your first trip'),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }
+              return SliverPadding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 80),
+                sliver: SliverList(
+                  delegate: SliverChildBuilderDelegate(
+                    (context, index) => ItinerarySummaryCard(
+                      itinerary: itineraries[index],
+                    ),
+                    childCount: itineraries.length,
+                  ),
+                ),
+              );
+            },
           ),
-          const SizedBox(height: 16),
-
-          // Bio
-          if (user.bio != null && user.bio!.isNotEmpty) ...[
-            Text(
-              user.bio!,
-              textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.bodyMedium,
-            ),
-            const SizedBox(height: 16),
-          ],
-
-          // Follow requests banner (only for private accounts with pending requests)
-          if (user.isPrivate && pendingCount > 0) ...[
-            Card(
-              color: Theme.of(context).colorScheme.primaryContainer,
-              child: ListTile(
-                leading: const Icon(Icons.person_add),
-                title: Text('Follow Requests ($pendingCount)'),
-                subtitle: const Text('Tap to review'),
-                trailing: const Icon(Icons.chevron_right),
-                onTap: () => context.push('/follow-requests'),
-              ),
-            ),
-            const SizedBox(height: 8),
-          ],
         ],
       ),
     );

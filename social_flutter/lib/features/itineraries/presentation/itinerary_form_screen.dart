@@ -1,13 +1,26 @@
 // presentation/itinerary_form_screen.dart — Create or edit an itinerary header.
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:social_flutter/core/api/api_client.dart';
+import 'package:social_flutter/core/api/api_endpoints.dart';
+import 'package:social_flutter/features/itineraries/domain/itinerary.dart';
 import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
+import 'package:social_flutter/shared/models/user.dart';
 
 /// Whether this form is creating a new itinerary or editing an existing one.
 enum ItineraryFormMode { create, edit }
+
+/// Maps each visibility level to its wire-format string for API payloads.
+const _visibilityToString = {
+  ItineraryVisibility.public: 'public',
+  ItineraryVisibility.followers: 'followers',
+  ItineraryVisibility.restricted: 'restricted',
+  ItineraryVisibility.onlyMe: 'only_me',
+};
 
 class ItineraryFormScreen extends ConsumerStatefulWidget {
   /// Null in create mode; the itinerary ID in edit mode.
@@ -30,7 +43,7 @@ class _ItineraryFormScreenState extends ConsumerState<ItineraryFormScreen> {
 
   String _currency = 'EUR';
   int? _safetyRating;
-  bool _isPublic = false;
+  ItineraryVisibility _visibility = ItineraryVisibility.onlyMe;
   bool _saving = false;
   bool _initialized = false;
 
@@ -40,7 +53,6 @@ class _ItineraryFormScreenState extends ConsumerState<ItineraryFormScreen> {
   void initState() {
     super.initState();
     if (widget.mode == ItineraryFormMode.edit) {
-      // Pre-fill fields once the provider has loaded the itinerary.
       WidgetsBinding.instance.addPostFrameCallback((_) => _initFromProvider());
     }
   }
@@ -56,7 +68,7 @@ class _ItineraryFormScreenState extends ConsumerState<ItineraryFormScreen> {
           ? itinerary.currency
           : 'Other';
       _safetyRating = itinerary.safetyRating;
-      _isPublic = itinerary.isPublic;
+      _visibility = itinerary.visibility;
       _initialized = true;
     });
   }
@@ -79,14 +91,13 @@ class _ItineraryFormScreenState extends ConsumerState<ItineraryFormScreen> {
           'description': _descriptionController.text.trim(),
         'currency': _currency == 'Other' ? 'EUR' : _currency,
         if (_safetyRating != null) 'safety_rating': _safetyRating,
-        'is_public': _isPublic,
+        'visibility': _visibilityToString[_visibility],
       };
 
       if (widget.mode == ItineraryFormMode.create) {
         final itinerary =
             await ref.read(myItinerariesProvider.notifier).addItinerary(data);
         if (!mounted) return;
-        // Navigate to the detail screen of the newly created itinerary.
         context.go('/itineraries/${itinerary.id}');
       } else {
         await ref
@@ -177,7 +188,6 @@ class _ItineraryFormScreenState extends ConsumerState<ItineraryFormScreen> {
                         color: Colors.amber,
                       ),
                       onPressed: () => setState(() {
-                        // Tap the same star again to clear the rating.
                         _safetyRating = _safetyRating == i ? null : i;
                       }),
                     ),
@@ -188,18 +198,54 @@ class _ItineraryFormScreenState extends ConsumerState<ItineraryFormScreen> {
                     ),
                 ],
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 16),
 
-              // Is public toggle
-              SwitchListTile(
-                title: const Text('Public itinerary'),
-                subtitle: const Text(
-                  'Anyone can view this itinerary when public.',
-                ),
-                value: _isPublic,
-                onChanged: (v) => setState(() => _isPublic = v),
-                contentPadding: EdgeInsets.zero,
+              // Visibility picker
+              Text(
+                'Visibility',
+                style: Theme.of(context).textTheme.labelLarge,
               ),
+              const SizedBox(height: 8),
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: SegmentedButton<ItineraryVisibility>(
+                  segments: const [
+                    ButtonSegment(
+                      value: ItineraryVisibility.public,
+                      label: Text('Public'),
+                      icon: Icon(Icons.public),
+                    ),
+                    ButtonSegment(
+                      value: ItineraryVisibility.followers,
+                      label: Text('Followers'),
+                      icon: Icon(Icons.people),
+                    ),
+                    ButtonSegment(
+                      value: ItineraryVisibility.restricted,
+                      label: Text('Restricted'),
+                      icon: Icon(Icons.lock_outline),
+                    ),
+                    ButtonSegment(
+                      value: ItineraryVisibility.onlyMe,
+                      label: Text('Only Me'),
+                      icon: Icon(Icons.lock),
+                    ),
+                  ],
+                  selected: {_visibility},
+                  onSelectionChanged: (selection) =>
+                      setState(() => _visibility = selection.first),
+                ),
+              ),
+
+              // Restricted allowlist section — edit mode only.
+              // In create mode, there is no itinerary ID yet, so allowlist
+              // management is available after saving (via the edit flow).
+              if (widget.mode == ItineraryFormMode.edit &&
+                  _visibility == ItineraryVisibility.restricted) ...[
+                const SizedBox(height: 16),
+                _AllowlistSection(itineraryId: widget.itineraryId!),
+              ],
+
               const SizedBox(height: 24),
 
               // Save button
@@ -226,3 +272,240 @@ class _ItineraryFormScreenState extends ConsumerState<ItineraryFormScreen> {
   }
 }
 
+// ---------------------------------------------------------------------------
+// _AllowlistSection — shown in edit mode when visibility == restricted
+// ---------------------------------------------------------------------------
+
+class _AllowlistSection extends ConsumerWidget {
+  final String itineraryId;
+
+  const _AllowlistSection({required this.itineraryId});
+
+  Future<void> _showAddPersonDialog(BuildContext context) async {
+    await showDialog<void>(
+      context: context,
+      builder: (_) => _AddPersonDialog(itineraryId: itineraryId),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final allowedAsync = ref.watch(allowedUsersProvider(itineraryId));
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'People with access',
+              style: Theme.of(context).textTheme.titleSmall,
+            ),
+            TextButton.icon(
+              icon: const Icon(Icons.person_add_outlined, size: 18),
+              label: const Text('Add person'),
+              onPressed: () => _showAddPersonDialog(context),
+            ),
+          ],
+        ),
+        allowedAsync.when(
+          loading: () => const Padding(
+            padding: EdgeInsets.symmetric(vertical: 8),
+            child: Center(child: CircularProgressIndicator()),
+          ),
+          error: (e, _) => Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Text('Error loading allowlist: $e'),
+          ),
+          data: (users) {
+            if (users.isEmpty) {
+              return const Padding(
+                padding: EdgeInsets.symmetric(vertical: 8),
+                child: Text(
+                  'No one has access yet. Tap "Add person" to grant access.',
+                  style: TextStyle(color: Colors.grey),
+                ),
+              );
+            }
+            return Column(
+              children: users
+                  .map(
+                    (user) => ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: CircleAvatar(
+                        child: Text(
+                          (user.displayName ?? user.username)
+                              .substring(0, 1)
+                              .toUpperCase(),
+                        ),
+                      ),
+                      title: Text(user.displayName ?? user.username),
+                      subtitle: Text('@${user.username}'),
+                      trailing: IconButton(
+                        icon: const Icon(Icons.close, size: 18),
+                        tooltip: 'Remove access',
+                        onPressed: () async {
+                          try {
+                            await ref
+                                .read(allowedUsersProvider(itineraryId)
+                                    .notifier)
+                                .removeUser(user.userId);
+                          } on Exception catch (e) {
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    extractErrorMessage(e as dynamic),
+                                  ),
+                                ),
+                              );
+                            }
+                          }
+                        },
+                      ),
+                    ),
+                  )
+                  .toList(),
+            );
+          },
+        ),
+      ],
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// _AddPersonDialog — search for a user and add them to the allowlist
+// ---------------------------------------------------------------------------
+
+class _AddPersonDialog extends ConsumerStatefulWidget {
+  final String itineraryId;
+
+  const _AddPersonDialog({required this.itineraryId});
+
+  @override
+  ConsumerState<_AddPersonDialog> createState() => _AddPersonDialogState();
+}
+
+class _AddPersonDialogState extends ConsumerState<_AddPersonDialog> {
+  final _searchController = TextEditingController();
+  final List<User> _results = [];
+  Timer? _debounce;
+  bool _searching = false;
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    _debounce?.cancel();
+    super.dispose();
+  }
+
+  void _onSearchChanged(String value) {
+    _debounce?.cancel();
+    if (value.trim().isEmpty) {
+      setState(() => _results.clear());
+      return;
+    }
+    _debounce = Timer(const Duration(milliseconds: 400), () async {
+      if (!mounted) return;
+      setState(() => _searching = true);
+      try {
+        final response = await dio.get<List<dynamic>>(
+          kSearchUsersEndpoint,
+          queryParameters: {'q': value.trim()},
+        );
+        final users = (response.data ?? [])
+            .cast<Map<String, dynamic>>()
+            .map(User.fromJson)
+            .toList();
+        if (mounted) {
+          setState(() {
+            _results
+              ..clear()
+              ..addAll(users);
+            _searching = false;
+          });
+        }
+      } catch (_) {
+        if (mounted) setState(() => _searching = false);
+      }
+    });
+  }
+
+  Future<void> _addUser(User user) async {
+    try {
+      await ref
+          .read(allowedUsersProvider(widget.itineraryId).notifier)
+          .addUser(user.id);
+      if (mounted) Navigator.pop(context);
+    } on Exception catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(extractErrorMessage(e as dynamic))),
+        );
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Add person'),
+      content: SizedBox(
+        width: double.maxFinite,
+        height: 360,
+        child: Column(
+          children: [
+            TextField(
+              controller: _searchController,
+              autofocus: true,
+              decoration: const InputDecoration(
+                hintText: 'Search by username...',
+                prefixIcon: Icon(Icons.search),
+                border: OutlineInputBorder(),
+              ),
+              onChanged: _onSearchChanged,
+            ),
+            const SizedBox(height: 8),
+            if (_searching)
+              const Expanded(
+                child: Center(child: CircularProgressIndicator()),
+              )
+            else if (_results.isEmpty && _searchController.text.isNotEmpty)
+              const Expanded(
+                child: Center(child: Text('No users found.')),
+              )
+            else
+              Expanded(
+                child: ListView.builder(
+                  itemCount: _results.length,
+                  itemBuilder: (context, index) {
+                    final user = _results[index];
+                    return ListTile(
+                      leading: CircleAvatar(
+                        child: Text(
+                          (user.displayName ?? user.username)
+                              .substring(0, 1)
+                              .toUpperCase(),
+                        ),
+                      ),
+                      title: Text(user.displayName ?? user.username),
+                      subtitle: Text('@${user.username}'),
+                      onTap: () => _addUser(user),
+                    );
+                  },
+                ),
+              ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+      ],
+    );
+  }
+}

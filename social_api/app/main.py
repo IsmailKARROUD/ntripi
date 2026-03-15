@@ -84,6 +84,7 @@ app.include_router(auth.router)    # /auth/register, /auth/login
 app.include_router(users.router)   # /users/me, /users/search, /users/{id}
 app.include_router(follows.router) # /users/{id}/follow, /users/me/follow-requests, etc.
 app.include_router(itineraries.router, prefix="/itineraries")  # /itineraries/...
+app.include_router(itineraries.user_itineraries_router, prefix="/users", tags=["Itineraries"])  # /users/{id}/itineraries
 
 
 # ---------------------------------------------------------------------------

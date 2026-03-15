@@ -8,6 +8,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:social_flutter/core/api/api_client.dart';
 import 'package:social_flutter/core/api/api_endpoints.dart';
+import 'package:social_flutter/features/itineraries/domain/allowed_user.dart';
 import 'package:social_flutter/features/itineraries/domain/annotation.dart';
 import 'package:social_flutter/features/itineraries/domain/itinerary.dart';
 import 'package:social_flutter/features/itineraries/domain/stop.dart';
@@ -24,6 +25,18 @@ class ItineraryRepository {
   /// GET /itineraries/me — returns the authenticated user's itineraries.
   Future<List<Itinerary>> getMyItineraries() async {
     final response = await _dio.get<List<dynamic>>(kMyItinerariesEndpoint);
+    return (response.data ?? [])
+        .cast<Map<String, dynamic>>()
+        .map(Itinerary.fromJson)
+        .toList();
+  }
+
+  /// GET /users/{userId}/itineraries — returns itineraries visible to the
+  /// authenticated user on another user's profile.
+  Future<List<Itinerary>> getUserItineraries(String userId) async {
+    final response = await _dio.get<List<dynamic>>(
+      userItinerariesEndpoint(userId),
+    );
     return (response.data ?? [])
         .cast<Map<String, dynamic>>()
         .map(Itinerary.fromJson)
@@ -129,6 +142,38 @@ class ItineraryRepository {
     String annotationId,
   ) async {
     await _dio.delete(stopAnnotationEndpoint(itineraryId, stopId, annotationId));
+  }
+
+  // ---------------------------------------------------------------------------
+  // Allowlist CRUD (restricted visibility)
+  // ---------------------------------------------------------------------------
+
+  /// GET /itineraries/{id}/allowed-users
+  Future<List<AllowedUser>> getAllowedUsers(String itineraryId) async {
+    final response = await _dio.get<List<dynamic>>(
+      itineraryAllowedUsersEndpoint(itineraryId),
+    );
+    return (response.data ?? [])
+        .cast<Map<String, dynamic>>()
+        .map(AllowedUser.fromJson)
+        .toList();
+  }
+
+  /// POST /itineraries/{id}/allowed-users
+  Future<AllowedUser> addAllowedUser(
+    String itineraryId,
+    String userId,
+  ) async {
+    final response = await _dio.post<Map<String, dynamic>>(
+      itineraryAllowedUsersEndpoint(itineraryId),
+      data: {'user_id': userId},
+    );
+    return AllowedUser.fromJson(response.data!);
+  }
+
+  /// DELETE /itineraries/{id}/allowed-users/{userId}
+  Future<void> removeAllowedUser(String itineraryId, String userId) async {
+    await _dio.delete(itineraryAllowedUserEndpoint(itineraryId, userId));
   }
 }
 
