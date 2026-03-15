@@ -11,6 +11,8 @@ __pycache__/
 dist/
 build/
 *.egg-info/
+*.sqlite
+*.db
 
 # ─── Flutter / Dart ─────────────────────────────────────────────────
 social_flutter/.dart_tool/
