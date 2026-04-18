@@ -63,6 +63,9 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
   // Current stop (in edit mode)
   Stop? _existingStop;
 
+  // Annotations collected before the stop is created (create mode only)
+  final List<_PendingAnnotation> _pendingAnnotations = [];
+
   @override
   void initState() {
     super.initState();
@@ -196,6 +199,23 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
         await notifier.updateStop(widget.stopId!, data);
       } else {
         await notifier.addStop(data);
+        // Submit any annotations queued before the stop existed.
+        if (_pendingAnnotations.isNotEmpty) {
+          final itinerary =
+              ref.read(itineraryDetailProvider(widget.itineraryId)).value;
+          final newStop = itinerary?.stops.firstWhere(
+            (s) => s.position == position,
+            orElse: () => itinerary!.stops.last,
+          );
+          if (newStop != null) {
+            for (final pending in _pendingAnnotations) {
+              await notifier.addAnnotation(newStop.id, {
+                'type': pending.type.name,
+                'content': pending.content,
+              });
+            }
+          }
+        }
       }
 
       if (!mounted) return;
@@ -211,7 +231,7 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
   }
 
   // ---------------------------------------------------------------------------
-  // Annotation helpers (edit mode only)
+  // Annotation helpers
   // ---------------------------------------------------------------------------
 
   Future<void> _showAddAnnotationDialog() async {
@@ -226,7 +246,6 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Type segmented button
               SegmentedButton<AnnotationType>(
                 segments: const [
                   ButtonSegment(
@@ -284,18 +303,65 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
     if (confirmed != true || !mounted) return;
     if (contentController.text.trim().isEmpty) return;
 
+    if (widget.isEditMode) {
+      // Stop already exists — send to API immediately.
+      try {
+        await ref
+            .read(itineraryDetailProvider(widget.itineraryId).notifier)
+            .addAnnotation(widget.stopId!, {
+          'type': selectedType!.name,
+          'content': contentController.text.trim(),
+        });
+        _initFromExistingStop();
+      } on Exception catch (e) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(extractErrorMessage(e as dynamic))),
+        );
+      }
+    } else {
+      // Stop doesn't exist yet — queue locally until save.
+      setState(() {
+        _pendingAnnotations.add(
+          _PendingAnnotation(selectedType!, contentController.text.trim()),
+        );
+      });
+    }
+  }
+
+  Future<void> _confirmDelete() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Delete stop?'),
+        content: const Text(
+            'This stop and all its annotations will be permanently removed.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    setState(() => _saving = true);
     try {
       await ref
           .read(itineraryDetailProvider(widget.itineraryId).notifier)
-          .addAnnotation(widget.stopId!, {
-        'type': selectedType!.name,
-        'content': contentController.text.trim(),
-      });
-
-      // Refresh local stop reference.
-      _initFromExistingStop();
+          .deleteStop(widget.stopId!);
+      if (!mounted) return;
+      context.pop();
     } on Exception catch (e) {
       if (!mounted) return;
+      setState(() => _saving = false);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(extractErrorMessage(e as dynamic))),
       );
@@ -623,24 +689,25 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
               const SizedBox(height: 20),
 
               // ----------------------------------------------------------------
-              // Section 3: Annotations (edit mode only)
+              // Section 3: Annotations
               // ----------------------------------------------------------------
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Annotations',
+                    style: Theme.of(context).textTheme.titleSmall,
+                  ),
+                  TextButton.icon(
+                    onPressed: _showAddAnnotationDialog,
+                    icon: const Icon(Icons.add, size: 16),
+                    label: const Text('Add'),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
               if (widget.isEditMode) ...[
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Annotations',
-                      style: Theme.of(context).textTheme.titleSmall,
-                    ),
-                    TextButton.icon(
-                      onPressed: _showAddAnnotationDialog,
-                      icon: const Icon(Icons.add, size: 16),
-                      label: const Text('Add'),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
+                // Edit mode: show saved annotations from the existing stop.
                 if (_existingStop == null ||
                     _existingStop!.annotations.isEmpty)
                   Text(
@@ -660,8 +727,50 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                         )
                         .toList(),
                   ),
-                const SizedBox(height: 20),
+              ] else ...[
+                // Create mode: show locally queued annotations.
+                if (_pendingAnnotations.isEmpty)
+                  Text(
+                    'No annotations yet.',
+                    style: TextStyle(color: Colors.grey.shade600),
+                  )
+                else
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 6,
+                    children: _pendingAnnotations
+                        .map(
+                          (p) => Chip(
+                            avatar: Icon(
+                              _annotationIcons[p.type],
+                              size: 16,
+                              color: _annotationColors[p.type],
+                            ),
+                            label: Text(
+                              p.content,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: _annotationColors[p.type],
+                              ),
+                            ),
+                            backgroundColor:
+                                _annotationColors[p.type]!.withOpacity(0.1),
+                            side: BorderSide.none,
+                            deleteIcon: Icon(
+                              Icons.close,
+                              size: 14,
+                              color: _annotationColors[p.type],
+                            ),
+                            onDeleted: () =>
+                                setState(() => _pendingAnnotations.remove(p)),
+                          ),
+                        )
+                        .toList(),
+                  ),
               ],
+              const SizedBox(height: 20),
 
               // Save button
               FilledButton(
@@ -677,10 +786,47 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                       )
                     : Text(widget.isEditMode ? 'Save Changes' : 'Add Stop'),
               ),
+
+              // Delete stop — edit mode only
+              if (widget.isEditMode) ...[
+                const SizedBox(height: 12),
+                OutlinedButton.icon(
+                  onPressed: _saving ? null : _confirmDelete,
+                  icon: const Icon(Icons.delete_outline, color: Colors.red),
+                  label: const Text(
+                    'Delete Stop',
+                    style: TextStyle(color: Colors.red),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    side: const BorderSide(color: Colors.red),
+                  ),
+                ),
+              ],
             ],
           ),
         ),
       ),
     );
   }
+
+  static const _annotationColors = {
+    AnnotationType.advice: Color(0xFF2E7D32),
+    AnnotationType.caution: Color(0xFFE65100),
+    AnnotationType.avoid: Color(0xFFC62828),
+    AnnotationType.info: Color(0xFF1565C0),
+  };
+
+  static const _annotationIcons = {
+    AnnotationType.advice: Icons.lightbulb_outline,
+    AnnotationType.caution: Icons.warning_amber_outlined,
+    AnnotationType.avoid: Icons.block,
+    AnnotationType.info: Icons.info_outline,
+  };
+}
+
+/// Annotation queued locally in create mode before the stop is saved.
+class _PendingAnnotation {
+  final AnnotationType type;
+  final String content;
+  const _PendingAnnotation(this.type, this.content);
 }

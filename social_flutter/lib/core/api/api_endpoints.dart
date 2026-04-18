@@ -53,7 +53,7 @@ const kFollowRequestsEndpoint = '/users/me/follow-requests';
 const kMyItinerariesEndpoint = '/itineraries/me';
 
 /// Create a new itinerary.
-const kItinerariesEndpoint = '/itineraries';
+const kItinerariesEndpoint = '/itineraries/';
 
 /// CRUD for a single itinerary.
 String itineraryEndpoint(String id) => '/itineraries/$id';

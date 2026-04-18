@@ -13,14 +13,12 @@ class StopCard extends StatelessWidget {
   final Stop stop;
   final String currency;
   final VoidCallback? onEdit;
-  final VoidCallback? onDelete;
 
   const StopCard({
     super.key,
     required this.stop,
     required this.currency,
     this.onEdit,
-    this.onDelete,
   });
 
   static const _typeIcons = {
@@ -143,32 +141,19 @@ class StopCard extends StatelessWidget {
                   ),
                 ),
 
-                // Edit + delete icons
-                Column(
-                  children: [
-                    if (onEdit != null)
-                      IconButton(
-                        icon: const Icon(Icons.edit_outlined, size: 18),
-                        onPressed: onEdit,
-                        visualDensity: VisualDensity.compact,
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(),
-                      ),
-                    if (onDelete != null)
-                      IconButton(
-                        icon: const Icon(Icons.delete_outline, size: 18),
-                        onPressed: onDelete,
-                        visualDensity: VisualDensity.compact,
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(),
-                        color: Colors.red.shade400,
-                      ),
-                  ],
-                ),
+                // Edit icon
+                if (onEdit != null)
+                  IconButton(
+                    icon: const Icon(Icons.edit_outlined, size: 18),
+                    onPressed: onEdit,
+                    visualDensity: VisualDensity.compact,
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                  ),
               ],
             ),
 
-            // Annotation chips
+            // Annotation chips (read-only — manage from Edit Stop page)
             if (stop.annotations.isNotEmpty)
               Padding(
                 padding: const EdgeInsets.only(top: 8, left: 40),

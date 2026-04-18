@@ -346,12 +346,6 @@ class ItineraryDetailScreen extends ConsumerWidget {
                               onEdit: () => context.push(
                                 '/itineraries/$itineraryId/stops/${stop.id}/edit',
                               ),
-                              onDelete: () => _confirmDeleteStop(
-                                context,
-                                ref,
-                                stop.id,
-                                stop.placeName ?? 'Stop ${stop.position}',
-                              ),
                             ),
                           );
                         },
