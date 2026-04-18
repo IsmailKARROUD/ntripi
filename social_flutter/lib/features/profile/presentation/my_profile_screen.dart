@@ -32,6 +32,14 @@ class _MyProfileScreenState extends ConsumerState<MyProfileScreen> {
   bool? _editIsPrivate;
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(followRequestsProvider.notifier).refresh();
+    });
+  }
+
+  @override
   void dispose() {
     _displayNameController.dispose();
     _bioController.dispose();
@@ -145,6 +153,7 @@ class _MyProfileScreenState extends ConsumerState<MyProfileScreen> {
       onRefresh: () async {
         ref.read(myProfileProvider.notifier).refresh();
         ref.read(myItinerariesProvider.notifier).refresh();
+        ref.read(followRequestsProvider.notifier).refresh();
       },
       child: CustomScrollView(
         slivers: [
