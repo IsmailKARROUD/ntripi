@@ -15,6 +15,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:social_flutter/core/api/api_client.dart';
+import 'package:social_flutter/features/auth/providers/auth_provider.dart';
 import 'package:social_flutter/features/itineraries/domain/stop.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/stop_card.dart';
 import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
@@ -101,6 +102,8 @@ class ItineraryDetailScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final itineraryAsync = ref.watch(itineraryDetailProvider(itineraryId));
+    final currentUserId = ref.watch(authNotifierProvider);
+    final isOwner = itineraryAsync.valueOrNull?.userId == currentUserId;
 
     return Scaffold(
       appBar: AppBar(
@@ -110,7 +113,7 @@ class ItineraryDetailScreen extends ConsumerWidget {
           error: (_, __) => const Text('Itinerary'),
         ),
         actions: [
-          if (itineraryAsync.hasValue)
+          if (isOwner)
             IconButton(
               icon: const Icon(Icons.edit_outlined),
               onPressed: () =>
@@ -184,14 +187,20 @@ class ItineraryDetailScreen extends ConsumerWidget {
                         label: '${itinerary.safetyRating}/5',
                         iconColor: Colors.amber,
                       ),
-                    GestureDetector(
-                      onTap: () => context.push(
-                          '/itineraries/$itineraryId/edit'),
-                      child: _SummaryChip(
+                    if (isOwner)
+                      GestureDetector(
+                        onTap: () => context.push(
+                            '/itineraries/$itineraryId/edit'),
+                        child: _SummaryChip(
+                          icon: itinerary.visibilityIcon,
+                          label: itinerary.visibilityLabel,
+                        ),
+                      )
+                    else
+                      _SummaryChip(
                         icon: itinerary.visibilityIcon,
                         label: itinerary.visibilityLabel,
                       ),
-                    ),
                   ],
                 ),
               ),
@@ -322,44 +331,61 @@ class ItineraryDetailScreen extends ConsumerWidget {
                             Icon(Icons.place_outlined,
                                 size: 48, color: Colors.grey.shade400),
                             const SizedBox(height: 12),
-                            const Text('No stops yet. Tap + to add one.'),
+                            Text(isOwner
+                                ? 'No stops yet. Tap + to add one.'
+                                : 'No stops yet.'),
                           ],
                         ),
                       )
-                    : ReorderableListView.builder(
-                        padding: const EdgeInsets.only(bottom: 80),
-                        itemCount: itinerary.stops.length,
-                        onReorder: (oldIndex, newIndex) => _onReorder(
-                          ref,
-                          itinerary.stops,
-                          oldIndex,
-                          newIndex,
-                          context,
-                        ),
-                        itemBuilder: (context, index) {
-                          final stop = itinerary.stops[index];
-                          return KeyedSubtree(
-                            key: ValueKey(stop.id),
-                            child: StopCard(
-                              stop: stop,
-                              currency: itinerary.currency,
-                              onEdit: () => context.push(
-                                '/itineraries/$itineraryId/stops/${stop.id}/edit',
-                              ),
+                    : isOwner
+                        ? ReorderableListView.builder(
+                            padding: const EdgeInsets.only(bottom: 80),
+                            itemCount: itinerary.stops.length,
+                            onReorder: (oldIndex, newIndex) => _onReorder(
+                              ref,
+                              itinerary.stops,
+                              oldIndex,
+                              newIndex,
+                              context,
                             ),
-                          );
-                        },
-                      ),
+                            itemBuilder: (context, index) {
+                              final stop = itinerary.stops[index];
+                              return KeyedSubtree(
+                                key: ValueKey(stop.id),
+                                child: StopCard(
+                                  stop: stop,
+                                  currency: itinerary.currency,
+                                  onEdit: () => context.push(
+                                    '/itineraries/$itineraryId/stops/${stop.id}/edit',
+                                  ),
+                                ),
+                              );
+                            },
+                          )
+                        : ListView.builder(
+                            padding: const EdgeInsets.only(bottom: 16),
+                            itemCount: itinerary.stops.length,
+                            itemBuilder: (context, index) {
+                              final stop = itinerary.stops[index];
+                              return StopCard(
+                                key: ValueKey(stop.id),
+                                stop: stop,
+                                currency: itinerary.currency,
+                              );
+                            },
+                          ),
               ),
             ],
           );
         },
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () =>
-            context.push('/itineraries/$itineraryId/stops/new'),
-        child: const Icon(Icons.add),
-      ),
+      floatingActionButton: isOwner
+          ? FloatingActionButton(
+              onPressed: () =>
+                  context.push('/itineraries/$itineraryId/stops/new'),
+              child: const Icon(Icons.add),
+            )
+          : null,
     );
   }
 }
