@@ -14,7 +14,7 @@
 /// To make this configurable at build time:
 ///   flutter run --dart-define=API_BASE_URL=https://api.myserver.com
 /// Then use: const kApiBaseUrl = String.fromEnvironment('API_BASE_URL', defaultValue: '...');
-const kApiBaseUrl = 'http://localhost:8000'; // Use http://10.0.2.2:8000 for Android emulator
+const kApiBaseUrl = String.fromEnvironment('API_BASE_URL', defaultValue: 'http://localhost:8000');
 
 // ---------------------------------------------------------------------------
 // Auth endpoints
