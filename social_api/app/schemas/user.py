@@ -70,6 +70,11 @@ class UserUpdateRequest(BaseModel):
     is_private: bool | None = None
 
 
+class DeleteAccountRequest(BaseModel):
+    """Input for DELETE /users/me — requires password re-confirmation."""
+    password: str
+
+
 class UserSearchResult(BaseModel):
     """
     Compact user representation for search results.

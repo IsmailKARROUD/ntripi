@@ -60,6 +60,7 @@ void main() {
           'email': 'alice@test.com',
           'password': 'secret123',
           'display_name': 'Alice',
+          'tos_accepted': true,
         },
       );
 
@@ -69,6 +70,7 @@ void main() {
         email: 'alice@test.com',
         password: 'secret123',
         displayName: 'Alice',
+        tosAccepted: true,
       );
 
       // Verify that the response fields are correctly parsed.
@@ -90,6 +92,7 @@ void main() {
           'username': 'bob1',
           'email': 'bob@test.com',
           'password': 'secret456',
+          'tos_accepted': true,
         },
       );
 
@@ -99,6 +102,7 @@ void main() {
         username: 'bob1',
         email: 'bob@test.com',
         password: 'secret456',
+        tosAccepted: true,
       );
 
       // If we get here, the body matched — display_name was correctly omitted.
@@ -114,6 +118,7 @@ void main() {
           'username': 'alice1',
           'email': 'alice@test.com',
           'password': 'secret123',
+          'tos_accepted': true,
         },
       );
 
@@ -122,6 +127,7 @@ void main() {
         username: 'alice1',
         email: 'alice@test.com',
         password: 'secret123',
+        tosAccepted: true,
       );
 
       // Read the stored token directly from the mock secure storage.
@@ -139,6 +145,7 @@ void main() {
           'username': 'alice1',
           'email': 'alice@test.com',
           'password': 'secret123',
+          'tos_accepted': true,
         },
       );
 
@@ -148,6 +155,7 @@ void main() {
           username: 'alice1',
           email: 'alice@test.com',
           password: 'secret123',
+          tosAccepted: true,
         ),
         throwsA(isA<DioException>()),
       );

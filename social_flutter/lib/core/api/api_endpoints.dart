@@ -21,6 +21,7 @@ const kApiBaseUrl = String.fromEnvironment('API_BASE_URL', defaultValue: 'http:/
 // ---------------------------------------------------------------------------
 const kRegisterEndpoint = '/auth/register';
 const kLoginEndpoint = '/auth/login';
+const kTosEndpoint = '/auth/tos';
 
 // ---------------------------------------------------------------------------
 // User endpoints

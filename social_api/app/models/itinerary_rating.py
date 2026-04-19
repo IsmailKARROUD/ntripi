@@ -43,10 +43,14 @@ class ItineraryRating(Base):
         index=True,
     )
 
-    user_id: Mapped[uuid.UUID] = mapped_column(
+    # nullable=True + ondelete='SET NULL':
+    # When a user deletes their account, their rating score is retained as
+    # anonymous community data (GDPR Art. 17 — anonymized data is out of scope).
+    # user_id is set to NULL rather than cascading the delete.
+    user_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True),
-        ForeignKey("users.id", ondelete="CASCADE"),
-        nullable=False,
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
     )
 
     stars: Mapped[int] = mapped_column(SmallInteger, nullable=False)

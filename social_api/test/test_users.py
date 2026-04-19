@@ -39,8 +39,8 @@ class TestMyProfile:
         assert profile["followers_count"] == 0
         assert profile["following_count"] == 0
 
-        # Default privacy is public
-        assert profile["is_private"] is False
+        # New accounts default to private
+        assert profile["is_private"] is True
 
     def test_update_profile_display_name(self, client: TestClient):
         """
@@ -235,6 +235,10 @@ class TestViewUserProfile:
         """
         alice = register_user(client, "alice1", "alice@test.com")
         bob = register_user(client, "bob1", "bob@test.com")
+
+        # Bob must be public so Alice's follow is auto-accepted
+        client.patch("/users/me", headers=auth_headers(bob["access_token"]),
+                     json={"is_private": False})
 
         # Alice follows Bob
         client.post(f"/users/{bob['user_id']}/follow",

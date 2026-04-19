@@ -31,7 +31,7 @@ Why 'function' scope for fixtures?
 
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, event
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
@@ -55,6 +55,16 @@ engine = create_engine(
     connect_args={"check_same_thread": False},
     poolclass=StaticPool,
 )
+
+
+# SQLite does not enforce foreign key constraints by default.
+# This event listener enables FK enforcement (including ON DELETE CASCADE)
+# for every connection, matching PostgreSQL's behaviour in production.
+@event.listens_for(engine, "connect")
+def set_sqlite_pragma(dbapi_connection, connection_record):
+    cursor = dbapi_connection.cursor()
+    cursor.execute("PRAGMA foreign_keys=ON")
+    cursor.close()
 
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
@@ -126,6 +136,7 @@ def register_user(client: TestClient, username: str, email: str,
         "email": email,
         "password": password,
         "display_name": display_name,
+        "tos_accepted": True,
     })
     assert response.status_code == 201, (
         f"Registration failed for {username}: {response.json()}"

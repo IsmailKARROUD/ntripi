@@ -24,24 +24,83 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   bool _isLoading = false;
   String? _errorMessage;
   bool _obscurePassword = true;
+  bool _tosAccepted = false;
+  String? _tosSummary;
 
   @override
-  void dispose() {
-    _usernameController.dispose();
-    _emailController.dispose();
-    _passwordController.dispose();
-    _displayNameController.dispose();
-    super.dispose();
+  void initState() {
+    super.initState();
+    _loadTos();
+  }
+
+  Future<void> _loadTos() async {
+    try {
+      final repo = ref.read(authRepositoryProvider);
+      final data = await repo.fetchTos();
+      if (mounted) {
+        setState(() => _tosSummary = data['summary'] as String?);
+      }
+    } catch (_) {
+      // Non-fatal — user can still read the checkbox label
+    }
+  }
+
+  void _showTosBottomSheet() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (ctx) => DraggableScrollableSheet(
+        initialChildSize: 0.6,
+        minChildSize: 0.4,
+        maxChildSize: 0.9,
+        expand: false,
+        builder: (_, scrollController) => Column(
+          children: [
+            const SizedBox(height: 12),
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey.shade300,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Text(
+                'Terms of Service',
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
+            ),
+            Expanded(
+              child: SingleChildScrollView(
+                controller: scrollController,
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+                child: Text(
+                  _tosSummary ?? 'Loading…',
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   Future<void> _register() async {
-    // Run all form validators. If any field is invalid, stop here.
-    // The validators provide inline error messages below each field.
     if (!_formKey.currentState!.validate()) return;
+    if (!_tosAccepted) {
+      setState(() => _errorMessage = 'You must accept the Terms of Service.');
+      return;
+    }
 
     setState(() {
       _isLoading = true;
-      _errorMessage = null; // Clear any previous API error
+      _errorMessage = null;
     });
 
     try {
@@ -50,23 +109,18 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
         username: _usernameController.text.trim(),
         email: _emailController.text.trim(),
         password: _passwordController.text,
-        // Send null if display name is blank — the API treats null as "not set".
         displayName: _displayNameController.text.trim().isEmpty
             ? null
             : _displayNameController.text.trim(),
+        tosAccepted: true,
       );
 
-      // Mark the user as authenticated in the Riverpod state.
-      // The router redirect will see the stored token on next navigation.
       ref.read(authNotifierProvider.notifier).setAuthenticated(result.userId);
 
-      // Navigate to the main app. context.go() replaces the entire navigation
-      // stack, so the user can't press Back to return to the register screen.
       if (mounted) {
         context.go('/profile/me');
       }
     } on DioException catch (e) {
-      // API returned an error (e.g., 409 username taken). Display the message.
       setState(() {
         _errorMessage = extractErrorMessage(e);
       });
@@ -75,6 +129,15 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
         setState(() => _isLoading = false);
       }
     }
+  }
+
+  @override
+  void dispose() {
+    _usernameController.dispose();
+    _emailController.dispose();
+    _passwordController.dispose();
+    _displayNameController.dispose();
+    super.dispose();
   }
 
   @override
@@ -124,7 +187,6 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       if (trimmed.length < 3 || trimmed.length > 30) {
                         return 'Username must be 3–30 characters.';
                       }
-                      // Client-side enforcement matching server validation.
                       if (!RegExp(r'^[a-z0-9_]+$').hasMatch(trimmed)) {
                         return 'Only lowercase letters, digits, underscores.';
                       }
@@ -147,7 +209,6 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       if (value == null || value.trim().isEmpty) {
                         return 'Email is required.';
                       }
-                      // Simple format check matching the server's EmailStr.
                       if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value.trim())) {
                         return 'Please enter a valid email.';
                       }
@@ -210,7 +271,37 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       return null;
                     },
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 16),
+
+                  // ToS acceptance row
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Checkbox(
+                        value: _tosAccepted,
+                        onChanged: (v) =>
+                            setState(() => _tosAccepted = v ?? false),
+                      ),
+                      Expanded(
+                        child: Wrap(
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          children: [
+                            const Text('I accept the '),
+                            GestureDetector(
+                              onTap: _showTosBottomSheet,
+                              child: Text(
+                                'Terms of Service',
+                                style: TextStyle(
+                                  color: Theme.of(context).colorScheme.primary,
+                                  decoration: TextDecoration.underline,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
 
                   // Error message from API
                   if (_errorMessage != null) ...[
@@ -231,9 +322,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   ],
                   const SizedBox(height: 24),
 
-                  // Register button
+                  // Register button — disabled until ToS checked
                   ElevatedButton(
-                    onPressed: _isLoading ? null : _register,
+                    onPressed: (_isLoading || !_tosAccepted) ? null : _register,
                     style: ElevatedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 16),
                     ),

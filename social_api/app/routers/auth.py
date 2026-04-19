@@ -17,10 +17,13 @@ Security notes:
     client doesn't need a separate login step.
 """
 
+from datetime import datetime, timezone
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.constants.tos import TOS_DATE, TOS_SUMMARY, TOS_VERSION
 from app.database import get_db
 from app.models.user import User
 from app.schemas.auth import LoginRequest, RegisterRequest, TokenResponse
@@ -57,6 +60,13 @@ def register(payload: RegisterRequest, db: Session = Depends(get_db)) -> TokenRe
       Two separate queries give the client a specific error message.
       A single combined query would just say "conflict" without specifying which field.
     """
+    # Step 0 — ToS must be accepted before we create anything.
+    if not payload.tos_accepted:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="You must accept the Terms of Service to register.",
+        )
+
     # Step 1 — ensure the username isn't already taken.
     existing_user = db.execute(
         select(User).where(User.username == payload.username)
@@ -84,6 +94,7 @@ def register(payload: RegisterRequest, db: Session = Depends(get_db)) -> TokenRe
         email=payload.email,
         password_hash=hash_password(payload.password),
         display_name=payload.display_name,
+        tos_accepted_at=datetime.now(timezone.utc),
     )
     db.add(new_user)
     db.commit()
@@ -135,3 +146,21 @@ def login(payload: LoginRequest, db: Session = Depends(get_db)) -> TokenResponse
         user_id=str(user.id),
         username=user.username,
     )
+
+
+@router.get(
+    "/tos",
+    summary="Get the current Terms of Service",
+)
+def get_tos() -> dict:
+    """
+    Return the current ToS version, date, and summary text.
+    No authentication required — this is fetched during registration.
+    Serving it from the backend means updating the ToS requires only a
+    backend deploy, not an app store submission.
+    """
+    return {
+        "version": TOS_VERSION,
+        "date": TOS_DATE,
+        "summary": TOS_SUMMARY,
+    }

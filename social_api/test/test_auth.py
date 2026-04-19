@@ -38,6 +38,7 @@ class TestRegister:
             "email": "alice@test.com",
             "password": "test1234",
             "display_name": "Alice",
+            "tos_accepted": True,
         })
 
         assert response.status_code == 201
@@ -65,6 +66,7 @@ class TestRegister:
             "username": "alice1",
             "email": "alice2@test.com",
             "password": "test1234",
+            "tos_accepted": True,
         })
 
         assert response.status_code == 409
@@ -82,6 +84,7 @@ class TestRegister:
             "username": "alice2",
             "email": "alice@test.com",  # Same email, different username
             "password": "test1234",
+            "tos_accepted": True,
         })
 
         assert response.status_code == 409

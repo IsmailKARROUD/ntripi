@@ -19,7 +19,7 @@ Design decisions:
 import uuid
 from datetime import datetime, timezone
 
-from sqlalchemy import Boolean, Integer, String, Text, DateTime, func
+from sqlalchemy import Boolean, Integer, String, Text, DateTime, func, TIMESTAMP
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.dialects.postgresql import UUID
 
@@ -80,6 +80,13 @@ class User(Base):
 
     # Soft-delete flag. Deactivated users cannot log in (checked in get_current_user).
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+
+    # Timestamp when the user accepted the Terms of Service.
+    # Nullable for existing users who registered before this field was added.
+    # Required for all new registrations (enforced at the API layer).
+    tos_accepted_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True, default=None
+    )
 
     # server_default uses the DB's NOW() for the initial insert.
     # onupdate=func.now() automatically sets updated_at on every UPDATE statement.

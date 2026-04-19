@@ -37,6 +37,7 @@ class RegisterRequest(BaseModel):
     email: EmailStr  # EmailStr validates format and normalizes the email
     password: str = Field(..., min_length=8, max_length=128)
     display_name: str | None = Field(None, max_length=100)
+    tos_accepted: bool
 
     @field_validator("username")
     @classmethod

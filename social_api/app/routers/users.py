@@ -14,19 +14,22 @@ Endpoints:
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy import select, or_
+from sqlalchemy import select, or_, update
 from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.dependencies import get_current_user
 from app.models.follow import Follow, FollowStatus
+from app.models.itinerary_rating import ItineraryRating
 from app.models.user import User
 from app.schemas.user import (
+    DeleteAccountRequest,
     UserPrivateProfile,
     UserPublicProfile,
     UserSearchResult,
     UserUpdateRequest,
 )
+from app.services.auth import verify_password
 
 router = APIRouter(prefix="/users", tags=["Users"])
 
@@ -97,6 +100,92 @@ def update_my_profile(
     db.commit()
     db.refresh(current_user)
     return current_user  # type: ignore[return-value]
+
+
+@router.delete(
+    "/me",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Permanently delete the current user's account",
+)
+def delete_my_account(
+    payload: DeleteAccountRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> None:
+    """
+    Permanently delete the authenticated user's account.
+
+    Steps (order is critical):
+
+    1. Re-verify password — prevents accidental or unauthorized deletion.
+
+    2. Decrement denormalized follow counters on other users BEFORE the
+       cascade delete removes the follow rows and we lose the information.
+         - Users that current_user follows: their followers_count -= 1
+         - Users that follow current_user: their following_count -= 1
+
+    3. Anonymize ratings: SET user_id = NULL on all rating rows belonging
+       to this user. This makes them GDPR-compliant anonymous community data.
+       We do this explicitly (not relying solely on ON DELETE SET NULL) so
+       the intent is clear to future developers.
+
+    4. Delete the user row. Cascade handles: itineraries, stops, annotations,
+       allowlist entries, follow rows, and any remaining non-anonymized data.
+
+    Token invalidation: get_current_user fetches the user from the DB on
+    every request. With the user row gone, it returns None and raises 401.
+    No token blacklist is needed.
+    """
+    # Step 1 — re-verify password.
+    if not verify_password(payload.password, current_user.password_hash):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect password.",
+        )
+
+    # Step 2 — fix denormalized follow counters on other users.
+    # Users that current_user follows (accepted): they lose a follower.
+    following_ids = db.execute(
+        select(Follow.following_id).where(
+            Follow.follower_id == current_user.id,
+            Follow.status == FollowStatus.accepted,
+        )
+    ).scalars().all()
+
+    if following_ids:
+        db.execute(
+            update(User)
+            .where(User.id.in_(following_ids))
+            .values(followers_count=User.followers_count - 1)
+        )
+
+    # Users that follow current_user (accepted): they lose someone they follow.
+    follower_ids = db.execute(
+        select(Follow.follower_id).where(
+            Follow.following_id == current_user.id,
+            Follow.status == FollowStatus.accepted,
+        )
+    ).scalars().all()
+
+    if follower_ids:
+        db.execute(
+            update(User)
+            .where(User.id.in_(follower_ids))
+            .values(following_count=User.following_count - 1)
+        )
+
+    # Step 3 — anonymize ratings before deleting the user row.
+    # ON DELETE SET NULL would handle this automatically, but doing it
+    # explicitly makes the GDPR anonymization intent clear in the code.
+    db.execute(
+        update(ItineraryRating)
+        .where(ItineraryRating.user_id == current_user.id)
+        .values(user_id=None)
+    )
+
+    # Step 4 — delete the user. Cascade handles all remaining owned data.
+    db.delete(current_user)
+    db.commit()
 
 
 @router.get(

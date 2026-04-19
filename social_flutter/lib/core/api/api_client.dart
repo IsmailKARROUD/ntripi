@@ -15,7 +15,7 @@
 //     from being stuck in a broken authenticated state.
 
 import 'package:dio/dio.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:go_router/go_router.dart';
 import 'package:social_flutter/core/api/api_endpoints.dart';
 import 'package:social_flutter/core/storage/secure_storage.dart';
@@ -82,7 +82,7 @@ class AuthInterceptor extends Interceptor {
   }
 
   @override
-  void onError(DioException err, ErrorInterceptorHandler handler) async {
+  void onError(DioException err, ErrorInterceptorHandler handler) {
     if (err.response?.statusCode == 401) {
       // Skip the redirect for auth endpoints — their 401 means "wrong credentials"
       // and the LoginScreen / RegisterScreen will display the error themselves.
@@ -90,19 +90,23 @@ class AuthInterceptor extends Interceptor {
       final isAuthEndpoint = path == kLoginEndpoint || path == kRegisterEndpoint;
 
       if (!isAuthEndpoint) {
-        // A protected route returned 401: the stored token is invalid or expired.
-        // 1. Clear it so we don't keep sending a bad token.
-        await deleteToken();
-
-        // 2. Force the user back to the login screen.
-        // We use the navigator key because we're outside the widget tree here.
-        final context = navigatorKey.currentContext;
-        if (context != null && context.mounted) {
-          context.go('/login');
-        }
+        // A protected route returned 401: clear the token, then navigate to login.
+        // We use .then() instead of async/await because Dio does not properly
+        // await async onError callbacks — using async here causes a race where
+        // handler.next() is never called, hanging the request.
+        // addPostFrameCallback defers the navigation until after the current
+        // build frame, avoiding "setState during build" errors.
+        deleteToken().then((_) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            final ctx = navigatorKey.currentContext;
+            if (ctx != null && ctx.mounted) {
+              ctx.go('/login');
+            }
+          });
+        });
       }
     }
-    // Pass the error along — the calling code can still inspect it.
+    // Always resolve the handler so the Dio future completes.
     handler.next(err);
   }
 }

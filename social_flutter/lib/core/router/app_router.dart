@@ -1,8 +1,9 @@
 // core/router/app_router.dart — go_router configuration.
 //
 // Route definitions:
-//   /login          → LoginScreen (public)
-//   /register       → RegisterScreen (public)
+//   /login                    → LoginScreen (public)
+//   /register                 → RegisterScreen (public)
+//   /settings/delete-account  → DeleteAccountScreen (requires auth)
 //   /profile/me     → MyProfileScreen (requires auth) [tab: My Profile]
 //   /profile/:id    → UserProfileScreen (requires auth)
 //   /search         → SearchScreen (requires auth) [tab: Search]
@@ -36,6 +37,7 @@ import 'package:social_flutter/features/itineraries/presentation/itinerary_form_
 import 'package:social_flutter/features/itineraries/presentation/itinerary_list_screen.dart';
 import 'package:social_flutter/features/itineraries/presentation/map_picker_screen.dart';
 import 'package:social_flutter/features/itineraries/presentation/stop_form_screen.dart';
+import 'package:social_flutter/features/profile/presentation/delete_account_screen.dart';
 import 'package:social_flutter/features/profile/presentation/my_profile_screen.dart';
 import 'package:social_flutter/features/profile/presentation/user_profile_screen.dart';
 import 'package:social_flutter/features/search/presentation/search_screen.dart';
@@ -88,6 +90,12 @@ final appRouter = GoRouter(
         GoRoute(
           path: '/profile/me',
           builder: (context, state) => const MyProfileScreen(),
+        ),
+
+        // Account deletion screen
+        GoRoute(
+          path: '/settings/delete-account',
+          builder: (context, state) => const DeleteAccountScreen(),
         ),
 
         // Other user's profile (pushed on top, no bottom nav change)

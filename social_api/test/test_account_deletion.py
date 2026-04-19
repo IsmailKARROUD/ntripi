@@ -1,0 +1,291 @@
+"""
+test_account_deletion.py — Tests for ToS acceptance, account deletion,
+cascade integrity, and rating anonymization.
+
+Three test classes:
+  TestRegistrationToS   — ToS enforcement on register + GET /tos endpoint
+  TestAccountDeletion   — full deletion flow, wrong password, token invalidation
+  TestDeleteCascades    — follow counter integrity, itinerary cascade, allowlists
+"""
+
+import pytest
+from fastapi.testclient import TestClient
+from sqlalchemy import text
+
+from conftest import auth_headers
+
+
+# ---------------------------------------------------------------------------
+# Helper — register with ToS (new default)
+# ---------------------------------------------------------------------------
+
+def register(client, username, email, password="test1234", tos_accepted=True):
+    r = client.post("/auth/register", json={
+        "username": username,
+        "email": email,
+        "password": password,
+        "tos_accepted": tos_accepted,
+    })
+    return r
+
+
+def register_ok(client, username, email, password="test1234"):
+    r = register(client, username, email, password)
+    assert r.status_code == 201, r.json()
+    return r.json()
+
+
+def delete_account(client, token, password):
+    # TestClient.delete() does not accept json= in this starlette version;
+    # use client.request() instead.
+    return client.request(
+        "DELETE",
+        "/users/me",
+        json={"password": password},
+        headers=auth_headers(token),
+    )
+
+
+def create_itinerary(client, token, title="Trip", visibility="public"):
+    r = client.post(
+        "/itineraries/",
+        json={"title": title, "visibility": visibility},
+        headers=auth_headers(token),
+    )
+    assert r.status_code == 201, r.json()
+    return r.json()
+
+
+def add_stop(client, token, itinerary_id):
+    r = client.post(
+        f"/itineraries/{itinerary_id}/stops",
+        json={"position": 1, "type": "origin"},
+        headers=auth_headers(token),
+    )
+    assert r.status_code == 201, r.json()
+    return r.json()
+
+
+def follow(client, token, user_id):
+    r = client.post(
+        f"/users/{user_id}/follow",
+        headers=auth_headers(token),
+    )
+    assert r.status_code in (200, 201), r.json()
+    return r.json()
+
+
+def rate(client, token, itinerary_id, stars):
+    r = client.post(
+        f"/itineraries/{itinerary_id}/ratings",
+        json={"stars": stars},
+        headers=auth_headers(token),
+    )
+    assert r.status_code == 201, r.json()
+    return r.json()
+
+
+# ---------------------------------------------------------------------------
+# Class: TestRegistrationToS
+# ---------------------------------------------------------------------------
+
+class TestRegistrationToS:
+    def test_register_without_tos_fails(self, client):
+        r = register(client, "alice", "alice@x.com", tos_accepted=False)
+        assert r.status_code == 400
+        assert "Terms of Service" in r.json()["detail"]
+
+    def test_register_with_tos_succeeds(self, client):
+        r = register(client, "alice", "alice@x.com", tos_accepted=True)
+        assert r.status_code == 201
+        data = r.json()
+        assert "access_token" in data
+
+    def test_tos_endpoint_returns_text(self, client):
+        r = client.get("/auth/tos")
+        assert r.status_code == 200
+        body = r.json()
+        assert "version" in body
+        assert "date" in body
+        assert "summary" in body
+        assert len(body["summary"]) > 10
+
+
+# ---------------------------------------------------------------------------
+# Class: TestAccountDeletion
+# ---------------------------------------------------------------------------
+
+class TestAccountDeletion:
+    def test_delete_account_requires_correct_password(self, client):
+        alice = register_ok(client, "alice", "alice@x.com")
+        r = delete_account(client, alice["access_token"], "wrongpass9")
+        assert r.status_code == 401
+
+    def test_delete_account_succeeds_with_correct_password(self, client):
+        alice = register_ok(client, "alice", "alice@x.com")
+        r = delete_account(client, alice["access_token"], "test1234")
+        assert r.status_code == 204
+
+        # Token is now invalid — get_current_user raises 401.
+        r2 = client.get("/users/me", headers=auth_headers(alice["access_token"]))
+        assert r2.status_code == 401
+
+    def test_delete_account_removes_user_data(self, client):
+        alice = register_ok(client, "alice", "alice@x.com")
+        bob = register_ok(client, "bob", "bob@x.com")
+
+        it = create_itinerary(client, alice["access_token"])
+        # Alice follows Bob (public account — accepted immediately)
+        client.patch(
+            "/users/me",
+            json={"is_private": False},
+            headers=auth_headers(bob["access_token"]),
+        )
+        follow(client, alice["access_token"], bob["user_id"])
+
+        delete_account(client, alice["access_token"], "test1234")
+
+        # Alice's itinerary is gone (Bob can't see it either)
+        r = client.get(
+            f"/itineraries/{it['id']}",
+            headers=auth_headers(bob["access_token"]),
+        )
+        assert r.status_code == 404
+
+    def test_delete_account_anonymizes_ratings_not_deletes(self, client):
+        alice = register_ok(client, "alice", "alice@x.com")
+        bob = register_ok(client, "bob", "bob@x.com")
+
+        it = create_itinerary(client, alice["access_token"])
+        rate(client, bob["access_token"], it["id"], 4)
+
+        delete_account(client, bob["access_token"], "test1234")
+
+        # Itinerary still has the rating — just anonymous now.
+        r = client.get(
+            f"/itineraries/{it['id']}",
+            headers=auth_headers(alice["access_token"]),
+        )
+        assert r.status_code == 200
+        body = r.json()
+        assert body["rating_count"] == 1
+        assert abs(body["rating_avg"] - 4.0) < 0.01
+
+    def test_rating_avg_unchanged_after_rater_deletes_account(self, client):
+        alice = register_ok(client, "alice", "alice@x.com")
+        bob = register_ok(client, "bob", "bob@x.com")
+        charlie = register_ok(client, "charlie", "charlie@x.com")
+
+        it = create_itinerary(client, alice["access_token"])
+        rate(client, bob["access_token"], it["id"], 5)
+        rate(client, charlie["access_token"], it["id"], 3)
+
+        # Confirm avg = 4.0 before deletion
+        r = client.get(
+            f"/itineraries/{it['id']}",
+            headers=auth_headers(alice["access_token"]),
+        )
+        assert abs(r.json()["rating_avg"] - 4.0) < 0.01
+
+        delete_account(client, bob["access_token"], "test1234")
+
+        # Avg and count unchanged — Bob's score was preserved anonymously.
+        r2 = client.get(
+            f"/itineraries/{it['id']}",
+            headers=auth_headers(alice["access_token"]),
+        )
+        body = r2.json()
+        assert body["rating_count"] == 2
+        assert abs(body["rating_avg"] - 4.0) < 0.01
+
+    def test_deleted_user_cannot_login(self, client):
+        alice = register_ok(client, "alice", "alice@x.com")
+        delete_account(client, alice["access_token"], "test1234")
+
+        r = client.post("/auth/login", json={
+            "email": "alice@x.com",
+            "password": "test1234",
+        })
+        assert r.status_code == 401
+
+    def test_deleted_user_token_is_invalid(self, client):
+        alice = register_ok(client, "alice", "alice@x.com")
+        token = alice["access_token"]
+        delete_account(client, token, "test1234")
+
+        r = client.get("/users/me", headers=auth_headers(token))
+        assert r.status_code == 401
+
+
+# ---------------------------------------------------------------------------
+# Class: TestDeleteCascades
+# ---------------------------------------------------------------------------
+
+class TestDeleteCascades:
+    def test_delete_removes_itineraries_and_stops(self, client):
+        alice = register_ok(client, "alice", "alice@x.com")
+        it = create_itinerary(client, alice["access_token"])
+        for i in range(1, 4):
+            client.post(
+                f"/itineraries/{it['id']}/stops",
+                json={"position": i, "type": "waypoint"},
+                headers=auth_headers(alice["access_token"]),
+            )
+
+        delete_account(client, alice["access_token"], "test1234")
+
+        # Re-register under a different name to get a token to query with
+        bob = register_ok(client, "bob", "bob@x.com")
+        r = client.get(
+            f"/itineraries/{it['id']}",
+            headers=auth_headers(bob["access_token"]),
+        )
+        assert r.status_code == 404
+
+    def test_delete_removes_follow_relationships(self, client):
+        alice = register_ok(client, "alice", "alice@x.com")
+        bob = register_ok(client, "bob", "bob@x.com")
+
+        # Both accounts need to be public for auto-accept
+        client.patch("/users/me", json={"is_private": False},
+                     headers=auth_headers(alice["access_token"]))
+        client.patch("/users/me", json={"is_private": False},
+                     headers=auth_headers(bob["access_token"]))
+
+        follow(client, alice["access_token"], bob["user_id"])
+        follow(client, bob["access_token"], alice["user_id"])
+
+        # Verify counts before
+        bob_before = client.get("/users/me",
+                                headers=auth_headers(bob["access_token"])).json()
+        assert bob_before["followers_count"] == 1
+        assert bob_before["following_count"] == 1
+
+        delete_account(client, alice["access_token"], "test1234")
+
+        # Bob should have 0 followers and 0 following now
+        bob_after = client.get("/users/me",
+                               headers=auth_headers(bob["access_token"])).json()
+        assert bob_after["followers_count"] == 0
+        assert bob_after["following_count"] == 0
+
+    def test_delete_removes_from_allowlists(self, client):
+        alice = register_ok(client, "alice", "alice@x.com")
+        bob = register_ok(client, "bob", "bob@x.com")
+
+        it = create_itinerary(client, alice["access_token"], visibility="restricted")
+        client.post(
+            f"/itineraries/{it['id']}/allowed-users",
+            json={"user_id": bob["user_id"]},
+            headers=auth_headers(alice["access_token"]),
+        )
+
+        # Alice deletes her account — itinerary and its allowlist rows cascade
+        delete_account(client, alice["access_token"], "test1234")
+
+        # Bob can no longer access the itinerary
+        r = client.get(
+            f"/itineraries/{it['id']}",
+            headers=auth_headers(bob["access_token"]),
+        )
+        assert r.status_code == 404

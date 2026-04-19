@@ -26,6 +26,12 @@ class AuthRepository {
 
   const AuthRepository(this._dio);
 
+  /// GET /auth/tos — fetch the current Terms of Service text.
+  Future<Map<String, dynamic>> fetchTos() async {
+    final response = await _dio.get(kTosEndpoint);
+    return response.data as Map<String, dynamic>;
+  }
+
   /// POST /auth/register
   /// On success, saves the token and returns the result.
   Future<AuthResult> register({
@@ -33,6 +39,7 @@ class AuthRepository {
     required String email,
     required String password,
     String? displayName,
+    required bool tosAccepted,
   }) async {
     final response = await _dio.post(kRegisterEndpoint, data: {
       'username': username,
@@ -40,6 +47,7 @@ class AuthRepository {
       'password': password,
       if (displayName != null && displayName.isNotEmpty)
         'display_name': displayName,
+      'tos_accepted': tosAccepted,
     });
 
     final result = AuthResult(

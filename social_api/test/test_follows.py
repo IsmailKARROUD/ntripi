@@ -71,6 +71,9 @@ class TestPublicFollow:
         alice = register_user(client, "alice1", "alice@test.com")
         bob = register_user(client, "bob1", "bob@test.com")
 
+        client.patch("/users/me", headers=auth_headers(bob["access_token"]),
+                     json={"is_private": False})
+
         response = follow(client, alice["access_token"], bob["user_id"])
 
         assert response.status_code == 201
@@ -88,6 +91,9 @@ class TestPublicFollow:
         """
         alice = register_user(client, "alice1", "alice@test.com")
         bob = register_user(client, "bob1", "bob@test.com")
+
+        client.patch("/users/me", headers=auth_headers(bob["access_token"]),
+                     json={"is_private": False})
 
         follow(client, alice["access_token"], bob["user_id"])
 
@@ -171,6 +177,9 @@ class TestPublicFollow:
         alice = register_user(client, "alice1", "alice@test.com")
         bob = register_user(client, "bob1", "bob@test.com")
 
+        client.patch("/users/me", headers=auth_headers(bob["access_token"]),
+                     json={"is_private": False})
+
         follow(client, alice["access_token"], bob["user_id"])
 
         response = client.get(
@@ -190,6 +199,9 @@ class TestPublicFollow:
         """
         alice = register_user(client, "alice1", "alice@test.com")
         bob = register_user(client, "bob1", "bob@test.com")
+
+        client.patch("/users/me", headers=auth_headers(bob["access_token"]),
+                     json={"is_private": False})
 
         follow(client, alice["access_token"], bob["user_id"])
 
