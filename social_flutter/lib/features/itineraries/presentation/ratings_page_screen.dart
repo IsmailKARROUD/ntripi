@@ -4,8 +4,9 @@
 // Shows the full community ratings page: aggregate, distribution bars,
 // and individual rater list.
 //
-// Access rule: same as can_view_itinerary() on the backend.
-// The backend enforces this; the client just displays the 403 error state.
+// Pull-to-refresh works in every state (loading, error, empty, data) because
+// AlwaysScrollableScrollPhysics is set on the CustomScrollView and all states
+// are expressed as slivers — so the pull gesture is always recognized.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -22,75 +23,88 @@ class RatingsPageScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final ratingsAsync = ref.watch(ratingsPageProvider(itineraryId));
+    final page = ratingsAsync.valueOrNull;
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Ratings'),
-        bottom: ratingsAsync.whenOrNull(
-          data: (page) => page.ratingCount > 0
-              ? PreferredSize(
-                  preferredSize: const Size.fromHeight(24),
-                  child: Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: Text(
-                      '${page.ratingAvg!.toStringAsFixed(1)} ★  ·  ${page.ratingCount} ratings',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Colors.amber.shade700,
-                            fontWeight: FontWeight.w600,
-                          ),
-                    ),
+        bottom: (page != null && page.ratingCount > 0)
+            ? PreferredSize(
+                preferredSize: const Size.fromHeight(24),
+                child: Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Text(
+                    '${page.ratingAvg!.toStringAsFixed(1)} ★  ·  ${page.ratingCount} ratings',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Colors.amber.shade700,
+                          fontWeight: FontWeight.w600,
+                        ),
                   ),
-                )
-              : null,
-        ),
+                ),
+              )
+            : null,
       ),
-      body: ratingsAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (_, __) => Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.error_outline, size: 48, color: Colors.red),
-              const SizedBox(height: 12),
-              const Text('Could not load ratings'),
-              const SizedBox(height: 8),
-              TextButton(
-                onPressed: () =>
-                    ref.read(ratingsPageProvider(itineraryId).notifier).refresh(),
-                child: const Text('Retry'),
-              ),
-            ],
-          ),
-        ),
-        data: (page) {
-          if (page.ratingCount == 0) {
-            return Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.star_border,
-                      size: 64, color: Colors.grey.shade400),
-                  const SizedBox(height: 12),
-                  const Text(
-                    'No ratings yet',
-                    style: TextStyle(
-                        fontSize: 18, fontWeight: FontWeight.w600),
+      body: RefreshIndicator(
+        onRefresh: () =>
+            ref.read(ratingsPageProvider(itineraryId).notifier).refresh(),
+        child: CustomScrollView(
+          // AlwaysScrollableScrollPhysics ensures the pull gesture is detected
+          // even when the content does not overflow the viewport (e.g. empty
+          // state or error state with no list items below).
+          physics: const AlwaysScrollableScrollPhysics(),
+          slivers: [
+            if (ratingsAsync.isLoading && page == null)
+              const SliverFillRemaining(
+                child: Center(child: CircularProgressIndicator()),
+              )
+            else if (ratingsAsync.hasError && page == null)
+              SliverFillRemaining(
+                child: Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.error_outline,
+                          size: 48, color: Colors.red),
+                      const SizedBox(height: 12),
+                      const Text('Could not load ratings'),
+                      const SizedBox(height: 8),
+                      TextButton(
+                        onPressed: () => ref
+                            .read(ratingsPageProvider(itineraryId).notifier)
+                            .refresh(),
+                        child: const Text('Retry'),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Be the first to rate this itinerary',
-                    style: TextStyle(color: Colors.grey.shade600),
+                ),
+              )
+            else if (page != null && page.ratingCount == 0)
+              SliverFillRemaining(
+                child: Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.star_border,
+                          size: 64, color: Colors.grey.shade400),
+                      const SizedBox(height: 12),
+                      const Text(
+                        'No ratings yet',
+                        style: TextStyle(
+                            fontSize: 18, fontWeight: FontWeight.w600),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Be the first to rate this itinerary',
+                        style: TextStyle(color: Colors.grey.shade600),
+                      ),
+                    ],
                   ),
-                ],
-              ),
-            );
-          }
-
-          return CustomScrollView(
-            slivers: [
-              // ----------------------------------------------------------
+                ),
+              )
+            else if (page != null) ...[
+              // ----------------------------------------------------------------
               // Sliver 1 — Summary header
-              // ----------------------------------------------------------
+              // ----------------------------------------------------------------
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(24, 24, 24, 8),
@@ -115,13 +129,13 @@ class RatingsPageScreen extends ConsumerWidget {
                 ),
               ),
 
-              // ----------------------------------------------------------
-              // Sliver 2 — Distribution bars
-              // ----------------------------------------------------------
+              // ----------------------------------------------------------------
+              // Sliver 2 — Distribution bars (always 5 rows, even if count = 0)
+              // ----------------------------------------------------------------
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 24, vertical: 8),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
                   child: Column(
                     children: [5, 4, 3, 2, 1].map((stars) {
                       final pct = page.distribution.percentageFor(stars);
@@ -182,13 +196,12 @@ class RatingsPageScreen extends ConsumerWidget {
                 ),
               ),
 
-              // ----------------------------------------------------------
+              // ----------------------------------------------------------------
               // Sliver 3 — Section header
-              // ----------------------------------------------------------
+              // ----------------------------------------------------------------
               SliverToBoxAdapter(
                 child: Padding(
-                  padding:
-                      const EdgeInsets.fromLTRB(24, 16, 24, 4),
+                  padding: const EdgeInsets.fromLTRB(24, 16, 24, 4),
                   child: Text(
                     'All Ratings',
                     style: Theme.of(context).textTheme.titleSmall?.copyWith(
@@ -200,22 +213,21 @@ class RatingsPageScreen extends ConsumerWidget {
               ),
               const SliverToBoxAdapter(child: Divider(height: 1)),
 
-              // ----------------------------------------------------------
+              // ----------------------------------------------------------------
               // Sliver 4 — Individual rating tiles
-              // ----------------------------------------------------------
+              // ----------------------------------------------------------------
               SliverList(
                 delegate: SliverChildBuilderDelegate(
-                  (context, index) => _RatingListTile(
-                    rating: page.ratings[index],
-                  ),
+                  (context, index) =>
+                      _RatingListTile(rating: page.ratings[index]),
                   childCount: page.ratings.length,
                 ),
               ),
 
               const SliverToBoxAdapter(child: SizedBox(height: 24)),
             ],
-          );
-        },
+          ],
+        ),
       ),
     );
   }
@@ -233,7 +245,7 @@ class _StarRow extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: List.generate(5, (i) {
         final starValue = i + 1;
-        IconData icon;
+        final IconData icon;
         if (avg >= starValue) {
           icon = Icons.star_rounded;
         } else if (avg >= starValue - 0.5) {
@@ -257,14 +269,14 @@ class _RatingListTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final user = rating.user;
 
-    Widget tile = ListTile(
+    final Widget tile = ListTile(
       leading: user.isDeleted
           ? Opacity(
               opacity: 0.5,
               child: CircleAvatar(
                 backgroundColor: Colors.grey.shade300,
-                child: const Icon(Icons.person_off,
-                    color: Colors.grey, size: 20),
+                child:
+                    const Icon(Icons.person_off, color: Colors.grey, size: 20),
               ),
             )
           : UserAvatar(avatarUrl: user.avatarUrl, radius: 20),
@@ -290,6 +302,7 @@ class _RatingListTile extends StatelessWidget {
           );
         }),
       ),
+      // Deleted users have no profile to navigate to — onTap must be null.
       onTap: user.isDeleted
           ? null
           : () => context.push('/profile/${user.userId}'),
