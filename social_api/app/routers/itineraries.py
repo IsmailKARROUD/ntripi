@@ -43,8 +43,12 @@ from app.schemas.itinerary import (
     ItineraryDetail,
     ItinerarySummary,
     ItineraryUpdate,
+    RaterInfo,
+    RatingDistribution,
     RatingResponse,
     RatingSubmit,
+    RatingWithUser,
+    RatingsPageResponse,
     ReorderRequest,
     StopCreate,
     StopResponse,
@@ -800,6 +804,88 @@ def get_my_rating(
         )
 
     return rating  # type: ignore[return-value]
+
+
+# ---------------------------------------------------------------------------
+# GET /itineraries/{itinerary_id}/ratings — Full ratings page
+# ---------------------------------------------------------------------------
+
+@router.get(
+    "/{itinerary_id}/ratings",
+    response_model=RatingsPageResponse,
+    summary="Get the full ratings page for an itinerary",
+)
+def get_ratings_page(
+    itinerary_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> RatingsPageResponse:
+    """
+    Return the ratings page: aggregate stats, star distribution, and the
+    full list of individual ratings with rater identity.
+
+    Access rule: same as GET /itineraries/{id} — delegates to
+    can_view_itinerary(), returns 403 if the caller has no access.
+
+    LEFT JOIN is mandatory here: INNER JOIN would silently drop ratings
+    whose user_id is NULL (deleted users). LEFT JOIN preserves them so
+    the anonymized community scores remain visible.
+    """
+    itinerary = _get_itinerary_or_404(itinerary_id, db)
+    if not can_view_itinerary(itinerary, current_user.id, db):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You do not have access to this itinerary.",
+        )
+
+    # LEFT JOIN so deleted-user rows (user_id = NULL) are preserved.
+    rows = db.execute(
+        select(
+            ItineraryRating.stars,
+            ItineraryRating.updated_at,
+            ItineraryRating.user_id,
+            User.username,
+            User.display_name,
+            User.avatar_url,
+        )
+        .outerjoin(User, ItineraryRating.user_id == User.id)
+        .where(ItineraryRating.itinerary_id == itinerary_id)
+        .order_by(ItineraryRating.updated_at.desc())
+    ).all()
+
+    # Compute star distribution by iterating the result set.
+    dist: dict[int, int] = {1: 0, 2: 0, 3: 0, 4: 0, 5: 0}
+    for row in rows:
+        dist[row.stars] += 1
+
+    distribution = RatingDistribution(
+        five=dist[5],
+        four=dist[4],
+        three=dist[3],
+        two=dist[2],
+        one=dist[1],
+    )
+
+    ratings = [
+        RatingWithUser(
+            score=row.stars,
+            updated_at=row.updated_at,
+            user=RaterInfo(
+                user_id=row.user_id,
+                username=row.username,
+                display_name=row.display_name,
+                avatar_url=row.avatar_url,
+            ),
+        )
+        for row in rows
+    ]
+
+    return RatingsPageResponse(
+        rating_avg=itinerary.rating_avg,
+        rating_count=itinerary.rating_count,
+        distribution=distribution,
+        ratings=ratings,
+    )
 
 
 # ---------------------------------------------------------------------------

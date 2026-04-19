@@ -11,6 +11,7 @@ import 'package:social_flutter/core/services/geocoding_service.dart';
 import 'package:social_flutter/features/itineraries/data/itinerary_repository.dart';
 import 'package:social_flutter/features/itineraries/domain/allowed_user.dart';
 import 'package:social_flutter/features/itineraries/domain/itinerary.dart';
+import 'package:social_flutter/features/itineraries/domain/ratings_page.dart';
 
 // ---------------------------------------------------------------------------
 // MyItinerariesNotifier — list of all itineraries owned by the current user
@@ -266,6 +267,30 @@ class MyRatingNotifier extends FamilyAsyncNotifier<int?, String> {
 final myRatingProvider =
     AsyncNotifierProviderFamily<MyRatingNotifier, int?, String>(
   () => MyRatingNotifier(),
+);
+
+// ---------------------------------------------------------------------------
+// RatingsPageNotifier — full ratings page for one itinerary (family by ID)
+// ---------------------------------------------------------------------------
+
+class RatingsPageNotifier extends FamilyAsyncNotifier<RatingsPage, String> {
+  @override
+  Future<RatingsPage> build(String itineraryId) {
+    return ref.read(itineraryRepositoryProvider).getRatingsPage(itineraryId);
+  }
+
+  /// Re-fetch from the server — called after a rating is submitted or deleted.
+  Future<void> refresh() async {
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(
+      () => ref.read(itineraryRepositoryProvider).getRatingsPage(arg),
+    );
+  }
+}
+
+final ratingsPageProvider =
+    AsyncNotifierProviderFamily<RatingsPageNotifier, RatingsPage, String>(
+  () => RatingsPageNotifier(),
 );
 
 // ---------------------------------------------------------------------------

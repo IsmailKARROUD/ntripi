@@ -161,6 +161,43 @@ class RatingResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class RaterInfo(BaseModel):
+    """Public identity of someone who rated an itinerary.
+
+    user_id is None when the user has deleted their account —
+    the rating score is kept as anonymous community data (GDPR Art. 17).
+    username / display_name / avatar_url are also None in that case.
+    """
+    user_id: Optional[uuid.UUID]
+    username: Optional[str]
+    display_name: Optional[str]
+    avatar_url: Optional[str]
+
+
+class RatingWithUser(BaseModel):
+    """One rating entry with its rater's public info."""
+    score: int
+    updated_at: datetime
+    user: RaterInfo
+
+
+class RatingDistribution(BaseModel):
+    """Star-count breakdown across all ratings for an itinerary."""
+    five: int
+    four: int
+    three: int
+    two: int
+    one: int
+
+
+class RatingsPageResponse(BaseModel):
+    """Full ratings page payload — aggregate + distribution + individual list."""
+    rating_avg: Optional[float]
+    rating_count: int
+    distribution: RatingDistribution
+    ratings: list[RatingWithUser]   # ordered by updated_at DESC
+
+
 class ItinerarySummary(BaseModel):
     """
     Compact itinerary view used in list responses.

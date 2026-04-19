@@ -11,6 +11,7 @@ import 'package:social_flutter/core/api/api_endpoints.dart';
 import 'package:social_flutter/features/itineraries/domain/allowed_user.dart';
 import 'package:social_flutter/features/itineraries/domain/annotation.dart';
 import 'package:social_flutter/features/itineraries/domain/itinerary.dart';
+import 'package:social_flutter/features/itineraries/domain/ratings_page.dart';
 import 'package:social_flutter/features/itineraries/domain/stop.dart';
 
 class ItineraryRepository {
@@ -193,6 +194,14 @@ class ItineraryRepository {
   /// DELETE /itineraries/{id}/ratings/me — remove the current user's rating.
   Future<void> deleteMyRating(String itineraryId) async {
     await _dio.delete(itineraryMyRatingEndpoint(itineraryId));
+  }
+
+  /// GET /itineraries/{id}/ratings — full ratings page with distribution + list.
+  Future<RatingsPage> getRatingsPage(String itineraryId) async {
+    final response = await _dio.get<Map<String, dynamic>>(
+      itineraryRatingsEndpoint(itineraryId),
+    );
+    return RatingsPage.fromJson(response.data!);
   }
 
   /// GET /itineraries/{id}/ratings/me — returns {'stars': int} or null if not rated.

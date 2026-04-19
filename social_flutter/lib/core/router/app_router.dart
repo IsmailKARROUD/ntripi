@@ -37,6 +37,7 @@ import 'package:social_flutter/features/itineraries/presentation/itinerary_form_
 import 'package:social_flutter/features/itineraries/presentation/itinerary_list_screen.dart';
 import 'package:social_flutter/features/itineraries/presentation/map_picker_screen.dart';
 import 'package:social_flutter/features/itineraries/presentation/stop_form_screen.dart';
+import 'package:social_flutter/features/itineraries/presentation/ratings_page_screen.dart';
 import 'package:social_flutter/features/profile/presentation/delete_account_screen.dart';
 import 'package:social_flutter/features/profile/presentation/my_profile_screen.dart';
 import 'package:social_flutter/features/profile/presentation/user_profile_screen.dart';
@@ -166,6 +167,14 @@ final appRouter = GoRouter(
         GoRoute(
           path: '/itineraries/:id/edit',
           builder: (context, state) => ItineraryFormScreen(
+            itineraryId: state.pathParameters['id']!,
+          ),
+        ),
+
+        // Ratings page — must be before stops subroutes to avoid ambiguity
+        GoRoute(
+          path: '/itineraries/:id/ratings',
+          builder: (context, state) => RatingsPageScreen(
             itineraryId: state.pathParameters['id']!,
           ),
         ),

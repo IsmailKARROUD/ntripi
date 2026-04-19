@@ -402,29 +402,43 @@ class _RatingSection extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              const Icon(Icons.star_rounded, size: 16, color: Colors.amber),
-              const SizedBox(width: 4),
-              Text(
-                itinerary.ratingAvg != null
-                    ? '${itinerary.ratingAvg!.toStringAsFixed(1)} / 5'
-                    : 'No ratings yet',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      fontWeight: FontWeight.w600,
+          // Tappable row → navigates to the full ratings page.
+          InkWell(
+            onTap: () =>
+                context.push('/itineraries/$itineraryId/ratings'),
+            borderRadius: BorderRadius.circular(8),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 2),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.star_rounded,
+                      size: 16, color: Colors.amber),
+                  const SizedBox(width: 4),
+                  Text(
+                    itinerary.ratingAvg != null
+                        ? '${itinerary.ratingAvg!.toStringAsFixed(1)} / 5'
+                        : 'No ratings yet',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                  ),
+                  if (itinerary.ratingCount > 0) ...[
+                    const SizedBox(width: 4),
+                    Text(
+                      '(${itinerary.ratingCount})',
+                      style: Theme.of(context)
+                          .textTheme
+                          .bodySmall
+                          ?.copyWith(color: Colors.grey),
                     ),
+                  ],
+                  const SizedBox(width: 2),
+                  Icon(Icons.chevron_right,
+                      size: 16, color: Colors.grey.shade400),
+                ],
               ),
-              if (itinerary.ratingCount > 0) ...[
-                const SizedBox(width: 4),
-                Text(
-                  '(${itinerary.ratingCount})',
-                  style: Theme.of(context)
-                      .textTheme
-                      .bodySmall
-                      ?.copyWith(color: Colors.grey),
-                ),
-              ],
-            ],
+            ),
           ),
           const SizedBox(height: 6),
           myRatingAsync.when(
