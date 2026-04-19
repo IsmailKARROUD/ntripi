@@ -7,9 +7,10 @@ from app.models.itinerary import Itinerary
 from app.models.itinerary_allowed_user import ItineraryAllowedUser
 from app.models.stop import Stop
 from app.models.annotation import Annotation
+from app.models.itinerary_rating import ItineraryRating
 
 __all__ = [
     "User", "Follow", "FollowStatus",
     "Itinerary", "ItineraryAllowedUser",
-    "Stop", "Annotation",
+    "Stop", "Annotation", "ItineraryRating",
 ]

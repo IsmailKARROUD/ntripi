@@ -33,6 +33,7 @@ from app.models.itinerary import Itinerary
 from app.models.itinerary_allowed_user import ItineraryAllowedUser
 from app.models.stop import Stop
 from app.models.user import User
+from app.models.itinerary_rating import ItineraryRating
 from app.schemas.itinerary import (
     AllowedUserAdd,
     AllowedUserResponse,
@@ -42,12 +43,14 @@ from app.schemas.itinerary import (
     ItineraryDetail,
     ItinerarySummary,
     ItineraryUpdate,
+    RatingResponse,
+    RatingSubmit,
     ReorderRequest,
     StopCreate,
     StopResponse,
     StopUpdate,
 )
-from app.services.itinerary_access import can_view_itinerary
+from app.services.itinerary_access import can_view_itinerary, recalculate_rating
 
 router = APIRouter(tags=["Itineraries"])
 
@@ -683,6 +686,120 @@ def delete_annotation(
 
     db.delete(annotation)
     db.commit()
+
+
+# ---------------------------------------------------------------------------
+# Rating endpoints — POST/DELETE/GET /itineraries/{id}/ratings
+# ---------------------------------------------------------------------------
+
+@router.post(
+    "/{itinerary_id}/ratings",
+    response_model=RatingResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Submit or update the current user's rating for an itinerary",
+)
+def upsert_rating(
+    itinerary_id: uuid.UUID,
+    body: RatingSubmit,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> RatingResponse:
+    """
+    Upsert a 1–5 star rating for this itinerary.
+    Any authenticated user who can view the itinerary may rate it.
+    Calling again with a different value updates the existing rating.
+    """
+    itinerary = _get_itinerary_or_404(itinerary_id, db)
+    if not can_view_itinerary(itinerary, current_user.id, db):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You do not have access to this itinerary.",
+        )
+
+    existing = db.execute(
+        select(ItineraryRating).where(
+            ItineraryRating.itinerary_id == itinerary_id,
+            ItineraryRating.user_id == current_user.id,
+        )
+    ).scalar_one_or_none()
+
+    if existing:
+        existing.stars = body.stars
+        rating = existing
+    else:
+        rating = ItineraryRating(
+            itinerary_id=itinerary_id,
+            user_id=current_user.id,
+            stars=body.stars,
+        )
+        db.add(rating)
+
+    db.flush()
+    recalculate_rating(itinerary, db)
+    db.commit()
+    db.refresh(rating)
+    return rating  # type: ignore[return-value]
+
+
+@router.delete(
+    "/{itinerary_id}/ratings/me",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Remove the current user's rating from an itinerary",
+)
+def delete_my_rating(
+    itinerary_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> None:
+    """Delete the caller's rating. 404 if no rating exists."""
+    itinerary = _get_itinerary_or_404(itinerary_id, db)
+
+    rating = db.execute(
+        select(ItineraryRating).where(
+            ItineraryRating.itinerary_id == itinerary_id,
+            ItineraryRating.user_id == current_user.id,
+        )
+    ).scalar_one_or_none()
+
+    if not rating:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="You have not rated this itinerary.",
+        )
+
+    db.delete(rating)
+    db.flush()
+    recalculate_rating(itinerary, db)
+    db.commit()
+
+
+@router.get(
+    "/{itinerary_id}/ratings/me",
+    response_model=RatingResponse,
+    summary="Get the current user's rating for an itinerary",
+)
+def get_my_rating(
+    itinerary_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> RatingResponse:
+    """Return the caller's rating, or 404 if they have not rated yet."""
+    _get_itinerary_or_404(itinerary_id, db)
+
+    rating = db.execute(
+        select(ItineraryRating).where(
+            ItineraryRating.itinerary_id == itinerary_id,
+            ItineraryRating.user_id == current_user.id,
+        )
+    ).scalar_one_or_none()
+
+    if not rating:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="You have not rated this itinerary.",
+        )
+
+    return rating  # type: ignore[return-value]
 
 
 # ---------------------------------------------------------------------------

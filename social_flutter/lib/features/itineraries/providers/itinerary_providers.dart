@@ -67,7 +67,8 @@ class ItineraryDetailNotifier
 
   /// Full re-fetch from the server — used after stop mutations so totals
   /// (total_duration_min, total_cost) reflect the server-recalculated values.
-  Future<void> _refresh() async {
+  /// Also called by MyRatingNotifier after a rating change to update rating_avg.
+  Future<void> refresh() async {
     state = const AsyncLoading();
     state = await AsyncValue.guard(
       () => ref.read(itineraryRepositoryProvider).getItinerary(arg),
@@ -77,19 +78,19 @@ class ItineraryDetailNotifier
   /// Add a stop, then refresh the full itinerary so totals are accurate.
   Future<void> addStop(Map<String, dynamic> data) async {
     await ref.read(itineraryRepositoryProvider).addStop(arg, data);
-    await _refresh();
+    await refresh();
   }
 
   /// Update a stop, then refresh.
   Future<void> updateStop(String stopId, Map<String, dynamic> data) async {
     await ref.read(itineraryRepositoryProvider).updateStop(arg, stopId, data);
-    await _refresh();
+    await refresh();
   }
 
   /// Delete a stop, then refresh.
   Future<void> deleteStop(String stopId) async {
     await ref.read(itineraryRepositoryProvider).deleteStop(arg, stopId);
-    await _refresh();
+    await refresh();
   }
 
   /// Reorder stops. The backend returns the updated ItineraryDetail, so we
@@ -225,6 +226,46 @@ class UserItinerariesNotifier
 final userItinerariesProvider = AsyncNotifierProviderFamily<
     UserItinerariesNotifier, List<Itinerary>, String>(
   () => UserItinerariesNotifier(),
+);
+
+// ---------------------------------------------------------------------------
+// MyRatingNotifier — current user's star rating for one itinerary (family by ID)
+// ---------------------------------------------------------------------------
+
+/// State: the user's current rating (1–5), or null if they have not rated.
+class MyRatingNotifier extends FamilyAsyncNotifier<int?, String> {
+  @override
+  Future<int?> build(String itineraryId) {
+    return ref.read(itineraryRepositoryProvider).getMyRating(itineraryId);
+  }
+
+  /// Submit (or update) the rating and update itinerary aggregate locally.
+  Future<void> submitRating(int stars) async {
+    await ref
+        .read(itineraryRepositoryProvider)
+        .submitRating(arg, stars);
+    state = AsyncData(stars);
+
+    // Refresh the detail so rating_avg / rating_count reflect the new value.
+    await ref
+        .read(itineraryDetailProvider(arg).notifier)
+        .refresh();
+  }
+
+  /// Delete the rating and clear local state.
+  Future<void> deleteRating() async {
+    await ref.read(itineraryRepositoryProvider).deleteMyRating(arg);
+    state = const AsyncData(null);
+
+    await ref
+        .read(itineraryDetailProvider(arg).notifier)
+        .refresh();
+  }
+}
+
+final myRatingProvider =
+    AsyncNotifierProviderFamily<MyRatingNotifier, int?, String>(
+  () => MyRatingNotifier(),
 );
 
 // ---------------------------------------------------------------------------

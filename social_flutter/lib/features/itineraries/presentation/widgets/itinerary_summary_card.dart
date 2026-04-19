@@ -72,6 +72,13 @@ class ItinerarySummaryCard extends StatelessWidget {
                       label: '${itinerary.safetyRating}/5',
                       iconColor: Colors.amber,
                     ),
+                  if (itinerary.ratingAvg != null)
+                    _Stat(
+                      icon: Icons.star_rounded,
+                      label:
+                          '${itinerary.ratingAvg!.toStringAsFixed(1)} (${itinerary.ratingCount})',
+                      iconColor: Colors.orange,
+                    ),
                 ],
               ),
             ],

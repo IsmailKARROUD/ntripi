@@ -16,6 +16,7 @@ import 'package:go_router/go_router.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:social_flutter/core/api/api_client.dart';
 import 'package:social_flutter/features/auth/providers/auth_provider.dart';
+import 'package:social_flutter/features/itineraries/domain/itinerary.dart';
 import 'package:social_flutter/features/itineraries/domain/stop.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/stop_card.dart';
 import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
@@ -32,44 +33,6 @@ class ItineraryDetailScreen extends ConsumerWidget {
     StopType.destination: Colors.red,
   };
 
-  Future<void> _confirmDeleteStop(
-    BuildContext context,
-    WidgetRef ref,
-    String stopId,
-    String stopName,
-  ) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Delete stop?'),
-        content: Text('"$stopName" will be permanently removed.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: Colors.red),
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed != true || !context.mounted) return;
-
-    try {
-      await ref
-          .read(itineraryDetailProvider(itineraryId).notifier)
-          .deleteStop(stopId);
-    } on Exception catch (e) {
-      if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(extractErrorMessage(e as dynamic))),
-      );
-    }
-  }
 
   Future<void> _onReorder(
     WidgetRef ref,
@@ -218,6 +181,11 @@ class ItineraryDetailScreen extends ConsumerWidget {
                         ?.copyWith(color: Colors.grey.shade700),
                   ),
                 ),
+
+              // ----------------------------------------------------------------
+              // Rating section
+              // ----------------------------------------------------------------
+              _RatingSection(itineraryId: itineraryId, itinerary: itinerary),
 
               // ----------------------------------------------------------------
               // Map section
@@ -386,6 +354,115 @@ class ItineraryDetailScreen extends ConsumerWidget {
               child: const Icon(Icons.add),
             )
           : null,
+    );
+  }
+}
+
+/// Shows the community rating average + the current user's star picker.
+class _RatingSection extends ConsumerWidget {
+  final String itineraryId;
+  final Itinerary itinerary;
+
+  const _RatingSection({
+    required this.itineraryId,
+    required this.itinerary,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final myRatingAsync = ref.watch(myRatingProvider(itineraryId));
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Community average
+          Row(
+            children: [
+              const Icon(Icons.star_rounded, size: 16, color: Colors.amber),
+              const SizedBox(width: 4),
+              Text(
+                itinerary.ratingAvg != null
+                    ? '${itinerary.ratingAvg!.toStringAsFixed(1)} / 5'
+                    : 'No ratings yet',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+              ),
+              if (itinerary.ratingCount > 0) ...[
+                const SizedBox(width: 4),
+                Text(
+                  '(${itinerary.ratingCount})',
+                  style: Theme.of(context)
+                      .textTheme
+                      .bodySmall
+                      ?.copyWith(color: Colors.grey),
+                ),
+              ],
+            ],
+          ),
+          const SizedBox(height: 6),
+
+          // User's star picker
+          myRatingAsync.when(
+            loading: () => const SizedBox(height: 28),
+            error: (_, __) => const SizedBox.shrink(),
+            data: (myStars) => _StarPicker(
+              itineraryId: itineraryId,
+              currentStars: myStars,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Five tappable stars for submitting / updating a rating.
+class _StarPicker extends ConsumerWidget {
+  final String itineraryId;
+  final int? currentStars;
+
+  const _StarPicker({required this.itineraryId, this.currentStars});
+
+  Future<void> _onTap(WidgetRef ref, BuildContext context, int stars) async {
+    try {
+      if (currentStars == stars) {
+        // Tapping the same star removes the rating.
+        await ref.read(myRatingProvider(itineraryId).notifier).deleteRating();
+      } else {
+        await ref
+            .read(myRatingProvider(itineraryId).notifier)
+            .submitRating(stars);
+      }
+    } on Exception catch (e) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString())),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: List.generate(5, (index) {
+        final star = index + 1;
+        final filled = currentStars != null && star <= currentStars!;
+        return GestureDetector(
+          onTap: () => _onTap(ref, context, star),
+          child: Padding(
+            padding: const EdgeInsets.only(right: 4),
+            child: Icon(
+              filled ? Icons.star_rounded : Icons.star_outline_rounded,
+              size: 28,
+              color: filled ? Colors.amber : Colors.grey.shade400,
+            ),
+          ),
+        );
+      }),
     );
   }
 }

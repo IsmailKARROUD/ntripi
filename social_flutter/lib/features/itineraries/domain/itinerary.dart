@@ -24,6 +24,10 @@ class Itinerary {
   final ItineraryVisibility visibility;
   final DateTime createdAt;
 
+  /// Community rating aggregate. Null until at least one rating exists.
+  final double? ratingAvg;
+  final int ratingCount;
+
   /// Empty in summary views, populated in detail views.
   final List<Stop> stops;
 
@@ -39,6 +43,8 @@ class Itinerary {
     this.safetyRating,
     required this.visibility,
     required this.createdAt,
+    this.ratingAvg,
+    this.ratingCount = 0,
     this.stops = const [],
   });
 
@@ -55,6 +61,8 @@ class Itinerary {
       safetyRating: json['safety_rating'] as int?,
       visibility: _parseVisibility(json['visibility'] as String? ?? 'only_me'),
       createdAt: DateTime.parse(json['created_at'] as String),
+      ratingAvg: (json['rating_avg'] as num?)?.toDouble(),
+      ratingCount: json['rating_count'] as int? ?? 0,
       stops: (json['stops'] as List<dynamic>?)
               ?.map((s) => Stop.fromJson(s as Map<String, dynamic>))
               .toList() ??
@@ -106,6 +114,8 @@ class Itinerary {
     int? safetyRating,
     ItineraryVisibility? visibility,
     DateTime? createdAt,
+    double? ratingAvg,
+    int? ratingCount,
     List<Stop>? stops,
   }) {
     return Itinerary(
@@ -120,6 +130,8 @@ class Itinerary {
       safetyRating: safetyRating ?? this.safetyRating,
       visibility: visibility ?? this.visibility,
       createdAt: createdAt ?? this.createdAt,
+      ratingAvg: ratingAvg ?? this.ratingAvg,
+      ratingCount: ratingCount ?? this.ratingCount,
       stops: stops ?? this.stops,
     );
   }

@@ -175,6 +175,38 @@ class ItineraryRepository {
   Future<void> removeAllowedUser(String itineraryId, String userId) async {
     await _dio.delete(itineraryAllowedUserEndpoint(itineraryId, userId));
   }
+
+  // ---------------------------------------------------------------------------
+  // Ratings
+  // ---------------------------------------------------------------------------
+
+  /// POST /itineraries/{id}/ratings — upsert the current user's rating.
+  /// Returns the updated rating as `{'stars': int, 'updated_at': String}`.
+  Future<Map<String, dynamic>> submitRating(String itineraryId, int stars) async {
+    final response = await _dio.post<Map<String, dynamic>>(
+      itineraryRatingsEndpoint(itineraryId),
+      data: {'stars': stars},
+    );
+    return response.data!;
+  }
+
+  /// DELETE /itineraries/{id}/ratings/me — remove the current user's rating.
+  Future<void> deleteMyRating(String itineraryId) async {
+    await _dio.delete(itineraryMyRatingEndpoint(itineraryId));
+  }
+
+  /// GET /itineraries/{id}/ratings/me — returns {'stars': int} or null if not rated.
+  Future<int?> getMyRating(String itineraryId) async {
+    try {
+      final response = await _dio.get<Map<String, dynamic>>(
+        itineraryMyRatingEndpoint(itineraryId),
+      );
+      return response.data?['stars'] as int?;
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 404) return null;
+      rethrow;
+    }
+  }
 }
 
 /// Provides the ItineraryRepository singleton, using the app-wide Dio client

@@ -77,6 +77,16 @@ class Itinerary(Base):
 
     safety_rating: Mapped[int | None] = mapped_column(SmallInteger, nullable=True)
 
+    # Denormalized community-rating aggregates — recalculated by
+    # recalculate_rating() in services/itinerary_access.py after every
+    # ItineraryRating insert/update/delete.
+    rating_avg: Mapped[float | None] = mapped_column(
+        Numeric(3, 2), nullable=True, default=None
+    )
+    rating_count: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=0, server_default="0"
+    )
+
     # Four-level visibility system. Defaults to 'only_me' — the safest option.
     # Valid values: 'public' | 'followers' | 'restricted' | 'only_me'
     # Logic is enforced by can_view_itinerary() in services/itinerary_access.py.

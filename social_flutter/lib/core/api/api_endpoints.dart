@@ -102,3 +102,13 @@ String itineraryAllowedUserEndpoint(String id, String userId) =>
 
 /// List itineraries visible to the authenticated user on another user's profile.
 String userItinerariesEndpoint(String userId) => '/users/$userId/itineraries';
+
+// ---------------------------------------------------------------------------
+// Rating endpoints
+// ---------------------------------------------------------------------------
+
+/// Submit or update the current user's rating for an itinerary.
+String itineraryRatingsEndpoint(String id) => '/itineraries/$id/ratings';
+
+/// Get or delete the current user's own rating.
+String itineraryMyRatingEndpoint(String id) => '/itineraries/$id/ratings/me';

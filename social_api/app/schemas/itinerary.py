@@ -144,6 +144,23 @@ class ItineraryUpdate(BaseModel):
     visibility: Optional[Literal['public', 'followers', 'restricted', 'only_me']] = None
 
 
+# ---------------------------------------------------------------------------
+# Rating schemas
+# ---------------------------------------------------------------------------
+
+class RatingSubmit(BaseModel):
+    """Input for POST /itineraries/{id}/ratings."""
+    stars: int = Field(..., ge=1, le=5)
+
+
+class RatingResponse(BaseModel):
+    """The current user's rating for an itinerary."""
+    stars: int
+    updated_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 class ItinerarySummary(BaseModel):
     """
     Compact itinerary view used in list responses.
@@ -159,6 +176,8 @@ class ItinerarySummary(BaseModel):
     safety_rating: Optional[int]
     visibility: Literal['public', 'followers', 'restricted', 'only_me']
     created_at: datetime
+    rating_avg: Optional[float]
+    rating_count: int = 0
 
     model_config = ConfigDict(from_attributes=True)
 

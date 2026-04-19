@@ -14,11 +14,12 @@ Visibility rules:
 import uuid
 
 from sqlalchemy.orm import Session
-from sqlalchemy import select
+from sqlalchemy import func, select
 
 from app.models.follow import Follow, FollowStatus
 from app.models.itinerary import Itinerary
 from app.models.itinerary_allowed_user import ItineraryAllowedUser
+from app.models.itinerary_rating import ItineraryRating
 
 
 def can_view_itinerary(
@@ -62,3 +63,22 @@ def can_view_itinerary(
 
     # only_me — owner already passed above, so deny everyone else.
     return False
+
+
+def recalculate_rating(itinerary: Itinerary, db: Session) -> None:
+    """
+    Recomputes rating_avg and rating_count from the itinerary_ratings table
+    and writes them back to the itinerary row.
+
+    Call this after every ItineraryRating insert, update, or delete.
+    The caller is responsible for committing the session.
+    """
+    row = db.execute(
+        select(
+            func.count(ItineraryRating.id).label("cnt"),
+            func.avg(ItineraryRating.stars).label("avg"),
+        ).where(ItineraryRating.itinerary_id == itinerary.id)
+    ).one()
+
+    itinerary.rating_count = row.cnt or 0
+    itinerary.rating_avg = float(row.avg) if row.avg is not None else None

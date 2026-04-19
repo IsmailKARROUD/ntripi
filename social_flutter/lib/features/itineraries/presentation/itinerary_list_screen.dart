@@ -85,42 +85,48 @@ class ItineraryListScreen extends ConsumerWidget {
             ],
           ),
         ),
-        data: (itineraries) {
-          if (itineraries.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.map_outlined,
-                      size: 64, color: Colors.grey.shade400),
-                  const SizedBox(height: 16),
-                  Text(
-                    'No itineraries yet.',
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
-                  const SizedBox(height: 8),
-                  const Text('Tap + to create your first trip.'),
-                ],
-              ),
-            );
-          }
-
-          return RefreshIndicator(
-            onRefresh: () =>
-                ref.read(myItinerariesProvider.notifier).refresh(),
-            child: ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: itineraries.length,
-              itemBuilder: (context, index) {
-                final itinerary = itineraries[index];
-                return ItinerarySummaryCard(
-                  itinerary: itinerary,
-                  onLongPress: () => _confirmDelete(context, ref, itinerary),
-                );
-              },
-            ),
-          );
-        },
+        data: (itineraries) => RefreshIndicator(
+          onRefresh: () =>
+              ref.read(myItinerariesProvider.notifier).refresh(),
+          child: itineraries.isEmpty
+              ? ListView(
+                  // physics that allow pull-to-refresh even when empty
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: const EdgeInsets.all(16),
+                  children: [
+                    SizedBox(
+                      height: MediaQuery.of(context).size.height * 0.6,
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.map_outlined,
+                              size: 64, color: Colors.grey.shade400),
+                          const SizedBox(height: 16),
+                          Text(
+                            'No itineraries yet.',
+                            style: Theme.of(context).textTheme.titleMedium,
+                          ),
+                          const SizedBox(height: 8),
+                          const Text('Tap + to create your first trip.'),
+                        ],
+                      ),
+                    ),
+                  ],
+                )
+              : ListView.builder(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: const EdgeInsets.all(16),
+                  itemCount: itineraries.length,
+                  itemBuilder: (context, index) {
+                    final itinerary = itineraries[index];
+                    return ItinerarySummaryCard(
+                      itinerary: itinerary,
+                      onLongPress: () =>
+                          _confirmDelete(context, ref, itinerary),
+                    );
+                  },
+                ),
+        ),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => context.push('/itineraries/new'),
