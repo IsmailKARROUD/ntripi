@@ -36,6 +36,11 @@ class ItineraryDetailScreen extends ConsumerStatefulWidget {
 class _ItineraryDetailScreenState
     extends ConsumerState<ItineraryDetailScreen> {
   bool _editMode = false;
+  bool _saving = false;
+  // Snapshot of stop IDs when edit mode was entered — used to detect changes.
+  List<String> _originalStopOrder = [];
+  // Local pending order: non-null only after the user drags at least once.
+  List<String>? _pendingOrder;
 
   static const _markerColors = {
     StopType.origin: Colors.green,
@@ -44,28 +49,119 @@ class _ItineraryDetailScreenState
     StopType.destination: Colors.red,
   };
 
-  Future<void> _onReorder(
-    List<Stop> stops,
-    int oldIndex,
-    int newIndex,
-  ) async {
-    if (newIndex > oldIndex) newIndex--;
+  void _enterEditMode(List<Stop> stops) {
+    setState(() {
+      _editMode = true;
+      _originalStopOrder = stops.map((s) => s.id).toList();
+      _pendingOrder = null;
+    });
+  }
 
-    final reordered = [...stops];
-    final moved = reordered.removeAt(oldIndex);
-    reordered.insert(newIndex, moved);
-
-    final stopIds = reordered.map((s) => s.id).toList();
-    try {
-      await ref
-          .read(itineraryDetailProvider(widget.itineraryId).notifier)
-          .reorderStops(stopIds);
-    } on Exception catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(extractErrorMessage(e as dynamic))),
-      );
+  // Sorts provider stops by the pending order, keeping content always fresh.
+  List<Stop> _applyPendingOrder(List<Stop> providerStops) {
+    if (_pendingOrder == null) return providerStops;
+    final map = {for (final s in providerStops) s.id: s};
+    final ordered = _pendingOrder!
+        .map((id) => map[id])
+        .whereType<Stop>()
+        .toList();
+    // Append any new stops (added from a sub-screen) at the end.
+    for (final s in providerStops) {
+      if (!_pendingOrder!.contains(s.id)) ordered.add(s);
     }
+    return ordered;
+  }
+
+  // Sync _pendingOrder when stops are added/deleted from sub-screens.
+  void _syncPendingOrder(List<Stop> providerStops) {
+    if (_pendingOrder == null) return;
+    final newIds = providerStops.map((s) => s.id).toSet();
+    final synced = [
+      ..._pendingOrder!.where(newIds.contains),
+      ...newIds.where((id) => !_pendingOrder!.contains(id)),
+    ];
+    if (!_listsEqual(synced, _pendingOrder!)) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) setState(() => _pendingOrder = synced);
+      });
+    }
+  }
+
+  // Local-only reorder — no API call. Deferred until Save.
+  void _onReorder(List<Stop> displayStops, int oldIndex, int newIndex) {
+    if (newIndex > oldIndex) newIndex--;
+    final ids = displayStops.map((s) => s.id).toList();
+    final moved = ids.removeAt(oldIndex);
+    ids.insert(newIndex, moved);
+    setState(() => _pendingOrder = ids);
+  }
+
+  Future<void> _confirmExitEditMode() async {
+    final hasReordered = _pendingOrder != null &&
+        !_listsEqual(_pendingOrder!, _originalStopOrder);
+
+    final result = await showDialog<_ExitAction>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Exit edit mode?'),
+        content: Text(
+          hasReordered
+              ? 'You reordered stops. Save or discard the new order?'
+              : 'Do you want to exit edit mode?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(_ExitAction.stay),
+            child: const Text('Stay'),
+          ),
+          if (hasReordered)
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(_ExitAction.discard),
+              child: const Text('Discard'),
+            ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(_ExitAction.save),
+            child: Text(hasReordered ? 'Save' : 'Exit'),
+          ),
+        ],
+      ),
+    );
+
+    if (!mounted) return;
+
+    if (result == _ExitAction.save && hasReordered) {
+      setState(() => _saving = true);
+      try {
+        await ref
+            .read(itineraryDetailProvider(widget.itineraryId).notifier)
+            .reorderStops(_pendingOrder!);
+      } on Exception catch (e) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(extractErrorMessage(e as dynamic))),
+        );
+        setState(() => _saving = false);
+        return;
+      }
+      if (!mounted) return;
+      setState(() => _saving = false);
+    }
+
+    // Discard: just drop local state — no API call needed.
+    if (result == _ExitAction.save || result == _ExitAction.discard) {
+      setState(() {
+        _editMode = false;
+        _pendingOrder = null;
+      });
+    }
+  }
+
+  bool _listsEqual(List<String> a, List<String> b) {
+    if (a.length != b.length) return false;
+    for (var i = 0; i < a.length; i++) {
+      if (a[i] != b[i]) return false;
+    }
+    return true;
   }
 
   @override
@@ -76,7 +172,14 @@ class _ItineraryDetailScreenState
     final isOwner = currentUserId != null &&
         itineraryAsync.valueOrNull?.userId == currentUserId;
 
-    return Scaffold(
+    // Keep _pendingOrder in sync when sub-screens add or delete stops.
+    ref.listen(itineraryDetailProvider(widget.itineraryId), (_, next) {
+      _syncPendingOrder(next.valueOrNull?.stops ?? []);
+    });
+
+    return Stack(
+      children: [
+        Scaffold(
       appBar: AppBar(
         title: itineraryAsync.when(
           data: (i) => Text(i.title),
@@ -88,7 +191,11 @@ class _ItineraryDetailScreenState
             IconButton(
               icon: Icon(_editMode ? Icons.close : Icons.edit_outlined),
               tooltip: _editMode ? 'Exit edit mode' : 'Edit',
-              onPressed: () => setState(() => _editMode = !_editMode),
+              onPressed: _editMode
+                  ? _confirmExitEditMode
+                  : () => _enterEditMode(
+                        itineraryAsync.valueOrNull?.stops ?? [],
+                      ),
             ),
         ],
       ),
@@ -113,7 +220,9 @@ class _ItineraryDetailScreenState
           ),
         ),
         data: (itinerary) {
-          final mappableStops = itinerary.stops
+          final displayStops = _applyPendingOrder(itinerary.stops);
+
+          final mappableStops = displayStops
               .where((s) => s.lat != null && s.lng != null)
               .toList();
 
@@ -127,10 +236,7 @@ class _ItineraryDetailScreenState
 
           final canEdit = isOwner && _editMode;
 
-          // Build the stop list as a plain list of widgets so we can put it
-          // inside a SliverList. The ReorderableListView is placed in a
-          // SliverToBoxAdapter with shrinkWrap so it sizes to its content.
-          final stopWidgets = itinerary.stops.map((stop) {
+          final stopWidgets = displayStops.map((stop) {
             return StopCard(
               key: ValueKey(stop.id),
               stop: stop,
@@ -172,7 +278,7 @@ class _ItineraryDetailScreenState
                         _SummaryChip(
                           icon: Icons.place_outlined,
                           label:
-                              '${itinerary.stops.length} stop${itinerary.stops.length == 1 ? '' : 's'}',
+                              '${displayStops.length} stop${displayStops.length == 1 ? '' : 's'}',
                         ),
                         if (itinerary.safetyRating != null)
                           _SummaryChip(
@@ -325,7 +431,7 @@ class _ItineraryDetailScreenState
                 // ------------------------------------------------------------
                 // Stop list
                 // ------------------------------------------------------------
-                if (itinerary.stops.isEmpty)
+                if (displayStops.isEmpty)
                   SliverToBoxAdapter(
                     child: Padding(
                       padding: const EdgeInsets.symmetric(vertical: 48),
@@ -342,15 +448,13 @@ class _ItineraryDetailScreenState
                     ),
                   )
                 else if (canEdit)
-                  // ReorderableListView must be shrinkWrapped inside a
-                  // SliverToBoxAdapter so the outer CustomScrollView scrolls.
                   SliverToBoxAdapter(
                     child: ReorderableListView(
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
                       padding: const EdgeInsets.only(bottom: 80),
                       onReorder: (oldIndex, newIndex) => _onReorder(
-                        itinerary.stops,
+                        displayStops,
                         oldIndex,
                         newIndex,
                       ),
@@ -379,6 +483,14 @@ class _ItineraryDetailScreenState
               child: const Icon(Icons.add),
             )
           : null,
+        ),
+        // Saving overlay — shown while the single reorder API call is in flight.
+        if (_saving)
+          const ColoredBox(
+            color: Color(0x66000000),
+            child: Center(child: CircularProgressIndicator()),
+          ),
+      ],
     );
   }
 }
@@ -535,3 +647,5 @@ class _SummaryChip extends StatelessWidget {
     );
   }
 }
+
+enum _ExitAction { stay, discard, save }

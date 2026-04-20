@@ -24,6 +24,7 @@ from decimal import Decimal
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, selectinload
 
 from app.database import get_db
@@ -477,8 +478,15 @@ def reorder_stops(
             detail="stop_ids must contain exactly all stop IDs for this itinerary.",
         )
 
-    # Build a lookup map and reassign positions.
+    # Two-phase reassignment avoids unique-constraint collisions when positions
+    # are shuffled. Phase 1: park every stop at a temporary position that can't
+    # collide with any real 1-based index. Phase 2: write the real positions.
     stop_map = {s.id: s for s in existing_stops}
+    offset = len(body.stop_ids) + 1
+    for i, stop_id in enumerate(body.stop_ids):
+        stop_map[stop_id].position = offset + i
+    db.flush()
+
     for new_position, stop_id in enumerate(body.stop_ids, start=1):
         stop_map[stop_id].position = new_position
 
@@ -518,11 +526,16 @@ def add_stop(
         **body.model_dump(),
     )
     db.add(stop)
-    db.flush()  # Flush to get the stop's ID before recalculating
+    try:
+        db.flush()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"A stop at position {body.position} already exists in this itinerary.",
+        )
 
-    # Update denormalized totals on the itinerary row.
     _recalculate_totals(itinerary, db)
-
     db.commit()
     db.refresh(stop)
     return stop  # type: ignore[return-value]

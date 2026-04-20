@@ -157,12 +157,15 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
 
     setState(() => _saving = true);
     try {
-      // Compute position for new stops: append at the end.
+      // Compute position for new stops: append after the highest existing position.
+      // Using length would collide when stops have been deleted without renumbering.
       int position = 1;
       if (!widget.isEditMode) {
-        final itinerary =
-            ref.read(itineraryDetailProvider(widget.itineraryId)).value;
-        position = (itinerary?.stops.length ?? 0) + 1;
+        final stops =
+            ref.read(itineraryDetailProvider(widget.itineraryId)).value?.stops ?? [];
+        position = stops.isEmpty
+            ? 1
+            : stops.map((s) => s.position).reduce((a, b) => a > b ? a : b) + 1;
       }
 
       final data = <String, dynamic>{
