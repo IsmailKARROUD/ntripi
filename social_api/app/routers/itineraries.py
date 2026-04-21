@@ -1,5 +1,5 @@
 """
-routers/itineraries.py — Itinerary, stop, annotation, and allowlist endpoints.
+routers/itineraries.py — Itinerary, stop, annotation, allowlist, segment, and leg endpoints.
 
 All routes require Bearer token authentication (get_current_user dependency).
 The router prefix '/itineraries' is added in main.py.
@@ -14,9 +14,9 @@ Visibility rule:
   logic. Logic is never duplicated inline here.
 
 Total recalculation:
-  After every stop add/update/delete, _recalculate_totals() recomputes
-  itinerary.total_duration_min and itinerary.total_cost so summary views
-  always reflect the current state.
+  After every stop/segment/leg mutation, _recalculate_totals() recomputes
+  itinerary.total_duration_min and itinerary.total_cost from both stops
+  and transit segments so summary views always reflect current state.
 """
 
 import uuid
@@ -33,6 +33,8 @@ from app.models.annotation import Annotation
 from app.models.itinerary import Itinerary
 from app.models.itinerary_allowed_user import ItineraryAllowedUser
 from app.models.stop import Stop
+from app.models.transit_segment import TransitSegment
+from app.models.transport_leg import TransportLeg
 from app.models.user import User
 from app.models.itinerary_rating import ItineraryRating
 from app.schemas.itinerary import (
@@ -54,6 +56,11 @@ from app.schemas.itinerary import (
     StopCreate,
     StopResponse,
     StopUpdate,
+    TransitSegmentCreate,
+    TransitSegmentResponse,
+    TransportLegCreate,
+    TransportLegResponse,
+    TransportLegUpdate,
 )
 from app.services.itinerary_access import can_view_itinerary, recalculate_rating
 
@@ -88,40 +95,59 @@ def _require_owner(itinerary: Itinerary, current_user: User) -> None:
         )
 
 
+def _recalculate_segment_totals(segment: TransitSegment, db: Session) -> None:
+    """Recompute segment.total_duration_min and total_cost from its legs."""
+    legs = db.execute(
+        select(TransportLeg).where(TransportLeg.segment_id == segment.id)
+    ).scalars().all()
+
+    segment.total_duration_min = sum(lg.duration_min or 0 for lg in legs)
+    segment.total_cost = sum(
+        (lg.cost if lg.cost is not None else Decimal("0.00"))
+        for lg in legs
+        if not lg.is_free
+    )
+
+
 def _recalculate_totals(itinerary: Itinerary, db: Session) -> None:
     """
-    Recompute total_duration_min and total_cost from the current set of stops.
+    Recompute total_duration_min and total_cost from stops AND transit segments.
 
-    Called after every stop add/update/delete so the itinerary summary always
-    reflects accurate aggregates without a separate aggregation query on read.
-
-    Cost rule: only include stops where is_free=False.
+    Cost rule: only include stops/legs where is_free=False.
     Duration rule: treat NULL duration_min as 0.
     """
     stops = db.execute(
         select(Stop).where(Stop.itinerary_id == itinerary.id)
     ).scalars().all()
 
-    itinerary.total_duration_min = sum(s.duration_min or 0 for s in stops)
-    itinerary.total_cost = sum(
+    segments = db.execute(
+        select(TransitSegment).where(TransitSegment.itinerary_id == itinerary.id)
+    ).scalars().all()
+
+    stop_duration = sum(s.duration_min or 0 for s in stops)
+    stop_cost = sum(
         (s.cost if s.cost is not None else Decimal("0.00"))
         for s in stops
         if not s.is_free
     )
+    seg_duration = sum(seg.total_duration_min for seg in segments)
+    seg_cost = sum(seg.total_cost for seg in segments)
+
+    itinerary.total_duration_min = stop_duration + seg_duration
+    itinerary.total_cost = stop_cost + seg_cost
 
 
 def _load_itinerary_detail(itinerary_id: uuid.UUID, db: Session) -> Itinerary:
     """
-    Fetch an itinerary with all stops and annotations eagerly loaded.
-    Uses selectinload to avoid N+1 queries:
-      1 query for the itinerary
-      1 query for all its stops
-      1 query for all annotations across those stops
+    Fetch an itinerary with stops, annotations, and transit segments+legs loaded.
+    Uses selectinload to avoid N+1 queries.
     """
     itinerary = db.execute(
         select(Itinerary)
         .options(
-            selectinload(Itinerary.stops).selectinload(Stop.annotations)
+            selectinload(Itinerary.stops).selectinload(Stop.annotations),
+            selectinload(Itinerary.segments).selectinload(TransitSegment.legs),
+            selectinload(Itinerary.segments).selectinload(TransitSegment.from_stop),
         )
         .where(Itinerary.id == itinerary_id)
     ).scalar_one_or_none()
@@ -131,7 +157,54 @@ def _load_itinerary_detail(itinerary_id: uuid.UUID, db: Session) -> Itinerary:
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Itinerary not found.",
         )
+    itinerary.segments.sort(
+        key=lambda seg: seg.from_stop.position if seg.from_stop else 0
+    )
     return itinerary
+
+
+def _get_segment_or_404(
+    segment_id: uuid.UUID,
+    itinerary_id: uuid.UUID,
+    db: Session,
+) -> TransitSegment:
+    """Fetch a segment and verify it belongs to the given itinerary."""
+    segment = db.execute(
+        select(TransitSegment)
+        .options(selectinload(TransitSegment.legs))
+        .where(
+            TransitSegment.id == segment_id,
+            TransitSegment.itinerary_id == itinerary_id,
+        )
+    ).scalar_one_or_none()
+
+    if not segment:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Transit segment not found.",
+        )
+    return segment
+
+
+def _get_leg_or_404(
+    leg_id: uuid.UUID,
+    segment_id: uuid.UUID,
+    db: Session,
+) -> TransportLeg:
+    """Fetch a leg and verify it belongs to the given segment."""
+    leg = db.execute(
+        select(TransportLeg).where(
+            TransportLeg.id == leg_id,
+            TransportLeg.segment_id == segment_id,
+        )
+    ).scalar_one_or_none()
+
+    if not leg:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Transport leg not found.",
+        )
+    return leg
 
 
 def _get_stop_or_404(
@@ -899,6 +972,284 @@ def get_ratings_page(
         distribution=distribution,
         ratings=ratings,
     )
+
+
+# ---------------------------------------------------------------------------
+# Transit segment endpoints — /itineraries/{id}/segments
+# ---------------------------------------------------------------------------
+
+@router.post(
+    "/{itinerary_id}/segments",
+    response_model=TransitSegmentResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Create a transit segment between two stops",
+)
+def create_segment(
+    itinerary_id: uuid.UUID,
+    body: TransitSegmentCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> TransitSegmentResponse:
+    """
+    Create a TransitSegment with one or more TransportLegs between two stops.
+
+    Both from_stop_id and to_stop_id must belong to this itinerary.
+    Only one segment per stop pair is allowed (UNIQUE constraint).
+    Leg positions must be contiguous starting at 1 (validated by schema).
+    """
+    itinerary = _get_itinerary_or_404(itinerary_id, db)
+    _require_owner(itinerary, current_user)
+
+    # Verify both stops belong to this itinerary.
+    for stop_id, label in ((body.from_stop_id, "from_stop_id"), (body.to_stop_id, "to_stop_id")):
+        stop = db.execute(
+            select(Stop).where(Stop.id == stop_id, Stop.itinerary_id == itinerary_id)
+        ).scalar_one_or_none()
+        if not stop:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"{label} does not belong to this itinerary.",
+            )
+
+    segment = TransitSegment(
+        itinerary_id=itinerary_id,
+        from_stop_id=body.from_stop_id,
+        to_stop_id=body.to_stop_id,
+    )
+    db.add(segment)
+    try:
+        db.flush()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="A segment between these two stops already exists.",
+        )
+
+    for leg_data in body.legs:
+        leg = TransportLeg(segment_id=segment.id, **leg_data.model_dump())
+        db.add(leg)
+
+    db.flush()
+    _recalculate_segment_totals(segment, db)
+    _recalculate_totals(itinerary, db)
+    db.commit()
+    db.refresh(segment)
+    return segment  # type: ignore[return-value]
+
+
+@router.get(
+    "/{itinerary_id}/segments",
+    response_model=list[TransitSegmentResponse],
+    summary="List all transit segments for an itinerary",
+)
+def list_segments(
+    itinerary_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> list[TransitSegmentResponse]:
+    """Return all transit segments for the itinerary, ordered by from_stop.position."""
+    itinerary = _get_itinerary_or_404(itinerary_id, db)
+    if not can_view_itinerary(itinerary, current_user.id, db):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You do not have access to this itinerary.",
+        )
+
+    segments = db.execute(
+        select(TransitSegment)
+        .options(
+            selectinload(TransitSegment.legs),
+            selectinload(TransitSegment.from_stop),
+        )
+        .where(TransitSegment.itinerary_id == itinerary_id)
+    ).scalars().all()
+
+    segments.sort(key=lambda seg: seg.from_stop.position if seg.from_stop else 0)
+    return segments  # type: ignore[return-value]
+
+
+@router.patch(
+    "/{itinerary_id}/segments/{segment_id}",
+    response_model=TransitSegmentResponse,
+    summary="Update a transit segment's stop references",
+)
+def update_segment(
+    itinerary_id: uuid.UUID,
+    segment_id: uuid.UUID,
+    body: TransitSegmentCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> TransitSegmentResponse:
+    """
+    Replace from_stop_id and to_stop_id (and the full leg list) of a segment.
+    Both stop IDs must belong to this itinerary.
+    """
+    itinerary = _get_itinerary_or_404(itinerary_id, db)
+    _require_owner(itinerary, current_user)
+
+    segment = _get_segment_or_404(segment_id, itinerary_id, db)
+
+    for stop_id, label in ((body.from_stop_id, "from_stop_id"), (body.to_stop_id, "to_stop_id")):
+        stop = db.execute(
+            select(Stop).where(Stop.id == stop_id, Stop.itinerary_id == itinerary_id)
+        ).scalar_one_or_none()
+        if not stop:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"{label} does not belong to this itinerary.",
+            )
+
+    segment.from_stop_id = body.from_stop_id
+    segment.to_stop_id = body.to_stop_id
+
+    # Replace all legs with the new set.
+    for leg in list(segment.legs):
+        db.delete(leg)
+    db.flush()
+
+    for leg_data in body.legs:
+        leg = TransportLeg(segment_id=segment.id, **leg_data.model_dump())
+        db.add(leg)
+
+    try:
+        db.flush()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="A segment between these two stops already exists.",
+        )
+
+    _recalculate_segment_totals(segment, db)
+    _recalculate_totals(itinerary, db)
+    db.commit()
+    db.refresh(segment)
+    return segment  # type: ignore[return-value]
+
+
+@router.delete(
+    "/{itinerary_id}/segments/{segment_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Delete a transit segment and all its legs",
+)
+def delete_segment(
+    itinerary_id: uuid.UUID,
+    segment_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> None:
+    """Delete a segment. Its legs are removed via ON DELETE CASCADE."""
+    itinerary = _get_itinerary_or_404(itinerary_id, db)
+    _require_owner(itinerary, current_user)
+
+    segment = _get_segment_or_404(segment_id, itinerary_id, db)
+
+    db.delete(segment)
+    db.flush()
+    _recalculate_totals(itinerary, db)
+    db.commit()
+
+
+# ---------------------------------------------------------------------------
+# Transport leg endpoints — /itineraries/{id}/segments/{segment_id}/legs
+# ---------------------------------------------------------------------------
+
+@router.post(
+    "/{itinerary_id}/segments/{segment_id}/legs",
+    response_model=TransportLegResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Add a transport leg to a segment",
+)
+def add_leg(
+    itinerary_id: uuid.UUID,
+    segment_id: uuid.UUID,
+    body: TransportLegCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> TransportLegResponse:
+    """
+    Append a new leg to a transit segment.
+    Position must not collide with existing legs (409 if it does).
+    """
+    itinerary = _get_itinerary_or_404(itinerary_id, db)
+    _require_owner(itinerary, current_user)
+
+    segment = _get_segment_or_404(segment_id, itinerary_id, db)
+
+    leg = TransportLeg(segment_id=segment.id, **body.model_dump())
+    db.add(leg)
+    try:
+        db.flush()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"A leg at position {body.position} already exists in this segment.",
+        )
+
+    _recalculate_segment_totals(segment, db)
+    _recalculate_totals(itinerary, db)
+    db.commit()
+    db.refresh(leg)
+    return leg  # type: ignore[return-value]
+
+
+@router.patch(
+    "/{itinerary_id}/segments/{segment_id}/legs/{leg_id}",
+    response_model=TransportLegResponse,
+    summary="Update a transport leg (partial update)",
+)
+def update_leg(
+    itinerary_id: uuid.UUID,
+    segment_id: uuid.UUID,
+    leg_id: uuid.UUID,
+    body: TransportLegUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> TransportLegResponse:
+    """Partial update a leg and recalculate segment and itinerary totals."""
+    itinerary = _get_itinerary_or_404(itinerary_id, db)
+    _require_owner(itinerary, current_user)
+
+    segment = _get_segment_or_404(segment_id, itinerary_id, db)
+    leg = _get_leg_or_404(leg_id, segment_id, db)
+
+    update_data = body.model_dump(exclude_unset=True)
+    for field, value in update_data.items():
+        setattr(leg, field, value)
+
+    _recalculate_segment_totals(segment, db)
+    _recalculate_totals(itinerary, db)
+    db.commit()
+    db.refresh(leg)
+    return leg  # type: ignore[return-value]
+
+
+@router.delete(
+    "/{itinerary_id}/segments/{segment_id}/legs/{leg_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Delete a transport leg from a segment",
+)
+def delete_leg(
+    itinerary_id: uuid.UUID,
+    segment_id: uuid.UUID,
+    leg_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> None:
+    """Delete a leg and recalculate segment and itinerary totals."""
+    itinerary = _get_itinerary_or_404(itinerary_id, db)
+    _require_owner(itinerary, current_user)
+
+    segment = _get_segment_or_404(segment_id, itinerary_id, db)
+    leg = _get_leg_or_404(leg_id, segment_id, db)
+
+    db.delete(leg)
+    db.flush()
+    _recalculate_segment_totals(segment, db)
+    _recalculate_totals(itinerary, db)
+    db.commit()
 
 
 # ---------------------------------------------------------------------------

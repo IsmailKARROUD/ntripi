@@ -114,5 +114,13 @@ class Itinerary(Base):
         order_by="Stop.position",
     )
 
+    # Transit segments for this itinerary (order maintained in Python by
+    # from_stop.position after eager loading — see _sort_segments in router).
+    segments: Mapped[list["TransitSegment"]] = relationship(
+        "TransitSegment",
+        back_populates="itinerary",
+        cascade="all, delete-orphan",
+    )
+
     def __repr__(self) -> str:
         return f"<Itinerary id={self.id} title={self.title!r}>"

@@ -4,6 +4,8 @@ schemas/itinerary.py — Pydantic schemas for itinerary-related requests and res
 Hierarchy:
   AnnotationCreate / AnnotationResponse
   StopCreate / StopUpdate / StopResponse
+  TransportLegCreate / TransportLegUpdate / TransportLegResponse
+  TransitSegmentCreate / TransitSegmentResponse
   ItineraryCreate / ItineraryUpdate / ItinerarySummary / ItineraryDetail
   AllowedUserAdd / AllowedUserResponse
   ReorderRequest
@@ -14,7 +16,7 @@ from datetime import datetime
 from decimal import Decimal
 from typing import Literal, Optional
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
 # ---------------------------------------------------------------------------
@@ -22,13 +24,11 @@ from pydantic import BaseModel, ConfigDict, Field
 # ---------------------------------------------------------------------------
 
 class AnnotationCreate(BaseModel):
-    """Input for POST .../annotations."""
     type: str = Field(..., pattern="^(advice|caution|avoid|info)$")
     content: str = Field(..., min_length=1, max_length=2000)
 
 
 class AnnotationResponse(BaseModel):
-    """Annotation as returned by the API."""
     id: uuid.UUID
     stop_id: uuid.UUID
     type: str
@@ -39,35 +39,23 @@ class AnnotationResponse(BaseModel):
 
 
 # ---------------------------------------------------------------------------
-# Stop schemas
+# Stop schemas  — 'transit' type removed
 # ---------------------------------------------------------------------------
 
 class StopCreate(BaseModel):
-    """Input for POST .../stops."""
     position: int = Field(..., ge=1)
-    type: str = Field(..., pattern="^(origin|waypoint|transit|destination)$")
+    type: Literal['origin', 'waypoint', 'destination']
 
-    # Location — user-authored text + OSM coordinates (legal to store)
     place_name: Optional[str] = Field(None, max_length=200)
     place_address: Optional[str] = None
     lat: Optional[float] = Field(None, ge=-90, le=90)
     lng: Optional[float] = Field(None, ge=-180, le=180)
 
-    # User-selected place category (not from any external provider)
     place_type: Optional[str] = Field(
         None,
         pattern="^(restaurant|cafe|museum|hotel|park|station|airport|beach|landmark|other)$",
     )
 
-    # Transit fields — only relevant when type='transit'
-    transport_mode: Optional[str] = Field(
-        None,
-        pattern="^(walk|bus|tram|metro|train|taxi|uber|bike|ferry|car)$",
-    )
-    transport_line: Optional[str] = Field(None, max_length=30)
-    transport_direction: Optional[str] = None
-
-    # Time and money
     duration_min: Optional[int] = Field(None, ge=0)
     cost: Decimal = Field(default=Decimal("0.00"), ge=0)
     is_free: bool = False
@@ -75,9 +63,8 @@ class StopCreate(BaseModel):
 
 
 class StopUpdate(BaseModel):
-    """Input for PATCH .../stops/{stop_id}. All fields optional."""
     position: Optional[int] = Field(None, ge=1)
-    type: Optional[str] = Field(None, pattern="^(origin|waypoint|transit|destination)$")
+    type: Optional[Literal['origin', 'waypoint', 'destination']] = None
     place_name: Optional[str] = Field(None, max_length=200)
     place_address: Optional[str] = None
     lat: Optional[float] = Field(None, ge=-90, le=90)
@@ -86,12 +73,6 @@ class StopUpdate(BaseModel):
         None,
         pattern="^(restaurant|cafe|museum|hotel|park|station|airport|beach|landmark|other)$",
     )
-    transport_mode: Optional[str] = Field(
-        None,
-        pattern="^(walk|bus|tram|metro|train|taxi|uber|bike|ferry|car)$",
-    )
-    transport_line: Optional[str] = Field(None, max_length=30)
-    transport_direction: Optional[str] = None
     duration_min: Optional[int] = Field(None, ge=0)
     cost: Optional[Decimal] = Field(None, ge=0)
     is_free: Optional[bool] = None
@@ -99,7 +80,6 @@ class StopUpdate(BaseModel):
 
 
 class StopResponse(BaseModel):
-    """Stop as returned by the API, with its annotations included."""
     id: uuid.UUID
     itinerary_id: uuid.UUID
     position: int
@@ -109,11 +89,8 @@ class StopResponse(BaseModel):
     lat: Optional[float]
     lng: Optional[float]
     place_type: Optional[str]
-    transport_mode: Optional[str]
-    transport_line: Optional[str]
-    transport_direction: Optional[str]
     duration_min: Optional[int]
-    cost: float          # Decimal → float for JSON serialization
+    cost: float
     is_free: bool
     notes: Optional[str]
     created_at: datetime
@@ -123,11 +100,87 @@ class StopResponse(BaseModel):
 
 
 # ---------------------------------------------------------------------------
+# TransportLeg schemas
+# ---------------------------------------------------------------------------
+
+_LEG_MODES = Literal[
+    'walk', 'bus', 'tram', 'metro', 'train',
+    'taxi', 'uber', 'bike', 'ferry', 'car',
+]
+
+
+class TransportLegCreate(BaseModel):
+    position: int = Field(..., ge=1)
+    mode: _LEG_MODES
+    line: Optional[str] = Field(None, max_length=30)
+    direction: Optional[str] = None
+    duration_min: Optional[int] = Field(None, ge=0)
+    cost: Decimal = Field(default=Decimal("0.00"), ge=0)
+    is_free: bool = False
+    notes: Optional[str] = None
+
+
+class TransportLegUpdate(BaseModel):
+    mode: Optional[_LEG_MODES] = None
+    line: Optional[str] = Field(None, max_length=30)
+    direction: Optional[str] = None
+    duration_min: Optional[int] = Field(None, ge=0)
+    cost: Optional[Decimal] = Field(None, ge=0)
+    is_free: Optional[bool] = None
+    notes: Optional[str] = None
+
+
+class TransportLegResponse(BaseModel):
+    id: uuid.UUID
+    segment_id: uuid.UUID
+    position: int
+    mode: str
+    line: Optional[str]
+    direction: Optional[str]
+    duration_min: Optional[int]
+    cost: float
+    is_free: bool
+    notes: Optional[str]
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+# ---------------------------------------------------------------------------
+# TransitSegment schemas
+# ---------------------------------------------------------------------------
+
+class TransitSegmentCreate(BaseModel):
+    from_stop_id: uuid.UUID
+    to_stop_id: uuid.UUID
+    legs: list[TransportLegCreate] = Field(..., min_length=1)
+
+    @model_validator(mode='after')
+    def _validate_legs(self) -> 'TransitSegmentCreate':
+        positions = sorted(leg.position for leg in self.legs)
+        if positions != list(range(1, len(positions) + 1)):
+            raise ValueError("Leg positions must be contiguous starting from 1.")
+        return self
+
+
+class TransitSegmentResponse(BaseModel):
+    id: uuid.UUID
+    itinerary_id: uuid.UUID
+    from_stop_id: uuid.UUID
+    to_stop_id: uuid.UUID
+    total_duration_min: int
+    total_cost: float
+    legs: list[TransportLegResponse] = []
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+# ---------------------------------------------------------------------------
 # Itinerary schemas
 # ---------------------------------------------------------------------------
 
 class ItineraryCreate(BaseModel):
-    """Input for POST /itineraries."""
     title: str = Field(..., min_length=1, max_length=200)
     description: Optional[str] = None
     currency: str = Field(default="EUR", max_length=3, min_length=3)
@@ -136,7 +189,6 @@ class ItineraryCreate(BaseModel):
 
 
 class ItineraryUpdate(BaseModel):
-    """Input for PATCH /itineraries/{id}. All fields optional."""
     title: Optional[str] = Field(None, min_length=1, max_length=200)
     description: Optional[str] = None
     currency: Optional[str] = Field(None, max_length=3, min_length=3)
@@ -149,12 +201,10 @@ class ItineraryUpdate(BaseModel):
 # ---------------------------------------------------------------------------
 
 class RatingSubmit(BaseModel):
-    """Input for POST /itineraries/{id}/ratings."""
     stars: int = Field(..., ge=1, le=5)
 
 
 class RatingResponse(BaseModel):
-    """The current user's rating for an itinerary."""
     stars: int
     updated_at: datetime
 
@@ -162,12 +212,6 @@ class RatingResponse(BaseModel):
 
 
 class RaterInfo(BaseModel):
-    """Public identity of someone who rated an itinerary.
-
-    user_id is None when the user has deleted their account —
-    the rating score is kept as anonymous community data (GDPR Art. 17).
-    username / display_name / avatar_url are also None in that case.
-    """
     user_id: Optional[uuid.UUID]
     username: Optional[str]
     display_name: Optional[str]
@@ -175,14 +219,12 @@ class RaterInfo(BaseModel):
 
 
 class RatingWithUser(BaseModel):
-    """One rating entry with its rater's public info."""
     score: int
     updated_at: datetime
     user: RaterInfo
 
 
 class RatingDistribution(BaseModel):
-    """Star-count breakdown across all ratings for an itinerary."""
     five: int
     four: int
     three: int
@@ -191,24 +233,19 @@ class RatingDistribution(BaseModel):
 
 
 class RatingsPageResponse(BaseModel):
-    """Full ratings page payload — aggregate + distribution + individual list."""
     rating_avg: Optional[float]
     rating_count: int
     distribution: RatingDistribution
-    ratings: list[RatingWithUser]   # ordered by updated_at DESC
+    ratings: list[RatingWithUser]
 
 
 class ItinerarySummary(BaseModel):
-    """
-    Compact itinerary view used in list responses.
-    Does not include the description or the full stop list.
-    """
     id: uuid.UUID
     user_id: uuid.UUID
     title: str
     cover_image_url: Optional[str]
     total_duration_min: int
-    total_cost: float    # Decimal → float for JSON serialization
+    total_cost: float
     currency: str
     safety_rating: Optional[int]
     visibility: Literal['public', 'followers', 'restricted', 'only_me']
@@ -220,12 +257,9 @@ class ItinerarySummary(BaseModel):
 
 
 class ItineraryDetail(ItinerarySummary):
-    """
-    Full itinerary view used in detail responses.
-    Extends ItinerarySummary with description and the ordered stop list.
-    """
     description: Optional[str]
     stops: list[StopResponse] = []
+    segments: list[TransitSegmentResponse] = []
 
 
 # ---------------------------------------------------------------------------
@@ -233,12 +267,10 @@ class ItineraryDetail(ItinerarySummary):
 # ---------------------------------------------------------------------------
 
 class AllowedUserAdd(BaseModel):
-    """Input for POST /itineraries/{id}/allowed-users."""
     user_id: uuid.UUID
 
 
 class AllowedUserResponse(BaseModel):
-    """A user in the restricted allowlist, as returned by the API."""
     user_id: uuid.UUID
     username: str
     display_name: Optional[str]
@@ -250,9 +282,4 @@ class AllowedUserResponse(BaseModel):
 # ---------------------------------------------------------------------------
 
 class ReorderRequest(BaseModel):
-    """
-    Body for PATCH /itineraries/{id}/stops/reorder.
-    The client sends the complete ordered list of stop UUIDs.
-    The backend reassigns position=1,2,3... in that exact order.
-    """
     stop_ids: list[uuid.UUID] = Field(..., min_length=1)

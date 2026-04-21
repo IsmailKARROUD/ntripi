@@ -8,9 +8,12 @@ from app.models.itinerary_allowed_user import ItineraryAllowedUser
 from app.models.stop import Stop
 from app.models.annotation import Annotation
 from app.models.itinerary_rating import ItineraryRating
+from app.models.transit_segment import TransitSegment
+from app.models.transport_leg import TransportLeg
 
 __all__ = [
     "User", "Follow", "FollowStatus",
     "Itinerary", "ItineraryAllowedUser",
     "Stop", "Annotation", "ItineraryRating",
+    "TransitSegment", "TransportLeg",
 ]
