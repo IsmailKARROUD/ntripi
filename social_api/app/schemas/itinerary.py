@@ -121,6 +121,8 @@ class TransportLegCreate(BaseModel):
 
 
 class TransportLegUpdate(BaseModel):
+    # position is intentionally omitted — leg positions are reassigned as a
+    # unit when the parent segment is updated (full replace via PATCH /segments/{id}).
     mode: Optional[_LEG_MODES] = None
     line: Optional[str] = Field(None, max_length=30)
     direction: Optional[str] = None
@@ -153,10 +155,13 @@ class TransportLegResponse(BaseModel):
 class TransitSegmentCreate(BaseModel):
     from_stop_id: uuid.UUID
     to_stop_id: uuid.UUID
+    # At least one leg required — a segment with zero legs is meaningless.
     legs: list[TransportLegCreate] = Field(..., min_length=1)
 
     @model_validator(mode='after')
     def _validate_legs(self) -> 'TransitSegmentCreate':
+        # Enforce contiguous 1-based positions so the router can insert legs
+        # in order without gaps or duplicate position violations.
         positions = sorted(leg.position for leg in self.legs)
         if positions != list(range(1, len(positions) + 1)):
             raise ValueError("Leg positions must be contiguous starting from 1.")
@@ -212,6 +217,9 @@ class RatingResponse(BaseModel):
 
 
 class RaterInfo(BaseModel):
+    # All fields are Optional because the rater may have deleted their account.
+    # ItineraryRating.user_id is SET NULL on user delete (GDPR anonymization),
+    # so these fields can all be None for historical ratings.
     user_id: Optional[uuid.UUID]
     username: Optional[str]
     display_name: Optional[str]
@@ -256,6 +264,8 @@ class ItinerarySummary(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+# ItineraryDetail extends ItinerarySummary with the full stop + segment lists.
+# Used by GET /itineraries/{id} and the reorder endpoint.
 class ItineraryDetail(ItinerarySummary):
     description: Optional[str]
     stops: list[StopResponse] = []
