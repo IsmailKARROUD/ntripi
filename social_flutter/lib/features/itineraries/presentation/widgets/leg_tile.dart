@@ -1,4 +1,8 @@
-// widgets/leg_tile.dart — One transport leg row inside the segment form.
+// widgets/leg_tile.dart — One transport leg row inside SegmentFormScreen.
+//
+// Displays the leg's mode icon, summary text, and optional duration/cost
+// subtitle. Edit and delete icon buttons are shown only when the callbacks
+// are provided (omit them for read-only contexts).
 
 import 'package:flutter/material.dart';
 import 'package:social_flutter/features/itineraries/domain/transport_leg.dart';

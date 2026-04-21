@@ -1,4 +1,8 @@
 // features/itineraries/domain/transport_leg.dart — TransportLeg model and TransportMode enum.
+//
+// TransportMode drives the icon, label, and emoji shown throughout the UI.
+// position is 1-based and is assigned server-side; when building legs locally
+// in SegmentFormScreen, a placeholder id ('local-N') is used for display only.
 
 import 'package:flutter/material.dart';
 

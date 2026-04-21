@@ -1,4 +1,9 @@
 // widgets/segment_card.dart — Card showing a transit segment between two stops.
+//
+// Rendered inside buildInterleavedList() in itinerary_detail_screen.dart.
+// The horizontal padding (36) intentionally indents it relative to StopCards
+// so it looks visually nested between them.
+// onEdit / onDelete are null in read-only mode; non-null in edit mode.
 
 import 'package:flutter/material.dart';
 import 'package:social_flutter/features/itineraries/domain/transit_segment.dart';

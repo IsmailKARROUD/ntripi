@@ -1,4 +1,11 @@
 // widgets/leg_form_dialog.dart — Bottom sheet for adding / editing a transport leg.
+//
+// Usage: await LegFormDialog.show(context) — returns Map<String,dynamic>? with
+//   keys: mode, line?, direction?, notes?, duration_min?, is_free, cost?
+// Returns null if the user dismisses without saving.
+//
+// isScrollControlled: true is required so the sheet can resize when the
+// keyboard appears and the cost/notes fields stay visible.
 
 import 'package:flutter/material.dart';
 import 'package:social_flutter/features/itineraries/domain/transport_leg.dart';

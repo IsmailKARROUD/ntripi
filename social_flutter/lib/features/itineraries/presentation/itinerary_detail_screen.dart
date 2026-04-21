@@ -1,13 +1,32 @@
 // presentation/itinerary_detail_screen.dart — Full itinerary view with map.
 //
-// Layout (all inside one CustomScrollView so pull-to-refresh works anywhere):
-//   AppBar — title + edit action
-//   Summary chips — duration, cost, safety rating, stop count
-//   Description (optional)
-//   Rating section — community avg + user's star picker
-//   Map section — flutter_map with stop markers and connecting polyline
-//   Stop list — ReorderableListView (owner) or plain list (others)
-//   FAB — navigate to StopFormScreen (owner only)
+// Layout (CustomScrollView so pull-to-refresh works over the whole page):
+//   AppBar       — title | reorder toggle + Save button (edit mode only) | edit pencil
+//   Summary chips — duration, cost, safety rating, stop count, visibility
+//   Description  — optional free-text
+//   Rating section — community avg + current user's 5-star picker
+//   Map section  — OSM map with stop markers and polyline (ODbL requires attribution)
+//   Stop list    — interleaved stops + segments (read & edit mode)
+//                  switches to standalone ReorderableListView in reorder mode
+//   FABs         — Add Stop + Add Segment (edit mode only, hidden in reorder mode)
+//
+// Edit-mode state machine:
+//   _editMode = false          → read-only view
+//   _editMode = true           → interleaved list with inline edit/delete buttons,
+//                                inline separators between stops, two FABs
+//   _editMode + _reorderMode   → standalone ReorderableListView (stops only)
+//                                drag handles work because there's no outer
+//                                CustomScrollView to steal the gesture
+//
+// Pending reorder:
+//   Stop reordering is deferred — changes accumulate in _pendingOrder and are
+//   only sent to the server when the user taps Save. All other mutations (stop
+//   edit/delete, segment edit/delete) call the API immediately from sub-screens.
+//
+// Back-button guard (PopScope):
+//   While in edit mode, the system back button is intercepted. If the user has
+//   a pending reorder they're asked to Save / Discard / Stay. If there are no
+//   pending changes they just exit edit mode silently (don't navigate away).
 //
 // OSM attribution is required by the ODbL license and is always visible.
 
@@ -38,11 +57,15 @@ class ItineraryDetailScreen extends ConsumerStatefulWidget {
 class _ItineraryDetailScreenState
     extends ConsumerState<ItineraryDetailScreen> {
   bool _editMode = false;
+  // Reorder mode replaces the interleaved list with a standalone
+  // ReorderableListView so drag gestures aren't stolen by CustomScrollView.
   bool _reorderMode = false;
   bool _saving = false;
-  // Snapshot of stop IDs when edit mode was entered — used to detect changes.
+  // Captured on edit-mode entry; compared on exit to detect unsaved reorders.
   List<String> _originalStopOrder = [];
-  // Local pending order: non-null only after the user drags at least once.
+  // Null = no drag has happened yet (provider order is authoritative).
+  // Non-null = user dragged at least once; this order is rendered locally
+  // until the user saves (sends to server) or discards.
   List<String>? _pendingOrder;
 
   static const _markerColors = {
@@ -59,7 +82,9 @@ class _ItineraryDetailScreenState
     });
   }
 
-  // Sorts provider stops by the pending order, keeping content always fresh.
+  // Re-orders providerStops according to _pendingOrder.
+  // We always use the fresh provider objects (not stale snapshots) so that
+  // edits made in sub-screens (place name, cost…) are reflected immediately.
   List<Stop> _applyPendingOrder(List<Stop> providerStops) {
     if (_pendingOrder == null) return providerStops;
     final map = {for (final s in providerStops) s.id: s};
@@ -67,20 +92,24 @@ class _ItineraryDetailScreenState
         .map((id) => map[id])
         .whereType<Stop>()
         .toList();
-    // Append any new stops (added from a sub-screen) at the end.
+    // Stops added from sub-screens while in edit mode won't be in _pendingOrder
+    // yet — append them at the end so they're never invisible.
     for (final s in providerStops) {
       if (!_pendingOrder!.contains(s.id)) ordered.add(s);
     }
     return ordered;
   }
 
-  // Sync _pendingOrder when stops are added/deleted from sub-screens.
+  // Keeps _pendingOrder consistent when sub-screens add or delete stops.
+  // Uses addPostFrameCallback because this is called from ref.listen, which
+  // fires during the provider's build phase — calling setState directly there
+  // would schedule a rebuild inside a rebuild and trigger an assertion.
   void _syncPendingOrder(List<Stop> providerStops) {
     if (_pendingOrder == null) return;
     final newIds = providerStops.map((s) => s.id).toSet();
     final synced = [
-      ..._pendingOrder!.where(newIds.contains),
-      ...newIds.where((id) => !_pendingOrder!.contains(id)),
+      ..._pendingOrder!.where(newIds.contains), // keep existing, drop deleted
+      ...newIds.where((id) => !_pendingOrder!.contains(id)), // append new
     ];
     if (!_listsEqual(synced, _pendingOrder!)) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -89,7 +118,9 @@ class _ItineraryDetailScreenState
     }
   }
 
-  // Local-only reorder — no API call. Deferred until Save.
+  // Records the new order locally without touching the server.
+  // ReorderableListView passes newIndex AFTER removal, so we decrement when
+  // moving downward to get the correct insertion index.
   void _onReorder(List<Stop> displayStops, int oldIndex, int newIndex) {
     if (newIndex > oldIndex) newIndex--;
     final ids = displayStops.map((s) => s.id).toList();
@@ -98,6 +129,8 @@ class _ItineraryDetailScreenState
     setState(() => _pendingOrder = ids);
   }
 
+  // Only stop reordering is "pending" — every other mutation (stop edit/delete,
+  // segment edit/delete, add stop) commits immediately via the sub-screen.
   bool get _hasChanges =>
       _pendingOrder != null &&
       !_listsEqual(_pendingOrder!, _originalStopOrder);

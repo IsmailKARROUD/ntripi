@@ -1,4 +1,8 @@
 // features/itineraries/domain/transit_segment.dart — TransitSegment model.
+//
+// totalDurationMin and totalCost are server-computed aggregates (sum of legs).
+// They are read-only in Flutter; the backend recalculates them on every
+// segment create / update.
 
 import 'package:social_flutter/features/itineraries/domain/transport_leg.dart';
 
