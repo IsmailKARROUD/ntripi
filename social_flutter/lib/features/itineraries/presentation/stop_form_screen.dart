@@ -26,10 +26,15 @@ class StopFormScreen extends ConsumerStatefulWidget {
   /// Null in create mode; the stop ID in edit mode.
   final String? stopId;
 
+  /// When set, the new stop is inserted at this position + 1, shifting
+  /// existing stops up. Null means append at the end.
+  final int? insertAfterPosition;
+
   const StopFormScreen({
     super.key,
     required this.itineraryId,
     this.stopId,
+    this.insertAfterPosition,
   });
 
   bool get isEditMode => stopId != null;
@@ -198,15 +203,18 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
 
     setState(() => _saving = true);
     try {
-      // Compute position for new stops: append after the highest existing position.
-      // Using length would collide when stops have been deleted without renumbering.
+      // Compute position for new stops.
       int position = 1;
       if (!widget.isEditMode) {
-        final stops =
-            ref.read(itineraryDetailProvider(widget.itineraryId)).value?.stops ?? [];
-        position = stops.isEmpty
-            ? 1
-            : stops.map((s) => s.position).reduce((a, b) => a > b ? a : b) + 1;
+        if (widget.insertAfterPosition != null) {
+          position = widget.insertAfterPosition! + 1;
+        } else {
+          final stops =
+              ref.read(itineraryDetailProvider(widget.itineraryId)).value?.stops ?? [];
+          position = stops.isEmpty
+              ? 1
+              : stops.map((s) => s.position).reduce((a, b) => a > b ? a : b) + 1;
+        }
       }
 
       final data = <String, dynamic>{

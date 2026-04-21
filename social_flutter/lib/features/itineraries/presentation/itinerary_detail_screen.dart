@@ -322,17 +322,25 @@ class _ItineraryDetailScreenState
                       : null,
                   onDelete: canEdit ? () => _confirmDeleteSegment(seg) : null,
                 ));
-              } else if (canEdit && hasNextStop) {
+              }
+
+              if (canEdit && hasNextStop) {
                 final nextStop = displayStops[i + 1];
-                items.add(_AddSegmentRow(
-                  key: ValueKey('add-seg-${stop.id}'),
-                  onTap: () => context.push(
-                    '/itineraries/${widget.itineraryId}/segments/new',
-                    extra: {
-                      'fromStopId': stop.id,
-                      'toStopId': nextStop.id,
-                    },
+                items.add(_InlineSeparator(
+                  key: ValueKey('sep-${stop.id}'),
+                  onAddStop: () => context.push(
+                    '/itineraries/${widget.itineraryId}/stops/new',
+                    extra: {'insertAfterPosition': stop.position},
                   ),
+                  onAddSegment: seg == null
+                      ? () => context.push(
+                            '/itineraries/${widget.itineraryId}/segments/new',
+                            extra: {
+                              'fromStopId': stop.id,
+                              'toStopId': nextStop.id,
+                            },
+                          )
+                      : null,
                 ));
               }
             }
@@ -739,36 +747,81 @@ class _SummaryChip extends StatelessWidget {
   }
 }
 
-class _AddSegmentRow extends StatelessWidget {
-  final VoidCallback onTap;
+class _InlineSeparator extends StatelessWidget {
+  final VoidCallback onAddStop;
+  final VoidCallback? onAddSegment;
 
-  const _AddSegmentRow({super.key, required this.onTap});
+  const _InlineSeparator({
+    super.key,
+    required this.onAddStop,
+    this.onAddSegment,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 36, vertical: 2),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(6),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
-          child: Row(
-            children: [
-              Expanded(child: Divider(color: Colors.grey.shade300, height: 1)),
-              const SizedBox(width: 8),
-              Icon(Icons.add, size: 14, color: Colors.grey.shade500),
-              const SizedBox(width: 4),
-              Text(
-                'Add segment',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Colors.grey.shade500,
-                    ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(child: Divider(color: Colors.grey.shade300, height: 1)),
-            ],
+      child: Row(
+        children: [
+          Expanded(child: Divider(color: Colors.grey.shade300, height: 1)),
+          const SizedBox(width: 8),
+          _ActionButton(
+            icon: Icons.add_location_alt_outlined,
+            label: 'Stop',
+            onTap: onAddStop,
           ),
+          if (onAddSegment != null) ...[
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 6),
+              child: Text('·',
+                  style:
+                      TextStyle(color: Colors.grey.shade400, fontSize: 12)),
+            ),
+            _ActionButton(
+              icon: Icons.directions_transit_outlined,
+              label: 'Segment',
+              onTap: onAddSegment!,
+            ),
+          ],
+          const SizedBox(width: 8),
+          Expanded(child: Divider(color: Colors.grey.shade300, height: 1)),
+        ],
+      ),
+    );
+  }
+}
+
+class _ActionButton extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+
+  const _ActionButton({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(6),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 13, color: Colors.grey.shade500),
+            const SizedBox(width: 3),
+            Text(
+              label,
+              style: Theme.of(context)
+                  .textTheme
+                  .bodySmall
+                  ?.copyWith(color: Colors.grey.shade500),
+            ),
+          ],
         ),
       ),
     );

@@ -588,25 +588,36 @@ def add_stop(
     """
     Add a new stop and recalculate itinerary totals.
 
-    The position must be provided by the client. If you want to append to
-    the end, use len(existing_stops) + 1.
+    If the requested position is already occupied, all stops at that position
+    and above are shifted up by 1 before inserting (two-phase to avoid
+    UNIQUE constraint violations during the shift).
     """
     itinerary = _get_itinerary_or_404(itinerary_id, db)
     _require_owner(itinerary, current_user)
+
+    # Shift any stops that sit at or above the requested position.
+    conflicting = db.execute(
+        select(Stop).where(
+            Stop.itinerary_id == itinerary_id,
+            Stop.position >= body.position,
+        )
+    ).scalars().all()
+
+    if conflicting:
+        offset = max(s.position for s in conflicting) + 1
+        for s in conflicting:
+            s.position += offset
+        db.flush()
+        for s in conflicting:
+            s.position -= offset - 1  # net effect: original + 1
+        db.flush()
 
     stop = Stop(
         itinerary_id=itinerary_id,
         **body.model_dump(),
     )
     db.add(stop)
-    try:
-        db.flush()
-    except IntegrityError:
-        db.rollback()
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail=f"A stop at position {body.position} already exists in this itinerary.",
-        )
+    db.flush()
 
     _recalculate_totals(itinerary, db)
     db.commit()

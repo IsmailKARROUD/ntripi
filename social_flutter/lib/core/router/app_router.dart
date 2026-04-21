@@ -183,9 +183,13 @@ final appRouter = GoRouter(
         // Add a new stop — must be BEFORE stops/:stopId/edit
         GoRoute(
           path: '/itineraries/:id/stops/new',
-          builder: (context, state) => StopFormScreen(
-            itineraryId: state.pathParameters['id']!,
-          ),
+          builder: (context, state) {
+            final extra = state.extra as Map<String, dynamic>?;
+            return StopFormScreen(
+              itineraryId: state.pathParameters['id']!,
+              insertAfterPosition: extra?['insertAfterPosition'] as int?,
+            );
+          },
         ),
 
         // Edit an existing stop
