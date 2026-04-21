@@ -36,6 +36,8 @@ class SegmentFormScreen extends ConsumerStatefulWidget {
   ConsumerState<SegmentFormScreen> createState() => _SegmentFormScreenState();
 }
 
+enum _DuplicateAction { replace, join, discard, cancel }
+
 class _SegmentFormScreenState extends ConsumerState<SegmentFormScreen> {
   String? _fromStopId;
   String? _toStopId;
@@ -43,8 +45,11 @@ class _SegmentFormScreenState extends ConsumerState<SegmentFormScreen> {
   List<Map<String, dynamic>> _legs = [];
   bool _initialized = false;
   bool _saving = false;
+  // Set after the user picks Join — triggers update instead of create on next save.
+  String? _resolvedSegmentId;
 
   bool get _isEdit => widget.segmentId != null;
+  bool get _isMergePreview => _resolvedSegmentId != null && !_isEdit;
 
   void _initFromSegment(TransitSegment segment) {
     _fromStopId = segment.fromStopId;
@@ -70,19 +75,67 @@ class _SegmentFormScreenState extends ConsumerState<SegmentFormScreen> {
       );
       return;
     }
-    if (_legs.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Add at least one leg before saving.')),
-      );
-      return;
-    }
     if (_fromStopId == _toStopId) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('From and To stops must differ.')),
       );
       return;
     }
+    if (_legs.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Add at least one leg before saving.')),
+      );
+      return;
+    }
 
+    // Detect duplicate on a fresh create (not already resolved via Join).
+    if (!_isEdit && _resolvedSegmentId == null) {
+      final itinerary =
+          ref.read(itineraryDetailProvider(widget.itineraryId)).valueOrNull;
+      final duplicate = itinerary?.segments
+          .where((s) => s.fromStopId == _fromStopId && s.toStopId == _toStopId)
+          .firstOrNull;
+
+      if (duplicate != null) {
+        final action = await _showDuplicateDialog();
+        if (!mounted) return;
+
+        switch (action) {
+          case _DuplicateAction.cancel:
+            return;
+
+          case _DuplicateAction.discard:
+            context.pop();
+            return;
+
+          case _DuplicateAction.replace:
+            // Proceed to save with the existing segment's ID.
+            _resolvedSegmentId = duplicate.id;
+
+          case _DuplicateAction.join:
+            // Merge old legs + new legs, stay on screen for review.
+            final oldLegs = duplicate.legs.map((l) => <String, dynamic>{
+                  'mode': l.mode.name,
+                  if (l.line != null) 'line': l.line,
+                  if (l.direction != null) 'direction': l.direction,
+                  if (l.notes != null) 'notes': l.notes,
+                  if (l.durationMin != null) 'duration_min': l.durationMin,
+                  'is_free': l.isFree,
+                  'cost': l.cost,
+                }).toList();
+            setState(() {
+              _resolvedSegmentId = duplicate.id;
+              _legs = [...oldLegs, ..._legs];
+            });
+            return; // User reviews merged list, then taps Save again.
+
+          case null:
+            return;
+        }
+      }
+    }
+
+    final targetId = _isEdit ? widget.segmentId : _resolvedSegmentId;
     final notifier =
         ref.read(itineraryDetailProvider(widget.itineraryId).notifier);
     final data = <String, dynamic>{
@@ -96,8 +149,8 @@ class _SegmentFormScreenState extends ConsumerState<SegmentFormScreen> {
 
     setState(() => _saving = true);
     try {
-      if (_isEdit) {
-        await notifier.updateSegment(widget.segmentId!, data);
+      if (targetId != null) {
+        await notifier.updateSegment(targetId, data);
       } else {
         await notifier.createSegment(data);
       }
@@ -111,6 +164,39 @@ class _SegmentFormScreenState extends ConsumerState<SegmentFormScreen> {
     } finally {
       if (mounted) setState(() => _saving = false);
     }
+  }
+
+  Future<_DuplicateAction?> _showDuplicateDialog() {
+    return showDialog<_DuplicateAction>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Segment already exists'),
+        content: const Text(
+          'A segment already connects these two stops. What do you want to do?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(_DuplicateAction.cancel),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(_DuplicateAction.discard),
+            child: Text(
+              'Discard new',
+              style: TextStyle(color: Colors.red.shade400),
+            ),
+          ),
+          OutlinedButton(
+            onPressed: () => Navigator.of(ctx).pop(_DuplicateAction.join),
+            child: const Text('Join'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(_DuplicateAction.replace),
+            child: const Text('Replace'),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _addLeg() async {
@@ -204,6 +290,34 @@ class _SegmentFormScreenState extends ConsumerState<SegmentFormScreen> {
           body: ListView(
             padding: const EdgeInsets.all(16),
             children: [
+              if (_isMergePreview)
+                Container(
+                  margin: const EdgeInsets.only(bottom: 16),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.shade50,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.orange.shade300),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.merge_outlined,
+                          size: 18, color: Colors.orange.shade700),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Merged result — review and save when ready.',
+                          style: TextStyle(
+                            color: Colors.orange.shade800,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
               // From stop
               DropdownButtonFormField<String>(
                 value: _fromStopId,
