@@ -292,13 +292,22 @@ class _ItineraryDetailScreenState
           // Interleaved list: StopCard, then optional SegmentCard after each stop.
           List<Widget> buildInterleavedList() {
             final items = <Widget>[];
-            for (final stop in displayStops) {
+            for (var i = 0; i < displayStops.length; i++) {
+              final stop = displayStops[i];
               items.add(StopCard(
                 key: ValueKey('stop-${stop.id}'),
                 stop: stop,
                 currency: itinerary.currency,
+                onEdit: canEdit
+                    ? () => context.push(
+                          '/itineraries/${widget.itineraryId}/stops/${stop.id}/edit',
+                        )
+                    : null,
               ));
+
               final seg = segmentByFromStop[stop.id];
+              final hasNextStop = i < displayStops.length - 1;
+
               if (seg != null) {
                 items.add(SegmentCard(
                   key: ValueKey('seg-${seg.id}'),
@@ -312,6 +321,18 @@ class _ItineraryDetailScreenState
                           )
                       : null,
                   onDelete: canEdit ? () => _confirmDeleteSegment(seg) : null,
+                ));
+              } else if (canEdit && hasNextStop) {
+                final nextStop = displayStops[i + 1];
+                items.add(_AddSegmentRow(
+                  key: ValueKey('add-seg-${stop.id}'),
+                  onTap: () => context.push(
+                    '/itineraries/${widget.itineraryId}/segments/new',
+                    extra: {
+                      'fromStopId': stop.id,
+                      'toStopId': nextStop.id,
+                    },
+                  ),
                 ));
               }
             }
@@ -713,6 +734,42 @@ class _SummaryChip extends StatelessWidget {
                 ?.copyWith(fontWeight: FontWeight.w500),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _AddSegmentRow extends StatelessWidget {
+  final VoidCallback onTap;
+
+  const _AddSegmentRow({super.key, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 36, vertical: 2),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(6),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
+          child: Row(
+            children: [
+              Expanded(child: Divider(color: Colors.grey.shade300, height: 1)),
+              const SizedBox(width: 8),
+              Icon(Icons.add, size: 14, color: Colors.grey.shade500),
+              const SizedBox(width: 4),
+              Text(
+                'Add segment',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Colors.grey.shade500,
+                    ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(child: Divider(color: Colors.grey.shade300, height: 1)),
+            ],
+          ),
+        ),
       ),
     );
   }

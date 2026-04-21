@@ -200,9 +200,14 @@ final appRouter = GoRouter(
         // Add a new segment — must be BEFORE segments/:segmentId/edit
         GoRoute(
           path: '/itineraries/:id/segments/new',
-          builder: (context, state) => SegmentFormScreen(
-            itineraryId: state.pathParameters['id']!,
-          ),
+          builder: (context, state) {
+            final extra = state.extra as Map<String, dynamic>?;
+            return SegmentFormScreen(
+              itineraryId: state.pathParameters['id']!,
+              initialFromStopId: extra?['fromStopId'] as String?,
+              initialToStopId: extra?['toStopId'] as String?,
+            );
+          },
         ),
 
         // Edit an existing segment

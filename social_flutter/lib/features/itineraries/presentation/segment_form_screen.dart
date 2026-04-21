@@ -21,11 +21,15 @@ import 'package:social_flutter/features/itineraries/providers/itinerary_provider
 class SegmentFormScreen extends ConsumerStatefulWidget {
   final String itineraryId;
   final String? segmentId;
+  final String? initialFromStopId;
+  final String? initialToStopId;
 
   const SegmentFormScreen({
     super.key,
     required this.itineraryId,
     this.segmentId,
+    this.initialFromStopId,
+    this.initialToStopId,
   });
 
   @override
@@ -63,6 +67,12 @@ class _SegmentFormScreenState extends ConsumerState<SegmentFormScreen> {
     if (_fromStopId == null || _toStopId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Select both a From and a To stop.')),
+      );
+      return;
+    }
+    if (_legs.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Add at least one leg before saving.')),
       );
       return;
     }
@@ -154,14 +164,18 @@ class _SegmentFormScreenState extends ConsumerState<SegmentFormScreen> {
       data: (itinerary) {
         final stops = itinerary.stops;
 
-        // One-time initialisation in edit mode.
-        if (_isEdit && !_initialized) {
-          final segment = itinerary.segments
-              .where((s) => s.id == widget.segmentId)
-              .firstOrNull;
-          if (segment != null) _initFromSegment(segment);
-        } else if (!_initialized) {
-          _initialized = true;
+        // One-time initialisation.
+        if (!_initialized) {
+          if (_isEdit) {
+            final segment = itinerary.segments
+                .where((s) => s.id == widget.segmentId)
+                .firstOrNull;
+            if (segment != null) _initFromSegment(segment);
+          } else {
+            _fromStopId = widget.initialFromStopId;
+            _toStopId = widget.initialToStopId;
+            _initialized = true;
+          }
         }
 
         final eligibleTo =
