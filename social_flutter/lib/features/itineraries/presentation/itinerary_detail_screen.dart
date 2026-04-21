@@ -18,8 +18,10 @@ import 'package:go_router/go_router.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:social_flutter/core/api/api_client.dart';
 import 'package:social_flutter/features/itineraries/domain/itinerary.dart';
+import 'package:social_flutter/features/itineraries/domain/transit_segment.dart';
 import 'package:social_flutter/features/profile/providers/profile_provider.dart';
 import 'package:social_flutter/features/itineraries/domain/stop.dart';
+import 'package:social_flutter/features/itineraries/presentation/widgets/segment_card.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/stop_card.dart';
 import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
 
@@ -45,7 +47,6 @@ class _ItineraryDetailScreenState
   static const _markerColors = {
     StopType.origin: Colors.green,
     StopType.waypoint: Colors.blue,
-    StopType.transit: Colors.grey,
     StopType.destination: Colors.red,
   };
 
@@ -156,6 +157,39 @@ class _ItineraryDetailScreenState
     }
   }
 
+  Future<void> _confirmDeleteSegment(TransitSegment segment) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete segment?'),
+        content: const Text('This will remove the transit segment and all its legs.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+                backgroundColor: Colors.red),
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    try {
+      await ref
+          .read(itineraryDetailProvider(widget.itineraryId).notifier)
+          .deleteSegment(segment.id);
+    } on Exception catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(extractErrorMessage(e as dynamic))),
+      );
+    }
+  }
+
   bool _listsEqual(List<String> a, List<String> b) {
     if (a.length != b.length) return false;
     for (var i = 0; i < a.length; i++) {
@@ -222,6 +256,12 @@ class _ItineraryDetailScreenState
         data: (itinerary) {
           final displayStops = _applyPendingOrder(itinerary.stops);
 
+          // Build a lookup from fromStopId → segment for interleaved display.
+          final segmentByFromStop = {
+            for (final seg in itinerary.segments) seg.fromStopId: seg,
+          };
+          final stopById = {for (final s in itinerary.stops) s.id: s};
+
           final mappableStops = displayStops
               .where((s) => s.lat != null && s.lng != null)
               .toList();
@@ -248,6 +288,35 @@ class _ItineraryDetailScreenState
                   : null,
             );
           }).toList();
+
+          // Interleaved list: StopCard, then optional SegmentCard after each stop.
+          List<Widget> buildInterleavedList() {
+            final items = <Widget>[];
+            for (final stop in displayStops) {
+              items.add(StopCard(
+                key: ValueKey('stop-${stop.id}'),
+                stop: stop,
+                currency: itinerary.currency,
+              ));
+              final seg = segmentByFromStop[stop.id];
+              if (seg != null) {
+                items.add(SegmentCard(
+                  key: ValueKey('seg-${seg.id}'),
+                  segment: seg,
+                  currency: itinerary.currency,
+                  fromStopName: stopById[seg.fromStopId]?.placeName,
+                  toStopName: stopById[seg.toStopId]?.placeName,
+                  onEdit: canEdit
+                      ? () => context.push(
+                            '/itineraries/${widget.itineraryId}/segments/${seg.id}/edit',
+                          )
+                      : null,
+                  onDelete: canEdit ? () => _confirmDeleteSegment(seg) : null,
+                ));
+              }
+            }
+            return items;
+          }
 
           return RefreshIndicator(
             onRefresh: () => ref
@@ -429,7 +498,7 @@ class _ItineraryDetailScreenState
                 const SliverToBoxAdapter(child: Divider(height: 1)),
 
                 // ------------------------------------------------------------
-                // Stop list
+                // Stop list (edit: reorderable stops only; read: interleaved)
                 // ------------------------------------------------------------
                 if (displayStops.isEmpty)
                   SliverToBoxAdapter(
@@ -452,7 +521,7 @@ class _ItineraryDetailScreenState
                     child: ReorderableListView(
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
-                      padding: const EdgeInsets.only(bottom: 80),
+                      padding: const EdgeInsets.only(bottom: 100),
                       onReorder: (oldIndex, newIndex) => _onReorder(
                         displayStops,
                         oldIndex,
@@ -465,9 +534,8 @@ class _ItineraryDetailScreenState
                   SliverPadding(
                     padding: const EdgeInsets.only(bottom: 16),
                     sliver: SliverList(
-                      delegate: SliverChildBuilderDelegate(
-                        (context, index) => stopWidgets[index],
-                        childCount: stopWidgets.length,
+                      delegate: SliverChildListDelegate(
+                        buildInterleavedList(),
                       ),
                     ),
                   ),
@@ -477,10 +545,26 @@ class _ItineraryDetailScreenState
         },
       ),
       floatingActionButton: isOwner && _editMode
-          ? FloatingActionButton(
-              onPressed: () => context
-                  .push('/itineraries/${widget.itineraryId}/stops/new'),
-              child: const Icon(Icons.add),
+          ? Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                FloatingActionButton.small(
+                  heroTag: 'fab_segment',
+                  tooltip: 'Add Segment',
+                  onPressed: () => context.push(
+                      '/itineraries/${widget.itineraryId}/segments/new'),
+                  child: const Icon(Icons.directions_transit_outlined),
+                ),
+                const SizedBox(height: 12),
+                FloatingActionButton(
+                  heroTag: 'fab_stop',
+                  tooltip: 'Add Stop',
+                  onPressed: () => context
+                      .push('/itineraries/${widget.itineraryId}/stops/new'),
+                  child: const Icon(Icons.add),
+                ),
+              ],
             )
           : null,
         ),

@@ -2,30 +2,13 @@
 
 import 'package:social_flutter/features/itineraries/domain/annotation.dart';
 
-/// The role of a stop in the itinerary.
 enum StopType {
   origin,
   waypoint,
-  transit,
   destination;
 }
 
-/// How the user travels on a transit stop.
-enum TransportMode {
-  walk,
-  bus,
-  tram,
-  metro,
-  train,
-  taxi,
-  uber,
-  bike,
-  ferry,
-  car;
-}
-
-/// Category of a non-transit stop (user selects from a fixed list).
-/// Using our own enum instead of any third-party provider category.
+/// Category of a stop (user selects from a fixed list).
 enum PlaceType {
   restaurant,
   cafe,
@@ -39,28 +22,18 @@ enum PlaceType {
   other;
 }
 
-/// A single step in an itinerary.
 class Stop {
   final String id;
   final String itineraryId;
   final int position;
   final StopType type;
 
-  // Location — user-authored text + OSM coordinates
   final String? placeName;
   final String? placeAddress;
   final double? lat;
   final double? lng;
-
-  // Place classification (non-transit stops)
   final PlaceType? placeType;
 
-  // Transit-specific fields
-  final TransportMode? transportMode;
-  final String? transportLine;
-  final String? transportDirection;
-
-  // Time and money
   final int? durationMin;
   final double cost;
   final bool isFree;
@@ -79,9 +52,6 @@ class Stop {
     this.lat,
     this.lng,
     this.placeType,
-    this.transportMode,
-    this.transportLine,
-    this.transportDirection,
     this.durationMin,
     this.cost = 0.0,
     this.isFree = false,
@@ -103,11 +73,6 @@ class Stop {
       placeType: json['place_type'] != null
           ? PlaceType.values.byName(json['place_type'] as String)
           : null,
-      transportMode: json['transport_mode'] != null
-          ? TransportMode.values.byName(json['transport_mode'] as String)
-          : null,
-      transportLine: json['transport_line'] as String?,
-      transportDirection: json['transport_direction'] as String?,
       durationMin: json['duration_min'] as int?,
       cost: (json['cost'] as num?)?.toDouble() ?? 0.0,
       isFree: json['is_free'] as bool? ?? false,
@@ -131,9 +96,6 @@ class Stop {
       if (lat != null) 'lat': lat,
       if (lng != null) 'lng': lng,
       if (placeType != null) 'place_type': placeType!.name,
-      if (transportMode != null) 'transport_mode': transportMode!.name,
-      if (transportLine != null) 'transport_line': transportLine,
-      if (transportDirection != null) 'transport_direction': transportDirection,
       if (durationMin != null) 'duration_min': durationMin,
       'cost': cost,
       'is_free': isFree,
@@ -152,9 +114,6 @@ class Stop {
     double? lat,
     double? lng,
     PlaceType? placeType,
-    TransportMode? transportMode,
-    String? transportLine,
-    String? transportDirection,
     int? durationMin,
     double? cost,
     bool? isFree,
@@ -172,9 +131,6 @@ class Stop {
       lat: lat ?? this.lat,
       lng: lng ?? this.lng,
       placeType: placeType ?? this.placeType,
-      transportMode: transportMode ?? this.transportMode,
-      transportLine: transportLine ?? this.transportLine,
-      transportDirection: transportDirection ?? this.transportDirection,
       durationMin: durationMin ?? this.durationMin,
       cost: cost ?? this.cost,
       isFree: isFree ?? this.isFree,

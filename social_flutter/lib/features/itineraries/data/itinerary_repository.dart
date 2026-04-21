@@ -13,6 +13,7 @@ import 'package:social_flutter/features/itineraries/domain/annotation.dart';
 import 'package:social_flutter/features/itineraries/domain/itinerary.dart';
 import 'package:social_flutter/features/itineraries/domain/ratings_page.dart';
 import 'package:social_flutter/features/itineraries/domain/stop.dart';
+import 'package:social_flutter/features/itineraries/domain/transit_segment.dart';
 
 class ItineraryRepository {
   final Dio _dio;
@@ -175,6 +176,40 @@ class ItineraryRepository {
   /// DELETE /itineraries/{id}/allowed-users/{userId}
   Future<void> removeAllowedUser(String itineraryId, String userId) async {
     await _dio.delete(itineraryAllowedUserEndpoint(itineraryId, userId));
+  }
+
+  // ---------------------------------------------------------------------------
+  // Transit segments
+  // ---------------------------------------------------------------------------
+
+  /// POST /itineraries/{id}/segments — create a segment with its legs.
+  Future<TransitSegment> createSegment(
+    String itineraryId,
+    Map<String, dynamic> data,
+  ) async {
+    final response = await _dio.post<Map<String, dynamic>>(
+      itinerarySegmentsEndpoint(itineraryId),
+      data: data,
+    );
+    return TransitSegment.fromJson(response.data!);
+  }
+
+  /// PATCH /itineraries/{id}/segments/{segmentId} — replace stops + legs.
+  Future<TransitSegment> updateSegment(
+    String itineraryId,
+    String segmentId,
+    Map<String, dynamic> data,
+  ) async {
+    final response = await _dio.patch<Map<String, dynamic>>(
+      itinerarySegmentEndpoint(itineraryId, segmentId),
+      data: data,
+    );
+    return TransitSegment.fromJson(response.data!);
+  }
+
+  /// DELETE /itineraries/{id}/segments/{segmentId}
+  Future<void> deleteSegment(String itineraryId, String segmentId) async {
+    await _dio.delete(itinerarySegmentEndpoint(itineraryId, segmentId));
   }
 
   // ---------------------------------------------------------------------------

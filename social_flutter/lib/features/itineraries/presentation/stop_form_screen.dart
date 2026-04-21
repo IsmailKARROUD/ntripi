@@ -43,8 +43,6 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
   final _searchController = TextEditingController();
   final _placeNameController = TextEditingController();
   final _placeAddressController = TextEditingController();
-  final _transportLineController = TextEditingController();
-  final _transportDirectionController = TextEditingController();
   final _durationController = TextEditingController();
   final _costController = TextEditingController();
   final _notesController = TextEditingController();
@@ -55,7 +53,6 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
 
   StopType _stopType = StopType.waypoint;
   PlaceType? _placeType;
-  TransportMode? _transportMode;
   double? _lat;
   double? _lng;
   bool _isFree = false;
@@ -96,9 +93,6 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
       _lat = found.lat;
       _lng = found.lng;
       _placeType = found.placeType;
-      _transportMode = found.transportMode;
-      _transportLineController.text = found.transportLine ?? '';
-      _transportDirectionController.text = found.transportDirection ?? '';
       _durationController.text =
           found.durationMin != null ? '${found.durationMin}' : '';
       _costController.text = found.cost.toStringAsFixed(2);
@@ -114,8 +108,6 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
     _searchController.dispose();
     _placeNameController.dispose();
     _placeAddressController.dispose();
-    _transportLineController.dispose();
-    _transportDirectionController.dispose();
     _durationController.dispose();
     _costController.dispose();
     _notesController.dispose();
@@ -177,16 +169,7 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
           'place_address': _placeAddressController.text.trim(),
         if (_lat != null) 'lat': _lat,
         if (_lng != null) 'lng': _lng,
-        if (_stopType != StopType.transit && _placeType != null)
-          'place_type': _placeType!.name,
-        if (_stopType == StopType.transit && _transportMode != null)
-          'transport_mode': _transportMode!.name,
-        if (_stopType == StopType.transit &&
-            _transportLineController.text.trim().isNotEmpty)
-          'transport_line': _transportLineController.text.trim(),
-        if (_stopType == StopType.transit &&
-            _transportDirectionController.text.trim().isNotEmpty)
-          'transport_direction': _transportDirectionController.text.trim(),
+        if (_placeType != null) 'place_type': _placeType!.name,
         if (_durationController.text.trim().isNotEmpty)
           'duration_min': int.tryParse(_durationController.text.trim()),
         'cost': double.tryParse(_costController.text.trim()) ?? 0.0,
@@ -500,11 +483,6 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                     icon: Icon(Icons.place_outlined, size: 16),
                   ),
                   ButtonSegment(
-                    value: StopType.transit,
-                    label: Text('Transit'),
-                    icon: Icon(Icons.directions_transit, size: 16),
-                  ),
-                  ButtonSegment(
                     value: StopType.destination,
                     label: Text('Dest.'),
                     icon: Icon(Icons.flag, size: 16),
@@ -560,77 +538,26 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
               ),
               const SizedBox(height: 16),
 
-              // Conditional fields: transit vs place type
-              if (_stopType == StopType.transit) ...[
-                // Transport mode
-                DropdownButtonFormField<TransportMode>(
-                  value: _transportMode,
-                  decoration: const InputDecoration(
-                    labelText: 'Transport mode',
-                    border: OutlineInputBorder(),
-                  ),
-                  items: const [
-                    DropdownMenuItem(
-                        value: TransportMode.walk, child: Text('🚶 Walk')),
-                    DropdownMenuItem(
-                        value: TransportMode.bus, child: Text('🚌 Bus')),
-                    DropdownMenuItem(
-                        value: TransportMode.tram, child: Text('🚋 Tram')),
-                    DropdownMenuItem(
-                        value: TransportMode.metro, child: Text('🚇 Metro')),
-                    DropdownMenuItem(
-                        value: TransportMode.train, child: Text('🚆 Train')),
-                    DropdownMenuItem(
-                        value: TransportMode.taxi, child: Text('🚕 Taxi')),
-                    DropdownMenuItem(
-                        value: TransportMode.uber, child: Text('🚗 Uber')),
-                    DropdownMenuItem(
-                        value: TransportMode.bike, child: Text('🚲 Bike')),
-                    DropdownMenuItem(
-                        value: TransportMode.ferry, child: Text('⛴ Ferry')),
-                    DropdownMenuItem(
-                        value: TransportMode.car, child: Text('🚗 Car')),
-                  ],
-                  onChanged: (v) => setState(() => _transportMode = v),
+              // Place type
+              DropdownButtonFormField<PlaceType>(
+                value: _placeType,
+                decoration: const InputDecoration(
+                  labelText: 'Place type',
+                  border: OutlineInputBorder(),
                 ),
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: _transportLineController,
-                  decoration: const InputDecoration(
-                    labelText: 'Line (e.g. Tram 3, RER B)',
-                    border: OutlineInputBorder(),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: _transportDirectionController,
-                  decoration: const InputDecoration(
-                    labelText: 'Direction (e.g. direction Nation)',
-                    border: OutlineInputBorder(),
-                  ),
-                ),
-              ] else ...[
-                // Place type
-                DropdownButtonFormField<PlaceType>(
-                  value: _placeType,
-                  decoration: const InputDecoration(
-                    labelText: 'Place type',
-                    border: OutlineInputBorder(),
-                  ),
-                  hint: const Text('Select place type'),
-                  items: PlaceType.values
-                      .map(
-                        (t) => DropdownMenuItem(
-                          value: t,
-                          child: Text(
-                            t.name[0].toUpperCase() + t.name.substring(1),
-                          ),
+                hint: const Text('Select place type'),
+                items: PlaceType.values
+                    .map(
+                      (t) => DropdownMenuItem(
+                        value: t,
+                        child: Text(
+                          t.name[0].toUpperCase() + t.name.substring(1),
                         ),
-                      )
-                      .toList(),
-                  onChanged: (v) => setState(() => _placeType = v),
-                ),
-              ],
+                      ),
+                    )
+                    .toList(),
+                onChanged: (v) => setState(() => _placeType = v),
+              ),
               const SizedBox(height: 16),
 
               // Duration

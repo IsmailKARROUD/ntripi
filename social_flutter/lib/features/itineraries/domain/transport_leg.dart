@@ -1,0 +1,151 @@
+// features/itineraries/domain/transport_leg.dart — TransportLeg model and TransportMode enum.
+
+import 'package:flutter/material.dart';
+
+enum TransportMode {
+  walk,
+  bus,
+  tram,
+  metro,
+  train,
+  taxi,
+  uber,
+  bike,
+  ferry,
+  car;
+
+  String get emoji => const {
+        TransportMode.walk: '🚶',
+        TransportMode.bus: '🚌',
+        TransportMode.tram: '🚋',
+        TransportMode.metro: '🚇',
+        TransportMode.train: '🚆',
+        TransportMode.taxi: '🚕',
+        TransportMode.uber: '🚗',
+        TransportMode.bike: '🚲',
+        TransportMode.ferry: '⛴',
+        TransportMode.car: '🚗',
+      }[this]!;
+
+  String get label => const {
+        TransportMode.walk: 'Walk',
+        TransportMode.bus: 'Bus',
+        TransportMode.tram: 'Tram',
+        TransportMode.metro: 'Metro',
+        TransportMode.train: 'Train',
+        TransportMode.taxi: 'Taxi',
+        TransportMode.uber: 'Uber',
+        TransportMode.bike: 'Bike',
+        TransportMode.ferry: 'Ferry',
+        TransportMode.car: 'Car',
+      }[this]!;
+
+  IconData get icon => const {
+        TransportMode.walk: Icons.directions_walk,
+        TransportMode.bus: Icons.directions_bus,
+        TransportMode.tram: Icons.tram,
+        TransportMode.metro: Icons.subway,
+        TransportMode.train: Icons.train,
+        TransportMode.taxi: Icons.local_taxi,
+        TransportMode.uber: Icons.directions_car,
+        TransportMode.bike: Icons.directions_bike,
+        TransportMode.ferry: Icons.directions_boat,
+        TransportMode.car: Icons.directions_car,
+      }[this]!;
+}
+
+class TransportLeg {
+  final String id;
+  final String segmentId;
+  final int position;
+  final TransportMode mode;
+  final String? line;
+  final String? direction;
+  final int? durationMin;
+  final double cost;
+  final bool isFree;
+  final String? notes;
+  final DateTime createdAt;
+
+  const TransportLeg({
+    required this.id,
+    required this.segmentId,
+    required this.position,
+    required this.mode,
+    this.line,
+    this.direction,
+    this.durationMin,
+    this.cost = 0.0,
+    this.isFree = false,
+    this.notes,
+    required this.createdAt,
+  });
+
+  factory TransportLeg.fromJson(Map<String, dynamic> json) {
+    return TransportLeg(
+      id: json['id'] as String,
+      segmentId: json['segment_id'] as String,
+      position: json['position'] as int,
+      mode: TransportMode.values.byName(json['mode'] as String),
+      line: json['line'] as String?,
+      direction: json['direction'] as String?,
+      durationMin: json['duration_min'] as int?,
+      cost: (json['cost'] as num?)?.toDouble() ?? 0.0,
+      isFree: json['is_free'] as bool? ?? false,
+      notes: json['notes'] as String?,
+      createdAt: DateTime.parse(json['created_at'] as String),
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'segment_id': segmentId,
+        'position': position,
+        'mode': mode.name,
+        if (line != null) 'line': line,
+        if (direction != null) 'direction': direction,
+        if (durationMin != null) 'duration_min': durationMin,
+        'cost': cost,
+        'is_free': isFree,
+        if (notes != null) 'notes': notes,
+        'created_at': createdAt.toIso8601String(),
+      };
+
+  TransportLeg copyWith({
+    String? id,
+    String? segmentId,
+    int? position,
+    TransportMode? mode,
+    String? line,
+    String? direction,
+    int? durationMin,
+    double? cost,
+    bool? isFree,
+    String? notes,
+    DateTime? createdAt,
+  }) {
+    return TransportLeg(
+      id: id ?? this.id,
+      segmentId: segmentId ?? this.segmentId,
+      position: position ?? this.position,
+      mode: mode ?? this.mode,
+      line: line ?? this.line,
+      direction: direction ?? this.direction,
+      durationMin: durationMin ?? this.durationMin,
+      cost: cost ?? this.cost,
+      isFree: isFree ?? this.isFree,
+      notes: notes ?? this.notes,
+      createdAt: createdAt ?? this.createdAt,
+    );
+  }
+
+  /// Compact one-line summary: "🚇 Metro · Line 9 → direction Nation"
+  String get summary {
+    final parts = <String>[
+      '${mode.emoji} ${mode.label}',
+      if (line != null && line!.isNotEmpty) line!,
+      if (direction != null && direction!.isNotEmpty) '→ $direction',
+    ];
+    return parts.join(' ');
+  }
+}

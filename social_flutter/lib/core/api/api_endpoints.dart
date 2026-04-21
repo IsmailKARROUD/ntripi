@@ -105,6 +105,25 @@ String itineraryAllowedUserEndpoint(String id, String userId) =>
 String userItinerariesEndpoint(String userId) => '/users/$userId/itineraries';
 
 // ---------------------------------------------------------------------------
+// Transit segment endpoints
+// ---------------------------------------------------------------------------
+
+/// List or create segments for an itinerary.
+String itinerarySegmentsEndpoint(String id) => '/itineraries/$id/segments';
+
+/// Update or delete a single segment.
+String itinerarySegmentEndpoint(String id, String segmentId) =>
+    '/itineraries/$id/segments/$segmentId';
+
+/// Add a leg to a segment.
+String segmentLegsEndpoint(String id, String segmentId) =>
+    '/itineraries/$id/segments/$segmentId/legs';
+
+/// Update or delete a single leg.
+String segmentLegEndpoint(String id, String segmentId, String legId) =>
+    '/itineraries/$id/segments/$segmentId/legs/$legId';
+
+// ---------------------------------------------------------------------------
 // Rating endpoints
 // ---------------------------------------------------------------------------
 

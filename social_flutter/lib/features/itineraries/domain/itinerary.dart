@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:social_flutter/features/itineraries/domain/stop.dart';
+import 'package:social_flutter/features/itineraries/domain/transit_segment.dart';
 
 /// Four-level visibility for an itinerary.
 enum ItineraryVisibility { public, followers, restricted, onlyMe }
@@ -31,6 +32,9 @@ class Itinerary {
   /// Empty in summary views, populated in detail views.
   final List<Stop> stops;
 
+  /// Empty in summary views, populated in detail views.
+  final List<TransitSegment> segments;
+
   const Itinerary({
     required this.id,
     required this.userId,
@@ -46,6 +50,7 @@ class Itinerary {
     this.ratingAvg,
     this.ratingCount = 0,
     this.stops = const [],
+    this.segments = const [],
   });
 
   factory Itinerary.fromJson(Map<String, dynamic> json) {
@@ -65,6 +70,10 @@ class Itinerary {
       ratingCount: json['rating_count'] as int? ?? 0,
       stops: (json['stops'] as List<dynamic>?)
               ?.map((s) => Stop.fromJson(s as Map<String, dynamic>))
+              .toList() ??
+          [],
+      segments: (json['segments'] as List<dynamic>?)
+              ?.map((s) => TransitSegment.fromJson(s as Map<String, dynamic>))
               .toList() ??
           [],
     );
@@ -117,6 +126,7 @@ class Itinerary {
     double? ratingAvg,
     int? ratingCount,
     List<Stop>? stops,
+    List<TransitSegment>? segments,
   }) {
     return Itinerary(
       id: id ?? this.id,
@@ -133,6 +143,7 @@ class Itinerary {
       ratingAvg: ratingAvg ?? this.ratingAvg,
       ratingCount: ratingCount ?? this.ratingCount,
       stops: stops ?? this.stops,
+      segments: segments ?? this.segments,
     );
   }
 

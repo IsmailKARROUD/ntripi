@@ -36,6 +36,7 @@ import 'package:social_flutter/features/itineraries/presentation/itinerary_detai
 import 'package:social_flutter/features/itineraries/presentation/itinerary_form_screen.dart';
 import 'package:social_flutter/features/itineraries/presentation/itinerary_list_screen.dart';
 import 'package:social_flutter/features/itineraries/presentation/map_picker_screen.dart';
+import 'package:social_flutter/features/itineraries/presentation/segment_form_screen.dart';
 import 'package:social_flutter/features/itineraries/presentation/stop_form_screen.dart';
 import 'package:social_flutter/features/itineraries/presentation/ratings_page_screen.dart';
 import 'package:social_flutter/features/profile/presentation/delete_account_screen.dart';
@@ -193,6 +194,23 @@ final appRouter = GoRouter(
           builder: (context, state) => StopFormScreen(
             itineraryId: state.pathParameters['id']!,
             stopId: state.pathParameters['stopId']!,
+          ),
+        ),
+
+        // Add a new segment — must be BEFORE segments/:segmentId/edit
+        GoRoute(
+          path: '/itineraries/:id/segments/new',
+          builder: (context, state) => SegmentFormScreen(
+            itineraryId: state.pathParameters['id']!,
+          ),
+        ),
+
+        // Edit an existing segment
+        GoRoute(
+          path: '/itineraries/:id/segments/:segmentId/edit',
+          builder: (context, state) => SegmentFormScreen(
+            itineraryId: state.pathParameters['id']!,
+            segmentId: state.pathParameters['segmentId']!,
           ),
         ),
 

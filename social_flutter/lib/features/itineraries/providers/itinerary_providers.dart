@@ -138,6 +138,31 @@ class ItineraryDetailNotifier
     return updated;
   }
 
+  /// Create a transit segment and refresh.
+  Future<void> createSegment(Map<String, dynamic> data) async {
+    await ref.read(itineraryRepositoryProvider).createSegment(arg, data);
+    await refresh();
+  }
+
+  /// Update (replace) a transit segment and refresh.
+  Future<void> updateSegment(
+    String segmentId,
+    Map<String, dynamic> data,
+  ) async {
+    await ref
+        .read(itineraryRepositoryProvider)
+        .updateSegment(arg, segmentId, data);
+    await refresh();
+  }
+
+  /// Delete a transit segment and refresh.
+  Future<void> deleteSegment(String segmentId) async {
+    await ref
+        .read(itineraryRepositoryProvider)
+        .deleteSegment(arg, segmentId);
+    await refresh();
+  }
+
   /// Delete an annotation and remove it from local state.
   Future<void> deleteAnnotation(
     String stopId,

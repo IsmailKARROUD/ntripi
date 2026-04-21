@@ -3,12 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:social_flutter/features/itineraries/domain/stop.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/annotation_chip.dart';
-import 'package:social_flutter/features/itineraries/presentation/widgets/transport_badge.dart';
 
-/// Displays a stop with its position, type, location, cost/duration chips,
-/// transport info (if transit), and annotation chips.
-///
-/// [onEdit] and [onDelete] are called when the user taps the action icons.
 class StopCard extends StatelessWidget {
   final Stop stop;
   final String currency;
@@ -24,14 +19,12 @@ class StopCard extends StatelessWidget {
   static const _typeIcons = {
     StopType.origin: Icons.trip_origin,
     StopType.waypoint: Icons.place_outlined,
-    StopType.transit: Icons.directions_transit,
     StopType.destination: Icons.flag,
   };
 
   static const _typeColors = {
     StopType.origin: Colors.green,
     StopType.waypoint: Colors.blue,
-    StopType.transit: Colors.grey,
     StopType.destination: Colors.red,
   };
 
@@ -43,7 +36,7 @@ class StopCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final typeColor = _typeColors[stop.type] ?? Colors.grey;
+    final typeColor = _typeColors[stop.type] ?? Colors.blue;
     final typeIcon = _typeIcons[stop.type] ?? Icons.place;
     final costLabel = _formatCost(stop.cost, stop.isFree, currency);
 
@@ -83,7 +76,6 @@ class StopCard extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Place name
                       Text(
                         stop.placeName ??
                             stop.type.name[0].toUpperCase() +
@@ -93,8 +85,6 @@ class StopCard extends StatelessWidget {
                             .titleSmall
                             ?.copyWith(fontWeight: FontWeight.w600),
                       ),
-
-                      // Address (if set)
                       if (stop.placeAddress != null &&
                           stop.placeAddress!.isNotEmpty)
                         Padding(
@@ -110,14 +100,6 @@ class StopCard extends StatelessWidget {
                           ),
                         ),
 
-                      // Transit badge
-                      if (stop.type == StopType.transit)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 6),
-                          child: TransportBadge(stop: stop),
-                        ),
-
-                      // Duration + cost chips
                       if (stop.durationMin != null || costLabel.isNotEmpty)
                         Padding(
                           padding: const EdgeInsets.only(top: 6),
@@ -141,7 +123,6 @@ class StopCard extends StatelessWidget {
                   ),
                 ),
 
-                // Edit icon
                 if (onEdit != null)
                   IconButton(
                     icon: const Icon(Icons.edit_outlined, size: 18),
@@ -153,7 +134,6 @@ class StopCard extends StatelessWidget {
               ],
             ),
 
-            // Annotation chips (read-only — manage from Edit Stop page)
             if (stop.annotations.isNotEmpty)
               Padding(
                 padding: const EdgeInsets.only(top: 8, left: 40),
@@ -172,7 +152,6 @@ class StopCard extends StatelessWidget {
   }
 }
 
-/// Small chip used for duration and cost info inside a stop card.
 class _InfoChip extends StatelessWidget {
   final IconData icon;
   final String label;
