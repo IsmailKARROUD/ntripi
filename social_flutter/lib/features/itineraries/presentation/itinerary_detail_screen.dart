@@ -38,6 +38,7 @@ class ItineraryDetailScreen extends ConsumerStatefulWidget {
 class _ItineraryDetailScreenState
     extends ConsumerState<ItineraryDetailScreen> {
   bool _editMode = false;
+  bool _reorderMode = false;
   bool _saving = false;
   // Snapshot of stop IDs when edit mode was entered — used to detect changes.
   List<String> _originalStopOrder = [];
@@ -152,6 +153,7 @@ class _ItineraryDetailScreenState
     if (result == _ExitAction.save || result == _ExitAction.discard) {
       setState(() {
         _editMode = false;
+        _reorderMode = false;
         _pendingOrder = null;
       });
     }
@@ -221,6 +223,17 @@ class _ItineraryDetailScreenState
           error: (_, __) => const Text('Itinerary'),
         ),
         actions: [
+          if (isOwner && _editMode)
+            IconButton(
+              icon: Icon(
+                _reorderMode ? Icons.reorder : Icons.reorder,
+                color: _reorderMode
+                    ? Theme.of(context).colorScheme.primary
+                    : null,
+              ),
+              tooltip: _reorderMode ? 'Exit reorder' : 'Reorder stops',
+              onPressed: () => setState(() => _reorderMode = !_reorderMode),
+            ),
           if (isOwner)
             IconButton(
               icon: Icon(_editMode ? Icons.close : Icons.edit_outlined),
@@ -233,7 +246,26 @@ class _ItineraryDetailScreenState
             ),
         ],
       ),
-      body: itineraryAsync.when(
+      body: _reorderMode
+          ? itineraryAsync.when(
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (e, _) => Center(child: Text(extractErrorMessage(e as dynamic))),
+              data: (itinerary) {
+                final displayStops = _applyPendingOrder(itinerary.stops);
+                final stopWidgets = displayStops.map((stop) => StopCard(
+                      key: ValueKey(stop.id),
+                      stop: stop,
+                      currency: itinerary.currency,
+                    )).toList();
+                return ReorderableListView(
+                  padding: const EdgeInsets.only(top: 8, bottom: 100),
+                  onReorder: (oldIndex, newIndex) =>
+                      _onReorder(displayStops, oldIndex, newIndex),
+                  children: stopWidgets,
+                );
+              },
+            )
+          : itineraryAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, _) => Center(
           child: Column(
@@ -545,6 +577,17 @@ class _ItineraryDetailScreenState
                       ),
                     ),
                   )
+                else if (_reorderMode)
+                  SliverToBoxAdapter(
+                    child: ReorderableListView(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      padding: const EdgeInsets.only(bottom: 100),
+                      onReorder: (oldIndex, newIndex) =>
+                          _onReorder(displayStops, oldIndex, newIndex),
+                      children: stopWidgets,
+                    ),
+                  )
                 else
                   SliverPadding(
                     padding: EdgeInsets.only(bottom: canEdit ? 100 : 16),
@@ -559,7 +602,7 @@ class _ItineraryDetailScreenState
           );
         },
       ),
-      floatingActionButton: isOwner && _editMode
+      floatingActionButton: isOwner && _editMode && !_reorderMode
           ? Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.end,
