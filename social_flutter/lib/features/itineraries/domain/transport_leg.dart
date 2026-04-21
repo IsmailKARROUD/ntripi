@@ -16,7 +16,8 @@ enum TransportMode {
   uber,
   bike,
   ferry,
-  car;
+  car,
+  airplane;
 
   String get emoji => const {
         TransportMode.walk: '🚶',
@@ -29,6 +30,7 @@ enum TransportMode {
         TransportMode.bike: '🚲',
         TransportMode.ferry: '⛴',
         TransportMode.car: '🚗',
+        TransportMode.airplane: '✈️',
       }[this]!;
 
   String get label => const {
@@ -42,6 +44,7 @@ enum TransportMode {
         TransportMode.bike: 'Bike',
         TransportMode.ferry: 'Ferry',
         TransportMode.car: 'Car',
+        TransportMode.airplane: 'Airplane',
       }[this]!;
 
   IconData get icon => const {
@@ -54,6 +57,7 @@ enum TransportMode {
         TransportMode.uber: Icons.directions_car,
         TransportMode.bike: Icons.directions_bike,
         TransportMode.ferry: Icons.directions_boat,
+        TransportMode.airplane: Icons.flight,
         TransportMode.car: Icons.directions_car,
       }[this]!;
 }

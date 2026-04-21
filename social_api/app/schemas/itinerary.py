@@ -105,7 +105,7 @@ class StopResponse(BaseModel):
 
 _LEG_MODES = Literal[
     'walk', 'bus', 'tram', 'metro', 'train',
-    'taxi', 'uber', 'bike', 'ferry', 'car',
+    'taxi', 'uber', 'bike', 'ferry', 'car', 'airplane',
 ]
 
 

@@ -35,7 +35,7 @@ class TransportLeg(Base):
     __table_args__ = (
         UniqueConstraint("segment_id", "position", name="uq_leg_position"),
         CheckConstraint(
-            "mode IN ('walk','bus','tram','metro','train','taxi','uber','bike','ferry','car')",
+            "mode IN ('walk','bus','tram','metro','train','taxi','uber','bike','ferry','car','airplane')",
             name="ck_leg_mode",
         ),
     )
