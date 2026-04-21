@@ -98,32 +98,58 @@ class _ItineraryDetailScreenState
     setState(() => _pendingOrder = ids);
   }
 
-  Future<void> _confirmExitEditMode() async {
-    final hasReordered = _pendingOrder != null &&
-        !_listsEqual(_pendingOrder!, _originalStopOrder);
+  bool get _hasChanges =>
+      _pendingOrder != null &&
+      !_listsEqual(_pendingOrder!, _originalStopOrder);
 
+  /// Save pending reorder to the server and exit edit mode.
+  Future<void> _saveAndExit() async {
+    setState(() => _saving = true);
+    try {
+      if (_hasChanges) {
+        await ref
+            .read(itineraryDetailProvider(widget.itineraryId).notifier)
+            .reorderStops(_pendingOrder!);
+      }
+    } on Exception catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(extractErrorMessage(e as dynamic))),
+      );
+      setState(() => _saving = false);
+      return;
+    }
+    if (!mounted) return;
+    setState(() {
+      _saving = false;
+      _editMode = false;
+      _reorderMode = false;
+      _pendingOrder = null;
+    });
+  }
+
+  /// Called by the back button when in edit mode with unsaved changes.
+  /// Shows Stay / Discard / Save.
+  Future<void> _confirmExitEditMode() async {
     final result = await showDialog<_ExitAction>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Exit edit mode?'),
-        content: Text(
-          hasReordered
-              ? 'You reordered stops. Save or discard the new order?'
-              : 'Do you want to exit edit mode?',
+        title: const Text('Unsaved changes'),
+        content: const Text(
+          'You have unsaved changes. What do you want to do?',
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(_ExitAction.stay),
             child: const Text('Stay'),
           ),
-          if (hasReordered)
-            TextButton(
-              onPressed: () => Navigator.of(ctx).pop(_ExitAction.discard),
-              child: const Text('Discard'),
-            ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(_ExitAction.discard),
+            child: const Text('Discard'),
+          ),
           FilledButton(
             onPressed: () => Navigator.of(ctx).pop(_ExitAction.save),
-            child: Text(hasReordered ? 'Save' : 'Exit'),
+            child: const Text('Save'),
           ),
         ],
       ),
@@ -131,32 +157,16 @@ class _ItineraryDetailScreenState
 
     if (!mounted) return;
 
-    if (result == _ExitAction.save && hasReordered) {
-      setState(() => _saving = true);
-      try {
-        await ref
-            .read(itineraryDetailProvider(widget.itineraryId).notifier)
-            .reorderStops(_pendingOrder!);
-      } on Exception catch (e) {
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(extractErrorMessage(e as dynamic))),
-        );
-        setState(() => _saving = false);
-        return;
-      }
-      if (!mounted) return;
-      setState(() => _saving = false);
-    }
-
-    // Discard: just drop local state — no API call needed.
-    if (result == _ExitAction.save || result == _ExitAction.discard) {
+    if (result == _ExitAction.save) {
+      await _saveAndExit();
+    } else if (result == _ExitAction.discard) {
       setState(() {
         _editMode = false;
         _reorderMode = false;
         _pendingOrder = null;
       });
     }
+    // _ExitAction.stay → do nothing, stay in edit mode.
   }
 
   Future<void> _confirmDeleteSegment(TransitSegment segment) async {
@@ -213,8 +223,22 @@ class _ItineraryDetailScreenState
       _syncPendingOrder(next.valueOrNull?.stops ?? []);
     });
 
-    return Stack(
-      children: [
+    return PopScope(
+      canPop: !_editMode,
+      onPopInvokedWithResult: (didPop, _) async {
+        if (didPop) return;
+        if (_hasChanges) {
+          await _confirmExitEditMode();
+        } else {
+          setState(() {
+            _editMode = false;
+            _reorderMode = false;
+            _pendingOrder = null;
+          });
+        }
+      },
+      child: Stack(
+        children: [
         Scaffold(
       appBar: AppBar(
         title: itineraryAsync.when(
@@ -223,10 +247,10 @@ class _ItineraryDetailScreenState
           error: (_, __) => const Text('Itinerary'),
         ),
         actions: [
-          if (isOwner && _editMode)
+          if (isOwner && _editMode) ...[
             IconButton(
               icon: Icon(
-                _reorderMode ? Icons.reorder : Icons.reorder,
+                Icons.reorder,
                 color: _reorderMode
                     ? Theme.of(context).colorScheme.primary
                     : null,
@@ -234,15 +258,27 @@ class _ItineraryDetailScreenState
               tooltip: _reorderMode ? 'Exit reorder' : 'Reorder stops',
               onPressed: () => setState(() => _reorderMode = !_reorderMode),
             ),
-          if (isOwner)
+            if (_saving)
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 16),
+                child: SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+              )
+            else
+              TextButton(
+                onPressed: _saveAndExit,
+                child: const Text('Save'),
+              ),
+          ] else if (isOwner)
             IconButton(
-              icon: Icon(_editMode ? Icons.close : Icons.edit_outlined),
-              tooltip: _editMode ? 'Exit edit mode' : 'Edit',
-              onPressed: _editMode
-                  ? _confirmExitEditMode
-                  : () => _enterEditMode(
-                        itineraryAsync.valueOrNull?.stops ?? [],
-                      ),
+              icon: const Icon(Icons.edit_outlined),
+              tooltip: 'Edit',
+              onPressed: () => _enterEditMode(
+                itineraryAsync.valueOrNull?.stops ?? [],
+              ),
             ),
         ],
       ),
@@ -633,6 +669,7 @@ class _ItineraryDetailScreenState
             child: Center(child: CircularProgressIndicator()),
           ),
       ],
+    ),
     );
   }
 }
