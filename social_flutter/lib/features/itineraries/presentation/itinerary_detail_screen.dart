@@ -516,23 +516,9 @@ class _ItineraryDetailScreenState
                       ),
                     ),
                   )
-                else if (canEdit)
-                  SliverToBoxAdapter(
-                    child: ReorderableListView(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      padding: const EdgeInsets.only(bottom: 100),
-                      onReorder: (oldIndex, newIndex) => _onReorder(
-                        displayStops,
-                        oldIndex,
-                        newIndex,
-                      ),
-                      children: stopWidgets,
-                    ),
-                  )
                 else
                   SliverPadding(
-                    padding: const EdgeInsets.only(bottom: 16),
+                    padding: EdgeInsets.only(bottom: canEdit ? 100 : 16),
                     sliver: SliverList(
                       delegate: SliverChildListDelegate(
                         buildInterleavedList(),
