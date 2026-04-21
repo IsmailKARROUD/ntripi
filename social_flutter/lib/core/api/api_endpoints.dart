@@ -108,20 +108,17 @@ String userItinerariesEndpoint(String userId) => '/users/$userId/itineraries';
 // Transit segment endpoints
 // ---------------------------------------------------------------------------
 
-/// List or create segments for an itinerary.
+/// Create a segment or list segments for an itinerary.
+/// Note: listing is not used by Flutter — segments are embedded in the
+/// full itinerary detail returned by [itineraryEndpoint].
 String itinerarySegmentsEndpoint(String id) => '/itineraries/$id/segments';
 
-/// Update or delete a single segment.
+/// Update or delete a single segment (full leg replacement on PATCH).
 String itinerarySegmentEndpoint(String id, String segmentId) =>
     '/itineraries/$id/segments/$segmentId';
-
-/// Add a leg to a segment.
-String segmentLegsEndpoint(String id, String segmentId) =>
-    '/itineraries/$id/segments/$segmentId/legs';
-
-/// Update or delete a single leg.
-String segmentLegEndpoint(String id, String segmentId, String legId) =>
-    '/itineraries/$id/segments/$segmentId/legs/$legId';
+// Individual leg CRUD endpoints (POST/PATCH/DELETE .../legs/{legId}) are
+// not used by Flutter — the segment PATCH does a full leg replacement instead.
+// Those endpoints are defined in the backend for future API consumers.
 
 // ---------------------------------------------------------------------------
 // Rating endpoints

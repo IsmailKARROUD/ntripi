@@ -255,6 +255,8 @@ Composite primary key (itinerary_id, user_id).
 
 ### Transport Legs
 
+> These endpoints are **not called by the Flutter app**. Flutter uses `PATCH /segments/{id}` (full leg replacement) for all leg changes. These endpoints are available for future API consumers (web client, third-party integrations).
+
 | Method | Path                                               | Auth | Description                     |
 |--------|----------------------------------------------------|------|---------------------------------|
 | POST   | /itineraries/{id}/segments/{segId}/legs            | Yes  | Add leg to a segment            |

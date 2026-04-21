@@ -1164,6 +1164,12 @@ def delete_segment(
 
 # ---------------------------------------------------------------------------
 # Transport leg endpoints — /itineraries/{id}/segments/{segment_id}/legs
+#
+# NOTE: The Flutter mobile app does NOT call these endpoints individually.
+# It uses PATCH /segments/{id} (full leg replacement) for all leg changes,
+# which is simpler for a mobile client. These endpoints exist for future
+# API consumers (web client, third-party integrations, etc.) that may need
+# fine-grained per-leg control without replacing the entire segment.
 # ---------------------------------------------------------------------------
 
 @router.post(

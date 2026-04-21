@@ -26,10 +26,12 @@ settings = get_settings()
 app = FastAPI(
     title="Ntripi API",
     description=(
-        "Social media backend for Ntripi. "
-        "V0.1 covers: authentication, user profiles, and the follow system."
+        "Social travel backend for Ntripi. "
+        "Covers: authentication, user profiles, follow system, "
+        "itineraries with stops/annotations, transit segments with legs, "
+        "community ratings, restricted-access allowlists, and GDPR account deletion."
     ),
-    version="0.1.0",
+    version="0.2.0",
     # In production, you may want to disable the docs endpoints:
     # docs_url=None if not settings.DEBUG else "/docs",
     # redoc_url=None if not settings.DEBUG else "/redoc",

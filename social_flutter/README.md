@@ -115,6 +115,7 @@ social_flutter/
 - Each leg has: mode, line (transit modes only), direction, duration (h + min), cost, is_free, notes.
 - Supported modes: Walk, Bus, Tram, Metro, Train, Taxi, Uber, Bike, Ferry, Car, Airplane.
 - Line and Direction fields are only shown for transit modes (Bus, Tram, Metro, Train, Ferry, Airplane).
+- Legs are always edited via the **segment PATCH** (full replacement), not via individual leg endpoints. The backend exposes per-leg endpoints for future non-Flutter consumers.
 
 ### Ratings
 - Submit, update, or delete a 1–5 star rating for any itinerary you can view.
