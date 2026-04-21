@@ -144,8 +144,57 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
     }
   }
 
+  Stop? _findDuplicate() {
+    if (widget.isEditMode) return null;
+    final stops =
+        ref.read(itineraryDetailProvider(widget.itineraryId)).valueOrNull?.stops ?? [];
+    for (final s in stops) {
+      if (_lat != null && _lng != null && s.lat != null && s.lng != null) {
+        // Use epsilon ~11m to handle floating-point rounding from DB storage.
+        const eps = 0.0001;
+        if ((_lat! - s.lat!).abs() < eps && (_lng! - s.lng!).abs() < eps) {
+          return s;
+        }
+      } else {
+        final newName = _placeNameController.text.trim().toLowerCase();
+        if (newName.isNotEmpty &&
+            (s.placeName?.trim().toLowerCase() ?? '') == newName) return s;
+      }
+    }
+    return null;
+  }
+
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
+
+    if (!widget.isEditMode) {
+      final duplicate = _findDuplicate();
+      if (duplicate != null) {
+        final stopLabel = duplicate.placeName != null
+            ? 'Stop ${duplicate.position} — ${duplicate.placeName}'
+            : 'Stop ${duplicate.position}';
+        final confirmed = await showDialog<bool>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: const Text('Duplicate stop'),
+            content: Text(
+              '$stopLabel is already in this itinerary. Add it again anyway?',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(ctx).pop(false),
+                child: const Text('Cancel'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.of(ctx).pop(true),
+                child: const Text('Add anyway'),
+              ),
+            ],
+          ),
+        );
+        if (confirmed != true || !mounted) return;
+      }
+    }
 
     setState(() => _saving = true);
     try {
@@ -375,6 +424,7 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
   @override
   Widget build(BuildContext context) {
     final suggestionsAsync = ref.watch(placeSearchProvider);
+    final duplicate = _findDuplicate();
 
     // In edit mode, keep local stop in sync when provider updates.
     if (widget.isEditMode && _initialized) {
@@ -537,6 +587,39 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                 ],
               ),
               const SizedBox(height: 16),
+
+              // Duplicate warning — shown live in create mode
+              if (!widget.isEditMode && duplicate != null) ...[
+                const SizedBox(height: 8),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: Colors.amber.shade50,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.amber.shade300),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.warning_amber_outlined,
+                          size: 16, color: Colors.amber.shade800),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'This place matches Stop ${duplicate.position}'
+                          '${duplicate.placeName != null ? ' — ${duplicate.placeName}' : ''}'
+                          ' already in this itinerary.',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.amber.shade900,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 8),
+              ],
 
               // Place type
               DropdownButtonFormField<PlaceType>(
