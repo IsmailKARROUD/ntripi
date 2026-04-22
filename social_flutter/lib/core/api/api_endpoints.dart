@@ -121,6 +121,19 @@ String itinerarySegmentEndpoint(String id, String segmentId) =>
 // Those endpoints are defined in the backend for future API consumers.
 
 // ---------------------------------------------------------------------------
+// Share endpoints
+// ---------------------------------------------------------------------------
+
+/// Base URL for the HTML share landing pages.
+const kShareBaseUrl = String.fromEnvironment(
+  'SHARE_BASE_URL',
+  defaultValue: 'http://localhost:8000',
+);
+
+/// Returns the public share URL for a given itinerary ID.
+String shareUrlFor(String itineraryId) => '$kShareBaseUrl/share/i/$itineraryId';
+
+// ---------------------------------------------------------------------------
 // Rating endpoints
 // ---------------------------------------------------------------------------
 

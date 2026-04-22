@@ -29,6 +29,9 @@ dependencies:
   flutter_map: ^6.0.0
   latlong2: ^0.9.0
 
+  # Native OS share sheet — share a URL + caption to any installed app.
+  share_plus: ^10.0.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

@@ -9,6 +9,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:social_flutter/core/services/geocoding_service.dart';
 import 'package:social_flutter/features/itineraries/data/itinerary_repository.dart';
+import 'package:social_flutter/features/itineraries/data/share_service.dart';
 import 'package:social_flutter/features/itineraries/domain/allowed_user.dart';
 import 'package:social_flutter/features/itineraries/domain/itinerary.dart';
 import 'package:social_flutter/features/itineraries/domain/my_rating.dart';
@@ -351,3 +352,9 @@ final placeSearchProvider =
     AsyncNotifierProvider<PlaceSearchNotifier, List<PlaceSuggestion>>(
   () => PlaceSearchNotifier(),
 );
+
+// ---------------------------------------------------------------------------
+// ShareService provider
+// ---------------------------------------------------------------------------
+
+final shareServiceProvider = Provider<ShareService>((ref) => ShareService());

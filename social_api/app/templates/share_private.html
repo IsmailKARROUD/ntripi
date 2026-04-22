@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ itinerary.title }} — Ntripi</title>
+  <meta name="description" content="A private itinerary on Ntripi.">
+
+  <!-- Open Graph — still present so messaging app previews look nice -->
+  <meta property="og:type"        content="website">
+  <meta property="og:site_name"   content="Ntripi">
+  <meta property="og:title"       content="{{ itinerary.title }}">
+  <meta property="og:description" content="🔒 Private itinerary by @{{ owner.username }}. Open in Ntripi to view.">
+  <meta property="og:url"         content="{{ share_url }}">
+  <meta property="og:image"       content="{{ preview_image_url }}">
+
+  <meta name="twitter:card"        content="summary_large_image">
+  <meta name="twitter:title"       content="{{ itinerary.title }}">
+  <meta name="twitter:description" content="🔒 Private itinerary by @{{ owner.username }}. Open in Ntripi to view.">
+  <meta name="twitter:image"       content="{{ preview_image_url }}">
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --brand:  #4F46E5;
+      --text:   #111827;
+      --sub:    #6B7280;
+      --border: #E5E7EB;
+      --bg:     #F9FAFB;
+      --white:  #FFFFFF;
+      --radius: 12px;
+    }
+
+    body {
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    a { color: var(--brand); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    header {
+      background: var(--white);
+      border-bottom: 1px solid var(--border);
+      padding: 14px 20px;
+    }
+    .logo {
+      font-size: 20px;
+      font-weight: 800;
+      color: var(--brand);
+      letter-spacing: -0.5px;
+    }
+
+    main {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 32px 16px;
+    }
+
+    .card {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 36px 32px;
+      max-width: 420px;
+      width: 100%;
+      text-align: center;
+    }
+
+    .lock-icon {
+      font-size: 48px;
+      margin-bottom: 16px;
+    }
+
+    h1 {
+      font-size: 22px;
+      font-weight: 800;
+      margin-bottom: 6px;
+    }
+
+    .author {
+      color: var(--sub);
+      font-size: 14px;
+      margin-bottom: 20px;
+    }
+
+    .message {
+      color: var(--sub);
+      font-size: 15px;
+      margin-bottom: 28px;
+    }
+
+    .open-app-btn {
+      display: inline-block;
+      background: var(--brand);
+      color: var(--white);
+      font-weight: 700;
+      font-size: 16px;
+      padding: 13px 28px;
+      border-radius: var(--radius);
+      text-decoration: none;
+      transition: opacity .15s;
+      margin-bottom: 20px;
+    }
+    .open-app-btn:hover { opacity: .88; text-decoration: none; }
+
+    .install-prompt {
+      color: var(--sub);
+      font-size: 14px;
+      margin-bottom: 10px;
+    }
+
+    .store-badges {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+    }
+    .store-badge {
+      background: var(--text);
+      color: var(--white);
+      font-size: 13px;
+      font-weight: 600;
+      padding: 8px 18px;
+      border-radius: 8px;
+      text-decoration: none;
+    }
+    .store-badge:hover { opacity: .85; text-decoration: none; }
+
+    footer {
+      text-align: center;
+      padding: 20px;
+      font-size: 13px;
+      color: var(--sub);
+      border-top: 1px solid var(--border);
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">Ntripi</div>
+</header>
+
+<main>
+  <div class="card">
+    <div class="lock-icon">🔒</div>
+    <h1>{{ itinerary.title }}</h1>
+    <p class="author">by @{{ owner.username }}</p>
+    <p class="message">
+      This is a private itinerary.<br>
+      Open in Ntripi app to view the full trip.
+    </p>
+
+    <a href="ntripi://itinerary/{{ itinerary.id }}" class="open-app-btn">
+      Open in Ntripi
+    </a>
+
+    <p class="install-prompt">Don't have Ntripi?</p>
+    <div class="store-badges">
+      <a href="#" class="store-badge">App Store</a>
+      <a href="#" class="store-badge">Google Play</a>
+    </div>
+  </div>
+</main>
+
+<footer>
+  <p>Shared via Ntripi · <a href="/">ntripi.app</a></p>
+</footer>
+
+</body>
+</html>

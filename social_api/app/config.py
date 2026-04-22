@@ -49,6 +49,10 @@ class Settings(BaseSettings):
     # In DEBUG mode this is overridden to allow all origins.
     ALLOWED_ORIGINS: str = "https://your-frontend-domain.com"
 
+    # Base URL used to construct share links sent via the share sheet.
+    # In production: SHARE_BASE_URL=https://ntripi.app
+    share_base_url: str = "http://localhost:8000"
+
     # Tell pydantic-settings to look for a .env file in the working directory.
     # extra="ignore" means unknown .env keys don't cause validation errors.
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")

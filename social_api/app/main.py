@@ -13,11 +13,14 @@ Why a separate main.py?
   - The uvicorn command points here: uvicorn app.main:app
 """
 
+from pathlib import Path
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 from app.config import get_settings
-from app.routers import auth, users, follows, itineraries
+from app.routers import auth, users, follows, itineraries, share
 
 settings = get_settings()
 
@@ -87,6 +90,14 @@ app.include_router(users.router)   # /users/me, /users/search, /users/{id}
 app.include_router(follows.router) # /users/{id}/follow, /users/me/follow-requests, etc.
 app.include_router(itineraries.router, prefix="/itineraries")  # /itineraries/...
 app.include_router(itineraries.user_itineraries_router, prefix="/users", tags=["Itineraries"])  # /users/{id}/itineraries
+app.include_router(share.router)   # /share/i/{id} — public HTML landing pages
+
+# ---------------------------------------------------------------------------
+# Static files
+# ---------------------------------------------------------------------------
+# Serves app/static/ at /static — used for the OG preview image.
+_static_dir = Path(__file__).parent / "static"
+app.mount("/static", StaticFiles(directory=str(_static_dir)), name="static")
 
 
 # ---------------------------------------------------------------------------

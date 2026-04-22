@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ itinerary.title }} — Ntripi</title>
+  <meta name="description" content="{{ itinerary.description or ('A ' + formatted_duration + ' trip with ' + stop_count|string + ' stops.') }}">
+
+  <!-- Open Graph -->
+  <meta property="og:type"        content="website">
+  <meta property="og:site_name"   content="Ntripi">
+  <meta property="og:title"       content="{{ itinerary.title }}">
+  <meta property="og:description" content="⏱ {{ formatted_duration }} · 💰 {{ formatted_cost }} · 📍 {{ stop_count }} stops{% if rating_avg %} · ★ {{ rating_avg }} ({{ rating_count }}){% endif %}">
+  <meta property="og:url"         content="{{ share_url }}">
+  <meta property="og:image"       content="{{ preview_image_url }}">
+
+  <!-- Twitter card -->
+  <meta name="twitter:card"        content="summary_large_image">
+  <meta name="twitter:title"       content="{{ itinerary.title }}">
+  <meta name="twitter:description" content="⏱ {{ formatted_duration }} · 💰 {{ formatted_cost }} · 📍 {{ stop_count }} stops{% if rating_avg %} · ★ {{ rating_avg }} ({{ rating_count }}){% endif %}">
+  <meta name="twitter:image"       content="{{ preview_image_url }}">
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --brand:   #4F46E5;
+      --brand-light: #EEF2FF;
+      --text:    #111827;
+      --sub:     #6B7280;
+      --border:  #E5E7EB;
+      --bg:      #F9FAFB;
+      --white:   #FFFFFF;
+      --radius:  12px;
+    }
+
+    body {
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      min-height: 100vh;
+    }
+
+    a { color: var(--brand); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    /* ── Header ── */
+    header {
+      background: var(--white);
+      border-bottom: 1px solid var(--border);
+      padding: 14px 20px;
+    }
+    .logo {
+      font-size: 20px;
+      font-weight: 800;
+      color: var(--brand);
+      letter-spacing: -0.5px;
+    }
+
+    /* ── Main ── */
+    main {
+      max-width: 640px;
+      margin: 28px auto;
+      padding: 0 16px 48px;
+    }
+
+    h1 {
+      font-size: 26px;
+      font-weight: 800;
+      line-height: 1.25;
+      margin-bottom: 4px;
+    }
+
+    .author {
+      color: var(--sub);
+      font-size: 14px;
+      margin-bottom: 16px;
+    }
+
+    /* ── Stats chips ── */
+    .stats {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 18px;
+    }
+    .stats span {
+      background: var(--brand-light);
+      color: var(--brand);
+      font-size: 13px;
+      font-weight: 600;
+      padding: 5px 12px;
+      border-radius: 20px;
+    }
+
+    /* ── Description ── */
+    .description {
+      color: var(--sub);
+      font-size: 15px;
+      margin-bottom: 20px;
+      padding: 14px 16px;
+      background: var(--white);
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+    }
+
+    /* ── Map placeholder ── */
+    .map-placeholder {
+      background: linear-gradient(135deg, #c7d2fe, #a5b4fc);
+      border-radius: var(--radius);
+      height: 160px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 24px;
+      color: var(--brand);
+      font-size: 14px;
+      font-weight: 600;
+      gap: 8px;
+    }
+
+    /* ── Stops ── */
+    h2 {
+      font-size: 17px;
+      font-weight: 700;
+      margin-bottom: 14px;
+      color: var(--text);
+    }
+
+    ol.stops {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+
+    ol.stops > li {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px 16px;
+      display: flex;
+      gap: 12px;
+      margin-bottom: 4px;
+    }
+
+    .stop-type {
+      font-size: 22px;
+      line-height: 1;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    .stop-content h3 {
+      font-size: 15px;
+      font-weight: 600;
+      margin-bottom: 2px;
+    }
+
+    .stop-content .address {
+      font-size: 13px;
+      color: var(--sub);
+      margin-bottom: 6px;
+    }
+
+    .chip {
+      display: inline-block;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 12px;
+      padding: 2px 8px;
+      margin-right: 4px;
+      color: var(--sub);
+    }
+
+    /* ── Transit row ── */
+    li.transit {
+      background: transparent;
+      border: none;
+      padding: 6px 16px;
+      margin-bottom: 4px;
+      color: var(--sub);
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .transit-summary { flex: 1; }
+
+    /* ── CTA ── */
+    .cta {
+      margin-top: 32px;
+      text-align: center;
+    }
+    .open-app-btn {
+      display: inline-block;
+      background: var(--brand);
+      color: var(--white);
+      font-weight: 700;
+      font-size: 16px;
+      padding: 14px 32px;
+      border-radius: var(--radius);
+      text-decoration: none;
+      transition: opacity .15s;
+    }
+    .open-app-btn:hover { opacity: .88; text-decoration: none; }
+
+    .install-prompt {
+      margin-top: 14px;
+      color: var(--sub);
+      font-size: 14px;
+    }
+    .store-badges {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      margin-top: 10px;
+    }
+    .store-badge {
+      background: var(--text);
+      color: var(--white);
+      font-size: 13px;
+      font-weight: 600;
+      padding: 8px 18px;
+      border-radius: 8px;
+      text-decoration: none;
+    }
+    .store-badge:hover { opacity: .85; text-decoration: none; }
+
+    /* ── Footer ── */
+    footer {
+      text-align: center;
+      padding: 20px;
+      font-size: 13px;
+      color: var(--sub);
+      border-top: 1px solid var(--border);
+      margin-top: 40px;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">Ntripi</div>
+</header>
+
+<main>
+  <h1>{{ itinerary.title }}</h1>
+  <p class="author">by @{{ owner.username }}</p>
+
+  <div class="stats">
+    <span>⏱ {{ formatted_duration }}</span>
+    <span>💰 {{ formatted_cost }}</span>
+    <span>📍 {{ stop_count }} stop{{ 's' if stop_count != 1 else '' }}</span>
+    {% if rating_avg %}
+    <span>★ {{ rating_avg }} ({{ rating_count }})</span>
+    {% endif %}
+  </div>
+
+  {% if itinerary.description %}
+  <p class="description">{{ itinerary.description }}</p>
+  {% endif %}
+
+  <div class="map-placeholder">
+    🗺️ Map preview
+  </div>
+
+  {% if stops %}
+  <h2>Your trip</h2>
+  <ol class="stops">
+    {% for stop in stops %}
+    <li>
+      <div class="stop-type">{{ stop.type_emoji }}</div>
+      <div class="stop-content">
+        <h3>{{ stop.place_name }}</h3>
+        {% if stop.place_address %}
+        <p class="address">{{ stop.place_address }}</p>
+        {% endif %}
+        {% if stop.duration_min %}
+        <span class="chip">{{ stop.duration_min }} min</span>
+        {% endif %}
+        {% if stop.is_free %}
+        <span class="chip">Free</span>
+        {% elif stop.cost > 0 %}
+        <span class="chip">{{ "%.2f"|format(stop.cost) }} {{ itinerary.currency }}</span>
+        {% endif %}
+      </div>
+    </li>
+    {% if not loop.last and stop.id in segments_by_from_stop %}
+    {% set seg = segments_by_from_stop[stop.id] %}
+    <li class="transit">
+      <div class="transit-summary">
+        {% for leg in seg.legs %}{{ leg.mode_emoji }} {{ leg.mode }}{% if not loop.last %} → {% endif %}{% endfor %}
+      </div>
+      {% if seg.total_duration_min > 0 %}
+      <span class="chip">{{ seg.total_duration_min }} min</span>
+      {% endif %}
+    </li>
+    {% endif %}
+    {% endfor %}
+  </ol>
+  {% endif %}
+
+  <div class="cta">
+    <a href="ntripi://itinerary/{{ itinerary.id }}" class="open-app-btn">
+      Open in Ntripi app
+    </a>
+    <p class="install-prompt">Don't have Ntripi?</p>
+    <div class="store-badges">
+      <a href="#" class="store-badge">App Store</a>
+      <a href="#" class="store-badge">Google Play</a>
+    </div>
+  </div>
+</main>
+
+<footer>
+  <p>Shared via Ntripi · <a href="/">ntripi.app</a></p>
+</footer>
+
+</body>
+</html>

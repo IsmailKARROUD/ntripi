@@ -4,10 +4,12 @@
 // safety rating). Tapping navigates to the itinerary detail screen.
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:social_flutter/features/itineraries/domain/itinerary.dart';
+import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
 
-class ItinerarySummaryCard extends StatelessWidget {
+class ItinerarySummaryCard extends ConsumerWidget {
   final Itinerary itinerary;
 
   /// Optional long-press callback (e.g. for delete confirmation).
@@ -20,7 +22,7 @@ class ItinerarySummaryCard extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       child: InkWell(
@@ -32,7 +34,7 @@ class ItinerarySummaryCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Title + visibility badge
+              // Title + visibility badge + optional share icon
               Row(
                 children: [
                   Expanded(
@@ -44,6 +46,23 @@ class ItinerarySummaryCard extends StatelessWidget {
                     ),
                   ),
                   _VisibilityBadge(itinerary: itinerary),
+                  if (itinerary.visibility != ItineraryVisibility.onlyMe) ...[
+                    const SizedBox(width: 4),
+                    InkWell(
+                      onTap: () => ref
+                          .read(shareServiceProvider)
+                          .shareItinerary(itinerary),
+                      borderRadius: BorderRadius.circular(16),
+                      child: Padding(
+                        padding: const EdgeInsets.all(4),
+                        child: Icon(
+                          Icons.share_outlined,
+                          size: 16,
+                          color: Colors.grey.shade500,
+                        ),
+                      ),
+                    ),
+                  ],
                 ],
               ),
               const SizedBox(height: 10),

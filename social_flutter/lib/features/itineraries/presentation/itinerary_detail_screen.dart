@@ -306,14 +306,26 @@ class _ItineraryDetailScreenState
                 onPressed: _saveAndExit,
                 child: const Text('Save'),
               ),
-          ] else if (isOwner)
-            IconButton(
-              icon: const Icon(Icons.edit_outlined),
-              tooltip: 'Edit',
-              onPressed: () => _enterEditMode(
-                itineraryAsync.valueOrNull?.stops ?? [],
+          ] else ...[
+            if (itineraryAsync.valueOrNull != null &&
+                itineraryAsync.valueOrNull!.visibility !=
+                    ItineraryVisibility.onlyMe)
+              IconButton(
+                icon: const Icon(Icons.share_outlined),
+                tooltip: 'Share',
+                onPressed: () => ref
+                    .read(shareServiceProvider)
+                    .shareItinerary(itineraryAsync.value!),
               ),
-            ),
+            if (isOwner)
+              IconButton(
+                icon: const Icon(Icons.edit_outlined),
+                tooltip: 'Edit',
+                onPressed: () => _enterEditMode(
+                  itineraryAsync.valueOrNull?.stops ?? [],
+                ),
+              ),
+          ],
         ],
       ),
       body: _reorderMode
