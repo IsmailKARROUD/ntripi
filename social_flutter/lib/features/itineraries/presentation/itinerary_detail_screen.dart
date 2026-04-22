@@ -708,7 +708,8 @@ class _ItineraryDetailScreenState
   }
 }
 
-/// Shows the community rating average + the current user's star picker.
+/// Single-row card combining the community average (left) and the user's
+/// star picker (right), separated by a vertical divider.
 class _RatingSection extends ConsumerWidget {
   final String itineraryId;
   final Itinerary itinerary;
@@ -721,98 +722,162 @@ class _RatingSection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final myRatingAsync = ref.watch(myRatingProvider(itineraryId));
+    final myRating = myRatingAsync.valueOrNull;
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Tappable row → navigates to the full ratings page.
-          InkWell(
-            onTap: () =>
-                context.push('/itineraries/$itineraryId/ratings'),
-            borderRadius: BorderRadius.circular(8),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 2),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(Icons.star_rounded,
-                      size: 16, color: Colors.amber),
-                  const SizedBox(width: 4),
-                  Text(
-                    itinerary.ratingAvg != null
-                        ? '${itinerary.ratingAvg!.toStringAsFixed(1)} / 5'
-                        : 'No ratings yet',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+      child: Card(
+        elevation: 0,
+        color: cs.surfaceContainerLow,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        child: IntrinsicHeight(
+          child: Row(
+            children: [
+              // ── Left: community average ──────────────────────────────────
+              Expanded(
+                child: InkWell(
+                  onTap: () =>
+                      context.push('/itineraries/$itineraryId/ratings'),
+                  borderRadius: const BorderRadius.horizontal(
+                    left: Radius.circular(14),
                   ),
-                  if (itinerary.ratingCount > 0) ...[
-                    const SizedBox(width: 4),
-                    Text(
-                      '(${itinerary.ratingCount})',
-                      style: Theme.of(context)
-                          .textTheme
-                          .bodySmall
-                          ?.copyWith(color: Colors.grey),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                        vertical: 14, horizontal: 16),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                'Community',
+                                style: theme.textTheme.labelSmall?.copyWith(
+                                  color: cs.onSurfaceVariant,
+                                  letterSpacing: 0.4,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Row(
+                                crossAxisAlignment: CrossAxisAlignment.baseline,
+                                textBaseline: TextBaseline.alphabetic,
+                                children: [
+                                  const Icon(Icons.star_rounded,
+                                      size: 20, color: Colors.amber),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    itinerary.ratingAvg != null
+                                        ? itinerary.ratingAvg!
+                                            .toStringAsFixed(1)
+                                        : '—',
+                                    style: theme.textTheme.titleMedium
+                                        ?.copyWith(
+                                      fontWeight: FontWeight.bold,
+                                      color: cs.onSurface,
+                                    ),
+                                  ),
+                                  if (itinerary.ratingCount > 0) ...[
+                                    const SizedBox(width: 5),
+                                    Text(
+                                      '${itinerary.ratingCount} ratings',
+                                      style:
+                                          theme.textTheme.bodySmall?.copyWith(
+                                        color: cs.onSurfaceVariant,
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                        Icon(Icons.chevron_right,
+                            size: 18, color: cs.onSurfaceVariant),
+                      ],
                     ),
-                  ],
-                  const SizedBox(width: 2),
-                  Icon(Icons.chevron_right,
-                      size: 16, color: Colors.grey.shade400),
-                ],
+                  ),
+                ),
               ),
-            ),
+
+              // ── Divider ──────────────────────────────────────────────────
+              VerticalDivider(
+                width: 1,
+                thickness: 1,
+                indent: 10,
+                endIndent: 10,
+                color: cs.outlineVariant,
+              ),
+
+              // ── Right: my rating ─────────────────────────────────────────
+              Expanded(
+                child: InkWell(
+                  onTap: () => showRateItineraryDialog(
+                    context,
+                    ref,
+                    itineraryId: itineraryId,
+                    current: myRating,
+                  ),
+                  borderRadius: const BorderRadius.horizontal(
+                    right: Radius.circular(14),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                        vertical: 14, horizontal: 16),
+                    child: myRatingAsync.isLoading
+                        ? const Center(
+                            child: SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            ),
+                          )
+                        : Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                myRating != null ? 'Your rating' : 'Rate it',
+                                style: theme.textTheme.labelSmall?.copyWith(
+                                  color: myRating != null
+                                      ? cs.onSurfaceVariant
+                                      : cs.primary,
+                                  letterSpacing: 0.4,
+                                  fontWeight: myRating == null
+                                      ? FontWeight.w600
+                                      : FontWeight.normal,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Row(
+                                children: List.generate(5, (i) {
+                                  final filled = myRating != null &&
+                                      i < myRating.stars;
+                                  return Padding(
+                                    padding: const EdgeInsets.only(right: 3),
+                                    child: Icon(
+                                      filled
+                                          ? Icons.star_rounded
+                                          : Icons.star_outline_rounded,
+                                      size: 22,
+                                      color: filled
+                                          ? Colors.amber
+                                          : cs.onSurfaceVariant
+                                              .withValues(alpha: 0.4),
+                                    ),
+                                  );
+                                }),
+                              ),
+                            ],
+                          ),
+                  ),
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 6),
-          myRatingAsync.when(
-            loading: () => const SizedBox(height: 28),
-            error: (_, __) => const SizedBox.shrink(),
-            data: (myRating) => _StarPicker(
-              itineraryId: itineraryId,
-              currentStars: myRating?.stars,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// Tappable star display that opens the full rating dialog.
-class _StarPicker extends ConsumerWidget {
-  final String itineraryId;
-  final int? currentStars;
-
-  const _StarPicker({required this.itineraryId, this.currentStars});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    return GestureDetector(
-      onTap: () {
-        final current = ref.read(myRatingProvider(itineraryId)).valueOrNull;
-        showRateItineraryDialog(
-          context,
-          ref,
-          itineraryId: itineraryId,
-          current: current,
-        );
-      },
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: List.generate(5, (index) {
-          final star = index + 1;
-          final filled = currentStars != null && star <= currentStars!;
-          return Padding(
-            padding: const EdgeInsets.only(right: 4),
-            child: Icon(
-              filled ? Icons.star_rounded : Icons.star_outline_rounded,
-              size: 28,
-              color: filled ? Colors.amber : Colors.grey.shade400,
-            ),
-          );
-        }),
+        ),
       ),
     );
   }
