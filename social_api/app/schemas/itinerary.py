@@ -189,7 +189,6 @@ class ItineraryCreate(BaseModel):
     title: str = Field(..., min_length=1, max_length=200)
     description: Optional[str] = None
     currency: str = Field(default="EUR", max_length=3, min_length=3)
-    safety_rating: Optional[int] = Field(None, ge=1, le=5)
     visibility: Literal['public', 'followers', 'restricted', 'only_me'] = 'only_me'
 
 
@@ -197,7 +196,6 @@ class ItineraryUpdate(BaseModel):
     title: Optional[str] = Field(None, min_length=1, max_length=200)
     description: Optional[str] = None
     currency: Optional[str] = Field(None, max_length=3, min_length=3)
-    safety_rating: Optional[int] = Field(None, ge=1, le=5)
     visibility: Optional[Literal['public', 'followers', 'restricted', 'only_me']] = None
 
 
@@ -267,7 +265,6 @@ class ItinerarySummary(BaseModel):
     total_duration_min: int
     total_cost: float
     currency: str
-    safety_rating: Optional[int]
     visibility: Literal['public', 'followers', 'restricted', 'only_me']
     created_at: datetime
     rating_avg: Optional[float]

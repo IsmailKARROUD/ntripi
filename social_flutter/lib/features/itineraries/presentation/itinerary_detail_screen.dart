@@ -480,12 +480,6 @@ class _ItineraryDetailScreenState
                           label:
                               '${displayStops.length} stop${displayStops.length == 1 ? '' : 's'}',
                         ),
-                        if (itinerary.safetyRating != null)
-                          _SummaryChip(
-                            icon: Icons.star,
-                            label: '${itinerary.safetyRating}/5',
-                            iconColor: Colors.amber,
-                          ),
                         if (isOwner && _editMode)
                           GestureDetector(
                             onTap: () => context.push(
@@ -886,9 +880,8 @@ class _RatingSection extends ConsumerWidget {
 class _SummaryChip extends StatelessWidget {
   final IconData icon;
   final String label;
-  final Color? iconColor;
 
-  const _SummaryChip({required this.icon, required this.label, this.iconColor});
+  const _SummaryChip({required this.icon, required this.label});
 
   @override
   Widget build(BuildContext context) {
@@ -902,7 +895,7 @@ class _SummaryChip extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 14, color: iconColor ?? Colors.grey.shade600),
+          Icon(icon, size: 14, color: Colors.grey.shade600),
           const SizedBox(width: 5),
           Text(
             label,

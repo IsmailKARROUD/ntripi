@@ -66,12 +66,6 @@ class ItinerarySummaryCard extends StatelessWidget {
                     label:
                         '${itinerary.stops.length} stop${itinerary.stops.length == 1 ? '' : 's'}',
                   ),
-                  if (itinerary.safetyRating != null)
-                    _Stat(
-                      icon: Icons.star,
-                      label: '${itinerary.safetyRating}/5',
-                      iconColor: Colors.amber,
-                    ),
                   if (itinerary.ratingAvg != null)
                     _Stat(
                       icon: Icons.star_rounded,

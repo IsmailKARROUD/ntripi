@@ -42,7 +42,6 @@ class _ItineraryFormScreenState extends ConsumerState<ItineraryFormScreen> {
   final _descriptionController = TextEditingController();
 
   String _currency = 'EUR';
-  int? _safetyRating;
   ItineraryVisibility _visibility = ItineraryVisibility.onlyMe;
   bool _saving = false;
   bool _initialized = false;
@@ -67,7 +66,6 @@ class _ItineraryFormScreenState extends ConsumerState<ItineraryFormScreen> {
       _currency = _currencies.contains(itinerary.currency)
           ? itinerary.currency
           : 'Other';
-      _safetyRating = itinerary.safetyRating;
       _visibility = itinerary.visibility;
       _initialized = true;
     });
@@ -90,7 +88,6 @@ class _ItineraryFormScreenState extends ConsumerState<ItineraryFormScreen> {
         if (_descriptionController.text.trim().isNotEmpty)
           'description': _descriptionController.text.trim(),
         'currency': _currency == 'Other' ? 'EUR' : _currency,
-        if (_safetyRating != null) 'safety_rating': _safetyRating,
         'visibility': _visibilityToString[_visibility],
       };
 
@@ -168,35 +165,6 @@ class _ItineraryFormScreenState extends ConsumerState<ItineraryFormScreen> {
                     .map((c) => DropdownMenuItem(value: c, child: Text(c)))
                     .toList(),
                 onChanged: (v) => setState(() => _currency = v ?? 'EUR'),
-              ),
-              const SizedBox(height: 16),
-
-              // Safety rating
-              Text(
-                'Safety Rating (optional)',
-                style: Theme.of(context).textTheme.labelLarge,
-              ),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  for (int i = 1; i <= 5; i++)
-                    IconButton(
-                      icon: Icon(
-                        i <= (_safetyRating ?? 0)
-                            ? Icons.star
-                            : Icons.star_border,
-                        color: Colors.amber,
-                      ),
-                      onPressed: () => setState(() {
-                        _safetyRating = _safetyRating == i ? null : i;
-                      }),
-                    ),
-                  if (_safetyRating != null)
-                    TextButton(
-                      onPressed: () => setState(() => _safetyRating = null),
-                      child: const Text('Clear'),
-                    ),
-                ],
               ),
               const SizedBox(height: 16),
 

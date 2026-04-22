@@ -6,8 +6,6 @@ Design decisions:
   - total_duration_min and total_cost are denormalized on the itinerary row
     for fast summary reads. They are recalculated by the router after every
     stop add/update/delete — never modified directly by callers.
-  - safety_rating is nullable (user may skip it) and constrained to 1–5
-    at the DB level with a CHECK constraint.
   - visibility defaults to 'only_me': safest option. Users explicitly open
     up access; they never accidentally expose content.
   - cover_image_url is stored as a plain URL to a file hosted on our own server.
@@ -19,8 +17,8 @@ from decimal import Decimal
 from datetime import datetime
 
 from sqlalchemy import (
-    CheckConstraint, DateTime, ForeignKey, Integer,
-    Numeric, SmallInteger, String, Text, func,
+    DateTime, ForeignKey, Integer,
+    Numeric, String, Text, func,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.dialects.postgresql import UUID
@@ -30,14 +28,6 @@ from app.database import Base
 
 class Itinerary(Base):
     __tablename__ = "itineraries"
-
-    __table_args__ = (
-        # Rating is either absent (NULL) or 1–5 inclusive.
-        CheckConstraint(
-            "safety_rating IS NULL OR safety_rating BETWEEN 1 AND 5",
-            name="ck_itinerary_safety_rating",
-        ),
-    )
 
     # UUID primary key, same pattern as User model.
     id: Mapped[uuid.UUID] = mapped_column(
@@ -74,8 +64,6 @@ class Itinerary(Base):
     currency: Mapped[str] = mapped_column(
         String(3), default="EUR", server_default="'EUR'", nullable=False
     )
-
-    safety_rating: Mapped[int | None] = mapped_column(SmallInteger, nullable=True)
 
     # Denormalized community-rating aggregates — recalculated by
     # recalculate_rating() in services/itinerary_access.py after every

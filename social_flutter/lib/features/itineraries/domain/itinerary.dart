@@ -21,7 +21,6 @@ class Itinerary {
   final int totalDurationMin;
   final double totalCost;
   final String currency;
-  final int? safetyRating;
   final ItineraryVisibility visibility;
   final DateTime createdAt;
 
@@ -44,7 +43,6 @@ class Itinerary {
     required this.totalDurationMin,
     required this.totalCost,
     required this.currency,
-    this.safetyRating,
     required this.visibility,
     required this.createdAt,
     this.ratingAvg,
@@ -63,7 +61,6 @@ class Itinerary {
       totalDurationMin: json['total_duration_min'] as int? ?? 0,
       totalCost: (json['total_cost'] as num?)?.toDouble() ?? 0.0,
       currency: json['currency'] as String? ?? 'EUR',
-      safetyRating: json['safety_rating'] as int?,
       visibility: _parseVisibility(json['visibility'] as String? ?? 'only_me'),
       createdAt: DateTime.parse(json['created_at'] as String),
       ratingAvg: (json['rating_avg'] as num?)?.toDouble(),
@@ -105,7 +102,6 @@ class Itinerary {
       'total_duration_min': totalDurationMin,
       'total_cost': totalCost,
       'currency': currency,
-      if (safetyRating != null) 'safety_rating': safetyRating,
       'visibility': reverseMap[visibility],
       'created_at': createdAt.toIso8601String(),
     };
@@ -120,7 +116,6 @@ class Itinerary {
     int? totalDurationMin,
     double? totalCost,
     String? currency,
-    int? safetyRating,
     ItineraryVisibility? visibility,
     DateTime? createdAt,
     double? ratingAvg,
@@ -137,7 +132,6 @@ class Itinerary {
       totalDurationMin: totalDurationMin ?? this.totalDurationMin,
       totalCost: totalCost ?? this.totalCost,
       currency: currency ?? this.currency,
-      safetyRating: safetyRating ?? this.safetyRating,
       visibility: visibility ?? this.visibility,
       createdAt: createdAt ?? this.createdAt,
       ratingAvg: ratingAvg ?? this.ratingAvg,

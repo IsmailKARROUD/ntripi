@@ -252,7 +252,6 @@ def create_itinerary(
         title=body.title,
         description=body.description,
         currency=body.currency,
-        safety_rating=body.safety_rating,
         visibility=body.visibility,
         total_duration_min=0,
         total_cost=Decimal("0.00"),

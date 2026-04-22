@@ -133,7 +133,6 @@ class ItineraryDetailNotifier
         title: updated.title,
         visibility: updated.visibility,
         currency: updated.currency,
-        safetyRating: updated.safetyRating,
       ));
     });
     return updated;
