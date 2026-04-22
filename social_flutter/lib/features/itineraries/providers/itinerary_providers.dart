@@ -11,6 +11,7 @@ import 'package:social_flutter/core/services/geocoding_service.dart';
 import 'package:social_flutter/features/itineraries/data/itinerary_repository.dart';
 import 'package:social_flutter/features/itineraries/domain/allowed_user.dart';
 import 'package:social_flutter/features/itineraries/domain/itinerary.dart';
+import 'package:social_flutter/features/itineraries/domain/my_rating.dart';
 import 'package:social_flutter/features/itineraries/domain/ratings_page.dart';
 
 // ---------------------------------------------------------------------------
@@ -258,19 +259,19 @@ final userItinerariesProvider = AsyncNotifierProviderFamily<
 // MyRatingNotifier — current user's star rating for one itinerary (family by ID)
 // ---------------------------------------------------------------------------
 
-/// State: the user's current rating (1–5), or null if they have not rated.
-class MyRatingNotifier extends FamilyAsyncNotifier<int?, String> {
+/// State: the user's current rating, or null if they have not rated.
+class MyRatingNotifier extends FamilyAsyncNotifier<MyRating?, String> {
   @override
-  Future<int?> build(String itineraryId) {
+  Future<MyRating?> build(String itineraryId) {
     return ref.read(itineraryRepositoryProvider).getMyRating(itineraryId);
   }
 
   /// Submit (or update) the rating and update itinerary aggregate locally.
-  Future<void> submitRating(int stars) async {
-    await ref
+  Future<void> submitRating(MyRating rating) async {
+    final saved = await ref
         .read(itineraryRepositoryProvider)
-        .submitRating(arg, stars);
-    state = AsyncData(stars);
+        .submitRating(arg, rating);
+    state = AsyncData(saved);
 
     // Refresh the detail so rating_avg / rating_count reflect the new value.
     await ref
@@ -290,7 +291,7 @@ class MyRatingNotifier extends FamilyAsyncNotifier<int?, String> {
 }
 
 final myRatingProvider =
-    AsyncNotifierProviderFamily<MyRatingNotifier, int?, String>(
+    AsyncNotifierProviderFamily<MyRatingNotifier, MyRating?, String>(
   () => MyRatingNotifier(),
 );
 

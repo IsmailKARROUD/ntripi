@@ -38,6 +38,8 @@ import 'package:social_flutter/features/itineraries/presentation/itinerary_list_
 import 'package:social_flutter/features/itineraries/presentation/map_picker_screen.dart';
 import 'package:social_flutter/features/itineraries/presentation/segment_form_screen.dart';
 import 'package:social_flutter/features/itineraries/presentation/stop_form_screen.dart';
+import 'package:social_flutter/features/itineraries/domain/dimension_key.dart';
+import 'package:social_flutter/features/itineraries/presentation/dimension_ratings_screen.dart';
 import 'package:social_flutter/features/itineraries/presentation/ratings_page_screen.dart';
 import 'package:social_flutter/features/profile/presentation/delete_account_screen.dart';
 import 'package:social_flutter/features/profile/presentation/my_profile_screen.dart';
@@ -172,11 +174,22 @@ final appRouter = GoRouter(
           ),
         ),
 
-        // Ratings page — must be before stops subroutes to avoid ambiguity
+        // Ratings hub — must be before stops subroutes to avoid ambiguity
         GoRoute(
           path: '/itineraries/:id/ratings',
-          builder: (context, state) => RatingsPageScreen(
+          builder: (context, state) => RatingsHubScreen(
             itineraryId: state.pathParameters['id']!,
+          ),
+        ),
+
+        // Per-dimension ratings drill-down
+        GoRoute(
+          path: '/itineraries/:id/ratings/:dimension',
+          builder: (context, state) => DimensionRatingsScreen(
+            itineraryId: state.pathParameters['id']!,
+            dimension: DimensionKey.fromPath(
+              state.pathParameters['dimension']!,
+            ),
           ),
         ),
 

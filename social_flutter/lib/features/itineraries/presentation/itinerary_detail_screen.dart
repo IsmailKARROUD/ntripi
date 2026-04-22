@@ -40,6 +40,7 @@ import 'package:social_flutter/features/itineraries/domain/itinerary.dart';
 import 'package:social_flutter/features/itineraries/domain/transit_segment.dart';
 import 'package:social_flutter/features/profile/providers/profile_provider.dart';
 import 'package:social_flutter/features/itineraries/domain/stop.dart';
+import 'package:social_flutter/features/itineraries/presentation/widgets/rate_itinerary_dialog.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/segment_card.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/stop_card.dart';
 import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
@@ -768,9 +769,9 @@ class _RatingSection extends ConsumerWidget {
           myRatingAsync.when(
             loading: () => const SizedBox(height: 28),
             error: (_, __) => const SizedBox.shrink(),
-            data: (myStars) => _StarPicker(
+            data: (myRating) => _StarPicker(
               itineraryId: itineraryId,
-              currentStars: myStars,
+              currentStars: myRating?.stars,
             ),
           ),
         ],
@@ -779,49 +780,40 @@ class _RatingSection extends ConsumerWidget {
   }
 }
 
-/// Five tappable stars for submitting / updating a rating.
+/// Tappable star display that opens the full rating dialog.
 class _StarPicker extends ConsumerWidget {
   final String itineraryId;
   final int? currentStars;
 
   const _StarPicker({required this.itineraryId, this.currentStars});
 
-  Future<void> _onTap(WidgetRef ref, BuildContext context, int stars) async {
-    try {
-      if (currentStars == stars) {
-        await ref.read(myRatingProvider(itineraryId).notifier).deleteRating();
-      } else {
-        await ref
-            .read(myRatingProvider(itineraryId).notifier)
-            .submitRating(stars);
-      }
-    } on Exception catch (e) {
-      if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString())),
-      );
-    }
-  }
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: List.generate(5, (index) {
-        final star = index + 1;
-        final filled = currentStars != null && star <= currentStars!;
-        return GestureDetector(
-          onTap: () => _onTap(ref, context, star),
-          child: Padding(
+    return GestureDetector(
+      onTap: () {
+        final current = ref.read(myRatingProvider(itineraryId)).valueOrNull;
+        showRateItineraryDialog(
+          context,
+          ref,
+          itineraryId: itineraryId,
+          current: current,
+        );
+      },
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: List.generate(5, (index) {
+          final star = index + 1;
+          final filled = currentStars != null && star <= currentStars!;
+          return Padding(
             padding: const EdgeInsets.only(right: 4),
             child: Icon(
               filled ? Icons.star_rounded : Icons.star_outline_rounded,
               size: 28,
               color: filled ? Colors.amber : Colors.grey.shade400,
             ),
-          ),
-        );
-      }),
+          );
+        }),
+      ),
     );
   }
 }

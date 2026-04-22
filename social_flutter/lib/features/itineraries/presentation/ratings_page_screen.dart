@@ -1,24 +1,27 @@
 // features/itineraries/presentation/ratings_page_screen.dart
 //
-// Screen: /itineraries/:id/ratings
-// Shows the full community ratings page: aggregate, distribution bars,
-// and individual rater list.
+// RatingsHubScreen — /itineraries/:id/ratings
 //
-// Pull-to-refresh works in every state (loading, error, empty, data) because
-// AlwaysScrollableScrollPhysics is set on the CustomScrollView and all states
-// are expressed as slivers — so the pull gesture is always recognized.
+// Layout:
+//   Sliver 1 — Dimension averages list (Overall + 4 sub-dimensions)
+//   Sliver 2 — "All Raters" section header
+//   Sliver 3 — SliverList of individual rater tiles (overall score shown)
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:social_flutter/features/itineraries/domain/dimension_key.dart';
 import 'package:social_flutter/features/itineraries/domain/ratings_page.dart';
 import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
 import 'package:social_flutter/shared/widgets/user_avatar.dart';
 
-class RatingsPageScreen extends ConsumerWidget {
+// Keep the old name exported so the router import doesn't break.
+typedef RatingsPageScreen = RatingsHubScreen;
+
+class RatingsHubScreen extends ConsumerWidget {
   final String itineraryId;
 
-  const RatingsPageScreen({super.key, required this.itineraryId});
+  const RatingsHubScreen({super.key, required this.itineraryId});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -26,31 +29,11 @@ class RatingsPageScreen extends ConsumerWidget {
     final page = ratingsAsync.valueOrNull;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Ratings'),
-        bottom: (page != null && page.ratingCount > 0)
-            ? PreferredSize(
-                preferredSize: const Size.fromHeight(24),
-                child: Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: Text(
-                    '${page.ratingAvg!.toStringAsFixed(1)} ★  ·  ${page.ratingCount} ratings',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Colors.amber.shade700,
-                          fontWeight: FontWeight.w600,
-                        ),
-                  ),
-                ),
-              )
-            : null,
-      ),
+      appBar: AppBar(title: const Text('Ratings')),
       body: RefreshIndicator(
         onRefresh: () =>
             ref.read(ratingsPageProvider(itineraryId).notifier).refresh(),
         child: CustomScrollView(
-          // AlwaysScrollableScrollPhysics ensures the pull gesture is detected
-          // even when the content does not overflow the viewport (e.g. empty
-          // state or error state with no list items below).
           physics: const AlwaysScrollableScrollPhysics(),
           slivers: [
             if (ratingsAsync.isLoading && page == null)
@@ -78,132 +61,25 @@ class RatingsPageScreen extends ConsumerWidget {
                   ),
                 ),
               )
-            else if (page != null && page.ratingCount == 0)
-              SliverFillRemaining(
-                child: Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.star_border,
-                          size: 64, color: Colors.grey.shade400),
-                      const SizedBox(height: 12),
-                      const Text(
-                        'No ratings yet',
-                        style: TextStyle(
-                            fontSize: 18, fontWeight: FontWeight.w600),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Be the first to rate this itinerary',
-                        style: TextStyle(color: Colors.grey.shade600),
-                      ),
-                    ],
-                  ),
-                ),
-              )
             else if (page != null) ...[
               // ----------------------------------------------------------------
-              // Sliver 1 — Summary header
+              // Sliver 1 — Dimension averages
               // ----------------------------------------------------------------
               SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(24, 24, 24, 8),
-                  child: Column(
-                    children: [
-                      Text(
-                        page.ratingAvg!.toStringAsFixed(1),
-                        style: const TextStyle(
-                          fontSize: 56,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      _StarRow(avg: page.ratingAvg!),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Based on ${page.ratingCount} rating${page.ratingCount == 1 ? '' : 's'}',
-                        style: TextStyle(color: Colors.grey.shade600),
-                      ),
-                    ],
-                  ),
+                child: _DimensionList(
+                  itineraryId: itineraryId,
+                  page: page,
                 ),
               ),
 
               // ----------------------------------------------------------------
-              // Sliver 2 — Distribution bars (always 5 rows, even if count = 0)
+              // Sliver 2 — Section header
               // ----------------------------------------------------------------
               SliverToBoxAdapter(
                 child: Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-                  child: Column(
-                    children: [5, 4, 3, 2, 1].map((stars) {
-                      final pct = page.distribution.percentageFor(stars);
-                      final count = switch (stars) {
-                        5 => page.distribution.five,
-                        4 => page.distribution.four,
-                        3 => page.distribution.three,
-                        2 => page.distribution.two,
-                        _ => page.distribution.one,
-                      };
-                      return Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 3),
-                        child: Row(
-                          children: [
-                            SizedBox(
-                              width: 24,
-                              child: Text(
-                                '$stars★',
-                                style: const TextStyle(fontSize: 12),
-                                textAlign: TextAlign.right,
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: LinearProgressIndicator(
-                                value: pct,
-                                minHeight: 8,
-                                backgroundColor: Colors.grey.shade200,
-                                color: Colors.amber,
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            SizedBox(
-                              width: 28,
-                              child: Text(
-                                '$count',
-                                style: const TextStyle(fontSize: 12),
-                                textAlign: TextAlign.right,
-                              ),
-                            ),
-                            const SizedBox(width: 4),
-                            SizedBox(
-                              width: 36,
-                              child: Text(
-                                '${(pct * 100).round()}%',
-                                style: TextStyle(
-                                    fontSize: 11,
-                                    color: Colors.grey.shade600),
-                                textAlign: TextAlign.right,
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
-                    }).toList(),
-                  ),
-                ),
-              ),
-
-              // ----------------------------------------------------------------
-              // Sliver 3 — Section header
-              // ----------------------------------------------------------------
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(24, 16, 24, 4),
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
                   child: Text(
-                    'All Ratings',
+                    'All Raters',
                     style: Theme.of(context).textTheme.titleSmall?.copyWith(
                           color: Colors.grey.shade600,
                           letterSpacing: 0.5,
@@ -214,15 +90,38 @@ class RatingsPageScreen extends ConsumerWidget {
               const SliverToBoxAdapter(child: Divider(height: 1)),
 
               // ----------------------------------------------------------------
-              // Sliver 4 — Individual rating tiles
+              // Sliver 3 — Rater tiles (overall score)
               // ----------------------------------------------------------------
-              SliverList(
-                delegate: SliverChildBuilderDelegate(
-                  (context, index) =>
-                      _RatingListTile(rating: page.ratings[index]),
-                  childCount: page.ratings.length,
+              if (page.ratingCount == 0)
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 40),
+                    child: Center(
+                      child: Column(
+                        children: [
+                          Icon(Icons.star_border,
+                              size: 56, color: Colors.grey.shade400),
+                          const SizedBox(height: 12),
+                          const Text('No ratings yet',
+                              style: TextStyle(
+                                  fontSize: 18, fontWeight: FontWeight.w600)),
+                          const SizedBox(height: 4),
+                          Text('Be the first to rate this itinerary',
+                              style:
+                                  TextStyle(color: Colors.grey.shade600)),
+                        ],
+                      ),
+                    ),
+                  ),
+                )
+              else
+                SliverList(
+                  delegate: SliverChildBuilderDelegate(
+                    (context, i) =>
+                        _RatingListTile(rating: page.ratings[i]),
+                    childCount: page.ratings.length,
+                  ),
                 ),
-              ),
 
               const SliverToBoxAdapter(child: SizedBox(height: 24)),
             ],
@@ -233,11 +132,103 @@ class RatingsPageScreen extends ConsumerWidget {
   }
 }
 
-/// Five partially-filled stars proportional to the average.
-class _StarRow extends StatelessWidget {
-  final double avg;
+// ---------------------------------------------------------------------------
+// Dimension averages list
+// ---------------------------------------------------------------------------
 
-  const _StarRow({required this.avg});
+class _DimensionList extends StatelessWidget {
+  final String itineraryId;
+  final RatingsPage page;
+
+  const _DimensionList({required this.itineraryId, required this.page});
+
+  /// Compute average + count for a given dimension from the ratings list.
+  (double?, int) _stats(DimensionKey dim) {
+    if (dim == DimensionKey.overall) {
+      return (page.ratingAvg, page.ratingCount);
+    }
+    final scores = page.ratings
+        .map((r) => r.scoreForDimension(dim))
+        .whereType<int>()
+        .toList();
+    if (scores.isEmpty) return (null, 0);
+    final avg = scores.reduce((a, b) => a + b) / scores.length;
+    return (avg, scores.length);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: DimensionKey.values.map((dim) {
+        final (avg, count) = _stats(dim);
+        final hasData = count > 0;
+
+        return Opacity(
+          opacity: hasData ? 1.0 : 0.5,
+          child: ListTile(
+            leading: Icon(
+              dim.icon,
+              color: dim == DimensionKey.overall ? Colors.amber : null,
+            ),
+            title: Text(dim.label),
+            subtitle: dim != DimensionKey.overall
+                ? Text(
+                    dim.description,
+                    style: const TextStyle(fontSize: 12),
+                  )
+                : null,
+            trailing: hasData
+                ? Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        avg!.toStringAsFixed(1),
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        '($count)',
+                        style: TextStyle(
+                            color: Colors.grey.shade600, fontSize: 13),
+                      ),
+                      const SizedBox(width: 2),
+                      Icon(Icons.chevron_right,
+                          color: Colors.grey.shade400),
+                    ],
+                  )
+                : Text(
+                    'No ratings yet',
+                    style: TextStyle(
+                      color: Colors.grey.shade500,
+                      fontStyle: FontStyle.italic,
+                      fontSize: 13,
+                    ),
+                  ),
+            onTap: hasData
+                ? () => context.push(
+                      '/itineraries/$itineraryId/ratings/${dim.pathSegment}',
+                    )
+                : null,
+          ),
+        );
+      }).toList(),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Shared widgets (also used by DimensionRatingsScreen via import)
+// ---------------------------------------------------------------------------
+
+/// Five partially-filled stars proportional to the average.
+class RatingStarRow extends StatelessWidget {
+  final double avg;
+  final double size;
+
+  const RatingStarRow({super.key, required this.avg, this.size = 24});
 
   @override
   Widget build(BuildContext context) {
@@ -253,21 +244,84 @@ class _StarRow extends StatelessWidget {
         } else {
           icon = Icons.star_outline_rounded;
         }
-        return Icon(icon, color: Colors.amber, size: 24);
+        return Icon(icon, color: Colors.amber, size: size);
       }),
     );
   }
 }
 
-/// One tile in the ratings list — shows rater identity + score + time.
+/// Distribution bars widget — reused by both hub and dimension screens.
+class RatingDistributionBars extends StatelessWidget {
+  final Map<int, int> dist;
+
+  const RatingDistributionBars({super.key, required this.dist});
+
+  @override
+  Widget build(BuildContext context) {
+    final total = dist.values.fold(0, (a, b) => a + b);
+    return Column(
+      children: [5, 4, 3, 2, 1].map((stars) {
+        final count = dist[stars] ?? 0;
+        final pct = total == 0 ? 0.0 : count / total;
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 3),
+          child: Row(
+            children: [
+              SizedBox(
+                width: 24,
+                child: Text('$stars★',
+                    style: const TextStyle(fontSize: 12),
+                    textAlign: TextAlign.right),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: LinearProgressIndicator(
+                  value: pct,
+                  minHeight: 8,
+                  backgroundColor: Colors.grey.shade200,
+                  color: Colors.amber,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+              ),
+              const SizedBox(width: 8),
+              SizedBox(
+                width: 28,
+                child: Text('$count',
+                    style: const TextStyle(fontSize: 12),
+                    textAlign: TextAlign.right),
+              ),
+              const SizedBox(width: 4),
+              SizedBox(
+                width: 36,
+                child: Text(
+                  '${(pct * 100).round()}%',
+                  style: TextStyle(
+                      fontSize: 11, color: Colors.grey.shade600),
+                  textAlign: TextAlign.right,
+                ),
+              ),
+            ],
+          ),
+        );
+      }).toList(),
+    );
+  }
+}
+
+/// One rater tile — shows avatar, name, time, and a 5-star trailing widget.
 class _RatingListTile extends StatelessWidget {
   final RatingWithUser rating;
+  final DimensionKey dimension;
 
-  const _RatingListTile({required this.rating});
+  const _RatingListTile({
+    required this.rating,
+    this.dimension = DimensionKey.overall,
+  });
 
   @override
   Widget build(BuildContext context) {
     final user = rating.user;
+    final score = rating.scoreForDimension(dimension) ?? rating.score;
 
     final Widget tile = ListTile(
       leading: user.isDeleted
@@ -275,8 +329,8 @@ class _RatingListTile extends StatelessWidget {
               opacity: 0.5,
               child: CircleAvatar(
                 backgroundColor: Colors.grey.shade300,
-                child:
-                    const Icon(Icons.person_off, color: Colors.grey, size: 20),
+                child: const Icon(Icons.person_off,
+                    color: Colors.grey, size: 20),
               ),
             )
           : UserAvatar(avatarUrl: user.avatarUrl, radius: 20),
@@ -284,17 +338,16 @@ class _RatingListTile extends StatelessWidget {
           ? Text(
               'Deleted User',
               style: TextStyle(
-                  fontStyle: FontStyle.italic, color: Colors.grey.shade500),
+                  fontStyle: FontStyle.italic,
+                  color: Colors.grey.shade500),
             )
-          : Text(
-              user.displayNameOrFallback,
-              style: const TextStyle(fontWeight: FontWeight.w600),
-            ),
+          : Text(user.displayNameOrFallback,
+              style: const TextStyle(fontWeight: FontWeight.w600)),
       subtitle: Text(rating.timeAgo),
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: List.generate(5, (i) {
-          final filled = i < rating.score;
+          final filled = i < score;
           return Icon(
             filled ? Icons.star_rounded : Icons.star_outline_rounded,
             size: 16,
@@ -302,15 +355,15 @@ class _RatingListTile extends StatelessWidget {
           );
         }),
       ),
-      // Deleted users have no profile to navigate to — onTap must be null.
       onTap: user.isDeleted
           ? null
           : () => context.push('/profile/${user.userId}'),
     );
 
-    if (user.isDeleted) {
-      return Opacity(opacity: 0.6, child: tile);
-    }
-    return tile;
+    return user.isDeleted ? Opacity(opacity: 0.6, child: tile) : tile;
   }
 }
+
+// Export _RatingListTile for DimensionRatingsScreen via the public alias.
+// ignore: library_private_types_in_public_api
+typedef RatingListTile = _RatingListTile;

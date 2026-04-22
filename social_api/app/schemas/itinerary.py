@@ -207,10 +207,18 @@ class ItineraryUpdate(BaseModel):
 
 class RatingSubmit(BaseModel):
     stars: int = Field(..., ge=1, le=5)
+    safety_stars: Optional[int] = Field(None, ge=1, le=5)
+    experience_stars: Optional[int] = Field(None, ge=1, le=5)
+    accessibility_stars: Optional[int] = Field(None, ge=1, le=5)
+    family_friendly_stars: Optional[int] = Field(None, ge=1, le=5)
 
 
 class RatingResponse(BaseModel):
     stars: int
+    safety_stars: Optional[int]
+    experience_stars: Optional[int]
+    accessibility_stars: Optional[int]
+    family_friendly_stars: Optional[int]
     updated_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
@@ -228,6 +236,10 @@ class RaterInfo(BaseModel):
 
 class RatingWithUser(BaseModel):
     score: int
+    safety_score: Optional[int]
+    experience_score: Optional[int]
+    accessibility_score: Optional[int]
+    family_friendly_score: Optional[int]
     updated_at: datetime
     user: RaterInfo
 

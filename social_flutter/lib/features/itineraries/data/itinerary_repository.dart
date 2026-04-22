@@ -11,6 +11,7 @@ import 'package:social_flutter/core/api/api_endpoints.dart';
 import 'package:social_flutter/features/itineraries/domain/allowed_user.dart';
 import 'package:social_flutter/features/itineraries/domain/annotation.dart';
 import 'package:social_flutter/features/itineraries/domain/itinerary.dart';
+import 'package:social_flutter/features/itineraries/domain/my_rating.dart';
 import 'package:social_flutter/features/itineraries/domain/ratings_page.dart';
 import 'package:social_flutter/features/itineraries/domain/stop.dart';
 import 'package:social_flutter/features/itineraries/domain/transit_segment.dart';
@@ -217,13 +218,12 @@ class ItineraryRepository {
   // ---------------------------------------------------------------------------
 
   /// POST /itineraries/{id}/ratings — upsert the current user's rating.
-  /// Returns the updated rating as `{'stars': int, 'updated_at': String}`.
-  Future<Map<String, dynamic>> submitRating(String itineraryId, int stars) async {
+  Future<MyRating> submitRating(String itineraryId, MyRating rating) async {
     final response = await _dio.post<Map<String, dynamic>>(
       itineraryRatingsEndpoint(itineraryId),
-      data: {'stars': stars},
+      data: rating.toJson(),
     );
-    return response.data!;
+    return MyRating.fromJson(response.data!);
   }
 
   /// DELETE /itineraries/{id}/ratings/me — remove the current user's rating.
@@ -239,13 +239,13 @@ class ItineraryRepository {
     return RatingsPage.fromJson(response.data!);
   }
 
-  /// GET /itineraries/{id}/ratings/me — returns {'stars': int} or null if not rated.
-  Future<int?> getMyRating(String itineraryId) async {
+  /// GET /itineraries/{id}/ratings/me — returns the user's rating or null if not rated.
+  Future<MyRating?> getMyRating(String itineraryId) async {
     try {
       final response = await _dio.get<Map<String, dynamic>>(
         itineraryMyRatingEndpoint(itineraryId),
       );
-      return response.data?['stars'] as int?;
+      return MyRating.fromJson(response.data!);
     } on DioException catch (e) {
       if (e.response?.statusCode == 404) return null;
       rethrow;

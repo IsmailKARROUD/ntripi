@@ -826,12 +826,20 @@ def upsert_rating(
 
     if existing:
         existing.stars = body.stars
+        existing.safety_stars = body.safety_stars
+        existing.experience_stars = body.experience_stars
+        existing.accessibility_stars = body.accessibility_stars
+        existing.family_friendly_stars = body.family_friendly_stars
         rating = existing
     else:
         rating = ItineraryRating(
             itinerary_id=itinerary_id,
             user_id=current_user.id,
             stars=body.stars,
+            safety_stars=body.safety_stars,
+            experience_stars=body.experience_stars,
+            accessibility_stars=body.accessibility_stars,
+            family_friendly_stars=body.family_friendly_stars,
         )
         db.add(rating)
 
@@ -939,6 +947,10 @@ def get_ratings_page(
     rows = db.execute(
         select(
             ItineraryRating.stars,
+            ItineraryRating.safety_stars,
+            ItineraryRating.experience_stars,
+            ItineraryRating.accessibility_stars,
+            ItineraryRating.family_friendly_stars,
             ItineraryRating.updated_at,
             ItineraryRating.user_id,
             User.username,
@@ -950,7 +962,7 @@ def get_ratings_page(
         .order_by(ItineraryRating.updated_at.desc())
     ).all()
 
-    # Compute star distribution by iterating the result set.
+    # Compute overall star distribution by iterating the result set.
     dist: dict[int, int] = {1: 0, 2: 0, 3: 0, 4: 0, 5: 0}
     for row in rows:
         dist[row.stars] += 1
@@ -966,6 +978,10 @@ def get_ratings_page(
     ratings = [
         RatingWithUser(
             score=row.stars,
+            safety_score=row.safety_stars,
+            experience_score=row.experience_stars,
+            accessibility_score=row.accessibility_stars,
+            family_friendly_score=row.family_friendly_stars,
             updated_at=row.updated_at,
             user=RaterInfo(
                 user_id=row.user_id,

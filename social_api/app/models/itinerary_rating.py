@@ -23,10 +23,24 @@ class ItineraryRating(Base):
     __tablename__ = "itinerary_ratings"
 
     __table_args__ = (
-        # Each user rates an itinerary at most once.
         UniqueConstraint("itinerary_id", "user_id", name="uq_itinerary_rating"),
-        # Stars are always 1–5.
         CheckConstraint("stars BETWEEN 1 AND 5", name="ck_rating_stars"),
+        CheckConstraint(
+            "safety_stars IS NULL OR safety_stars BETWEEN 1 AND 5",
+            name="ck_rating_safety_stars",
+        ),
+        CheckConstraint(
+            "experience_stars IS NULL OR experience_stars BETWEEN 1 AND 5",
+            name="ck_rating_experience_stars",
+        ),
+        CheckConstraint(
+            "accessibility_stars IS NULL OR accessibility_stars BETWEEN 1 AND 5",
+            name="ck_rating_accessibility_stars",
+        ),
+        CheckConstraint(
+            "family_friendly_stars IS NULL OR family_friendly_stars BETWEEN 1 AND 5",
+            name="ck_rating_family_friendly_stars",
+        ),
     )
 
     id: Mapped[uuid.UUID] = mapped_column(
@@ -54,6 +68,12 @@ class ItineraryRating(Base):
     )
 
     stars: Mapped[int] = mapped_column(SmallInteger, nullable=False)
+
+    # Optional sub-ratings — collected via the "Want to share more?" dialog section.
+    safety_stars: Mapped[int | None] = mapped_column(SmallInteger, nullable=True)
+    experience_stars: Mapped[int | None] = mapped_column(SmallInteger, nullable=True)
+    accessibility_stars: Mapped[int | None] = mapped_column(SmallInteger, nullable=True)
+    family_friendly_stars: Mapped[int | None] = mapped_column(SmallInteger, nullable=True)
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),

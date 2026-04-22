@@ -1,6 +1,8 @@
 // features/itineraries/domain/ratings_page.dart
 // Domain models for the GET /itineraries/{id}/ratings response.
 
+import 'package:social_flutter/features/itineraries/domain/dimension_key.dart';
+
 /// Identity of someone who rated an itinerary.
 ///
 /// [isDeleted] is the ONLY reliable signal that a user deleted their account.
@@ -46,14 +48,31 @@ class RaterInfo {
 /// One rating entry with rater identity and submission time.
 class RatingWithUser {
   final int score;
+  final int? scoreSafety;
+  final int? scoreExperience;
+  final int? scoreAccessibility;
+  final int? scoreFamilyFriendly;
   final DateTime updatedAt;
   final RaterInfo user;
 
   const RatingWithUser({
     required this.score,
+    this.scoreSafety,
+    this.scoreExperience,
+    this.scoreAccessibility,
+    this.scoreFamilyFriendly,
     required this.updatedAt,
     required this.user,
   });
+
+  /// Returns the score for the given dimension, or null if not rated.
+  int? scoreForDimension(DimensionKey dim) => switch (dim) {
+        DimensionKey.overall => score,
+        DimensionKey.safety => scoreSafety,
+        DimensionKey.experience => scoreExperience,
+        DimensionKey.accessibility => scoreAccessibility,
+        DimensionKey.familyFriendly => scoreFamilyFriendly,
+      };
 
   /// Human-readable relative time — e.g. "3d ago", "2mo ago", "Just now".
   String get timeAgo {
@@ -67,12 +86,20 @@ class RatingWithUser {
 
   factory RatingWithUser.fromJson(Map<String, dynamic> json) => RatingWithUser(
         score: json['score'] as int,
+        scoreSafety: json['safety_score'] as int?,
+        scoreExperience: json['experience_score'] as int?,
+        scoreAccessibility: json['accessibility_score'] as int?,
+        scoreFamilyFriendly: json['family_friendly_score'] as int?,
         updatedAt: DateTime.parse(json['updated_at'] as String),
         user: RaterInfo.fromJson(json['user'] as Map<String, dynamic>),
       );
 
   Map<String, dynamic> toJson() => {
         'score': score,
+        if (scoreSafety != null) 'safety_score': scoreSafety,
+        if (scoreExperience != null) 'experience_score': scoreExperience,
+        if (scoreAccessibility != null) 'accessibility_score': scoreAccessibility,
+        if (scoreFamilyFriendly != null) 'family_friendly_score': scoreFamilyFriendly,
         'updated_at': updatedAt.toIso8601String(),
         'user': user.toJson(),
       };
