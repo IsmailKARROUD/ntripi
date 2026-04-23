@@ -181,32 +181,51 @@ A `ShellRoute` wraps all protected routes with a persistent `BottomNavigationBar
 
 ---
 
-## Local Setup
+## Running the App
+
+### Development (local backend)
+
+Backend must be running at `http://localhost:8000`:
+```bash
+cd ../social_api
+source venv/bin/activate
+PYTHONPATH=. uvicorn app.main:app --reload
+```
+
+Flutter:
+```bash
+flutter run -d chrome \
+  --dart-define=API_BASE_URL=http://localhost:8000 \
+  --dart-define=SHARE_BASE_URL=http://localhost:8000
+```
+
+### Production (live backend)
+
+No local backend needed. Uses the deployed Railway instance:
+```bash
+flutter run -d chrome \
+  --dart-define=API_BASE_URL=https://ntripi.app \
+  --dart-define=SHARE_BASE_URL=https://ntripi.app
+```
+
+### Production builds
+
+For release builds (iOS / Android / Web):
+```bash
+flutter build apk --release \
+  --dart-define=API_BASE_URL=https://ntripi.app \
+  --dart-define=SHARE_BASE_URL=https://ntripi.app
+```
 
 ### Prerequisites
 - Flutter 3.x (stable channel)
 - Dart SDK (bundled with Flutter)
 - Android Studio / Xcode for simulators, or a physical device
 
-### Steps
-
 ```bash
-# 1. Enter the Flutter project directory
 cd social_flutter
-
-# 2. Install dependencies
 flutter pub get
-
-# 3. Configure the API base URL
-# Edit lib/core/api/api_endpoints.dart and set kBaseUrl to your backend URL
-# e.g. http://10.0.2.2:8000 for Android emulator hitting localhost
-
-# 4. Run the app
-flutter run
 ```
-
-### Running on a physical device (iOS/Android)
-Make sure the backend is reachable from the device network. Use your machine's LAN IP instead of `localhost`.
 
 ---
 
