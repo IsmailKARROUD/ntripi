@@ -46,38 +46,19 @@ app = FastAPI(
 # CORS (Cross-Origin Resource Sharing) controls which domains can make
 # requests to this API from a browser.
 #
-# Why allow all origins in DEBUG?
-#   During development, the frontend might run on localhost:3000, localhost:8080,
-#   or various other ports. Allowing all origins makes local development frictionless.
-#
-# Why restrict in production?
-#   Allowing all origins in production would let any website make authenticated
-#   requests to the API using a logged-in user's browser cookies (CSRF risk).
-#   By restricting to only our known frontend domain, we limit exposure.
+allowed_origins = [
+    o.strip()
+    for o in settings.ALLOWED_ORIGINS.split(",")
+    if o.strip()
+]
 
-if settings.DEBUG:
-    # Development: allow all origins via regex.
-    # We cannot use allow_origins=["*"] together with allow_credentials=True —
-    # the CORS spec forbids a wildcard origin with credentials, so browsers
-    # block the request and the server sends no Allow-Origin header at all.
-    # allow_origin_regex=".*" matches every origin while still letting
-    # Starlette echo the actual request origin back, which satisfies the browser.
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origin_regex=".*",
-        allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
-    )
-else:
-    # Production: restrict to the single configured frontend domain.
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=[settings.ALLOWED_ORIGINS],
-        allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
-    )
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=allowed_origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # ---------------------------------------------------------------------------
 # Routers
