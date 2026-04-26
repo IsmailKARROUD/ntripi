@@ -9,7 +9,6 @@ RUN flutter pub get
 
 RUN flutter build web \
     --release \
-    --web-renderer=html \
     --base-href=/app/ \
     --dart-define=API_BASE_URL=https://ntripi.app \
     --dart-define=SHARE_BASE_URL=https://ntripi.app
