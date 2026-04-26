@@ -1,0 +1,136 @@
+{% extends "_base.html" %}
+{% block content %}
+
+<style>
+  .auth-form {
+    max-width: 400px;
+    margin: 0 auto;
+    padding-top: 24px;
+  }
+
+  .auth-form h2 {
+    font-size: 1.6rem;
+    font-weight: 800;
+    margin-bottom: 28px;
+    text-align: center;
+  }
+
+  .auth-form label {
+    display: block;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text);
+    margin-bottom: 16px;
+  }
+
+  .auth-form input[type="email"],
+  .auth-form input[type="password"],
+  .auth-form input[type="text"] {
+    display: block;
+    width: 100%;
+    margin-top: 6px;
+    padding: 10px 14px;
+    font-size: 15px;
+    font-family: inherit;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--white);
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.15s;
+  }
+
+  .auth-form input:focus {
+    border-color: var(--brand);
+    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.12);
+  }
+
+  .auth-form label.checkbox {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    font-weight: 400;
+    color: var(--sub);
+    cursor: pointer;
+    margin-top: 4px;
+  }
+
+  .auth-form label.checkbox input[type="checkbox"] {
+    margin-top: 3px;
+    flex-shrink: 0;
+    width: 16px;
+    height: 16px;
+    accent-color: var(--brand);
+  }
+
+  .auth-form .btn-primary {
+    width: 100%;
+    text-align: center;
+    margin-top: 8px;
+  }
+
+  .auth-switch {
+    text-align: center;
+    margin-top: 20px;
+    font-size: 14px;
+    color: var(--sub);
+  }
+
+  .field-hint {
+    font-size: 12px;
+    color: var(--sub);
+    margin-top: 4px;
+    font-weight: 400;
+  }
+</style>
+
+<section class="auth-form">
+  <h2>Create your Ntripi account</h2>
+
+  {% if error_message %}
+  <div class="error-banner">{{ error_message }}</div>
+  {% endif %}
+
+  <form method="POST" action="/web/register">
+    <label>
+      Email
+      <input type="email" name="email" required autofocus
+             value="{{ email or '' }}" autocomplete="email">
+    </label>
+
+    <label>
+      Username
+      <input type="text" name="username" required minlength="3" maxlength="30"
+             value="{{ username or '' }}" autocomplete="username"
+             pattern="[a-z0-9_]+" title="Lowercase letters, digits, and underscores only">
+      <span class="field-hint">Lowercase letters, digits, and underscores. 3–30 characters.</span>
+    </label>
+
+    <label>
+      Password
+      <input type="password" name="password" required minlength="8"
+             autocomplete="new-password">
+      <span class="field-hint">At least 8 characters, must include a digit.</span>
+    </label>
+
+    <label>
+      Confirm password
+      <input type="password" name="password_confirm" required
+             autocomplete="new-password">
+    </label>
+
+    <label class="checkbox">
+      <input type="checkbox" name="tos_accepted" required>
+      I agree to the <a href="/terms" target="_blank">Terms of Service</a> and
+      <a href="/privacy" target="_blank">Privacy Policy</a>
+    </label>
+
+    <button type="submit" class="btn-primary btn-large">Create account</button>
+  </form>
+
+  <p class="auth-switch">
+    Already have an account? <a href="/login">Sign in</a>
+  </p>
+</section>
+
+{% endblock %}

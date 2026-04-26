@@ -1,0 +1,129 @@
+{% extends "_base.html" %}
+{% block content %}
+
+<style>
+  /* ── Hero ── */
+  .hero {
+    text-align: center;
+    padding: 56px 0 48px;
+  }
+
+  .hero h1 {
+    font-size: clamp(2rem, 6vw, 3.25rem);
+    font-weight: 800;
+    letter-spacing: -1px;
+    line-height: 1.15;
+    margin-bottom: 20px;
+    background: linear-gradient(135deg, #4F46E5, #7C3AED);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .tagline {
+    font-size: clamp(1rem, 2.5vw, 1.2rem);
+    color: var(--sub);
+    max-width: 520px;
+    margin: 0 auto 36px;
+    line-height: 1.6;
+  }
+
+  .cta-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    justify-content: center;
+    margin-bottom: 24px;
+  }
+
+  .login-link {
+    font-size: 14px;
+    color: var(--sub);
+  }
+
+  /* ── Features grid ── */
+  .features {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 16px;
+    margin-top: 56px;
+  }
+
+  .feature {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px 20px;
+  }
+
+  .feature h3 {
+    font-size: 17px;
+    font-weight: 700;
+    margin-bottom: 8px;
+  }
+
+  .feature p {
+    font-size: 14px;
+    color: var(--sub);
+    line-height: 1.6;
+  }
+
+  @media (min-width: 600px) {
+    .features { grid-template-columns: repeat(3, 1fr); }
+  }
+</style>
+
+<section class="hero">
+  <h1>Plan. Share. Discover.</h1>
+  <p class="tagline">
+    Build travel itineraries with friends. Share what works.
+    Discover trips that locals love.
+  </p>
+
+  <div class="cta-buttons">
+    <a href="/app/" class="btn-primary btn-large">Continue on web</a>
+
+    {% if android_download_url %}
+    <a href="{{ android_download_url }}"
+       class="btn-secondary btn-large"
+       id="android-download-btn"
+       style="display: none;">
+      📱 Download for Android
+    </a>
+    {% endif %}
+  </div>
+
+  <p class="login-link">
+    Already have an account? <a href="/login">Sign in</a>
+  </p>
+</section>
+
+<section class="features">
+  <div class="feature">
+    <h3>📍 Plan together</h3>
+    <p>Build itineraries with stops, transit, costs, and notes.</p>
+  </div>
+  <div class="feature">
+    <h3>🔗 Share anywhere</h3>
+    <p>Send a link. Anyone can see your trip — no install required.</p>
+  </div>
+  <div class="feature">
+    <h3>★ Trust the community</h3>
+    <p>Multi-dimensional ratings: safety, experience, accessibility.</p>
+  </div>
+</section>
+
+<script>
+  (function () {
+    var ua = navigator.userAgent || "";
+    var isAndroid = /Android/i.test(ua);
+    {% if android_download_url %}
+    if (isAndroid) {
+      var btn = document.getElementById("android-download-btn");
+      if (btn) btn.style.display = "inline-block";
+    }
+    {% endif %}
+  })();
+</script>
+
+{% endblock %}

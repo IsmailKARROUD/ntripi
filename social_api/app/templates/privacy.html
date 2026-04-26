@@ -1,0 +1,51 @@
+{% extends "_base.html" %}
+{% block content %}
+
+<style>
+  .legal-doc h1 {
+    font-size: 2rem;
+    font-weight: 800;
+    margin-bottom: 8px;
+  }
+
+  .last-updated {
+    font-size: 13px;
+    color: var(--sub);
+    margin-bottom: 36px;
+  }
+
+  .prose h2 {
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin: 28px 0 10px;
+    color: var(--text);
+  }
+
+  .prose p {
+    font-size: 15px;
+    color: var(--sub);
+    margin-bottom: 12px;
+    line-height: 1.7;
+  }
+
+  .prose a { color: var(--brand); }
+
+  .prose code {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 1px 6px;
+    font-size: 13px;
+    font-family: ui-monospace, "SF Mono", Consolas, monospace;
+  }
+</style>
+
+<section class="legal-doc">
+  <h1>Privacy Policy</h1>
+  <p class="last-updated">Last updated: {{ last_updated }}</p>
+  <div class="prose">
+    {{ content | safe }}
+  </div>
+</section>
+
+{% endblock %}

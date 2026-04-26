@@ -53,6 +53,10 @@ class Settings(BaseSettings):
     # In production: SHARE_BASE_URL=https://ntripi.app
     share_base_url: str = "http://localhost:8000"
 
+    # Optional URL for Android APK download. None hides the button on the homepage.
+    # Set to /downloads/ntripi-latest.apk once Ticket 9 ships the binary.
+    ANDROID_DOWNLOAD_URL: str | None = None
+
     # Tell pydantic-settings to look for a .env file in the working directory.
     # extra="ignore" means unknown .env keys don't cause validation errors.
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")

@@ -1,0 +1,47 @@
+{% extends "_base.html" %}
+{% block content %}
+
+<style>
+  .legal-doc h1 {
+    font-size: 2rem;
+    font-weight: 800;
+    margin-bottom: 8px;
+  }
+
+  .last-updated {
+    font-size: 13px;
+    color: var(--sub);
+    margin-bottom: 36px;
+  }
+
+  .prose {
+    font-size: 15px;
+    color: var(--sub);
+    line-height: 1.8;
+    white-space: pre-wrap;
+  }
+
+  .prose a { color: var(--brand); }
+
+  .version-badge {
+    display: inline-block;
+    background: var(--brand-light);
+    color: var(--brand);
+    font-size: 12px;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 20px;
+    margin-bottom: 24px;
+  }
+</style>
+
+<section class="legal-doc">
+  <h1>Terms of Service</h1>
+  <p class="last-updated">Last updated: {{ last_updated }}</p>
+  {% if tos_version %}
+  <span class="version-badge">Version {{ tos_version }}</span>
+  {% endif %}
+  <div class="prose">{{ content }}</div>
+</section>
+
+{% endblock %}

@@ -20,7 +20,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from app.config import get_settings
-from app.routers import auth, users, follows, itineraries, share
+from app.routers import auth, users, follows, itineraries, share, web
 
 settings = get_settings()
 
@@ -72,6 +72,7 @@ app.include_router(follows.router) # /users/{id}/follow, /users/me/follow-reques
 app.include_router(itineraries.router, prefix="/itineraries")  # /itineraries/...
 app.include_router(itineraries.user_itineraries_router, prefix="/users", tags=["Itineraries"])  # /users/{id}/itineraries
 app.include_router(share.router)   # /share/i/{id} — public HTML landing pages
+app.include_router(web.router)     # /, /login, /register, /privacy, /terms, /app/
 
 # ---------------------------------------------------------------------------
 # Static files
@@ -84,12 +85,9 @@ app.mount("/static", StaticFiles(directory=str(_static_dir)), name="static")
 # ---------------------------------------------------------------------------
 # Health check
 # ---------------------------------------------------------------------------
+# GET / is now handled by the web router (homepage).
+# Dedicated health endpoint for deployment platform probes.
 
-@app.get("/", tags=["Health"])
+@app.get("/health", tags=["Health"])
 def health_check() -> dict:
-    """
-    Lightweight health check endpoint.
-    Used by deployment platforms (Railway, Render, Fly.io) to verify the app is running.
-    No authentication required — monitoring systems need to call this anonymously.
-    """
     return {"status": "ok"}
