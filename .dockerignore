@@ -1,0 +1,47 @@
+# Python
+**/venv/
+**/.venv/
+**/__pycache__/
+**/*.pyc
+**/.pytest_cache/
+**/.coverage
+**/htmlcov/
+
+# Environment files
+**/.env
+**/.env.*
+!**/.env.example
+
+# Git
+.git/
+.gitignore
+
+# Flutter
+social_flutter/build/
+social_flutter/.dart_tool/
+social_flutter/.flutter-plugins
+social_flutter/.flutter-plugins-dependencies
+social_flutter/.packages
+social_flutter/ios/Pods/
+social_flutter/android/.gradle/
+social_flutter/android/build/
+
+# IDE
+.vscode/
+.idea/
+**/*.swp
+
+# OS
+**/.DS_Store
+
+# Project-specific
+social_api/test/
+social_api/tests/
+**/*.md
+!README.md
+CLAUDE.md
+ARCHITECTURE.md
+
+# Other
+scripts/
+docs/

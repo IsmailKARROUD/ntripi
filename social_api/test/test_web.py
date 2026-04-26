@@ -7,11 +7,16 @@ Coverage:
   - POST /web/login: success → 302 + cookie; failure → 200 + error
   - POST /web/register: success → 302 + cookie; validation failures → 200 + error
   - Logged-in users redirected away from /login
+  - Flutter web static mount behaviour (build present vs. missing)
 """
 
+from pathlib import Path
+
 import pytest
+from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
+from app.main import _SPAStaticFiles
 from conftest import register_user
 
 
@@ -160,3 +165,36 @@ class TestWebAuthFlow:
 
         assert response.status_code == 302
         assert response.headers["location"] == "/app/"
+
+
+class TestFlutterWebMount:
+    def test_app_path_returns_html_when_build_exists(self, tmp_path):
+        """_SPAStaticFiles serves index.html at the mount root."""
+        (tmp_path / "index.html").write_text(
+            "<!DOCTYPE html><html><head></head><body>Flutter</body></html>"
+        )
+        test_app = FastAPI()
+        test_app.mount("/app", _SPAStaticFiles(directory=str(tmp_path), html=True), name="fw")
+        with TestClient(test_app) as c:
+            resp = c.get("/app/")
+        assert resp.status_code == 200
+        assert "<html" in resp.text
+
+    def test_app_subpath_falls_back_to_index(self, tmp_path):
+        """Unmatched sub-paths return index.html so Flutter's client-side router handles them."""
+        content = "<!DOCTYPE html><html><head></head><body>Flutter SPA</body></html>"
+        (tmp_path / "index.html").write_text(content)
+        test_app = FastAPI()
+        test_app.mount("/app", _SPAStaticFiles(directory=str(tmp_path), html=True), name="fw")
+        with TestClient(test_app) as c:
+            resp = c.get("/app/itineraries/abc123")
+        assert resp.status_code == 200
+        assert "Flutter SPA" in resp.text
+
+    def test_app_returns_404_when_build_missing(self, client: TestClient):
+        """/app/ returns 404 in dev when the Flutter build directory is absent."""
+        assert not Path("/app/web_build").exists(), (
+            "/app/web_build should not exist in the test environment"
+        )
+        resp = client.get("/app/")
+        assert resp.status_code == 404

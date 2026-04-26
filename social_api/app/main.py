@@ -18,9 +18,26 @@ from pathlib import Path
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from starlette.exceptions import HTTPException
 
 from app.config import get_settings
 from app.routers import auth, users, follows, itineraries, share, web
+
+
+class _SPAStaticFiles(StaticFiles):
+    """StaticFiles with SPA fallback: returns index.html for any unmatched path.
+
+    Starlette ≥0.52 removed the automatic index.html fallback from html=True.
+    Flutter's client-side router requires the server to return index.html for
+    every path under /app/ so deep links and page refreshes work correctly.
+    """
+    async def get_response(self, path: str, scope):  # type: ignore[override]
+        try:
+            return await super().get_response(path, scope)
+        except HTTPException as exc:
+            if exc.status_code == 404:
+                return await super().get_response("index.html", scope)
+            raise
 
 settings = get_settings()
 
@@ -72,7 +89,7 @@ app.include_router(follows.router) # /users/{id}/follow, /users/me/follow-reques
 app.include_router(itineraries.router, prefix="/itineraries")  # /itineraries/...
 app.include_router(itineraries.user_itineraries_router, prefix="/users", tags=["Itineraries"])  # /users/{id}/itineraries
 app.include_router(share.router)   # /share/i/{id} — public HTML landing pages
-app.include_router(web.router)     # /, /login, /register, /privacy, /terms, /app/
+app.include_router(web.router)     # /, /login, /register, /privacy, /terms
 
 # ---------------------------------------------------------------------------
 # Static files
@@ -80,6 +97,18 @@ app.include_router(web.router)     # /, /login, /register, /privacy, /terms, /ap
 # Serves app/static/ at /static — used for the OG preview image.
 _static_dir = Path(__file__).parent / "static"
 app.mount("/static", StaticFiles(directory=str(_static_dir)), name="static")
+
+# Flutter web build served at /app/.
+# html=True makes StaticFiles return index.html for any unmatched sub-path,
+# which is required for Flutter's client-side router (deep links on refresh).
+# The conditional check keeps the backend functional in local dev without a build.
+_flutter_web_dir = Path("/app/web_build")
+if _flutter_web_dir.exists():
+    app.mount(
+        "/app",
+        _SPAStaticFiles(directory=str(_flutter_web_dir), html=True),
+        name="flutter_web",
+    )
 
 
 # ---------------------------------------------------------------------------

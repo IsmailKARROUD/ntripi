@@ -7,9 +7,10 @@ Routes:
   GET  /register  → Register form (redirects if already logged in)
   GET  /privacy   → Privacy Policy
   GET  /terms     → Terms of Service
-  GET  /app/      → App shell placeholder (Ticket 8)
   POST /web/login     → Validates credentials, sets cookie, redirects to /app/
   POST /web/register  → Creates account, sets cookie, redirects to /app/
+
+/app/ is served by the StaticFiles mount in main.py (Flutter web build).
 
 Cookie strategy:
   - Name: ntripi_session
@@ -125,30 +126,6 @@ def terms_page(request: Request) -> HTMLResponse:
         "last_updated": TOS_DATE,
         "tos_version": TOS_VERSION,
     })
-
-
-@router.get("/app/", response_class=HTMLResponse)
-def app_shell(request: Request) -> HTMLResponse:
-    # Placeholder until Ticket 8 ships the Flutter web build at this path.
-    return HTMLResponse("""<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Ntripi</title>
-  <style>
-    body { font-family: system-ui, sans-serif; text-align: center; padding: 60px 20px; background: #F9FAFB; color: #111827; }
-    h1 { color: #4F46E5; font-size: 2rem; margin-bottom: 12px; }
-    p { color: #6B7280; margin-bottom: 8px; }
-    a { color: #4F46E5; }
-  </style>
-</head>
-<body>
-  <h1>Ntripi</h1>
-  <p>The web app is coming soon.</p>
-  <p><a href="/">Back to homepage</a></p>
-</body>
-</html>""")
 
 
 # ---------------------------------------------------------------------------

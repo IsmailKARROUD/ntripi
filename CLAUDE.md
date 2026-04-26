@@ -164,6 +164,39 @@ When adding file uploads (photos, avatars, etc.):
 - Future option: migrate to self-hosted VPS or own infrastructure
   (rules above make this possible with no code changes)
 
+### Docker build (single image, monorepo root)
+
+The `Dockerfile` lives at the **monorepo root** (not inside `social_api/`).
+It is a multi-stage build that compiles both the frontend and backend:
+
+- **Stage 1** (`ghcr.io/cirruslabs/flutter:stable`): Builds Flutter web bundle
+  with `--base-href=/app/` and production `--dart-define` values baked in.
+- **Stage 2** (`python:3.11-slim`): Installs backend dependencies, copies
+  the FastAPI app, and copies the Flutter bundle into `/app/web_build/`.
+
+**Railway settings:**
+- Root Directory: *(empty — repo root)*
+- Dockerfile path: `Dockerfile`
+
+**Build time:** ~5–8 min first build (Flutter SDK download); ~2–3 min cached.
+**Final image size:** ~250 MB (Flutter SDK discarded after Stage 1).
+
+### Routes served by the single container
+
+| Path prefix        | Handler                                      |
+|--------------------|----------------------------------------------|
+| `/`                | Jinja2 marketing homepage                    |
+| `/login`, `/register` | Web auth forms                            |
+| `/privacy`, `/terms` | Legal pages                               |
+| `/share/i/{id}`    | Public itinerary landing pages               |
+| `/app/`            | Flutter web app (StaticFiles, `html=True`)   |
+| `/static/`         | Backend static assets (OG image, etc.)       |
+| `/docs`            | Swagger UI                                   |
+| `/health`          | Health check                                 |
+| Everything else    | JSON API endpoints                           |
+
+In **local dev**, `/app/` returns 404 (no Flutter build present — intended).
+
 ---
 
 ## Deferred Features (tracked in Jira)
