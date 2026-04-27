@@ -1,9 +1,8 @@
 """username_lower_and_display_name
 
-Add username_lower (canonical lowercase lookup) and resize display_name to
-VARCHAR(50). username_lower carries the unique constraint so usernames are
-case-insensitively unique. The old case-sensitive unique constraint on
-username is dropped.
+Add username_lower (canonical lowercase lookup). username_lower carries the
+unique constraint so usernames are case-insensitively unique. The old
+case-sensitive unique constraint on username is dropped if it exists.
 
 Revision ID: d4e5f6a7b8c9
 Revises: a1b2c3d4e5f6
@@ -73,32 +72,24 @@ def upgrade() -> None:
         'uq_users_username_lower', 'users', ['username_lower']
     )
 
-    # Step 7 — Drop old case-sensitive unique constraint on username.
-    try:
+    # Step 7 — Drop old case-sensitive unique constraint on username if it
+    # exists. We query information_schema first so we never attempt a DROP
+    # inside an already-failing transaction (try/except doesn't save you in
+    # PostgreSQL — the txn is aborted at the DB level even if Python catches).
+    exists = bind.execute(sa.text("""
+        SELECT 1 FROM information_schema.table_constraints
+        WHERE table_name = 'users'
+          AND constraint_name = 'uq_users_username'
+          AND constraint_type = 'UNIQUE'
+    """)).fetchone()
+    if exists:
         op.drop_constraint('uq_users_username', 'users', type_='unique')
-    except Exception:
-        pass  # Constraint name may differ across environments.
-
-    # Step 8 — Resize display_name from VARCHAR(100) to VARCHAR(50).
-    # Existing values longer than 50 chars would be truncated — but since
-    # the column was never populated in production, this is safe.
-    op.alter_column(
-        'users',
-        'display_name',
-        existing_type=sa.String(100),
-        type_=sa.String(50),
-        existing_nullable=True,
-    )
+    # display_name column type is intentionally NOT resized here.
+    # The application layer (Pydantic) already enforces the 50-char limit.
+    # Shrinking VARCHAR(100) → VARCHAR(50) in DDL is unnecessary and risky.
 
 
 def downgrade() -> None:
-    op.alter_column(
-        'users',
-        'display_name',
-        existing_type=sa.String(50),
-        type_=sa.String(100),
-        existing_nullable=True,
-    )
     op.create_unique_constraint('uq_users_username', 'users', ['username'])
     op.drop_constraint('uq_users_username_lower', 'users', type_='unique')
     op.drop_column('users', 'username_lower')
