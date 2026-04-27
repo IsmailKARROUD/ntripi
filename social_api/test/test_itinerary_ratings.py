@@ -112,7 +112,7 @@ class TestRatingSubmit:
 
     def test_another_user_can_rate_public_itinerary(self, client):
         alice = register_user(client, "alice", "alice@x.com")
-        bob = register_user(client, "bob", "bob@x.com")
+        bob = register_user(client, "bob1", "bob@x.com")
         it = create_itinerary(client, alice["access_token"])
 
         r = rate(client, bob["access_token"], it["id"], 5)
@@ -120,7 +120,7 @@ class TestRatingSubmit:
 
     def test_cannot_rate_only_me_itinerary(self, client):
         alice = register_user(client, "alice", "alice@x.com")
-        bob = register_user(client, "bob", "bob@x.com")
+        bob = register_user(client, "bob1", "bob@x.com")
         it = create_itinerary(
             client, alice["access_token"], visibility="only_me"
         )
@@ -141,7 +141,7 @@ class TestRatingAggregate:
 
     def test_rating_avg_with_two_users(self, client):
         alice = register_user(client, "alice", "alice@x.com")
-        bob = register_user(client, "bob", "bob@x.com")
+        bob = register_user(client, "bob1", "bob@x.com")
         it = create_itinerary(client, alice["access_token"])
         rate(client, alice["access_token"], it["id"], 2)
         rate(client, bob["access_token"], it["id"], 4)
@@ -152,7 +152,7 @@ class TestRatingAggregate:
 
     def test_upsert_recalculates_avg(self, client):
         alice = register_user(client, "alice", "alice@x.com")
-        bob = register_user(client, "bob", "bob@x.com")
+        bob = register_user(client, "bob1", "bob@x.com")
         it = create_itinerary(client, alice["access_token"])
         rate(client, alice["access_token"], it["id"], 2)
         rate(client, bob["access_token"], it["id"], 4)
@@ -193,7 +193,7 @@ class TestRatingDelete:
 
     def test_delete_recalculates_aggregate(self, client):
         alice = register_user(client, "alice", "alice@x.com")
-        bob = register_user(client, "bob", "bob@x.com")
+        bob = register_user(client, "bob1", "bob@x.com")
         it = create_itinerary(client, alice["access_token"])
         rate(client, alice["access_token"], it["id"], 2)
         rate(client, bob["access_token"], it["id"], 4)
@@ -275,7 +275,7 @@ class TestRatingsPage:
     def test_ratings_page_requires_view_permission(self, client):
         """Stranger cannot see ratings of a followers-only itinerary."""
         alice = register_user(client, "alice", "alice@x.com")
-        bob = register_user(client, "bob", "bob@x.com")
+        bob = register_user(client, "bob1", "bob@x.com")
 
         it = create_itinerary(client, alice["access_token"], visibility="followers")
 
@@ -285,7 +285,7 @@ class TestRatingsPage:
     def test_ratings_page_accessible_to_allowed_viewer(self, client):
         """Any authenticated user can view a public itinerary's ratings."""
         alice = register_user(client, "alice", "alice@x.com")
-        bob = register_user(client, "bob", "bob@x.com")
+        bob = register_user(client, "bob1", "bob@x.com")
 
         it = create_itinerary(client, alice["access_token"], visibility="public")
 
@@ -295,7 +295,7 @@ class TestRatingsPage:
     def test_ratings_page_returns_all_raters(self, client):
         """Ratings from multiple users all appear in the list."""
         alice = register_user(client, "alice", "alice@x.com")
-        bob = register_user(client, "bob", "bob@x.com")
+        bob = register_user(client, "bob1", "bob@x.com")
         charlie = register_user(client, "charlie", "charlie@x.com")
 
         it = create_itinerary(client, alice["access_token"], visibility="public")
@@ -308,13 +308,13 @@ class TestRatingsPage:
         assert body["rating_count"] == 2
         assert len(body["ratings"]) == 2
         usernames = {entry["user"]["username"] for entry in body["ratings"]}
-        assert "bob" in usernames
+        assert "bob1" in usernames
         assert "charlie" in usernames
 
     def test_ratings_page_distribution_is_correct(self, client):
         """Star distribution is counted correctly per bucket."""
         alice = register_user(client, "alice", "alice@x.com")
-        bob = register_user(client, "bob", "bob@x.com")
+        bob = register_user(client, "bob1", "bob@x.com")
         charlie = register_user(client, "charlie", "charlie@x.com")
         dave = register_user(client, "dave", "dave@x.com")
 
@@ -338,7 +338,7 @@ class TestRatingsPage:
         DELETE /users/me endpoint to test the full anonymization flow.
         """
         alice = register_user(client, "alice", "alice@x.com")
-        bob = register_user(client, "bob", "bob@x.com")
+        bob = register_user(client, "bob1", "bob@x.com")
 
         it = create_itinerary(client, alice["access_token"], visibility="public")
         rate(client, bob["access_token"], it["id"], 4)
@@ -411,7 +411,7 @@ class TestRatingsPage:
     def test_follower_can_view_followers_itinerary_ratings(self, client):
         """An accepted follower can view a followers-only itinerary's ratings."""
         alice = register_user(client, "alice", "alice@x.com")
-        bob = register_user(client, "bob", "bob@x.com")
+        bob = register_user(client, "bob1", "bob@x.com")
 
         # Make Alice public so Bob's follow is auto-accepted.
         make_public(client, alice["access_token"])

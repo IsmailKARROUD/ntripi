@@ -189,6 +189,54 @@ def delete_my_account(
 
 
 @router.get(
+    "/by-username/{username}",
+    response_model=UserPublicProfile,
+    summary="Get a user's public profile by username (case-insensitive)",
+)
+def get_user_by_username(
+    username: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> UserPublicProfile:
+    target_user = db.execute(
+        select(User).where(User.username_lower == username.lower())
+    ).scalar_one_or_none()
+
+    if not target_user or not target_user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found.",
+        )
+
+    follow_record = db.execute(
+        select(Follow).where(
+            Follow.follower_id == current_user.id,
+            Follow.following_id == target_user.id,
+        )
+    ).scalar_one_or_none()
+
+    return UserPublicProfile(
+        id=target_user.id,
+        username=target_user.username,
+        display_name=target_user.display_name,
+        bio=target_user.bio,
+        avatar_url=target_user.avatar_url,
+        is_private=target_user.is_private,
+        followers_count=target_user.followers_count,
+        following_count=target_user.following_count,
+        created_at=target_user.created_at,
+        is_following=(
+            follow_record is not None
+            and follow_record.status == FollowStatus.accepted
+        ),
+        follow_is_pending=(
+            follow_record is not None
+            and follow_record.status == FollowStatus.pending
+        ),
+    )
+
+
+@router.get(
     "/search",
     response_model=list[UserSearchResult],
     summary="Search users by username or display name",

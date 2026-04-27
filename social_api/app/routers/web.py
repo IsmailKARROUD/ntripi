@@ -20,7 +20,6 @@ Cookie strategy:
 
 from __future__ import annotations
 
-import re
 from datetime import datetime
 from pathlib import Path
 
@@ -135,13 +134,13 @@ def terms_page(request: Request) -> HTMLResponse:
 @router.post("/web/login", response_class=HTMLResponse)
 def web_login(
     request: Request,
-    email: str = Form(...),
+    identifier: str = Form(...),
     password: str = Form(...),
     db: Session = Depends(get_db),
     settings: Settings = Depends(get_settings),
 ) -> HTMLResponse:
     try:
-        user, token = auth_service.authenticate_user(email, password, db)
+        user, token = auth_service.authenticate_user(identifier, password, db)
     except auth_service.AuthError as e:
         return templates.TemplateResponse(
             request,
@@ -149,7 +148,7 @@ def web_login(
             {
                 "page_title": "Sign in — Ntripi",
                 "error_message": e.message,
-                "email": email,
+                "identifier": identifier,
             },
             status_code=200,
         )
@@ -166,6 +165,7 @@ def web_register(
     username: str = Form(...),
     password: str = Form(...),
     password_confirm: str = Form(...),
+    display_name: str = Form(""),
     tos_accepted: str | None = Form(None),
     db: Session = Depends(get_db),
     settings: Settings = Depends(get_settings),
@@ -179,6 +179,7 @@ def web_register(
                 "error_message": msg,
                 "email": email,
                 "username": username,
+                "display_name": display_name,
             },
             status_code=200,
         )
@@ -188,11 +189,6 @@ def web_register(
 
     if not tos_accepted:
         return _error("You must accept the Terms of Service to register.")
-
-    if not re.match(r"^[a-z0-9_]+$", username):
-        return _error(
-            "Username may only contain lowercase letters, digits, and underscores."
-        )
 
     if len(password) < 8:
         return _error("Password must be at least 8 characters.")
@@ -205,7 +201,7 @@ def web_register(
             username=username,
             email=email,
             password=password,
-            display_name=None,
+            display_name=display_name or None,
             tos_accepted=True,
             db=db,
         )

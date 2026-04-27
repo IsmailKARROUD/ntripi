@@ -61,14 +61,14 @@ class AuthRepository {
     return result;
   }
 
-  /// POST /auth/login
+  /// POST /auth/login — accepts email or username as identifier.
   /// On success, saves the token and returns the result.
   Future<AuthResult> login({
-    required String email,
+    required String identifier,
     required String password,
   }) async {
     final response = await _dio.post(kLoginEndpoint, data: {
-      'email': email,
+      'identifier': identifier,
       'password': password,
     });
 

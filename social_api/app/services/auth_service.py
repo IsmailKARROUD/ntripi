@@ -4,26 +4,23 @@ services/auth_service.py — Shared business logic for user authentication.
 Both the JSON API (routers/auth.py) and the web form flow (routers/web.py)
 call these functions. Keeps password hashing, JWT creation, and DB logic
 in one place — no duplication across routes.
-
-AuthError carries an HTTP status code so the API router can map it to the
-right HTTPException, while the web router can use the message directly for
-form error rendering.
 """
 
 from __future__ import annotations
 
 from datetime import datetime, timezone
 
-from sqlalchemy import select
+from sqlalchemy import select, or_
 from sqlalchemy.orm import Session
 
 from app.models.user import User
 from app.services.auth import create_access_token, hash_password, verify_password
+from app.validators.username import validate_username, normalize_username, validate_display_name
 
-# Precomputed bcrypt hash used when the login email doesn't exist.
+# Precomputed bcrypt hash used when the login identifier doesn't exist.
 # Always calling verify_password (even against this dummy hash) ensures
-# the response time is identical whether the email is wrong or the password
-# is wrong — preventing timing-based user enumeration.
+# the response time is identical whether the identifier is wrong or the
+# password is wrong — preventing timing-based user enumeration.
 _DUMMY_HASH = hash_password("dummy_timing_placeholder_password1")
 
 
@@ -34,13 +31,21 @@ class AuthError(Exception):
         super().__init__(message)
 
 
-def authenticate_user(email: str, password: str, db: Session) -> tuple[User, str]:
+def authenticate_user(identifier: str, password: str, db: Session) -> tuple[User, str]:
     """
     Validate credentials and return (user, JWT token) on success.
+    Accepts either an email address or a username (case-insensitive).
     Raises AuthError on any failure.
     """
+    identifier = identifier.strip().lower()
+
     user = db.execute(
-        select(User).where(User.email == email)
+        select(User).where(
+            or_(
+                User.email == identifier,
+                User.username_lower == identifier,
+            )
+        )
     ).scalar_one_or_none()
 
     password_matches = verify_password(
@@ -49,7 +54,7 @@ def authenticate_user(email: str, password: str, db: Session) -> tuple[User, str
     )
 
     if not user or not password_matches:
-        raise AuthError("Incorrect email or password.", http_status=401)
+        raise AuthError("Incorrect email/username or password.", http_status=401)
 
     if not user.is_active:
         raise AuthError("Your account has been deactivated.", http_status=403)
@@ -76,8 +81,22 @@ def create_user(
             http_status=400,
         )
 
+    # Defense-in-depth: validate even though Pydantic schema already checked.
+    try:
+        username = validate_username(username)
+    except ValueError as exc:
+        raise AuthError(str(exc), http_status=422)
+
+    username_lower = normalize_username(username)
+    email = email.strip().lower()
+
+    try:
+        display_name = validate_display_name(display_name)
+    except ValueError as exc:
+        raise AuthError(str(exc), http_status=422)
+
     existing_username = db.execute(
-        select(User).where(User.username == username)
+        select(User).where(User.username_lower == username_lower)
     ).scalar_one_or_none()
     if existing_username:
         raise AuthError("This username is already taken.", http_status=409)
@@ -92,6 +111,7 @@ def create_user(
 
     new_user = User(
         username=username,
+        username_lower=username_lower,
         email=email,
         password_hash=hash_password(password),
         display_name=display_name,

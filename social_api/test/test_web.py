@@ -65,7 +65,7 @@ class TestWebAuthFlow:
 
         response = client.post(
             "/web/login",
-            data={"email": "weblogin@example.com", "password": "password123"},
+            data={"identifier": "weblogin@example.com", "password": "password123"},
             follow_redirects=False,
         )
 
@@ -78,7 +78,7 @@ class TestWebAuthFlow:
     ):
         response = client.post(
             "/web/login",
-            data={"email": "nobody@example.com", "password": "wrongpassword1"},
+            data={"identifier": "nobody@example.com", "password": "wrongpassword1"},
             follow_redirects=False,
         )
 
@@ -107,7 +107,7 @@ class TestWebAuthFlow:
         # Verify user was actually created by logging in via the API
         login_resp = client.post(
             "/auth/login",
-            json={"email": "newuser@example.com", "password": "secure123"},
+            json={"identifier": "newuser@example.com", "password": "secure123"},
         )
         assert login_resp.status_code == 200
         assert login_resp.json()["username"] == "newuser1"
@@ -132,7 +132,7 @@ class TestWebAuthFlow:
         # Verify no user was created
         login_resp = client.post(
             "/auth/login",
-            json={"email": "mismatch@example.com", "password": "secure123"},
+            json={"identifier": "mismatch@example.com", "password": "secure123"},
         )
         assert login_resp.status_code == 401
 

@@ -132,7 +132,7 @@ class TestAccountDeletion:
 
     def test_delete_account_removes_user_data(self, client):
         alice = register_ok(client, "alice", "alice@x.com")
-        bob = register_ok(client, "bob", "bob@x.com")
+        bob = register_ok(client, "bob1", "bob@x.com")
 
         it = create_itinerary(client, alice["access_token"])
         # Alice follows Bob (public account — accepted immediately)
@@ -154,7 +154,7 @@ class TestAccountDeletion:
 
     def test_delete_account_anonymizes_ratings_not_deletes(self, client):
         alice = register_ok(client, "alice", "alice@x.com")
-        bob = register_ok(client, "bob", "bob@x.com")
+        bob = register_ok(client, "bob1", "bob@x.com")
 
         it = create_itinerary(client, alice["access_token"])
         rate(client, bob["access_token"], it["id"], 4)
@@ -173,7 +173,7 @@ class TestAccountDeletion:
 
     def test_rating_avg_unchanged_after_rater_deletes_account(self, client):
         alice = register_ok(client, "alice", "alice@x.com")
-        bob = register_ok(client, "bob", "bob@x.com")
+        bob = register_ok(client, "bob1", "bob@x.com")
         charlie = register_ok(client, "charlie", "charlie@x.com")
 
         it = create_itinerary(client, alice["access_token"])
@@ -203,7 +203,7 @@ class TestAccountDeletion:
         delete_account(client, alice["access_token"], "test1234")
 
         r = client.post("/auth/login", json={
-            "email": "alice@x.com",
+            "identifier": "alice@x.com",
             "password": "test1234",
         })
         assert r.status_code == 401
@@ -235,7 +235,7 @@ class TestDeleteCascades:
         delete_account(client, alice["access_token"], "test1234")
 
         # Re-register under a different name to get a token to query with
-        bob = register_ok(client, "bob", "bob@x.com")
+        bob = register_ok(client, "bob1", "bob@x.com")
         r = client.get(
             f"/itineraries/{it['id']}",
             headers=auth_headers(bob["access_token"]),
@@ -244,7 +244,7 @@ class TestDeleteCascades:
 
     def test_delete_removes_follow_relationships(self, client):
         alice = register_ok(client, "alice", "alice@x.com")
-        bob = register_ok(client, "bob", "bob@x.com")
+        bob = register_ok(client, "bob1", "bob@x.com")
 
         # Both accounts need to be public for auto-accept
         client.patch("/users/me", json={"is_private": False},
@@ -271,7 +271,7 @@ class TestDeleteCascades:
 
     def test_delete_removes_from_allowlists(self, client):
         alice = register_ok(client, "alice", "alice@x.com")
-        bob = register_ok(client, "bob", "bob@x.com")
+        bob = register_ok(client, "bob1", "bob@x.com")
 
         it = create_itinerary(client, alice["access_token"], visibility="restricted")
         client.post(

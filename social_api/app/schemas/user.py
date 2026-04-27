@@ -63,11 +63,18 @@ class UserUpdateRequest(BaseModel):
 
     All fields are optional — this is a true partial update.
     Only the fields provided in the request body are updated.
+    Username editing is intentionally excluded (deferred — needs rate limiting).
     """
-    display_name: str | None = Field(None, max_length=100)
+    display_name: str | None = Field(None, max_length=50)
     bio: str | None = Field(None, max_length=500)
     avatar_url: str | None = None
     is_private: bool | None = None
+
+    @field_validator("display_name")
+    @classmethod
+    def _check_display_name(cls, v: str | None) -> str | None:
+        from app.validators.username import validate_display_name
+        return validate_display_name(v)
 
 
 class DeleteAccountRequest(BaseModel):

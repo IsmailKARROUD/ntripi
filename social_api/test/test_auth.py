@@ -137,7 +137,7 @@ class TestLogin:
         register_user(client, "alice1", "alice@test.com")
 
         response = client.post("/auth/login", json={
-            "email": "alice@test.com",
+            "identifier": "alice@test.com",
             "password": "test1234",
         })
 
@@ -151,7 +151,7 @@ class TestLogin:
         register_user(client, "alice1", "alice@test.com")
 
         response = client.post("/auth/login", json={
-            "email": "alice@test.com",
+            "identifier": "alice@test.com",
             "password": "wrongpassword1",
         })
 
@@ -167,7 +167,7 @@ class TestLogin:
         case — this prevents email enumeration attacks.
         """
         response = client.post("/auth/login", json={
-            "email": "nobody@test.com",
+            "identifier": "nobody@test.com",
             "password": "test1234",
         })
 
@@ -182,7 +182,7 @@ class TestLogin:
         register_user(client, "alice1", "alice@test.com")
 
         login_response = client.post("/auth/login", json={
-            "email": "alice@test.com",
+            "identifier": "alice@test.com",
             "password": "test1234",
         })
         token = login_response.json()["access_token"]
@@ -229,11 +229,6 @@ class TestLogout:
         assert response.status_code == 403
 
     def test_tampered_token_after_logout_returns_401(self, client: TestClient):
-        """
-        A valid token whose signature has been tampered with must be rejected.
-        This ensures a malicious user cannot modify the token payload (e.g.,
-        change the user ID) after the real token has been discarded on logout.
-        """
         data = register_user(client, "alice1", "alice@test.com")
         token = data["access_token"]
 
@@ -271,3 +266,239 @@ class TestLogout:
 
         assert response.status_code == 200
         assert response.json()["username"] == "alice1"
+
+
+class TestUsernameValidation:
+
+    def test_valid_letters_only_succeeds(self, client: TestClient):
+        assert register_user(client, "alice", "alice@test.com")["username"] == "alice"
+
+    def test_valid_letters_and_numbers_succeeds(self, client: TestClient):
+        assert register_user(client, "alice42", "a@test.com")["username"] == "alice42"
+
+    def test_valid_with_underscore_succeeds(self, client: TestClient):
+        assert register_user(client, "alice_smith", "a@test.com")["username"] == "alice_smith"
+
+    def test_valid_with_period_succeeds(self, client: TestClient):
+        assert register_user(client, "alice.smith", "a@test.com")["username"] == "alice.smith"
+
+    def test_invalid_with_hyphen_rejected(self, client: TestClient):
+        r = client.post("/auth/register", json={"username": "alice-smith", "email": "a@test.com", "password": "test1234", "tos_accepted": True})
+        assert r.status_code == 422
+
+    def test_invalid_with_space_rejected(self, client: TestClient):
+        r = client.post("/auth/register", json={"username": "alice smith", "email": "a@test.com", "password": "test1234", "tos_accepted": True})
+        assert r.status_code == 422
+
+    def test_invalid_with_emoji_rejected(self, client: TestClient):
+        r = client.post("/auth/register", json={"username": "alice\U0001f389", "email": "a@test.com", "password": "test1234", "tos_accepted": True})
+        assert r.status_code == 422
+
+    def test_invalid_with_accent_rejected(self, client: TestClient):
+        r = client.post("/auth/register", json={"username": "élise", "email": "a@test.com", "password": "test1234", "tos_accepted": True})
+        assert r.status_code == 422
+
+    def test_starts_with_number_rejected(self, client: TestClient):
+        r = client.post("/auth/register", json={"username": "1alice", "email": "a@test.com", "password": "test1234", "tos_accepted": True})
+        assert r.status_code == 422
+
+    def test_starts_with_period_rejected(self, client: TestClient):
+        r = client.post("/auth/register", json={"username": ".alice", "email": "a@test.com", "password": "test1234", "tos_accepted": True})
+        assert r.status_code == 422
+
+    def test_starts_with_underscore_rejected(self, client: TestClient):
+        r = client.post("/auth/register", json={"username": "_alice", "email": "a@test.com", "password": "test1234", "tos_accepted": True})
+        assert r.status_code == 422
+
+    def test_ends_with_period_rejected(self, client: TestClient):
+        r = client.post("/auth/register", json={"username": "alice.", "email": "a@test.com", "password": "test1234", "tos_accepted": True})
+        assert r.status_code == 422
+
+    def test_ends_with_underscore_rejected(self, client: TestClient):
+        r = client.post("/auth/register", json={"username": "alice_", "email": "a@test.com", "password": "test1234", "tos_accepted": True})
+        assert r.status_code == 422
+
+    def test_consecutive_periods_rejected(self, client: TestClient):
+        r = client.post("/auth/register", json={"username": "ali..ce", "email": "a@test.com", "password": "test1234", "tos_accepted": True})
+        assert r.status_code == 422
+
+    def test_consecutive_underscores_rejected(self, client: TestClient):
+        r = client.post("/auth/register", json={"username": "ali__ce", "email": "a@test.com", "password": "test1234", "tos_accepted": True})
+        assert r.status_code == 422
+
+    def test_period_underscore_adjacent_rejected(self, client: TestClient):
+        r = client.post("/auth/register", json={"username": "ali._ce", "email": "a@test.com", "password": "test1234", "tos_accepted": True})
+        assert r.status_code == 422
+
+    def test_too_short_3_chars_rejected(self, client: TestClient):
+        r = client.post("/auth/register", json={"username": "ali", "email": "a@test.com", "password": "test1234", "tos_accepted": True})
+        assert r.status_code == 422
+
+    def test_minimum_4_chars_succeeds(self, client: TestClient):
+        assert register_user(client, "alic", "a@test.com")["username"] == "alic"
+
+    def test_too_long_31_chars_rejected(self, client: TestClient):
+        r = client.post("/auth/register", json={"username": "a" * 31, "email": "a@test.com", "password": "test1234", "tos_accepted": True})
+        assert r.status_code == 422
+
+    def test_max_30_chars_succeeds(self, client: TestClient):
+        name = "a" + "b" * 28 + "c"  # 30 chars, starts with letter, ends with letter
+        assert register_user(client, name, "a@test.com")["username"] == name
+
+    def test_reserved_username_rejected(self, client: TestClient):
+        r = client.post("/auth/register", json={"username": "admin", "email": "a@test.com", "password": "test1234", "tos_accepted": True})
+        assert r.status_code == 422
+
+    def test_reserved_username_case_insensitive(self, client: TestClient):
+        r = client.post("/auth/register", json={"username": "ADMIN", "email": "a@test.com", "password": "test1234", "tos_accepted": True})
+        assert r.status_code == 422
+
+
+class TestCaseInsensitiveUsername:
+
+    def test_register_uppercase_then_lowercase_rejected(self, client: TestClient):
+        register_user(client, "Ismail", "first@test.com")
+        r = client.post("/auth/register", json={"username": "ismail", "email": "second@test.com", "password": "test1234", "tos_accepted": True})
+        assert r.status_code == 409
+
+    def test_register_lowercase_then_uppercase_rejected(self, client: TestClient):
+        register_user(client, "ismail", "first@test.com")
+        r = client.post("/auth/register", json={"username": "ISMAIL", "email": "second@test.com", "password": "test1234", "tos_accepted": True})
+        assert r.status_code == 409
+
+    def test_register_mixed_case_rejected(self, client: TestClient):
+        register_user(client, "Ismail", "first@test.com")
+        r = client.post("/auth/register", json={"username": "iSmAiL", "email": "second@test.com", "password": "test1234", "tos_accepted": True})
+        assert r.status_code == 409
+
+    def test_username_display_form_preserved(self, client: TestClient):
+        data = register_user(client, "Ismail", "ismail@test.com")
+        token = data["access_token"]
+        me = client.get("/users/me", headers=auth_headers(token)).json()
+        assert me["username"] == "Ismail"
+
+    def test_login_with_lowercase_works(self, client: TestClient):
+        register_user(client, "Ismail", "ismail@test.com")
+        r = client.post("/auth/login", json={"identifier": "ismail", "password": "test1234"})
+        assert r.status_code == 200
+
+    def test_login_with_uppercase_works(self, client: TestClient):
+        register_user(client, "Ismail", "ismail@test.com")
+        r = client.post("/auth/login", json={"identifier": "ISMAIL", "password": "test1234"})
+        assert r.status_code == 200
+
+    def test_login_with_original_case_works(self, client: TestClient):
+        register_user(client, "Ismail", "ismail@test.com")
+        r = client.post("/auth/login", json={"identifier": "Ismail", "password": "test1234"})
+        assert r.status_code == 200
+
+    def test_user_lookup_by_username_case_insensitive(self, client: TestClient):
+        data = register_user(client, "Ismail", "ismail@test.com")
+        token = data["access_token"]
+        headers = auth_headers(token)
+        r = client.get("/users/by-username/ismail", headers=headers)
+        assert r.status_code == 200
+        assert r.json()["username"] == "Ismail"
+        r2 = client.get("/users/by-username/ISMAIL", headers=headers)
+        assert r2.status_code == 200
+        assert r2.json()["username"] == "Ismail"
+
+
+class TestDisplayName:
+
+    def test_register_without_display_name_works(self, client: TestClient):
+        data = register_user(client, "alice1", "alice@test.com", display_name=None)
+        token = data["access_token"]
+        me = client.get("/users/me", headers=auth_headers(token)).json()
+        assert me["display_name"] is None
+
+    def test_register_with_display_name_works(self, client: TestClient):
+        data = register_user(client, "alice1", "alice@test.com", display_name="Alice Smith")
+        token = data["access_token"]
+        me = client.get("/users/me", headers=auth_headers(token)).json()
+        assert me["display_name"] == "Alice Smith"
+
+    def test_unicode_display_name_works(self, client: TestClient):
+        data = register_user(client, "alice1", "alice@test.com", display_name="إسماعيل")
+        token = data["access_token"]
+        me = client.get("/users/me", headers=auth_headers(token)).json()
+        assert me["display_name"] == "إسماعيل"
+
+    def test_display_name_too_long_rejected(self, client: TestClient):
+        r = client.post("/auth/register", json={"username": "alice1", "email": "a@test.com", "password": "test1234", "tos_accepted": True, "display_name": "x" * 51})
+        assert r.status_code == 422
+
+    def test_display_name_with_control_chars_rejected(self, client: TestClient):
+        r = client.post("/auth/register", json={"username": "alice1", "email": "a@test.com", "password": "test1234", "tos_accepted": True, "display_name": "Alice\x00Smith"})
+        assert r.status_code == 422
+
+    def test_display_name_with_zero_width_chars_rejected(self, client: TestClient):
+        r = client.post("/auth/register", json={"username": "alice1", "email": "a@test.com", "password": "test1234", "tos_accepted": True, "display_name": "Alice​Smith"})
+        assert r.status_code == 422
+
+    def test_empty_display_name_becomes_none(self, client: TestClient):
+        data = register_user(client, "alice1", "alice@test.com", display_name="   ")
+        token = data["access_token"]
+        me = client.get("/users/me", headers=auth_headers(token)).json()
+        assert me["display_name"] is None
+
+
+class TestUserUpdate:
+
+    def test_update_display_name_succeeds(self, client: TestClient):
+        data = register_user(client, "alice1", "alice@test.com")
+        headers = auth_headers(data["access_token"])
+        r = client.patch("/users/me", json={"display_name": "Alice Updated"}, headers=headers)
+        assert r.status_code == 200
+        assert r.json()["display_name"] == "Alice Updated"
+
+    def test_update_display_name_to_empty_clears_it(self, client: TestClient):
+        data = register_user(client, "alice1", "alice@test.com", display_name="Alice")
+        headers = auth_headers(data["access_token"])
+        r = client.patch("/users/me", json={"display_name": "  "}, headers=headers)
+        assert r.status_code == 200
+        assert r.json()["display_name"] is None
+
+    def test_username_not_accepted_in_user_update(self, client: TestClient):
+        data = register_user(client, "alice1", "alice@test.com")
+        headers = auth_headers(data["access_token"])
+        r = client.patch("/users/me", json={"username": "hackedname", "display_name": "Alice"}, headers=headers)
+        assert r.status_code == 200
+        assert r.json()["username"] == "alice1"
+
+
+class TestUsernameLookup:
+
+    def test_lookup_returns_display_username(self, client: TestClient):
+        data = register_user(client, "Ismail", "ismail@test.com")
+        headers = auth_headers(data["access_token"])
+        r = client.get("/users/by-username/ismail", headers=headers)
+        assert r.status_code == 200
+        assert r.json()["username"] == "Ismail"
+
+    def test_search_finds_by_username(self, client: TestClient):
+        data = register_user(client, "alice1", "alice@test.com")
+        register_user(client, "bobby1", "bob@test.com")
+        headers = auth_headers(data["access_token"])
+        r = client.get("/users/search?q=bobby", headers=headers)
+        assert r.status_code == 200
+        results = r.json()
+        assert any(u["username"] == "bobby1" for u in results)
+
+    def test_search_finds_by_display_name(self, client: TestClient):
+        data = register_user(client, "alice1", "alice@test.com")
+        register_user(client, "bobby1", "bob@test.com", display_name="Robert Paulson")
+        headers = auth_headers(data["access_token"])
+        r = client.get("/users/search?q=Robert", headers=headers)
+        assert r.status_code == 200
+        results = r.json()
+        assert any(u["username"] == "bobby1" for u in results)
+
+    def test_search_case_insensitive(self, client: TestClient):
+        data = register_user(client, "alice1", "alice@test.com")
+        register_user(client, "bobby1", "bob@test.com")
+        headers = auth_headers(data["access_token"])
+        r = client.get("/users/search?q=BOBBY", headers=headers)
+        assert r.status_code == 200
+        results = r.json()
+        assert any(u["username"] == "bobby1" for u in results)

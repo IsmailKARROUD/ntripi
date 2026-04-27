@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:social_flutter/core/api/api_client.dart';
+import 'package:social_flutter/features/auth/domain/username_validator.dart';
 import 'package:social_flutter/features/auth/providers/auth_provider.dart';
 
 class RegisterScreen extends ConsumerStatefulWidget {
@@ -169,29 +170,20 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   ),
                   const SizedBox(height: 40),
 
-                  // Username field
                   TextFormField(
                     controller: _usernameController,
                     textInputAction: TextInputAction.next,
+                    autocorrect: false,
+                    autovalidateMode: AutovalidateMode.onUserInteraction,
                     decoration: const InputDecoration(
                       labelText: 'Username',
-                      hintText: 'e.g. john_doe123',
+                      hintText: 'e.g. john.doe123',
+                      helperText:
+                          '4–30 chars: letters, numbers, periods, underscores',
                       prefixIcon: Icon(Icons.alternate_email),
                       border: OutlineInputBorder(),
                     ),
-                    validator: (value) {
-                      if (value == null || value.trim().isEmpty) {
-                        return 'Username is required.';
-                      }
-                      final trimmed = value.trim();
-                      if (trimmed.length < 3 || trimmed.length > 30) {
-                        return 'Username must be 3–30 characters.';
-                      }
-                      if (!RegExp(r'^[a-z0-9_]+$').hasMatch(trimmed)) {
-                        return 'Only lowercase letters, digits, underscores.';
-                      }
-                      return null;
-                    },
+                    validator: UsernameValidator.validate,
                   ),
                   const SizedBox(height: 16),
 
@@ -253,23 +245,19 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   ),
                   const SizedBox(height: 16),
 
-                  // Display name (optional)
                   TextFormField(
                     controller: _displayNameController,
                     textInputAction: TextInputAction.done,
                     onFieldSubmitted: (_) => _register(),
                     decoration: const InputDecoration(
-                      labelText: 'Display Name (optional)',
-                      hintText: 'Your full name or nickname',
+                      labelText: 'Display name (optional)',
+                      hintText: 'Any language, emoji — defaults to @username',
+                      helperText:
+                          'How others see you. Up to 50 characters.',
                       prefixIcon: Icon(Icons.person_outlined),
                       border: OutlineInputBorder(),
                     ),
-                    validator: (value) {
-                      if (value != null && value.trim().length > 100) {
-                        return 'Display name must be 100 characters or less.';
-                      }
-                      return null;
-                    },
+                    validator: DisplayNameValidator.validate,
                   ),
                   const SizedBox(height: 16),
 

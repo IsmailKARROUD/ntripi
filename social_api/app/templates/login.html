@@ -68,9 +68,9 @@
 
   <form method="POST" action="/web/login">
     <label>
-      Email
-      <input type="email" name="email" required autofocus
-             value="{{ email or '' }}" autocomplete="email">
+      Email or username
+      <input type="text" name="identifier" required autofocus
+             value="{{ identifier or '' }}" autocomplete="username">
     </label>
 
     <label>

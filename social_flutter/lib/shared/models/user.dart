@@ -33,6 +33,12 @@ class User {
 
   final DateTime createdAt;
 
+  /// Returns displayName if set, else "@username".
+  String get nameForDisplay => displayName ?? '@$username';
+
+  /// Returns the @-handle form regardless of displayName.
+  String get handle => '@$username';
+
   const User({
     required this.id,
     required this.username,

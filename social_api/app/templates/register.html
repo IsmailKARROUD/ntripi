@@ -100,10 +100,18 @@
 
     <label>
       Username
-      <input type="text" name="username" required minlength="3" maxlength="30"
+      <input type="text" name="username" required minlength="4" maxlength="30"
              value="{{ username or '' }}" autocomplete="username"
-             pattern="[a-z0-9_]+" title="Lowercase letters, digits, and underscores only">
-      <span class="field-hint">Lowercase letters, digits, and underscores. 3–30 characters.</span>
+             pattern="[a-zA-Z][a-zA-Z0-9_.]{2,28}[a-zA-Z0-9]"
+             title="Must start with a letter, end with a letter or number, 4–30 chars, letters/numbers/periods/underscores only">
+      <span class="field-hint">4–30 chars: letters, numbers, periods, or underscores. Must start with a letter. Hyphens not allowed.</span>
+    </label>
+
+    <label>
+      Display name <span style="font-weight:400;color:var(--sub)">(optional)</span>
+      <input type="text" name="display_name" maxlength="50"
+             value="{{ display_name or '' }}">
+      <span class="field-hint">How others see you. Any language, emoji. Defaults to your @username.</span>
     </label>
 
     <label>

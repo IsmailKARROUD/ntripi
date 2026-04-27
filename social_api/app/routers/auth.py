@@ -65,7 +65,7 @@ def register(payload: RegisterRequest, db: Session = Depends(get_db)) -> TokenRe
 )
 def login(payload: LoginRequest, db: Session = Depends(get_db)) -> TokenResponse:
     try:
-        user, token = auth_service.authenticate_user(payload.email, payload.password, db)
+        user, token = auth_service.authenticate_user(payload.identifier, payload.password, db)
     except auth_service.AuthError as e:
         raise HTTPException(status_code=e.http_status, detail=e.message)
     return TokenResponse(

@@ -150,7 +150,7 @@ class TestVisibilityPublic:
     def test_stranger_can_view_public(self, client: TestClient):
         """A user with no relationship to the owner can view a public itinerary."""
         alice = register_user(client, "alice", "alice@test.com")
-        bob = register_user(client, "bob", "bob@test.com")
+        bob = register_user(client, "bob1", "bob@test.com")
         itinerary = create_itinerary(client, alice["access_token"], "public")
 
         response = fetch_itinerary(client, bob["access_token"], itinerary["id"])
@@ -189,7 +189,7 @@ class TestVisibilityFollowers:
         Bob can view Alice's followers itinerary.
         """
         alice = register_user(client, "alice", "alice@test.com")
-        bob = register_user(client, "bob", "bob@test.com")
+        bob = register_user(client, "bob1", "bob@test.com")
         itinerary = create_itinerary(client, alice["access_token"], "followers")
 
         setup_accepted_follow(client, bob["access_token"], alice["access_token"], alice["user_id"])
@@ -205,7 +205,7 @@ class TestVisibilityFollowers:
         Bob cannot view Alice's followers itinerary.
         """
         alice = register_user(client, "alice", "alice@test.com")
-        bob = register_user(client, "bob", "bob@test.com")
+        bob = register_user(client, "bob1", "bob@test.com")
         itinerary = create_itinerary(client, alice["access_token"], "followers")
 
         make_private(client, alice["access_token"])
@@ -219,7 +219,7 @@ class TestVisibilityFollowers:
     def test_stranger_cannot_view_followers_itinerary(self, client: TestClient):
         """Bob has no relationship with Alice. He cannot view her followers itinerary."""
         alice = register_user(client, "alice", "alice@test.com")
-        bob = register_user(client, "bob", "bob@test.com")
+        bob = register_user(client, "bob1", "bob@test.com")
         itinerary = create_itinerary(client, alice["access_token"], "followers")
 
         response = fetch_itinerary(client, bob["access_token"], itinerary["id"])
@@ -248,7 +248,7 @@ class TestVisibilityRestricted:
         Bob can view it.
         """
         alice = register_user(client, "alice", "alice@test.com")
-        bob = register_user(client, "bob", "bob@test.com")
+        bob = register_user(client, "bob1", "bob@test.com")
         itinerary = create_itinerary(client, alice["access_token"], "restricted")
 
         add_resp = add_to_allowlist(
@@ -263,7 +263,7 @@ class TestVisibilityRestricted:
     def test_non_allowed_user_cannot_view(self, client: TestClient):
         """Charlie is not in the allowlist. She cannot view the restricted itinerary."""
         alice = register_user(client, "alice", "alice@test.com")
-        register_user(client, "bob", "bob@test.com")
+        register_user(client, "bob1", "bob@test.com")
         charlie = register_user(client, "charlie", "charlie@test.com")
         itinerary = create_itinerary(client, alice["access_token"], "restricted")
 
@@ -278,7 +278,7 @@ class TestVisibilityRestricted:
         itinerary. Explicit allowlist membership is required.
         """
         alice = register_user(client, "alice", "alice@test.com")
-        bob = register_user(client, "bob", "bob@test.com")
+        bob = register_user(client, "bob1", "bob@test.com")
         itinerary = create_itinerary(client, alice["access_token"], "restricted")
 
         # Bob follows Alice and is accepted — but is NOT in the allowlist.
@@ -295,7 +295,7 @@ class TestVisibilityRestricted:
         Allowlist only applies when visibility='restricted'.
         """
         alice = register_user(client, "alice", "alice@test.com")
-        bob = register_user(client, "bob", "bob@test.com")
+        bob = register_user(client, "bob1", "bob@test.com")
         itinerary = create_itinerary(client, alice["access_token"], "public")
 
         resp = add_to_allowlist(
@@ -311,7 +311,7 @@ class TestVisibilityRestricted:
         Only Alice (the owner) can do this. Bob receives 403.
         """
         alice = register_user(client, "alice", "alice@test.com")
-        bob = register_user(client, "bob", "bob@test.com")
+        bob = register_user(client, "bob1", "bob@test.com")
         charlie = register_user(client, "charlie", "charlie@test.com")
         itinerary = create_itinerary(client, alice["access_token"], "restricted")
 
@@ -327,7 +327,7 @@ class TestVisibilityRestricted:
         Alice removes Bob → Bob can no longer view (403).
         """
         alice = register_user(client, "alice", "alice@test.com")
-        bob = register_user(client, "bob", "bob@test.com")
+        bob = register_user(client, "bob1", "bob@test.com")
         itinerary = create_itinerary(client, alice["access_token"], "restricted")
 
         # Grant access
@@ -362,7 +362,7 @@ class TestVisibilityOnlyMe:
     def test_follower_cannot_view_only_me(self, client: TestClient):
         """Even an accepted follower cannot view an only_me itinerary."""
         alice = register_user(client, "alice", "alice@test.com")
-        bob = register_user(client, "bob", "bob@test.com")
+        bob = register_user(client, "bob1", "bob@test.com")
         itinerary = create_itinerary(client, alice["access_token"], "only_me")
 
         setup_accepted_follow(client, bob["access_token"], alice["access_token"], alice["user_id"])
@@ -374,7 +374,7 @@ class TestVisibilityOnlyMe:
     def test_stranger_cannot_view_only_me(self, client: TestClient):
         """A user with no relationship to the owner cannot view an only_me itinerary."""
         alice = register_user(client, "alice", "alice@test.com")
-        bob = register_user(client, "bob", "bob@test.com")
+        bob = register_user(client, "bob1", "bob@test.com")
         itinerary = create_itinerary(client, alice["access_token"], "only_me")
 
         response = fetch_itinerary(client, bob["access_token"], itinerary["id"])
@@ -394,7 +394,7 @@ class TestVisibilityChange:
         Alice changes visibility to only_me → Bob is blocked (403).
         """
         alice = register_user(client, "alice", "alice@test.com")
-        bob = register_user(client, "bob", "bob@test.com")
+        bob = register_user(client, "bob1", "bob@test.com")
         itinerary = create_itinerary(client, alice["access_token"], "public")
 
         assert fetch_itinerary(client, bob["access_token"], itinerary["id"]).status_code == 200
@@ -409,7 +409,7 @@ class TestVisibilityChange:
         Alice changes visibility to public → Bob can now view (200).
         """
         alice = register_user(client, "alice", "alice@test.com")
-        bob = register_user(client, "bob", "bob@test.com")
+        bob = register_user(client, "bob1", "bob@test.com")
         itinerary = create_itinerary(client, alice["access_token"], "only_me")
 
         assert fetch_itinerary(client, bob["access_token"], itinerary["id"]).status_code == 403
@@ -425,7 +425,7 @@ class TestVisibilityChange:
         Alice adds Bob to allowlist → Bob can view again (200).
         """
         alice = register_user(client, "alice", "alice@test.com")
-        bob = register_user(client, "bob", "bob@test.com")
+        bob = register_user(client, "bob1", "bob@test.com")
         itinerary = create_itinerary(client, alice["access_token"], "public")
 
         # Bob can view while public
@@ -475,7 +475,7 @@ class TestUserProfileItineraries:
     def test_stranger_sees_only_public(self, client: TestClient):
         """Bob has no relationship with Alice. He sees only the public itinerary."""
         alice = register_user(client, "alice", "alice@test.com")
-        bob = register_user(client, "bob", "bob@test.com")
+        bob = register_user(client, "bob1", "bob@test.com")
         _create_four_itineraries(client, alice["access_token"])
 
         resp = client.get(
@@ -493,7 +493,7 @@ class TestUserProfileItineraries:
         Bob follows Alice (accepted). He sees public + followers = 2 itineraries.
         """
         alice = register_user(client, "alice", "alice@test.com")
-        bob = register_user(client, "bob", "bob@test.com")
+        bob = register_user(client, "bob1", "bob@test.com")
         _create_four_itineraries(client, alice["access_token"])
 
         setup_accepted_follow(client, bob["access_token"], alice["access_token"], alice["user_id"])
@@ -515,7 +515,7 @@ class TestUserProfileItineraries:
         Pending follow grants no extra visibility — only public is returned.
         """
         alice = register_user(client, "alice", "alice@test.com")
-        bob = register_user(client, "bob", "bob@test.com")
+        bob = register_user(client, "bob1", "bob@test.com")
         _create_four_itineraries(client, alice["access_token"])
 
         make_private(client, alice["access_token"])
@@ -538,7 +538,7 @@ class TestUserProfileItineraries:
         Bob sees public + restricted = 2.
         """
         alice = register_user(client, "alice", "alice@test.com")
-        bob = register_user(client, "bob", "bob@test.com")
+        bob = register_user(client, "bob1", "bob@test.com")
         itineraries = _create_four_itineraries(client, alice["access_token"])
 
         add_resp = add_to_allowlist(
@@ -563,7 +563,7 @@ class TestUserProfileItineraries:
         Bob sees public + followers + restricted = 3.
         """
         alice = register_user(client, "alice", "alice@test.com")
-        bob = register_user(client, "bob", "bob@test.com")
+        bob = register_user(client, "bob1", "bob@test.com")
         itineraries = _create_four_itineraries(client, alice["access_token"])
 
         setup_accepted_follow(client, bob["access_token"], alice["access_token"], alice["user_id"])
@@ -585,7 +585,7 @@ class TestUserProfileItineraries:
     def test_empty_list_for_user_with_no_itineraries(self, client: TestClient):
         """Alice has no itineraries. Bob fetches and gets 200 with empty list."""
         alice = register_user(client, "alice", "alice@test.com")
-        bob = register_user(client, "bob", "bob@test.com")
+        bob = register_user(client, "bob1", "bob@test.com")
 
         resp = client.get(
             f"/users/{alice['user_id']}/itineraries",
