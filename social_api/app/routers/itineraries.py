@@ -42,6 +42,7 @@ from app.schemas.itinerary import (
     AllowedUserResponse,
     AnnotationCreate,
     AnnotationResponse,
+    AnnotationUpdate,
     ItineraryCreate,
     ItineraryDetail,
     ItinerarySummary,
@@ -786,6 +787,53 @@ def delete_annotation(
 
     db.delete(annotation)
     db.commit()
+
+
+# ---------------------------------------------------------------------------
+# PATCH /itineraries/{itinerary_id}/stops/{stop_id}/annotations/{annotation_id}
+# ---------------------------------------------------------------------------
+
+@router.patch(
+    "/{itinerary_id}/stops/{stop_id}/annotations/{annotation_id}",
+    response_model=AnnotationResponse,
+    summary="Edit an annotation on a stop",
+)
+def update_annotation(
+    itinerary_id: uuid.UUID,
+    stop_id: uuid.UUID,
+    annotation_id: uuid.UUID,
+    body: AnnotationUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> AnnotationResponse:
+    """Edit an annotation's content or type. Owner only."""
+    itinerary = _get_itinerary_or_404(itinerary_id, db)
+    _require_owner(itinerary, current_user)
+
+    annotation = db.execute(
+        select(Annotation)
+        .join(Stop, Annotation.stop_id == Stop.id)
+        .where(
+            Annotation.id == annotation_id,
+            Annotation.stop_id == stop_id,
+            Stop.itinerary_id == itinerary_id,
+        )
+    ).scalar_one_or_none()
+
+    if not annotation:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Annotation not found.",
+        )
+
+    if body.content is not None:
+        annotation.content = body.content
+    if body.type is not None:
+        annotation.type = body.type
+
+    db.commit()
+    db.refresh(annotation)
+    return annotation  # type: ignore[return-value]
 
 
 # ---------------------------------------------------------------------------

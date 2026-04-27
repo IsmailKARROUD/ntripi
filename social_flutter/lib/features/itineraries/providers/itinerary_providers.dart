@@ -11,6 +11,7 @@ import 'package:social_flutter/core/services/geocoding_service.dart';
 import 'package:social_flutter/features/itineraries/data/itinerary_repository.dart';
 import 'package:social_flutter/features/itineraries/data/share_service.dart';
 import 'package:social_flutter/features/itineraries/domain/allowed_user.dart';
+import 'package:social_flutter/features/itineraries/domain/annotation.dart';
 import 'package:social_flutter/features/itineraries/domain/itinerary.dart';
 import 'package:social_flutter/features/itineraries/domain/my_rating.dart';
 import 'package:social_flutter/features/itineraries/domain/ratings_page.dart';
@@ -162,6 +163,32 @@ class ItineraryDetailNotifier
         .read(itineraryRepositoryProvider)
         .deleteSegment(arg, segmentId);
     await refresh();
+  }
+
+  /// Update an annotation and patch it in local state.
+  Future<void> updateAnnotation(
+    String stopId,
+    String annotationId, {
+    String? content,
+    AnnotationType? type,
+  }) async {
+    final updated = await ref
+        .read(itineraryRepositoryProvider)
+        .updateAnnotation(arg, stopId, annotationId, content: content, type: type);
+
+    state.whenData((itinerary) {
+      final updatedStops = itinerary.stops.map((s) {
+        if (s.id == stopId) {
+          return s.copyWith(
+            annotations: s.annotations
+                .map((a) => a.id == annotationId ? updated : a)
+                .toList(),
+          );
+        }
+        return s;
+      }).toList();
+      state = AsyncData(itinerary.copyWith(stops: updatedStops));
+    });
   }
 
   /// Delete an annotation and remove it from local state.

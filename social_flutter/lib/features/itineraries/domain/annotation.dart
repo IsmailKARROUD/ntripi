@@ -15,6 +15,7 @@ class Annotation {
   final AnnotationType type;
   final String content;
   final DateTime createdAt;
+  final DateTime updatedAt;
 
   const Annotation({
     required this.id,
@@ -22,6 +23,7 @@ class Annotation {
     required this.type,
     required this.content,
     required this.createdAt,
+    required this.updatedAt,
   });
 
   factory Annotation.fromJson(Map<String, dynamic> json) {
@@ -31,6 +33,7 @@ class Annotation {
       type: AnnotationType.values.byName(json['type'] as String),
       content: json['content'] as String,
       createdAt: DateTime.parse(json['created_at'] as String),
+      updatedAt: DateTime.parse(json['updated_at'] as String),
     );
   }
 
@@ -41,6 +44,22 @@ class Annotation {
       'type': type.name,
       'content': content,
       'created_at': createdAt.toIso8601String(),
+      'updated_at': updatedAt.toIso8601String(),
     };
+  }
+
+  Annotation copyWith({
+    AnnotationType? type,
+    String? content,
+    DateTime? updatedAt,
+  }) {
+    return Annotation(
+      id: id,
+      stopId: stopId,
+      type: type ?? this.type,
+      content: content ?? this.content,
+      createdAt: createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
   }
 }

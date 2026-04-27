@@ -18,6 +18,7 @@ import 'package:social_flutter/core/services/geocoding_service.dart';
 import 'package:social_flutter/features/itineraries/domain/annotation.dart';
 import 'package:social_flutter/features/itineraries/domain/stop.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/annotation_chip.dart';
+import 'package:social_flutter/features/itineraries/presentation/widgets/annotation_form_dialog.dart';
 import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
 
 class StopFormScreen extends ConsumerStatefulWidget {
@@ -277,83 +278,43 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
   // Annotation helpers
   // ---------------------------------------------------------------------------
 
-  Future<void> _showAddAnnotationDialog() async {
-    AnnotationType? selectedType = AnnotationType.advice;
-    final contentController = TextEditingController();
-
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setDialogState) => AlertDialog(
-          title: const Text('Add Annotation'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              SegmentedButton<AnnotationType>(
-                segments: const [
-                  ButtonSegment(
-                    value: AnnotationType.advice,
-                    label: Text('Advice'),
-                    icon: Icon(Icons.lightbulb_outline, size: 16),
-                  ),
-                  ButtonSegment(
-                    value: AnnotationType.caution,
-                    label: Text('Caution'),
-                    icon: Icon(Icons.warning_amber_outlined, size: 16),
-                  ),
-                  ButtonSegment(
-                    value: AnnotationType.avoid,
-                    label: Text('Avoid'),
-                    icon: Icon(Icons.block, size: 16),
-                  ),
-                  ButtonSegment(
-                    value: AnnotationType.info,
-                    label: Text('Info'),
-                    icon: Icon(Icons.info_outline, size: 16),
-                  ),
-                ],
-                selected: {selectedType!},
-                onSelectionChanged: (s) =>
-                    setDialogState(() => selectedType = s.first),
-                showSelectedIcon: false,
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: contentController,
-                maxLines: 3,
-                decoration: const InputDecoration(
-                  labelText: 'Content *',
-                  border: OutlineInputBorder(),
-                  alignLabelWithHint: true,
-                ),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Cancel'),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.pop(ctx, true),
-              child: const Text('Add'),
-            ),
-          ],
-        ),
-      ),
+  Future<void> _showAnnotationDialog({Annotation? existing}) async {
+    if (!mounted) return;
+    final result = await showAnnotationFormDialog(
+      context,
+      initialContent: existing?.content,
+      initialType: existing?.type,
+      isEdit: existing != null,
     );
+    if (result == null || !mounted) return;
 
-    if (confirmed != true || !mounted) return;
-    if (contentController.text.trim().isEmpty) return;
+    final notifier =
+        ref.read(itineraryDetailProvider(widget.itineraryId).notifier);
 
-    if (widget.isEditMode) {
-      // Stop already exists — send to API immediately.
+    if (existing != null) {
+      // Edit — only send changed fields; skip API call if nothing changed.
+      final contentChanged = result.content != existing.content;
+      final typeChanged = result.type != existing.type;
+      if (!contentChanged && !typeChanged) return;
       try {
-        await ref
-            .read(itineraryDetailProvider(widget.itineraryId).notifier)
-            .addAnnotation(widget.stopId!, {
-          'type': selectedType!.name,
-          'content': contentController.text.trim(),
+        await notifier.updateAnnotation(
+          widget.stopId!,
+          existing.id,
+          content: contentChanged ? result.content : null,
+          type: typeChanged ? result.type : null,
+        );
+      } on Exception catch (e) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(extractErrorMessage(e as dynamic))),
+        );
+      }
+    } else if (widget.isEditMode) {
+      // Create — stop already exists, send to API immediately.
+      try {
+        await notifier.addAnnotation(widget.stopId!, {
+          'type': result.type.name,
+          'content': result.content,
         });
         _initFromExistingStop();
       } on Exception catch (e) {
@@ -363,10 +324,10 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
         );
       }
     } else {
-      // Stop doesn't exist yet — queue locally until save.
+      // Create — stop doesn't exist yet, queue locally until save.
       setState(() {
         _pendingAnnotations.add(
-          _PendingAnnotation(selectedType!, contentController.text.trim()),
+          _PendingAnnotation(result.type, result.content),
         );
       });
     }
@@ -720,7 +681,7 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                     style: Theme.of(context).textTheme.titleSmall,
                   ),
                   TextButton.icon(
-                    onPressed: _showAddAnnotationDialog,
+                    onPressed: () => _showAnnotationDialog(),
                     icon: const Icon(Icons.add, size: 16),
                     label: const Text('Add'),
                   ),
@@ -743,6 +704,7 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                         .map(
                           (a) => AnnotationChip(
                             annotation: a,
+                            onEdit: () => _showAnnotationDialog(existing: a),
                             onDelete: () => _deleteAnnotation(a.id),
                           ),
                         )

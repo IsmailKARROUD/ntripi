@@ -13,8 +13,8 @@ Design decisions:
     reason as Stop.type — adding new types requires no ALTER TYPE migration.
   - ON DELETE CASCADE: when a stop is deleted, all its annotations are
     automatically removed. No orphaned annotation rows possible.
-  - No updated_at column — annotations are write-once (create or delete).
-    Editing is not a supported operation; delete and recreate instead.
+  - updated_at uses onupdate=func.now() so every ORM UPDATE statement
+    automatically refreshes the timestamp without manual assignment.
 """
 
 import uuid
@@ -61,6 +61,13 @@ class Annotation(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         server_default=func.now(),
+        nullable=False,
+    )
+
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        onupdate=func.now(),
         nullable=False,
     )
 

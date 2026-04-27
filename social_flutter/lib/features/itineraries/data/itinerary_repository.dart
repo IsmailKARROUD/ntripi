@@ -147,6 +147,25 @@ class ItineraryRepository {
     await _dio.delete(stopAnnotationEndpoint(itineraryId, stopId, annotationId));
   }
 
+  /// PATCH /itineraries/{itineraryId}/stops/{stopId}/annotations/{annotationId}
+  Future<Annotation> updateAnnotation(
+    String itineraryId,
+    String stopId,
+    String annotationId, {
+    String? content,
+    AnnotationType? type,
+  }) async {
+    final body = <String, dynamic>{
+      if (content != null) 'content': content,
+      if (type != null) 'type': type.name,
+    };
+    final response = await _dio.patch<Map<String, dynamic>>(
+      stopAnnotationEndpoint(itineraryId, stopId, annotationId),
+      data: body,
+    );
+    return Annotation.fromJson(response.data!);
+  }
+
   // ---------------------------------------------------------------------------
   // Allowlist CRUD (restricted visibility)
   // ---------------------------------------------------------------------------

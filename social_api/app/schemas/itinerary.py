@@ -28,12 +28,26 @@ class AnnotationCreate(BaseModel):
     content: str = Field(..., min_length=1, max_length=2000)
 
 
+class AnnotationUpdate(BaseModel):
+    type: str | None = Field(None, pattern="^(advice|caution|avoid|info)$")
+    content: str | None = Field(None, min_length=1, max_length=2000)
+
+    @model_validator(mode='after')
+    def at_least_one_field(self) -> 'AnnotationUpdate':
+        if self.type is None and self.content is None:
+            raise ValueError(
+                "At least one field (type or content) must be provided."
+            )
+        return self
+
+
 class AnnotationResponse(BaseModel):
     id: uuid.UUID
     stop_id: uuid.UUID
     type: str
     content: str
     created_at: datetime
+    updated_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
 
