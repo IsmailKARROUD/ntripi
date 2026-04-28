@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:social_flutter/core/utils/apple_platform.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -172,10 +173,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 // Social placeholder buttons
                 Row(
                   children: [
-                    Expanded(
+                    const Expanded(
                       child: _SocialButton(
                         label: 'Google',
-                        icon: const Text(
+                        icon: Text(
                           'G',
                           style: TextStyle(
                             fontSize: 16,
@@ -186,12 +187,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       ),
                     ),
                     const SizedBox(width: 12),
-                    Expanded(
+                   isApplePlatform() ? const Expanded(
                       child: _SocialButton(
                         label: 'Apple',
-                        icon: const Icon(Icons.apple, size: 20, color: kBark),
+                        icon: Icon(Icons.apple, size: 20, color: kBark),
                       ),
-                    ),
+                    ) : const SizedBox.shrink(),
                   ],
                 ),
                 const SizedBox(height: 32),
