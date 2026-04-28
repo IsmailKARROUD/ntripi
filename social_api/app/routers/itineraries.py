@@ -22,7 +22,7 @@ Total recalculation:
 import uuid
 from decimal import Decimal
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, selectinload
@@ -45,6 +45,7 @@ from app.schemas.itinerary import (
     AnnotationUpdate,
     ItineraryCreate,
     ItineraryDetail,
+    ItineraryImageResponse,
     ItinerarySummary,
     ItineraryUpdate,
     RaterInfo,
@@ -63,7 +64,9 @@ from app.schemas.itinerary import (
     TransportLegResponse,
     TransportLegUpdate,
 )
+from app.services.image_service import ImageProcessingError, process_cover_image
 from app.services.itinerary_access import can_view_itinerary, recalculate_rating
+from app.storage.factory import storage
 
 router = APIRouter(tags=["Itineraries"])
 
@@ -1329,6 +1332,74 @@ def delete_leg(
     db.flush()
     _recalculate_segment_totals(segment, db)
     _recalculate_totals(itinerary, db)
+    db.commit()
+
+
+# ---------------------------------------------------------------------------
+# POST /itineraries/{id}/image — Upload or replace the cover image
+# ---------------------------------------------------------------------------
+# Defined BEFORE /{itinerary_id}/segments so FastAPI matches the literal
+# path segment 'image' first, not the parameterised {segment_id}.
+
+@router.post(
+    "/{itinerary_id}/image",
+    response_model=ItineraryImageResponse,
+    summary="Upload or replace the cover image for an itinerary",
+)
+async def upload_itinerary_image(
+    itinerary_id: uuid.UUID,
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> ItineraryImageResponse:
+    """
+    Accept a JPEG, PNG, or WebP upload and store it as the itinerary's cover.
+
+    Processing: validate format/dimensions, strip EXIF, resize to 1200×630,
+    re-encode as JPEG. The key is itineraries/{id}.jpg — uploading again
+    overwrites the previous image in place.
+    """
+    itinerary = _get_itinerary_or_404(itinerary_id, db)
+    _require_owner(itinerary, current_user)
+
+    raw_bytes = await file.read()
+
+    try:
+        processed = process_cover_image(raw_bytes)
+    except ImageProcessingError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
+
+    key = f"itineraries/{itinerary_id}.jpg"
+    public_url = await storage().save(key, processed, "image/jpeg")
+
+    itinerary.cover_image_url = public_url
+    db.commit()
+
+    return ItineraryImageResponse(cover_image_url=public_url)
+
+
+# ---------------------------------------------------------------------------
+# DELETE /itineraries/{id}/image — Remove the cover image
+# ---------------------------------------------------------------------------
+
+@router.delete(
+    "/{itinerary_id}/image",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Remove the cover image from an itinerary",
+)
+async def delete_itinerary_image(
+    itinerary_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> None:
+    """Delete the stored file and clear cover_image_url. No-op if no image exists."""
+    itinerary = _get_itinerary_or_404(itinerary_id, db)
+    _require_owner(itinerary, current_user)
+
+    key = f"itineraries/{itinerary_id}.jpg"
+    await storage().delete(key)
+
+    itinerary.cover_image_url = None
     db.commit()
 
 

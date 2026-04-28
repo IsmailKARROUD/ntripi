@@ -32,6 +32,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
+import 'package:social_flutter/core/api/api_endpoints.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:latlong2/latlong.dart';
@@ -457,6 +458,23 @@ class _ItineraryDetailScreenState
             child: CustomScrollView(
               physics: const AlwaysScrollableScrollPhysics(),
               slivers: [
+                // ------------------------------------------------------------
+                // Cover image hero banner
+                // ------------------------------------------------------------
+                if (itinerary.coverImageUrl != null)
+                  SliverToBoxAdapter(
+                    child: AspectRatio(
+                      aspectRatio: 1200 / 630,
+                      child: Image.network(
+                        itinerary.coverImageUrl!.startsWith('/')
+                            ? '$kApiBaseUrl${itinerary.coverImageUrl}'
+                            : itinerary.coverImageUrl!,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                      ),
+                    ),
+                  ),
+
                 // ------------------------------------------------------------
                 // Summary chips
                 // ------------------------------------------------------------

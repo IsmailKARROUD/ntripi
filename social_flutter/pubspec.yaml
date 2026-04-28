@@ -35,6 +35,9 @@ dependencies:
   # DM Sans font (used by NTripi design system)
   google_fonts: ^6.2.1
 
+  # Photo/file picker — used for itinerary cover image uploads.
+  image_picker: ^1.0.7
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

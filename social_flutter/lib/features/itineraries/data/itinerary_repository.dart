@@ -4,6 +4,8 @@
 // each method maps directly to one API endpoint and returns a typed Dart object.
 // Error handling is left to the caller via DioException.
 
+import 'dart:typed_data';
+
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:social_flutter/core/api/api_client.dart';
@@ -230,6 +232,35 @@ class ItineraryRepository {
   /// DELETE /itineraries/{id}/segments/{segmentId}
   Future<void> deleteSegment(String itineraryId, String segmentId) async {
     await _dio.delete(itinerarySegmentEndpoint(itineraryId, segmentId));
+  }
+
+  // ---------------------------------------------------------------------------
+  // Cover image
+  // ---------------------------------------------------------------------------
+
+  /// POST /itineraries/{id}/image — upload or replace the cover image.
+  /// Returns the new public URL for the cover image.
+  Future<String> uploadCoverImage({
+    required String itineraryId,
+    required Uint8List bytes,
+    required String filename,
+  }) async {
+    final formData = FormData.fromMap({
+      'file': MultipartFile.fromBytes(
+        bytes,
+        filename: filename,
+      ),
+    });
+    final response = await _dio.post<Map<String, dynamic>>(
+      itineraryImageEndpoint(itineraryId),
+      data: formData,
+    );
+    return response.data!['cover_image_url'] as String;
+  }
+
+  /// DELETE /itineraries/{id}/image — remove the cover image.
+  Future<void> deleteCoverImage(String itineraryId) async {
+    await _dio.delete(itineraryImageEndpoint(itineraryId));
   }
 
   // ---------------------------------------------------------------------------

@@ -29,7 +29,7 @@ from app.models.itinerary import Itinerary
 from app.models.stop import Stop
 from app.models.transit_segment import TransitSegment
 from app.models.user import User
-from app.services.share_service import prepare_share_context
+from app.services.share_service import prepare_share_context, _resolve_preview_image_url
 
 router = APIRouter(prefix="/share", tags=["share"])
 
@@ -83,7 +83,7 @@ def share_itinerary(
         )
 
     share_url = f"{settings.share_base_url}/share/i/{itinerary.id}"
-    preview_image_url = f"{settings.share_base_url}/static/ntripi-og-default.jpg"
+    preview_image_url = _resolve_preview_image_url(itinerary, settings)
 
     if itinerary.visibility in ("followers", "restricted"):
         return templates.TemplateResponse(

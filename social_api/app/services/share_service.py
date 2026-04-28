@@ -75,14 +75,35 @@ def prepare_share_context(
         ),
         "rating_count": itinerary.rating_count,
         "share_url": share_url,
-        # TODO (Jira Ticket 3): Replace with dynamic per-itinerary image.
-        "preview_image_url": f"{settings.share_base_url}/static/ntripi-og-default.jpg",
+        "preview_image_url": _resolve_preview_image_url(itinerary, settings),
     }
 
 
 # ---------------------------------------------------------------------------
 # Private helpers
 # ---------------------------------------------------------------------------
+
+def _resolve_preview_image_url(itinerary: "Itinerary", settings: "Settings") -> str:
+    """Return the absolute URL for the itinerary's OG preview image.
+
+    Priority:
+      1. User-uploaded cover image (Phase 1 — this release).
+      2. Auto-generated map image (Phase 2 — future).
+      3. Default Ntripi OG image (permanent fallback).
+
+    Relative URLs (from filesystem storage: /uploads/...) are made absolute
+    by prepending SHARE_BASE_URL so OG crawlers can fetch them.
+    """
+    if itinerary.cover_image_url:
+        url = itinerary.cover_image_url
+        if url.startswith("/"):
+            return f"{settings.share_base_url}{url}"
+        return url
+
+    # Phase 2 map-image fallback goes here.
+
+    return f"{settings.share_base_url}/static/ntripi-og-default.jpg"
+
 
 def _stop_emoji(stop_type: str, place_type: str | None) -> str:
     if stop_type == "origin":

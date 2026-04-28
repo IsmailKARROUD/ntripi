@@ -1,6 +1,7 @@
 // presentation/itinerary_form_screen.dart — Create or edit an itinerary header.
 
 import 'dart:async';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -8,7 +9,9 @@ import 'package:go_router/go_router.dart';
 import 'package:social_flutter/core/api/api_client.dart';
 import 'package:social_flutter/core/ui/destructive_actions.dart';
 import 'package:social_flutter/core/api/api_endpoints.dart';
+import 'package:social_flutter/features/itineraries/data/itinerary_repository.dart';
 import 'package:social_flutter/features/itineraries/domain/itinerary.dart';
+import 'package:social_flutter/features/itineraries/presentation/widgets/cover_image_field.dart';
 import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
 import 'package:social_flutter/shared/models/user.dart';
 
@@ -46,6 +49,11 @@ class _ItineraryFormScreenState extends ConsumerState<ItineraryFormScreen> {
   ItineraryVisibility _visibility = ItineraryVisibility.onlyMe;
   bool _saving = false;
   bool _initialized = false;
+
+  // Cover image state — deferred upload on create, immediate on edit.
+  Uint8List? _pendingImageBytes;
+  String? _pendingImageFilename;
+  bool _removeExistingImage = false;
 
   static const _currencies = ['EUR', 'USD', 'GBP', 'MAD', 'Other'];
 
@@ -92,12 +100,52 @@ class _ItineraryFormScreenState extends ConsumerState<ItineraryFormScreen> {
         'visibility': _visibilityToString[_visibility],
       };
 
+      final repo = ref.read(itineraryRepositoryProvider);
+
       if (widget.mode == ItineraryFormMode.create) {
+        // Step 1: create itinerary to obtain the ID.
         final itinerary =
             await ref.read(myItinerariesProvider.notifier).addItinerary(data);
+
+        // Step 2: upload cover image if one was selected.
+        // If this fails we show a warning but still navigate — the itinerary
+        // was created successfully and the image can be added later from the
+        // edit screen.
+        if (_pendingImageBytes != null && mounted) {
+          try {
+            await repo.uploadCoverImage(
+              itineraryId: itinerary.id,
+              bytes: _pendingImageBytes!,
+              filename: _pendingImageFilename ?? 'cover.jpg',
+            );
+          } on Exception {
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text(
+                    'Itinerary saved, but image upload failed. '
+                    'Try again from the edit screen.',
+                  ),
+                ),
+              );
+            }
+          }
+        }
+
         if (!mounted) return;
         context.go('/itineraries/${itinerary.id}');
       } else {
+        // Edit flow: handle image changes before patching the header.
+        if (_removeExistingImage) {
+          await repo.deleteCoverImage(widget.itineraryId!);
+        } else if (_pendingImageBytes != null) {
+          await repo.uploadCoverImage(
+            itineraryId: widget.itineraryId!,
+            bytes: _pendingImageBytes!,
+            filename: _pendingImageFilename ?? 'cover.jpg',
+          );
+        }
+
         await ref
             .read(itineraryDetailProvider(widget.itineraryId!).notifier)
             .updateHeader(data);
@@ -129,6 +177,27 @@ class _ItineraryFormScreenState extends ConsumerState<ItineraryFormScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              // Cover image — deferred upload on create, immediate on edit
+              CoverImageField(
+                initialUrl: widget.mode == ItineraryFormMode.edit
+                    ? ref
+                        .read(itineraryDetailProvider(widget.itineraryId!))
+                        .valueOrNull
+                        ?.coverImageUrl
+                    : null,
+                onImageSelected: (bytes, filename) => setState(() {
+                  _pendingImageBytes = bytes;
+                  _pendingImageFilename = filename;
+                  _removeExistingImage = false;
+                }),
+                onImageRemoved: () => setState(() {
+                  _pendingImageBytes = null;
+                  _pendingImageFilename = null;
+                  _removeExistingImage = true;
+                }),
+              ),
+              const SizedBox(height: 16),
+
               // Title
               TextFormField(
                 controller: _titleController,

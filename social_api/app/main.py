@@ -22,6 +22,7 @@ from starlette.exceptions import HTTPException
 
 from app.config import get_settings
 from app.routers import auth, users, follows, itineraries, share, web
+from app.storage.factory import storage
 
 
 class _SPAStaticFiles(StaticFiles):
@@ -97,6 +98,20 @@ app.include_router(web.router)     # /, /login, /register, /privacy, /terms
 # Serves app/static/ at /static — used for the OG preview image.
 _static_dir = Path(__file__).parent / "static"
 app.mount("/static", StaticFiles(directory=str(_static_dir)), name="static")
+
+# User-uploaded files served at STORAGE_PUBLIC_URL_PREFIX (default: /uploads).
+# The directory is created here at startup so StaticFiles never raises on an empty dir.
+_uploads_dir = Path(settings.STORAGE_FILESYSTEM_PATH)
+_uploads_dir.mkdir(parents=True, exist_ok=True)
+app.mount(
+    settings.STORAGE_PUBLIC_URL_PREFIX,
+    StaticFiles(directory=str(_uploads_dir)),
+    name="uploads",
+)
+
+# Eagerly initialise the storage singleton so any misconfiguration surfaces
+# at startup rather than on the first upload request.
+storage()
 
 # Flutter web build served at /app/.
 # html=True makes StaticFiles return index.html for any unmatched sub-path,

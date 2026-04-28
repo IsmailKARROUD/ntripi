@@ -6,6 +6,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:social_flutter/core/api/api_endpoints.dart';
 import 'package:social_flutter/features/itineraries/domain/itinerary.dart';
 import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
 
@@ -29,7 +30,25 @@ class ItinerarySummaryCard extends ConsumerWidget {
         onTap: () => context.push('/itineraries/${itinerary.id}'),
         onLongPress: onLongPress,
         borderRadius: BorderRadius.circular(12),
-        child: Padding(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Cover image thumbnail — shown only when the itinerary has one
+            if (itinerary.coverImageUrl != null)
+              ClipRRect(
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+                child: AspectRatio(
+                  aspectRatio: 1200 / 630,
+                  child: Image.network(
+                    itinerary.coverImageUrl!.startsWith('/')
+                        ? '$kApiBaseUrl${itinerary.coverImageUrl}'
+                        : itinerary.coverImageUrl!,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                  ),
+                ),
+              ),
+            Padding(
           padding: const EdgeInsets.all(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -96,6 +115,8 @@ class ItinerarySummaryCard extends ConsumerWidget {
               ),
             ],
           ),
+        ),
+          ],
         ),
       ),
     );

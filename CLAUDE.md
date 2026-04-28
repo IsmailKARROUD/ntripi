@@ -147,6 +147,24 @@ Web routes (`/web/login`, `/web/register`) and API routes
 `app/services/auth_service.py`. Web sets HTTP-only cookies;
 API returns JSON tokens.
 
+### Storage abstraction
+
+User-uploaded files (currently itinerary cover images) go through
+`app/storage/`. Never reference the filesystem directly from routes.
+
+- `app/storage/base.py` — `Storage` ABC (`save`, `delete`, `public_url`, `exists`)
+- `app/storage/filesystem.py` — `FilesystemStorage` (Phase 1, current production)
+- `app/storage/factory.py` — `storage()` lru-cached singleton; set `STORAGE_BACKEND`
+  env var to swap implementations without touching call sites
+- Future: add `R2Storage` / `S3Storage` in `factory.py` — zero call-site changes
+
+Image processing (resize to 1200×630, EXIF strip, JPEG re-encode) lives in
+`app/services/image_service.py` → `process_cover_image(raw_bytes) → bytes`.
+
+**Production requirement:** Railway must mount a persistent volume at
+`STORAGE_FILESYSTEM_PATH` (`/app/uploads` by default) so uploaded images survive
+deploys. Without it, every redeploy wipes all user cover images.
+
 ### Frontend patterns
 
 **Feature-first folder structure.**
@@ -334,7 +352,13 @@ DEBUG                         False
 SHARE_BASE_URL                https://ntripi.app
 ALLOWED_ORIGINS               https://ntripi.app,http://localhost:5555
 ANDROID_DOWNLOAD_URL          (empty until Android APK is hosted)
+STORAGE_BACKEND               filesystem
+STORAGE_FILESYSTEM_PATH       /app/uploads
+STORAGE_PUBLIC_URL_PREFIX     /uploads
 ```
+
+**Persistent volume (required):** Mount a Railway volume at `/app/uploads` so
+user-uploaded cover images survive deploys. Without it every redeploy wipes all images.
 
 ### Routes served by the single container
 

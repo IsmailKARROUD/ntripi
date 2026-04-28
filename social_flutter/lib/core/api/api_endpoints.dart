@@ -134,6 +134,13 @@ const kShareBaseUrl = String.fromEnvironment(
 String shareUrlFor(String itineraryId) => '$kShareBaseUrl/share/i/$itineraryId';
 
 // ---------------------------------------------------------------------------
+// Cover image endpoints
+// ---------------------------------------------------------------------------
+
+/// Upload or replace the cover image for an itinerary.
+String itineraryImageEndpoint(String id) => '/itineraries/$id/image';
+
+// ---------------------------------------------------------------------------
 // Rating endpoints
 // ---------------------------------------------------------------------------
 

@@ -105,7 +105,18 @@
       border: 1px solid var(--border);
     }
 
-    /* ── Map placeholder ── */
+    /* ── Cover image ── */
+    .cover-image {
+      width: 100%;
+      aspect-ratio: 1200 / 630;
+      object-fit: cover;
+      border-radius: var(--radius);
+      display: block;
+      margin-bottom: 24px;
+      background: var(--border);
+    }
+
+    /* ── Map placeholder (shown when no cover image) ── */
     .map-placeholder {
       background: linear-gradient(135deg, #c7d2fe, #a5b4fc);
       border-radius: var(--radius);
@@ -263,9 +274,16 @@
   <p class="description">{{ itinerary.description }}</p>
   {% endif %}
 
+  {% if itinerary.cover_image_url %}
+  <img src="{{ preview_image_url }}"
+       alt="{{ itinerary.title }}"
+       class="cover-image"
+       width="1200" height="630">
+  {% else %}
   <div class="map-placeholder">
     🗺️ Map preview
   </div>
+  {% endif %}
 
   {% if stops %}
   <h2>Your trip</h2>
