@@ -1,11 +1,11 @@
 {
-    "name": "social_flutter",
-    "short_name": "social_flutter",
+    "name": "NTripi",
+    "short_name": "NTripi",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#1F5E3A",
+    "theme_color": "#1F5E3A",
+    "description": "Plan, share, and discover travel itineraries.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [
