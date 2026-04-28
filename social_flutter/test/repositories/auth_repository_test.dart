@@ -177,7 +177,7 @@ void main() {
 
       final repo = AuthRepository(dio);
       final result = await repo.login(
-        email: 'alice@test.com',
+        identifier: 'alice@test.com',
         password: 'secret123',
       );
 
@@ -195,7 +195,7 @@ void main() {
       );
 
       final repo = AuthRepository(dio);
-      await repo.login(email: 'alice@test.com', password: 'secret123');
+      await repo.login(identifier: 'alice@test.com', password: 'secret123');
 
       const storage = FlutterSecureStorage();
       final stored = await storage.read(key: 'ntripi_access_token');
@@ -212,7 +212,7 @@ void main() {
 
       final repo = AuthRepository(dio);
       expect(
-        () => repo.login(email: 'alice@test.com', password: 'wrong'),
+        () => repo.login(identifier: 'alice@test.com', password: 'wrong'),
         throwsA(isA<DioException>()),
       );
     });
