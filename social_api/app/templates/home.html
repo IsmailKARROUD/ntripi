@@ -1,129 +1,390 @@
-{% extends "_base.html" %}
-{% block content %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ page_title or "NTripi — Plan. Share. Discover." }}</title>
+  <meta name="description" content="{{ page_description or 'Build travel itineraries with real stops, costs, and routes. Share what works. Discover trips that locals love.' }}">
 
-<style>
-  /* ── Hero ── */
-  .hero {
-    text-align: center;
-    padding: 56px 0 48px;
-  }
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="{{ page_title or 'NTripi' }}">
+  <meta property="og:description" content="{{ page_description or 'Plan, share, and discover travel itineraries.' }}">
+  <meta property="og:url" content="https://ntripi.app{{ request.url.path }}">
+  <meta property="og:image" content="https://ntripi.app/static/ntripi-og-default.jpg">
 
-  .hero h1 {
-    font-size: clamp(2rem, 6vw, 3.25rem);
-    font-weight: 800;
-    letter-spacing: -1px;
-    line-height: 1.15;
-    margin-bottom: 20px;
-    background: linear-gradient(135deg, #4F46E5, #7C3AED);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-  }
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="{{ page_title or 'NTripi' }}">
+  <meta name="twitter:description" content="{{ page_description or 'Plan, share, and discover travel itineraries.' }}">
+  <meta name="twitter:image" content="https://ntripi.app/static/ntripi-og-default.jpg">
 
-  .tagline {
-    font-size: clamp(1rem, 2.5vw, 1.2rem);
-    color: var(--sub);
-    max-width: 520px;
-    margin: 0 auto 36px;
-    line-height: 1.6;
-  }
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700;9..40,800&display=swap" rel="stylesheet">
 
-  .cta-buttons {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 12px;
-    justify-content: center;
-    margin-bottom: 24px;
-  }
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-  .login-link {
-    font-size: 14px;
-    color: var(--sub);
-  }
-
-  /* ── Features grid ── */
-  .features {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 16px;
-    margin-top: 56px;
-  }
-
-  .feature {
-    background: var(--white);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 24px 20px;
-  }
-
-  .feature h3 {
-    font-size: 17px;
-    font-weight: 700;
-    margin-bottom: 8px;
-  }
-
-  .feature p {
-    font-size: 14px;
-    color: var(--sub);
-    line-height: 1.6;
-  }
-
-  @media (min-width: 600px) {
-    .features { grid-template-columns: repeat(3, 1fr); }
-  }
-</style>
-
-<section class="hero">
-  <h1>Plan. Share. Discover.</h1>
-  <p class="tagline">
-    Build travel itineraries with friends. Share what works.
-    Discover trips that locals love.
-  </p>
-
-  <div class="cta-buttons">
-    <a href="/app/" class="btn-primary btn-large">Continue on web</a>
-
-    {% if android_download_url %}
-    <a href="{{ android_download_url }}"
-       class="btn-secondary btn-large"
-       id="android-download-btn"
-       style="display: none;">
-      📱 Download for Android
-    </a>
-    {% endif %}
-  </div>
-
-  <p class="login-link">
-    Already have an account? <a href="/login">Sign in</a>
-  </p>
-</section>
-
-<section class="features">
-  <div class="feature">
-    <h3>📍 Plan together</h3>
-    <p>Build itineraries with stops, transit, costs, and notes.</p>
-  </div>
-  <div class="feature">
-    <h3>🔗 Share anywhere</h3>
-    <p>Send a link. Anyone can see your trip — no install required.</p>
-  </div>
-  <div class="feature">
-    <h3>★ Trust the community</h3>
-    <p>Multi-dimensional ratings: safety, experience, accessibility.</p>
-  </div>
-</section>
-
-<script>
-  (function () {
-    var ua = navigator.userAgent || "";
-    var isAndroid = /Android/i.test(ua);
-    {% if android_download_url %}
-    if (isAndroid) {
-      var btn = document.getElementById("android-download-btn");
-      if (btn) btn.style.display = "inline-block";
+    :root {
+      --forest:      oklch(34% 0.11 150);
+      --canopy:      oklch(48% 0.13 150);
+      --mist:        oklch(90% 0.06 150);
+      --amber:       oklch(66% 0.17 75);
+      --amber-light: oklch(95% 0.07 80);
+      --sand:        oklch(97% 0.008 80);
+      --bark:        oklch(18% 0.03 150);
+      --text2:       oklch(48% 0.04 150);
+      --text3:       oklch(68% 0.03 150);
+      --border:      oklch(90% 0.02 150);
+      --surface:     #fff;
+      --shadow-sm:   0 1px 3px rgba(0,40,20,.07), 0 4px 12px rgba(0,40,20,.06);
+      --shadow-md:   0 4px 16px rgba(0,40,20,.10), 0 12px 40px rgba(0,40,20,.08);
     }
-    {% endif %}
-  })();
-</script>
 
-{% endblock %}
+    html { scroll-behavior: smooth; }
+    body { font-family: 'DM Sans', sans-serif; background: var(--sand); color: var(--bark); line-height: 1.6; overflow-x: hidden; }
+
+    /* ── NAV ── */
+    nav {
+      position: sticky; top: 0; z-index: 100;
+      background: rgba(245,242,236,0.88);
+      backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border);
+      padding: 0 40px; height: 64px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .nav-logo { display: flex; align-items: center; gap: 8px; text-decoration: none; }
+    .nav-logo-text { font-weight: 800; font-size: 20px; color: var(--forest); letter-spacing: -.5px; }
+    .nav-links { display: flex; align-items: center; gap: 12px; }
+    .btn-ghost { padding: 9px 20px; border-radius: 50px; border: none; background: transparent; color: var(--text2); font-weight: 600; font-size: 14px; cursor: pointer; font-family: inherit; transition: color .15s; text-decoration: none; display: inline-block; }
+    .btn-ghost:hover { color: var(--forest); }
+    .btn-primary { padding: 10px 22px; border-radius: 50px; border: none; background: var(--forest); color: white; font-weight: 700; font-size: 14px; cursor: pointer; font-family: inherit; box-shadow: 0 2px 8px rgba(20,80,40,.25); transition: background .15s, transform .1s; text-decoration: none; display: inline-block; }
+    .btn-primary:hover { background: var(--canopy); transform: translateY(-1px); }
+
+    /* ── HERO ── */
+    .hero { min-height: calc(100vh - 64px); display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 80px 24px 60px; text-align: center; position: relative; overflow: hidden; }
+    .hero-bg { position: absolute; inset: 0; z-index: 0; pointer-events: none; }
+    .hero-content { position: relative; z-index: 1; max-width: 660px; }
+    .hero-badge { display: inline-flex; align-items: center; gap: 8px; background: var(--mist); color: var(--forest); border-radius: 50px; padding: 6px 16px; font-size: 13px; font-weight: 600; margin-bottom: 28px; border: 1px solid rgba(50,120,70,.15); }
+    .hero-badge-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--amber); }
+    h1 { font-size: clamp(42px,6vw,72px); font-weight: 800; line-height: 1.05; letter-spacing: -2px; color: var(--bark); margin-bottom: 20px; }
+    h1 em { font-style: normal; color: var(--forest); }
+    .hero-sub { font-size: clamp(16px,2vw,19px); color: var(--text2); margin-bottom: 40px; font-weight: 400; max-width: 480px; margin-left: auto; margin-right: auto; }
+    .hero-ctas { display: flex; flex-direction: column; align-items: center; gap: 14px; }
+    .hero-downloads { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+    .btn-store { display: flex; align-items: center; gap: 10px; padding: 12px 22px; border-radius: 14px; border: none; background: var(--bark); color: white; cursor: pointer; font-family: inherit; box-shadow: var(--shadow-md); transition: transform .15s, background .15s; text-decoration: none; }
+    .btn-store:hover { transform: translateY(-2px); background: var(--forest); }
+    .btn-store-sub { font-size: 10px; color: rgba(255,255,255,.6); line-height: 1; }
+    .btn-store-title { font-size: 15px; font-weight: 700; line-height: 1; }
+    .btn-web { display: inline-flex; align-items: center; gap: 8px; padding: 13px 28px; border-radius: 50px; border: 2px solid var(--forest); color: var(--forest); background: transparent; font-weight: 700; font-size: 15px; cursor: pointer; font-family: inherit; transition: background .15s, color .15s, transform .1s; text-decoration: none; }
+    .btn-web:hover { background: var(--forest); color: white; transform: translateY(-1px); }
+    .hero-signin { font-size: 13px; color: var(--text3); }
+    .hero-signin a { color: var(--forest); font-weight: 600; text-decoration: none; }
+    .hero-signin a:hover { text-decoration: underline; }
+    .hero-phone { position: relative; margin-top: 56px; z-index: 1; }
+    .phone-shell { width: 220px; height: 476px; border-radius: 36px; background: var(--bark); box-shadow: 0 0 0 1.5px rgba(255,255,255,.08), 0 24px 80px rgba(0,40,20,.3), 0 4px 16px rgba(0,40,20,.2); position: relative; overflow: hidden; margin: 0 auto; }
+    .phone-screen { position: absolute; inset: 3px; border-radius: 33px; background: var(--forest); overflow: hidden; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; }
+    .phone-notch { position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 80px; height: 18px; background: var(--bark); border-radius: 0 0 14px 14px; z-index: 10; }
+    .phone-card { width: 80%; background: rgba(255,255,255,0.12); border-radius: 10px; padding: 10px 12px; }
+    .phone-card-title { color: white; font-size: 11px; font-weight: 700; }
+    .phone-card-sub { color: rgba(255,255,255,0.55); font-size: 9px; margin-top: 2px; }
+
+    /* ── FEATURES ── */
+    .features { padding: 80px 40px; max-width: 1100px; margin: 0 auto; }
+    .section-label { text-align: center; font-size: 12px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--text3); margin-bottom: 12px; }
+    .section-title { text-align: center; font-size: clamp(28px,4vw,42px); font-weight: 800; letter-spacing: -1px; color: var(--bark); margin-bottom: 56px; line-height: 1.15; }
+    .section-title span { color: var(--forest); }
+    .features-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px,1fr)); gap: 20px; }
+    .feature-card { background: var(--surface); border-radius: 20px; padding: 28px; border: 1px solid var(--border); box-shadow: var(--shadow-sm); transition: transform .2s, box-shadow .2s; }
+    .feature-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-md); }
+    .feature-icon { width: 48px; height: 48px; border-radius: 14px; background: var(--mist); display: flex; align-items: center; justify-content: center; margin-bottom: 16px; }
+    .feature-card h3 { font-size: 17px; font-weight: 700; color: var(--bark); margin-bottom: 8px; }
+    .feature-card p { font-size: 14px; color: var(--text2); line-height: 1.6; }
+
+    /* ── HOW IT WORKS ── */
+    .how { background: var(--forest); padding: 80px 40px; text-align: center; color: white; }
+    .how-label { font-size: 12px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: rgba(255,255,255,.5); margin-bottom: 12px; }
+    .how-title { font-size: clamp(28px,4vw,42px); font-weight: 800; letter-spacing: -1px; margin-bottom: 56px; line-height: 1.15; }
+    .how-title span { color: var(--amber); }
+    .how-steps { display: flex; justify-content: center; gap: 0; flex-wrap: wrap; max-width: 900px; margin: 0 auto; }
+    .how-step { flex: 1; min-width: 200px; padding: 0 24px; text-align: center; position: relative; }
+    .how-step-num { width: 48px; height: 48px; border-radius: 50%; background: rgba(255,255,255,.12); border: 2px solid rgba(255,255,255,.2); display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 800; color: white; margin: 0 auto 16px; }
+    .how-step h4 { font-size: 16px; font-weight: 700; color: white; margin-bottom: 8px; }
+    .how-step p { font-size: 14px; color: rgba(255,255,255,.6); line-height: 1.6; }
+    .how-connector { position: absolute; top: 24px; left: calc(50% + 24px); right: calc(-50% + 24px); height: 1px; background: rgba(255,255,255,.15); }
+
+    /* ── RATINGS ── */
+    .ratings-section { padding: 80px 40px; max-width: 1100px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: 60px; align-items: center; }
+    .ratings-text h2 { font-size: clamp(26px,3.5vw,38px); font-weight: 800; letter-spacing: -1px; color: var(--bark); margin-bottom: 16px; line-height: 1.2; }
+    .ratings-text h2 span { color: var(--forest); }
+    .ratings-text p { font-size: 15px; color: var(--text2); line-height: 1.7; margin-bottom: 24px; }
+    .rating-pills { display: flex; flex-wrap: wrap; gap: 10px; }
+    .rating-pill { display: flex; align-items: center; gap: 8px; background: var(--surface); border-radius: 50px; padding: 8px 16px; border: 1px solid var(--border); box-shadow: var(--shadow-sm); font-size: 13px; font-weight: 600; color: var(--bark); }
+    .rating-pill-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--amber); }
+    .ratings-visual { background: var(--surface); border-radius: 24px; padding: 28px; border: 1px solid var(--border); box-shadow: var(--shadow-md); }
+    .ratings-header { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
+    .ratings-big-num { font-size: 48px; font-weight: 800; color: var(--bark); line-height: 1; }
+    .stars-row { display: flex; gap: 4px; }
+    .bar-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+    .bar-label { font-size: 12px; color: var(--text2); width: 14px; text-align: right; }
+    .bar-track { flex: 1; height: 8px; border-radius: 4px; background: var(--mist); overflow: hidden; }
+    .bar-fill { height: 100%; border-radius: 4px; background: var(--amber); }
+
+    /* ── CTA BAND ── */
+    .cta-band { margin: 0 40px 80px; background: var(--bark); border-radius: 28px; padding: 60px 48px; display: flex; align-items: center; justify-content: space-between; gap: 40px; flex-wrap: wrap; box-shadow: var(--shadow-md); position: relative; overflow: hidden; }
+    .cta-band::before { content: ''; position: absolute; top: -60px; right: -60px; width: 240px; height: 240px; border-radius: 50%; background: rgba(255,255,255,.04); pointer-events: none; }
+    .cta-band h2 { font-size: clamp(24px,3.5vw,36px); font-weight: 800; color: white; letter-spacing: -1px; line-height: 1.2; margin-bottom: 8px; }
+    .cta-band p { font-size: 15px; color: rgba(255,255,255,.55); }
+    .cta-band-actions { display: flex; gap: 12px; flex-wrap: wrap; }
+    .btn-cta-white { padding: 13px 26px; border-radius: 50px; border: none; background: white; color: var(--bark); font-weight: 700; font-size: 15px; cursor: pointer; font-family: inherit; box-shadow: 0 4px 14px rgba(0,0,0,.2); transition: transform .15s; text-decoration: none; display: inline-block; }
+    .btn-cta-white:hover { transform: translateY(-2px); }
+    .btn-cta-outline { padding: 13px 26px; border-radius: 50px; border: 2px solid rgba(255,255,255,.25); color: white; background: transparent; font-weight: 600; font-size: 15px; cursor: pointer; font-family: inherit; transition: border-color .15s, background .15s; text-decoration: none; display: inline-block; }
+    .btn-cta-outline:hover { border-color: rgba(255,255,255,.6); background: rgba(255,255,255,.05); }
+
+    /* ── FOOTER ── */
+    footer { border-top: 1px solid var(--border); padding: 28px 40px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+    .footer-left { display: flex; align-items: center; gap: 10px; }
+    .footer-links { display: flex; gap: 24px; }
+    .footer-links a { font-size: 13px; color: var(--text3); text-decoration: none; transition: color .15s; }
+    .footer-links a:hover { color: var(--forest); }
+    .footer-copy { font-size: 13px; color: var(--text3); }
+
+    @media (max-width: 700px) {
+      nav { padding: 0 20px; }
+      .features, .cta-band { padding-left: 20px; padding-right: 20px; }
+      .cta-band { margin-left: 16px; margin-right: 16px; }
+      .ratings-section { grid-template-columns: 1fr; gap: 32px; padding: 48px 20px; }
+      footer { padding: 24px 20px; }
+      .how-connector { display: none; }
+      .how { padding: 60px 20px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a class="nav-logo" href="/">
+    <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+      <rect width="32" height="32" rx="8" fill="oklch(34% 0.11 150)"/>
+      <polyline points="8,24 8,10 16,20 24,10" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+      <circle cx="24" cy="10" r="3" fill="oklch(66% 0.17 75)"/>
+      <circle cx="24" cy="10" r="1.5" fill="white"/>
+    </svg>
+    <span class="nav-logo-text">NTripi</span>
+  </a>
+  <div class="nav-links">
+    <a class="btn-ghost" href="/login">Sign in</a>
+    <a class="btn-primary" href="/register">Sign up</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <svg class="hero-bg" viewBox="0 0 1200 700" preserveAspectRatio="xMidYMid slice">
+    <polyline points="100,650 200,400 400,500 600,250 800,350 1100,80" stroke="oklch(34% 0.11 150)" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity="0.08"/>
+    <polyline points="0,500 150,300 350,420 550,180 750,300 950,100 1200,200" stroke="oklch(48% 0.13 150)" stroke-width="0.8" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity="0.06"/>
+    <circle cx="1100" cy="80" r="7" fill="oklch(66% 0.17 75)" opacity="0.5"/>
+    <circle cx="600" cy="250" r="5" fill="oklch(34% 0.11 150)" opacity="0.2"/>
+    <circle cx="200" cy="400" r="4" fill="oklch(34% 0.11 150)" opacity="0.15"/>
+  </svg>
+
+  <div class="hero-content">
+    <div class="hero-badge">
+      <div class="hero-badge-dot"></div>
+      Now available on iOS &amp; Android
+    </div>
+    <h1>Plan. Share.<br><em>Discover.</em></h1>
+    <p class="hero-sub">Build travel itineraries with real stops, costs, and routes. Share what works. Discover trips that locals love.</p>
+    <div class="hero-ctas">
+      <div class="hero-downloads">
+        <a class="btn-store" href="{{ android_download_url or '#' }}">
+          <svg width="22" height="22" viewBox="0 0 22 22" fill="white"><path d="M3 1.5l15 9.5-15 9.5V1.5z"/></svg>
+          <div>
+            <div class="btn-store-sub">Get it on</div>
+            <div class="btn-store-title">Google Play</div>
+          </div>
+        </a>
+        <a class="btn-store" href="#">
+          <svg width="22" height="22" viewBox="0 0 22 22" fill="white"><path d="M16.2 11.7c0-2.7 2.2-4 2.3-4.1C17 5.8 15 5.5 14.3 5.5c-1.7-.2-3.4 1-4.3 1s-2.3-1-3.7-1c-1.9 0-3.7 1.1-4.7 2.8C-.5 11.5.8 17 3 20.1c1 1.5 2.3 3.1 3.9 3.1 1.5-.1 2.1-1 3.9-1s2.4 1 3.9 1c1.7 0 2.8-1.5 3.8-3 1.2-1.7 1.7-3.4 1.8-3.5-.1-.1-3.1-1.3-3.1-5zm-2.9-9.5c.9-1 1.5-2.5 1.3-3.9-1.3 0-2.8.8-3.7 1.8-.8.9-1.5 2.4-1.3 3.8 1.4.1 2.8-.7 3.7-1.7z"/></svg>
+          <div>
+            <div class="btn-store-sub">Download on the</div>
+            <div class="btn-store-title">App Store</div>
+          </div>
+        </a>
+      </div>
+      <a class="btn-web" href="/app/">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="8" cy="8" r="6.5"/><path d="M8 1.5c2 2.5 2 8.5 0 11M1.5 8h13M2 5h12M2 11h12" stroke-width="1.2"/></svg>
+        Continue on web
+      </a>
+      <p class="hero-signin">Already have an account? <a href="/login">Sign in</a></p>
+    </div>
+  </div>
+
+  <!-- Phone mockup -->
+  <div class="hero-phone">
+    <div class="phone-shell">
+      <div class="phone-notch"></div>
+      <div class="phone-screen">
+        <svg width="28" height="28" viewBox="0 0 32 32" fill="none">
+          <rect width="32" height="32" rx="8" fill="rgba(255,255,255,0.15)"/>
+          <polyline points="8,24 8,10 16,20 24,10" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+          <circle cx="24" cy="10" r="3" fill="oklch(66% 0.17 75)"/>
+          <circle cx="24" cy="10" r="1.5" fill="white"/>
+        </svg>
+        <div style="color:white;font-size:18px;font-weight:800;letter-spacing:-.5px">NTripi</div>
+        <div style="width:80%;display:flex;flex-direction:column;gap:6px;margin-top:8px">
+          <div class="phone-card">
+            <div class="phone-card-title">Marrakech → Safi</div>
+            <div class="phone-card-sub">3h · Train · 10 EUR</div>
+          </div>
+          <div class="phone-card">
+            <div class="phone-card-title">Atlas Hike</div>
+            <div class="phone-card-sub">6h · 5 stops · Free</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section class="features">
+  <p class="section-label">Everything you need</p>
+  <h2 class="section-title">Built for <span>real travelers</span></h2>
+  <div class="features-grid">
+    <div class="feature-card">
+      <div class="feature-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="oklch(34% 0.11 150)" stroke-width="2"><path d="M12 2C9 2 7 4 7 7c0 4.5 5 11 5 11s5-6.5 5-11c0-3-2-5-5-5z" stroke-linecap="round"/><circle cx="12" cy="7" r="2"/></svg>
+      </div>
+      <h3>Plan together</h3>
+      <p>Build itineraries with stops, transit modes, costs, and personal notes. Everything in one place, easy to share.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="oklch(34% 0.11 150)" stroke-width="2"><path d="M4 12v-2a8 8 0 0 1 16 0v2"/><rect x="2" y="12" width="4" height="8" rx="2"/><rect x="18" y="12" width="4" height="8" rx="2"/><path d="M6 20a6 6 0 0 0 12 0"/></svg>
+      </div>
+      <h3>Share anywhere</h3>
+      <p>Send a link to anyone. No install required — they can browse your full itinerary in any browser.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="oklch(34% 0.11 150)" stroke-width="2"><path d="M12 2l3 6.5 7 1-5 5 1.2 7L12 18l-6.2 3.5L7 14.5 2 9.5l7-1z"/></svg>
+      </div>
+      <h3>Trust the community</h3>
+      <p>Multi-dimensional ratings: safety, experience, accessibility, and family-friendliness — from people who've been there.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="oklch(34% 0.11 150)" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2a14 14 0 0 0 0 20M2 12h20M3.5 7h17M3.5 17h17"/></svg>
+      </div>
+      <h3>Explore the feed</h3>
+      <p>Discover public itineraries shared by travelers worldwide. Follow explorers and get inspired for your next trip.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="oklch(34% 0.11 150)" stroke-width="2"><rect x="2" y="3" width="20" height="16" rx="3"/><path d="M7 8h10M7 12h6"/></svg>
+      </div>
+      <h3>Detailed stop info</h3>
+      <p>Each stop includes location, cost, transport connections and custom notes — so nothing gets missed on the road.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="oklch(34% 0.11 150)" stroke-width="2"><circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/><path d="M16 3.13a4 4 0 0 1 0 7.75M21 21v-2a4 4 0 0 0-3-3.87"/></svg>
+      </div>
+      <h3>Follow &amp; connect</h3>
+      <p>Build a profile, follow fellow explorers, and grow your travel network — public or private, your choice.</p>
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section class="how">
+  <p class="how-label">How it works</p>
+  <h2 class="how-title">Three steps to your next <span>adventure</span></h2>
+  <div class="how-steps">
+    <div class="how-step">
+      <div class="how-step-num">1</div>
+      <h4>Create an itinerary</h4>
+      <p>Add your stops, choose transport, set costs and notes for each leg of the journey.</p>
+      <div class="how-connector"></div>
+    </div>
+    <div class="how-step">
+      <div class="how-step-num">2</div>
+      <h4>Share with the world</h4>
+      <p>Make it public and let the community discover your route via the feed or a direct link.</p>
+      <div class="how-connector"></div>
+    </div>
+    <div class="how-step">
+      <div class="how-step-num">3</div>
+      <h4>Rate &amp; improve</h4>
+      <p>Travelers who follow your route leave multi-dimensional ratings so everyone benefits.</p>
+    </div>
+  </div>
+</section>
+
+<!-- RATINGS -->
+<section class="ratings-section">
+  <div class="ratings-text">
+    <h2>Ratings that actually <span>mean something</span></h2>
+    <p>We go beyond a single star. Every itinerary is rated across multiple dimensions so you always know what to expect before you go.</p>
+    <div class="rating-pills">
+      <div class="rating-pill"><div class="rating-pill-dot"></div>Overall experience</div>
+      <div class="rating-pill"><div class="rating-pill-dot" style="background:oklch(34% 0.11 150)"></div>Safety</div>
+      <div class="rating-pill"><div class="rating-pill-dot" style="background:oklch(48% 0.13 150)"></div>Accessibility</div>
+      <div class="rating-pill"><div class="rating-pill-dot" style="background:oklch(55% 0.13 120)"></div>Family-friendly</div>
+    </div>
+  </div>
+  <div class="ratings-visual">
+    <div class="ratings-header">
+      <div>
+        <div class="ratings-big-num">4.8</div>
+        <div class="stars-row">
+          {% for _ in range(4) %}
+          <svg width="16" height="16" viewBox="0 0 14 14" fill="oklch(66% 0.17 75)"><path d="M7 1.5l1.5 3 3.3.5-2.4 2.3.6 3.2L7 9l-3 1.5.6-3.2L2.2 5l3.3-.5z"/></svg>
+          {% endfor %}
+          <svg width="16" height="16" viewBox="0 0 14 14" fill="oklch(66% 0.17 75)" opacity=".4"><path d="M7 1.5l1.5 3 3.3.5-2.4 2.3.6 3.2L7 9l-3 1.5.6-3.2L2.2 5l3.3-.5z"/></svg>
+        </div>
+      </div>
+      <div style="font-size:13px;color:var(--text2);margin-left:8px">Based on<br>2,400+ ratings</div>
+    </div>
+    {% for stars, pct in [(5,72),(4,18),(3,6),(2,2),(1,2)] %}
+    <div class="bar-row">
+      <span class="bar-label">{{ stars }}</span>
+      <div class="bar-track"><div class="bar-fill" style="width:{{ pct }}%"></div></div>
+      <span style="font-size:12px;color:var(--text3);width:32px">{{ pct }}%</span>
+    </div>
+    {% endfor %}
+  </div>
+</section>
+
+<!-- CTA BAND -->
+<div class="cta-band">
+  <div>
+    <h2>Ready to explore?</h2>
+    <p>Download the app or jump straight into the web experience.</p>
+  </div>
+  <div class="cta-band-actions">
+    <a class="btn-cta-white" href="{{ android_download_url or '#' }}">Download the App</a>
+    <a class="btn-cta-outline" href="/app/">Continue on web</a>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-left">
+    <svg width="24" height="24" viewBox="0 0 32 32" fill="none">
+      <rect width="32" height="32" rx="8" fill="oklch(34% 0.11 150)"/>
+      <polyline points="8,24 8,10 16,20 24,10" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+      <circle cx="24" cy="10" r="3" fill="oklch(66% 0.17 75)"/>
+      <circle cx="24" cy="10" r="1.5" fill="white"/>
+    </svg>
+    <span class="footer-copy">© NTripi {{ current_year }}</span>
+  </div>
+  <nav class="footer-links">
+    <a href="/privacy">Privacy</a>
+    <a href="/terms">Terms</a>
+  </nav>
+</footer>
+
+</body>
+</html>
