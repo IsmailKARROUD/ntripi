@@ -13,6 +13,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:social_flutter/core/api/api_client.dart';
+import 'package:social_flutter/core/ui/destructive_actions.dart';
 import 'package:social_flutter/features/follows/data/follow_repository.dart';
 
 /// Callback invoked after a follow state change.
@@ -67,28 +68,7 @@ class _FollowButtonState extends ConsumerState<FollowButton> {
   }
 
   Future<void> _handleUnfollow() async {
-    // Show confirmation dialog before unfollowing.
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Unfollow'),
-        content: Text('Unfollow @${widget.targetUsername}?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(true),
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('Unfollow'),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed != true) return;
-
+    // Tier 1: act immediately then offer undo via snackbar.
     setState(() => _isLoading = true);
     try {
       await _repo.unfollowUser(widget.targetUserId);
@@ -99,32 +79,37 @@ class _FollowButtonState extends ConsumerState<FollowButton> {
           SnackBar(content: Text(extractErrorMessage(e))),
         );
       }
+      return;
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
+
+    if (!mounted) return;
+    showUndoableActionSnackbar(
+      context: context,
+      message: 'Unfollowed @${widget.targetUsername}',
+      onUndo: () async {
+        final result = await _repo.followUser(widget.targetUserId);
+        widget.onChanged(
+          isFollowing: result.status == 'accepted',
+          followIsPending: result.status == 'pending',
+        );
+      },
+    );
   }
 
   Future<void> _handleCancelRequest() async {
-    final confirmed = await showDialog<bool>(
+    // Tier 2: simple confirmation — cancelling a pending request is harder
+    // to undo (requires re-tapping Follow), so we confirm first.
+    final confirmed = await confirmDestructiveAction(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Cancel Request'),
-        content: Text('Cancel follow request to @${widget.targetUsername}?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('Keep'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(true),
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('Cancel Request'),
-          ),
-        ],
-      ),
+      title: 'Cancel request?',
+      message: 'Cancel your follow request to @${widget.targetUsername}?',
+      confirmLabel: 'Cancel request',
+      cancelLabel: 'Keep',
     );
 
-    if (confirmed != true) return;
+    if (!confirmed) return;
 
     setState(() => _isLoading = true);
     try {

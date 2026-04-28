@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:social_flutter/core/api/api_client.dart';
+import 'package:social_flutter/core/ui/destructive_actions.dart';
 import 'package:social_flutter/core/api/api_endpoints.dart';
 import 'package:social_flutter/features/itineraries/domain/itinerary.dart';
 import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
@@ -329,7 +330,22 @@ class _AllowlistSection extends ConsumerWidget {
                                 ),
                               );
                             }
+                            return;
                           }
+                          if (!context.mounted) return;
+                          final displayLabel =
+                              user.displayName ?? user.username;
+                          showUndoableActionSnackbar(
+                            context: context,
+                            message:
+                                'Removed $displayLabel from allowlist',
+                            onUndo: () async {
+                              await ref
+                                  .read(allowedUsersProvider(itineraryId)
+                                      .notifier)
+                                  .addUser(user.userId);
+                            },
+                          );
                         },
                       ),
                     ),

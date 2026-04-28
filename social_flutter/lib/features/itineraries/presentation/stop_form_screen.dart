@@ -18,6 +18,7 @@ import 'package:social_flutter/core/services/geocoding_service.dart';
 import 'package:social_flutter/features/itineraries/domain/annotation.dart';
 import 'package:social_flutter/features/itineraries/domain/stop.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/annotation_chip.dart';
+import 'package:social_flutter/core/ui/destructive_actions.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/annotation_form_dialog.dart';
 import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
 
@@ -334,27 +335,14 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
   }
 
   Future<void> _confirmDelete() async {
-    final confirmed = await showDialog<bool>(
+    final confirmed = await confirmDestructiveAction(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Delete stop?'),
-        content: const Text(
-            'This stop and all its annotations will be permanently removed.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext, false),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: Colors.red),
-            onPressed: () => Navigator.pop(dialogContext, true),
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
+      title: 'Delete this stop?',
+      message: 'This will remove the stop, its annotations, and any transit '
+          'segments connecting it. The remaining stops will reorder.',
     );
 
-    if (confirmed != true || !mounted) return;
+    if (!confirmed || !mounted) return;
 
     setState(() => _saving = true);
     try {
@@ -373,6 +361,12 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
   }
 
   Future<void> _deleteAnnotation(String annotationId) async {
+    final confirmed = await confirmDestructiveAction(
+      context: context,
+      title: 'Delete annotation?',
+      message: 'This annotation will be permanently removed.',
+    );
+    if (!confirmed || !mounted) return;
     try {
       await ref
           .read(itineraryDetailProvider(widget.itineraryId).notifier)

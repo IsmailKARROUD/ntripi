@@ -36,6 +36,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:social_flutter/core/api/api_client.dart';
+import 'package:social_flutter/core/ui/destructive_actions.dart';
 import 'package:social_flutter/features/itineraries/domain/itinerary.dart';
 import 'package:social_flutter/features/itineraries/domain/transit_segment.dart';
 import 'package:social_flutter/features/profile/providers/profile_provider.dart';
@@ -204,26 +205,14 @@ class _ItineraryDetailScreenState
   }
 
   Future<void> _confirmDeleteSegment(TransitSegment segment) async {
-    final confirmed = await showDialog<bool>(
+    final confirmed = await confirmDestructiveAction(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Delete segment?'),
-        content: const Text('This will remove the transit segment and all its legs.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            style: FilledButton.styleFrom(
-                backgroundColor: Colors.red),
-            onPressed: () => Navigator.of(ctx).pop(true),
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
+      title: 'Remove transit between stops?',
+      message: 'The connection between these two stops will be cleared. '
+          'You can add a new one later.',
+      confirmLabel: 'Remove',
     );
-    if (confirmed != true || !mounted) return;
+    if (!confirmed || !mounted) return;
     try {
       await ref
           .read(itineraryDetailProvider(widget.itineraryId).notifier)

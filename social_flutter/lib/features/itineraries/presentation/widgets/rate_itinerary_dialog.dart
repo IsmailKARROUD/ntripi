@@ -8,6 +8,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:social_flutter/core/ui/destructive_actions.dart';
 import 'package:social_flutter/features/itineraries/domain/my_rating.dart';
 import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
 
@@ -67,6 +68,30 @@ class _RateItinerarySheetState extends State<_RateItinerarySheet> {
     _experience = widget.current?.experienceStars;
     _accessibility = widget.current?.accessibilityStars;
     _familyFriendly = widget.current?.familyFriendlyStars;
+  }
+
+  Future<void> _deleteRating() async {
+    final confirmed = await confirmDestructiveAction(
+      context: context,
+      title: 'Remove your rating?',
+      message: 'Your rating will be deleted and the average will update '
+          'for everyone viewing this itinerary.',
+      confirmLabel: 'Remove',
+    );
+    if (!confirmed || !mounted) return;
+    setState(() => _saving = true);
+    try {
+      await widget.parentRef
+          .read(myRatingProvider(widget.itineraryId).notifier)
+          .deleteRating();
+      if (mounted) Navigator.of(context).pop();
+    } on Exception catch (e) {
+      if (!mounted) return;
+      setState(() => _saving = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString())),
+      );
+    }
   }
 
   Future<void> _save() async {
@@ -175,6 +200,15 @@ class _RateItinerarySheetState extends State<_RateItinerarySheet> {
           // Action buttons
           Row(
             children: [
+              if (widget.current != null) ...[
+                IconButton(
+                  icon: Icon(Icons.delete_outline,
+                      color: Theme.of(context).colorScheme.error),
+                  tooltip: 'Remove my rating',
+                  onPressed: _saving ? null : _deleteRating,
+                ),
+                const SizedBox(width: 4),
+              ],
               Expanded(
                 child: OutlinedButton(
                   onPressed: _saving ? null : () => Navigator.of(context).pop(),

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:social_flutter/core/api/api_client.dart';
+import 'package:social_flutter/core/ui/destructive_actions.dart';
 import 'package:social_flutter/features/itineraries/domain/itinerary.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/itinerary_summary_card.dart';
 import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
@@ -16,28 +17,17 @@ class ItineraryListScreen extends ConsumerWidget {
     WidgetRef ref,
     Itinerary itinerary,
   ) async {
-    final confirmed = await showDialog<bool>(
+    final confirmed = await confirmTypedDestructiveAction(
       context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Delete itinerary?'),
-        content: Text(
-          '"${itinerary.title}" and all its stops will be permanently deleted.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: Colors.red),
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
+      title: 'Delete this itinerary?',
+      message: 'All stops, annotations, segments, ratings, and shared links '
+          'will be permanently destroyed. This cannot be undone.',
+      requiredText: itinerary.title,
+      confirmLabel: 'Delete itinerary',
+      hintText: itinerary.title,
     );
 
-    if (confirmed != true || !context.mounted) return;
+    if (!confirmed || !context.mounted) return;
 
     try {
       await ref

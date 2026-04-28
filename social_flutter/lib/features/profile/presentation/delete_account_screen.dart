@@ -7,6 +7,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:social_flutter/core/ui/destructive_actions.dart';
 import 'package:social_flutter/features/auth/providers/auth_provider.dart';
 import 'package:social_flutter/features/profile/data/profile_repository.dart';
 import 'package:social_flutter/features/profile/providers/profile_provider.dart';
@@ -32,30 +33,20 @@ class _DeleteAccountScreenState extends ConsumerState<DeleteAccountScreen> {
   }
 
   Future<void> _confirmAndDelete() async {
-    // Confirmation dialog before the destructive action.
-    final confirmed = await showDialog<bool>(
+    // Step 1 — Tier 3 type-to-confirm.
+    final typed = await confirmTypedDestructiveAction(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Delete account?'),
-        content: const Text(
-          'This is permanent. Your itineraries and profile will be deleted.\n\n'
-          'Ratings you gave to other itineraries will be kept anonymously.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Delete forever'),
-          ),
-        ],
-      ),
+      title: 'Delete your account?',
+      message: 'Your account, itineraries, follows, and ratings will be '
+          'anonymized or deleted per our privacy policy. You will be signed '
+          'out immediately. This cannot be undone.',
+      requiredText: 'DELETE MY ACCOUNT',
+      confirmLabel: 'Delete my account',
+      hintText: 'DELETE MY ACCOUNT',
     );
+    if (!typed || !mounted) return;
 
-    if (confirmed != true) return;
+    // Step 2 — password re-entry (existing logic below).
 
     setState(() {
       _isLoading = true;
