@@ -308,12 +308,73 @@ class _ItineraryDetailScreenState
                     .shareItinerary(itineraryAsync.value!),
               ),
             if (isOwner)
-              IconButton(
-                icon: const Icon(Icons.edit_outlined),
-                tooltip: 'Edit',
-                onPressed: () => _enterEditMode(
-                  itineraryAsync.valueOrNull?.stops ?? [],
-                ),
+              PopupMenuButton<_OwnerAction>(
+                icon: const Icon(Icons.more_vert),
+                tooltip: 'More options',
+                onSelected: (action) async {
+                  switch (action) {
+                    case _OwnerAction.editStops:
+                      _enterEditMode(itineraryAsync.valueOrNull?.stops ?? []);
+                    case _OwnerAction.editDetails:
+                      context.push('/itineraries/${widget.itineraryId}/edit');
+                    case _OwnerAction.delete:
+                      final title =
+                          itineraryAsync.valueOrNull?.title ?? 'this itinerary';
+                      final router = GoRouter.of(context);
+                      final messenger = ScaffoldMessenger.of(context);
+                      final confirmed =
+                          await confirmTypedDestructiveAction(
+                        context: context,
+                        title: 'Delete itinerary',
+                        message:
+                            'This will permanently delete "$title" and all its stops. Type the title to confirm.',
+                        requiredText: title,
+                        hintText: title,
+                      );
+                      if (!confirmed || !mounted) return;
+                      try {
+                        await ref
+                            .read(myItinerariesProvider.notifier)
+                            .removeItinerary(widget.itineraryId);
+                        if (!mounted) return;
+                        router.go('/');
+                      } on Exception catch (e) {
+                        messenger.showSnackBar(
+                          SnackBar(
+                              content:
+                                  Text(extractErrorMessage(e as dynamic))),
+                        );
+                      }
+                  }
+                },
+                itemBuilder: (_) => [
+                  const PopupMenuItem(
+                    value: _OwnerAction.editStops,
+                    child: ListTile(
+                      leading: Icon(Icons.edit_outlined),
+                      title: Text('Edit stops'),
+                      contentPadding: EdgeInsets.zero,
+                    ),
+                  ),
+                  const PopupMenuItem(
+                    value: _OwnerAction.editDetails,
+                    child: ListTile(
+                      leading: Icon(Icons.tune_outlined),
+                      title: Text('Edit details & image'),
+                      contentPadding: EdgeInsets.zero,
+                    ),
+                  ),
+                  const PopupMenuDivider(),
+                  const PopupMenuItem(
+                    value: _OwnerAction.delete,
+                    child: ListTile(
+                      leading: Icon(Icons.delete_outline, color: Colors.red),
+                      title: Text('Delete itinerary',
+                          style: TextStyle(color: Colors.red)),
+                      contentPadding: EdgeInsets.zero,
+                    ),
+                  ),
+                ],
               ),
           ],
         ],
@@ -1011,3 +1072,5 @@ class _ActionButton extends StatelessWidget {
 }
 
 enum _ExitAction { stay, discard, save }
+
+enum _OwnerAction { editStops, editDetails, delete }
