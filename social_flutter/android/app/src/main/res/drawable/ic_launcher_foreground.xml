@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    NTripi adaptive icon foreground — enhanced quality
+    Canvas: 108×108dp  |  Safe zone: 72×72dp (inset 18dp each side)
+    Visual center aligned, N route path + 3-layer amber destination pin
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- N route path: bottom-left → top-left → diagonal → top-right -->
+    <path
+        android:pathData="M 28.5,78 L 28.5,32 L 55,64 L 79.5,32"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="7.5"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:fillColor="@android:color/transparent"/>
+
+    <!-- Amber pin — outer halo (soft glow) -->
+    <path
+        android:pathData="M 79.5,32 m -11,0 a 11,11 0 1,0 22,0 a 11,11 0 1,0 -22,0"
+        android:fillColor="#C06A30"
+        android:fillAlpha="0.45"/>
+
+    <!-- Amber pin — main ring -->
+    <path
+        android:pathData="M 79.5,32 m -8.5,0 a 8.5,8.5 0 1,0 17,0 a 8.5,8.5 0 1,0 -17,0"
+        android:fillColor="#D4824A"/>
+
+    <!-- Amber pin — inner highlight -->
+    <path
+        android:pathData="M 79.5,32 m -6,0 a 6,6 0 1,0 12,0 a 6,6 0 1,0 -12,0"
+        android:fillColor="#E8955A"/>
+
+    <!-- White center dot -->
+    <path
+        android:pathData="M 79.5,32 m -3,0 a 3,3 0 1,0 6,0 a 3,3 0 1,0 -6,0"
+        android:fillColor="#FFFFFF"/>
+
+</vector>
