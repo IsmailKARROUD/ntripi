@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:social_flutter/features/itineraries/domain/transport_leg.dart';
 
 /// Compact badge shown in a SegmentCard or leg list.
-/// Example: "🚋 Tram · 3 → direction Nation"
+/// Example: "Tram · 3 → direction Nation"
 class TransportBadge extends StatelessWidget {
   final TransportLeg leg;
 

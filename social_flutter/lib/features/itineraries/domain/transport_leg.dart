@@ -1,6 +1,6 @@
 // features/itineraries/domain/transport_leg.dart — TransportLeg model and TransportMode enum.
 //
-// TransportMode drives the icon, label, and emoji shown throughout the UI.
+// TransportMode drives the icon and label shown throughout the UI.
 // position is 1-based and is assigned server-side; when building legs locally
 // in SegmentFormScreen, a placeholder id ('local-N') is used for display only.
 
@@ -18,20 +18,6 @@ enum TransportMode {
   ferry,
   car,
   airplane;
-
-  String get emoji => const {
-        TransportMode.walk: '🚶',
-        TransportMode.bus: '🚌',
-        TransportMode.tram: '🚋',
-        TransportMode.metro: '🚇',
-        TransportMode.train: '🚆',
-        TransportMode.taxi: '🚕',
-        TransportMode.uber: '🚗',
-        TransportMode.bike: '🚲',
-        TransportMode.ferry: '⛴',
-        TransportMode.car: '🚗',
-        TransportMode.airplane: '✈️',
-      }[this]!;
 
   String get label => const {
         TransportMode.walk: 'Walk',
@@ -147,10 +133,10 @@ class TransportLeg {
     );
   }
 
-  /// Compact one-line summary: "🚇 Metro · Line 9 → direction Nation"
+  /// Compact one-line summary: "Metro · Line 9 → direction Nation"
   String get summary {
     final parts = <String>[
-      '${mode.emoji} ${mode.label}',
+      mode.label,
       if (line != null && line!.isNotEmpty) line!,
       if (direction != null && direction!.isNotEmpty) '→ $direction',
     ];
