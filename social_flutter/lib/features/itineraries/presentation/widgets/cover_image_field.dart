@@ -64,10 +64,13 @@ class _CoverImageFieldState extends State<CoverImageField> {
       _error = null;
     });
     try {
+      // On web, image_picker_web runs maxWidth/imageQuality through a Canvas
+      // API that can throw on certain images. Skip pre-processing on web —
+      // the crop screen outputs 1200×630 regardless of input size.
       final picked = await ImagePicker().pickImage(
         source: ImageSource.gallery,
-        maxWidth: 2400,
-        imageQuality: 90,
+        maxWidth: kIsWeb ? null : 2400,
+        imageQuality: kIsWeb ? null : 90,
       );
       if (picked == null || !mounted) return;
       final bytes = await picked.readAsBytes();
@@ -76,6 +79,8 @@ class _CoverImageFieldState extends State<CoverImageField> {
         return;
       }
       await _openCrop(bytes, picked.name);
+    } catch (e) {
+      if (mounted) setState(() => _error = 'Could not load image. Please try another.');
     } finally {
       if (mounted) setState(() => _picking = false);
     }
