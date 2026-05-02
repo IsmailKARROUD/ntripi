@@ -86,7 +86,7 @@ class _CoverImageFieldState extends State<CoverImageField> {
   }
 
   Future<void> _openCrop(Uint8List source, String filename) async {
-    final cropped = await Navigator.of(context).push<Uint8List>(
+    final cropped = await Navigator.of(context, rootNavigator: true).push<Uint8List>(
       MaterialPageRoute(
         fullscreenDialog: true,
         builder: (_) => _CropScreen(imageBytes: source),
