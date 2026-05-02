@@ -99,15 +99,16 @@ app.include_router(web.router)     # /, /login, /register, /privacy, /terms
 _static_dir = Path(__file__).parent / "static"
 app.mount("/static", StaticFiles(directory=str(_static_dir)), name="static")
 
-# User-uploaded files served at STORAGE_PUBLIC_URL_PREFIX (default: /uploads).
-# The directory is created here at startup so StaticFiles never raises on an empty dir.
-_uploads_dir = Path(settings.STORAGE_FILESYSTEM_PATH)
-_uploads_dir.mkdir(parents=True, exist_ok=True)
-app.mount(
-    settings.STORAGE_PUBLIC_URL_PREFIX,
-    StaticFiles(directory=str(_uploads_dir)),
-    name="uploads",
-)
+# User-uploaded files — only needed when using the local filesystem backend.
+# With R2, images are served directly from the R2 public URL; no local mount required.
+if settings.STORAGE_BACKEND == "filesystem":
+    _uploads_dir = Path(settings.STORAGE_FILESYSTEM_PATH)
+    _uploads_dir.mkdir(parents=True, exist_ok=True)
+    app.mount(
+        settings.STORAGE_PUBLIC_URL_PREFIX,
+        StaticFiles(directory=str(_uploads_dir)),
+        name="uploads",
+    )
 
 # Eagerly initialise the storage singleton so any misconfiguration surfaces
 # at startup rather than on the first upload request.

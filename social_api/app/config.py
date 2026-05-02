@@ -58,11 +58,21 @@ class Settings(BaseSettings):
     ANDROID_DOWNLOAD_URL: str | None = None
 
     # Storage configuration — where user-uploaded files (cover images, etc.) are kept.
-    # Phase 1: "filesystem" stores files under STORAGE_FILESYSTEM_PATH, served at
-    # STORAGE_PUBLIC_URL_PREFIX. Future: swap to "r2" or "s3" in a single commit.
+    # Set STORAGE_BACKEND="r2" and supply the R2_* vars below to activate Cloudflare R2.
+    # "filesystem" is the local/fallback default and requires a Railway persistent volume.
     STORAGE_BACKEND: str = "filesystem"
     STORAGE_FILESYSTEM_PATH: str = "/app/uploads"
     STORAGE_PUBLIC_URL_PREFIX: str = "/uploads"
+
+    # Cloudflare R2 credentials — only required when STORAGE_BACKEND="r2".
+    # R2_ENDPOINT: https://<account-id>.r2.cloudflarestorage.com
+    # R2_PUBLIC_URL: public serving URL — either the r2.dev subdomain
+    #   (https://pub-<hash>.r2.dev) or a custom domain (https://images.ntripi.app).
+    R2_ACCESS_KEY_ID: str | None = None
+    R2_SECRET_ACCESS_KEY: str | None = None
+    R2_BUCKET: str | None = None
+    R2_ENDPOINT: str | None = None
+    R2_PUBLIC_URL: str | None = None
 
     # Tell pydantic-settings to look for a .env file in the working directory.
     # extra="ignore" means unknown .env keys don't cause validation errors.
