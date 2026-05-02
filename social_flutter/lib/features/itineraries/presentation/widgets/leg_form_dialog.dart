@@ -14,6 +14,7 @@
 // keyboard appears and the cost/notes fields stay visible.
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:social_flutter/features/itineraries/domain/transport_leg.dart';
 
 // Modes that use numbered/named transit lines and directions.
@@ -26,6 +27,26 @@ const _transitLineModes = {
   TransportMode.airplane,
 };
 
+class RegexInputFormatter extends TextInputFormatter {
+  final RegExp regex;
+
+  RegexInputFormatter(this.regex);
+
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    // Allow empty
+    if (newValue.text.isEmpty) return newValue;
+
+    // Accept if matches the regex
+    if (regex.hasMatch(newValue.text)) return newValue;
+
+    // Reject the change — keep old value
+    return oldValue;
+  }
+}
 class LegFormDialog extends StatefulWidget {
   final TransportLeg? existing;
 
@@ -121,6 +142,9 @@ class _LegFormDialogState extends State<LegFormDialog> {
     };
     Navigator.of(context).pop(data);
   }
+
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -219,6 +243,9 @@ class _LegFormDialogState extends State<LegFormDialog> {
                 width: 72,
                 child: TextField(
                   controller: _durationHCtrl,
+                  inputFormatters: [
+                    FilteringTextInputFormatter.digitsOnly,
+                  ],
                   keyboardType: TextInputType.number,
                   decoration: const InputDecoration(
                     labelText: 'h',
@@ -232,6 +259,9 @@ class _LegFormDialogState extends State<LegFormDialog> {
                 width: 72,
                 child: TextField(
                   controller: _durationMinCtrl,
+                  inputFormatters: [
+                    FilteringTextInputFormatter.digitsOnly,
+                  ],
                   keyboardType: TextInputType.number,
                   decoration: const InputDecoration(
                     labelText: 'min',
@@ -245,6 +275,9 @@ class _LegFormDialogState extends State<LegFormDialog> {
                 child: TextField(
                   controller: _costCtrl,
                   enabled: !_isFree,
+                  inputFormatters: [
+                    RegexInputFormatter(RegExp(r'^\d{0,8}(\.\d{0,2})?$')),
+                  ],
                   keyboardType:
                       const TextInputType.numberWithOptions(decimal: true),
                   decoration: const InputDecoration(
