@@ -17,6 +17,7 @@ import 'dart:math' as math;
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:social_flutter/core/api/api_endpoints.dart';
@@ -86,12 +87,26 @@ class _CoverImageFieldState extends State<CoverImageField> {
   }
 
   Future<void> _openCrop(Uint8List source, String filename) async {
-    final cropped = await Navigator.of(context, rootNavigator: true).push<Uint8List>(
-      MaterialPageRoute(
-        fullscreenDialog: true,
-        builder: (_) => _CropScreen(imageBytes: source),
-      ),
-    );
+    // On web, go_router's RouterDelegate can rebuild the navigator from the
+    // current URL and silently pop any page route it doesn't own.
+    // showGeneralDialog pushes a PopupRoute which go_router never manages.
+    final Uint8List? cropped;
+    if (kIsWeb) {
+      cropped = await showGeneralDialog<Uint8List>(
+        context: context,
+        barrierDismissible: false,
+        barrierColor: Colors.transparent,
+        useRootNavigator: true,
+        pageBuilder: (ctx, _, __) => _CropScreen(imageBytes: source),
+      );
+    } else {
+      cropped = await Navigator.of(context, rootNavigator: true).push<Uint8List>(
+        MaterialPageRoute(
+          fullscreenDialog: true,
+          builder: (_) => _CropScreen(imageBytes: source),
+        ),
+      );
+    }
     if (cropped == null || !mounted) return;
     setState(() {
       _originalBytes = source;
