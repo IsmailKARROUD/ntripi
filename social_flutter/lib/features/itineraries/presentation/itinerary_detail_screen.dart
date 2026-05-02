@@ -524,15 +524,10 @@ class _ItineraryDetailScreenState
                 // ------------------------------------------------------------
                 if (itinerary.coverImageUrl != null)
                   SliverToBoxAdapter(
-                    child: AspectRatio(
-                      aspectRatio: 1200 / 630,
-                      child: Image.network(
-                        itinerary.coverImageUrl!.startsWith('/')
-                            ? '$kApiBaseUrl${itinerary.coverImageUrl}'
-                            : itinerary.coverImageUrl!,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => const SizedBox.shrink(),
-                      ),
+                    child: _CoverImage(
+                      url: itinerary.coverImageUrl!.startsWith('/')
+                          ? '$kApiBaseUrl${itinerary.coverImageUrl}'
+                          : itinerary.coverImageUrl!,
                     ),
                   ),
 
@@ -1066,6 +1061,36 @@ class _ActionButton extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _CoverImage extends StatefulWidget {
+  final String url;
+  const _CoverImage({required this.url});
+
+  @override
+  State<_CoverImage> createState() => _CoverImageState();
+}
+
+class _CoverImageState extends State<_CoverImage> {
+  bool _error = false;
+
+  @override
+  Widget build(BuildContext context) {
+    if (_error) return const SizedBox.shrink();
+    return AspectRatio(
+      aspectRatio: 1200 / 630,
+      child: Image.network(
+        widget.url,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) setState(() => _error = true);
+          });
+          return const SizedBox.shrink();
+        },
       ),
     );
   }

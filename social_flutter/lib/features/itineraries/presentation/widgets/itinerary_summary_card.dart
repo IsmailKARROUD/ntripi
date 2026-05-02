@@ -35,18 +35,10 @@ class ItinerarySummaryCard extends ConsumerWidget {
           children: [
             // Cover image thumbnail — shown only when the itinerary has one
             if (itinerary.coverImageUrl != null)
-              ClipRRect(
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-                child: AspectRatio(
-                  aspectRatio: 1200 / 630,
-                  child: Image.network(
-                    itinerary.coverImageUrl!.startsWith('/')
-                        ? '$kApiBaseUrl${itinerary.coverImageUrl}'
-                        : itinerary.coverImageUrl!,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => const SizedBox.shrink(),
-                  ),
-                ),
+              _CardCoverImage(
+                url: itinerary.coverImageUrl!.startsWith('/')
+                    ? '$kApiBaseUrl${itinerary.coverImageUrl}'
+                    : itinerary.coverImageUrl!,
               ),
             Padding(
           padding: const EdgeInsets.all(16),
@@ -117,6 +109,39 @@ class ItinerarySummaryCard extends ConsumerWidget {
           ),
         ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _CardCoverImage extends StatefulWidget {
+  final String url;
+  const _CardCoverImage({required this.url});
+
+  @override
+  State<_CardCoverImage> createState() => _CardCoverImageState();
+}
+
+class _CardCoverImageState extends State<_CardCoverImage> {
+  bool _error = false;
+
+  @override
+  Widget build(BuildContext context) {
+    if (_error) return const SizedBox.shrink();
+    return ClipRRect(
+      borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+      child: AspectRatio(
+        aspectRatio: 1200 / 630,
+        child: Image.network(
+          widget.url,
+          fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (mounted) setState(() => _error = true);
+            });
+            return const SizedBox.shrink();
+          },
         ),
       ),
     );
