@@ -22,7 +22,10 @@ class FollowRequestsScreen extends ConsumerWidget {
       appBar: AppBar(
         title: const Text('Follow Requests'),
       ),
-      body: requestsAsync.when(
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 480),
+          child: requestsAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, _) => Center(child: Text('Error: $error')),
         data: (requests) {
@@ -54,7 +57,7 @@ class FollowRequestsScreen extends ConsumerWidget {
           );
         },
       ),
-    );
+    ),),);
   }
 }
 

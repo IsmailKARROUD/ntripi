@@ -47,7 +47,10 @@ class FollowListScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(title: Text(title)),
-      body: listAsync.when(
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 480),
+          child: listAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
 
         // Error state — most likely a 403 from a private account.
@@ -98,7 +101,7 @@ class FollowListScreen extends ConsumerWidget {
           );
         },
       ),
-    );
+    ),),);
   }
 }
 

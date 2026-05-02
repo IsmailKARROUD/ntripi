@@ -71,7 +71,10 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
           onChanged: _onSearchChanged,
         ),
       ),
-      body: resultsAsync.when(
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 480),
+          child: resultsAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, _) => Center(child: Text('Error: $error')),
         data: (users) {
@@ -104,7 +107,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
           );
         },
       ),
-    );
+    ),),);
   }
 }
 

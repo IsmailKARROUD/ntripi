@@ -178,14 +178,17 @@ class _MyProfileScreenState extends ConsumerState<MyProfileScreen> {
           ),
         ],
       ),
-      body: profileAsync.when(
+    body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 480),
+          child: profileAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, _) => Center(child: Text('Error: $error')),
         data: (user) => _isEditing
             ? _buildEditForm(user)
             : _buildProfileView(user, followRequestsAsync),
       ),
-    );
+    ),),);
   }
 
   Widget _buildProfileView(User user, AsyncValue followRequestsAsync) {

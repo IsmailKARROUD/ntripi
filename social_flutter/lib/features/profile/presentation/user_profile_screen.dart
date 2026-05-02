@@ -37,12 +37,15 @@ class UserProfileScreen extends ConsumerWidget {
           error: (_, __) => const Text('Profile'),
         ),
       ),
-      body: profileAsync.when(
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 480),
+          child: profileAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, _) => Center(child: Text('Error: $error')),
         data: (user) => _ProfileBody(userId: userId, user: user),
       ),
-    );
+    ),),);
   }
 }
 

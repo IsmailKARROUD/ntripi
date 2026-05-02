@@ -405,9 +405,12 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
       appBar: AppBar(
         title: Text(widget.isEditMode ? 'Edit Stop' : 'Add Stop'),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Form(
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 480),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
+            child: Form(
           key: _formKey,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -783,7 +786,7 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
           ),
         ),
       ),
-    );
+    ),),);
   }
 
   static const _annotationColors = {

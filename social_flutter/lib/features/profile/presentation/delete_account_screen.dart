@@ -77,9 +77,12 @@ class _DeleteAccountScreenState extends ConsumerState<DeleteAccountScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Delete Account')),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
-        child: Column(
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 480),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(24),
+            child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             // Warning card
@@ -215,6 +218,6 @@ class _DeleteAccountScreenState extends ConsumerState<DeleteAccountScreen> {
           ],
         ),
       ),
-    );
+    ),),);
   }
 }

@@ -56,7 +56,10 @@ class ItineraryListScreen extends ConsumerWidget {
           ),
         ],
       ),
-      body: itinerariesAsync.when(
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 480),
+          child: itinerariesAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, _) => Center(
           child: Column(
@@ -117,7 +120,7 @@ class ItineraryListScreen extends ConsumerWidget {
                   },
                 ),
         ),
-      ),
+      ),),),
       floatingActionButton: FloatingActionButton(
         onPressed: () => context.push('/itineraries/new'),
         child: const Icon(Icons.add),

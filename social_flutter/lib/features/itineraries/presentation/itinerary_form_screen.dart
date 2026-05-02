@@ -214,7 +214,7 @@ class _ItineraryFormScreenState extends ConsumerState<ItineraryFormScreen> {
       ),
       body: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 600),
+          constraints: const BoxConstraints(maxWidth: 480),
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(16),
             child: Form(

@@ -54,9 +54,12 @@ class DimensionRatingsScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(title: Text('${dimension.label} Rating')),
-      body: RefreshIndicator(
-        onRefresh: () =>
-            ref.read(ratingsPageProvider(itineraryId).notifier).refresh(),
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 480),
+          child: RefreshIndicator(
+            onRefresh: () =>
+                ref.read(ratingsPageProvider(itineraryId).notifier).refresh(),
         child: CustomScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
           slivers: [
@@ -190,6 +193,6 @@ class DimensionRatingsScreen extends ConsumerWidget {
           ],
         ),
       ),
-    );
+    ),),);
   }
 }
