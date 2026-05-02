@@ -1,4 +1,19 @@
 // presentation/itinerary_form_screen.dart — Create or edit an itinerary header.
+//
+// Shared by two flows controlled by ItineraryFormMode:
+//
+//   CREATE  — user fills the form and taps Save.
+//             Step 1: POST /itineraries  → gets the new ID.
+//             Step 2: POST /itineraries/{id}/image  (only if image was picked).
+//             Image upload is intentionally non-fatal: if it fails the itinerary
+//             still exists and the user can add the image later from the edit flow.
+//
+//   EDIT    — form is pre-filled from itineraryDetailProvider (already cached).
+//             Image upload/delete runs BEFORE the header PATCH so the provider
+//             refresh triggered by updateHeader reflects the final image state.
+//
+// Cover image upload is deferred in CREATE mode because the upload endpoint
+// requires an itinerary ID that doesn't exist yet when the form opens.
 
 import 'dart:async';
 import 'dart:typed_data';
@@ -48,6 +63,7 @@ class _ItineraryFormScreenState extends ConsumerState<ItineraryFormScreen> {
   String _currency = 'EUR';
   ItineraryVisibility _visibility = ItineraryVisibility.onlyMe;
   bool _saving = false;
+  // Guards _initFromProvider so rebuilds don't overwrite the user's edits.
   bool _initialized = false;
 
   // Cover image state — deferred upload on create, immediate on edit.
@@ -61,6 +77,7 @@ class _ItineraryFormScreenState extends ConsumerState<ItineraryFormScreen> {
   void initState() {
     super.initState();
     if (widget.mode == ItineraryFormMode.edit) {
+      // postFrameCallback: setState can't be called during initState itself.
       WidgetsBinding.instance.addPostFrameCallback((_) => _initFromProvider());
     }
   }
@@ -87,6 +104,19 @@ class _ItineraryFormScreenState extends ConsumerState<ItineraryFormScreen> {
     super.dispose();
   }
 
+  // The R2 storage key never changes between uploads (always itineraries/{id}.jpg),
+  // so Flutter's Image.network cache would keep serving the old bytes.
+  // Evicting the entry forces a fresh fetch on the next render.
+  void _evictCoverImageCache() {
+    final url = ref
+        .read(itineraryDetailProvider(widget.itineraryId!))
+        .valueOrNull
+        ?.coverImageUrl;
+    if (url == null) return;
+    final absUrl = url.startsWith('/') ? '$kApiBaseUrl$url' : url;
+    PaintingBinding.instance.imageCache.evict(NetworkImage(absUrl));
+  }
+
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -96,6 +126,7 @@ class _ItineraryFormScreenState extends ConsumerState<ItineraryFormScreen> {
         'title': _titleController.text.trim(),
         if (_descriptionController.text.trim().isNotEmpty)
           'description': _descriptionController.text.trim(),
+        // 'Other' is a UI-only placeholder; fall back to EUR for the API.
         'currency': _currency == 'Other' ? 'EUR' : _currency,
         'visibility': _visibilityToString[_visibility],
       };
@@ -135,15 +166,26 @@ class _ItineraryFormScreenState extends ConsumerState<ItineraryFormScreen> {
         if (!mounted) return;
         context.go('/itineraries/${itinerary.id}');
       } else {
-        // Edit flow: handle image changes before patching the header.
+        // Edit flow: image changes are applied BEFORE the header PATCH.
+        // Order matters: updateHeader (below) does a partial copyWith on the
+        // cached provider state. Mutating the image first means the provider
+        // already holds the correct cover_image_url when the PATCH response
+        // arrives, so no extra refresh is needed.
         if (_removeExistingImage) {
+          // User tapped "Remove" — delete the file from R2.
           await repo.deleteCoverImage(widget.itineraryId!);
+          _evictCoverImageCache();
         } else if (_pendingImageBytes != null) {
+          // User picked a new image — replace the file in R2.
+          // _evictCoverImageCache() clears Flutter's image cache so the next
+          // render fetches the fresh file instead of the stale cached bytes
+          // (the R2 key is always itineraries/{id}.jpg and never changes).
           await repo.uploadCoverImage(
             itineraryId: widget.itineraryId!,
             bytes: _pendingImageBytes!,
             filename: _pendingImageFilename ?? 'cover.jpg',
           );
+          _evictCoverImageCache();
         }
 
         await ref
