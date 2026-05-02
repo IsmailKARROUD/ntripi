@@ -36,6 +36,7 @@ class MyProfileNotifier extends AsyncNotifier<User> {
     String? displayName,
     String? bio,
     String? avatarUrl,
+    bool clearAvatarUrl = false,
     bool? isPrivate,
   }) async {
     state = await AsyncValue.guard(
@@ -43,6 +44,7 @@ class MyProfileNotifier extends AsyncNotifier<User> {
             displayName: displayName,
             bio: bio,
             avatarUrl: avatarUrl,
+            clearAvatarUrl: clearAvatarUrl,
             isPrivate: isPrivate,
           ),
     );

@@ -48,6 +48,7 @@ class ProfileRepository {
     String? displayName,
     String? bio,
     String? avatarUrl,
+    bool clearAvatarUrl = false,
     bool? isPrivate,
   }) async {
     // Build the request body with only the non-null fields.
@@ -55,7 +56,12 @@ class ProfileRepository {
     final data = <String, dynamic>{};
     if (displayName != null) data['display_name'] = displayName;
     if (bio != null) data['bio'] = bio;
-    if (avatarUrl != null) data['avatar_url'] = avatarUrl;
+    // clearAvatarUrl=true means the user explicitly cleared the field — send null.
+    if (clearAvatarUrl) {
+      data['avatar_url'] = null;
+    } else if (avatarUrl != null) {
+      data['avatar_url'] = avatarUrl;
+    }
     if (isPrivate != null) data['is_private'] = isPrivate;
 
     final response = await _dio.patch(kMyProfileEndpoint, data: data);

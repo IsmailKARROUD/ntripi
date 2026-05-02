@@ -212,139 +212,142 @@ class _ItineraryFormScreenState extends ConsumerState<ItineraryFormScreen> {
             ? 'New Itinerary'
             : 'Edit Itinerary'),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // Cover image — deferred upload on create, immediate on edit
-              CoverImageField(
-                initialUrl: widget.mode == ItineraryFormMode.edit
-                    ? ref
-                        .read(itineraryDetailProvider(widget.itineraryId!))
-                        .valueOrNull
-                        ?.coverImageUrl
-                    : null,
-                onImageSelected: (bytes, filename) => setState(() {
-                  _pendingImageBytes = bytes;
-                  _pendingImageFilename = filename;
-                  _removeExistingImage = false;
-                }),
-                onImageRemoved: () => setState(() {
-                  _pendingImageBytes = null;
-                  _pendingImageFilename = null;
-                  _removeExistingImage = true;
-                }),
-              ),
-              const SizedBox(height: 16),
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 600),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // Cover image — deferred upload on create, immediate on edit
+                  CoverImageField(
+                    initialUrl: widget.mode == ItineraryFormMode.edit
+                        ? ref
+                            .read(itineraryDetailProvider(widget.itineraryId!))
+                            .valueOrNull
+                            ?.coverImageUrl
+                        : null,
+                    onImageSelected: (bytes, filename) => setState(() {
+                      _pendingImageBytes = bytes;
+                      _pendingImageFilename = filename;
+                      _removeExistingImage = false;
+                    }),
+                    onImageRemoved: () => setState(() {
+                      _pendingImageBytes = null;
+                      _pendingImageFilename = null;
+                      _removeExistingImage = true;
+                    }),
+                  ),
+                  const SizedBox(height: 16),
 
-              // Title
-              TextFormField(
-                controller: _titleController,
-                decoration: const InputDecoration(
-                  labelText: 'Title *',
-                  border: OutlineInputBorder(),
-                ),
-                validator: (v) =>
-                    (v == null || v.trim().isEmpty) ? 'Title is required' : null,
-                textInputAction: TextInputAction.next,
-              ),
-              const SizedBox(height: 16),
-
-              // Description
-              TextFormField(
-                controller: _descriptionController,
-                decoration: const InputDecoration(
-                  labelText: 'Description',
-                  border: OutlineInputBorder(),
-                  alignLabelWithHint: true,
-                ),
-                maxLines: 4,
-                textInputAction: TextInputAction.newline,
-              ),
-              const SizedBox(height: 16),
-
-              // Currency
-              DropdownButtonFormField<String>(
-                value: _currency,
-                decoration: const InputDecoration(
-                  labelText: 'Currency',
-                  border: OutlineInputBorder(),
-                ),
-                items: _currencies
-                    .map((c) => DropdownMenuItem(value: c, child: Text(c)))
-                    .toList(),
-                onChanged: (v) => setState(() => _currency = v ?? 'EUR'),
-              ),
-              const SizedBox(height: 16),
-
-              // Visibility picker
-              Text(
-                'Visibility',
-                style: Theme.of(context).textTheme.labelLarge,
-              ),
-              const SizedBox(height: 8),
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: SegmentedButton<ItineraryVisibility>(
-                  segments: const [
-                    ButtonSegment(
-                      value: ItineraryVisibility.public,
-                      label: Text('Public'),
-                      icon: Icon(Icons.public),
+                  // Title
+                  TextFormField(
+                    controller: _titleController,
+                    decoration: const InputDecoration(
+                      labelText: 'Title *',
+                      border: OutlineInputBorder(),
                     ),
-                    ButtonSegment(
-                      value: ItineraryVisibility.followers,
-                      label: Text('Followers'),
-                      icon: Icon(Icons.people),
-                    ),
-                    ButtonSegment(
-                      value: ItineraryVisibility.restricted,
-                      label: Text('Restricted'),
-                      icon: Icon(Icons.lock_outline),
-                    ),
-                    ButtonSegment(
-                      value: ItineraryVisibility.onlyMe,
-                      label: Text('Only Me'),
-                      icon: Icon(Icons.lock),
-                    ),
-                  ],
-                  selected: {_visibility},
-                  onSelectionChanged: (selection) =>
-                      setState(() => _visibility = selection.first),
-                ),
-              ),
+                    validator: (v) =>
+                        (v == null || v.trim().isEmpty) ? 'Title is required' : null,
+                    textInputAction: TextInputAction.next,
+                  ),
+                  const SizedBox(height: 16),
 
-              // Restricted allowlist section — edit mode only.
-              // In create mode, there is no itinerary ID yet, so allowlist
-              // management is available after saving (via the edit flow).
-              if (widget.mode == ItineraryFormMode.edit &&
-                  _visibility == ItineraryVisibility.restricted) ...[
-                const SizedBox(height: 16),
-                _AllowlistSection(itineraryId: widget.itineraryId!),
-              ],
+                  // Description
+                  TextFormField(
+                    controller: _descriptionController,
+                    decoration: const InputDecoration(
+                      labelText: 'Description',
+                      border: OutlineInputBorder(),
+                      alignLabelWithHint: true,
+                    ),
+                    maxLines: 4,
+                    textInputAction: TextInputAction.newline,
+                  ),
+                  const SizedBox(height: 16),
 
-              const SizedBox(height: 24),
+                  // Currency
+                  DropdownButtonFormField<String>(
+                    value: _currency,
+                    decoration: const InputDecoration(
+                      labelText: 'Currency',
+                      border: OutlineInputBorder(),
+                    ),
+                    items: _currencies
+                        .map((c) => DropdownMenuItem(value: c, child: Text(c)))
+                        .toList(),
+                    onChanged: (v) => setState(() => _currency = v ?? 'EUR'),
+                  ),
+                  const SizedBox(height: 16),
 
-              // Save button
-              FilledButton(
-                onPressed: _saving ? null : _save,
-                child: _saving
-                    ? const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white,
+                  // Visibility picker
+                  Text(
+                    'Visibility',
+                    style: Theme.of(context).textTheme.labelLarge,
+                  ),
+                  const SizedBox(height: 8),
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: SegmentedButton<ItineraryVisibility>(
+                      segments: const [
+                        ButtonSegment(
+                          value: ItineraryVisibility.public,
+                          label: Text('Public'),
+                          icon: Icon(Icons.public),
                         ),
-                      )
-                    : Text(widget.mode == ItineraryFormMode.create
-                        ? 'Create Itinerary'
-                        : 'Save Changes'),
+                        ButtonSegment(
+                          value: ItineraryVisibility.followers,
+                          label: Text('Followers'),
+                          icon: Icon(Icons.people),
+                        ),
+                        ButtonSegment(
+                          value: ItineraryVisibility.restricted,
+                          label: Text('Restricted'),
+                          icon: Icon(Icons.lock_outline),
+                        ),
+                        ButtonSegment(
+                          value: ItineraryVisibility.onlyMe,
+                          label: Text('Only Me'),
+                          icon: Icon(Icons.lock),
+                        ),
+                      ],
+                      selected: {_visibility},
+                      onSelectionChanged: (selection) =>
+                          setState(() => _visibility = selection.first),
+                    ),
+                  ),
+
+                  // Restricted allowlist section — edit mode only.
+                  if (widget.mode == ItineraryFormMode.edit &&
+                      _visibility == ItineraryVisibility.restricted) ...[
+                    const SizedBox(height: 16),
+                    _AllowlistSection(itineraryId: widget.itineraryId!),
+                  ],
+
+                  const SizedBox(height: 24),
+
+                  // Save button
+                  FilledButton(
+                    onPressed: _saving ? null : _save,
+                    child: _saving
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : Text(widget.mode == ItineraryFormMode.create
+                            ? 'Create Itinerary'
+                            : 'Save Changes'),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
         ),
       ),

@@ -129,6 +129,7 @@ class _MyProfileScreenState extends ConsumerState<MyProfileScreen> {
   }
 
   Future<void> _saveEdits() async {
+    final avatarText = _avatarUrlController.text.trim();
     await ref.read(myProfileProvider.notifier).updateProfile(
           displayName: _displayNameController.text.trim().isEmpty
               ? null
@@ -136,9 +137,8 @@ class _MyProfileScreenState extends ConsumerState<MyProfileScreen> {
           bio: _bioController.text.trim().isEmpty
               ? null
               : _bioController.text.trim(),
-          avatarUrl: _avatarUrlController.text.trim().isEmpty
-              ? null
-              : _avatarUrlController.text.trim(),
+          avatarUrl: avatarText.isEmpty ? null : avatarText,
+          clearAvatarUrl: avatarText.isEmpty,
           isPrivate: _editIsPrivate,
         );
     if (mounted) {
