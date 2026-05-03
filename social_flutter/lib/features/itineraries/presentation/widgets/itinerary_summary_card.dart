@@ -94,7 +94,7 @@ class ItinerarySummaryCard extends ConsumerWidget {
                   _Stat(
                     icon: Icons.place_outlined,
                     label:
-                        '${itinerary.stops.length} stop${itinerary.stops.length == 1 ? '' : 's'}',
+                        '${itinerary.stopsCount} stop${itinerary.stopsCount == 1 ? '' : 's'}',
                   ),
                   if (itinerary.ratingAvg != null)
                     _Stat(

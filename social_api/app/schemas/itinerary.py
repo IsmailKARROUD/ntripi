@@ -283,6 +283,7 @@ class ItinerarySummary(BaseModel):
     created_at: datetime
     rating_avg: Optional[float]
     rating_count: int = 0
+    stops_count: int = 0
 
     model_config = ConfigDict(from_attributes=True)
 

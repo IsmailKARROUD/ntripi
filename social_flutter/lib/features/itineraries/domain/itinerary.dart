@@ -34,6 +34,10 @@ class Itinerary {
   /// Empty in summary views, populated in detail views.
   final List<TransitSegment> segments;
 
+  /// Count of stops. Populated from `stops_count` in summary responses,
+  /// or derived from [stops] in detail responses.
+  final int stopsCount;
+
   const Itinerary({
     required this.id,
     required this.userId,
@@ -49,6 +53,7 @@ class Itinerary {
     this.ratingCount = 0,
     this.stops = const [],
     this.segments = const [],
+    this.stopsCount = 0,
   });
 
   factory Itinerary.fromJson(Map<String, dynamic> json) {
@@ -73,6 +78,8 @@ class Itinerary {
               ?.map((s) => TransitSegment.fromJson(s as Map<String, dynamic>))
               .toList() ??
           [],
+      stopsCount: (json['stops'] as List<dynamic>?)?.length ??
+          (json['stops_count'] as int? ?? 0),
     );
   }
 
@@ -122,6 +129,7 @@ class Itinerary {
     int? ratingCount,
     List<Stop>? stops,
     List<TransitSegment>? segments,
+    int? stopsCount,
   }) {
     return Itinerary(
       id: id ?? this.id,
@@ -138,6 +146,7 @@ class Itinerary {
       ratingCount: ratingCount ?? this.ratingCount,
       stops: stops ?? this.stops,
       segments: segments ?? this.segments,
+      stopsCount: stopsCount ?? this.stopsCount,
     );
   }
 

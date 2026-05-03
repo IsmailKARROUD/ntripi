@@ -110,5 +110,9 @@ class Itinerary(Base):
         cascade="all, delete-orphan",
     )
 
+    @property
+    def stops_count(self) -> int:
+        return len(self.stops)
+
     def __repr__(self) -> str:
         return f"<Itinerary id={self.id} title={self.title!r}>"
