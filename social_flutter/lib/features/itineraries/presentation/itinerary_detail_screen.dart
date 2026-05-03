@@ -385,8 +385,9 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                 ],
               ],
             ),
-            body: ConstrainedBox(
-          constraints: BoxConstraints(maxWidth: isDesktopWeb() ? kDesktopMaxWidth : double.infinity),
+            body: Center(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(maxWidth: isDesktopWeb() ? kDesktopMaxWidth : double.infinity),
               child: _reorderMode
                   ? itineraryAsync.when(
                       loading: () =>
@@ -868,9 +869,10 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                       },
                     ),
             ),
-          ),
-        ],
-      ),
+              ),
+            ),
+          ],
+        ),
     );
   }
 }
