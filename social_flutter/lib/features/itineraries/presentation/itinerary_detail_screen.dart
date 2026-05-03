@@ -455,10 +455,27 @@ class _ItineraryDetailScreenState
           }).toList();
 
           // Interleaved list: StopCard, then optional SegmentCard after each stop.
+          // For a single stop, contextual "Add stop" buttons appear above/below
+          // depending on the stop's role (origin/waypoint/destination).
           List<Widget> buildInterleavedList() {
             final items = <Widget>[];
+            final isOnlyStop = displayStops.length == 1;
+
             for (var i = 0; i < displayStops.length; i++) {
               final stop = displayStops[i];
+              final hasNextStop = i < displayStops.length - 1;
+
+              // Single-stop: "Add stop" above for waypoint or destination.
+              if (canEdit && isOnlyStop && stop.type != StopType.origin) {
+                items.add(_InlineSeparator(
+                  key: ValueKey('above-${stop.id}'),
+                  onAddStop: () => context.push(
+                    '/itineraries/${widget.itineraryId}/stops/new',
+                    extra: {'insertAfterPosition': stop.position - 1},
+                  ),
+                ));
+              }
+
               items.add(StopCard(
                 key: ValueKey('stop-${stop.id}'),
                 stop: stop,
@@ -471,7 +488,6 @@ class _ItineraryDetailScreenState
               ));
 
               final seg = segmentByFromStop[stop.id];
-              final hasNextStop = i < displayStops.length - 1;
 
               if (seg != null) {
                 items.add(SegmentCard(
@@ -489,24 +505,36 @@ class _ItineraryDetailScreenState
                 ));
               }
 
-              if (canEdit && hasNextStop) {
-                final nextStop = displayStops[i + 1];
-                items.add(_InlineSeparator(
-                  key: ValueKey('sep-${stop.id}'),
-                  onAddStop: () => context.push(
-                    '/itineraries/${widget.itineraryId}/stops/new',
-                    extra: {'insertAfterPosition': stop.position},
-                  ),
-                  onAddSegment: seg == null
-                      ? () => context.push(
-                            '/itineraries/${widget.itineraryId}/segments/new',
-                            extra: {
-                              'fromStopId': stop.id,
-                              'toStopId': nextStop.id,
-                            },
-                          )
-                      : null,
-                ));
+              if (canEdit) {
+                if (hasNextStop) {
+                  // 2+ stops: inline separator with "Add stop" and optional "Add segment".
+                  final nextStop = displayStops[i + 1];
+                  items.add(_InlineSeparator(
+                    key: ValueKey('sep-${stop.id}'),
+                    onAddStop: () => context.push(
+                      '/itineraries/${widget.itineraryId}/stops/new',
+                      extra: {'insertAfterPosition': stop.position},
+                    ),
+                    onAddSegment: seg == null
+                        ? () => context.push(
+                              '/itineraries/${widget.itineraryId}/segments/new',
+                              extra: {
+                                'fromStopId': stop.id,
+                                'toStopId': nextStop.id,
+                              },
+                            )
+                        : null,
+                  ));
+                } else if (stop.type != StopType.destination) {
+                  // Last stop: "Add stop" below for origin or waypoint.
+                  items.add(_InlineSeparator(
+                    key: ValueKey('below-${stop.id}'),
+                    onAddStop: () => context.push(
+                      '/itineraries/${widget.itineraryId}/stops/new',
+                      extra: {'insertAfterPosition': stop.position},
+                    ),
+                  ));
+                }
               }
             }
             return items;
@@ -704,16 +732,29 @@ class _ItineraryDetailScreenState
                   SliverToBoxAdapter(
                     child: Padding(
                       padding: const EdgeInsets.symmetric(vertical: 48),
-                      child: Column(
-                        children: [
-                          Icon(Icons.place_outlined,
-                              size: 48, color: Colors.grey.shade400),
-                          const SizedBox(height: 12),
-                          Text(canEdit
-                              ? 'No stops yet. Tap + to add one.'
-                              : 'No stops yet.'),
-                        ],
-                      ),
+                      child: canEdit
+                          ? GestureDetector(
+                              onTap: () => context.push(
+                                '/itineraries/${widget.itineraryId}/stops/new',
+                                extra: {'defaultStopType': StopType.origin},
+                              ),
+                              child: Column(
+                                children: [
+                                  Icon(Icons.place_outlined,
+                                      size: 48, color: Colors.grey.shade400),
+                                  const SizedBox(height: 12),
+                                  const Text('No stops yet. Tap + to add one.'),
+                                ],
+                              ),
+                            )
+                          : Column(
+                              children: [
+                                Icon(Icons.place_outlined,
+                                    size: 48, color: Colors.grey.shade400),
+                                const SizedBox(height: 12),
+                                const Text('No stops yet.'),
+                              ],
+                            ),
                     ),
                   )
                 else if (_reorderMode)
@@ -1005,7 +1046,7 @@ class _InlineSeparator extends StatelessWidget {
           const SizedBox(width: 8),
           _ActionButton(
             icon: Icons.add_location_alt_outlined,
-            label: 'Stop',
+            label: 'Add stop',
             onTap: onAddStop,
           ),
           if (onAddSegment != null) ...[

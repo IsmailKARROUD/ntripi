@@ -32,11 +32,15 @@ class StopFormScreen extends ConsumerStatefulWidget {
   /// existing stops up. Null means append at the end.
   final int? insertAfterPosition;
 
+  /// Pre-selects a stop type in create mode. Ignored in edit mode.
+  final StopType? defaultStopType;
+
   const StopFormScreen({
     super.key,
     required this.itineraryId,
     this.stopId,
     this.insertAfterPosition,
+    this.defaultStopType,
   });
 
   bool get isEditMode => stopId != null;
@@ -73,6 +77,9 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
   @override
   void initState() {
     super.initState();
+    if (!widget.isEditMode && widget.defaultStopType != null) {
+      _stopType = widget.defaultStopType!;
+    }
     if (widget.isEditMode) {
       WidgetsBinding.instance
           .addPostFrameCallback((_) => _initFromExistingStop());
