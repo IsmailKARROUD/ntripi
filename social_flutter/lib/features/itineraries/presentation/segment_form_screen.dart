@@ -11,6 +11,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:social_flutter/core/api/api_client.dart';
+import 'package:social_flutter/core/utils/platform_utils.dart';
 import 'package:social_flutter/features/itineraries/domain/stop.dart';
 import 'package:social_flutter/features/itineraries/domain/transit_segment.dart';
 import 'package:social_flutter/features/itineraries/domain/transport_leg.dart';
@@ -287,128 +288,131 @@ class _SegmentFormScreenState extends ConsumerState<SegmentFormScreen> {
                 ),
             ],
           ),
-          body: ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
-              if (_isMergePreview)
-                Container(
-                  margin: const EdgeInsets.only(bottom: 16),
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                  decoration: BoxDecoration(
-                    color: Colors.orange.shade50,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.orange.shade300),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(Icons.merge_outlined,
-                          size: 18, color: Colors.orange.shade700),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          'Merged result — review and save when ready.',
-                          style: TextStyle(
-                            color: Colors.orange.shade800,
-                            fontSize: 13,
+          body: ConstrainedBox(
+          constraints: BoxConstraints(maxWidth: isDesktopWeb() ? kDesktopMaxWidth : double.infinity),
+            child: ListView(
+              padding: const EdgeInsets.all(16),
+              children: [
+                if (_isMergePreview)
+                  Container(
+                    margin: const EdgeInsets.only(bottom: 16),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: Colors.orange.shade50,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.orange.shade300),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.merge_outlined,
+                            size: 18, color: Colors.orange.shade700),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Merged result — review and save when ready.',
+                            style: TextStyle(
+                              color: Colors.orange.shade800,
+                              fontSize: 13,
+                            ),
                           ),
                         ),
-                      ),
-                    ],
-                  ),
-                ),
-
-              // From stop
-              DropdownButtonFormField<String>(
-                value: _fromStopId,
-                isExpanded: true,
-                decoration: const InputDecoration(
-                  labelText: 'From Stop',
-                  border: OutlineInputBorder(),
-                ),
-                items: stops
-                    .map(
-                      (s) => DropdownMenuItem(
-                        value: s.id,
-                        child: Text(
-                          _stopLabel(s),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    )
-                    .toList(),
-                onChanged: (v) => setState(() {
-                  _fromStopId = v;
-                  if (_toStopId == v) _toStopId = null;
-                }),
-              ),
-              const SizedBox(height: 12),
-
-              // To stop
-              DropdownButtonFormField<String>(
-                value: _toStopId,
-                isExpanded: true,
-                decoration: const InputDecoration(
-                  labelText: 'To Stop',
-                  border: OutlineInputBorder(),
-                ),
-                items: eligibleTo
-                    .map(
-                      (s) => DropdownMenuItem(
-                        value: s.id,
-                        child: Text(
-                          _stopLabel(s),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    )
-                    .toList(),
-                onChanged: (v) => setState(() => _toStopId = v),
-              ),
-              const SizedBox(height: 20),
-
-              // Legs header
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Legs',
-                    style: Theme.of(context)
-                        .textTheme
-                        .titleSmall
-                        ?.copyWith(fontWeight: FontWeight.w600),
-                  ),
-                  TextButton.icon(
-                    onPressed: _addLeg,
-                    icon: const Icon(Icons.add, size: 18),
-                    label: const Text('Add Leg'),
-                  ),
-                ],
-              ),
-
-              if (_legs.isEmpty)
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 24),
-                  child: Center(
-                    child: Text(
-                      'No legs yet. Add at least one.',
-                      style:
-                          TextStyle(color: Colors.grey.shade500, fontSize: 13),
+                      ],
                     ),
                   ),
-                )
-              else
-                for (var i = 0; i < _legs.length; i++)
-                  LegTile(
-                    key: ValueKey(i),
-                    leg: _legFromMap(_legs[i], i),
-                    onEdit: () => _editLeg(i),
-                    onDelete: () => setState(() => _legs.removeAt(i)),
+            
+                // From stop
+                DropdownButtonFormField<String>(
+                  value: _fromStopId,
+                  isExpanded: true,
+                  decoration: const InputDecoration(
+                    labelText: 'From Stop',
+                    border: OutlineInputBorder(),
                   ),
-
-              // Extra bottom padding so last leg isn't hidden behind keyboard.
-              const SizedBox(height: 40),
-            ],
+                  items: stops
+                      .map(
+                        (s) => DropdownMenuItem(
+                          value: s.id,
+                          child: Text(
+                            _stopLabel(s),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      )
+                      .toList(),
+                  onChanged: (v) => setState(() {
+                    _fromStopId = v;
+                    if (_toStopId == v) _toStopId = null;
+                  }),
+                ),
+                const SizedBox(height: 12),
+            
+                // To stop
+                DropdownButtonFormField<String>(
+                  value: _toStopId,
+                  isExpanded: true,
+                  decoration: const InputDecoration(
+                    labelText: 'To Stop',
+                    border: OutlineInputBorder(),
+                  ),
+                  items: eligibleTo
+                      .map(
+                        (s) => DropdownMenuItem(
+                          value: s.id,
+                          child: Text(
+                            _stopLabel(s),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      )
+                      .toList(),
+                  onChanged: (v) => setState(() => _toStopId = v),
+                ),
+                const SizedBox(height: 20),
+            
+                // Legs header
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Legs',
+                      style: Theme.of(context)
+                          .textTheme
+                          .titleSmall
+                          ?.copyWith(fontWeight: FontWeight.w600),
+                    ),
+                    TextButton.icon(
+                      onPressed: _addLeg,
+                      icon: const Icon(Icons.add, size: 18),
+                      label: const Text('Add Leg'),
+                    ),
+                  ],
+                ),
+            
+                if (_legs.isEmpty)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 24),
+                    child: Center(
+                      child: Text(
+                        'No legs yet. Add at least one.',
+                        style:
+                            TextStyle(color: Colors.grey.shade500, fontSize: 13),
+                      ),
+                    ),
+                  )
+                else
+                  for (var i = 0; i < _legs.length; i++)
+                    LegTile(
+                      key: ValueKey(i),
+                      leg: _legFromMap(_legs[i], i),
+                      onEdit: () => _editLeg(i),
+                      onDelete: () => setState(() => _legs.removeAt(i)),
+                    ),
+            
+                // Extra bottom padding so last leg isn't hidden behind keyboard.
+                const SizedBox(height: 40),
+              ],
+            ),
           ),
         );
       },
