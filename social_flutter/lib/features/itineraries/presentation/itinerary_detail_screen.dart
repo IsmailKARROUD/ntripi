@@ -65,6 +65,7 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
   // ReorderableListView so drag gestures aren't stolen by CustomScrollView.
   bool _reorderMode = false;
   bool _saving = false;
+  bool _mapVisible = true;
   // Captured on edit-mode entry; compared on exit to detect unsaved reorders.
   List<String> _originalStopOrder = [];
   // Null = no drag has happened yet (provider order is authoritative).
@@ -691,6 +692,36 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                               // ------------------------------------------------------------
                               // Map section
                               // ------------------------------------------------------------
+                              SliverToBoxAdapter(
+                                child: InkWell(
+                                  onTap: () =>
+                                      setState(() => _mapVisible = !_mapVisible),
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 16, vertical: 10),
+                                    child: Row(
+                                      children: [
+                                        const Icon(Icons.map_outlined, size: 18),
+                                        const SizedBox(width: 8),
+                                        const Text(
+                                          'Map',
+                                          style: TextStyle(
+                                              fontWeight: FontWeight.w600,
+                                              fontSize: 15),
+                                        ),
+                                        const Spacer(),
+                                        Icon(
+                                          _mapVisible
+                                              ? Icons.expand_less
+                                              : Icons.expand_more,
+                                          size: 20,
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              if (_mapVisible)
                               SliverToBoxAdapter(
                                 child: Padding(
                                   padding:
