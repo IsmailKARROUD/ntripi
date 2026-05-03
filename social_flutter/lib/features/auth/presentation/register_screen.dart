@@ -7,6 +7,7 @@ import 'package:social_flutter/core/ui/app_theme.dart';
 import 'package:social_flutter/core/ui/ntripi_logo.dart';
 import 'package:social_flutter/features/auth/domain/username_validator.dart';
 import 'package:social_flutter/features/auth/providers/auth_provider.dart';
+import 'package:social_flutter/core/utils/platform_utils.dart';
 
 class RegisterScreen extends ConsumerStatefulWidget {
   const RegisterScreen({super.key});
@@ -140,7 +141,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       backgroundColor: kSand,
       body: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 480),
+          constraints: BoxConstraints(maxWidth: isDesktopWeb() ? kDesktopMaxWidth : double.infinity),
           child: SafeArea(
             child: SingleChildScrollView(
               padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),

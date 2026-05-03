@@ -10,6 +10,7 @@ import 'package:social_flutter/core/api/api_client.dart';
 import 'package:social_flutter/features/follows/providers/follow_provider.dart';
 import 'package:social_flutter/shared/models/follow.dart';
 import 'package:social_flutter/shared/widgets/user_avatar.dart';
+import 'package:social_flutter/core/utils/platform_utils.dart';
 
 class FollowRequestsScreen extends ConsumerWidget {
   const FollowRequestsScreen({super.key});
@@ -24,7 +25,7 @@ class FollowRequestsScreen extends ConsumerWidget {
       ),
       body: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 480),
+          constraints: BoxConstraints(maxWidth: isDesktopWeb() ? kDesktopMaxWidth : double.infinity),
           child: requestsAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, _) => Center(child: Text('Error: $error')),

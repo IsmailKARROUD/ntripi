@@ -12,6 +12,7 @@ import 'package:social_flutter/features/itineraries/domain/dimension_key.dart';
 import 'package:social_flutter/features/itineraries/domain/ratings_page.dart';
 import 'package:social_flutter/features/itineraries/presentation/ratings_page_screen.dart';
 import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
+import 'package:social_flutter/core/utils/platform_utils.dart';
 
 class DimensionRatingsScreen extends ConsumerWidget {
   final String itineraryId;
@@ -56,7 +57,7 @@ class DimensionRatingsScreen extends ConsumerWidget {
       appBar: AppBar(title: Text('${dimension.label} Rating')),
       body: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 480),
+          constraints: BoxConstraints(maxWidth: isDesktopWeb() ? kDesktopMaxWidth : double.infinity),
           child: RefreshIndicator(
             onRefresh: () =>
                 ref.read(ratingsPageProvider(itineraryId).notifier).refresh(),

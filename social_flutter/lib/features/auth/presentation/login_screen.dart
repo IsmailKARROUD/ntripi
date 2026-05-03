@@ -7,6 +7,7 @@ import 'package:social_flutter/core/api/api_client.dart';
 import 'package:social_flutter/core/ui/app_theme.dart';
 import 'package:social_flutter/core/ui/ntripi_logo.dart';
 import 'package:social_flutter/features/auth/providers/auth_provider.dart';
+import 'package:social_flutter/core/utils/platform_utils.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -58,7 +59,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       backgroundColor: kSand,
       body: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 480),
+          constraints: BoxConstraints(maxWidth: isDesktopWeb() ? kDesktopMaxWidth : double.infinity),
           child: SafeArea(
             child: SingleChildScrollView(
               padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),

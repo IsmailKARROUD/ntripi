@@ -29,6 +29,7 @@ import 'package:social_flutter/features/itineraries/domain/itinerary.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/cover_image_field.dart';
 import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
 import 'package:social_flutter/shared/models/user.dart';
+import 'package:social_flutter/core/utils/platform_utils.dart';
 
 /// Whether this form is creating a new itinerary or editing an existing one.
 enum ItineraryFormMode { create, edit }
@@ -214,7 +215,7 @@ class _ItineraryFormScreenState extends ConsumerState<ItineraryFormScreen> {
       ),
       body: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 480),
+          constraints: BoxConstraints(maxWidth: isDesktopWeb() ? kDesktopMaxWidth : double.infinity),
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(16),
             child: Form(

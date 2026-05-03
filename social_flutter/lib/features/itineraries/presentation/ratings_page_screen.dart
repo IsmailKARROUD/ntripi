@@ -14,6 +14,7 @@ import 'package:social_flutter/features/itineraries/domain/dimension_key.dart';
 import 'package:social_flutter/features/itineraries/domain/ratings_page.dart';
 import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
 import 'package:social_flutter/shared/widgets/user_avatar.dart';
+import 'package:social_flutter/core/utils/platform_utils.dart';
 
 // Keep the old name exported so the router import doesn't break.
 typedef RatingsPageScreen = RatingsHubScreen;
@@ -32,7 +33,7 @@ class RatingsHubScreen extends ConsumerWidget {
       appBar: AppBar(title: const Text('Ratings')),
       body: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 480),
+          constraints: BoxConstraints(maxWidth: isDesktopWeb() ? kDesktopMaxWidth : double.infinity),
           child: RefreshIndicator(
             onRefresh: () =>
                 ref.read(ratingsPageProvider(itineraryId).notifier).refresh(),

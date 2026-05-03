@@ -8,6 +8,7 @@ import 'package:social_flutter/core/ui/destructive_actions.dart';
 import 'package:social_flutter/features/itineraries/domain/itinerary.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/itinerary_summary_card.dart';
 import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
+import 'package:social_flutter/core/utils/platform_utils.dart';
 
 class ItineraryListScreen extends ConsumerWidget {
   const ItineraryListScreen({super.key});
@@ -58,7 +59,7 @@ class ItineraryListScreen extends ConsumerWidget {
       ),
       body: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 480),
+          constraints: BoxConstraints(maxWidth: isDesktopWeb() ? kDesktopMaxWidth : double.infinity),
           child: itinerariesAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, _) => Center(

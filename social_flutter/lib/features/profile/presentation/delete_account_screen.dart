@@ -11,6 +11,7 @@ import 'package:social_flutter/core/ui/destructive_actions.dart';
 import 'package:social_flutter/features/auth/providers/auth_provider.dart';
 import 'package:social_flutter/features/profile/data/profile_repository.dart';
 import 'package:social_flutter/features/profile/providers/profile_provider.dart';
+import 'package:social_flutter/core/utils/platform_utils.dart';
 
 class DeleteAccountScreen extends ConsumerStatefulWidget {
   const DeleteAccountScreen({super.key});
@@ -79,7 +80,7 @@ class _DeleteAccountScreenState extends ConsumerState<DeleteAccountScreen> {
       appBar: AppBar(title: const Text('Delete Account')),
       body: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 480),
+          constraints: BoxConstraints(maxWidth: isDesktopWeb() ? kDesktopMaxWidth : double.infinity),
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(24),
             child: Column(

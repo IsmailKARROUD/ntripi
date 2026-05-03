@@ -16,6 +16,7 @@ import 'package:social_flutter/features/itineraries/providers/itinerary_provider
 import 'package:social_flutter/features/profile/providers/profile_provider.dart';
 import 'package:social_flutter/shared/models/user.dart';
 import 'package:social_flutter/shared/widgets/user_avatar.dart';
+import 'package:social_flutter/core/utils/platform_utils.dart';
 
 class MyProfileScreen extends ConsumerStatefulWidget {
   const MyProfileScreen({super.key});
@@ -180,7 +181,7 @@ class _MyProfileScreenState extends ConsumerState<MyProfileScreen> {
       ),
     body: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 480),
+          constraints: BoxConstraints(maxWidth: isDesktopWeb() ? kDesktopMaxWidth : double.infinity),
           child: profileAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, _) => Center(child: Text('Error: $error')),

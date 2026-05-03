@@ -14,6 +14,7 @@ import 'package:go_router/go_router.dart';
 import 'package:social_flutter/features/search/providers/search_provider.dart';
 import 'package:social_flutter/shared/models/user.dart';
 import 'package:social_flutter/shared/widgets/user_avatar.dart';
+import 'package:social_flutter/core/utils/platform_utils.dart';
 
 class SearchScreen extends ConsumerStatefulWidget {
   const SearchScreen({super.key});
@@ -73,7 +74,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
       ),
       body: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 480),
+          constraints: BoxConstraints(maxWidth: isDesktopWeb() ? kDesktopMaxWidth : double.infinity),
           child: resultsAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, _) => Center(child: Text('Error: $error')),

@@ -20,6 +20,7 @@ import 'package:go_router/go_router.dart';
 import 'package:social_flutter/features/follows/providers/follow_provider.dart';
 import 'package:social_flutter/shared/models/follow.dart';
 import 'package:social_flutter/shared/widgets/user_avatar.dart';
+import 'package:social_flutter/core/utils/platform_utils.dart';
 
 /// Controls which list the screen displays.
 enum FollowListType { followers, following }
@@ -49,7 +50,7 @@ class FollowListScreen extends ConsumerWidget {
       appBar: AppBar(title: Text(title)),
       body: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 480),
+          constraints: BoxConstraints(maxWidth: isDesktopWeb() ? kDesktopMaxWidth : double.infinity),
           child: listAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
 

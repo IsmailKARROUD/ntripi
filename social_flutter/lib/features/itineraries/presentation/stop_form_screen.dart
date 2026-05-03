@@ -21,6 +21,7 @@ import 'package:social_flutter/features/itineraries/presentation/widgets/annotat
 import 'package:social_flutter/core/ui/destructive_actions.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/annotation_form_dialog.dart';
 import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
+import 'package:social_flutter/core/utils/platform_utils.dart';
 
 class StopFormScreen extends ConsumerStatefulWidget {
   final String itineraryId;
@@ -414,7 +415,7 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
       ),
       body: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 480),
+          constraints: BoxConstraints(maxWidth: isDesktopWeb() ? kDesktopMaxWidth : double.infinity),
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(16),
             child: Form(
