@@ -1,7 +1,7 @@
 """add airplane to transport_legs mode constraint
 
 Revision ID: a6b7c8d9e0f1
-Revises: f5a2b3c4d1e0
+Revises: e7f8a9b0c1d2
 Create Date: 2026-05-03 00:00:00.000000+00:00
 
 The original migration omitted 'airplane' from ck_leg_mode.
@@ -13,7 +13,7 @@ from alembic import op
 
 
 revision: str = 'a6b7c8d9e0f1'
-down_revision: Union[str, None] = 'f5a2b3c4d1e0'
+down_revision: Union[str, None] = 'e7f8a9b0c1d2'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
