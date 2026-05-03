@@ -1,321 +1,425 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{{ itinerary.title }} — Ntripi</title>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>{{ itinerary.title }} — Shared on Ntripi</title>
   <meta name="description" content="{{ itinerary.description or ('A ' + formatted_duration + ' trip with ' + stop_count|string + ' stops.') }}">
 
   <!-- Open Graph -->
   <meta property="og:type"        content="website">
   <meta property="og:site_name"   content="Ntripi">
   <meta property="og:title"       content="{{ itinerary.title }}">
-  <meta property="og:description" content="⏱ {{ formatted_duration }} · 💰 {{ formatted_cost }} · 📍 {{ stop_count }} stops{% if rating_avg %} · ★ {{ rating_avg }} ({{ rating_count }}){% endif %}">
+  <meta property="og:description" content="⏱ {{ formatted_duration }} · 💰 {{ formatted_cost }} · 📍 {{ stop_count }} stop{{ 's' if stop_count != 1 else '' }}{% if rating_avg %} · ★ {{ rating_avg }} ({{ rating_count }}){% endif %}">
   <meta property="og:url"         content="{{ share_url }}">
   <meta property="og:image"       content="{{ preview_image_url }}">
 
   <!-- Twitter card -->
   <meta name="twitter:card"        content="summary_large_image">
   <meta name="twitter:title"       content="{{ itinerary.title }}">
-  <meta name="twitter:description" content="⏱ {{ formatted_duration }} · 💰 {{ formatted_cost }} · 📍 {{ stop_count }} stops{% if rating_avg %} · ★ {{ rating_avg }} ({{ rating_count }}){% endif %}">
+  <meta name="twitter:description" content="⏱ {{ formatted_duration }} · 💰 {{ formatted_cost }} · 📍 {{ stop_count }} stop{{ 's' if stop_count != 1 else '' }}{% if rating_avg %} · ★ {{ rating_avg }} ({{ rating_count }}){% endif %}">
   <meta name="twitter:image"       content="{{ preview_image_url }}">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;0,9..40,800&display=swap" rel="stylesheet"/>
 
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --brand:   #4F46E5;
-      --brand-light: #EEF2FF;
-      --text:    #111827;
-      --sub:     #6B7280;
-      --border:  #E5E7EB;
-      --bg:      #F9FAFB;
-      --white:   #FFFFFF;
-      --radius:  12px;
+      --forest:      #295B37;
+      --forest-deep: #1F4329;
+      --mist:        oklch(90% 0.06 150);
+      --amber:       #D4824A;
+      --amber-light: oklch(95% 0.07 80);
+      --sand:        oklch(97% 0.008 80);
+      --bark:        oklch(18% 0.03 150);
+      --text:        oklch(18% 0.03 150);
+      --text2:       oklch(48% 0.04 150);
+      --text3:       oklch(68% 0.03 150);
+      --border:      oklch(90% 0.02 150);
+      --surface:     #fff;
+      --shadow-sm:   0 1px 3px rgba(0,40,20,.07), 0 4px 12px rgba(0,40,20,.06);
+      --shadow-md:   0 4px 16px rgba(0,40,20,.1), 0 12px 40px rgba(0,40,20,.08);
     }
 
-    body {
-      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      line-height: 1.5;
-      min-height: 100vh;
-    }
+    body { font-family: 'DM Sans', sans-serif; background: var(--sand); color: var(--text); line-height: 1.6; }
 
-    a { color: var(--brand); text-decoration: none; }
-    a:hover { text-decoration: underline; }
-
-    /* ── Header ── */
-    header {
-      background: var(--white);
+    /* ── NAV ── */
+    nav {
+      position: sticky; top: 0; z-index: 100;
+      background: rgba(245,242,236,0.88);
+      backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
       border-bottom: 1px solid var(--border);
-      padding: 14px 20px;
+      padding: 0 24px; height: 60px;
+      display: flex; align-items: center; justify-content: space-between;
     }
-    .logo {
-      font-size: 20px;
-      font-weight: 800;
-      color: var(--brand);
-      letter-spacing: -0.5px;
-    }
-
-    /* ── Main ── */
-    main {
-      max-width: 640px;
-      margin: 28px auto;
-      padding: 0 16px 48px;
+    .nav-logo { display: flex; align-items: center; gap: 3px; text-decoration: none; }
+    .nav-logo-text { font-weight: 800; font-size: 19px; color: var(--forest); letter-spacing: -.5px; }
+    .nav-cta {
+      padding: 8px 18px; border-radius: 50px; border: none;
+      background: var(--forest); color: white; font-weight: 700; font-size: 13px;
+      cursor: pointer; font-family: inherit; text-decoration: none;
+      box-shadow: 0 2px 8px rgba(20,80,40,.25);
     }
 
-    h1 {
-      font-size: 26px;
-      font-weight: 800;
-      line-height: 1.25;
-      margin-bottom: 4px;
-    }
+    /* ── CONTAINER ── */
+    .container { max-width: 760px; margin: 0 auto; padding: 32px 24px 48px; }
 
-    .author {
-      color: var(--sub);
-      font-size: 14px;
-      margin-bottom: 16px;
-    }
-
-    /* ── Stats chips ── */
-    .stats {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      margin-bottom: 18px;
-    }
-    .stats span {
-      background: var(--brand-light);
-      color: var(--brand);
-      font-size: 13px;
-      font-weight: 600;
-      padding: 5px 12px;
-      border-radius: 20px;
-    }
-
-    /* ── Description ── */
-    .description {
-      color: var(--sub);
-      font-size: 15px;
-      margin-bottom: 20px;
-      padding: 14px 16px;
-      background: var(--white);
-      border-radius: var(--radius);
-      border: 1px solid var(--border);
-    }
-
-    /* ── Cover image ── */
-    .cover-image {
-      width: 100%;
-      aspect-ratio: 1200 / 630;
-      object-fit: cover;
-      border-radius: var(--radius);
-      display: block;
+    /* ── HERO COVER ── */
+    .hero-cover {
+      position: relative;
+      border-radius: 28px; overflow: hidden;
+      background: linear-gradient(135deg, #295B37 0%, #1F4329 100%);
+      height: 280px;
       margin-bottom: 24px;
-      background: var(--border);
+      box-shadow: var(--shadow-md);
     }
+    .hero-cover-img {
+      position: absolute; inset: 0; width: 100%; height: 100%;
+      object-fit: cover; opacity: .55;
+    }
+    .hero-cover-bg {
+      position: absolute; inset: 0; opacity: .18;
+    }
+    .hero-cover-overlay {
+      position: absolute; inset: 0;
+      background: linear-gradient(0deg, rgba(0,0,0,.45) 0%, rgba(0,0,0,0) 60%);
+    }
+    .hero-cover-content {
+      position: relative; height: 100%;
+      display: flex; flex-direction: column; justify-content: flex-end;
+      padding: 32px;
+    }
+    .cover-author {
+      display: flex; align-items: center; gap: 8px; margin-bottom: 12px;
+      font-size: 13px; color: rgba(255,255,255,.85); font-weight: 500;
+    }
+    .author-avatar {
+      width: 28px; height: 28px; border-radius: 50%;
+      background: var(--mist); color: var(--forest);
+      font-weight: 700; font-size: 12px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .cover-title {
+      font-size: clamp(32px, 5vw, 44px); font-weight: 800;
+      color: white; letter-spacing: -1px; line-height: 1.1;
+    }
+    .share-badge {
+      position: absolute; top: 20px; right: 20px;
+      display: inline-flex; align-items: center; gap: 6px;
+      background: rgba(255,255,255,.18); color: white;
+      backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+      padding: 6px 12px; border-radius: 50px; font-size: 11px; font-weight: 600;
+      border: 1px solid rgba(255,255,255,.2);
+    }
+    .share-badge-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--amber); }
 
-    /* ── Stops ── */
-    h2 {
-      font-size: 17px;
-      font-weight: 700;
-      margin-bottom: 14px;
-      color: var(--text);
+    /* ── META PILLS ── */
+    .meta-row { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 20px; }
+    .meta-pill {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: var(--surface); border: 1px solid var(--border); border-radius: 50px;
+      padding: 8px 14px; font-size: 13px; font-weight: 600; color: var(--text);
+      box-shadow: var(--shadow-sm);
     }
+    .meta-pill svg { color: var(--forest); }
 
-    ol.stops {
-      list-style: none;
-      display: flex;
-      flex-direction: column;
-      gap: 0;
+    /* ── RATING CARD ── */
+    .rating-card {
+      background: var(--surface); border-radius: 20px; padding: 18px 20px;
+      border: 1px solid var(--border); box-shadow: var(--shadow-sm);
+      display: flex; align-items: center; gap: 14px; margin-bottom: 24px;
     }
+    .rating-big { font-size: 32px; font-weight: 800; color: var(--bark); line-height: 1; }
+    .rating-stars { display: flex; gap: 2px; margin-bottom: 3px; }
+    .rating-meta { font-size: 12px; color: var(--text2); }
 
-    ol.stops > li {
-      background: var(--white);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 14px 16px;
-      display: flex;
-      gap: 12px;
-      margin-bottom: 4px;
+    /* ── NOTE CARD ── */
+    .note-card {
+      background: var(--amber-light); border-radius: 16px; padding: 14px 18px;
+      border-left: 3px solid var(--amber); margin-bottom: 28px;
+      display: flex; gap: 10px; align-items: flex-start;
     }
+    .note-label {
+      font-size: 11px; font-weight: 700; color: var(--amber);
+      text-transform: uppercase; letter-spacing: .06em; margin-bottom: 3px;
+    }
+    .note-text { font-size: 14px; color: var(--text); }
 
-    .stop-type {
-      font-size: 22px;
-      line-height: 1;
-      flex-shrink: 0;
-      margin-top: 2px;
+    /* ── STOPS ── */
+    .section-title {
+      font-size: 13px; font-weight: 700; letter-spacing: .08em;
+      text-transform: uppercase; color: var(--text3); margin-bottom: 14px;
     }
+    .stops { display: flex; flex-direction: column; }
+    .stop-item {
+      background: var(--surface); border-radius: 16px; padding: 14px 16px;
+      border: 1px solid var(--border); box-shadow: var(--shadow-sm);
+      display: flex; gap: 14px; align-items: center;
+    }
+    .stop-num {
+      width: 32px; height: 32px; border-radius: 50%;
+      background: var(--mist); color: var(--forest);
+      font-weight: 800; font-size: 14px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .stop-info { flex: 1; min-width: 0; }
+    .stop-name { font-weight: 700; font-size: 15px; color: var(--text); }
+    .stop-meta { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; margin-top: 4px; }
+    .stop-cost {
+      display: inline-flex; align-items: center; gap: 4px;
+      background: var(--mist); color: var(--forest);
+      font-size: 11px; font-weight: 600; padding: 3px 9px; border-radius: 50px;
+    }
+    .stop-duration { font-size: 11px; color: var(--text2); font-weight: 500; }
 
-    .stop-content h3 {
-      font-size: 15px;
-      font-weight: 600;
-      margin-bottom: 2px;
+    .transport {
+      margin: 8px 0 8px 36px;
+      background: oklch(95% 0.07 80);
+      border: 1px solid oklch(88% 0.06 80);
+      border-radius: 12px; padding: 10px 14px;
+      display: flex; align-items: center; gap: 10px; font-size: 13px;
     }
+    .transport-icon { font-size: 18px; }
+    .transport-meta { color: oklch(50% 0.12 75); font-weight: 600; }
+    .transport-time { margin-left: auto; font-size: 12px; color: var(--text2); }
 
-    .stop-content .address {
-      font-size: 13px;
-      color: var(--sub);
-      margin-bottom: 6px;
-    }
-
-    .chip {
-      display: inline-block;
-      background: var(--bg);
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      font-size: 12px;
-      padding: 2px 8px;
-      margin-right: 4px;
-      color: var(--sub);
-    }
-
-    /* ── Transit row ── */
-    li.transit {
-      background: transparent;
-      border: none;
-      padding: 6px 16px;
-      margin-bottom: 4px;
-      color: var(--sub);
-      font-size: 13px;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-    .transit-summary { flex: 1; }
-
-    /* ── CTA ── */
-    .cta {
-      margin-top: 32px;
-      text-align: center;
-    }
-    .open-app-btn {
-      display: inline-block;
-      background: var(--brand);
-      color: var(--white);
-      font-weight: 700;
-      font-size: 16px;
-      padding: 14px 32px;
-      border-radius: var(--radius);
-      text-decoration: none;
-      transition: opacity .15s;
-    }
-    .open-app-btn:hover { opacity: .88; text-decoration: none; }
-
-    .install-prompt {
-      margin-top: 14px;
-      color: var(--sub);
-      font-size: 14px;
-    }
-    .store-badges {
-      display: flex;
-      gap: 10px;
-      justify-content: center;
-      margin-top: 10px;
-    }
-    .store-badge {
-      background: var(--text);
-      color: var(--white);
-      font-size: 13px;
-      font-weight: 600;
-      padding: 8px 18px;
-      border-radius: 8px;
-      text-decoration: none;
-    }
-    .store-badge:hover { opacity: .85; text-decoration: none; }
-
-    /* ── Footer ── */
-    footer {
-      text-align: center;
-      padding: 20px;
-      font-size: 13px;
-      color: var(--sub);
-      border-top: 1px solid var(--border);
+    /* ── CTA BAND ── */
+    .cta-band {
       margin-top: 40px;
+      background: var(--forest); border-radius: 24px; padding: 32px 28px;
+      position: relative; overflow: hidden;
+      box-shadow: var(--shadow-md);
     }
+    .cta-band::before {
+      content: ''; position: absolute; top: -40px; right: -40px;
+      width: 180px; height: 180px; border-radius: 50%;
+      background: rgba(255,255,255,.05);
+    }
+    .cta-title { font-size: 22px; font-weight: 800; color: white; letter-spacing: -.5px; margin-bottom: 6px; line-height: 1.2; }
+    .cta-sub { font-size: 14px; color: rgba(255,255,255,.7); margin-bottom: 20px; }
+    .cta-buttons { display: flex; gap: 10px; flex-wrap: wrap; position: relative; }
+
+    .btn-open-app {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 12px 22px; border-radius: 50px;
+      background: white; color: var(--forest);
+      font-weight: 700; font-size: 14px; border: none; cursor: pointer;
+      font-family: inherit; text-decoration: none;
+      transition: transform .15s;
+    }
+    .btn-open-app:hover { transform: translateY(-2px); }
+
+    .cta-divider {
+      display: flex; align-items: center; gap: 10px; margin: 16px 0;
+      color: rgba(255,255,255,.3); font-size: 11px; font-weight: 600;
+      text-transform: uppercase; letter-spacing: .1em;
+    }
+    .cta-divider::before, .cta-divider::after { content: ''; flex: 1; height: 1px; background: rgba(255,255,255,.1); }
+
+    .btn-store {
+      display: flex; align-items: center; gap: 10px;
+      padding: 11px 18px; border-radius: 14px; border: none;
+      background: var(--bark); color: white;
+      cursor: pointer; font-family: inherit; text-decoration: none;
+      transition: transform .15s;
+    }
+    .btn-store:hover { transform: translateY(-2px); }
+    .btn-store-sub { font-size: 9px; color: rgba(255,255,255,.6); line-height: 1; }
+    .btn-store-title { font-size: 14px; font-weight: 700; line-height: 1; margin-top: 2px; }
+
+    /* ── FOOTER ── */
+    footer {
+      border-top: 1px solid var(--border); margin-top: 40px;
+      padding: 24px; text-align: center;
+      font-size: 13px; color: var(--text3);
+    }
+    footer a { color: var(--forest); font-weight: 600; text-decoration: none; }
   </style>
 </head>
 <body>
 
-<header>
-  <div class="logo">Ntripi</div>
-</header>
+<nav>
+  <a class="nav-logo" href="/">
+    <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+      <rect width="32" height="32" rx="8" fill="#295B37"/>
+      <polyline points="8,24 8,10 16,20 24,10" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+      <circle cx="24" cy="10" r="3" fill="#D4824A"/>
+      <circle cx="24" cy="10" r="1.5" fill="white"/>
+    </svg>
+    <span class="nav-logo-text">Tripi</span>
+  </a>
+  <a href="/app/" class="nav-cta">Get the app</a>
+</nav>
 
-<main>
-  <h1>{{ itinerary.title }}</h1>
-  <p class="author">by @{{ owner.username }}</p>
+<div class="container">
 
-  <div class="stats">
-    <span>⏱ {{ formatted_duration }}</span>
-    <span>💰 {{ formatted_cost }}</span>
-    <span>📍 {{ stop_count }} stop{{ 's' if stop_count != 1 else '' }}</span>
-    {% if rating_avg %}
-    <span>★ {{ rating_avg }} ({{ rating_count }})</span>
+  <!-- HERO COVER -->
+  <div class="hero-cover">
+    {% if itinerary.cover_image_url %}
+    <img class="hero-cover-img" src="{{ preview_image_url }}" alt="{{ itinerary.title }}">
+    {% else %}
+    <svg class="hero-cover-bg" viewBox="0 0 760 280" preserveAspectRatio="xMidYMid slice">
+      <polyline points="40,260 80,180 200,200 360,80 540,180 720,40" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+      <polyline points="0,160 120,100 280,140 480,60 680,140" stroke="white" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity=".7"/>
+      <circle cx="720" cy="40" r="8" fill="#D4824A"/>
+      <circle cx="40" cy="260" r="5" fill="white" opacity=".6"/>
+    </svg>
     {% endif %}
-  </div>
-
-  {% if itinerary.description %}
-  <p class="description">{{ itinerary.description }}</p>
-  {% endif %}
-
-  {% if itinerary.cover_image_url %}
-  <img src="{{ preview_image_url }}"
-       alt="{{ itinerary.title }}"
-       class="cover-image"
-       width="1200" height="630">
-  {% endif %}
-
-  {% if stops %}
-  <h2>Your trip</h2>
-  <ol class="stops">
-    {% for stop in stops %}
-    <li>
-      <div class="stop-type">{{ stop.type_emoji }}</div>
-      <div class="stop-content">
-        <h3>{{ stop.place_name }}</h3>
-        {% if stop.place_address %}
-        <p class="address">{{ stop.place_address }}</p>
-        {% endif %}
-        {% if stop.duration_min %}
-        <span class="chip">{{ stop.duration_min }} min</span>
-        {% endif %}
-        {% if stop.is_free %}
-        <span class="chip">Free</span>
-        {% elif stop.cost > 0 %}
-        <span class="chip">{{ "%.2f"|format(stop.cost) }} {{ itinerary.currency }}</span>
-        {% endif %}
+    <div class="hero-cover-overlay"></div>
+    <div class="share-badge"><div class="share-badge-dot"></div>Public itinerary</div>
+    <div class="hero-cover-content">
+      <div class="cover-author">
+        <div class="author-avatar">{{ owner.username[0]|upper }}</div>
+        <span>Shared by <strong style="color:white">@{{ owner.username }}</strong></span>
       </div>
-    </li>
-    {% if not loop.last and stop.id in segments_by_from_stop %}
-    {% set seg = segments_by_from_stop[stop.id] %}
-    <li class="transit">
-      <div class="transit-summary">
-        {% for leg in seg.legs %}{{ leg.mode_emoji }} {{ leg.mode }}{% if not loop.last %} → {% endif %}{% endfor %}
-      </div>
-      {% if seg.total_duration_min > 0 %}
-      <span class="chip">{{ seg.total_duration_min }} min</span>
-      {% endif %}
-    </li>
-    {% endif %}
-    {% endfor %}
-  </ol>
-  {% endif %}
-
-  <div class="cta">
-    <a href="ntripi://itinerary/{{ itinerary.id }}" class="open-app-btn">
-      Open in Ntripi app
-    </a>
-    <p class="install-prompt">Don't have Ntripi?</p>
-    <div class="store-badges">
-      <a href="#" class="store-badge">App Store</a>
-      <a href="#" class="store-badge">Google Play</a>
+      <h1 class="cover-title" dir="auto">{{ itinerary.title }}</h1>
     </div>
   </div>
-</main>
+
+  <!-- META PILLS -->
+  <div class="meta-row">
+    <div class="meta-pill">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.6">
+        <circle cx="7" cy="7" r="5.5"/><path d="M7 4v3l2 1" stroke-linecap="round"/>
+      </svg>
+      {{ formatted_duration }}
+    </div>
+    <div class="meta-pill">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.6">
+        <rect x="1.5" y="3" width="11" height="8" rx="1.5"/><path d="M1.5 6h11"/>
+      </svg>
+      {{ formatted_cost }}
+    </div>
+    <div class="meta-pill">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.6">
+        <path d="M7 1.5C5.3 1.5 4 2.8 4 4.5c0 2.5 3 7 3 7s3-4.5 3-7c0-1.7-1.3-3-3-3z"/>
+      </svg>
+      {{ stop_count }} stop{{ 's' if stop_count != 1 else '' }}
+    </div>
+    {% if rating_avg %}
+    <div class="meta-pill">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="#D4824A">
+        <path d="M7 1.5l1.5 3 3.3.5-2.4 2.3.6 3.2L7 9l-3 1.5.6-3.2L2.2 5l3.3-.5z"/>
+      </svg>
+      {{ rating_avg }}
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- RATING CARD -->
+  {% if rating_avg and rating_count >= 1 %}
+  <div class="rating-card">
+    <div class="rating-big">{{ rating_avg }}</div>
+    <div>
+      <div class="rating-stars">
+        {% set r = rating_avg|float %}
+        {% for i in range(1, 6) %}
+          {% if r >= i %}
+          <svg width="16" height="16" viewBox="0 0 14 14" fill="#D4824A"><path d="M7 1.5l1.5 3 3.3.5-2.4 2.3.6 3.2L7 9l-3 1.5.6-3.2L2.2 5l3.3-.5z"/></svg>
+          {% elif r >= i - 0.5 %}
+          <svg width="16" height="16" viewBox="0 0 14 14" fill="#D4824A" opacity=".45"><path d="M7 1.5l1.5 3 3.3.5-2.4 2.3.6 3.2L7 9l-3 1.5.6-3.2L2.2 5l3.3-.5z"/></svg>
+          {% else %}
+          <svg width="16" height="16" viewBox="0 0 14 14" fill="#D4824A" opacity=".18"><path d="M7 1.5l1.5 3 3.3.5-2.4 2.3.6 3.2L7 9l-3 1.5.6-3.2L2.2 5l3.3-.5z"/></svg>
+          {% endif %}
+        {% endfor %}
+      </div>
+      <div class="rating-meta">Based on {{ rating_count }} community rating{{ 's' if rating_count != 1 else '' }}</div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- NOTE CALLOUT -->
+  {% if itinerary.description %}
+  <div class="note-card">
+    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="#D4824A" stroke-width="1.7" style="flex-shrink:0;margin-top:2px">
+      <path d="M3 3h12v9l-3 3H3z" stroke-linejoin="round"/>
+      <line x1="6" y1="7" x2="12" y2="7" stroke-linecap="round"/>
+      <line x1="6" y1="10" x2="10" y2="10" stroke-linecap="round"/>
+    </svg>
+    <div>
+      <div class="note-label">Note from author</div>
+      <div class="note-text">{{ itinerary.description }}</div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- STOPS -->
+  {% if stops %}
+  <div class="section-title">The Route</div>
+  <div class="stops">
+    {% for stop in stops %}
+    <div class="stop-item">
+      <div class="stop-num">{{ loop.index }}</div>
+      <div class="stop-info">
+        <div class="stop-name" dir="auto">{{ stop.place_name }}</div>
+        <div class="stop-meta">
+          {% if stop.is_free %}
+          <span class="stop-cost">Free</span>
+          {% elif stop.cost > 0 %}
+          <span class="stop-cost">{{ "%.2f"|format(stop.cost) }} {{ itinerary.currency }}</span>
+          {% endif %}
+          {% if stop.duration_min %}
+          <span class="stop-duration">{{ stop.duration_min }} min</span>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    {% if not loop.last and stop.id in segments_by_from_stop %}
+    {% set seg = segments_by_from_stop[stop.id] %}
+    <div class="transport">
+      <span class="transport-icon">{{ seg.legs[0].mode_emoji if seg.legs else '🚗' }}</span>
+      <span class="transport-meta">{% for leg in seg.legs %}{{ leg.mode|capitalize }}{% if not loop.last %} → {% endif %}{% endfor %}</span>
+      {% if seg.total_duration_min > 0 %}
+      <span class="transport-time">{{ seg.total_duration_min }} min</span>
+      {% endif %}
+    </div>
+    {% endif %}
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <!-- CTA BAND -->
+  <div class="cta-band">
+    <h2 class="cta-title">Plan your own journey</h2>
+    <p class="cta-sub">Open this itinerary in the Ntripi app, or download to start creating your own.</p>
+    <div class="cta-buttons">
+      <a class="btn-open-app" href="ntripi://itinerary/{{ itinerary.id }}">
+        Open in app
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M3 7h8M7 3l4 4-4 4" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </a>
+    </div>
+    <div class="cta-divider">or download</div>
+    <div class="cta-buttons">
+      <a class="btn-store" href="#">
+        <svg width="20" height="20" viewBox="0 0 22 22" fill="white">
+          <path d="M16.2 11.7c0-2.7 2.2-4 2.3-4.1C17 5.8 15 5.5 14.3 5.5c-1.7-.2-3.4 1-4.3 1s-2.3-1-3.7-1c-1.9 0-3.7 1.1-4.7 2.8C-.5 11.5.8 17 3 20.1c1 1.5 2.3 3.1 3.9 3.1 1.5-.1 2.1-1 3.9-1s2.4 1 3.9 1c1.7 0 2.8-1.5 3.8-3 1.2-1.7 1.7-3.4 1.8-3.5-.1-.1-3.1-1.3-3.1-5zm-2.9-9.5c.9-1 1.5-2.5 1.3-3.9-1.3 0-2.8.8-3.7 1.8-.8.9-1.5 2.4-1.3 3.8 1.4.1 2.8-.7 3.7-1.7z"/>
+        </svg>
+        <div>
+          <div class="btn-store-sub">Download on the</div>
+          <div class="btn-store-title">App Store</div>
+        </div>
+      </a>
+      <a class="btn-store" href="#">
+        <svg width="20" height="20" viewBox="0 0 22 22" fill="white">
+          <path d="M3 1.5l15 9.5-15 9.5V1.5z" opacity=".9"/>
+        </svg>
+        <div>
+          <div class="btn-store-sub">Get it on</div>
+          <div class="btn-store-title">Google Play</div>
+        </div>
+      </a>
+    </div>
+  </div>
+
+</div>
 
 <footer>
-  <p>Shared via Ntripi · <a href="/">ntripi.app</a></p>
+  Shared via <a href="/">Ntripi</a> · ntripi.app
 </footer>
 
 </body>
