@@ -1,6 +1,6 @@
 # Static assets for Ntripi landing pages
 
-## ntripi-og-default.jpg (1200×630)
+## ntripi-og-default.png (1200×630)
 
 Default Open Graph preview image shown when a user shares an itinerary
 link to WhatsApp, Twitter, iMessage, etc.

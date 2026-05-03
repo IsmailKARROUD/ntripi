@@ -260,7 +260,7 @@ class TestImageUpload:
 
         html = client.get(f"/share/i/{itin_id}").text
 
-        assert "ntripi-og-default.jpg" in html
+        assert "ntripi-og-default.png" in html
 
 
 # ---------------------------------------------------------------------------

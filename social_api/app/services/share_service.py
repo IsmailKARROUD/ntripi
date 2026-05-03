@@ -102,7 +102,7 @@ def _resolve_preview_image_url(itinerary: "Itinerary", settings: "Settings") -> 
 
     # Phase 2 map-image fallback goes here.
 
-    return f"{settings.share_base_url}/static/ntripi-og-default.jpg"
+    return f"{settings.share_base_url}/static/ntripi-og-default.png"
 
 
 def _stop_emoji(stop_type: str, place_type: str | None) -> str:

@@ -140,7 +140,7 @@ One optional cover image per itinerary. Stored at
 Image priority chain on share landing page:
 1. user-uploaded `image_url` (current)
 2. auto-generated map image (deferred — Jira ticket)
-3. default `/static/ntripi-og-default.jpg`
+3. default `/static/ntripi-og-default.png`
 
 ### Account Deletion
 `ON DELETE SET NULL` on `itinerary_ratings.user_id` preserves
