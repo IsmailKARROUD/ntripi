@@ -13,6 +13,7 @@
 //   We map viewport corners (0,0)→(vpW,vpH) to image space, clamp to image
 //   bounds, then draw that rect onto a 1200×630 dart:ui canvas.
 
+import 'dart:async';
 import 'dart:math' as math;
 import 'dart:typed_data';
 import 'dart:ui' as ui;
@@ -92,26 +93,41 @@ class _CoverImageFieldState extends State<CoverImageField> {
   }
 
   Future<void> _openCrop(Uint8List source, String filename) async {
-    // On web, go_router's RouterDelegate can rebuild the navigator from the
-    // current URL and silently pop any page route it doesn't own.
-    // showGeneralDialog pushes a PopupRoute which go_router never manages.
-    final Uint8List? cropped;
-    if (kIsWeb) {
-      cropped = await showGeneralDialog<Uint8List>(
-        context: context,
-        barrierDismissible: false,
-        barrierColor: Colors.transparent,
-        useRootNavigator: true,
-        pageBuilder: (ctx, _, __) => _CropScreen(imageBytes: source),
-      );
-    } else {
-      cropped = await Navigator.of(context, rootNavigator: true).push<Uint8List>(
-        MaterialPageRoute(
-          fullscreenDialog: true,
-          builder: (_) => _CropScreen(imageBytes: source),
-        ),
-      );
-    }
+    // Use Overlay + LocalHistoryEntry instead of Navigator so go_router can
+    // never interfere. The LocalHistoryEntry intercepts the system/browser
+    // back button and dismisses the overlay cleanly.
+    final completer = Completer<Uint8List?>();
+    bool closed = false;
+
+    late OverlayEntry overlayEntry;
+    final historyEntry = LocalHistoryEntry(
+      onRemove: () {
+        if (closed) return;
+        closed = true;
+        overlayEntry.remove();
+        if (!completer.isCompleted) completer.complete(null);
+      },
+    );
+
+    overlayEntry = OverlayEntry(
+      opaque: true,
+      builder: (_) => _CropScreen(
+        imageBytes: source,
+        onDone: (bytes) {
+          if (closed) return;
+          closed = true;
+          historyEntry.remove(); // triggers onRemove, closed=true guards re-entry
+          overlayEntry.remove();
+          if (!completer.isCompleted) completer.complete(bytes);
+        },
+        onCancel: () => historyEntry.remove(),
+      ),
+    );
+
+    ModalRoute.of(context)?.addLocalHistoryEntry(historyEntry);
+    Overlay.of(context, rootOverlay: true).insert(overlayEntry);
+
+    final cropped = await completer.future;
     if (cropped == null || !mounted) return;
     setState(() {
       _originalBytes = source;
@@ -200,7 +216,14 @@ class _CoverImageFieldState extends State<CoverImageField> {
 
 class _CropScreen extends StatefulWidget {
   final Uint8List imageBytes;
-  const _CropScreen({required this.imageBytes});
+  final void Function(Uint8List bytes) onDone;
+  final VoidCallback onCancel;
+
+  const _CropScreen({
+    required this.imageBytes,
+    required this.onDone,
+    required this.onCancel,
+  });
 
   @override
   State<_CropScreen> createState() => _CropScreenState();
@@ -327,7 +350,12 @@ class _CropScreenState extends State<_CropScreen> {
       output.dispose();
 
       if (!mounted) return;
-      Navigator.of(context).pop(byteData?.buffer.asUint8List());
+      final bytes = byteData?.buffer.asUint8List();
+      if (bytes != null) {
+        widget.onDone(bytes);
+      } else {
+        setState(() => _processing = false);
+      }
     } catch (_) {
       if (mounted) setState(() => _processing = false);
     }
@@ -340,6 +368,10 @@ class _CropScreenState extends State<_CropScreen> {
       appBar: AppBar(
         backgroundColor: kSand,
         foregroundColor: Colors.white,
+        leading: IconButton(
+          icon: const Icon(Icons.close),
+          onPressed: widget.onCancel,
+        ),
         title: const Text(
           'Adjust cover photo',
           style: TextStyle(color: kBark),
