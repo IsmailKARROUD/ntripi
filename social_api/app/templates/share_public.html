@@ -116,21 +116,6 @@
       background: var(--border);
     }
 
-    /* ── Map placeholder (shown when no cover image) ── */
-    .map-placeholder {
-      background: linear-gradient(135deg, #c7d2fe, #a5b4fc);
-      border-radius: var(--radius);
-      height: 160px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin-bottom: 24px;
-      color: var(--brand);
-      font-size: 14px;
-      font-weight: 600;
-      gap: 8px;
-    }
-
     /* ── Stops ── */
     h2 {
       font-size: 17px;
@@ -279,10 +264,6 @@
        alt="{{ itinerary.title }}"
        class="cover-image"
        width="1200" height="630">
-  {% else %}
-  <div class="map-placeholder">
-    🗺️ Map preview
-  </div>
   {% endif %}
 
   {% if stops %}
