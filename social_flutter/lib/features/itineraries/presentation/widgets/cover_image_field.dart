@@ -23,6 +23,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:social_flutter/core/api/api_endpoints.dart';
 import 'package:social_flutter/core/ui/app_theme.dart';
+import 'package:social_flutter/core/utils/platform_utils.dart';
 
 const _maxFileSizeBytes = 10 * 1024 * 1024; // 10 MB
 
@@ -81,7 +82,8 @@ class _CoverImageFieldState extends State<CoverImageField> {
       }
       await _openCrop(bytes, picked.name);
     } catch (e) {
-      if (mounted) setState(() => _error = 'Could not load image. Please try another.');
+      if (mounted)
+        setState(() => _error = 'Could not load image. Please try another.');
     } finally {
       if (mounted) setState(() => _picking = false);
     }
@@ -116,7 +118,8 @@ class _CoverImageFieldState extends State<CoverImageField> {
         onDone: (bytes) {
           if (closed) return;
           closed = true;
-          historyEntry.remove(); // triggers onRemove, closed=true guards re-entry
+          historyEntry
+              .remove(); // triggers onRemove, closed=true guards re-entry
           overlayEntry.remove();
           if (!completer.isCompleted) completer.complete(bytes);
         },
@@ -153,59 +156,64 @@ class _CoverImageFieldState extends State<CoverImageField> {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        AspectRatio(
-          aspectRatio: 1200 / 630,
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(12),
-            child: _hasImage
-                ? _ImagePreview(
-                    pickedBytes: _pickedBytes,
-                    networkUrl: _removed ? null : widget.initialUrl,
-                    onTap: _picking ? null : _pick,
-                  )
-                : _ImagePlaceholder(
-                    picking: _picking,
-                    onTap: _picking ? null : _pick,
+    return ConstrainedBox(
+      constraints: BoxConstraints(
+          maxWidth: isDesktopWeb() ? kDesktopMaxWidth : double.infinity),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          AspectRatio(
+            aspectRatio: 1200 / 630,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: _hasImage
+                  ? _ImagePreview(
+                      pickedBytes: _pickedBytes,
+                      networkUrl: _removed ? null : widget.initialUrl,
+                      onTap: _picking ? null : _pick,
+                    )
+                  : _ImagePlaceholder(
+                      picking: _picking,
+                      onTap: _picking ? null : _pick,
+                    ),
+            ),
+          ),
+          if (_error != null) ...[
+            const SizedBox(height: 6),
+            Text(
+              _error!,
+              style: TextStyle(fontSize: 13, color: cs.error),
+            ),
+          ],
+          if (_hasImage) ...[
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                TextButton.icon(
+                  icon: const Icon(Icons.photo_outlined, size: 16),
+                  label: const Text('Change'),
+                  onPressed: _picking ? null : _pick,
+                ),
+                if (_originalBytes != null) ...[
+                  const SizedBox(width: 4),
+                  TextButton.icon(
+                    icon: const Icon(Icons.crop_outlined, size: 16),
+                    label: const Text('Edit crop'),
+                    onPressed: _picking ? null : _editCrop,
                   ),
-          ),
-        ),
-        if (_error != null) ...[
-          const SizedBox(height: 6),
-          Text(
-            _error!,
-            style: TextStyle(fontSize: 13, color: cs.error),
-          ),
-        ],
-        if (_hasImage) ...[
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              TextButton.icon(
-                icon: const Icon(Icons.photo_outlined, size: 16),
-                label: const Text('Change'),
-                onPressed: _picking ? null : _pick,
-              ),
-              if (_originalBytes != null) ...[
+                ],
                 const SizedBox(width: 4),
                 TextButton.icon(
-                  icon: const Icon(Icons.crop_outlined, size: 16),
-                  label: const Text('Edit crop'),
-                  onPressed: _picking ? null : _editCrop,
+                  icon: Icon(Icons.delete_outline, size: 16, color: cs.error),
+                  label: Text('Remove', style: TextStyle(color: cs.error)),
+                  onPressed: _remove,
                 ),
               ],
-              const SizedBox(width: 4),
-              TextButton.icon(
-                icon: Icon(Icons.delete_outline, size: 16, color: cs.error),
-                label: Text('Remove', style: TextStyle(color: cs.error)),
-                onPressed: _remove,
-              ),
-            ],
-          ),
+            ),
+          ],
         ],
-      ],
+      ),
     );
   }
 }
