@@ -5,7 +5,7 @@
 // Returns null if the user dismisses without saving.
 //
 // Line / Direction visibility: only shown for transit modes that use numbered
-//   lines (bus, tram, metro, train, ferry). Hidden for walk, car, bike, uber, taxi.
+//   lines (bus, tram, metro, train, ferry,airplane). Hidden for walk, car, bike, uber, taxi.
 //
 // Duration entry: two fields (h + min) combined into duration_min on submit.
 //   Easier than typing raw minutes for long durations (e.g. 1h 30min vs 90).
