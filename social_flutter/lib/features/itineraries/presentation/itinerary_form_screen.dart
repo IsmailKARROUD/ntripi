@@ -214,10 +214,11 @@ class _ItineraryFormScreenState extends ConsumerState<ItineraryFormScreen> {
             : 'Edit Itinerary'),
       ),
       body: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: ConstrainedBox(
-        constraints: BoxConstraints(maxWidth: isDesktopWeb() ? kDesktopMaxWidth : double.infinity),
-        child: Form(
+        padding: const EdgeInsets.all(16),
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+              maxWidth: isDesktopWeb() ? kDesktopMaxWidth : double.infinity),
+          child: Form(
             key: _formKey,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -242,7 +243,7 @@ class _ItineraryFormScreenState extends ConsumerState<ItineraryFormScreen> {
                   }),
                 ),
                 const SizedBox(height: 16),
-      
+
                 // Title
                 TextFormField(
                   controller: _titleController,
@@ -250,12 +251,13 @@ class _ItineraryFormScreenState extends ConsumerState<ItineraryFormScreen> {
                     labelText: 'Title *',
                     border: OutlineInputBorder(),
                   ),
-                  validator: (v) =>
-                      (v == null || v.trim().isEmpty) ? 'Title is required' : null,
+                  validator: (v) => (v == null || v.trim().isEmpty)
+                      ? 'Title is required'
+                      : null,
                   textInputAction: TextInputAction.next,
                 ),
                 const SizedBox(height: 16),
-      
+
                 // Description
                 TextFormField(
                   controller: _descriptionController,
@@ -268,7 +270,7 @@ class _ItineraryFormScreenState extends ConsumerState<ItineraryFormScreen> {
                   textInputAction: TextInputAction.newline,
                 ),
                 const SizedBox(height: 16),
-      
+
                 // Currency
                 DropdownButtonFormField<String>(
                   value: _currency,
@@ -282,7 +284,7 @@ class _ItineraryFormScreenState extends ConsumerState<ItineraryFormScreen> {
                   onChanged: (v) => setState(() => _currency = v ?? 'EUR'),
                 ),
                 const SizedBox(height: 16),
-      
+
                 // Visibility picker
                 Text(
                   'Visibility',
@@ -319,16 +321,16 @@ class _ItineraryFormScreenState extends ConsumerState<ItineraryFormScreen> {
                         setState(() => _visibility = selection.first),
                   ),
                 ),
-      
+
                 // Restricted allowlist section — edit mode only.
                 if (widget.mode == ItineraryFormMode.edit &&
                     _visibility == ItineraryVisibility.restricted) ...[
                   const SizedBox(height: 16),
                   _AllowlistSection(itineraryId: widget.itineraryId!),
                 ],
-      
+
                 const SizedBox(height: 24),
-      
+
                 // Save button
                 FilledButton(
                   onPressed: _saving ? null : _save,
@@ -375,101 +377,102 @@ class _AllowlistSection extends ConsumerWidget {
     final allowedAsync = ref.watch(allowedUsersProvider(itineraryId));
 
     return ConstrainedBox(
-          constraints: BoxConstraints(maxWidth: isDesktopWeb() ? kDesktopMaxWidth : double.infinity),
-          child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              'People with access',
-              style: Theme.of(context).textTheme.titleSmall,
-            ),
-            TextButton.icon(
-              icon: const Icon(Icons.person_add_outlined, size: 18),
-              label: const Text('Add person'),
-              onPressed: () => _showAddPersonDialog(context),
-            ),
-          ],
-        ),
-        allowedAsync.when(
-          loading: () => const Padding(
-            padding: EdgeInsets.symmetric(vertical: 8),
-            child: Center(child: CircularProgressIndicator()),
+      constraints: BoxConstraints(
+          maxWidth: isDesktopWeb() ? kDesktopMaxWidth : double.infinity),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'People with access',
+                style: Theme.of(context).textTheme.titleSmall,
+              ),
+              TextButton.icon(
+                icon: const Icon(Icons.person_add_outlined, size: 18),
+                label: const Text('Add person'),
+                onPressed: () => _showAddPersonDialog(context),
+              ),
+            ],
           ),
-          error: (e, _) => Padding(
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            child: Text('Error loading allowlist: $e'),
-          ),
-          data: (users) {
-            if (users.isEmpty) {
-              return const Padding(
-                padding: EdgeInsets.symmetric(vertical: 8),
-                child: Text(
-                  'No one has access yet. Tap "Add person" to grant access.',
-                  style: TextStyle(color: Colors.grey),
-                ),
-              );
-            }
-            return Column(
-              children: users
-                  .map(
-                    (user) => ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      leading: CircleAvatar(
-                        child: Text(
-                          (user.displayName ?? user.username)
-                              .substring(0, 1)
-                              .toUpperCase(),
+          allowedAsync.when(
+            loading: () => const Padding(
+              padding: EdgeInsets.symmetric(vertical: 8),
+              child: Center(child: CircularProgressIndicator()),
+            ),
+            error: (e, _) => Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: Text('Error loading allowlist: $e'),
+            ),
+            data: (users) {
+              if (users.isEmpty) {
+                return const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 8),
+                  child: Text(
+                    'No one has access yet. Tap "Add person" to grant access.',
+                    style: TextStyle(color: Colors.grey),
+                  ),
+                );
+              }
+              return Column(
+                children: users
+                    .map(
+                      (user) => ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        leading: CircleAvatar(
+                          child: Text(
+                            (user.displayName ?? user.username)
+                                .substring(0, 1)
+                                .toUpperCase(),
+                          ),
                         ),
-                      ),
-                      title: Text(user.displayName ?? user.username),
-                      subtitle: Text('@${user.username}'),
-                      trailing: IconButton(
-                        icon: const Icon(Icons.close, size: 18),
-                        tooltip: 'Remove access',
-                        onPressed: () async {
-                          try {
-                            await ref
-                                .read(allowedUsersProvider(itineraryId)
-                                    .notifier)
-                                .removeUser(user.userId);
-                          } on Exception catch (e) {
-                            if (context.mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(
-                                    extractErrorMessage(e as dynamic),
-                                  ),
-                                ),
-                              );
-                            }
-                            return;
-                          }
-                          if (!context.mounted) return;
-                          final displayLabel =
-                              user.displayName ?? user.username;
-                          showUndoableActionSnackbar(
-                            context: context,
-                            message:
-                                'Removed $displayLabel from allowlist',
-                            onUndo: () async {
+                        title: Text(user.displayName ?? user.username),
+                        subtitle: Text('@${user.username}'),
+                        trailing: IconButton(
+                          icon: const Icon(Icons.close, size: 18),
+                          tooltip: 'Remove access',
+                          onPressed: () async {
+                            try {
                               await ref
                                   .read(allowedUsersProvider(itineraryId)
                                       .notifier)
-                                  .addUser(user.userId);
-                            },
-                          );
-                        },
+                                  .removeUser(user.userId);
+                            } on Exception catch (e) {
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      extractErrorMessage(e as dynamic),
+                                    ),
+                                  ),
+                                );
+                              }
+                              return;
+                            }
+                            if (!context.mounted) return;
+                            final displayLabel =
+                                user.displayName ?? user.username;
+                            showUndoableActionSnackbar(
+                              context: context,
+                              message: 'Removed $displayLabel from allowlist',
+                              onUndo: () async {
+                                await ref
+                                    .read(allowedUsersProvider(itineraryId)
+                                        .notifier)
+                                    .addUser(user.userId);
+                              },
+                            );
+                          },
+                        ),
                       ),
-                    ),
-                  )
-                  .toList(),
-            );
-          },
-        ),
-      ],
+                    )
+                    .toList(),
+              );
+            },
+          ),
+        ],
+      ),
     );
   }
 }
