@@ -39,8 +39,10 @@ import 'package:latlong2/latlong.dart';
 import 'package:social_flutter/core/api/api_client.dart';
 import 'package:social_flutter/core/ui/app_theme.dart';
 import 'package:social_flutter/core/ui/destructive_actions.dart';
+import 'package:social_flutter/features/itineraries/domain/annotation.dart';
 import 'package:social_flutter/features/itineraries/domain/itinerary.dart';
 import 'package:social_flutter/features/itineraries/domain/transit_segment.dart';
+import 'package:social_flutter/features/itineraries/presentation/widgets/annotation_form_dialog.dart';
 import 'package:social_flutter/features/profile/providers/profile_provider.dart';
 import 'package:social_flutter/features/itineraries/domain/stop.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/rate_itinerary_dialog.dart';
@@ -202,6 +204,65 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
       });
     }
     // _ExitAction.stay → do nothing, stay in edit mode.
+  }
+
+  Future<void> _addAnnotation(String stopId) async {
+    final result = await showAnnotationFormDialog(context, isEdit: false);
+    if (result == null || !mounted) return;
+    try {
+      await ref
+          .read(itineraryDetailProvider(widget.itineraryId).notifier)
+          .addAnnotation(stopId, {
+        'content': result.content,
+        'type': result.type.name,
+      });
+    } on Exception catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(extractErrorMessage(e as dynamic))),
+      );
+    }
+  }
+
+  Future<void> _editAnnotation(String stopId, Annotation annotation) async {
+    final result = await showAnnotationFormDialog(
+      context,
+      isEdit: true,
+      initialContent: annotation.content,
+      initialType: annotation.type,
+    );
+    if (result == null || !mounted) return;
+    try {
+      await ref
+          .read(itineraryDetailProvider(widget.itineraryId).notifier)
+          .updateAnnotation(stopId, annotation.id,
+              content: result.content, type: result.type);
+    } on Exception catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(extractErrorMessage(e as dynamic))),
+      );
+    }
+  }
+
+  Future<void> _deleteAnnotation(String stopId, Annotation annotation) async {
+    final confirmed = await confirmDestructiveAction(
+      context: context,
+      title: 'Delete annotation?',
+      message: 'This will permanently remove this note.',
+      confirmLabel: 'Delete',
+    );
+    if (!confirmed || !mounted) return;
+    try {
+      await ref
+          .read(itineraryDetailProvider(widget.itineraryId).notifier)
+          .deleteAnnotation(stopId, annotation.id);
+    } on Exception catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(extractErrorMessage(e as dynamic))),
+      );
+    }
   }
 
   Future<void> _confirmDeleteSegment(TransitSegment segment) async {
@@ -509,6 +570,15 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                                   ? () => context.push(
                                         '/itineraries/${widget.itineraryId}/stops/${stop.id}/edit',
                                       )
+                                  : null,
+                              onAddAnnotation: canEdit
+                                  ? () => _addAnnotation(stop.id)
+                                  : null,
+                              onEditAnnotation: canEdit
+                                  ? (a) => _editAnnotation(stop.id, a)
+                                  : null,
+                              onDeleteAnnotation: canEdit
+                                  ? (a) => _deleteAnnotation(stop.id, a)
                                   : null,
                             ));
               

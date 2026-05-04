@@ -1,6 +1,7 @@
 // widgets/stop_card.dart — Card representing one stop in the detail list.
 
 import 'package:flutter/material.dart';
+import 'package:social_flutter/features/itineraries/domain/annotation.dart';
 import 'package:social_flutter/features/itineraries/domain/stop.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/annotation_chip.dart';
 
@@ -8,12 +9,18 @@ class StopCard extends StatelessWidget {
   final Stop stop;
   final String currency;
   final VoidCallback? onEdit;
+  final VoidCallback? onAddAnnotation;
+  final void Function(Annotation)? onEditAnnotation;
+  final void Function(Annotation)? onDeleteAnnotation;
 
   const StopCard({
     super.key,
     required this.stop,
     required this.currency,
     this.onEdit,
+    this.onAddAnnotation,
+    this.onEditAnnotation,
+    this.onDeleteAnnotation,
   });
 
   static const _typeIcons = {
@@ -134,15 +141,53 @@ class StopCard extends StatelessWidget {
               ],
             ),
 
-            if (stop.annotations.isNotEmpty)
+            if (stop.annotations.isNotEmpty || onAddAnnotation != null)
               Padding(
                 padding: const EdgeInsets.only(top: 8, left: 40),
                 child: Wrap(
                   spacing: 6,
                   runSpacing: 4,
-                  children: stop.annotations
-                      .map((a) => AnnotationChip(annotation: a))
-                      .toList(),
+                  children: [
+                    ...stop.annotations.map(
+                      (a) => AnnotationChip(
+                        annotation: a,
+                        onEdit: onEditAnnotation != null
+                            ? () => onEditAnnotation!(a)
+                            : null,
+                        onDelete: onDeleteAnnotation != null
+                            ? () => onDeleteAnnotation!(a)
+                            : null,
+                      ),
+                    ),
+                    if (onAddAnnotation != null)
+                      GestureDetector(
+                        onTap: onAddAnnotation,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade100,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                                color: Colors.grey.shade300,
+                                style: BorderStyle.solid),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.add, size: 13,
+                                  color: Colors.grey.shade500),
+                              const SizedBox(width: 3),
+                              Text(
+                                'Add note',
+                                style: TextStyle(
+                                    fontSize: 12, color: Colors.grey.shade500),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
               ),
           ],
