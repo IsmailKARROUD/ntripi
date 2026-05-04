@@ -67,7 +67,7 @@ class StopCreate(BaseModel):
 
     place_type: Optional[str] = Field(
         None,
-        pattern="^(restaurant|cafe|museum|hotel|park|station|airport|beach|landmark|other)$",
+        pattern="^(eatDrink|sleep|pray|learnSee|buy|playWatch|nature|travel|healBathe|entertainment|sight)$",
     )
 
     duration_min: Optional[int] = Field(None, ge=0)
@@ -85,7 +85,7 @@ class StopUpdate(BaseModel):
     lng: Optional[float] = Field(None, ge=-180, le=180)
     place_type: Optional[str] = Field(
         None,
-        pattern="^(restaurant|cafe|museum|hotel|park|station|airport|beach|landmark|other)$",
+        pattern="^(eatDrink|sleep|pray|learnSee|buy|playWatch|nature|travel|healBathe|entertainment|sight)$",
     )
     duration_min: Optional[int] = Field(None, ge=0)
     cost: Optional[Decimal] = Field(None, ge=0)

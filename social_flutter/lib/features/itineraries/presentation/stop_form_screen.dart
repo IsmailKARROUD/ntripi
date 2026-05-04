@@ -161,8 +161,11 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
 
   Stop? _findDuplicate() {
     if (widget.isEditMode) return null;
-    final stops =
-        ref.read(itineraryDetailProvider(widget.itineraryId)).valueOrNull?.stops ?? [];
+    final stops = ref
+            .read(itineraryDetailProvider(widget.itineraryId))
+            .valueOrNull
+            ?.stops ??
+        [];
     for (final s in stops) {
       if (_lat != null && _lng != null && s.lat != null && s.lng != null) {
         // Use epsilon ~11m to handle floating-point rounding from DB storage.
@@ -219,11 +222,15 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
         if (widget.insertAfterPosition != null) {
           position = widget.insertAfterPosition! + 1;
         } else {
-          final stops =
-              ref.read(itineraryDetailProvider(widget.itineraryId)).value?.stops ?? [];
+          final stops = ref
+                  .read(itineraryDetailProvider(widget.itineraryId))
+                  .value
+                  ?.stops ??
+              [];
           position = stops.isEmpty
               ? 1
-              : stops.map((s) => s.position).reduce((a, b) => a > b ? a : b) + 1;
+              : stops.map((s) => s.position).reduce((a, b) => a > b ? a : b) +
+                  1;
         }
       }
 
@@ -402,7 +409,8 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
       ref.listen(itineraryDetailProvider(widget.itineraryId), (_, next) {
         next.whenData((itinerary) {
           try {
-            final stop = itinerary.stops.firstWhere((s) => s.id == widget.stopId);
+            final stop =
+                itinerary.stops.firstWhere((s) => s.id == widget.stopId);
             if (mounted) setState(() => _existingStop = stop);
           } catch (_) {}
         });
@@ -415,386 +423,413 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
       ),
       body: Center(
         child: ConstrainedBox(
-          constraints: BoxConstraints(maxWidth: isDesktopWeb() ? kDesktopMaxWidth : double.infinity),
+          constraints: BoxConstraints(
+              maxWidth: isDesktopWeb() ? kDesktopMaxWidth : double.infinity),
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(16),
             child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // ----------------------------------------------------------------
-              // Section 1: Place search
-              // ----------------------------------------------------------------
-              Text(
-                'Search for a place',
-                style: Theme.of(context).textTheme.titleSmall,
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: _searchController,
-                decoration: InputDecoration(
-                  hintText: 'e.g. Eiffel Tower, Paris',
-                  border: const OutlineInputBorder(),
-                  prefixIcon: const Icon(Icons.search),
-                  suffixIcon: _searchController.text.isNotEmpty
-                      ? IconButton(
-                          icon: const Icon(Icons.clear),
-                          onPressed: () {
-                            _searchController.clear();
-                            ref.read(placeSearchProvider.notifier).clear();
-                          },
-                        )
-                      : null,
-                ),
-                onChanged: _onSearchChanged,
-              ),
-
-              // Suggestions list
-              suggestionsAsync.when(
-                loading: () => const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 8),
-                  child: LinearProgressIndicator(),
-                ),
-                error: (_, __) => const SizedBox.shrink(),
-                data: (suggestions) {
-                  if (suggestions.isEmpty) return const SizedBox.shrink();
-                  return Card(
-                    margin: const EdgeInsets.only(top: 4),
-                    child: Column(
-                      children: suggestions
-                          .map(
-                            (s) => ListTile(
-                              dense: true,
-                              leading: const Icon(Icons.place_outlined),
-                              title: Text(s.displayName, maxLines: 1),
-                              subtitle: Text(
-                                s.address,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(fontSize: 11),
-                              ),
-                              onTap: () => _applySuggestion(s),
-                            ),
-                          )
-                          .toList(),
-                    ),
-                  );
-                },
-              ),
-              const SizedBox(height: 20),
-
-              // ----------------------------------------------------------------
-              // Section 2: Stop details
-              // ----------------------------------------------------------------
-              Text(
-                'Stop details',
-                style: Theme.of(context).textTheme.titleSmall,
-              ),
-              const SizedBox(height: 12),
-
-              // Stop type
-              SegmentedButton<StopType>(
-                segments: const [
-                  ButtonSegment(
-                    value: StopType.origin,
-                    label: Text('Origin'),
-                    icon: Icon(Icons.trip_origin, size: 16),
-                  ),
-                  ButtonSegment(
-                    value: StopType.waypoint,
-                    label: Text('Stop'),
-                    icon: Icon(Icons.place_outlined, size: 16),
-                  ),
-                  ButtonSegment(
-                    value: StopType.destination,
-                    label: Text('Dest.'),
-                    icon: Icon(Icons.flag, size: 16),
-                  ),
-                ],
-                selected: {_stopType},
-                onSelectionChanged: (s) =>
-                    setState(() => _stopType = s.first),
-                showSelectedIcon: false,
-              ),
-              const SizedBox(height: 16),
-
-              // Place name
-              TextFormField(
-                controller: _placeNameController,
-                decoration: const InputDecoration(
-                  labelText: 'Place name',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-              const SizedBox(height: 12),
-
-              // Place address
-              TextFormField(
-                controller: _placeAddressController,
-                decoration: const InputDecoration(
-                  labelText: 'Address',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-              const SizedBox(height: 12),
-
-              // Coordinates display + map picker
-              Row(
+              key: _formKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Expanded(
-                    child: Text(
-                      _lat != null && _lng != null
-                          ? 'Lat: ${_lat!.toStringAsFixed(5)}, Lng: ${_lng!.toStringAsFixed(5)}'
-                          : 'No location selected',
-                      style: Theme.of(context)
-                          .textTheme
-                          .bodySmall
-                          ?.copyWith(color: Colors.grey.shade600),
+                  // ----------------------------------------------------------------
+                  // Section 1: Place search
+                  // ----------------------------------------------------------------
+                  Text(
+                    'Search for a place',
+                    style: Theme.of(context).textTheme.titleSmall,
+                  ),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: _searchController,
+                    decoration: InputDecoration(
+                      hintText: 'e.g. Eiffel Tower, Paris',
+                      border: const OutlineInputBorder(),
+                      prefixIcon: const Icon(Icons.search),
+                      suffixIcon: _searchController.text.isNotEmpty
+                          ? IconButton(
+                              icon: const Icon(Icons.clear),
+                              onPressed: () {
+                                _searchController.clear();
+                                ref.read(placeSearchProvider.notifier).clear();
+                              },
+                            )
+                          : null,
+                    ),
+                    onChanged: _onSearchChanged,
+                  ),
+
+                  // Suggestions list
+                  suggestionsAsync.when(
+                    loading: () => const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 8),
+                      child: LinearProgressIndicator(),
+                    ),
+                    error: (_, __) => const SizedBox.shrink(),
+                    data: (suggestions) {
+                      if (suggestions.isEmpty) return const SizedBox.shrink();
+                      return Card(
+                        margin: const EdgeInsets.only(top: 4),
+                        child: Column(
+                          children: suggestions
+                              .map(
+                                (s) => ListTile(
+                                  dense: true,
+                                  leading: const Icon(Icons.place_outlined),
+                                  title: Text(s.displayName, maxLines: 1),
+                                  subtitle: Text(
+                                    s.address,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(fontSize: 11),
+                                  ),
+                                  onTap: () => _applySuggestion(s),
+                                ),
+                              )
+                              .toList(),
+                        ),
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 20),
+
+                  // ----------------------------------------------------------------
+                  // Section 2: Stop details
+                  // ----------------------------------------------------------------
+                  Text(
+                    'Stop details',
+                    style: Theme.of(context).textTheme.titleSmall,
+                  ),
+                  const SizedBox(height: 12),
+
+                  // Stop type
+                  SegmentedButton<StopType>(
+                    segments: const [
+                      ButtonSegment(
+                        value: StopType.origin,
+                        label: Text('Origin'),
+                        icon: Icon(Icons.trip_origin, size: 16),
+                      ),
+                      ButtonSegment(
+                        value: StopType.waypoint,
+                        label: Text('Stop'),
+                        icon: Icon(Icons.place_outlined, size: 16),
+                      ),
+                      ButtonSegment(
+                        value: StopType.destination,
+                        label: Text('Dest.'),
+                        icon: Icon(Icons.flag, size: 16),
+                      ),
+                    ],
+                    selected: {_stopType},
+                    onSelectionChanged: (s) =>
+                        setState(() => _stopType = s.first),
+                    showSelectedIcon: false,
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Place name
+                  TextFormField(
+                    controller: _placeNameController,
+                    decoration: const InputDecoration(
+                      labelText: 'Place name',
+                      border: OutlineInputBorder(),
                     ),
                   ),
-                  OutlinedButton.icon(
-                    onPressed: _pickOnMap,
-                    icon: const Icon(Icons.map_outlined, size: 16),
-                    label: const Text('Pick on map'),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
+                  const SizedBox(height: 12),
 
-              // Duplicate warning — shown live in create mode
-              if (!widget.isEditMode && duplicate != null) ...[
-                const SizedBox(height: 8),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: Colors.amber.shade50,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.amber.shade300),
+                  // Place address
+                  TextFormField(
+                    controller: _placeAddressController,
+                    decoration: const InputDecoration(
+                      labelText: 'Address',
+                      border: OutlineInputBorder(),
+                    ),
                   ),
-                  child: Row(
+                  const SizedBox(height: 12),
+
+                  // Coordinates display + map picker
+                  Row(
                     children: [
-                      Icon(Icons.warning_amber_outlined,
-                          size: 16, color: Colors.amber.shade800),
-                      const SizedBox(width: 8),
                       Expanded(
                         child: Text(
-                          'This place matches Stop ${duplicate.position}'
-                          '${duplicate.placeName != null ? ' — ${duplicate.placeName}' : ''}'
-                          ' already in this itinerary.',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.amber.shade900,
-                          ),
+                          _lat != null && _lng != null
+                              ? 'Lat: ${_lat!.toStringAsFixed(5)}, Lng: ${_lng!.toStringAsFixed(5)}'
+                              : 'No location selected',
+                          style: Theme.of(context)
+                              .textTheme
+                              .bodySmall
+                              ?.copyWith(color: Colors.grey.shade600),
                         ),
+                      ),
+                      OutlinedButton.icon(
+                        onPressed: _pickOnMap,
+                        icon: const Icon(Icons.map_outlined, size: 16),
+                        label: const Text('Pick on map'),
                       ),
                     ],
                   ),
-                ),
-                const SizedBox(height: 8),
-              ],
+                  const SizedBox(height: 16),
 
-              // Place type
-              DropdownButtonFormField<PlaceType>(
-                value: _placeType,
-                decoration: const InputDecoration(
-                  labelText: 'Place type',
-                  border: OutlineInputBorder(),
-                ),
-                hint: const Text('Select place type'),
-                items: PlaceType.values
-                    .map(
-                      (t) => DropdownMenuItem(
-                        value: t,
-                        child: Text(
-                          t.name[0].toUpperCase() + t.name.substring(1),
-                        ),
+                  // Duplicate warning — shown live in create mode
+                  if (!widget.isEditMode && duplicate != null) ...[
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: Colors.amber.shade50,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.amber.shade300),
                       ),
-                    )
-                    .toList(),
-                onChanged: (v) => setState(() => _placeType = v),
-              ),
-              const SizedBox(height: 16),
-
-              // Duration
-              TextFormField(
-                controller: _durationController,
-                decoration: const InputDecoration(
-                  labelText: 'Duration (minutes)',
-                  border: OutlineInputBorder(),
-                ),
-                keyboardType: TextInputType.number,
-                validator: (v) {
-                  if (v == null || v.isEmpty) return null;
-                  if (int.tryParse(v) == null) return 'Enter a whole number';
-                  return null;
-                },
-              ),
-              const SizedBox(height: 12),
-
-              // Is free toggle
-              SwitchListTile(
-                title: const Text('This stop is free'),
-                value: _isFree,
-                onChanged: (v) => setState(() => _isFree = v),
-                contentPadding: EdgeInsets.zero,
-              ),
-
-              // Cost field — hidden when is_free = true
-              if (!_isFree) ...[
-                TextFormField(
-                  controller: _costController,
-                  decoration: const InputDecoration(
-                    labelText: 'Cost',
-                    border: OutlineInputBorder(),
-                    prefixText: '€ ',
-                  ),
-                  keyboardType:
-                      const TextInputType.numberWithOptions(decimal: true),
-                  validator: (v) {
-                    if (v == null || v.isEmpty) return null;
-                    if (double.tryParse(v) == null) {
-                      return 'Enter a valid number';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 12),
-              ],
-
-              // Notes
-              TextFormField(
-                controller: _notesController,
-                decoration: const InputDecoration(
-                  labelText: 'Notes (optional)',
-                  border: OutlineInputBorder(),
-                  alignLabelWithHint: true,
-                ),
-                maxLines: 3,
-              ),
-              const SizedBox(height: 20),
-
-              // ----------------------------------------------------------------
-              // Section 3: Annotations
-              // ----------------------------------------------------------------
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Annotations',
-                    style: Theme.of(context).textTheme.titleSmall,
-                  ),
-                  TextButton.icon(
-                    onPressed: () => _showAnnotationDialog(),
-                    icon: const Icon(Icons.add, size: 16),
-                    label: const Text('Add'),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              if (widget.isEditMode) ...[
-                // Edit mode: show saved annotations from the existing stop.
-                if (_existingStop == null ||
-                    _existingStop!.annotations.isEmpty)
-                  Text(
-                    'No annotations yet.',
-                    style: TextStyle(color: Colors.grey.shade600),
-                  )
-                else
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 6,
-                    children: _existingStop!.annotations
-                        .map(
-                          (a) => AnnotationChip(
-                            annotation: a,
-                            onEdit: () => _showAnnotationDialog(existing: a),
-                            onDelete: () => _deleteAnnotation(a.id),
-                          ),
-                        )
-                        .toList(),
-                  ),
-              ] else ...[
-                // Create mode: show locally queued annotations.
-                if (_pendingAnnotations.isEmpty)
-                  Text(
-                    'No annotations yet.',
-                    style: TextStyle(color: Colors.grey.shade600),
-                  )
-                else
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 6,
-                    children: _pendingAnnotations
-                        .map(
-                          (p) => Chip(
-                            avatar: Icon(
-                              _annotationIcons[p.type],
-                              size: 16,
-                              color: _annotationColors[p.type],
-                            ),
-                            label: Text(
-                              p.content,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
+                      child: Row(
+                        children: [
+                          Icon(Icons.warning_amber_outlined,
+                              size: 16, color: Colors.amber.shade800),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'This place matches Stop ${duplicate.position}'
+                              '${duplicate.placeName != null ? ' — ${duplicate.placeName}' : ''}'
+                              ' already in this itinerary.',
                               style: TextStyle(
                                 fontSize: 12,
-                                color: _annotationColors[p.type],
+                                color: Colors.amber.shade900,
                               ),
                             ),
-                            backgroundColor:
-                                _annotationColors[p.type]!.withOpacity(0.1),
-                            side: BorderSide.none,
-                            deleteIcon: Icon(
-                              Icons.close,
-                              size: 14,
-                              color: _annotationColors[p.type],
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                  ],
+
+                  // Place type
+                  DropdownButtonFormField<PlaceType>(
+                    value: _placeType,
+                    decoration: const InputDecoration(
+                      labelText: 'Place type',
+                      border: OutlineInputBorder(),
+                    ),
+                    hint: const Text('Select place type'),
+                    isExpanded: true,
+                    // Collapsed display: label only, no overflow
+                    selectedItemBuilder: (context) => PlaceType.values
+                        .map((t) => Align(
+                              alignment: Alignment.centerLeft,
+                              child: Text(t.label,),
+                            ))
+                        .toList(),
+                    // Open menu: two-line items with hint
+                    items: PlaceType.values
+                        .map(
+                          (t) => DropdownMenuItem(
+                            value: t,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(t.label, ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  t.hint,
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: Colors.grey.shade600,
+                                    fontStyle: FontStyle.italic,
+                                  ),
+                                ),
+                              ],
                             ),
-                            onDeleted: () =>
-                                setState(() => _pendingAnnotations.remove(p)),
                           ),
                         )
                         .toList(),
+                    onChanged: (v) => setState(() => _placeType = v),
                   ),
-              ],
-              const SizedBox(height: 20),
+                  const SizedBox(height: 16),
 
-              // Save button
-              FilledButton(
-                onPressed: _saving ? null : _save,
-                child: _saving
-                    ? const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white,
-                        ),
+                  // Duration
+                  TextFormField(
+                    controller: _durationController,
+                    decoration: const InputDecoration(
+                      labelText: 'Duration (minutes)',
+                      border: OutlineInputBorder(),
+                    ),
+                    keyboardType: TextInputType.number,
+                    validator: (v) {
+                      if (v == null || v.isEmpty) return null;
+                      if (int.tryParse(v) == null)
+                        return 'Enter a whole number';
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 12),
+
+                  // Is free toggle
+                  SwitchListTile(
+                    title: const Text('This stop is free'),
+                    value: _isFree,
+                    onChanged: (v) => setState(() => _isFree = v),
+                    contentPadding: EdgeInsets.zero,
+                  ),
+
+                  // Cost field — hidden when is_free = true
+                  if (!_isFree) ...[
+                    TextFormField(
+                      controller: _costController,
+                      decoration: const InputDecoration(
+                        labelText: 'Cost',
+                        border: OutlineInputBorder(),
+                        prefixText: '€ ',
+                      ),
+                      keyboardType:
+                          const TextInputType.numberWithOptions(decimal: true),
+                      validator: (v) {
+                        if (v == null || v.isEmpty) return null;
+                        if (double.tryParse(v) == null) {
+                          return 'Enter a valid number';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                  ],
+
+                  // Notes
+                  TextFormField(
+                    controller: _notesController,
+                    decoration: const InputDecoration(
+                      labelText: 'Notes (optional)',
+                      border: OutlineInputBorder(),
+                      alignLabelWithHint: true,
+                    ),
+                    maxLines: 3,
+                  ),
+                  const SizedBox(height: 20),
+
+                  // ----------------------------------------------------------------
+                  // Section 3: Annotations
+                  // ----------------------------------------------------------------
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Annotations',
+                        style: Theme.of(context).textTheme.titleSmall,
+                      ),
+                      TextButton.icon(
+                        onPressed: () => _showAnnotationDialog(),
+                        icon: const Icon(Icons.add, size: 16),
+                        label: const Text('Add'),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  if (widget.isEditMode) ...[
+                    // Edit mode: show saved annotations from the existing stop.
+                    if (_existingStop == null ||
+                        _existingStop!.annotations.isEmpty)
+                      Text(
+                        'No annotations yet.',
+                        style: TextStyle(color: Colors.grey.shade600),
                       )
-                    : Text(widget.isEditMode ? 'Save Changes' : 'Add Stop'),
-              ),
+                    else
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 6,
+                        children: _existingStop!.annotations
+                            .map(
+                              (a) => AnnotationChip(
+                                annotation: a,
+                                onEdit: () =>
+                                    _showAnnotationDialog(existing: a),
+                                onDelete: () => _deleteAnnotation(a.id),
+                              ),
+                            )
+                            .toList(),
+                      ),
+                  ] else ...[
+                    // Create mode: show locally queued annotations.
+                    if (_pendingAnnotations.isEmpty)
+                      Text(
+                        'No annotations yet.',
+                        style: TextStyle(color: Colors.grey.shade600),
+                      )
+                    else
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 6,
+                        children: _pendingAnnotations
+                            .map(
+                              (p) => Chip(
+                                avatar: Icon(
+                                  _annotationIcons[p.type],
+                                  size: 16,
+                                  color: _annotationColors[p.type],
+                                ),
+                                label: Text(
+                                  p.content,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: _annotationColors[p.type],
+                                  ),
+                                ),
+                                backgroundColor:
+                                    _annotationColors[p.type]!.withOpacity(0.1),
+                                side: BorderSide.none,
+                                deleteIcon: Icon(
+                                  Icons.close,
+                                  size: 14,
+                                  color: _annotationColors[p.type],
+                                ),
+                                onDeleted: () => setState(
+                                    () => _pendingAnnotations.remove(p)),
+                              ),
+                            )
+                            .toList(),
+                      ),
+                  ],
+                  const SizedBox(height: 20),
 
-              // Delete stop — edit mode only
-              if (widget.isEditMode) ...[
-                const SizedBox(height: 12),
-                OutlinedButton.icon(
-                  onPressed: _saving ? null : _confirmDelete,
-                  icon: const Icon(Icons.delete_outline, color: Colors.red),
-                  label: const Text(
-                    'Delete Stop',
-                    style: TextStyle(color: Colors.red),
+                  // Save button
+                  FilledButton(
+                    onPressed: _saving ? null : _save,
+                    child: _saving
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : Text(widget.isEditMode ? 'Save Changes' : 'Add Stop'),
                   ),
-                  style: OutlinedButton.styleFrom(
-                    side: const BorderSide(color: Colors.red),
-                  ),
-                ),
-              ],
-            ],
+
+                  // Delete stop — edit mode only
+                  if (widget.isEditMode) ...[
+                    const SizedBox(height: 12),
+                    OutlinedButton.icon(
+                      onPressed: _saving ? null : _confirmDelete,
+                      icon: const Icon(Icons.delete_outline, color: Colors.red),
+                      label: const Text(
+                        'Delete Stop',
+                        style: TextStyle(color: Colors.red),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        side: const BorderSide(color: Colors.red),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
           ),
         ),
       ),
-    ),),);
+    );
   }
 
   static const _annotationColors = {

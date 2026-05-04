@@ -112,16 +112,18 @@ def _stop_emoji(stop_type: str, place_type: str | None) -> str:
         return "🏁"
     # waypoint — differentiate by place type
     return {
-        "restaurant": "🍽️",
-        "cafe": "☕",
-        "museum": "🏛️",
-        "hotel": "🏨",
-        "park": "🌳",
-        "station": "🚉",
-        "airport": "✈️",
-        "beach": "🏖️",
-        "landmark": "🗺️",
-    }.get(place_type or "", "📍")
+        "eatDrink": "",
+        "sleep": "",
+        "pray": "",
+        "learnSee": "",
+        "buy": "",
+        "playWatch": "",
+        "nature": "",
+        "travel": "",
+        "healBathe": "",
+        "entertainment": "",
+        "sight": "",
+    }.get(place_type or "", "")
 
 
 def _mode_emoji(mode: str) -> str:

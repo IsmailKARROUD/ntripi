@@ -64,7 +64,7 @@ class Stop(Base):
     lat: Mapped[Decimal | None] = mapped_column(Numeric(9, 6), nullable=True)
     lng: Mapped[Decimal | None] = mapped_column(Numeric(9, 6), nullable=True)
 
-    # restaurant|cafe|museum|hotel|park|station|airport|beach|landmark|other
+    # eatDrink|sleep|pray|learnSee|buy|playWatch|nature|travel|healBathe|entertainment|sight
     place_type: Mapped[str | None] = mapped_column(String(50), nullable=True)
 
     duration_min: Mapped[int | None] = mapped_column(Integer, nullable=True)

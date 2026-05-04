@@ -10,16 +10,68 @@ enum StopType {
 
 /// Category of a stop (user selects from a fixed list).
 enum PlaceType {
-  restaurant,
-  cafe,
-  museum,
-  hotel,
-  park,
-  station,
-  airport,
-  beach,
-  landmark,
-  other;
+  eatDrink,
+  sleep,
+  pray,
+  learnSee,
+  buy,
+  playWatch,
+  nature,
+  travel,
+  healBathe,
+  entertainment,
+  sight;
+
+  String get label => switch (this) {
+        PlaceType.eatDrink => 'Eat & Drink',
+        PlaceType.sleep => 'Sleep',
+        PlaceType.pray => 'Pray',
+        PlaceType.learnSee => 'Learn & See',
+        PlaceType.buy => 'Buy',
+        PlaceType.playWatch => 'Play & Watch',
+        PlaceType.nature => 'Nature',
+        PlaceType.travel => 'Travel',
+        PlaceType.healBathe => 'Heal & Bathe',
+        PlaceType.entertainment => 'Entertainment',
+        PlaceType.sight => 'Sight',
+      };
+
+  static const _legacyMap = {
+    'restaurant': PlaceType.eatDrink,
+    'cafe': PlaceType.eatDrink,
+    'museum': PlaceType.learnSee,
+    'hotel': PlaceType.sleep,
+    'park': PlaceType.nature,
+    'station': PlaceType.travel,
+    'airport': PlaceType.travel,
+    'beach': PlaceType.nature,
+    'landmark': PlaceType.sight,
+    'other': null,
+  };
+
+  static PlaceType? fromString(String? value) {
+    if (value == null) return null;
+    if (_legacyMap.containsKey(value)) return _legacyMap[value];
+    try {
+      return PlaceType.values.byName(value);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  String get hint => switch (this) {
+        PlaceType.eatDrink => 'cafe, restaurant, bar, bakery, food truck',
+        PlaceType.sleep => 'hotel, hostel, campsite, inn, lodge',
+        PlaceType.pray => 'church, mosque, temple, synagogue, shrine',
+        PlaceType.learnSee => 'museum, gallery, library, aquarium, observatory',
+        PlaceType.buy => 'shop, market, mall, boutique, stall',
+        PlaceType.playWatch => 'stadium, gym, arena, court, bowling alley',
+        PlaceType.nature => 'beach, park, forest, mountain, waterfall',
+        PlaceType.travel => 'airport, train station, bus stop, ferry terminal',
+        PlaceType.healBathe => 'spa, hot spring, pool, sauna, bathhouse',
+        PlaceType.entertainment => 'theater, cinema, concert hall, nightclub',
+        PlaceType.sight => 'monument, viewpoint, castle, square, ruin',
+      };
 }
 
 class Stop {
@@ -70,9 +122,7 @@ class Stop {
       placeAddress: json['place_address'] as String?,
       lat: (json['lat'] as num?)?.toDouble(),
       lng: (json['lng'] as num?)?.toDouble(),
-      placeType: json['place_type'] != null
-          ? PlaceType.values.byName(json['place_type'] as String)
-          : null,
+      placeType: PlaceType.fromString(json['place_type'] as String?),
       durationMin: json['duration_min'] as int?,
       cost: (json['cost'] as num?)?.toDouble() ?? 0.0,
       isFree: json['is_free'] as bool? ?? false,
