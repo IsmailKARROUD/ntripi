@@ -1,14 +1,14 @@
 """rename stop type destination to arrival
 
-Revision ID: a1b2c3d4e5f6
-Revises: f5a2b3c4d1e0
+Revision ID: b9c0d1e2f3a4
+Revises: a6b7c8d9e0f1
 Create Date: 2026-05-04
 
 """
 from alembic import op
 
-revision: str = 'a1b2c3d4e5f6'
-down_revision: str = 'f5a2b3c4d1e0'
+revision: str = 'b9c0d1e2f3a4'
+down_revision: str = 'a6b7c8d9e0f1'
 branch_labels = None
 depends_on = None
 
