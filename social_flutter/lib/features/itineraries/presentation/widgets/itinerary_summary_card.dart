@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:social_flutter/core/api/api_endpoints.dart';
+import 'package:social_flutter/core/ui/app_theme.dart';
 import 'package:social_flutter/features/itineraries/domain/itinerary.dart';
 import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
 
@@ -101,7 +102,7 @@ class ItinerarySummaryCard extends ConsumerWidget {
                       icon: Icons.star_rounded,
                       label:
                           '${itinerary.ratingAvg!.toStringAsFixed(1)} (${itinerary.ratingCount})',
-                      iconColor: Colors.orange,
+                      iconColor: ratingColor(itinerary.ratingAvg!),
                     ),
                 ],
               ),

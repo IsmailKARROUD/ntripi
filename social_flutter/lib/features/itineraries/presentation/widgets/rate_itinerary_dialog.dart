@@ -8,6 +8,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:social_flutter/core/ui/app_theme.dart';
 import 'package:social_flutter/core/ui/destructive_actions.dart';
 import 'package:social_flutter/features/itineraries/domain/my_rating.dart';
 import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
@@ -371,7 +372,7 @@ class _StarRow extends StatelessWidget {
             child: Icon(
               filled ? Icons.star_rounded : Icons.star_outline_rounded,
               size: starSize,
-              color: filled ? Colors.amber : Colors.grey.shade400,
+              color: filled ? ratingColor(value!.toDouble()) : Colors.grey.shade400,
             ),
           ),
         );

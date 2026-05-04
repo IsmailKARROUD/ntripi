@@ -10,13 +10,27 @@ const kAmber = Color(0xFFC89030);  // oklch(66% 0.17 75)  — accent gold
 const kSand = Color(0xFFF5F2EC);   // oklch(97% 0.008 80) — warm cream bg
 const kBark = Color(0xFF1A2A1E);   // oklch(18% 0.03 150) — near-black text
 
+// Rating score colors: 1=red · 2=orange · 3=amber · 4=lime · 5=green
+const kRatingRed = Color(0xFFBA1A1A);
+const kRatingOrange = Color(0xFFD4611A);
+const kRatingLimeGreen = Color(0xFF7AAE35);
+
+/// Maps a 1–5 rating score to a semantic color (decimals supported).
+Color ratingColor(double score) {
+  if (score >= 4.5) return kCanopy;
+  if (score >= 3.5) return kRatingLimeGreen;
+  if (score >= 2.5) return kAmber;
+  if (score >= 1.5) return kRatingOrange;
+  return kRatingRed;
+}
+
 // Surface / border shades derived from the palette
 const _surface = Colors.white;
 const _border = Color(0xFFE4EDE6);
 const _text2 = Color(0xFF5A7562);
 const _text3 = Color(0xFF93A898);
 ThemeData buildNtripiTheme() {
-  final scheme = ColorScheme(
+  const scheme = ColorScheme(
     brightness: Brightness.light,
     primary: kForest,
     onPrimary: Colors.white,
@@ -24,27 +38,27 @@ ThemeData buildNtripiTheme() {
     onPrimaryContainer: kBark,
     secondary: kAmber,
     onSecondary: Colors.white,
-    secondaryContainer: const Color(0xFFFFF0CC),
-    onSecondaryContainer: const Color(0xFF3B2000),
+    secondaryContainer:  Color(0xFFFFF0CC),
+    onSecondaryContainer:  Color(0xFF3B2000),
     tertiary: kCanopy,
     onTertiary: Colors.white,
-    tertiaryContainer: const Color(0xFFD0EDD8),
+    tertiaryContainer:  Color(0xFFD0EDD8),
     onTertiaryContainer: kBark,
-    error: const Color(0xFFBA1A1A),
+    error:  Color(0xFFBA1A1A),
     onError: Colors.white,
-    errorContainer: const Color(0xFFFFDAD6),
-    onErrorContainer: const Color(0xFF410002),
+    errorContainer:  Color(0xFFFFDAD6),
+    onErrorContainer:  Color(0xFF410002),
     surface: _surface,
     onSurface: kBark,
-    surfaceContainerHighest: const Color(0xFFEFF2EC),
-    onSurfaceVariant: const Color(0xFF44483E),
+    surfaceContainerHighest:  Color(0xFFEFF2EC),
+    onSurfaceVariant:  Color(0xFF44483E),
     outline: _border,
-    outlineVariant: const Color(0xFFC4CAC0),
+    outlineVariant:  Color(0xFFC4CAC0),
     shadow: Colors.black,
     scrim: Colors.black,
     inverseSurface: kBark,
-    onInverseSurface: const Color(0xFFEFF1EB),
-    inversePrimary: const Color(0xFF74D098),
+    onInverseSurface:  Color(0xFFEFF1EB),
+    inversePrimary:  Color(0xFF74D098),
     surfaceTint: kForest,
   );
 

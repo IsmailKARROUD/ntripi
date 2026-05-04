@@ -965,8 +965,8 @@ class _RatingSection extends ConsumerWidget {
                                 crossAxisAlignment: CrossAxisAlignment.baseline,
                                 textBaseline: TextBaseline.alphabetic,
                                 children: [
-                                  const Icon(Icons.star_rounded,
-                                      size: 20, color: Colors.amber),
+                                  Icon(Icons.star_rounded,
+                                      size: 20, color: ratingColor(itinerary.ratingAvg ?? 3)),
                                   const SizedBox(width: 4),
                                   Text(
                                     itinerary.ratingAvg != null
@@ -1063,7 +1063,7 @@ class _RatingSection extends ConsumerWidget {
                                           : Icons.star_outline_rounded,
                                       size: 22,
                                       color: filled
-                                          ? Colors.amber
+                                          ? ratingColor(myRating.stars.toDouble())
                                           : cs.onSurfaceVariant
                                               .withValues(alpha: 0.4),
                                     ),

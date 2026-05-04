@@ -10,6 +10,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:social_flutter/core/ui/app_theme.dart';
 import 'package:social_flutter/features/itineraries/domain/dimension_key.dart';
 import 'package:social_flutter/features/itineraries/domain/ratings_page.dart';
 import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
@@ -172,7 +173,7 @@ class _DimensionList extends StatelessWidget {
           child: ListTile(
             leading: Icon(
               dim.icon,
-              color: dim == DimensionKey.overall ? Colors.amber : null,
+              color: kBark,
             ),
             title: Text(dim.label),
             subtitle: dim != DimensionKey.overall
@@ -187,9 +188,10 @@ class _DimensionList extends StatelessWidget {
                     children: [
                       Text(
                         avg!.toStringAsFixed(1),
-                        style: const TextStyle(
+                        style:  TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 16,
+                          color: ratingColor(avg),
                         ),
                       ),
                       const SizedBox(width: 4),
@@ -248,7 +250,7 @@ class RatingStarRow extends StatelessWidget {
         } else {
           icon = Icons.star_outline_rounded;
         }
-        return Icon(icon, color: Colors.amber, size: size);
+        return Icon(icon, color: ratingColor(avg), size: size);
       }),
     );
   }
@@ -283,7 +285,7 @@ class RatingDistributionBars extends StatelessWidget {
                   value: pct,
                   minHeight: 8,
                   backgroundColor: Colors.grey.shade200,
-                  color: Colors.amber,
+                  color: ratingColor(stars.toDouble()),
                   borderRadius: BorderRadius.circular(4),
                 ),
               ),
@@ -355,7 +357,7 @@ class _RatingListTile extends StatelessWidget {
           return Icon(
             filled ? Icons.star_rounded : Icons.star_outline_rounded,
             size: 16,
-            color: filled ? Colors.amber : Colors.grey.shade400,
+            color: filled ? ratingColor(score.toDouble()) : Colors.grey.shade400,
           );
         }),
       ),

@@ -8,6 +8,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:social_flutter/core/ui/app_theme.dart';
 import 'package:social_flutter/features/itineraries/domain/dimension_key.dart';
 import 'package:social_flutter/features/itineraries/domain/ratings_page.dart';
 import 'package:social_flutter/features/itineraries/presentation/ratings_page_screen.dart';
@@ -122,15 +123,14 @@ class DimensionRatingsScreen extends ConsumerWidget {
                         children: [
                           Icon(dimension.icon,
                               size: 36,
-                              color: dimension == DimensionKey.overall
-                                  ? Colors.amber
-                                  : Theme.of(context).colorScheme.primary),
+                              color: kBark),
                           const SizedBox(width: 10),
                           Text(
                             avg!.toStringAsFixed(1),
-                            style: const TextStyle(
+                            style:  TextStyle(
                               fontSize: 56,
                               fontWeight: FontWeight.bold,
+                              color: ratingColor(avg),
                             ),
                           ),
                         ],
