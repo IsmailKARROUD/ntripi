@@ -76,7 +76,7 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
   static const _markerColors = {
     StopType.origin: Colors.green,
     StopType.waypoint: Colors.blue,
-    StopType.destination: Colors.red,
+    StopType.arrival: Colors.red,
   };
 
   void _enterEditMode(List<Stop> stops) {
@@ -477,7 +477,7 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
               
                         // Interleaved list: StopCard, then optional SegmentCard after each stop.
                         // For a single stop, contextual "Add stop" buttons appear above/below
-                        // depending on the stop's role (origin/waypoint/destination).
+                        // depending on the stop's role (origin/waypoint/arrival).
                         List<Widget> buildInterleavedList() {
                           final items = <Widget>[];
                           final isOnlyStop = displayStops.length == 1;
@@ -486,7 +486,7 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                             final stop = displayStops[i];
                             final hasNextStop = i < displayStops.length - 1;
               
-                            // Single-stop: "Add stop" above for waypoint or destination.
+                            // Single-stop: "Add stop" above for waypoint or arrival.
                             if (canEdit &&
                                 isOnlyStop &&
                                 stop.type != StopType.origin) {
@@ -552,7 +552,7 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                                           )
                                       : null,
                                 ));
-                              } else if (stop.type != StopType.destination) {
+                              } else if (stop.type != StopType.arrival) {
                                 // Last stop: "Add stop" below for origin or waypoint.
                                 items.add(_InlineSeparator(
                                   key: ValueKey('below-${stop.id}'),

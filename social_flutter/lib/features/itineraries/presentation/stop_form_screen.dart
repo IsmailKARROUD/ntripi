@@ -516,7 +516,7 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                         icon: Icon(Icons.place_outlined, size: 16),
                       ),
                       ButtonSegment(
-                        value: StopType.destination,
+                        value: StopType.arrival,
                         label: Text('Arrival'),
                         icon: Icon(Icons.flag, size: 16),
                       ),

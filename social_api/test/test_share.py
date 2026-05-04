@@ -106,7 +106,7 @@ class TestSharePublicItinerary:
         add_stop(client, token, itinerary["id"], place_name="Louvre Museum",
                  position=2, stop_type="waypoint")
         add_stop(client, token, itinerary["id"], place_name="Arc de Triomphe",
-                 position=3, stop_type="destination")
+                 position=3, stop_type="arrival")
 
         r = client.get(share_url(itinerary["id"]))
 

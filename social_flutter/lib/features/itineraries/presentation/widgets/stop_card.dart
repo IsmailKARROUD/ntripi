@@ -19,13 +19,13 @@ class StopCard extends StatelessWidget {
   static const _typeIcons = {
     StopType.origin: Icons.trip_origin,
     StopType.waypoint: Icons.place_outlined,
-    StopType.destination: Icons.flag,
+    StopType.arrival: Icons.flag,
   };
 
   static const _typeColors = {
     StopType.origin: Colors.green,
     StopType.waypoint: Colors.blue,
-    StopType.destination: Colors.red,
+    StopType.arrival: Colors.red,
   };
 
   String _formatCost(double cost, bool isFree, String currency) {

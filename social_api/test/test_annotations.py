@@ -234,7 +234,7 @@ class TestAnnotationUpdate:
         stop_a = add_stop(client, alice["access_token"], it["id"])
         stop_b = client.post(
             f"/itineraries/{it['id']}/stops",
-            json={"position": 2, "type": "destination"},
+            json={"position": 2, "type": "arrival"},
             headers=auth_headers(alice["access_token"]),
         ).json()
         ann = add_annotation(client, alice["access_token"], it["id"], stop_a["id"])

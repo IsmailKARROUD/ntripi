@@ -58,7 +58,7 @@ class AnnotationResponse(BaseModel):
 
 class StopCreate(BaseModel):
     position: int = Field(..., ge=1)
-    type: Literal['origin', 'waypoint', 'destination']
+    type: Literal['origin', 'waypoint', 'arrival']
 
     place_name: Optional[str] = Field(None, max_length=200)
     place_address: Optional[str] = None
@@ -78,7 +78,7 @@ class StopCreate(BaseModel):
 
 class StopUpdate(BaseModel):
     position: Optional[int] = Field(None, ge=1)
-    type: Optional[Literal['origin', 'waypoint', 'destination']] = None
+    type: Optional[Literal['origin', 'waypoint', 'arrival']] = None
     place_name: Optional[str] = Field(None, max_length=200)
     place_address: Optional[str] = None
     lat: Optional[float] = Field(None, ge=-90, le=90)

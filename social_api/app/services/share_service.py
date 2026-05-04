@@ -108,7 +108,7 @@ def _resolve_preview_image_url(itinerary: "Itinerary", settings: "Settings") -> 
 def _stop_emoji(stop_type: str, place_type: str | None) -> str:
     if stop_type == "origin":
         return "📍"
-    if stop_type == "destination":
+    if stop_type == "arrival":
         return "🏁"
     # waypoint — differentiate by place type
     return {

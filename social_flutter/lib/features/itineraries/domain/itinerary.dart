@@ -199,10 +199,10 @@ class Itinerary {
     }
   }
 
-  /// The destination stop, if one exists.
-  Stop? get destination {
+  /// The arrival stop, if one exists.
+  Stop? get arrival {
     try {
-      return stops.firstWhere((s) => s.type == StopType.destination);
+      return stops.firstWhere((s) => s.type == StopType.arrival);
     } catch (_) {
       return null;
     }

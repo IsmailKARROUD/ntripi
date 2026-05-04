@@ -105,7 +105,7 @@ Constraints: UNIQUE(follower_id, following_id), CHECK follower_id != following_i
 | id           | UUID          | Primary key                                                      |
 | itinerary_id | UUID          | FK → itineraries.id ON DELETE CASCADE, indexed                   |
 | position     | SMALLINT      | 1-based order within the itinerary                               |
-| type         | VARCHAR(20)   | `origin` / `waypoint` / `destination`                            |
+| type         | VARCHAR(20)   | `origin` / `waypoint` / `arrival`                                |
 | place_name   | VARCHAR(200)  | Nullable                                                         |
 | place_address| TEXT          | Nullable                                                         |
 | lat          | NUMERIC(9,6)  | Nullable — ~11cm precision                                       |

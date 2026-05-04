@@ -54,7 +54,7 @@ def setup_two_stops(client, token):
     """Create an itinerary with two stops and return (itinerary_id, stop_a, stop_b)."""
     itin = create_itinerary(client, token)
     stop_a = add_stop(client, token, itin["id"], 1, "origin")
-    stop_b = add_stop(client, token, itin["id"], 2, "destination")
+    stop_b = add_stop(client, token, itin["id"], 2, "arrival")
     return itin["id"], stop_a, stop_b
 
 

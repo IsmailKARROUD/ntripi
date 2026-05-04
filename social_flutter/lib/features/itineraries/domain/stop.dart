@@ -5,7 +5,7 @@ import 'package:social_flutter/features/itineraries/domain/annotation.dart';
 enum StopType {
   origin,
   waypoint,
-  destination;
+  arrival;
 }
 
 /// Category of a stop (user selects from a fixed list).

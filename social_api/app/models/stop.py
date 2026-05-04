@@ -2,7 +2,7 @@
 models/stop.py — SQLAlchemy ORM model for the stops table.
 
 Design decisions:
-  - type is 'origin' | 'waypoint' | 'destination'. 'transit' was removed in
+  - type is 'origin' | 'waypoint' | 'arrival'. 'transit' was removed in
     the transit_segments refactor — transport between stops is now modelled
     as TransitSegment + TransportLeg rows.
   - Location fields (lat, lng) use NUMERIC(9, 6) — enough precision for
@@ -35,7 +35,7 @@ class Stop(Base):
     __table_args__ = (
         UniqueConstraint("itinerary_id", "position", name="uq_stop_position"),
         CheckConstraint(
-            "type IN ('origin', 'waypoint', 'destination')",
+            "type IN ('origin', 'waypoint', 'arrival')",
             name="ck_stop_type",
         ),
     )
@@ -56,7 +56,7 @@ class Stop(Base):
 
     position: Mapped[int] = mapped_column(SmallInteger, nullable=False)
 
-    # 'origin' | 'waypoint' | 'destination'
+    # 'origin' | 'waypoint' | 'arrival'
     type: Mapped[str] = mapped_column(String(20), nullable=False)
 
     place_name: Mapped[str | None] = mapped_column(String(200), nullable=True)
