@@ -98,7 +98,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 const SizedBox(height: 6),
                 TextFormField(
                   controller: _identifierController,
-                  keyboardType: TextInputType.text,
+                  keyboardType: TextInputType.emailAddress,
                   textInputAction: TextInputAction.next,
                   autocorrect: false,
                   decoration: const InputDecoration(
@@ -115,6 +115,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 TextFormField(
                   controller: _passwordController,
                   obscureText: _obscurePassword,
+                  
                   textInputAction: TextInputAction.done,
                   onFieldSubmitted: (_) => _login(),
                   decoration: InputDecoration(

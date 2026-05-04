@@ -27,6 +27,7 @@ class AnnotationFormDialog extends StatefulWidget {
 }
 
 class _AnnotationFormDialogState extends State<AnnotationFormDialog> {
+  final _formKey = GlobalKey<FormState>();
   late AnnotationType _type;
   late final TextEditingController _contentController;
 
@@ -47,48 +48,54 @@ class _AnnotationFormDialogState extends State<AnnotationFormDialog> {
   Widget build(BuildContext context) {
     return AlertDialog(
       title: Text(widget.title),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          SegmentedButton<AnnotationType>(
-            segments: const [
-              ButtonSegment(
-                value: AnnotationType.advice,
-                label: Text('Advice'),
-                icon: Icon(Icons.lightbulb_outline, size: 16),
-              ),
-              ButtonSegment(
-                value: AnnotationType.caution,
-                label: Text('Caution'),
-                icon: Icon(Icons.warning_amber_outlined, size: 16),
-              ),
-              ButtonSegment(
-                value: AnnotationType.avoid,
-                label: Text('Avoid'),
-                icon: Icon(Icons.block, size: 16),
-              ),
-              ButtonSegment(
-                value: AnnotationType.info,
-                label: Text('Info'),
-                icon: Icon(Icons.info_outline, size: 16),
-              ),
-            ],
-            selected: {_type},
-            onSelectionChanged: (s) => setState(() => _type = s.first),
-            showSelectedIcon: false,
-          ),
-          const SizedBox(height: 16),
-          TextField(
-            controller: _contentController,
-            maxLines: 3,
-            autofocus: true,
-            decoration: const InputDecoration(
-              labelText: 'Content *',
-              border: OutlineInputBorder(),
-              alignLabelWithHint: true,
+      content: Form(
+        key: _formKey,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SegmentedButton<AnnotationType>(
+              segments: const [
+                ButtonSegment(
+                  value: AnnotationType.advice,
+                  label: Text('Advice'),
+                  icon: Icon(Icons.lightbulb_outline, size: 16),
+                ),
+                ButtonSegment(
+                  value: AnnotationType.caution,
+                  label: Text('Caution'),
+                  icon: Icon(Icons.warning_amber_outlined, size: 16),
+                ),
+                ButtonSegment(
+                  value: AnnotationType.avoid,
+                  label: Text('Avoid'),
+                  icon: Icon(Icons.block, size: 16),
+                ),
+                ButtonSegment(
+                  value: AnnotationType.info,
+                  label: Text('Info'),
+                  icon: Icon(Icons.info_outline, size: 16),
+                ),
+              ],
+              selected: {_type},
+              onSelectionChanged: (s) => setState(() => _type = s.first),
+              showSelectedIcon: false,
             ),
-          ),
-        ],
+            const SizedBox(height: 16),
+            TextFormField(
+              controller: _contentController,
+              maxLines: 3,
+              autofocus: true,
+              decoration: const InputDecoration(
+                labelText: 'Content *',
+                border: OutlineInputBorder(),
+                alignLabelWithHint: true,
+              ),
+              validator: (v) => (v == null || v.trim().isEmpty)
+                  ? 'Content is required'
+                  : null,
+            ),
+          ],
+        ),
       ),
       actions: [
         TextButton(
@@ -97,11 +104,10 @@ class _AnnotationFormDialogState extends State<AnnotationFormDialog> {
         ),
         FilledButton(
           onPressed: () {
-            final content = _contentController.text.trim();
-            if (content.isEmpty) return;
+            if (!_formKey.currentState!.validate()) return;
             Navigator.pop<AnnotationFormResult>(
               context,
-              (content: content, type: _type),
+              (content: _contentController.text.trim(), type: _type),
             );
           },
           child: Text(widget.submitLabel),

@@ -512,12 +512,12 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                       ),
                       ButtonSegment(
                         value: StopType.waypoint,
-                        label: Text('Stop'),
+                        label: Text('Waypoint'),
                         icon: Icon(Icons.place_outlined, size: 16),
                       ),
                       ButtonSegment(
                         value: StopType.destination,
-                        label: Text('Dest.'),
+                        label: Text('Arrival'),
                         icon: Icon(Icons.flag, size: 16),
                       ),
                     ],
@@ -532,9 +532,12 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                   TextFormField(
                     controller: _placeNameController,
                     decoration: const InputDecoration(
-                      labelText: 'Place name',
+                      labelText: 'Place name *',
                       border: OutlineInputBorder(),
                     ),
+                    validator: (v) => (v == null || v.trim().isEmpty)
+                        ? 'Place name is required'
+                        : null,
                   ),
                   const SizedBox(height: 12),
 
@@ -699,7 +702,7 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                   TextFormField(
                     controller: _notesController,
                     decoration: const InputDecoration(
-                      labelText: 'Notes (optional)',
+                      labelText: 'Notes',
                       border: OutlineInputBorder(),
                       alignLabelWithHint: true,
                     ),

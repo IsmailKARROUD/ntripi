@@ -188,13 +188,13 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 TextFormField(
                   controller: _displayNameController,
                   textInputAction: TextInputAction.next,
-                  decoration: const InputDecoration(hintText: 'Your name (optional)'),
+                  decoration: const InputDecoration(hintText: 'Your name'),
                   validator: DisplayNameValidator.validate,
                 ),
                 const SizedBox(height: 12),
 
                 // Username
-                _FieldLabel('Username'),
+                const _FieldLabel('Username *'),
                 const SizedBox(height: 6),
                 TextFormField(
                   controller: _usernameController,
@@ -215,7 +215,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 const SizedBox(height: 12),
 
                 // Email
-                _FieldLabel('Email'),
+                const _FieldLabel('Email *'),
                 const SizedBox(height: 6),
                 TextFormField(
                   controller: _emailController,
@@ -233,7 +233,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 const SizedBox(height: 12),
 
                 // Password
-                _FieldLabel('Password'),
+                const _FieldLabel('Password *'),
                 const SizedBox(height: 6),
                 TextFormField(
                   controller: _passwordController,
@@ -265,7 +265,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 const SizedBox(height: 12),
 
                 // Confirm password
-                _FieldLabel('Confirm Password'),
+                const _FieldLabel('Confirm Password *'),
                 const SizedBox(height: 6),
                 TextFormField(
                   controller: _confirmPasswordController,
