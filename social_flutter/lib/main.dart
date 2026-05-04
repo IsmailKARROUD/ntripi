@@ -19,11 +19,14 @@ class NtripiApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp.router(
-      title: 'NTripi',
-      debugShowCheckedModeBanner: false,
-      routerConfig: appRouter,
-      theme: buildNtripiTheme(),
+    return GestureDetector(
+      onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
+      child: MaterialApp.router(
+        title: 'NTripi',
+        debugShowCheckedModeBanner: false,
+        routerConfig: appRouter,
+        theme: buildNtripiTheme(),
+      ),
     );
   }
 }
