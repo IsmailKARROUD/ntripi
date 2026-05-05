@@ -7,6 +7,8 @@ import 'package:social_flutter/core/ui/app_theme.dart';
 import 'package:social_flutter/core/ui/ntripi_logo.dart';
 import 'package:social_flutter/features/auth/domain/username_validator.dart';
 import 'package:social_flutter/features/auth/providers/auth_provider.dart';
+import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
+import 'package:social_flutter/features/profile/providers/profile_provider.dart';
 import 'package:social_flutter/core/utils/platform_utils.dart';
 
 class RegisterScreen extends ConsumerStatefulWidget {
@@ -117,6 +119,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
         tosAccepted: true,
       );
       ref.read(authNotifierProvider.notifier).setAuthenticated(result.userId);
+      ref.invalidate(myProfileProvider);
+      ref.invalidate(myItinerariesProvider);
       if (mounted) context.go('/profile/me');
     } on DioException catch (e) {
       setState(() => _errorMessage = extractErrorMessage(e));
