@@ -152,6 +152,8 @@ _LEG_MODES = Literal[
     'taxi', 'uber', 'bike', 'ferry', 'car', 'airplane',
 ]
 
+_NOTE_TYPES = Literal['advice', 'caution', 'avoid', 'info']
+
 
 class TransportLegCreate(BaseModel):
     position: int = Field(..., ge=1)
@@ -162,6 +164,7 @@ class TransportLegCreate(BaseModel):
     cost: Decimal = Field(default=Decimal("0.00"), ge=0)
     is_free: bool = False
     notes: Optional[str] = None
+    note_type: Optional[_NOTE_TYPES] = None
 
 
 class TransportLegUpdate(BaseModel):
@@ -174,6 +177,7 @@ class TransportLegUpdate(BaseModel):
     cost: Optional[Decimal] = Field(None, ge=0)
     is_free: Optional[bool] = None
     notes: Optional[str] = None
+    note_type: Optional[_NOTE_TYPES] = None
 
 
 class TransportLegResponse(BaseModel):
@@ -187,6 +191,7 @@ class TransportLegResponse(BaseModel):
     cost: float
     is_free: bool
     notes: Optional[str]
+    note_type: Optional[str]
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)

@@ -15,6 +15,8 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:social_flutter/core/ui/app_theme.dart';
+import 'package:social_flutter/features/itineraries/domain/annotation.dart';
 import 'package:social_flutter/features/itineraries/domain/transport_leg.dart';
 
 // Modes that use numbered/named transit lines and directions.
@@ -26,6 +28,90 @@ const _transitLineModes = {
   TransportMode.ferry,
   TransportMode.airplane,
 };
+
+const _noteTypeConfigs = {
+  AnnotationType.advice: (
+    icon: Icons.lightbulb_outline,
+    bg: kMist,
+    fg: kForest,
+    label: 'Advice',
+  ),
+  AnnotationType.caution: (
+    icon: Icons.warning_amber_outlined,
+    bg: Color(0xFFFFF0CC),
+    fg: kAmber,
+    label: 'Caution',
+  ),
+  AnnotationType.avoid: (
+    icon: Icons.block,
+    bg: Color(0xFFFFDAD6),
+    fg: Color(0xFFBA1A1A),
+    label: 'Avoid',
+  ),
+  AnnotationType.info: (
+    icon: Icons.info_outline,
+    bg: Color(0xFFD0EDD8),
+    fg: kCanopy,
+    label: 'Info',
+  ),
+};
+
+// Row of toggle buttons for picking a note category.
+// Tapping the already-selected type deselects it (sets to null).
+class _NoteTypePicker extends StatelessWidget {
+  final AnnotationType? selected;
+  final ValueChanged<AnnotationType?> onChanged;
+
+  const _NoteTypePicker({required this.selected, required this.onChanged});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: AnnotationType.values.map((type) {
+        final config = _noteTypeConfigs[type]!;
+        final isSelected = selected == type;
+        return Expanded(
+          child: Padding(
+            padding: const EdgeInsets.only(right: 6),
+            child: GestureDetector(
+              onTap: () => onChanged(isSelected ? null : type),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 150),
+                padding: const EdgeInsets.symmetric(vertical: 6),
+                decoration: BoxDecoration(
+                  color: isSelected ? config.bg : Colors.transparent,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: isSelected ? config.fg : Colors.grey.shade300,
+                  ),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(config.icon,
+                        size: 16,
+                        color: isSelected ? config.fg : Colors.grey.shade500),
+                    const SizedBox(height: 2),
+                    Text(
+                      config.label,
+                      style: TextStyle(
+                        fontSize: 10,
+                        color: isSelected ? config.fg : Colors.grey.shade500,
+                        fontWeight: isSelected
+                            ? FontWeight.w600
+                            : FontWeight.normal,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      }).toList(),
+    );
+  }
+}
 
 class RegexInputFormatter extends TextInputFormatter {
   final RegExp regex;
@@ -82,6 +168,7 @@ class _LegFormDialogState extends State<LegFormDialog> {
   late TextEditingController _durationMinCtrl;
   late TextEditingController _costCtrl;
   late bool _isFree;
+  AnnotationType? _noteType;
 
   bool get _showTransitLine => _transitLineModes.contains(_mode);
 
@@ -109,6 +196,7 @@ class _LegFormDialogState extends State<LegFormDialog> {
           : '',
     );
     _isFree = e?.isFree ?? false;
+    _noteType = e?.noteType;
   }
 
   @override
@@ -135,6 +223,7 @@ class _LegFormDialogState extends State<LegFormDialog> {
       if (_showTransitLine && _directionCtrl.text.trim().isNotEmpty)
         'direction': _directionCtrl.text.trim(),
       if (_notesCtrl.text.trim().isNotEmpty) 'notes': _notesCtrl.text.trim(),
+      if (_noteType != null) 'note_type': _noteType!.name,
       if (totalMin > 0) 'duration_min': totalMin,
       'is_free': _isFree,
       if (!_isFree && _costCtrl.text.trim().isNotEmpty)
@@ -174,7 +263,7 @@ class _LegFormDialogState extends State<LegFormDialog> {
           ),
 
           Text(
-            isEdit ? 'Edit Leg' : 'Add Leg',
+            isEdit ? 'Edit transit' : 'Add transit',
             style: Theme.of(context)
                 .textTheme
                 .titleMedium
@@ -297,7 +386,7 @@ class _LegFormDialogState extends State<LegFormDialog> {
             contentPadding: EdgeInsets.zero,
           ),
 
-          // Notes
+          // Notes + note-type picker
           TextField(
             controller: _notesCtrl,
             maxLines: 2,
@@ -306,11 +395,16 @@ class _LegFormDialogState extends State<LegFormDialog> {
               border: OutlineInputBorder(),
             ),
           ),
+          const SizedBox(height: 8),
+          _NoteTypePicker(
+            selected: _noteType,
+            onChanged: (t) => setState(() => _noteType = t),
+          ),
           const SizedBox(height: 16),
 
           FilledButton(
             onPressed: _submit,
-            child: Text(isEdit ? 'Update Leg' : 'Add Leg'),
+            child: Text(isEdit ? 'Update transit' : 'Add transit'),
           ),
         ],
       ),

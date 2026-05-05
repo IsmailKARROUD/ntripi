@@ -5,6 +5,7 @@
 // in SegmentFormScreen, a placeholder id ('local-N') is used for display only.
 
 import 'package:flutter/material.dart';
+import 'package:social_flutter/features/itineraries/domain/annotation.dart';
 
 enum TransportMode {
   walk,
@@ -59,6 +60,7 @@ class TransportLeg {
   final double cost;
   final bool isFree;
   final String? notes;
+  final AnnotationType? noteType;
   final DateTime createdAt;
 
   const TransportLeg({
@@ -72,10 +74,12 @@ class TransportLeg {
     this.cost = 0.0,
     this.isFree = false,
     this.notes,
+    this.noteType,
     required this.createdAt,
   });
 
   factory TransportLeg.fromJson(Map<String, dynamic> json) {
+    final rawNoteType = json['note_type'] as String?;
     return TransportLeg(
       id: json['id'] as String,
       segmentId: json['segment_id'] as String,
@@ -87,6 +91,9 @@ class TransportLeg {
       cost: (json['cost'] as num?)?.toDouble() ?? 0.0,
       isFree: json['is_free'] as bool? ?? false,
       notes: json['notes'] as String?,
+      noteType: rawNoteType != null
+          ? AnnotationType.values.byName(rawNoteType)
+          : null,
       createdAt: DateTime.parse(json['created_at'] as String),
     );
   }
@@ -102,6 +109,7 @@ class TransportLeg {
         'cost': cost,
         'is_free': isFree,
         if (notes != null) 'notes': notes,
+        if (noteType != null) 'note_type': noteType!.name,
         'created_at': createdAt.toIso8601String(),
       };
 
@@ -116,6 +124,7 @@ class TransportLeg {
     double? cost,
     bool? isFree,
     String? notes,
+    AnnotationType? noteType,
     DateTime? createdAt,
   }) {
     return TransportLeg(
@@ -129,6 +138,7 @@ class TransportLeg {
       cost: cost ?? this.cost,
       isFree: isFree ?? this.isFree,
       notes: notes ?? this.notes,
+      noteType: noteType ?? this.noteType,
       createdAt: createdAt ?? this.createdAt,
     );
   }

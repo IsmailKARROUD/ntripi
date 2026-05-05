@@ -43,13 +43,15 @@ import 'package:social_flutter/features/itineraries/domain/annotation.dart';
 import 'package:social_flutter/features/itineraries/domain/itinerary.dart';
 import 'package:social_flutter/features/itineraries/domain/itinerary_annotation.dart';
 import 'package:social_flutter/features/itineraries/domain/transit_segment.dart';
+import 'package:social_flutter/features/itineraries/domain/transport_leg.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/annotation_form_dialog.dart';
 import 'package:social_flutter/features/profile/providers/profile_provider.dart';
 import 'package:social_flutter/features/itineraries/domain/stop.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/annotation_chip.dart';
+import 'package:social_flutter/features/itineraries/presentation/widgets/leg_form_dialog.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/rate_itinerary_dialog.dart';
-import 'package:social_flutter/features/itineraries/presentation/widgets/segment_card.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/stop_card.dart';
+import 'package:social_flutter/features/itineraries/presentation/widgets/transport_badge.dart';
 import 'package:social_flutter/core/utils/platform_utils.dart';
 import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
 
@@ -327,19 +329,108 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
     }
   }
 
-  Future<void> _confirmDeleteSegment(TransitSegment segment) async {
+  Map<String, dynamic> _legToMap(TransportLeg leg, int position) => {
+        'mode': leg.mode.name,
+        if (leg.line != null) 'line': leg.line,
+        if (leg.direction != null) 'direction': leg.direction,
+        if (leg.notes != null) 'notes': leg.notes,
+        if (leg.noteType != null) 'note_type': leg.noteType!.name,
+        if (leg.durationMin != null) 'duration_min': leg.durationMin,
+        'is_free': leg.isFree,
+        'cost': leg.cost,
+        'position': position,
+      };
+
+  Future<void> _handleAddLeg(
+    TransitSegment? segment,
+    String fromStopId,
+    String toStopId,
+  ) async {
+    final result = await LegFormDialog.show(context);
+    if (result == null || !mounted) return;
+    try {
+      if (segment == null) {
+        await ref
+            .read(itineraryDetailProvider(widget.itineraryId).notifier)
+            .createSegment({
+          'from_stop_id': fromStopId,
+          'to_stop_id': toStopId,
+          'legs': [{...result, 'position': 1}],
+        });
+      } else {
+        final updatedLegs = [
+          for (var i = 0; i < segment.legs.length; i++)
+            _legToMap(segment.legs[i], i + 1),
+          {...result, 'position': segment.legs.length + 1},
+        ];
+        await ref
+            .read(itineraryDetailProvider(widget.itineraryId).notifier)
+            .updateSegment(segment.id, {
+          'from_stop_id': segment.fromStopId,
+          'to_stop_id': segment.toStopId,
+          'legs': updatedLegs,
+        });
+      }
+    } on Exception catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(extractErrorMessage(e as dynamic))),
+      );
+    }
+  }
+
+  Future<void> _handleEditLeg(TransitSegment segment, int legIndex) async {
+    final result =
+        await LegFormDialog.show(context, existing: segment.legs[legIndex]);
+    if (result == null || !mounted) return;
+    try {
+      final updatedLegs = [
+        for (var i = 0; i < segment.legs.length; i++)
+          i == legIndex
+              ? {...result, 'position': i + 1}
+              : _legToMap(segment.legs[i], i + 1),
+      ];
+      await ref
+          .read(itineraryDetailProvider(widget.itineraryId).notifier)
+          .updateSegment(segment.id, {
+        'from_stop_id': segment.fromStopId,
+        'to_stop_id': segment.toStopId,
+        'legs': updatedLegs,
+      });
+    } on Exception catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(extractErrorMessage(e as dynamic))),
+      );
+    }
+  }
+
+  Future<void> _handleDeleteLeg(TransitSegment segment, int legIndex) async {
     final confirmed = await confirmDestructiveAction(
       context: context,
-      title: 'Remove transit between stops?',
-      message: 'The connection between these two stops will be cleared. '
-          'You can add a new one later.',
+      title: 'Remove leg?',
+      message: 'This leg will be permanently removed.',
       confirmLabel: 'Remove',
     );
     if (!confirmed || !mounted) return;
     try {
-      await ref
-          .read(itineraryDetailProvider(widget.itineraryId).notifier)
-          .deleteSegment(segment.id);
+      if (segment.legs.length == 1) {
+        await ref
+            .read(itineraryDetailProvider(widget.itineraryId).notifier)
+            .deleteSegment(segment.id);
+      } else {
+        final remaining = <Map<String, dynamic>>[];
+        for (var i = 0; i < segment.legs.length; i++) {
+          if (i != legIndex) remaining.add(_legToMap(segment.legs[i], remaining.length + 1));
+        }
+        await ref
+            .read(itineraryDetailProvider(widget.itineraryId).notifier)
+            .updateSegment(segment.id, {
+          'from_stop_id': segment.fromStopId,
+          'to_stop_id': segment.toStopId,
+          'legs': remaining,
+        });
+      }
     } on Exception catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -401,15 +492,6 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                         ? null
                         : () => context.push(
                               '/itineraries/${widget.itineraryId}/stops/new',
-                            ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.directions_transit_outlined),
-                    tooltip: 'Add segment',
-                    onPressed: _reorderMode
-                        ? null
-                        : () => context.push(
-                              '/itineraries/${widget.itineraryId}/segments/new',
                             ),
                   ),
                   IconButton(
@@ -561,15 +643,6 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                       data: (itinerary) {
                         final displayStops = _applyPendingOrder(itinerary.stops);
               
-                        // Build a lookup from fromStopId → segment for interleaved display.
-                        final segmentByFromStop = {
-                          for (final seg in itinerary.segments)
-                            seg.fromStopId: seg,
-                        };
-                        final stopById = {
-                          for (final s in itinerary.stops) s.id: s
-                        };
-              
                         final mappableStops = displayStops
                             .where((s) => s.lat != null && s.lng != null)
                             .toList();
@@ -598,17 +671,23 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                           );
                         }).toList();
               
-                        // Interleaved list: StopCard, then optional SegmentCard after each stop.
-                        // For a single stop, contextual "Add stop" buttons appear above/below
-                        // depending on the stop's role (origin/waypoint/arrival).
+                        // Interleaved list: StopCard with _TransitConnector between each
+                        // adjacent pair of stops. Connectors show transit legs inline and
+                        // let the owner add/edit/delete legs without leaving the screen.
                         List<Widget> buildInterleavedList() {
                           final items = <Widget>[];
                           final isOnlyStop = displayStops.length == 1;
-              
+
+                          // Segment lookup by exact adjacent stop pair.
+                          final segByPair = {
+                            for (final seg in itinerary.segments)
+                              '${seg.fromStopId}:${seg.toStopId}': seg,
+                          };
+
                           for (var i = 0; i < displayStops.length; i++) {
                             final stop = displayStops[i];
                             final hasNextStop = i < displayStops.length - 1;
-              
+
                             // Single-stop: "Add stop" above for waypoint or arrival.
                             if (canEdit &&
                                 isOnlyStop &&
@@ -623,7 +702,7 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                                 ),
                               ));
                             }
-              
+
                             items.add(StopCard(
                               key: ValueKey('stop-${stop.id}'),
                               stop: stop,
@@ -643,57 +722,45 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                                   ? (a) => _deleteAnnotation(stop.id, a)
                                   : null,
                             ));
-              
-                            final seg = segmentByFromStop[stop.id];
-              
-                            if (seg != null) {
-                              items.add(SegmentCard(
-                                key: ValueKey('seg-${seg.id}'),
+
+                            if (hasNextStop) {
+                              final nextStop = displayStops[i + 1];
+                              final seg = segByPair['${stop.id}:${nextStop.id}'];
+
+                              items.add(_TransitConnector(
+                                key: ValueKey('transit-${stop.id}'),
                                 segment: seg,
+                                fromStopId: stop.id,
+                                toStopId: nextStop.id,
                                 currency: itinerary.currency,
-                                fromStopName: stopById[seg.fromStopId]?.placeName,
-                                toStopName: stopById[seg.toStopId]?.placeName,
-                                onEdit: canEdit
-                                    ? () => context.push(
-                                          '/itineraries/${widget.itineraryId}/segments/${seg.id}/edit',
-                                        )
-                                    : null,
-                                onDelete: canEdit
-                                    ? () => _confirmDeleteSegment(seg)
-                                    : null,
+                                canEdit: canEdit,
+                                onAddLeg: () =>
+                                    _handleAddLeg(seg, stop.id, nextStop.id),
+                                onEditLeg: (idx) {
+                                  if (seg != null) _handleEditLeg(seg, idx);
+                                },
+                                onDeleteLeg: (idx) {
+                                  if (seg != null) _handleDeleteLeg(seg, idx);
+                                },
                               ));
-                            }
-              
-                            if (canEdit) {
-                              if (hasNextStop) {
-                                // 2+ stops: inline separator with "Add stop" and optional "Add segment".
-                                final nextStop = displayStops[i + 1];
+
+                              if (canEdit) {
                                 items.add(_InlineSeparator(
                                   key: ValueKey('sep-${stop.id}'),
                                   onAddStop: () => context.push(
                                     '/itineraries/${widget.itineraryId}/stops/new',
                                     extra: {'insertAfterPosition': stop.position},
                                   ),
-                                  onAddSegment: seg == null
-                                      ? () => context.push(
-                                            '/itineraries/${widget.itineraryId}/segments/new',
-                                            extra: {
-                                              'fromStopId': stop.id,
-                                              'toStopId': nextStop.id,
-                                            },
-                                          )
-                                      : null,
-                                ));
-                              } else if (stop.type != StopType.arrival) {
-                                // Last stop: "Add stop" below for origin or waypoint.
-                                items.add(_InlineSeparator(
-                                  key: ValueKey('below-${stop.id}'),
-                                  onAddStop: () => context.push(
-                                    '/itineraries/${widget.itineraryId}/stops/new',
-                                    extra: {'insertAfterPosition': stop.position},
-                                  ),
                                 ));
                               }
+                            } else if (canEdit && stop.type != StopType.arrival) {
+                              items.add(_InlineSeparator(
+                                key: ValueKey('below-${stop.id}'),
+                                onAddStop: () => context.push(
+                                  '/itineraries/${widget.itineraryId}/stops/new',
+                                  extra: {'insertAfterPosition': stop.position},
+                                ),
+                              ));
                             }
                           }
                           return items;
@@ -1339,13 +1406,8 @@ class _SummaryChip extends StatelessWidget {
 
 class _InlineSeparator extends StatelessWidget {
   final VoidCallback onAddStop;
-  final VoidCallback? onAddSegment;
 
-  const _InlineSeparator({
-    super.key,
-    required this.onAddStop,
-    this.onAddSegment,
-  });
+  const _InlineSeparator({super.key, required this.onAddStop});
 
   @override
   Widget build(BuildContext context) {
@@ -1360,18 +1422,6 @@ class _InlineSeparator extends StatelessWidget {
             label: 'Add stop',
             onTap: onAddStop,
           ),
-          if (onAddSegment != null) ...[
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 6),
-              child: Text('·',
-                  style: TextStyle(color: Colors.grey.shade400, fontSize: 12)),
-            ),
-            _ActionButton(
-              icon: Icons.directions_transit_outlined,
-              label: 'Segment',
-              onTap: onAddSegment!,
-            ),
-          ],
           const SizedBox(width: 8),
           Expanded(child: Divider(color: Colors.grey.shade300, height: 1)),
         ],
@@ -1442,6 +1492,315 @@ class _CoverImageState extends State<_CoverImage> {
           });
           return const SizedBox.shrink();
         },
+      ),
+    );
+  }
+}
+
+// Compact inline connector rendered between two consecutive stops.
+// Shows transport legs as tappable badges. In edit mode also shows an
+// "+ Add transit" action. Tapping a badge opens a detail sheet.
+class _TransitConnector extends StatelessWidget {
+  final TransitSegment? segment;
+  final String fromStopId;
+  final String toStopId;
+  final String currency;
+  final bool canEdit;
+  final VoidCallback onAddLeg;
+  final void Function(int legIndex) onEditLeg;
+  final void Function(int legIndex) onDeleteLeg;
+
+  const _TransitConnector({
+    super.key,
+    required this.segment,
+    required this.fromStopId,
+    required this.toStopId,
+    required this.currency,
+    required this.canEdit,
+    required this.onAddLeg,
+    required this.onEditLeg,
+    required this.onDeleteLeg,
+  });
+
+  void _showLegDetail(BuildContext context, TransportLeg leg, int index) {
+    showModalBottomSheet(
+      context: context,
+      useSafeArea: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (_) => _LegDetailSheet(
+        leg: leg,
+        currency: currency,
+        canEdit: canEdit,
+        onEdit: () {
+          Navigator.of(context).pop();
+          onEditLeg(index);
+        },
+        onDelete: () {
+          Navigator.of(context).pop();
+          onDeleteLeg(index);
+        },
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final legs = segment?.legs ?? [];
+    final hasLegs = legs.isNotEmpty;
+
+    // Read mode with no segment: thin connecting line only.
+    if (!canEdit && !hasLegs) {
+      return Center(
+        child: Container(
+          width: 1,
+          height: 14,
+          color: Colors.grey.shade300,
+        ),
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      child: Row(
+        children: [
+          Expanded(child: Divider(color: Colors.grey.shade300, height: 1)),
+          const SizedBox(width: 8),
+          if (hasLegs)
+            Flexible(
+              child: Wrap(
+                spacing: 4,
+                runSpacing: 4,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: [
+                  for (var i = 0; i < legs.length; i++)
+                    GestureDetector(
+                      onTap: () => _showLegDetail(context, legs[i], i),
+                      child: TransportBadge(leg: legs[i], currency: currency),
+                    ),
+                  if (canEdit)
+                    _ActionButton(
+                      icon: Icons.add,
+                      label: 'Add transit',
+                      onTap: onAddLeg,
+                    ),
+                ],
+              ),
+            )
+          else
+            _ActionButton(
+              icon: Icons.directions_transit_outlined,
+              label: 'Add transit',
+              onTap: onAddLeg,
+            ),
+          const SizedBox(width: 8),
+          Expanded(child: Divider(color: Colors.grey.shade300, height: 1)),
+        ],
+      ),
+    );
+  }
+}
+
+// Bottom sheet showing full details of one transport leg.
+// Shows Edit / Remove buttons only when canEdit is true.
+class _LegDetailSheet extends StatelessWidget {
+  final TransportLeg leg;
+  final String currency;
+  final bool canEdit;
+  final VoidCallback onEdit;
+  final VoidCallback onDelete;
+
+  const _LegDetailSheet({
+    required this.leg,
+    required this.currency,
+    required this.canEdit,
+    required this.onEdit,
+    required this.onDelete,
+  });
+
+  String _formatDuration(int minutes) {
+    final h = minutes ~/ 60;
+    final m = minutes % 60;
+    if (h == 0) return '${m}min';
+    if (m == 0) return '${h}h';
+    return '${h}h ${m}min';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Center(
+            child: Container(
+              width: 40,
+              height: 4,
+              margin: const EdgeInsets.only(bottom: 16),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade300,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+          Row(
+            children: [
+              Icon(leg.mode.icon, size: 22, color: theme.colorScheme.primary),
+              const SizedBox(width: 10),
+              Text(
+                leg.mode.label,
+                style: theme.textTheme.titleMedium
+                    ?.copyWith(fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          if (leg.line != null)
+            _DetailRow(label: 'Line', value: leg.line!),
+          if (leg.direction != null)
+            _DetailRow(label: 'Direction', value: leg.direction!),
+          _DetailRow(
+            label: 'Duration',
+            value: leg.durationMin != null
+                ? _formatDuration(leg.durationMin!)
+                : '—',
+          ),
+          _DetailRow(
+            label: 'Cost',
+            value: leg.isFree
+                ? 'Free'
+                : leg.cost > 0
+                    ? '${leg.cost.toStringAsFixed(2)} $currency'
+                    : '—',
+          ),
+          if (leg.notes != null && leg.notes!.isNotEmpty) ...[
+            if (leg.noteType != null)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 4),
+                child: _NoteTypeChip(type: leg.noteType!),
+              ),
+            _DetailRow(label: 'Notes', value: leg.notes!),
+          ],
+          if (canEdit) ...[
+            const SizedBox(height: 20),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: onEdit,
+                    icon: const Icon(Icons.edit_outlined, size: 16),
+                    label: const Text('Edit'),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: onDelete,
+                    icon: Icon(Icons.delete_outline,
+                        size: 16, color: Colors.red.shade400),
+                    label: Text('Remove',
+                        style: TextStyle(color: Colors.red.shade400)),
+                    style: OutlinedButton.styleFrom(
+                      side: BorderSide(color: Colors.red.shade300),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+const _noteTypeConfigs = {
+  AnnotationType.advice: (
+    icon: Icons.lightbulb_outline,
+    bg: kMist,
+    fg: kForest,
+    label: 'Advice',
+  ),
+  AnnotationType.caution: (
+    icon: Icons.warning_amber_outlined,
+    bg: Color(0xFFFFF0CC),
+    fg: kAmber,
+    label: 'Caution',
+  ),
+  AnnotationType.avoid: (
+    icon: Icons.block,
+    bg: Color(0xFFFFDAD6),
+    fg: Color(0xFFBA1A1A),
+    label: 'Avoid',
+  ),
+  AnnotationType.info: (
+    icon: Icons.info_outline,
+    bg: Color(0xFFD0EDD8),
+    fg: kCanopy,
+    label: 'Info',
+  ),
+};
+
+class _NoteTypeChip extends StatelessWidget {
+  final AnnotationType type;
+  const _NoteTypeChip({required this.type});
+
+  @override
+  Widget build(BuildContext context) {
+    final config = _noteTypeConfigs[type]!;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: config.bg,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(config.icon, size: 13, color: config.fg),
+          const SizedBox(width: 4),
+          Text(
+            config.label,
+            style: TextStyle(
+                fontSize: 12, color: config.fg, fontWeight: FontWeight.w500),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _DetailRow extends StatelessWidget {
+  final String label;
+  final String value;
+
+  const _DetailRow({required this.label, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 3),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 80,
+            child: Text(
+              label,
+              style: Theme.of(context)
+                  .textTheme
+                  .bodySmall
+                  ?.copyWith(color: Colors.grey.shade600),
+            ),
+          ),
+          Expanded(
+            child: Text(value, style: Theme.of(context).textTheme.bodyMedium),
+          ),
+        ],
       ),
     );
   }

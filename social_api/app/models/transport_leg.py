@@ -38,6 +38,10 @@ class TransportLeg(Base):
             "mode IN ('walk','bus','tram','metro','train','taxi','uber','bike','ferry','car','airplane')",
             name="ck_leg_mode",
         ),
+        CheckConstraint(
+            "note_type IS NULL OR note_type IN ('advice','caution','avoid','info')",
+            name="ck_leg_note_type",
+        ),
     )
 
     id: Mapped[uuid.UUID] = mapped_column(
@@ -69,6 +73,7 @@ class TransportLeg(Base):
         Boolean, default=False, server_default="false", nullable=False
     )
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    note_type: Mapped[str | None] = mapped_column(String(10), nullable=True)
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
