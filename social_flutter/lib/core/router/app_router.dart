@@ -15,7 +15,6 @@ import 'package:social_flutter/features/itineraries/presentation/map_picker_scre
 import 'package:social_flutter/features/itineraries/presentation/segment_form_screen.dart';
 import 'package:social_flutter/features/itineraries/presentation/stop_form_screen.dart';
 import 'package:social_flutter/features/itineraries/domain/dimension_key.dart';
-import 'package:social_flutter/features/itineraries/domain/stop.dart';
 import 'package:social_flutter/features/itineraries/presentation/dimension_ratings_screen.dart';
 import 'package:social_flutter/features/itineraries/presentation/ratings_page_screen.dart';
 import 'package:social_flutter/features/profile/presentation/delete_account_screen.dart';
@@ -140,7 +139,6 @@ final appRouter = GoRouter(
             return StopFormScreen(
               itineraryId: state.pathParameters['id']!,
               insertAfterPosition: extra?['insertAfterPosition'] as int?,
-              defaultStopType: extra?['defaultStopType'] as StopType?,
             );
           },
         ),

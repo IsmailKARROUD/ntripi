@@ -118,6 +118,18 @@ ntripi.app/health              Health check (Railway)
   to `@{username}` when empty.
 - **Email:** Always lowercased before storage and comparison.
 
+### Stop Place Types
+11 purpose-based categories stored as camelCase strings in `place_type` (String, nullable):
+`eatDrink` · `sleep` · `pray` · `learnSee` · `buy` · `playWatch` ·
+`nature` · `travel` · `healBathe` · `entertainment` · `sight`
+
+Flutter: `PlaceType` enum in `features/itineraries/domain/stop.dart`.
+Use `PlaceType.fromString()` for deserialization — handles legacy DB values
+(restaurant→eatDrink, hotel→sleep, museum→learnSee, etc.) and returns null
+for unknowns instead of throwing.
+Backend: validated by regex in `StopCreate`/`StopUpdate` in `schemas/itinerary.py`.
+Do NOT use `PlaceType.values.byName()` directly — always go through `fromString()`.
+
 ### Itinerary Visibility
 Four levels: `public`, `followers`, `restricted`, `only_me`.
 Default `only_me`. Single source of truth: `can_view_itinerary()`.

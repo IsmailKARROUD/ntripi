@@ -117,7 +117,7 @@ class Stop {
       id: json['id'] as String,
       itineraryId: json['itinerary_id'] as String,
       position: json['position'] as int,
-      type: StopType.values.byName(json['type'] as String),
+      type: StopType.waypoint,
       placeName: json['place_name'] as String?,
       placeAddress: json['place_address'] as String?,
       lat: (json['lat'] as num?)?.toDouble(),

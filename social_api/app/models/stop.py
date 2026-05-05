@@ -20,7 +20,7 @@ from decimal import Decimal
 from datetime import datetime
 
 from sqlalchemy import (
-    Boolean, CheckConstraint, DateTime, ForeignKey, Integer,
+    Boolean, DateTime, ForeignKey, Integer,
     Numeric, SmallInteger, String, Text, UniqueConstraint, func,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -34,10 +34,6 @@ class Stop(Base):
 
     __table_args__ = (
         UniqueConstraint("itinerary_id", "position", name="uq_stop_position"),
-        CheckConstraint(
-            "type IN ('origin', 'waypoint', 'arrival')",
-            name="ck_stop_type",
-        ),
     )
 
     id: Mapped[uuid.UUID] = mapped_column(
@@ -55,9 +51,6 @@ class Stop(Base):
     )
 
     position: Mapped[int] = mapped_column(SmallInteger, nullable=False)
-
-    # 'origin' | 'waypoint' | 'arrival'
-    type: Mapped[str] = mapped_column(String(20), nullable=False)
 
     place_name: Mapped[str | None] = mapped_column(String(200), nullable=True)
     place_address: Mapped[str | None] = mapped_column(Text, nullable=True)
@@ -113,4 +106,4 @@ class Stop(Base):
     )
 
     def __repr__(self) -> str:
-        return f"<Stop id={self.id} pos={self.position} type={self.type!r}>"
+        return f"<Stop id={self.id} pos={self.position}>"

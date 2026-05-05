@@ -33,15 +33,11 @@ class StopFormScreen extends ConsumerStatefulWidget {
   /// existing stops up. Null means append at the end.
   final int? insertAfterPosition;
 
-  /// Pre-selects a stop type in create mode. Ignored in edit mode.
-  final StopType? defaultStopType;
-
   const StopFormScreen({
     super.key,
     required this.itineraryId,
     this.stopId,
     this.insertAfterPosition,
-    this.defaultStopType,
   });
 
   bool get isEditMode => stopId != null;
@@ -63,7 +59,6 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
   bool _initialized = false;
   bool _saving = false;
 
-  StopType _stopType = StopType.waypoint;
   PlaceType? _placeType;
   double? _lat;
   double? _lng;
@@ -78,9 +73,6 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
   @override
   void initState() {
     super.initState();
-    if (!widget.isEditMode && widget.defaultStopType != null) {
-      _stopType = widget.defaultStopType!;
-    }
     if (widget.isEditMode) {
       WidgetsBinding.instance
           .addPostFrameCallback((_) => _initFromExistingStop());
@@ -102,8 +94,7 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
 
     setState(() {
       _existingStop = found;
-      _stopType = found!.type;
-      _placeNameController.text = found.placeName ?? '';
+      _placeNameController.text = found!.placeName ?? '';
       _placeAddressController.text = found.placeAddress ?? '';
       _lat = found.lat;
       _lng = found.lng;
@@ -236,7 +227,6 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
 
       final data = <String, dynamic>{
         if (!widget.isEditMode) 'position': position,
-        'type': _stopType.name,
         if (_placeNameController.text.trim().isNotEmpty)
           'place_name': _placeNameController.text.trim(),
         if (_placeAddressController.text.trim().isNotEmpty)
@@ -265,7 +255,7 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
               ref.read(itineraryDetailProvider(widget.itineraryId)).value;
           final newStop = itinerary?.stops.firstWhere(
             (s) => s.position == position,
-            orElse: () => itinerary!.stops.last,
+            orElse: () => itinerary.stops.last,
           );
           if (newStop != null) {
             for (final pending in _pendingAnnotations) {
@@ -501,32 +491,6 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                     style: Theme.of(context).textTheme.titleSmall,
                   ),
                   const SizedBox(height: 12),
-
-                  // Stop type
-                  SegmentedButton<StopType>(
-                    segments: const [
-                      ButtonSegment(
-                        value: StopType.origin,
-                        label: Text('Origin'),
-                        icon: Icon(Icons.trip_origin, size: 16),
-                      ),
-                      ButtonSegment(
-                        value: StopType.waypoint,
-                        label: Text('Waypoint'),
-                        icon: Icon(Icons.place_outlined, size: 16),
-                      ),
-                      ButtonSegment(
-                        value: StopType.arrival,
-                        label: Text('Arrival'),
-                        icon: Icon(Icons.flag, size: 16),
-                      ),
-                    ],
-                    selected: {_stopType},
-                    onSelectionChanged: (s) =>
-                        setState(() => _stopType = s.first),
-                    showSelectedIcon: false,
-                  ),
-                  const SizedBox(height: 16),
 
                   // Place name
                   TextFormField(

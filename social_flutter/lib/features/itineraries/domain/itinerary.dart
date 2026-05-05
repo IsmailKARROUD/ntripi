@@ -62,6 +62,7 @@ class Itinerary {
   });
 
   factory Itinerary.fromJson(Map<String, dynamic> json) {
+    final stops = _parseStops(json['stops'] as List<dynamic>?);
     return Itinerary(
       id: json['id'] as String,
       userId: json['user_id'] as String,
@@ -75,10 +76,7 @@ class Itinerary {
       createdAt: DateTime.parse(json['created_at'] as String),
       ratingAvg: (json['rating_avg'] as num?)?.toDouble(),
       ratingCount: json['rating_count'] as int? ?? 0,
-      stops: (json['stops'] as List<dynamic>?)
-              ?.map((s) => Stop.fromJson(s as Map<String, dynamic>))
-              .toList() ??
-          [],
+      stops: stops,
       segments: (json['segments'] as List<dynamic>?)
               ?.map((s) => TransitSegment.fromJson(s as Map<String, dynamic>))
               .toList() ??
@@ -91,6 +89,24 @@ class Itinerary {
       stopsCount: (json['stops'] as List<dynamic>?)?.length ??
           (json['stops_count'] as int? ?? 0),
     );
+  }
+
+  static List<Stop> _parseStops(List<dynamic>? raw) {
+    if (raw == null || raw.isEmpty) return const [];
+    final stops = raw
+        .map((s) => Stop.fromJson(s as Map<String, dynamic>))
+        .toList()
+      ..sort((a, b) => a.position.compareTo(b.position));
+    return [
+      for (var i = 0; i < stops.length; i++)
+        stops[i].copyWith(
+          type: i == 0
+              ? StopType.origin
+              : i == stops.length - 1
+                  ? StopType.arrival
+                  : StopType.waypoint,
+        ),
+    ];
   }
 
   static ItineraryVisibility _parseVisibility(String raw) {

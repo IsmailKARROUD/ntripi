@@ -1072,9 +1072,6 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                                         ? GestureDetector(
                                             onTap: () => context.push(
                                               '/itineraries/${widget.itineraryId}/stops/new',
-                                              extra: {
-                                                'defaultStopType': StopType.origin
-                                              },
                                             ),
                                             child: Column(
                                               children: [
