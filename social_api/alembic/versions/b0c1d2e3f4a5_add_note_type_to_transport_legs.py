@@ -1,7 +1,7 @@
 """add note_type to transport_legs
 
 Revision ID: b0c1d2e3f4a5
-Revises: a6b7c8d9e0f1
+Revises: b9c0d1e2f3a4
 Create Date: 2026-05-05
 """
 
@@ -10,7 +10,7 @@ from alembic import op
 import sqlalchemy as sa
 
 revision: str = 'b0c1d2e3f4a5'
-down_revision: Union[str, None] = 'a6b7c8d9e0f1'
+down_revision: Union[str, None] = 'b9c0d1e2f3a4'
 branch_labels = None
 depends_on = None
 
