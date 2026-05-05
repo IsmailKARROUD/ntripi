@@ -98,7 +98,8 @@ social_flutter/
 - Pull-to-refresh on all itinerary screens.
 
 ### Stops
-- Add stops to an itinerary with type (origin / waypoint / destination), place name, address, coordinates, place type, duration, cost, and notes.
+- Add stops to an itinerary with place name, address, coordinates, place type, duration, cost, and notes.
+- **Stop role is derived from position** — the first stop is always the origin, the last is always the arrival, and all stops in between are waypoints. This is computed client-side in `Itinerary._parseStops()`; there is no type selector in the UI and no `type` field in the API.
 - Place search via Nominatim (debounced, 400ms) or manual map picker.
 - Insert a stop at any position (mid-list inserts shift existing stops up server-side).
 - Edit and delete stops.

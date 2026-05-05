@@ -118,6 +118,19 @@ ntripi.app/health              Health check (Railway)
   to `@{username}` when empty.
 - **Email:** Always lowercased before storage and comparison.
 
+### Stop Role (StopType)
+`StopType` is a **frontend-only concept** — it is not stored in the database.
+Flutter derives it from the stop's sorted position within the itinerary:
+- Position 1 (first) → `StopType.origin`
+- Last position → `StopType.arrival`
+- Everything in between → `StopType.waypoint`
+
+Computed in `Itinerary._parseStops()` (`domain/itinerary.dart`) every time
+the itinerary is loaded from the API. `Stop.fromJson` always sets a placeholder
+of `waypoint`; the correct value is assigned by `_parseStops` after sorting.
+The `stops` table has no `type` column. Never send or expect a `type` field
+on stop API requests or responses.
+
 ### Stop Place Types
 11 purpose-based categories stored as camelCase strings in `place_type` (String, nullable):
 `eatDrink` · `sleep` · `pray` · `learnSee` · `buy` · `playWatch` ·
@@ -301,6 +314,10 @@ at `/app/uploads` or images vanish on redeploy.
 
 ## What NOT To Do
 
+- Do NOT add a `type` column back to the `stops` table — stop role is derived
+  from position on the client, not stored in the DB
+- Do NOT send `type` in stop create/update API payloads — the field is not in
+  `StopCreate` or `StopUpdate` and will be rejected
 - Do NOT introduce code generation (build_runner, json_serializable)
 - Do NOT add a new state management library — Riverpod only
 - Do NOT use Google Maps SDK anywhere — OSM only
