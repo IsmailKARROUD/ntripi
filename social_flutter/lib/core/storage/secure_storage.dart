@@ -10,6 +10,8 @@
 //   - Android: EncryptedSharedPreferences (backed by Android Keystore)
 // This is appropriate for sensitive data like auth tokens.
 
+import 'dart:convert';
+
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 /// Key under which the JWT access token is stored.
@@ -42,4 +44,21 @@ Future<void> deleteToken() async {
 Future<bool> hasToken() async {
   final token = await readToken();
   return token != null && token.isNotEmpty;
+}
+
+/// Returns true if [token] has passed its `exp` JWT claim.
+/// Treats malformed or claim-less tokens as expired so they are evicted.
+bool isJwtExpired(String token) {
+  try {
+    final parts = token.split('.');
+    if (parts.length != 3) return true;
+    final payload = jsonDecode(
+      utf8.decode(base64Url.decode(base64Url.normalize(parts[1]))),
+    ) as Map<String, dynamic>;
+    final exp = payload['exp'] as int?;
+    if (exp == null) return false;
+    return DateTime.now().millisecondsSinceEpoch ~/ 1000 >= exp;
+  } catch (_) {
+    return true;
+  }
 }

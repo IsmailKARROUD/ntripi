@@ -74,6 +74,20 @@ class AuthInterceptor extends Interceptor {
   ) async {
     final token = await readToken();
     if (token != null) {
+      if (isJwtExpired(token)) {
+        // Evict the stale token and redirect to login without hitting the network.
+        await deleteToken();
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          final ctx = navigatorKey.currentContext;
+          if (ctx != null && ctx.mounted) ctx.go('/login');
+        });
+        handler.reject(DioException(
+          requestOptions: options,
+          type: DioExceptionType.cancel,
+          message: 'session_expired',
+        ));
+        return;
+      }
       // Attach the token to the Authorization header.
       // The header value follows the Bearer token scheme from RFC 6750.
       options.headers['Authorization'] = 'Bearer $token';

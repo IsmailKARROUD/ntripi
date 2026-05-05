@@ -28,7 +28,7 @@ final appRouter = GoRouter(
 
   redirect: (context, state) async {
     final token = await readToken();
-    final hasAuth = token != null && token.isNotEmpty;
+    final hasAuth = token != null && token.isNotEmpty && !isJwtExpired(token);
 
     // Routes that require no authentication check
     const publicRoutes = ['/login', '/register', '/splash'];
