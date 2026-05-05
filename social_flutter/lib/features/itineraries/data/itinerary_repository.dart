@@ -13,6 +13,7 @@ import 'package:social_flutter/core/api/api_endpoints.dart';
 import 'package:social_flutter/features/itineraries/domain/allowed_user.dart';
 import 'package:social_flutter/features/itineraries/domain/annotation.dart';
 import 'package:social_flutter/features/itineraries/domain/itinerary.dart';
+import 'package:social_flutter/features/itineraries/domain/itinerary_annotation.dart';
 import 'package:social_flutter/features/itineraries/domain/my_rating.dart';
 import 'package:social_flutter/features/itineraries/domain/ratings_page.dart';
 import 'package:social_flutter/features/itineraries/domain/stop.dart';
@@ -166,6 +167,48 @@ class ItineraryRepository {
       data: body,
     );
     return Annotation.fromJson(response.data!);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Itinerary-level annotation CRUD
+  // ---------------------------------------------------------------------------
+
+  /// POST /itineraries/{itineraryId}/annotations
+  Future<ItineraryAnnotation> addItineraryAnnotation(
+    String itineraryId,
+    Map<String, dynamic> data,
+  ) async {
+    final response = await _dio.post<Map<String, dynamic>>(
+      itineraryAnnotationsEndpoint(itineraryId),
+      data: data,
+    );
+    return ItineraryAnnotation.fromJson(response.data!);
+  }
+
+  /// PATCH /itineraries/{itineraryId}/annotations/{annotationId}
+  Future<ItineraryAnnotation> updateItineraryAnnotation(
+    String itineraryId,
+    String annotationId, {
+    String? content,
+    AnnotationType? type,
+  }) async {
+    final body = <String, dynamic>{
+      if (content != null) 'content': content,
+      if (type != null) 'type': type.name,
+    };
+    final response = await _dio.patch<Map<String, dynamic>>(
+      itineraryAnnotationEndpoint(itineraryId, annotationId),
+      data: body,
+    );
+    return ItineraryAnnotation.fromJson(response.data!);
+  }
+
+  /// DELETE /itineraries/{itineraryId}/annotations/{annotationId}
+  Future<void> deleteItineraryAnnotation(
+    String itineraryId,
+    String annotationId,
+  ) async {
+    await _dio.delete(itineraryAnnotationEndpoint(itineraryId, annotationId));
   }
 
   // ---------------------------------------------------------------------------

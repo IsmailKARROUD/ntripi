@@ -13,6 +13,7 @@ import 'package:social_flutter/features/itineraries/data/share_service.dart';
 import 'package:social_flutter/features/itineraries/domain/allowed_user.dart';
 import 'package:social_flutter/features/itineraries/domain/annotation.dart';
 import 'package:social_flutter/features/itineraries/domain/itinerary.dart';
+import 'package:social_flutter/features/itineraries/domain/itinerary_annotation.dart';
 import 'package:social_flutter/features/itineraries/domain/my_rating.dart';
 import 'package:social_flutter/features/itineraries/domain/ratings_page.dart';
 
@@ -211,6 +212,53 @@ class ItineraryDetailNotifier
         return s;
       }).toList();
       state = AsyncData(itinerary.copyWith(stops: updatedStops));
+    });
+  }
+
+  /// Add an itinerary-level annotation and patch local state.
+  Future<void> addItineraryAnnotation(Map<String, dynamic> data) async {
+    final annotation = await ref
+        .read(itineraryRepositoryProvider)
+        .addItineraryAnnotation(arg, data);
+
+    state.whenData((itinerary) {
+      state = AsyncData(itinerary.copyWith(
+        annotations: [...itinerary.annotations, annotation],
+      ));
+    });
+  }
+
+  /// Update an itinerary-level annotation and patch local state.
+  Future<void> updateItineraryAnnotation(
+    String annotationId, {
+    String? content,
+    AnnotationType? type,
+  }) async {
+    final updated = await ref
+        .read(itineraryRepositoryProvider)
+        .updateItineraryAnnotation(arg, annotationId,
+            content: content, type: type);
+
+    state.whenData((itinerary) {
+      state = AsyncData(itinerary.copyWith(
+        annotations: itinerary.annotations
+            .map((a) => a.id == annotationId ? updated : a)
+            .toList(),
+      ));
+    });
+  }
+
+  /// Delete an itinerary-level annotation and remove it from local state.
+  Future<void> deleteItineraryAnnotation(String annotationId) async {
+    await ref
+        .read(itineraryRepositoryProvider)
+        .deleteItineraryAnnotation(arg, annotationId);
+
+    state.whenData((itinerary) {
+      state = AsyncData(itinerary.copyWith(
+        annotations:
+            itinerary.annotations.where((a) => a.id != annotationId).toList(),
+      ));
     });
   }
 }

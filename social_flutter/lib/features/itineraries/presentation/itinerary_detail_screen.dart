@@ -41,10 +41,12 @@ import 'package:social_flutter/core/ui/app_theme.dart';
 import 'package:social_flutter/core/ui/destructive_actions.dart';
 import 'package:social_flutter/features/itineraries/domain/annotation.dart';
 import 'package:social_flutter/features/itineraries/domain/itinerary.dart';
+import 'package:social_flutter/features/itineraries/domain/itinerary_annotation.dart';
 import 'package:social_flutter/features/itineraries/domain/transit_segment.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/annotation_form_dialog.dart';
 import 'package:social_flutter/features/profile/providers/profile_provider.dart';
 import 'package:social_flutter/features/itineraries/domain/stop.dart';
+import 'package:social_flutter/features/itineraries/presentation/widgets/annotation_chip.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/rate_itinerary_dialog.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/segment_card.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/stop_card.dart';
@@ -204,6 +206,66 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
       });
     }
     // _ExitAction.stay → do nothing, stay in edit mode.
+  }
+
+  Future<void> _addItineraryAnnotation() async {
+    final result = await showAnnotationFormDialog(context, isEdit: false);
+    if (result == null || !mounted) return;
+    try {
+      await ref
+          .read(itineraryDetailProvider(widget.itineraryId).notifier)
+          .addItineraryAnnotation({
+        'content': result.content,
+        'type': result.type.name,
+      });
+    } on Exception catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(extractErrorMessage(e as dynamic))),
+      );
+    }
+  }
+
+  Future<void> _editItineraryAnnotation(ItineraryAnnotation annotation) async {
+    final result = await showAnnotationFormDialog(
+      context,
+      isEdit: true,
+      initialContent: annotation.content,
+      initialType: annotation.type,
+    );
+    if (result == null || !mounted) return;
+    try {
+      await ref
+          .read(itineraryDetailProvider(widget.itineraryId).notifier)
+          .updateItineraryAnnotation(annotation.id,
+              content: result.content, type: result.type);
+    } on Exception catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(extractErrorMessage(e as dynamic))),
+      );
+    }
+  }
+
+  Future<void> _deleteItineraryAnnotation(
+      ItineraryAnnotation annotation) async {
+    final confirmed = await confirmDestructiveAction(
+      context: context,
+      title: 'Delete note?',
+      message: 'This will permanently remove this note from the itinerary.',
+      confirmLabel: 'Delete',
+    );
+    if (!confirmed || !mounted) return;
+    try {
+      await ref
+          .read(itineraryDetailProvider(widget.itineraryId).notifier)
+          .deleteItineraryAnnotation(annotation.id);
+    } on Exception catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(extractErrorMessage(e as dynamic))),
+      );
+    }
   }
 
   Future<void> _addAnnotation(String stopId) async {
@@ -719,6 +781,98 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                                   ),
                                 ),
               
+                              // ------------------------------------------------------------
+                              // Itinerary-level annotations (Notes)
+                              // ------------------------------------------------------------
+                              if (itinerary.annotations.isNotEmpty || canEdit)
+                                SliverToBoxAdapter(
+                                  child: Padding(
+                                    padding: const EdgeInsets.fromLTRB(
+                                        16, 10, 16, 4),
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Row(
+                                          children: [
+                                            Text(
+                                              'Notes',
+                                              style: Theme.of(context)
+                                                  .textTheme
+                                                  .titleSmall
+                                                  ?.copyWith(
+                                                    fontWeight: FontWeight.w600,
+                                                  ),
+                                            ),
+                                            if (canEdit) ...[
+                                              const Spacer(),
+                                              TextButton.icon(
+                                                onPressed:
+                                                    _addItineraryAnnotation,
+                                                icon: const Icon(Icons.add,
+                                                    size: 16),
+                                                label: const Text('Add note'),
+                                                style: TextButton.styleFrom(
+                                                  visualDensity:
+                                                      VisualDensity.compact,
+                                                ),
+                                              ),
+                                            ],
+                                          ],
+                                        ),
+                                        if (itinerary.annotations.isEmpty)
+                                          Padding(
+                                            padding: const EdgeInsets.only(
+                                                top: 4, bottom: 4),
+                                            child: Text(
+                                              'No notes yet.',
+                                              style: Theme.of(context)
+                                                  .textTheme
+                                                  .bodySmall
+                                                  ?.copyWith(
+                                                    color:
+                                                        Colors.grey.shade500,
+                                                  ),
+                                            ),
+                                          )
+                                        else
+                                          Padding(
+                                            padding:
+                                                const EdgeInsets.only(top: 6),
+                                            child: Wrap(
+                                              spacing: 6,
+                                              runSpacing: 6,
+                                              children: itinerary.annotations
+                                                  .map(
+                                                    (a) => AnnotationChip(
+                                                      annotation: Annotation(
+                                                        id: a.id,
+                                                        stopId: a.itineraryId,
+                                                        type: a.type,
+                                                        content: a.content,
+                                                        createdAt: a.createdAt,
+                                                        updatedAt: a.updatedAt,
+                                                      ),
+                                                      onEdit: canEdit
+                                                          ? () =>
+                                                              _editItineraryAnnotation(
+                                                                  a)
+                                                          : null,
+                                                      onDelete: canEdit
+                                                          ? () =>
+                                                              _deleteItineraryAnnotation(
+                                                                  a)
+                                                          : null,
+                                                    ),
+                                                  )
+                                                  .toList(),
+                                            ),
+                                          ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+
                               // ------------------------------------------------------------
                               // Rating section (read) / Save button (edit mode)
                               // ------------------------------------------------------------

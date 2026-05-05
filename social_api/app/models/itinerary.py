@@ -110,6 +110,14 @@ class Itinerary(Base):
         cascade="all, delete-orphan",
     )
 
+    # Itinerary-level annotations (general notes about the trip as a whole).
+    annotations: Mapped[list["ItineraryAnnotation"]] = relationship(
+        "ItineraryAnnotation",
+        back_populates="itinerary",
+        cascade="all, delete-orphan",
+        order_by="ItineraryAnnotation.created_at",
+    )
+
     @property
     def stops_count(self) -> int:
         return len(self.stops)

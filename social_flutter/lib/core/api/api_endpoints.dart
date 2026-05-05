@@ -73,9 +73,17 @@ String itineraryStopEndpoint(String id, String stopId) =>
 String stopAnnotationsEndpoint(String id, String stopId) =>
     '/itineraries/$id/stops/$stopId/annotations';
 
-/// Delete a single annotation.
+/// Update or delete a single stop annotation.
 String stopAnnotationEndpoint(String id, String stopId, String annotationId) =>
     '/itineraries/$id/stops/$stopId/annotations/$annotationId';
+
+/// Add an itinerary-level annotation.
+String itineraryAnnotationsEndpoint(String id) =>
+    '/itineraries/$id/annotations';
+
+/// Update or delete a single itinerary-level annotation.
+String itineraryAnnotationEndpoint(String id, String annotationId) =>
+    '/itineraries/$id/annotations/$annotationId';
 
 /// Accept a specific follow request.
 String acceptFollowRequestEndpoint(String followId) =>

@@ -1,6 +1,7 @@
 // features/itineraries/domain/itinerary.dart — Itinerary Dart model.
 
 import 'package:flutter/material.dart';
+import 'package:social_flutter/features/itineraries/domain/itinerary_annotation.dart';
 import 'package:social_flutter/features/itineraries/domain/stop.dart';
 import 'package:social_flutter/features/itineraries/domain/transit_segment.dart';
 
@@ -34,6 +35,9 @@ class Itinerary {
   /// Empty in summary views, populated in detail views.
   final List<TransitSegment> segments;
 
+  /// Itinerary-level annotations. Empty in summary views.
+  final List<ItineraryAnnotation> annotations;
+
   /// Count of stops. Populated from `stops_count` in summary responses,
   /// or derived from [stops] in detail responses.
   final int stopsCount;
@@ -53,6 +57,7 @@ class Itinerary {
     this.ratingCount = 0,
     this.stops = const [],
     this.segments = const [],
+    this.annotations = const [],
     this.stopsCount = 0,
   });
 
@@ -76,6 +81,11 @@ class Itinerary {
           [],
       segments: (json['segments'] as List<dynamic>?)
               ?.map((s) => TransitSegment.fromJson(s as Map<String, dynamic>))
+              .toList() ??
+          [],
+      annotations: (json['annotations'] as List<dynamic>?)
+              ?.map((a) =>
+                  ItineraryAnnotation.fromJson(a as Map<String, dynamic>))
               .toList() ??
           [],
       stopsCount: (json['stops'] as List<dynamic>?)?.length ??
@@ -129,6 +139,7 @@ class Itinerary {
     int? ratingCount,
     List<Stop>? stops,
     List<TransitSegment>? segments,
+    List<ItineraryAnnotation>? annotations,
     int? stopsCount,
   }) {
     return Itinerary(
@@ -146,6 +157,7 @@ class Itinerary {
       ratingCount: ratingCount ?? this.ratingCount,
       stops: stops ?? this.stops,
       segments: segments ?? this.segments,
+      annotations: annotations ?? this.annotations,
       stopsCount: stopsCount ?? this.stopsCount,
     );
   }

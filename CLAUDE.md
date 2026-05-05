@@ -131,8 +131,22 @@ Cached aggregates: `rating_avg_*` (NULL when count=0), `rating_count_*`.
 Show dimension averages only when count >= 3.
 
 ### Annotations
-Editable. PATCH endpoint accepts text and/or type.
-`updated_at` column with `onupdate=func.now()`.
+Two separate annotation systems — same four types (advice/caution/avoid/info),
+different parent FK:
+
+**Stop-level** (`annotations` table, `stop_id → stops.id`)
+- Notes about a specific stop ("closes at 5pm", "avoid the souvenir shops")
+- Endpoints: `POST/PATCH/DELETE /itineraries/{id}/stops/{stopId}/annotations`
+- Managed from the stop form screen AND inline in detail screen edit mode
+
+**Itinerary-level** (`itinerary_annotations` table, `itinerary_id → itineraries.id`)
+- Notes about the trip as a whole ("best in summer", "book 2 months ahead")
+- Endpoints: `POST/PATCH/DELETE /itineraries/{id}/annotations`
+- Shown in a "Notes" section on the detail screen (between description and rating)
+
+Both: editable via PATCH (type and/or content). `updated_at` with `onupdate=func.now()`.
+Flutter: both use `AnnotationChip` for display. `ItineraryAnnotation` domain model
+is separate from `Annotation` (different `itineraryId` vs `stopId` field).
 
 ### Itinerary Images
 One optional cover image per itinerary. Stored at

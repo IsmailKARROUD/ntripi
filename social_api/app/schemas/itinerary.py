@@ -20,7 +20,40 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
 # ---------------------------------------------------------------------------
-# Annotation schemas
+# Itinerary-level annotation schemas
+# ---------------------------------------------------------------------------
+
+class ItineraryAnnotationCreate(BaseModel):
+    type: str = Field(..., pattern="^(advice|caution|avoid|info)$")
+    content: str = Field(..., min_length=1, max_length=2000)
+
+
+class ItineraryAnnotationUpdate(BaseModel):
+    type: str | None = Field(None, pattern="^(advice|caution|avoid|info)$")
+    content: str | None = Field(None, min_length=1, max_length=2000)
+
+    @model_validator(mode='after')
+    def at_least_one_field(self) -> 'ItineraryAnnotationUpdate':
+        if self.type is None and self.content is None:
+            raise ValueError(
+                "At least one field (type or content) must be provided."
+            )
+        return self
+
+
+class ItineraryAnnotationResponse(BaseModel):
+    id: uuid.UUID
+    itinerary_id: uuid.UUID
+    type: str
+    content: str
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+# ---------------------------------------------------------------------------
+# Stop-level annotation schemas
 # ---------------------------------------------------------------------------
 
 class AnnotationCreate(BaseModel):
@@ -294,6 +327,7 @@ class ItineraryDetail(ItinerarySummary):
     description: Optional[str]
     stops: list[StopResponse] = []
     segments: list[TransitSegmentResponse] = []
+    annotations: list[ItineraryAnnotationResponse] = []
 
 
 # ---------------------------------------------------------------------------

@@ -31,6 +31,7 @@ from app.database import get_db
 from app.dependencies import get_current_user
 from app.models.annotation import Annotation
 from app.models.itinerary import Itinerary
+from app.models.itinerary_annotation import ItineraryAnnotation
 from app.models.itinerary_allowed_user import ItineraryAllowedUser
 from app.models.stop import Stop
 from app.models.transit_segment import TransitSegment
@@ -43,6 +44,9 @@ from app.schemas.itinerary import (
     AnnotationCreate,
     AnnotationResponse,
     AnnotationUpdate,
+    ItineraryAnnotationCreate,
+    ItineraryAnnotationResponse,
+    ItineraryAnnotationUpdate,
     ItineraryCreate,
     ItineraryDetail,
     ItineraryImageResponse,
@@ -152,6 +156,7 @@ def _load_itinerary_detail(itinerary_id: uuid.UUID, db: Session) -> Itinerary:
             selectinload(Itinerary.stops).selectinload(Stop.annotations),
             selectinload(Itinerary.segments).selectinload(TransitSegment.legs),
             selectinload(Itinerary.segments).selectinload(TransitSegment.from_stop),
+            selectinload(Itinerary.annotations),
         )
         .where(Itinerary.id == itinerary_id)
     ).scalar_one_or_none()
@@ -701,6 +706,105 @@ def delete_stop(
 
     _recalculate_totals(itinerary, db)
 
+    db.commit()
+
+
+# ---------------------------------------------------------------------------
+# Itinerary-level annotation endpoints
+# ---------------------------------------------------------------------------
+
+@router.post(
+    "/{itinerary_id}/annotations",
+    response_model=ItineraryAnnotationResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Add an annotation to an itinerary",
+)
+def add_itinerary_annotation(
+    itinerary_id: uuid.UUID,
+    body: ItineraryAnnotationCreate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> ItineraryAnnotationResponse:
+    itinerary = _get_itinerary_or_404(itinerary_id, db)
+    _require_owner(itinerary, current_user)
+
+    annotation = ItineraryAnnotation(
+        itinerary_id=itinerary_id,
+        type=body.type,
+        content=body.content,
+    )
+    db.add(annotation)
+    db.commit()
+    db.refresh(annotation)
+    return annotation  # type: ignore[return-value]
+
+
+@router.patch(
+    "/{itinerary_id}/annotations/{annotation_id}",
+    response_model=ItineraryAnnotationResponse,
+    summary="Update an itinerary annotation",
+)
+def update_itinerary_annotation(
+    itinerary_id: uuid.UUID,
+    annotation_id: uuid.UUID,
+    body: ItineraryAnnotationUpdate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> ItineraryAnnotationResponse:
+    itinerary = _get_itinerary_or_404(itinerary_id, db)
+    _require_owner(itinerary, current_user)
+
+    annotation = db.execute(
+        select(ItineraryAnnotation).where(
+            ItineraryAnnotation.id == annotation_id,
+            ItineraryAnnotation.itinerary_id == itinerary_id,
+        )
+    ).scalar_one_or_none()
+
+    if not annotation:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Annotation not found.",
+        )
+
+    if body.type is not None:
+        annotation.type = body.type
+    if body.content is not None:
+        annotation.content = body.content
+
+    db.commit()
+    db.refresh(annotation)
+    return annotation  # type: ignore[return-value]
+
+
+@router.delete(
+    "/{itinerary_id}/annotations/{annotation_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Delete an itinerary annotation",
+)
+def delete_itinerary_annotation(
+    itinerary_id: uuid.UUID,
+    annotation_id: uuid.UUID,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> None:
+    itinerary = _get_itinerary_or_404(itinerary_id, db)
+    _require_owner(itinerary, current_user)
+
+    annotation = db.execute(
+        select(ItineraryAnnotation).where(
+            ItineraryAnnotation.id == annotation_id,
+            ItineraryAnnotation.itinerary_id == itinerary_id,
+        )
+    ).scalar_one_or_none()
+
+    if not annotation:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Annotation not found.",
+        )
+
+    db.delete(annotation)
     db.commit()
 
 
