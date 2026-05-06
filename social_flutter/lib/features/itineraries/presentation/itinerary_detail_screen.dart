@@ -51,6 +51,7 @@ import 'package:social_flutter/features/itineraries/presentation/widgets/rate_it
 import 'package:social_flutter/features/itineraries/presentation/widgets/segment_card.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/stop_card.dart';
 import 'package:social_flutter/core/utils/platform_utils.dart';
+import 'package:social_flutter/features/itineraries/presentation/widgets/leg_form_dialog.dart';
 import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
 
 class ItineraryDetailScreen extends ConsumerStatefulWidget {
@@ -348,6 +349,28 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
     }
   }
 
+  Future<void> _addSegmentWithLeg(String fromStopId, String toStopId) async {
+    final legData = await LegFormDialog.show(context);
+    if (!mounted || legData == null) return;
+    final data = <String, dynamic>{
+      'from_stop_id': fromStopId,
+      'to_stop_id': toStopId,
+      'legs': [
+        {...legData, 'position': 1},
+      ],
+    };
+    try {
+      await ref
+          .read(itineraryDetailProvider(widget.itineraryId).notifier)
+          .createSegment(data);
+    } on Exception catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(extractErrorMessage(e as dynamic))),
+      );
+    }
+  }
+
   bool _listsEqual(List<String> a, List<String> b) {
     if (a.length != b.length) return false;
     for (var i = 0; i < a.length; i++) {
@@ -401,15 +424,6 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                         ? null
                         : () => context.push(
                               '/itineraries/${widget.itineraryId}/stops/new',
-                            ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.directions_transit_outlined),
-                    tooltip: 'Add segment',
-                    onPressed: _reorderMode
-                        ? null
-                        : () => context.push(
-                              '/itineraries/${widget.itineraryId}/segments/new',
                             ),
                   ),
                   IconButton(
@@ -669,13 +683,10 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                                     '/itineraries/${widget.itineraryId}/stops/new',
                                     extra: {'insertAfterPosition': stop.position},
                                   ),
-                                  onAddSegment: seg == null
-                                      ? () => context.push(
-                                            '/itineraries/${widget.itineraryId}/segments/new',
-                                            extra: {
-                                              'fromStopId': stop.id,
-                                              'toStopId': nextStop.id,
-                                            },
+                                  onAddTransit: seg == null
+                                      ? () => _addSegmentWithLeg(
+                                            stop.id,
+                                            nextStop.id,
                                           )
                                       : null,
                                 ));
@@ -1334,12 +1345,12 @@ class _SummaryChip extends StatelessWidget {
 
 class _InlineSeparator extends StatelessWidget {
   final VoidCallback onAddStop;
-  final VoidCallback? onAddSegment;
+  final VoidCallback? onAddTransit;
 
   const _InlineSeparator({
     super.key,
     required this.onAddStop,
-    this.onAddSegment,
+    this.onAddTransit,
   });
 
   @override
@@ -1355,7 +1366,7 @@ class _InlineSeparator extends StatelessWidget {
             label: 'Add stop',
             onTap: onAddStop,
           ),
-          if (onAddSegment != null) ...[
+          if (onAddTransit != null) ...[
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 6),
               child: Text('·',
@@ -1363,8 +1374,8 @@ class _InlineSeparator extends StatelessWidget {
             ),
             _ActionButton(
               icon: Icons.directions_transit_outlined,
-              label: 'Segment',
-              onTap: onAddSegment!,
+              label: 'Transit +',
+              onTap: onAddTransit!,
             ),
           ],
           const SizedBox(width: 8),

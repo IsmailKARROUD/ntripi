@@ -176,7 +176,7 @@ class _LegFormDialogState extends State<LegFormDialog> {
           ),
 
           Text(
-            isEdit ? 'Edit Leg' : 'Add Leg',
+            isEdit ? 'Edit Transit' : 'Add Transit',
             style: Theme.of(context)
                 .textTheme
                 .titleMedium
@@ -327,7 +327,7 @@ class _LegFormDialogState extends State<LegFormDialog> {
               const SizedBox(width: 8),
               FilledButton(
                 onPressed: _submit,
-                child: Text(isEdit ? 'Update Leg' : 'Add Leg'),
+                child: Text(isEdit ? 'Update Transit' : 'Add Transit'),
               ),
             ],
           ),
