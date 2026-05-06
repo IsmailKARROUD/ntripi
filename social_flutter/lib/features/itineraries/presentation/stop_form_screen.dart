@@ -33,11 +33,20 @@ class StopFormScreen extends ConsumerStatefulWidget {
   /// existing stops up. Null means append at the end.
   final int? insertAfterPosition;
 
+  /// When adding a parallel stop: the exact position to place it at.
+  /// Takes precedence over [insertAfterPosition].
+  final int? atPosition;
+
+  /// The parallel slot (0–2) for the new stop. 0 = sequential (default).
+  final int parallelPosition;
+
   const StopFormScreen({
     super.key,
     required this.itineraryId,
     this.stopId,
     this.insertAfterPosition,
+    this.atPosition,
+    this.parallelPosition = 0,
   });
 
   bool get isEditMode => stopId != null;
@@ -210,7 +219,10 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
       // Compute position for new stops.
       int position = 1;
       if (!widget.isEditMode) {
-        if (widget.insertAfterPosition != null) {
+        if (widget.atPosition != null) {
+          // Parallel insert: use the exact position passed by the caller.
+          position = widget.atPosition!;
+        } else if (widget.insertAfterPosition != null) {
           position = widget.insertAfterPosition! + 1;
         } else {
           final stops = ref
@@ -218,15 +230,20 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                   .value
                   ?.stops ??
               [];
-          position = stops.isEmpty
+          // Append after the last primary (parallel_position == 0) stop.
+          final primaryPositions = stops
+              .where((s) => s.parallelPosition == 0)
+              .map((s) => s.position);
+          position = primaryPositions.isEmpty
               ? 1
-              : stops.map((s) => s.position).reduce((a, b) => a > b ? a : b) +
-                  1;
+              : primaryPositions.reduce((a, b) => a > b ? a : b) + 1;
         }
       }
 
       final data = <String, dynamic>{
         if (!widget.isEditMode) 'position': position,
+        if (!widget.isEditMode && widget.parallelPosition > 0)
+          'parallel_position': widget.parallelPosition,
         if (_placeNameController.text.trim().isNotEmpty)
           'place_name': _placeNameController.text.trim(),
         if (_placeAddressController.text.trim().isNotEmpty)

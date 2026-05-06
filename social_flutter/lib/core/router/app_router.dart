@@ -139,6 +139,8 @@ final appRouter = GoRouter(
             return StopFormScreen(
               itineraryId: state.pathParameters['id']!,
               insertAfterPosition: extra?['insertAfterPosition'] as int?,
+              atPosition: extra?['atPosition'] as int?,
+              parallelPosition: extra?['parallelPosition'] as int? ?? 0,
             );
           },
         ),

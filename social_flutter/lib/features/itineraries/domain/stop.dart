@@ -78,6 +78,7 @@ class Stop {
   final String id;
   final String itineraryId;
   final int position;
+  final int parallelPosition;
   final StopType type;
 
   final String? placeName;
@@ -98,6 +99,7 @@ class Stop {
     required this.id,
     required this.itineraryId,
     required this.position,
+    this.parallelPosition = 0,
     required this.type,
     this.placeName,
     this.placeAddress,
@@ -117,6 +119,7 @@ class Stop {
       id: json['id'] as String,
       itineraryId: json['itinerary_id'] as String,
       position: json['position'] as int,
+      parallelPosition: json['parallel_position'] as int? ?? 0,
       type: StopType.waypoint,
       placeName: json['place_name'] as String?,
       placeAddress: json['place_address'] as String?,
@@ -140,6 +143,7 @@ class Stop {
       'id': id,
       'itinerary_id': itineraryId,
       'position': position,
+      'parallel_position': parallelPosition,
       'type': type.name,
       if (placeName != null) 'place_name': placeName,
       if (placeAddress != null) 'place_address': placeAddress,
@@ -158,6 +162,7 @@ class Stop {
     String? id,
     String? itineraryId,
     int? position,
+    int? parallelPosition,
     StopType? type,
     String? placeName,
     String? placeAddress,
@@ -175,6 +180,7 @@ class Stop {
       id: id ?? this.id,
       itineraryId: itineraryId ?? this.itineraryId,
       position: position ?? this.position,
+      parallelPosition: parallelPosition ?? this.parallelPosition,
       type: type ?? this.type,
       placeName: placeName ?? this.placeName,
       placeAddress: placeAddress ?? this.placeAddress,

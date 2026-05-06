@@ -33,7 +33,10 @@ class Stop(Base):
     __tablename__ = "stops"
 
     __table_args__ = (
-        UniqueConstraint("itinerary_id", "position", name="uq_stop_position"),
+        UniqueConstraint(
+            "itinerary_id", "position", "parallel_position",
+            name="uq_stop_position_parallel",
+        ),
     )
 
     id: Mapped[uuid.UUID] = mapped_column(
@@ -51,6 +54,9 @@ class Stop(Base):
     )
 
     position: Mapped[int] = mapped_column(SmallInteger, nullable=False)
+    parallel_position: Mapped[int] = mapped_column(
+        SmallInteger, default=0, server_default="0", nullable=False
+    )
 
     place_name: Mapped[str | None] = mapped_column(String(200), nullable=True)
     place_address: Mapped[str | None] = mapped_column(Text, nullable=True)
@@ -106,4 +112,4 @@ class Stop(Base):
     )
 
     def __repr__(self) -> str:
-        return f"<Stop id={self.id} pos={self.position}>"
+        return f"<Stop id={self.id} pos={self.position}-{self.parallel_position}>"

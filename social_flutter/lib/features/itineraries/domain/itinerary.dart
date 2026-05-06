@@ -96,17 +96,32 @@ class Itinerary {
     final stops = raw
         .map((s) => Stop.fromJson(s as Map<String, dynamic>))
         .toList()
-      ..sort((a, b) => a.position.compareTo(b.position));
-    return [
-      for (var i = 0; i < stops.length; i++)
-        stops[i].copyWith(
-          type: i == 0
-              ? StopType.origin
-              : i == stops.length - 1
-                  ? StopType.arrival
-                  : StopType.waypoint,
-        ),
-    ];
+      ..sort((a, b) {
+        final posCmp = a.position.compareTo(b.position);
+        return posCmp != 0 ? posCmp : a.parallelPosition.compareTo(b.parallelPosition);
+      });
+
+    // Group by position to determine StopType per group.
+    final positions = stops.map((s) => s.position).toSet().toList()..sort();
+    StopType typeFor(int pos) {
+      if (pos == positions.first) return StopType.origin;
+      if (pos == positions.last) return StopType.arrival;
+      return StopType.waypoint;
+    }
+
+    return [for (final s in stops) s.copyWith(type: typeFor(s.position))];
+  }
+
+  /// Stops grouped by position, sorted by position then parallel_position.
+  /// Each inner list contains 1–3 parallel alternatives at the same position.
+  List<List<Stop>> get stopGroups {
+    if (stops.isEmpty) return const [];
+    final Map<int, List<Stop>> byPos = {};
+    for (final s in stops) {
+      byPos.putIfAbsent(s.position, () => []).add(s);
+    }
+    final sortedPositions = byPos.keys.toList()..sort();
+    return [for (final pos in sortedPositions) byPos[pos]!];
   }
 
   static ItineraryVisibility _parseVisibility(String raw) {

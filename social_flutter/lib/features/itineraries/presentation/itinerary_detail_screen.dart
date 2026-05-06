@@ -48,7 +48,7 @@ import 'package:social_flutter/features/profile/providers/profile_provider.dart'
 import 'package:social_flutter/features/itineraries/domain/stop.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/annotation_chip.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/rate_itinerary_dialog.dart';
-import 'package:social_flutter/features/itineraries/presentation/widgets/segment_card.dart';
+import 'package:social_flutter/features/itineraries/presentation/widgets/parallel_stop_group.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/stop_card.dart';
 import 'package:social_flutter/core/utils/platform_utils.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/leg_form_dialog.dart';
@@ -534,7 +534,11 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                           Center(child: Text(extractErrorMessage(e as dynamic))),
                       data: (itinerary) {
                         final displayStops = _applyPendingOrder(itinerary.stops);
-                        final stopWidgets = displayStops
+                        // Reorder operates on primary stops only (parallel_position == 0).
+                        final primaryStops = displayStops
+                            .where((s) => s.parallelPosition == 0)
+                            .toList();
+                        final stopWidgets = primaryStops
                             .map((stop) => StopCard(
                                   key: ValueKey(stop.id),
                                   stop: stop,
@@ -544,7 +548,7 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                         return ReorderableListView(
                           padding: const EdgeInsets.only(top: 8, bottom: 16),
                           onReorder: (oldIndex, newIndex) =>
-                              _onReorder(displayStops, oldIndex, newIndex),
+                              _onReorder(primaryStops, oldIndex, newIndex),
                           children: stopWidgets,
                         );
                       },
@@ -594,109 +598,131 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                             : const LatLng(48.8566, 2.3522);
               
                         final canEdit = isOwner && _editMode;
-              
-                        final stopWidgets = displayStops.map((stop) {
-                          return StopCard(
-                            key: ValueKey(stop.id),
-                            stop: stop,
-                            currency: itinerary.currency,
-                            onEdit: canEdit
-                                ? () => context.push(
-                                      '/itineraries/${widget.itineraryId}/stops/${stop.id}/edit',
-                                    )
-                                : null,
-                          );
-                        }).toList();
-              
-                        // Interleaved list: StopCard, then optional SegmentCard after each stop.
-                        // For a single stop, contextual "Add stop" buttons appear above/below
-                        // depending on the stop's role (origin/waypoint/arrival).
+
+                        // Group displayStops by position (preserves pending-order).
+                        final Map<int, List<Stop>> byPos = {};
+                        for (final s in displayStops) {
+                          byPos.putIfAbsent(s.position, () => []).add(s);
+                        }
+                        final sortedPos = byPos.keys.toList()..sort();
+                        final displayGroups = [
+                          for (final pos in sortedPos) byPos[pos]!
+                        ];
+
+                        // stopWidgets used only in reorder mode (primary stops only).
+                        final stopWidgets = displayStops
+                            .where((s) => s.parallelPosition == 0)
+                            .map((stop) => StopCard(
+                                  key: ValueKey(stop.id),
+                                  stop: stop,
+                                  currency: itinerary.currency,
+                                ))
+                            .toList();
+
+                        // Interleaved list: ParallelStopGroup per position, then
+                        // optional inline separator (add stop / add transit).
                         List<Widget> buildInterleavedList() {
                           final items = <Widget>[];
-                          final isOnlyStop = displayStops.length == 1;
-              
-                          for (var i = 0; i < displayStops.length; i++) {
-                            final stop = displayStops[i];
-                            final hasNextStop = i < displayStops.length - 1;
-              
-                            // Single-stop: "Add stop" above for waypoint or arrival.
+                          final isOnlyGroup = displayGroups.length == 1;
+
+                          for (var i = 0; i < displayGroups.length; i++) {
+                            final group = displayGroups[i];
+                            final primaryStop = group.first;
+                            final hasNextGroup = i < displayGroups.length - 1;
+
+                            // Single-group: "Add stop" above for non-origin.
                             if (canEdit &&
-                                isOnlyStop &&
-                                stop.type != StopType.origin) {
+                                isOnlyGroup &&
+                                primaryStop.type != StopType.origin) {
                               items.add(_InlineSeparator(
-                                key: ValueKey('above-${stop.id}'),
+                                key: ValueKey('above-${primaryStop.id}'),
                                 onAddStop: () => context.push(
                                   '/itineraries/${widget.itineraryId}/stops/new',
                                   extra: {
-                                    'insertAfterPosition': stop.position - 1
+                                    'insertAfterPosition':
+                                        primaryStop.position - 1,
                                   },
                                 ),
                               ));
                             }
-              
-                            items.add(StopCard(
-                              key: ValueKey('stop-${stop.id}'),
-                              stop: stop,
+
+                            items.add(ParallelStopGroup(
+                              key: ValueKey('group-${primaryStop.position}'),
+                              stops: group,
                               currency: itinerary.currency,
-                              onEdit: canEdit
-                                  ? () => context.push(
+                              itineraryId: widget.itineraryId,
+                              editMode: canEdit,
+                              getSegment: (id) => segmentByFromStop[id],
+                              onAddParallel: canEdit
+                                  ? (position) {
+                                      final nextParallel = group.length;
+                                      context.push(
+                                        '/itineraries/${widget.itineraryId}/stops/new',
+                                        extra: {
+                                          'atPosition': position,
+                                          'parallelPosition': nextParallel,
+                                        },
+                                      );
+                                    }
+                                  : null,
+                              onEditStop: canEdit
+                                  ? (stop) => context.push(
                                         '/itineraries/${widget.itineraryId}/stops/${stop.id}/edit',
                                       )
                                   : null,
                               onAddAnnotation: canEdit
-                                  ? () => _addAnnotation(stop.id)
+                                  ? (stop) => _addAnnotation(stop.id)
                                   : null,
                               onEditAnnotation: canEdit
-                                  ? (a) => _editAnnotation(stop.id, a)
+                                  ? (stop, a) => _editAnnotation(stop.id, a)
                                   : null,
                               onDeleteAnnotation: canEdit
-                                  ? (a) => _deleteAnnotation(stop.id, a)
+                                  ? (stop, a) =>
+                                      _deleteAnnotation(stop.id, a)
+                                  : null,
+                              onEditSegment: canEdit
+                                  ? (seg) => context.push(
+                                        '/itineraries/${widget.itineraryId}/segments/${seg.id}/edit',
+                                      )
+                                  : null,
+                              onDeleteSegment: canEdit
+                                  ? _confirmDeleteSegment
                                   : null,
                             ));
-              
-                            final seg = segmentByFromStop[stop.id];
-              
-                            if (seg != null) {
-                              items.add(SegmentCard(
-                                key: ValueKey('seg-${seg.id}'),
-                                segment: seg,
-                                currency: itinerary.currency,
-                                itineraryId: widget.itineraryId,
-                                onEdit: canEdit
-                                    ? () => context.push(
-                                          '/itineraries/${widget.itineraryId}/segments/${seg.id}/edit',
-                                        )
-                                    : null,
-                                onDelete: canEdit
-                                    ? () => _confirmDeleteSegment(seg)
-                                    : null,
-                              ));
-                            }
-              
+
                             if (canEdit) {
-                              if (hasNextStop) {
-                                // 2+ stops: inline separator with "Add stop" and optional "Add segment".
-                                final nextStop = displayStops[i + 1];
+                              if (hasNextGroup) {
+                                final nextPrimary = displayGroups[i + 1].first;
+                                // "Add Transit" connects primary stops of
+                                // adjacent groups (no segment exists yet).
+                                final primarySeg =
+                                    segmentByFromStop[primaryStop.id];
                                 items.add(_InlineSeparator(
-                                  key: ValueKey('sep-${stop.id}'),
+                                  key: ValueKey('sep-${primaryStop.id}'),
                                   onAddStop: () => context.push(
                                     '/itineraries/${widget.itineraryId}/stops/new',
-                                    extra: {'insertAfterPosition': stop.position},
+                                    extra: {
+                                      'insertAfterPosition':
+                                          primaryStop.position,
+                                    },
                                   ),
-                                  onAddTransit: seg == null
+                                  onAddTransit: primarySeg == null
                                       ? () => _addSegmentWithLeg(
-                                            stop.id,
-                                            nextStop.id,
+                                            primaryStop.id,
+                                            nextPrimary.id,
                                           )
                                       : null,
                                 ));
-                              } else if (stop.type != StopType.arrival) {
-                                // Last stop: "Add stop" below for origin or waypoint.
+                              } else if (primaryStop.type !=
+                                  StopType.arrival) {
                                 items.add(_InlineSeparator(
-                                  key: ValueKey('below-${stop.id}'),
+                                  key: ValueKey('below-${primaryStop.id}'),
                                   onAddStop: () => context.push(
                                     '/itineraries/${widget.itineraryId}/stops/new',
-                                    extra: {'insertAfterPosition': stop.position},
+                                    extra: {
+                                      'insertAfterPosition':
+                                          primaryStop.position,
+                                    },
                                   ),
                                 ));
                               }
@@ -704,6 +730,7 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                           }
                           return items;
                         }
+
               
                         return RefreshIndicator(
                           onRefresh: () => ref

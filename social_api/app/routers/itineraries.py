@@ -603,22 +603,48 @@ def add_stop(
     itinerary = _get_itinerary_or_404(itinerary_id, db)
     _require_owner(itinerary, current_user)
 
-    # Shift any stops that sit at or above the requested position.
-    conflicting = db.execute(
-        select(Stop).where(
-            Stop.itinerary_id == itinerary_id,
-            Stop.position >= body.position,
-        )
-    ).scalars().all()
+    if body.parallel_position == 0:
+        # Sequential insert: shift ALL stops (all parallel positions) at or
+        # above the requested position up by one row.
+        conflicting = db.execute(
+            select(Stop).where(
+                Stop.itinerary_id == itinerary_id,
+                Stop.position >= body.position,
+            )
+        ).scalars().all()
 
-    if conflicting:
-        offset = max(s.position for s in conflicting) + 1
-        for s in conflicting:
-            s.position += offset
-        db.flush()
-        for s in conflicting:
-            s.position -= offset - 1  # net effect: original + 1
-        db.flush()
+        if conflicting:
+            offset = max(s.position for s in conflicting) + 1
+            for s in conflicting:
+                s.position += offset
+            db.flush()
+            for s in conflicting:
+                s.position -= offset - 1  # net effect: original + 1
+            db.flush()
+    else:
+        # Parallel insert: no position shift — just validate the slot is free
+        # and the position group has fewer than 3 stops already.
+        count_at_pos = db.execute(
+            select(Stop).where(
+                Stop.itinerary_id == itinerary_id,
+                Stop.position == body.position,
+            )
+        ).scalars().all()
+
+        if len(count_at_pos) >= 3:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Maximum 3 parallel stops per position.",
+            )
+
+        occupied = any(
+            s.parallel_position == body.parallel_position for s in count_at_pos
+        )
+        if occupied:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="A stop already exists at this parallel position.",
+            )
 
     stop = Stop(
         itinerary_id=itinerary_id,

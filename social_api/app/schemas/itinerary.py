@@ -91,6 +91,7 @@ class AnnotationResponse(BaseModel):
 
 class StopCreate(BaseModel):
     position: int = Field(..., ge=1)
+    parallel_position: int = Field(default=0, ge=0, le=2)
 
     place_name: Optional[str] = Field(None, max_length=200)
     place_address: Optional[str] = None
@@ -128,6 +129,7 @@ class StopResponse(BaseModel):
     id: uuid.UUID
     itinerary_id: uuid.UUID
     position: int
+    parallel_position: int
     place_name: Optional[str]
     place_address: Optional[str]
     lat: Optional[float]
