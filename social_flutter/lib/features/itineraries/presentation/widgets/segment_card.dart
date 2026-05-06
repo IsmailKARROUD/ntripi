@@ -12,8 +12,6 @@ import 'package:social_flutter/features/itineraries/presentation/widgets/transpo
 class SegmentCard extends StatelessWidget {
   final TransitSegment segment;
   final String currency;
-  final String? fromStopName;
-  final String? toStopName;
   final VoidCallback? onEdit;
   final VoidCallback? onDelete;
 
@@ -21,8 +19,6 @@ class SegmentCard extends StatelessWidget {
     super.key,
     required this.segment,
     required this.currency,
-    this.fromStopName,
-    this.toStopName,
     this.onEdit,
     this.onDelete,
   });
@@ -49,18 +45,7 @@ class SegmentCard extends StatelessWidget {
                     size: 14,
                     color: Colors.orange.shade700,
                   ),
-                  const SizedBox(width: 6),
-                  Expanded(
-                    child: Text(
-                      '${fromStopName ?? '?'} → ${toStopName ?? '?'}',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Colors.orange.shade800,
-                            fontWeight: FontWeight.w600,
-                          ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
+                  const Spacer(),
                   if (onEdit != null)
                     IconButton(
                       icon: const Icon(Icons.edit_outlined, size: 16),
@@ -88,40 +73,18 @@ class SegmentCard extends StatelessWidget {
                 Wrap(
                   spacing: 4,
                   runSpacing: 4,
-                  children:
-                      segment.legs.map((leg) => TransportBadge(leg: leg)).toList(),
+                  children: segment.legs
+                      .map((leg) => TransportBadge(leg: leg, currency: currency,formattedDuration:segment.formattedDuration))
+                      .toList(),
                 ),
-              ],
-              if (segment.totalDurationMin > 0 || segment.totalCost > 0) ...[
+              ] else ...[
                 const SizedBox(height: 6),
-                Row(
-                  children: [
-                    if (segment.totalDurationMin > 0) ...[
-                      Icon(Icons.timer_outlined,
-                          size: 12, color: Colors.grey.shade600),
-                      const SizedBox(width: 3),
-                      Text(
-                        segment.formattedDuration,
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: Colors.grey.shade600,
-                              fontSize: 11,
-                            ),
+                Text(
+                  'No transport legs added yet.',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Colors.grey.shade600,
+                        fontStyle: FontStyle.italic,
                       ),
-                      const SizedBox(width: 10),
-                    ],
-                    if (segment.totalCost > 0) ...[
-                      Icon(Icons.euro_symbol,
-                          size: 12, color: Colors.grey.shade600),
-                      const SizedBox(width: 3),
-                      Text(
-                        segment.formattedCost(currency),
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: Colors.grey.shade600,
-                              fontSize: 11,
-                            ),
-                      ),
-                    ],
-                  ],
                 ),
               ],
             ],

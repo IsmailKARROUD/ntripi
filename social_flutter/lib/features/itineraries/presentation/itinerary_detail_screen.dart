@@ -566,10 +566,6 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                           for (final seg in itinerary.segments)
                             seg.fromStopId: seg,
                         };
-                        final stopById = {
-                          for (final s in itinerary.stops) s.id: s
-                        };
-              
                         final mappableStops = displayStops
                             .where((s) => s.lat != null && s.lng != null)
                             .toList();
@@ -651,8 +647,6 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                                 key: ValueKey('seg-${seg.id}'),
                                 segment: seg,
                                 currency: itinerary.currency,
-                                fromStopName: stopById[seg.fromStopId]?.placeName,
-                                toStopName: stopById[seg.toStopId]?.placeName,
                                 onEdit: canEdit
                                     ? () => context.push(
                                           '/itineraries/${widget.itineraryId}/segments/${seg.id}/edit',
