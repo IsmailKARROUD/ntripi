@@ -466,7 +466,7 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                                   .read(myItinerariesProvider.notifier)
                                   .removeItinerary(widget.itineraryId);
                               if (!mounted) return;
-                              router.go('/');
+                              router.go('/itineraries');
                             } on Exception catch (e) {
                               messenger.showSnackBar(
                                 SnackBar(
@@ -647,6 +647,7 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                                 key: ValueKey('seg-${seg.id}'),
                                 segment: seg,
                                 currency: itinerary.currency,
+                                itineraryId: widget.itineraryId,
                                 onEdit: canEdit
                                     ? () => context.push(
                                           '/itineraries/${widget.itineraryId}/segments/${seg.id}/edit',
