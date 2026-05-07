@@ -10,6 +10,7 @@
 
 import 'dart:async';
 
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -64,7 +65,9 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
   final _searchController = TextEditingController();
   final _placeNameController = TextEditingController();
   final _placeAddressController = TextEditingController();
-  final _durationController = TextEditingController();
+  int _durationDays = 0;
+  int _durationHours = 0;
+  int _durationMinutes = 0;
   final _costController = TextEditingController();
   final _notesController = TextEditingController();
 
@@ -92,6 +95,118 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
     }
   }
 
+  int? get _totalDurationMin {
+    final total =
+        _durationDays * 24 * 60 + _durationHours * 60 + _durationMinutes;
+    return total > 0 ? total : null;
+  }
+
+  String get _durationLabel {
+    final parts = <String>[
+      if (_durationDays > 0) '${_durationDays}d',
+      if (_durationHours > 0) '${_durationHours}h',
+      if (_durationMinutes > 0)
+        '${_durationMinutes.toString().padLeft(2, '0')}min',
+    ];
+    return parts.isEmpty ? 'Not set' : parts.join(' ');
+  }
+
+  Future<void> _showDurationPicker() async {
+    int tempDays = _durationDays;
+    int tempHours = _durationHours;
+    int tempMinutes = _durationMinutes;
+
+    final daysCtrl = FixedExtentScrollController(initialItem: tempDays);
+    final hoursCtrl = FixedExtentScrollController(initialItem: tempHours);
+    final minsCtrl = FixedExtentScrollController(initialItem: tempMinutes);
+
+    await showModalBottomSheet<void>(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: SizedBox(
+          height: 300,
+          child: Column(
+            children: [
+              Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    TextButton(
+                      onPressed: () => Navigator.of(ctx).pop(),
+                      child: const Text('Cancel'),
+                    ),
+                    Text(
+                      'Time to spend',
+                      style: Theme.of(ctx).textTheme.titleSmall,
+                    ),
+                    TextButton(
+                      onPressed: () {
+                        setState(() {
+                          _durationDays = tempDays;
+                          _durationHours = tempHours;
+                          _durationMinutes = tempMinutes;
+                        });
+                        Navigator.of(ctx).pop();
+                      },
+                      child: const Text('Done'),
+                    ),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: CupertinoPicker(
+                        scrollController: daysCtrl,
+                        itemExtent: 44,
+                        onSelectedItemChanged: (i) => tempDays = i,
+                        children: List.generate(
+                          366,
+                          (i) => Center(child: Text('$i d')),
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      child: CupertinoPicker(
+                        scrollController: hoursCtrl,
+                        itemExtent: 44,
+                        onSelectedItemChanged: (i) => tempHours = i,
+                        children: List.generate(
+                          24,
+                          (i) => Center(child: Text('$i h')),
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      child: CupertinoPicker(
+                        scrollController: minsCtrl,
+                        itemExtent: 44,
+                        onSelectedItemChanged: (i) => tempMinutes = i,
+                        children: List.generate(
+                          60,
+                          (i) => Center(
+                            child: Text('${i.toString().padLeft(2, '0')} min'),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    daysCtrl.dispose();
+    hoursCtrl.dispose();
+    minsCtrl.dispose();
+  }
+
   void _initFromExistingStop() {
     if (_initialized) return;
     final itinerary =
@@ -112,8 +227,12 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
       _lat = found.lat;
       _lng = found.lng;
       _placeType = found.placeType;
-      _durationController.text =
-          found.durationMin != null ? '${found.durationMin}' : '';
+      if (found.durationMin != null) {
+        final total = found.durationMin!;
+        _durationDays = total ~/ (24 * 60);
+        _durationHours = (total % (24 * 60)) ~/ 60;
+        _durationMinutes = total % 60;
+      }
       _costController.text = found.cost.toStringAsFixed(2);
       _isFree = found.isFree;
       _notesController.text = found.notes ?? '';
@@ -127,7 +246,6 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
     _searchController.dispose();
     _placeNameController.dispose();
     _placeAddressController.dispose();
-    _durationController.dispose();
     _costController.dispose();
     _notesController.dispose();
     super.dispose();
@@ -233,8 +351,7 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
         if (_lat != null) 'lat': _lat,
         if (_lng != null) 'lng': _lng,
         if (_placeType != null) 'place_type': _placeType!.name,
-        if (_durationController.text.trim().isNotEmpty)
-          'duration_min': int.tryParse(_durationController.text.trim()),
+        if (_totalDurationMin != null) 'duration_min': _totalDurationMin,
         'cost': double.tryParse(_costController.text.trim()) ?? 0.0,
         'is_free': _isFree,
         if (_notesController.text.trim().isNotEmpty)
@@ -630,20 +747,35 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                   ),
                   const SizedBox(height: 16),
 
-                  // Duration
-                  TextFormField(
-                    controller: _durationController,
-                    decoration: const InputDecoration(
-                      labelText: 'Duration (minutes)',
-                      border: OutlineInputBorder(),
+                  // Duration — recommended time to spend
+                  InkWell(
+                    onTap: _showDurationPicker,
+                    borderRadius: BorderRadius.circular(4),
+                    child: InputDecorator(
+                      decoration: InputDecoration(
+                        labelText: 'Recommended time to spend',
+                        border: const OutlineInputBorder(),
+                        prefixIcon: const Icon(Icons.schedule_outlined),
+                        suffixIcon: _totalDurationMin != null
+                            ? IconButton(
+                                icon: const Icon(Icons.clear, size: 18),
+                                onPressed: () => setState(() {
+                                  _durationDays = 0;
+                                  _durationHours = 0;
+                                  _durationMinutes = 0;
+                                }),
+                              )
+                            : const Icon(Icons.chevron_right),
+                      ),
+                      child: Text(
+                        _durationLabel,
+                        style: TextStyle(
+                          color: _totalDurationMin == null
+                              ? Theme.of(context).hintColor
+                              : null,
+                        ),
+                      ),
                     ),
-                    keyboardType: TextInputType.number,
-                    validator: (v) {
-                      if (v == null || v.isEmpty) return null;
-                      if (int.tryParse(v) == null)
-                        return 'Enter a whole number';
-                      return null;
-                    },
                   ),
                   const SizedBox(height: 12),
 
