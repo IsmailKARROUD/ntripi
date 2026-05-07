@@ -1,6 +1,6 @@
 # Ntripi — Flutter Frontend
 
-Flutter mobile app for the Ntripi social travel platform.
+Flutter mobile/web app for the Ntripi social travel platform.
 
 ## Project Structure
 
@@ -10,14 +10,16 @@ social_flutter/
     ├── main.dart                        ← Entry point, ProviderScope, MaterialApp.router
     ├── core/
     │   ├── api/
-    │   │   ├── api_client.dart          ← Dio singleton + AuthInterceptor (attaches Bearer token)
+    │   │   ├── api_client.dart          ← Dio singleton + AuthInterceptor (attaches Bearer token, clears on 401)
     │   │   └── api_endpoints.dart       ← All URL constants
     │   ├── router/
     │   │   └── app_router.dart          ← go_router config: auth guard + ShellRoute + all routes
     │   ├── services/
     │   │   └── geocoding_service.dart   ← Nominatim place search (debounced, ODbL compliant)
-    │   └── storage/
-    │       └── secure_storage.dart      ← flutter_secure_storage wrapper (JWT token)
+    │   ├── storage/
+    │   │   └── secure_storage.dart      ← flutter_secure_storage wrapper (JWT token)
+    │   └── ui/
+    │       └── destructive_actions.dart ← Tier-1/2/3 destructive action helpers
     ├── features/
     │   ├── auth/
     │   │   └── presentation/
@@ -31,28 +33,37 @@ social_flutter/
     │   │   ├── data/
     │   │   │   └── itinerary_repository.dart    ← All itinerary API calls
     │   │   ├── domain/
-    │   │   │   ├── itinerary.dart
-    │   │   │   ├── stop.dart
-    │   │   │   ├── annotation.dart
+    │   │   │   ├── itinerary.dart               ← Itinerary model; derives stop groups + StopType
+    │   │   │   ├── stop.dart                    ← Stop model (includes parallelPosition)
+    │   │   │   ├── annotation.dart              ← Stop-level annotation model
+    │   │   │   ├── itinerary_annotation.dart    ← Itinerary-level annotation model
     │   │   │   ├── transit_segment.dart
-    │   │   │   ├── transport_leg.dart           ← TransportLeg + TransportMode enum
+    │   │   │   ├── transport_leg.dart           ← TransportLeg + TransportMode enum (11 modes)
     │   │   │   ├── allowed_user.dart
-    │   │   │   └── ratings_page.dart
+    │   │   │   ├── my_rating.dart               ← Own rating (5 optional dimensions)
+    │   │   │   ├── ratings_page.dart            ← Community ratings page model
+    │   │   │   └── dimension_key.dart           ← DimensionKey enum (overall/safety/experience/accessibility/familyFriendly)
     │   │   ├── presentation/
     │   │   │   ├── itinerary_list_screen.dart
-    │   │   │   ├── itinerary_detail_screen.dart ← Full detail, edit mode, reorder
-    │   │   │   ├── itinerary_form_screen.dart   ← Create / edit itinerary header
-    │   │   │   ├── stop_form_screen.dart        ← Add / edit a stop
+    │   │   │   ├── itinerary_detail_screen.dart ← Full detail, edit mode, reorder, inline stop/segment add
+    │   │   │   ├── itinerary_form_screen.dart   ← Create / edit itinerary header + cover image upload
+    │   │   │   ├── stop_form_screen.dart        ← Add / edit a stop (supports parallelPosition)
     │   │   │   ├── segment_form_screen.dart     ← Add / edit a transit segment
     │   │   │   ├── map_picker_screen.dart       ← OSM map coordinate picker
-    │   │   │   ├── ratings_page_screen.dart     ← Community ratings list + distribution
+    │   │   │   ├── ratings_page_screen.dart     ← Community ratings list + star distribution
+    │   │   │   ├── dimension_ratings_screen.dart← Per-dimension rating list (safety / experience / …)
     │   │   │   └── widgets/
     │   │   │       ├── stop_card.dart
+    │   │   │       ├── parallel_stop_group.dart ← Renders 1–3 parallel alternative stops
     │   │   │       ├── segment_card.dart        ← Segment between two stops
     │   │   │       ├── leg_tile.dart            ← One leg row in segment form
     │   │   │       ├── leg_form_dialog.dart     ← Bottom sheet: add / edit a leg
     │   │   │       ├── transport_badge.dart     ← Mode chip shown on segment card
-    │   │   │       └── annotation_chip.dart
+    │   │   │       ├── annotation_chip.dart     ← Single annotation chip (advice/caution/avoid/info)
+    │   │   │       ├── annotation_form_dialog.dart ← Bottom sheet: add / edit an annotation
+    │   │   │       ├── cover_image_field.dart   ← Cover image picker + upload widget
+    │   │   │       ├── rate_itinerary_dialog.dart  ← Rating dialog (overall + 4 optional dimensions)
+    │   │   │       └── itinerary_summary_card.dart ← Card used on list and profile screens
     │   │   └── providers/
     │   │       └── itinerary_providers.dart     ← All Riverpod notifiers for itineraries
     │   ├── profile/
@@ -89,73 +100,83 @@ social_flutter/
 - Hybrid follow system: public accounts auto-accept, private accounts create pending requests.
 - Manage incoming follow requests (accept / reject).
 - Browse followers and following lists.
-- Delete own account (GDPR).
+- Delete own account (type-to-confirm + password re-entry).
 
 ### Itineraries
-- Create, edit, and delete itineraries with title, description, currency, visibility, and safety rating.
+- Create, edit, and delete itineraries with title, description, currency, visibility, and cover image.
+- **Cover image upload**: pick an image from the gallery, upload it to the server; processed server-side (Pillow resize + EXIF strip + 1200×630 cover-fit crop).
 - Four visibility levels: **Public**, **Followers only**, **Restricted** (allowlist), **Only me**.
 - Allowlist management for restricted itineraries.
+- **Itinerary-level notes**: add trip-wide annotations (advice/caution/avoid/info) shown in a "Notes" section between description and ratings. Separate from per-stop annotations.
 - Pull-to-refresh on all itinerary screens.
 
 ### Stops
 - Add stops to an itinerary with place name, address, coordinates, place type, duration, cost, and notes.
-- **Stop role is derived from position** — the first stop is always the origin, the last is always the arrival, and all stops in between are waypoints. This is computed client-side in `Itinerary._parseStops()`; there is no type selector in the UI and no `type` field in the API.
-- Place search via Nominatim (debounced, 400ms) or manual map picker.
+- **Stop role is derived from position** — the first stop is always the origin, the last is always the arrival, and all stops in between are waypoints. Computed client-side in `Itinerary._parseStops()`; no `type` field in the UI or API.
+- **Parallel stops**: up to 3 alternative stops can share the same position (e.g. two hotel options for the same night). Each has a `parallelPosition` (0, 1, 2) distinguishing it within the slot. Rendered by `ParallelStopGroup` in the detail screen.
+- Place search via Nominatim (debounced 400ms) or manual map picker.
 - Insert a stop at any position (mid-list inserts shift existing stops up server-side).
 - Edit and delete stops.
-- **Duplicate stop detection**: live amber warning when the same place is entered twice; confirmation dialog before saving.
-- Annotations per stop: advice / caution / avoid / info chips. Can be added before the stop is saved (queued locally, submitted after create).
+- **Duplicate stop detection**: live amber warning when the same place is entered twice (uses ≤0.0001° coordinate tolerance); confirmation dialog before saving.
+- Annotations per stop: advice / caution / avoid / info chips. Can be queued before the stop is saved.
 
 ### Transit Segments
 - Add a transit segment between any two stops with one or more legs.
+- **Add the first leg directly** from the detail screen without navigating to the segment form first.
 - **Duplicate segment detection**: if a segment already exists for the chosen stop pair, a dialog offers: Cancel / Discard new / Join (merge legs for review) / Replace.
 - Edit segments (full replace of stop references + leg list).
 - Delete segments.
+- Segment controls are accessible directly from the itinerary detail screen (no need to navigate into edit sub-screens for common actions).
 
 ### Transport Legs
 - Each leg has: mode, line (transit modes only), direction, duration (h + min), cost, is_free, notes.
-- Supported modes: Walk, Bus, Tram, Metro, Train, Taxi, Uber, Bike, Ferry, Car, Airplane.
-- Line and Direction fields are only shown for transit modes (Bus, Tram, Metro, Train, Ferry, Airplane).
-- Legs are always edited via the **segment PATCH** (full replacement), not via individual leg endpoints. The backend exposes per-leg endpoints for future non-Flutter consumers.
+- 11 modes: Walk, Bus, Tram, Metro, Train, Taxi, Uber, Bike, Ferry, Car, Airplane.
+- Line and Direction fields shown only for transit modes (Bus, Tram, Metro, Train, Ferry, Airplane).
+- Legs are always edited via segment PATCH (full replacement) — the Flutter app never calls individual leg endpoints.
 
 ### Ratings
-- Submit, update, or delete a 1–5 star rating for any itinerary you can view.
-- Tapping the rating row opens the full ratings page with community average, star distribution chart, and individual rater list.
+- Submit or update a rating with 1–5 stars for the **overall** dimension (required) plus four optional dimensions: **safety**, **experience**, **accessibility**, **family-friendly**.
+- Delete own rating at any time.
+- Tapping the rating row opens the full `RatingsPageScreen` with community average, star distribution chart, and individual rater list.
+- Each dimension has a dedicated `DimensionRatingsScreen` (reachable from the ratings page) showing the filtered list and per-dimension average. Dimension scores use color-coded stars (green ≥ 4, amber ≥ 3, red < 3).
+- Dimension averages are only displayed when at least 3 users have rated that dimension.
 
 ### Edit Mode (Itinerary Detail)
 - Pencil button enters edit mode; **Save** button commits pending changes.
 - Back button intercepted by `PopScope`: Stay / Discard / Save dialog when there are unsaved changes.
-- Inline **+ Stop** and **+ Segment** separators between every pair of consecutive stops.
+- Inline **+ Stop** and **+ Segment** separators between every pair of consecutive stop groups.
 - **Reorder mode**: tap the reorder icon to switch to a drag-handle list (`ReorderableListView`). Reordering is deferred — positions are sent to the server only on Save.
-- OSM map with stop markers and polyline, always visible.
+- OSM map with stop markers and polyline (toggle show/hide).
 
 ---
 
 ## Navigation (go_router)
 
-| Route                                         | Screen                        |
-|-----------------------------------------------|-------------------------------|
-| `/login`                                      | LoginScreen                   |
-| `/register`                                   | RegisterScreen                |
-| `/profile/me`                                 | MyProfileScreen (tab)         |
-| `/profile/:userId`                            | UserProfileScreen             |
-| `/profile/:userId/followers`                  | FollowListScreen              |
-| `/profile/:userId/following`                  | FollowListScreen              |
-| `/follow-requests`                            | FollowRequestsScreen          |
-| `/search`                                     | SearchScreen (tab)            |
-| `/itineraries`                                | ItineraryListScreen (tab)     |
-| `/itineraries/new`                            | ItineraryFormScreen (create)  |
-| `/itineraries/:id`                            | ItineraryDetailScreen         |
-| `/itineraries/:id/edit`                       | ItineraryFormScreen (edit)    |
-| `/itineraries/:id/stops/new`                  | StopFormScreen (create)       |
-| `/itineraries/:id/stops/:stopId/edit`         | StopFormScreen (edit)         |
-| `/itineraries/:id/segments/new`               | SegmentFormScreen (create)    |
-| `/itineraries/:id/segments/:segmentId/edit`   | SegmentFormScreen (edit)      |
-| `/itineraries/:id/ratings`                    | RatingsPageScreen             |
-| `/map-picker`                                 | MapPickerScreen               |
-| `/settings/delete-account`                    | DeleteAccountScreen           |
+| Route                                              | Screen                           |
+|----------------------------------------------------|----------------------------------|
+| `/login`                                           | LoginScreen                      |
+| `/register`                                        | RegisterScreen                   |
+| `/profile/me`                                      | MyProfileScreen (tab)            |
+| `/profile/:userId`                                 | UserProfileScreen                |
+| `/profile/:userId/followers`                       | FollowListScreen                 |
+| `/profile/:userId/following`                       | FollowListScreen                 |
+| `/follow-requests`                                 | FollowRequestsScreen             |
+| `/search`                                          | SearchScreen (tab)               |
+| `/itineraries`                                     | ItineraryListScreen (tab)        |
+| `/itineraries/new`                                 | ItineraryFormScreen (create)     |
+| `/itineraries/:id`                                 | ItineraryDetailScreen            |
+| `/itineraries/:id/edit`                            | ItineraryFormScreen (edit)       |
+| `/itineraries/:id/stops/new`                       | StopFormScreen (create)          |
+| `/itineraries/:id/stops/:stopId/edit`              | StopFormScreen (edit)            |
+| `/itineraries/:id/segments/new`                    | SegmentFormScreen (create)       |
+| `/itineraries/:id/segments/:segmentId/edit`        | SegmentFormScreen (edit)         |
+| `/itineraries/:id/ratings`                         | RatingsPageScreen                |
+| `/itineraries/:id/ratings/:dimension`              | DimensionRatingsScreen           |
+| `/map-picker`                                      | MapPickerScreen                  |
+| `/settings/delete-account`                         | DeleteAccountScreen              |
 
-A `ShellRoute` wraps all protected routes with a persistent `BottomNavigationBar` (Search / Profile / Itineraries / Feed).
+A `ShellRoute` wraps all protected routes with a persistent `BottomNavigationBar`.
+`:dimension` is one of: `overall`, `safety`, `experience`, `accessibility`, `family_friendly`.
 
 ---
 
@@ -180,6 +201,13 @@ A `ShellRoute` wraps all protected routes with a persistent `BottomNavigationBar
 
 **Epsilon coordinate comparison** — Duplicate stop detection uses `0.0001°` (~11m) tolerance instead of exact equality, because Nominatim returns more decimal places than PostgreSQL `NUMERIC(9,6)` stores.
 
+**Parallel stop groups** — `Itinerary.parallelStopGroups` groups stops by `position` into inner lists of 1–3 `Stop` objects sorted by `parallelPosition`. The detail screen and reorder view iterate over groups, not individual stops. `StopType` is assigned to the entire group (all alternatives share the same role).
+
+**Destructive action tiers** — Never call `showDialog` directly for destructive actions. Use:
+- `showUndoableActionSnackbar()` (Tier 1 — undo snackbar)
+- `confirmDestructiveAction()` (Tier 2 — simple confirmation)
+- `confirmTypedDestructiveAction()` (Tier 3 — type-to-confirm)
+
 ---
 
 ## Running the App
@@ -200,27 +228,21 @@ flutter run -d chrome \
   --dart-define=SHARE_BASE_URL=http://localhost:8000
 ```
 
+Or use `scripts/dev.sh`.
+
 ### Production (live backend)
 
-No local backend needed. Uses the deployed Railway instance:
+No local backend needed:
 ```bash
 flutter run -d chrome \
   --dart-define=API_BASE_URL=https://ntripi.app \
   --dart-define=SHARE_BASE_URL=https://ntripi.app
 ```
 
-### Production builds
-
-For release builds (iOS / Android / Web):
-```bash
-flutter build apk --release \
-  --dart-define=API_BASE_URL=https://ntripi.app \
-  --dart-define=SHARE_BASE_URL=https://ntripi.app
-```
+Or use `scripts/prod.sh`.
 
 ### Prerequisites
-- Flutter 3.x (stable channel)
-- Dart SDK (bundled with Flutter)
+- Flutter 3.x (stable channel), Dart SDK bundled
 - Android Studio / Xcode for simulators, or a physical device
 
 ```bash
@@ -240,3 +262,5 @@ flutter pub get
 | flutter_secure_storage   | Secure JWT storage                         |
 | flutter_map              | OSM tile map rendering                     |
 | latlong2                 | LatLng type for flutter_map                |
+| image_picker             | Gallery / camera image selection           |
+| share_plus               | Native share sheet for share links         |

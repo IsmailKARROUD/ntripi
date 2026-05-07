@@ -42,6 +42,16 @@ class ParallelStopGroup extends StatefulWidget {
   final void Function(TransitSegment seg)? onEditSegment;
   final void Function(TransitSegment seg)? onDeleteSegment;
 
+  /// Called when "Add stop" is tapped below this group.
+  final Future<void> Function()? onAddStopAfter;
+
+  /// Called when the active parallel has no segment and the user taps
+  /// "Add transit". Receives the active stop's ID as fromStopId.
+  final Future<void> Function(String fromStopId)? onAddTransit;
+
+  /// Called whenever the user swipes to a different parallel, with the new index.
+  final void Function(int index)? onPageChanged;
+
   const ParallelStopGroup({
     super.key,
     required this.stops,
@@ -56,6 +66,9 @@ class ParallelStopGroup extends StatefulWidget {
     this.onDeleteAnnotation,
     this.onEditSegment,
     this.onDeleteSegment,
+    this.onAddStopAfter,
+    this.onAddTransit,
+    this.onPageChanged,
   });
 
   /// The stop currently visible (parallel_position=0 by default).
@@ -69,6 +82,8 @@ class ParallelStopGroup extends StatefulWidget {
 class _ParallelStopGroupState extends State<ParallelStopGroup> {
   late final PageController _pageController;
   int _currentPage = 0;
+  bool _addStopLoading = false;
+  bool _addTransitLoading = false;
 
   @override
   void initState() {
@@ -106,7 +121,10 @@ class _ParallelStopGroupState extends State<ParallelStopGroup> {
                       child: PageView.builder(
                         controller: _pageController,
                         itemCount: widget.stops.length,
-                        onPageChanged: (i) => setState(() => _currentPage = i),
+                        onPageChanged: (i) {
+                          setState(() => _currentPage = i);
+                          widget.onPageChanged?.call(i);
+                        },
                         itemBuilder: (_, i) => _buildStopCard(widget.stops[i]),
                       ),
                     )
@@ -147,6 +165,29 @@ class _ParallelStopGroupState extends State<ParallelStopGroup> {
             ),
           ),
 
+        // ── Bottom action row: "Add stop" and/or "Add transit" side by side ─
+        if (widget.editMode)
+          _BottomActionRow(
+            showAddStop: widget.onAddStopAfter != null,
+            addStopLoading: _addStopLoading,
+            onAddStop: widget.onAddStopAfter == null
+                ? null
+                : () async {
+                    setState(() => _addStopLoading = true);
+                    await widget.onAddStopAfter!();
+                    if (mounted) setState(() => _addStopLoading = false);
+                  },
+            showAddTransit: segment == null && widget.onAddTransit != null,
+            addTransitLoading: _addTransitLoading,
+            onAddTransit: widget.onAddTransit == null
+                ? null
+                : () async {
+                    setState(() => _addTransitLoading = true);
+                    await widget.onAddTransit!(_activeStop.id);
+                    if (mounted) setState(() => _addTransitLoading = false);
+                  },
+          ),
+
         // ── Segment for the active parallel ───────────────────────────────
         if (segment != null)
           SegmentCard(
@@ -182,6 +223,106 @@ class _ParallelStopGroupState extends State<ParallelStopGroup> {
       onDeleteAnnotation: widget.editMode && widget.onDeleteAnnotation != null
           ? (a) => widget.onDeleteAnnotation!(stop, a)
           : null,
+    );
+  }
+}
+
+class _BottomActionRow extends StatelessWidget {
+  final bool showAddStop;
+  final bool addStopLoading;
+  final VoidCallback? onAddStop;
+
+  final bool showAddTransit;
+  final bool addTransitLoading;
+  final VoidCallback? onAddTransit;
+
+  const _BottomActionRow({
+    required this.showAddStop,
+    required this.addStopLoading,
+    this.onAddStop,
+    required this.showAddTransit,
+    required this.addTransitLoading,
+    this.onAddTransit,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (!showAddStop && !showAddTransit) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 36, vertical: 2),
+      child: Row(
+        children: [
+          Expanded(child: Divider(color: Colors.grey.shade300, height: 1)),
+          const SizedBox(width: 8),
+          if (showAddStop)
+            _ActionChip(
+              icon: Icons.add_location_alt_outlined,
+              label: 'Add stop',
+              loading: addStopLoading,
+              onTap: addStopLoading ? null : onAddStop,
+            ),
+          if (showAddStop && showAddTransit)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 6),
+              child: Text('·',
+                  style: TextStyle(color: Colors.grey.shade400, fontSize: 12)),
+            ),
+          if (showAddTransit)
+            _ActionChip(
+              icon: Icons.directions_transit_outlined,
+              label: 'Add transit',
+              loading: addTransitLoading,
+              onTap: addTransitLoading ? null : onAddTransit,
+            ),
+          const SizedBox(width: 8),
+          Expanded(child: Divider(color: Colors.grey.shade300, height: 1)),
+        ],
+      ),
+    );
+  }
+}
+
+class _ActionChip extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final bool loading;
+  final VoidCallback? onTap;
+
+  const _ActionChip({
+    required this.icon,
+    required this.label,
+    required this.loading,
+    this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(6),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+        child: loading
+            ? SizedBox(
+                width: 13,
+                height: 13,
+                child: CircularProgressIndicator(
+                  strokeWidth: 1.5,
+                  color: Colors.grey.shade500,
+                ),
+              )
+            : Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(icon, size: 13, color: Colors.grey.shade500),
+                  const SizedBox(width: 3),
+                  Text(
+                    label,
+                    style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+                  ),
+                ],
+              ),
+      ),
     );
   }
 }

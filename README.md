@@ -10,10 +10,13 @@ with friends, and discover routes that locals love.
 ## What It Does
 
 - Build travel itineraries with stops, transit segments, costs, and notes
-- Multi-dimensional community ratings: safety, experience, accessibility, family-friendly
+- **Parallel stops**: add up to 3 alternative stops at the same position (e.g. "Hotel A or Hotel B")
+- Multi-dimensional community ratings: overall, safety, experience, accessibility, family-friendly
 - Four levels of itinerary visibility: public, followers, restricted, only-me
 - Share itineraries via URL with rich Open Graph previews on WhatsApp / Twitter / iMessage
-- Annotate stops with advice, cautions, or suggestions to avoid
+- Upload a cover image per itinerary (EXIF-stripped, auto-cropped to 1200×630)
+- Annotate stops with advice, cautions, avoid, or info notes
+- Itinerary-level notes for trip-wide observations ("book 2 months ahead")
 - Hybrid follow system: public accounts auto-accept, private accounts require approval
 
 ## Tech Stack
@@ -42,7 +45,7 @@ Ntripi/
 │   │   ├── models/         SQLAlchemy ORM models
 │   │   ├── schemas/        Pydantic request/response schemas
 │   │   ├── routers/        API endpoints + web HTML routes
-│   │   ├── services/       Business logic (auth, access control)
+│   │   ├── services/       Business logic (auth, access control, image processing)
 │   │   ├── validators/     Username and other field validators
 │   │   ├── templates/      Jinja2 HTML for landing pages
 │   │   └── static/         Static assets (default OG image, etc.)
@@ -137,24 +140,18 @@ Create `social_api/.env` from `.env.example`:
 
 ```env
 # PostgreSQL connection string
-# macOS (Homebrew): default superuser is your system username, no password needed
-#   postgresql://yourname@localhost:5432/ntripi_db
-# Linux / Docker: postgresql://postgres:password@localhost:5432/ntripi_db
 DATABASE_URL=postgresql://yourname@localhost:5432/ntripi_db
 
 # JWT signing secret — generate with: openssl rand -hex 32
 SECRET_KEY=your-super-secret-key-change-this-in-production
 
-# JWT algorithm — HS256 is standard for a single-service setup
 ALGORITHM=HS256
-
-# Token expiry in minutes (1440 = 24 hours)
 ACCESS_TOKEN_EXPIRE_MINUTES=1440
 
 # True in development: allows all CORS origins + verbose errors
 DEBUG=True
 
-# Production only: comma-separated list of allowed CORS origins (used when DEBUG=False)
+# Production only: comma-separated allowed CORS origins (used when DEBUG=False)
 ALLOWED_ORIGINS=https://ntripi.app
 
 # Base URL used in share link generation
@@ -162,6 +159,11 @@ SHARE_BASE_URL=http://localhost:8000
 
 # Android download URL (leave empty until APK is hosted)
 ANDROID_DOWNLOAD_URL=
+
+# Storage backend (filesystem or s3-compatible)
+STORAGE_BACKEND=filesystem
+STORAGE_FILESYSTEM_PATH=/app/uploads
+STORAGE_PUBLIC_URL_PREFIX=/uploads
 ```
 
 ## Production Build
@@ -247,8 +249,9 @@ replaced by an in-memory stub via `FlutterSecureStorage.setMockInitialValues({})
 - **Timing attack prevention** — bcrypt is called against a dummy hash even when the email doesn't exist, so response time can't reveal whether an account is registered.
 - **JWT tokens** are signed with HS256, expire after 24 hours (configurable), and stored in the device's secure enclave (iOS Keychain / Android Keystore).
 - **401 auto-logout** — the Dio interceptor clears the stored token and redirects to `/login` on any 401 response.
-- **CORS** is restricted to configured origins in production (`DEBUG=False`). In development `allow_origin_regex=".*"` is used instead of `allow_origins=["*"]` because the browser CORS spec forbids the wildcard when `credentials: true`.
-- **Private by default** — new accounts are private (`is_private = true`). Content is never accidentally exposed; users must opt in to public visibility.
+- **CORS** is restricted to configured origins in production (`DEBUG=False`).
+- **EXIF stripping** — all uploaded cover images have EXIF metadata (including GPS) removed before storage.
+- **Private by default** — new accounts are private (`is_private = true`).
 
 ## Deployment
 
@@ -258,13 +261,18 @@ DNS, proxy, and DDoS protection. SSL via Let's Encrypt (auto-managed
 by Railway). HTTPS is enforced at the TLD level (`.app` is on the
 HSTS preload list).
 
+A persistent volume must be mounted at `/app/uploads` on Railway
+or uploaded cover images will be lost on redeploy.
+
 ## Status
 
 Active development. Production is live and stable.
 
 - ✓ Authentication with JWT cookies + tokens
 - ✓ User profiles, follows, blocks
-- ✓ Itineraries with stops, transit segments, annotations
+- ✓ Itineraries with stops (including parallel alternatives), transit segments, annotations
+- ✓ Itinerary-level notes (trip-wide annotations)
+- ✓ Cover image upload with EXIF stripping and auto-crop
 - ✓ Multi-dimensional ratings (overall, safety, experience, accessibility, family-friendly)
 - ✓ Visibility system (public, followers, restricted, only-me)
 - ✓ Share landing pages with Open Graph previews

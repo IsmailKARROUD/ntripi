@@ -711,8 +711,12 @@ def delete_stop(
     Delete a stop. Its annotations are removed via ON DELETE CASCADE.
     Itinerary totals are recalculated after deletion.
 
-    Note: positions of remaining stops are NOT automatically renumbered.
-    Use the reorder endpoint to compact positions after deletion.
+    After deletion two compaction steps run automatically:
+    - If parallel siblings remain at the same position their parallel_position
+      values are renumbered to be contiguous starting at 0.
+    - If no siblings remain the position slot is vacated and all stops at
+      higher positions are shifted down by 1 (across all parallel positions).
+    Both use a two-phase approach to avoid UNIQUE constraint violations.
     """
     itinerary = _get_itinerary_or_404(itinerary_id, db)
     _require_owner(itinerary, current_user)
@@ -727,8 +731,47 @@ def delete_stop(
             detail="Stop not found.",
         )
 
+    deleted_position = stop.position
+
     db.delete(stop)
     db.flush()
+
+    # Remaining stops at the same position (parallel siblings).
+    siblings = db.execute(
+        select(Stop)
+        .where(
+            Stop.itinerary_id == itinerary_id,
+            Stop.position == deleted_position,
+        )
+        .order_by(Stop.parallel_position)
+    ).scalars().all()
+
+    if siblings:
+        # Compact parallel_position to 0, 1, 2… using two-phase renumber.
+        offset = len(siblings) + 1
+        for s in siblings:
+            s.parallel_position += offset
+        db.flush()
+        for new_pp, s in enumerate(siblings):
+            s.parallel_position = new_pp
+        db.flush()
+    else:
+        # Whole position vacated — shift higher positions down by 1.
+        above = db.execute(
+            select(Stop).where(
+                Stop.itinerary_id == itinerary_id,
+                Stop.position > deleted_position,
+            )
+        ).scalars().all()
+
+        if above:
+            offset = max(s.position for s in above) + 1
+            for s in above:
+                s.position += offset
+            db.flush()
+            for s in above:
+                s.position -= offset + 1  # net effect: original - 1
+            db.flush()
 
     _recalculate_totals(itinerary, db)
 

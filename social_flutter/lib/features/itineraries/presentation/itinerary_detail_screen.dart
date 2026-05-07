@@ -66,6 +66,9 @@ class ItineraryDetailScreen extends ConsumerStatefulWidget {
 
 class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
   bool _editMode = false;
+  // Tracks which parallel index is active per position (position → index).
+  // Default is 0 (primary stop). Used to filter segments by both endpoints.
+  final Map<int, int> _activeParallelByPosition = {};
   // Reorder mode replaces the interleaved list with a standalone
   // ReorderableListView so drag gestures aren't stolen by CustomScrollView.
   bool _reorderMode = false;
@@ -629,6 +632,10 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                             final group = displayGroups[i];
                             final primaryStop = group.first;
                             final hasNextGroup = i < displayGroups.length - 1;
+                            // Pre-capture next group as a final so closures
+                            // below don't capture the mutable loop variable i.
+                            final nextGroup =
+                                hasNextGroup ? displayGroups[i + 1] : null;
 
                             // Single-group: "Add stop" above for non-origin.
                             if (canEdit &&
@@ -652,7 +659,21 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                               currency: itinerary.currency,
                               itineraryId: widget.itineraryId,
                               editMode: canEdit,
-                              getSegment: (id) => segmentByFromStop[id],
+                              getSegment: (fromStopId) {
+                                final seg = segmentByFromStop[fromStopId];
+                                if (seg == null) return null;
+                                // Only show the segment when its toStopId
+                                // matches the active parallel at the next group.
+                                if (nextGroup != null) {
+                                  final nextActiveIdx =
+                                      _activeParallelByPosition[nextGroup.first.position] ?? 0;
+                                  final nextActiveStop = nextGroup.length > nextActiveIdx
+                                      ? nextGroup[nextActiveIdx]
+                                      : nextGroup.first;
+                                  if (seg.toStopId != nextActiveStop.id) return null;
+                                }
+                                return seg;
+                              },
                               onAddParallel: canEdit
                                   ? (position) {
                                       final nextParallel = group.length;
@@ -688,45 +709,31 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                               onDeleteSegment: canEdit
                                   ? _confirmDeleteSegment
                                   : null,
+                              onAddTransit: canEdit && nextGroup != null
+                                  ? (fromStopId) {
+                                      final nextActiveIdx =
+                                          _activeParallelByPosition[nextGroup.first.position] ?? 0;
+                                      final toStop = nextGroup.length > nextActiveIdx
+                                          ? nextGroup[nextActiveIdx]
+                                          : nextGroup.first;
+                                      return _addSegmentWithLeg(fromStopId, toStop.id);
+                                    }
+                                  : null,
+                              onPageChanged: (idx) => setState(() {
+                                _activeParallelByPosition[primaryStop.position] = idx;
+                              }),
+                              onAddStopAfter: canEdit &&
+                                      (hasNextGroup ||
+                                          primaryStop.type != StopType.arrival)
+                                  ? () => context.push(
+                                        '/itineraries/${widget.itineraryId}/stops/new',
+                                        extra: {
+                                          'insertAfterPosition':
+                                              primaryStop.position,
+                                        },
+                                      )
+                                  : null,
                             ));
-
-                            if (canEdit) {
-                              if (hasNextGroup) {
-                                final nextPrimary = displayGroups[i + 1].first;
-                                // "Add Transit" connects primary stops of
-                                // adjacent groups (no segment exists yet).
-                                final primarySeg =
-                                    segmentByFromStop[primaryStop.id];
-                                items.add(_InlineSeparator(
-                                  key: ValueKey('sep-${primaryStop.id}'),
-                                  onAddStop: () => context.push(
-                                    '/itineraries/${widget.itineraryId}/stops/new',
-                                    extra: {
-                                      'insertAfterPosition':
-                                          primaryStop.position,
-                                    },
-                                  ),
-                                  onAddTransit: primarySeg == null
-                                      ? () => _addSegmentWithLeg(
-                                            primaryStop.id,
-                                            nextPrimary.id,
-                                          )
-                                      : null,
-                                ));
-                              } else if (primaryStop.type !=
-                                  StopType.arrival) {
-                                items.add(_InlineSeparator(
-                                  key: ValueKey('below-${primaryStop.id}'),
-                                  onAddStop: () => context.push(
-                                    '/itineraries/${widget.itineraryId}/stops/new',
-                                    extra: {
-                                      'insertAfterPosition':
-                                          primaryStop.position,
-                                    },
-                                  ),
-                                ));
-                              }
-                            }
                           }
                           return items;
                         }
@@ -1372,12 +1379,10 @@ class _SummaryChip extends StatelessWidget {
 
 class _InlineSeparator extends StatelessWidget {
   final VoidCallback onAddStop;
-  final VoidCallback? onAddTransit;
 
   const _InlineSeparator({
     super.key,
     required this.onAddStop,
-    this.onAddTransit,
   });
 
   @override
@@ -1393,18 +1398,6 @@ class _InlineSeparator extends StatelessWidget {
             label: 'Add stop',
             onTap: onAddStop,
           ),
-          if (onAddTransit != null) ...[
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 6),
-              child: Text('·',
-                  style: TextStyle(color: Colors.grey.shade400, fontSize: 12)),
-            ),
-            _ActionButton(
-              icon: Icons.directions_transit_outlined,
-              label: 'Transit +',
-              onTap: onAddTransit!,
-            ),
-          ],
           const SizedBox(width: 8),
           Expanded(child: Divider(color: Colors.grey.shade300, height: 1)),
         ],
