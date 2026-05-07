@@ -15,7 +15,8 @@ social_api/
 │   │   ├── user.py                    ← users table
 │   │   ├── follow.py                  ← follows table + FollowStatus enum
 │   │   ├── itinerary.py               ← itineraries table
-│   │   ├── stop.py                    ← stops table (includes parallel_position)
+│   │   ├── track.py                   ← tracks table (groups parallel stops, ordered by rank)
+│   │   ├── stop.py                    ← stops table (track_id + rank, no position)
 │   │   ├── annotation.py              ← annotations table (per stop)
 │   │   ├── itinerary_annotation.py    ← itinerary_annotations table (trip-level notes)
 │   │   ├── transit_segment.py         ← transit_segments table
@@ -39,6 +40,7 @@ social_api/
 │       ├── auth_service.py       ← Shared login/session logic for web + API
 │       ├── itinerary_access.py   ← Visibility logic + rating recalculation
 │       ├── image_service.py      ← Pillow: resize + EXIF strip + 1200×630 crop + JPEG
+│       ├── ordering.py           ← Fractional indexing: key_between / n_keys_between
 │       └── share_service.py      ← OG metadata builder for share pages
 ├── alembic/
 │   ├── env.py               ← Alembic config (reads DATABASE_URL from settings)
@@ -105,30 +107,42 @@ Constraints: UNIQUE(follower_id, following_id), CHECK follower_id != following_i
 | created_at         | TIMESTAMP     |                                                           |
 | updated_at         | TIMESTAMP     |                                                           |
 
+### Table: tracks
+
+A track is a vertical column of parallel stop alternatives at the same point in the journey. Tracks are ordered within an itinerary by `rank` (fractional indexing).
+
+| Column       | Type      | Notes                                                    |
+|--------------|-----------|----------------------------------------------------------|
+| id           | UUID      | Primary key                                              |
+| itinerary_id | UUID      | FK → itineraries.id ON DELETE CASCADE, indexed           |
+| rank         | TEXT COLLATE "C" | Fractional-index key — byte-wise sorted            |
+| created_at   | TIMESTAMP |                                                          |
+| updated_at   | TIMESTAMP |                                                          |
+
+Constraints: UNIQUE(itinerary_id, rank). A track is always non-empty — it is created with its first stop and deleted when its last stop is deleted.
+
 ### Table: stops
 
-> **Stop role (origin / waypoint / arrival) is not stored here.** Flutter derives it
-> from sorted position at read time: first stop = origin, last = arrival, rest = waypoint.
-> Multiple stops sharing the same `position` are parallel alternatives at that slot.
+> **Stop role (origin / waypoint / arrival) is not stored here.** Flutter derives it from track position: first track = origin, last track = arrival, rest = waypoint. Computed in `Itinerary._parseTracks()`. No `type` column exists.
 
-| Column            | Type          | Notes                                                                |
-|-------------------|---------------|----------------------------------------------------------------------|
-| id                | UUID          | Primary key                                                          |
-| itinerary_id      | UUID          | FK → itineraries.id ON DELETE CASCADE, indexed                       |
-| position          | SMALLINT      | 1-based slot within the itinerary                                    |
-| parallel_position | SMALLINT      | 0-based index within the slot (0 = first/default). Max 3 per slot.  |
-| place_name        | VARCHAR(200)  | Nullable                                                             |
-| place_address     | TEXT          | Nullable                                                             |
-| lat               | NUMERIC(9,6)  | Nullable — ~11cm precision                                           |
-| lng               | NUMERIC(9,6)  | Nullable                                                             |
-| place_type        | VARCHAR(50)   | Nullable — camelCase: eatDrink/sleep/pray/learnSee/buy/playWatch/nature/travel/healBathe/entertainment/sight |
-| duration_min      | INTEGER       | Nullable — time spent at this stop                                   |
-| cost              | NUMERIC(10,2) | Default 0.00                                                         |
-| is_free           | BOOLEAN       | Explicitly free (park, beach, etc.)                                  |
-| notes             | TEXT          | Nullable                                                             |
-| created_at        | TIMESTAMP     |                                                                      |
+| Column       | Type          | Notes                                                                |
+|--------------|---------------|----------------------------------------------------------------------|
+| id           | UUID          | Primary key                                                          |
+| itinerary_id | UUID          | FK → itineraries.id ON DELETE CASCADE, indexed                       |
+| track_id     | UUID          | FK → tracks.id ON DELETE CASCADE, indexed                            |
+| rank         | TEXT COLLATE "C" | Fractional-index key within the track                             |
+| place_name   | VARCHAR(200)  | Nullable                                                             |
+| place_address| TEXT          | Nullable                                                             |
+| lat          | NUMERIC(9,6)  | Nullable — ~11cm precision                                           |
+| lng          | NUMERIC(9,6)  | Nullable                                                             |
+| place_type   | VARCHAR(50)   | Nullable — camelCase: eatDrink/sleep/pray/learnSee/buy/playWatch/nature/travel/healBathe/entertainment/sight |
+| duration_min | INTEGER       | Nullable                                                             |
+| cost         | NUMERIC(10,2) | Default 0.00                                                         |
+| is_free      | BOOLEAN       | Explicitly free (park, beach, etc.)                                  |
+| notes        | TEXT          | Nullable                                                             |
+| created_at   | TIMESTAMP     |                                                                      |
 
-Constraints: UNIQUE(itinerary_id, position, parallel_position)
+Constraints: UNIQUE(track_id, rank)
 
 ### Table: annotations
 
@@ -269,12 +283,13 @@ Composite primary key (itinerary_id, user_id).
 
 ### Stops
 
-| Method | Path                                   | Auth | Description                              |
-|--------|----------------------------------------|------|------------------------------------------|
-| POST   | /itineraries/{id}/stops                | Yes  | Add a stop (supply `position` and `parallel_position`) |
-| PATCH  | /itineraries/{id}/stops/reorder        | Yes  | Reorder all stops by providing ordered ID list |
-| PATCH  | /itineraries/{id}/stops/{stopId}       | Yes  | Partial update a stop                    |
-| DELETE | /itineraries/{id}/stops/{stopId}       | Yes  | Delete a stop and its annotations        |
+All mutation endpoints require an `If-Match` header matching the itinerary's current ETag. Missing header → 428. Stale header → 412. Successful response includes the new `ETag` header.
+
+| Method | Path                             | Auth | Description                                                       |
+|--------|----------------------------------|------|-------------------------------------------------------------------|
+| POST   | /itineraries/{id}/stops          | Yes  | Add a stop. `track_id=null` creates a new track; otherwise adds to existing track. Anchors: `after_stop_id`, `before_stop_id`, `after_track_id`, `before_track_id`. |
+| PATCH  | /itineraries/{id}/stops/{stopId} | Yes  | Partial update. Optional `track_id` change moves the stop across tracks. |
+| DELETE | /itineraries/{id}/stops/{stopId} | Yes  | Delete a stop; deletes its track too if it becomes empty.         |
 
 ### Stop Annotations
 
@@ -346,15 +361,17 @@ Four levels enforced by `can_view_itinerary()` in `services/itinerary_access.py`
 - `restricted` — owner + explicit allowlist
 - `only_me` — owner only (default)
 
-### Parallel stops
-Multiple stops can occupy the same itinerary position as parallel alternatives (e.g. two hotel options). `parallel_position` (0-based) distinguishes them within the slot. The unique constraint is `(itinerary_id, position, parallel_position)`. Maximum 3 parallel stops per slot. Inserting a new stop at an occupied `(position, parallel_position=0)` triggers the two-phase shift of **all** stops (across all parallel_positions) at or above that position.
+### Tracks and fractional indexing
+Stops are grouped into **tracks**. A track is a column of parallel alternative stops at the same point in the journey (e.g. two hotel options for the same night). Tracks and stops within a track are ordered by `rank` — a lexicographic string key produced by the fractional-indexing algorithm (`services/ordering.py`). Both columns use `TEXT COLLATE "C"` so PostgreSQL sorts by raw byte value, identical to Python's default string comparison. Inserting between two existing items never requires touching other rows — only the new rank needs to be computed.
 
-### Two-phase position shifting
-Inserting or reordering stops uses a two-phase UPDATE to avoid unique constraint violations:
-1. Park conflicting stops at high temporary positions (offset = max + 1)
-2. Write the final 1-based positions
+### ETag / If-Match concurrency control
+Every GET on an itinerary returns an `ETag` header equal to the itinerary's `updated_at` ISO string (quoted per RFC 7232). Every mutation (stop, annotation, segment) requires a matching `If-Match` header. Missing → 428. Stale → 412. This prevents silent overwrites when two sessions edit the same itinerary concurrently. Implemented in `app/dependencies.py` via the `require_etag` dependency (SELECT FOR UPDATE).
 
-The same pattern is used in the reorder endpoint and when compacting `parallel_position` values after a parallel stop is deleted.
+### Track lifecycle
+A track is always non-empty. Creating a stop with `track_id=null` creates a new track + stop atomically. Deleting the last stop in a track also deletes the track. This invariant is enforced in application code (`_delete_track_if_empty`), not by a DB trigger, so it is auditable.
+
+### Rank collision retry
+On `IntegrityError` (UNIQUE constraint on rank), the endpoint retries up to 3 times with freshly computed ranks before returning 409. This handles the rare case of two concurrent inserts at the same anchor pair.
 
 ### Cover image processing
 `services/image_service.py` uses Pillow to: strip all EXIF metadata (privacy / GPS), resize to fit within 1200×630, and JPEG re-encode at 85% quality. This happens synchronously before the file is written via the storage abstraction.

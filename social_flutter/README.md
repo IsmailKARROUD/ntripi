@@ -33,8 +33,9 @@ social_flutter/
     │   │   ├── data/
     │   │   │   └── itinerary_repository.dart    ← All itinerary API calls
     │   │   ├── domain/
-    │   │   │   ├── itinerary.dart               ← Itinerary model; derives stop groups + StopType
-    │   │   │   ├── stop.dart                    ← Stop model (includes parallelPosition)
+    │   │   │   ├── itinerary.dart               ← Itinerary model; derives StopType via _parseTracks()
+    │   │   │   ├── track.dart                   ← Track model (ordered list of parallel stops)
+    │   │   │   ├── stop.dart                    ← Stop model (trackId + rank; no position)
     │   │   │   ├── annotation.dart              ← Stop-level annotation model
     │   │   │   ├── itinerary_annotation.dart    ← Itinerary-level annotation model
     │   │   │   ├── transit_segment.dart
@@ -47,14 +48,14 @@ social_flutter/
     │   │   │   ├── itinerary_list_screen.dart
     │   │   │   ├── itinerary_detail_screen.dart ← Full detail, edit mode, reorder, inline stop/segment add
     │   │   │   ├── itinerary_form_screen.dart   ← Create / edit itinerary header + cover image upload
-    │   │   │   ├── stop_form_screen.dart        ← Add / edit a stop (supports parallelPosition)
+    │   │   │   ├── stop_form_screen.dart        ← Add / edit a stop (trackId, afterStopId, afterTrackId, beforeTrackId)
     │   │   │   ├── segment_form_screen.dart     ← Add / edit a transit segment
     │   │   │   ├── map_picker_screen.dart       ← OSM map coordinate picker
     │   │   │   ├── ratings_page_screen.dart     ← Community ratings list + star distribution
     │   │   │   ├── dimension_ratings_screen.dart← Per-dimension rating list (safety / experience / …)
     │   │   │   └── widgets/
     │   │   │       ├── stop_card.dart
-    │   │   │       ├── parallel_stop_group.dart ← Renders 1–3 parallel alternative stops
+    │   │   │       ├── parallel_stop_group.dart ← Renders stops within a track as swipeable pages
     │   │   │       ├── segment_card.dart        ← Segment between two stops
     │   │   │       ├── leg_tile.dart            ← One leg row in segment form
     │   │   │       ├── leg_form_dialog.dart     ← Bottom sheet: add / edit a leg
@@ -112,11 +113,12 @@ social_flutter/
 
 ### Stops
 - Add stops to an itinerary with place name, address, coordinates, place type, duration, cost, and notes.
-- **Stop role is derived from position** — the first stop is always the origin, the last is always the arrival, and all stops in between are waypoints. Computed client-side in `Itinerary._parseStops()`; no `type` field in the UI or API.
-- **Parallel stops**: up to 3 alternative stops can share the same position (e.g. two hotel options for the same night). Each has a `parallelPosition` (0, 1, 2) distinguishing it within the slot. Rendered by `ParallelStopGroup` in the detail screen.
+- **Stop role is derived from track position** — the first track is always the origin, the last track is always the arrival, and all tracks in between are waypoints. Computed client-side in `Itinerary._parseTracks()`; no `type` field in the UI or API.
+- **Tracks**: each track holds one or more parallel alternative stops (e.g. two hotel options for the same night). Tracks and stops within a track are ordered by fractional-index `rank` strings. Rendered by `ParallelStopGroup` as swipeable pages.
+- **ETag / If-Match**: the repository tracks the itinerary's `updatedAt` and sends it as the `If-Match` header on every mutation. On 412 (stale), `ItineraryStaleException` is thrown and a reload dialog is shown.
 - Place search via Nominatim (debounced 400ms) or manual map picker.
-- Insert a stop at any position (mid-list inserts shift existing stops up server-side).
-- Edit and delete stops.
+- Insert a stop in any track or create a new track at any position.
+- Edit and delete stops (deleting the last stop in a track also deletes the track).
 - **Duplicate stop detection**: live amber warning when the same place is entered twice (uses ≤0.0001° coordinate tolerance); confirmation dialog before saving.
 - Annotations per stop: advice / caution / avoid / info chips. Can be queued before the stop is saved.
 
@@ -142,10 +144,10 @@ social_flutter/
 - Dimension averages are only displayed when at least 3 users have rated that dimension.
 
 ### Edit Mode (Itinerary Detail)
-- Pencil button enters edit mode; **Save** button commits pending changes.
-- Back button intercepted by `PopScope`: Stay / Discard / Save dialog when there are unsaved changes.
-- Inline **+ Stop** and **+ Segment** separators between every pair of consecutive stop groups.
-- **Reorder mode**: tap the reorder icon to switch to a drag-handle list (`ReorderableListView`). Reordering is deferred — positions are sent to the server only on Save.
+- Pencil button enters edit mode; **Done** (✓) button exits.
+- Back button intercepted by `PopScope` — exits edit mode.
+- Inline **+ Stop** (creates new track) and **+ // stop** (adds to same track) buttons.
+- **Segment orphan warning**: inserting a new track between two tracks that share a transit segment prompts the user to delete the segment before proceeding — it would otherwise become invisible.
 - OSM map with stop markers and polyline (toggle show/hide).
 
 ---
@@ -193,15 +195,15 @@ A `ShellRoute` wraps all protected routes with a persistent `BottomNavigationBar
 
 ### Key design patterns
 
-**Deferred reorder** — Stop drag-reordering accumulates in `_pendingOrder` locally and is only sent to the server when the user taps Save. All other stop/segment mutations commit immediately from their sub-screens.
+**Tracks as first-class model** — `Itinerary.tracks` is a `List<Track>`, each containing a `List<Stop>` already sorted by `rank` (server pre-sorts). The detail screen iterates over tracks, not a flat stop list. `StopType` is assigned per track index: first = origin, last = arrival, rest = waypoint.
 
-**ReorderableListView isolation** — When reorder mode is active, the full `body` is replaced with a standalone `ReorderableListView` (no outer `CustomScrollView`), preventing gesture conflicts that would silently swallow drag events.
+**ETag on every mutation** — `ItineraryDetailNotifier._etag` reads `state.value?.eTag` and passes it to every repository call. On 412, the repository throws `ItineraryStaleException`; the presentation layer catches it and shows a "reload" dialog.
 
-**`_pendingOrder` sync** — `ref.listen` keeps `_pendingOrder` consistent when sub-screens add or delete stops. The update is deferred with `addPostFrameCallback` to avoid calling `setState` during a provider build.
+**Immediate commit** — All stop/segment mutations commit to the server immediately from their sub-screens. There is no deferred reorder queue.
 
 **Epsilon coordinate comparison** — Duplicate stop detection uses `0.0001°` (~11m) tolerance instead of exact equality, because Nominatim returns more decimal places than PostgreSQL `NUMERIC(9,6)` stores.
 
-**Parallel stop groups** — `Itinerary.parallelStopGroups` groups stops by `position` into inner lists of 1–3 `Stop` objects sorted by `parallelPosition`. The detail screen and reorder view iterate over groups, not individual stops. `StopType` is assigned to the entire group (all alternatives share the same role).
+**Segment orphan guard** — `onAddStopAfter` in the detail screen checks whether a segment connects the current track to the next. If one is found, a confirmation dialog prompts to delete it before inserting the new track.
 
 **Destructive action tiers** — Never call `showDialog` directly for destructive actions. Use:
 - `showUndoableActionSnackbar()` (Tier 1 — undo snackbar)

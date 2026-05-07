@@ -10,7 +10,8 @@ with friends, and discover routes that locals love.
 ## What It Does
 
 - Build travel itineraries with stops, transit segments, costs, and notes
-- **Parallel stops**: add up to 3 alternative stops at the same position (e.g. "Hotel A or Hotel B")
+- **Tracks**: group parallel alternative stops in a vertical "column" (e.g. "Hotel A or Hotel B" at night 2). Tracks are ordered by fractional-index rank strings so inserts never require full re-numbering.
+- **Optimistic concurrency**: every itinerary mutation uses ETag / If-Match headers — conflicting edits from different devices are detected and surfaced to the user.
 - Multi-dimensional community ratings: overall, safety, experience, accessibility, family-friendly
 - Four levels of itinerary visibility: public, followers, restricted, only-me
 - Share itineraries via URL with rich Open Graph previews on WhatsApp / Twitter / iMessage
@@ -270,7 +271,7 @@ Active development. Production is live and stable.
 
 - ✓ Authentication with JWT cookies + tokens
 - ✓ User profiles, follows, blocks
-- ✓ Itineraries with stops (including parallel alternatives), transit segments, annotations
+- ✓ Itineraries with stops (tracks + fractional indexing), transit segments, annotations
 - ✓ Itinerary-level notes (trip-wide annotations)
 - ✓ Cover image upload with EXIF stripping and auto-crop
 - ✓ Multi-dimensional ratings (overall, safety, experience, accessibility, family-friendly)
