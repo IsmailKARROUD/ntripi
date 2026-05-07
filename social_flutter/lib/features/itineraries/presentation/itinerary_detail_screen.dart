@@ -443,6 +443,9 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                                 }
                                 return seg;
                               },
+                              onViewStop: (stop) => context.push(
+                                '/itineraries/${widget.itineraryId}/stops/${stop.id}',
+                              ),
                               onAddParallel: canEdit
                                   ? (trackId) => context.push(
                                         '/itineraries/${widget.itineraryId}/stops/new',

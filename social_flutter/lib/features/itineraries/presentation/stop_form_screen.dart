@@ -23,6 +23,7 @@ import 'package:social_flutter/core/ui/destructive_actions.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/annotation_form_dialog.dart';
 import 'package:social_flutter/features/itineraries/data/itinerary_repository.dart';
 import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
+import 'package:social_flutter/features/profile/providers/profile_provider.dart';
 import 'package:social_flutter/core/utils/platform_utils.dart';
 
 class StopFormScreen extends ConsumerStatefulWidget {
@@ -44,6 +45,10 @@ class StopFormScreen extends ConsumerStatefulWidget {
   /// Must be passed alongside [afterTrackId] when inserting between two tracks.
   final String? beforeTrackId;
 
+  /// When true the screen opens in read-only view; an edit button in the AppBar
+  /// lets the owner switch to full edit mode without navigating away.
+  final bool viewOnly;
+
   const StopFormScreen({
     super.key,
     required this.itineraryId,
@@ -52,6 +57,7 @@ class StopFormScreen extends ConsumerStatefulWidget {
     this.afterStopId,
     this.afterTrackId,
     this.beforeTrackId,
+    this.viewOnly = false,
   });
 
   bool get isEditMode => stopId != null;
@@ -86,9 +92,13 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
   // Annotations collected before the stop is created (create mode only)
   final List<_PendingAnnotation> _pendingAnnotations = [];
 
+  // false while showing read-only view; flips to true when owner taps edit
+  bool _isEditing = false;
+
   @override
   void initState() {
     super.initState();
+    _isEditing = !widget.viewOnly;
     if (widget.isEditMode) {
       WidgetsBinding.instance
           .addPostFrameCallback((_) => _initFromExistingStop());
@@ -525,8 +535,14 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final bool readOnly = widget.viewOnly && !_isEditing;
     final suggestionsAsync = ref.watch(placeSearchProvider);
     final duplicate = _findDuplicate();
+
+    final currentUserId = ref.watch(myProfileProvider).valueOrNull?.id;
+    final itineraryAsync = ref.watch(itineraryDetailProvider(widget.itineraryId));
+    final isOwner = currentUserId != null &&
+        itineraryAsync.valueOrNull?.userId == currentUserId;
 
     // In edit mode, keep local stop in sync when provider updates.
     if (widget.isEditMode && _initialized) {
@@ -541,9 +557,26 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
       });
     }
 
+    String appBarTitle;
+    if (readOnly) {
+      appBarTitle = 'Stop Details';
+    } else if (widget.isEditMode) {
+      appBarTitle = 'Edit Stop';
+    } else {
+      appBarTitle = 'Add Stop';
+    }
+
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.isEditMode ? 'Edit Stop' : 'Add Stop'),
+        title: Text(appBarTitle),
+        actions: [
+          if (readOnly && isOwner)
+            IconButton(
+              icon: const Icon(Icons.edit_outlined),
+              tooltip: 'Edit stop',
+              onPressed: () => setState(() => _isEditing = true),
+            ),
+        ],
       ),
       body: Center(
         child: ConstrainedBox(
@@ -557,65 +590,67 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   // ----------------------------------------------------------------
-                  // Section 1: Place search
+                  // Section 1: Place search (hidden in view mode)
                   // ----------------------------------------------------------------
-                  Text(
-                    'Search for a place',
-                    style: Theme.of(context).textTheme.titleSmall,
-                  ),
-                  const SizedBox(height: 8),
-                  TextField(
-                    controller: _searchController,
-                    decoration: InputDecoration(
-                      hintText: 'e.g. Eiffel Tower, Paris',
-                      border: const OutlineInputBorder(),
-                      prefixIcon: const Icon(Icons.search),
-                      suffixIcon: _searchController.text.isNotEmpty
-                          ? IconButton(
-                              icon: const Icon(Icons.clear),
-                              onPressed: () {
-                                _searchController.clear();
-                                ref.read(placeSearchProvider.notifier).clear();
-                              },
-                            )
-                          : null,
+                  if (!readOnly) ...[
+                    Text(
+                      'Search for a place',
+                      style: Theme.of(context).textTheme.titleSmall,
                     ),
-                    onChanged: _onSearchChanged,
-                  ),
-
-                  // Suggestions list
-                  suggestionsAsync.when(
-                    loading: () => const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 8),
-                      child: LinearProgressIndicator(),
-                    ),
-                    error: (_, __) => const SizedBox.shrink(),
-                    data: (suggestions) {
-                      if (suggestions.isEmpty) return const SizedBox.shrink();
-                      return Card(
-                        margin: const EdgeInsets.only(top: 4),
-                        child: Column(
-                          children: suggestions
-                              .map(
-                                (s) => ListTile(
-                                  dense: true,
-                                  leading: const Icon(Icons.place_outlined),
-                                  title: Text(s.displayName, maxLines: 1),
-                                  subtitle: Text(
-                                    s.address,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(fontSize: 11),
-                                  ),
-                                  onTap: () => _applySuggestion(s),
-                                ),
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: _searchController,
+                      decoration: InputDecoration(
+                        hintText: 'e.g. Eiffel Tower, Paris',
+                        border: const OutlineInputBorder(),
+                        prefixIcon: const Icon(Icons.search),
+                        suffixIcon: _searchController.text.isNotEmpty
+                            ? IconButton(
+                                icon: const Icon(Icons.clear),
+                                onPressed: () {
+                                  _searchController.clear();
+                                  ref.read(placeSearchProvider.notifier).clear();
+                                },
                               )
-                              .toList(),
-                        ),
-                      );
-                    },
-                  ),
-                  const SizedBox(height: 20),
+                            : null,
+                      ),
+                      onChanged: _onSearchChanged,
+                    ),
+
+                    // Suggestions list
+                    suggestionsAsync.when(
+                      loading: () => const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 8),
+                        child: LinearProgressIndicator(),
+                      ),
+                      error: (_, __) => const SizedBox.shrink(),
+                      data: (suggestions) {
+                        if (suggestions.isEmpty) return const SizedBox.shrink();
+                        return Card(
+                          margin: const EdgeInsets.only(top: 4),
+                          child: Column(
+                            children: suggestions
+                                .map(
+                                  (s) => ListTile(
+                                    dense: true,
+                                    leading: const Icon(Icons.place_outlined),
+                                    title: Text(s.displayName, maxLines: 1),
+                                    subtitle: Text(
+                                      s.address,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(fontSize: 11),
+                                    ),
+                                    onTap: () => _applySuggestion(s),
+                                  ),
+                                )
+                                .toList(),
+                          ),
+                        );
+                      },
+                    ),
+                    const SizedBox(height: 20),
+                  ],
 
                   // ----------------------------------------------------------------
                   // Section 2: Stop details
@@ -629,8 +664,9 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                   // Place name
                   TextFormField(
                     controller: _placeNameController,
+                    readOnly: readOnly,
                     decoration: const InputDecoration(
-                      labelText: 'Place name *',
+                      labelText: 'Place name',
                       border: OutlineInputBorder(),
                     ),
                     validator: (v) => (v == null || v.trim().isEmpty)
@@ -642,6 +678,7 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                   // Place address
                   TextFormField(
                     controller: _placeAddressController,
+                    readOnly: readOnly,
                     decoration: const InputDecoration(
                       labelText: 'Address',
                       border: OutlineInputBorder(),
@@ -663,11 +700,12 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                               ?.copyWith(color: Colors.grey.shade600),
                         ),
                       ),
-                      OutlinedButton.icon(
-                        onPressed: _pickOnMap,
-                        icon: const Icon(Icons.map_outlined, size: 16),
-                        label: const Text('Pick on map'),
-                      ),
+                      if (!readOnly)
+                        OutlinedButton.icon(
+                          onPressed: _pickOnMap,
+                          icon: const Icon(Icons.map_outlined, size: 16),
+                          label: const Text('Pick on map'),
+                        ),
                     ],
                   ),
                   const SizedBox(height: 16),
@@ -704,68 +742,80 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                   ],
 
                   // Place type
-                  DropdownButtonFormField<PlaceType>(
-                    value: _placeType,
-                    decoration: const InputDecoration(
-                      labelText: 'Place type',
-                      border: OutlineInputBorder(),
-                    ),
-                    hint: const Text('Select place type'),
-                    isExpanded: true,
-                    // Collapsed display: label only, no overflow
-                    selectedItemBuilder: (context) => PlaceType.values
-                        .map((t) => Align(
-                              alignment: Alignment.centerLeft,
-                              child: Text(t.label,),
-                            ))
-                        .toList(),
-                    // Open menu: two-line items with hint
-                    items: PlaceType.values
-                        .map(
-                          (t) => DropdownMenuItem(
-                            value: t,
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Text(t.label, ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  t.hint,
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    color: Colors.grey.shade600,
-                                    fontStyle: FontStyle.italic,
+                  if (readOnly)
+                    InputDecorator(
+                      decoration: const InputDecoration(
+                        labelText: 'Place type',
+                        border: OutlineInputBorder(),
+                      ),
+                      child: Text(
+                        _placeType?.label ?? '—',
+                        style: Theme.of(context).textTheme.bodyMedium,
+                      ),
+                    )
+                  else
+                    DropdownButtonFormField<PlaceType>(
+                      value: _placeType,
+                      decoration: const InputDecoration(
+                        labelText: 'Place type',
+                        border: OutlineInputBorder(),
+                      ),
+                      hint: const Text('Select place type'),
+                      isExpanded: true,
+                      selectedItemBuilder: (context) => PlaceType.values
+                          .map((t) => Align(
+                                alignment: Alignment.centerLeft,
+                                child: Text(t.label),
+                              ))
+                          .toList(),
+                      items: PlaceType.values
+                          .map(
+                            (t) => DropdownMenuItem(
+                              value: t,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Text(t.label),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    t.hint,
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      color: Colors.grey.shade600,
+                                      fontStyle: FontStyle.italic,
+                                    ),
                                   ),
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
-                          ),
-                        )
-                        .toList(),
-                    onChanged: (v) => setState(() => _placeType = v),
-                  ),
+                          )
+                          .toList(),
+                      onChanged: (v) => setState(() => _placeType = v),
+                    ),
                   const SizedBox(height: 16),
 
                   // Duration — recommended time to spend
                   InkWell(
-                    onTap: _showDurationPicker,
+                    onTap: readOnly ? null : _showDurationPicker,
                     borderRadius: BorderRadius.circular(4),
                     child: InputDecorator(
                       decoration: InputDecoration(
                         labelText: 'Recommended time to spend',
                         border: const OutlineInputBorder(),
                         prefixIcon: const Icon(Icons.schedule_outlined),
-                        suffixIcon: _totalDurationMin != null
-                            ? IconButton(
-                                icon: const Icon(Icons.clear, size: 18),
-                                onPressed: () => setState(() {
-                                  _durationDays = 0;
-                                  _durationHours = 0;
-                                  _durationMinutes = 0;
-                                }),
-                              )
-                            : const Icon(Icons.chevron_right),
+                        suffixIcon: readOnly
+                            ? null
+                            : (_totalDurationMin != null
+                                ? IconButton(
+                                    icon: const Icon(Icons.clear, size: 18),
+                                    onPressed: () => setState(() {
+                                      _durationDays = 0;
+                                      _durationHours = 0;
+                                      _durationMinutes = 0;
+                                    }),
+                                  )
+                                : const Icon(Icons.chevron_right)),
                       ),
                       child: Text(
                         _durationLabel,
@@ -780,17 +830,28 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                   const SizedBox(height: 12),
 
                   // Is free toggle
-                  SwitchListTile(
-                    title: const Text('This stop is free'),
-                    value: _isFree,
-                    onChanged: (v) => setState(() => _isFree = v),
-                    contentPadding: EdgeInsets.zero,
-                  ),
+                  if (readOnly)
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: Icon(
+                        _isFree ? Icons.check_circle_outline : Icons.money_off_outlined,
+                        color: _isFree ? Colors.green : null,
+                      ),
+                      title: Text(_isFree ? 'This stop is free' : 'This stop has a cost'),
+                    )
+                  else
+                    SwitchListTile(
+                      title: const Text('This stop is free'),
+                      value: _isFree,
+                      onChanged: (v) => setState(() => _isFree = v),
+                      contentPadding: EdgeInsets.zero,
+                    ),
 
                   // Cost field — hidden when is_free = true
                   if (!_isFree) ...[
                     TextFormField(
                       controller: _costController,
+                      readOnly: readOnly,
                       decoration: const InputDecoration(
                         labelText: 'Cost',
                         border: OutlineInputBorder(),
@@ -812,6 +873,7 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                   // Notes
                   TextFormField(
                     controller: _notesController,
+                    readOnly: readOnly,
                     decoration: const InputDecoration(
                       labelText: 'Notes',
                       border: OutlineInputBorder(),
@@ -831,11 +893,12 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                         'Annotations',
                         style: Theme.of(context).textTheme.titleSmall,
                       ),
-                      TextButton.icon(
-                        onPressed: () => _showAnnotationDialog(),
-                        icon: const Icon(Icons.add, size: 16),
-                        label: const Text('Add'),
-                      ),
+                      if (!readOnly)
+                        TextButton.icon(
+                          onPressed: () => _showAnnotationDialog(),
+                          icon: const Icon(Icons.add, size: 16),
+                          label: const Text('Add'),
+                        ),
                     ],
                   ),
                   const SizedBox(height: 8),
@@ -855,9 +918,12 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                             .map(
                               (a) => AnnotationChip(
                                 annotation: a,
-                                onEdit: () =>
-                                    _showAnnotationDialog(existing: a),
-                                onDelete: () => _deleteAnnotation(a.id),
+                                onEdit: readOnly
+                                    ? null
+                                    : () => _showAnnotationDialog(existing: a),
+                                onDelete: readOnly
+                                    ? null
+                                    : () => _deleteAnnotation(a.id),
                               ),
                             )
                             .toList(),
@@ -907,35 +973,37 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                   ],
                   const SizedBox(height: 20),
 
-                  // Save button
-                  FilledButton(
-                    onPressed: _saving ? null : _save,
-                    child: _saving
-                        ? const SizedBox(
-                            height: 20,
-                            width: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.white,
-                            ),
-                          )
-                        : Text(widget.isEditMode ? 'Save Changes' : 'Add Stop'),
-                  ),
-
-                  // Delete stop — edit mode only
-                  if (widget.isEditMode) ...[
-                    const SizedBox(height: 12),
-                    OutlinedButton.icon(
-                      onPressed: _saving ? null : _confirmDelete,
-                      icon: const Icon(Icons.delete_outline, color: Colors.red),
-                      label: const Text(
-                        'Delete Stop',
-                        style: TextStyle(color: Colors.red),
-                      ),
-                      style: OutlinedButton.styleFrom(
-                        side: const BorderSide(color: Colors.red),
-                      ),
+                  // Save button — hidden in read-only view
+                  if (!readOnly) ...[
+                    FilledButton(
+                      onPressed: _saving ? null : _save,
+                      child: _saving
+                          ? const SizedBox(
+                              height: 20,
+                              width: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : Text(widget.isEditMode ? 'Save Changes' : 'Add Stop'),
                     ),
+
+                    // Delete stop — edit mode only
+                    if (widget.isEditMode) ...[
+                      const SizedBox(height: 12),
+                      OutlinedButton.icon(
+                        onPressed: _saving ? null : _confirmDelete,
+                        icon: const Icon(Icons.delete_outline, color: Colors.red),
+                        label: const Text(
+                          'Delete Stop',
+                          style: TextStyle(color: Colors.red),
+                        ),
+                        style: OutlinedButton.styleFrom(
+                          side: const BorderSide(color: Colors.red),
+                        ),
+                      ),
+                    ],
                   ],
                 ],
               ),

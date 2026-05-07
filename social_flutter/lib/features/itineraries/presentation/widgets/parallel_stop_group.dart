@@ -31,6 +31,9 @@ class ParallelStopGroup extends StatefulWidget {
   /// Called when "+ // stop" is tapped — receives the track ID to add to.
   final void Function(String trackId)? onAddParallel;
 
+  /// Called when the stop card itself is tapped (always, regardless of edit mode).
+  final void Function(Stop stop)? onViewStop;
+
   /// Edit/delete/annotation callbacks forwarded to StopCard.
   final void Function(Stop stop)? onEditStop;
   final void Function(Stop stop)? onAddAnnotation;
@@ -60,6 +63,7 @@ class ParallelStopGroup extends StatefulWidget {
     required this.trackIndex,
     required this.getSegment,
     this.onAddParallel,
+    this.onViewStop,
     this.onEditStop,
     this.onAddAnnotation,
     this.onEditAnnotation,
@@ -212,6 +216,7 @@ class _ParallelStopGroupState extends State<ParallelStopGroup> {
       stop: stop,
       currency: widget.currency,
       trackIndex: widget.trackIndex,
+      onTap: widget.onViewStop != null ? () => widget.onViewStop!(stop) : null,
       onEdit: widget.editMode && widget.onEditStop != null
           ? () => widget.onEditStop!(stop)
           : null,

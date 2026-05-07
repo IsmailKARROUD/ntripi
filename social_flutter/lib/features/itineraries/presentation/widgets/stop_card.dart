@@ -12,6 +12,7 @@ class StopCard extends StatelessWidget {
   /// 1-based display index (track number). If null, the type icon is shown instead.
   final int? trackIndex;
 
+  final VoidCallback? onTap;
   final VoidCallback? onEdit;
   final VoidCallback? onAddAnnotation;
   final void Function(Annotation)? onEditAnnotation;
@@ -22,6 +23,7 @@ class StopCard extends StatelessWidget {
     required this.stop,
     required this.currency,
     this.trackIndex,
+    this.onTap,
     this.onEdit,
     this.onAddAnnotation,
     this.onEditAnnotation,
@@ -54,7 +56,10 @@ class StopCard extends StatelessWidget {
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      child: Padding(
+      clipBehavior: Clip.hardEdge,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
         padding: const EdgeInsets.all(12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -203,6 +208,7 @@ class StopCard extends StatelessWidget {
               ),
           ],
         ),
+      ),
       ),
     );
   }

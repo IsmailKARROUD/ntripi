@@ -149,6 +149,14 @@ final appRouter = GoRouter(
           },
         ),
         GoRoute(
+          path: '/itineraries/:id/stops/:stopId',
+          builder: (context, state) => StopFormScreen(
+            itineraryId: state.pathParameters['id']!,
+            stopId: state.pathParameters['stopId']!,
+            viewOnly: true,
+          ),
+        ),
+        GoRoute(
           path: '/itineraries/:id/stops/:stopId/edit',
           builder: (context, state) => StopFormScreen(
             itineraryId: state.pathParameters['id']!,
