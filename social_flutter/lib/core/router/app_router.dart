@@ -141,6 +141,7 @@ final appRouter = GoRouter(
               trackId: extra?['trackId'] as String?,
               afterStopId: extra?['afterStopId'] as String?,
               afterTrackId: extra?['afterTrackId'] as String?,
+              beforeTrackId: extra?['beforeTrackId'] as String?,
             );
           },
         ),

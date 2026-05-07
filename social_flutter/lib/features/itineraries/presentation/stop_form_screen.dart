@@ -39,6 +39,10 @@ class StopFormScreen extends ConsumerStatefulWidget {
   /// Track after which the new track should be placed (when trackId is null).
   final String? afterTrackId;
 
+  /// Track before which the new track should be placed (when trackId is null).
+  /// Must be passed alongside [afterTrackId] when inserting between two tracks.
+  final String? beforeTrackId;
+
   const StopFormScreen({
     super.key,
     required this.itineraryId,
@@ -46,6 +50,7 @@ class StopFormScreen extends ConsumerStatefulWidget {
     this.trackId,
     this.afterStopId,
     this.afterTrackId,
+    this.beforeTrackId,
   });
 
   bool get isEditMode => stopId != null;
@@ -219,6 +224,8 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
           'after_stop_id': widget.afterStopId,
         if (!widget.isEditMode && widget.afterTrackId != null)
           'after_track_id': widget.afterTrackId,
+        if (!widget.isEditMode && widget.beforeTrackId != null)
+          'before_track_id': widget.beforeTrackId,
         if (_placeNameController.text.trim().isNotEmpty)
           'place_name': _placeNameController.text.trim(),
         if (_placeAddressController.text.trim().isNotEmpty)

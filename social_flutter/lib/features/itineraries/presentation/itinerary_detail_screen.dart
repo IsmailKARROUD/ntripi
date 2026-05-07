@@ -484,7 +484,11 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                               onAddStopAfter: canEdit
                                   ? () => context.push(
                                         '/itineraries/${widget.itineraryId}/stops/new',
-                                        extra: {'afterTrackId': track.id},
+                                        extra: {
+                                          'afterTrackId': track.id,
+                                          if (nextTrack != null)
+                                            'beforeTrackId': nextTrack.id,
+                                        },
                                       )
                                   : null,
                             ));
