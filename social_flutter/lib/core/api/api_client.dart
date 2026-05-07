@@ -125,15 +125,18 @@ class AuthInterceptor extends Interceptor {
   }
 }
 
-/// Helper: extract the 'detail' string from a Dio error response.
-/// The Ntripi API always returns {"detail": "..."} for errors.
-/// Returns a generic fallback message if the format is unexpected.
-String extractErrorMessage(DioException e) {
-  try {
-    final data = e.response?.data;
-    if (data is Map<String, dynamic>) {
-      return data['detail']?.toString() ?? 'An error occurred.';
-    }
-  } catch (_) {}
-  return 'An error occurred. Please try again.';
+/// Helper: extract a human-readable message from any exception.
+/// For DioException, reads the API's {"detail": "..."} response body.
+/// For ItineraryStaleException and other typed exceptions, uses toString().
+String extractErrorMessage(dynamic e) {
+  if (e is DioException) {
+    try {
+      final data = e.response?.data;
+      if (data is Map<String, dynamic>) {
+        return data['detail']?.toString() ?? 'An error occurred.';
+      }
+    } catch (_) {}
+    return 'An error occurred. Please try again.';
+  }
+  return e?.toString() ?? 'An error occurred.';
 }

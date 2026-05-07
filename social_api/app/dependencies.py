@@ -77,11 +77,16 @@ def _etag_value(itinerary) -> str:
 def _normalize_etag(raw: str) -> str:
     """Strip quotes and normalize timezone suffix for comparison.
 
-    Pydantic v2 serializes naive datetimes without '+00:00'; clients may
-    send that back. The server always stores UTC so we treat missing tz as UTC.
+    Handles three client formats:
+      - "2026-05-07T14:23:11.456789+00:00"  (Python / Pydantic)
+      - "2026-05-07T14:23:11.456789Z"        (Dart UTC toIso8601String)
+      - "2026-05-07T14:23:11.456789"         (naive, treated as UTC)
+    All are normalized to the '+00:00' form before comparing.
     """
     s = raw.strip('"').strip()
-    if "T" in s and "+" not in s and not s.endswith("Z"):
+    if s.endswith("Z"):
+        s = s[:-1] + "+00:00"
+    elif "T" in s and "+" not in s:
         s += "+00:00"
     return s
 

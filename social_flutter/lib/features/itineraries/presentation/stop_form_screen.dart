@@ -20,6 +20,7 @@ import 'package:social_flutter/features/itineraries/domain/stop.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/annotation_chip.dart';
 import 'package:social_flutter/core/ui/destructive_actions.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/annotation_form_dialog.dart';
+import 'package:social_flutter/features/itineraries/data/itinerary_repository.dart';
 import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
 import 'package:social_flutter/core/utils/platform_utils.dart';
 
@@ -258,10 +259,31 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
 
       if (!mounted) return;
       context.pop();
+    } on ItineraryStaleException {
+      if (!mounted) return;
+      await showDialog<void>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Itinerary updated elsewhere'),
+          content: const Text(
+            'This itinerary was edited from another device. '
+            'Go back and reload to see the latest version.',
+          ),
+          actions: [
+            FilledButton(
+              onPressed: () {
+                Navigator.of(ctx).pop();
+                if (mounted) context.pop();
+              },
+              child: const Text('Go back'),
+            ),
+          ],
+        ),
+      );
     } on Exception catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(extractErrorMessage(e as dynamic))),
+        SnackBar(content: Text(extractErrorMessage(e))),
       );
     } finally {
       if (mounted) setState(() => _saving = false);
