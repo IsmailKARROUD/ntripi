@@ -29,24 +29,22 @@ class StopFormScreen extends ConsumerStatefulWidget {
   /// Null in create mode; the stop ID in edit mode.
   final String? stopId;
 
-  /// When set, the new stop is inserted at this position + 1, shifting
-  /// existing stops up. Null means append at the end.
-  final int? insertAfterPosition;
+  /// Target track to add within (null = create a new track).
+  final String? trackId;
 
-  /// When adding a parallel stop: the exact position to place it at.
-  /// Takes precedence over [insertAfterPosition].
-  final int? atPosition;
+  /// Stop after which to insert in the target track. Null = tail of track.
+  final String? afterStopId;
 
-  /// The parallel slot (0–2) for the new stop. 0 = sequential (default).
-  final int parallelPosition;
+  /// Track after which the new track should be placed (when trackId is null).
+  final String? afterTrackId;
 
   const StopFormScreen({
     super.key,
     required this.itineraryId,
     this.stopId,
-    this.insertAfterPosition,
-    this.atPosition,
-    this.parallelPosition = 0,
+    this.trackId,
+    this.afterStopId,
+    this.afterTrackId,
   });
 
   bool get isEditMode => stopId != null;
@@ -188,9 +186,7 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
     if (!widget.isEditMode) {
       final duplicate = _findDuplicate();
       if (duplicate != null) {
-        final stopLabel = duplicate.placeName != null
-            ? 'Stop ${duplicate.position} — ${duplicate.placeName}'
-            : 'Stop ${duplicate.position}';
+        final stopLabel = duplicate.placeName ?? 'A stop';
         final confirmed = await showDialog<bool>(
           context: context,
           builder: (ctx) => AlertDialog(
@@ -216,34 +212,12 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
 
     setState(() => _saving = true);
     try {
-      // Compute position for new stops.
-      int position = 1;
-      if (!widget.isEditMode) {
-        if (widget.atPosition != null) {
-          // Parallel insert: use the exact position passed by the caller.
-          position = widget.atPosition!;
-        } else if (widget.insertAfterPosition != null) {
-          position = widget.insertAfterPosition! + 1;
-        } else {
-          final stops = ref
-                  .read(itineraryDetailProvider(widget.itineraryId))
-                  .value
-                  ?.stops ??
-              [];
-          // Append after the last primary (parallel_position == 0) stop.
-          final primaryPositions = stops
-              .where((s) => s.parallelPosition == 0)
-              .map((s) => s.position);
-          position = primaryPositions.isEmpty
-              ? 1
-              : primaryPositions.reduce((a, b) => a > b ? a : b) + 1;
-        }
-      }
-
       final data = <String, dynamic>{
-        if (!widget.isEditMode) 'position': position,
-        if (!widget.isEditMode && widget.parallelPosition > 0)
-          'parallel_position': widget.parallelPosition,
+        if (!widget.isEditMode) 'track_id': widget.trackId,
+        if (!widget.isEditMode && widget.afterStopId != null)
+          'after_stop_id': widget.afterStopId,
+        if (!widget.isEditMode && widget.afterTrackId != null)
+          'after_track_id': widget.afterTrackId,
         if (_placeNameController.text.trim().isNotEmpty)
           'place_name': _placeNameController.text.trim(),
         if (_placeAddressController.text.trim().isNotEmpty)
@@ -270,10 +244,7 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
         if (_pendingAnnotations.isNotEmpty) {
           final itinerary =
               ref.read(itineraryDetailProvider(widget.itineraryId)).value;
-          final newStop = itinerary?.stops.firstWhere(
-            (s) => s.position == position,
-            orElse: () => itinerary.stops.last,
-          );
+          final newStop = itinerary?.stops.lastOrNull;
           if (newStop != null) {
             for (final pending in _pendingAnnotations) {
               await notifier.addAnnotation(newStop.id, {
@@ -573,9 +544,7 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
-                              'This place matches Stop ${duplicate.position}'
-                              '${duplicate.placeName != null ? ' — ${duplicate.placeName}' : ''}'
-                              ' already in this itinerary.',
+                              '${duplicate.placeName ?? 'A stop'} is already in this itinerary.',
                               style: TextStyle(
                                 fontSize: 12,
                                 color: Colors.amber.shade900,

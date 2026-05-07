@@ -1,35 +1,22 @@
 """
 dependencies.py — Reusable FastAPI dependencies.
 
-Why a separate dependencies.py?
-  - Dependencies are shared across multiple routers. Centralising them
-    here avoids circular imports and makes them easy to find.
-  - FastAPI's dependency injection system is one of its best features.
-    Any function can be a dependency; FastAPI handles calling it and
-    injecting the result automatically.
-
-The key dependency here is get_current_user, which:
-  1. Extracts the Bearer token from the Authorization header.
-  2. Decodes and validates the JWT.
-  3. Looks up the user in the database.
-  4. Verifies the user is active.
-  5. Returns the User ORM object.
-
-Any route that needs an authenticated user just declares:
-    current_user: User = Depends(get_current_user)
+Provides:
+  get_current_user   — validate JWT, return authenticated User
+  check_etag         — validate If-Match header for optimistic concurrency
 """
 
 import uuid
-from fastapi import Depends, HTTPException, status
+from datetime import timezone
+from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.models.user import User
 from app.services.auth import decode_access_token
 
-# HTTPBearer extracts the token from the "Authorization: Bearer <token>" header.
-# auto_error=False so we can raise 403 manually when the header is missing.
 bearer_scheme = HTTPBearer(auto_error=False)
 
 
@@ -40,9 +27,9 @@ def get_current_user(
     """
     Validate the JWT and return the authenticated User object.
 
-    Fails fast with appropriate HTTP errors:
-      - 403 if the Authorization header is missing entirely.
-      - 401 if the token is invalid or expired.
+    Fails fast:
+      - 403 if Authorization header is missing.
+      - 401 if token is invalid or expired.
       - 401 if the user no longer exists.
       - 403 if the user's account is deactivated.
     """
@@ -58,14 +45,12 @@ def get_current_user(
         headers={"WWW-Authenticate": "Bearer"},
     )
 
-    # decode_access_token returns the user ID string directly (or None).
     user_id_str = decode_access_token(credentials.credentials)
     if user_id_str is None:
         raise credentials_exception
     try:
         user_id = uuid.UUID(user_id_str)
     except ValueError:
-        # The 'sub' claim exists but is not a valid UUID string.
         raise credentials_exception
 
     user = db.get(User, user_id)
@@ -79,3 +64,86 @@ def get_current_user(
         )
 
     return user
+
+
+def _etag_value(itinerary) -> str:
+    """Format the ETag header value from itinerary.updated_at (RFC 7232)."""
+    ts = itinerary.updated_at
+    if ts.tzinfo is None:
+        ts = ts.replace(tzinfo=timezone.utc)
+    return f'"{ts.isoformat()}"'
+
+
+def _normalize_etag(raw: str) -> str:
+    """Strip quotes and normalize timezone suffix for comparison.
+
+    Pydantic v2 serializes naive datetimes without '+00:00'; clients may
+    send that back. The server always stores UTC so we treat missing tz as UTC.
+    """
+    s = raw.strip('"').strip()
+    if "T" in s and "+" not in s and not s.endswith("Z"):
+        s += "+00:00"
+    return s
+
+
+def make_etag_checker(itinerary_id_param: str = "itinerary_id"):
+    """
+    Factory returning a FastAPI dependency that:
+      1. Loads the itinerary row (SELECT FOR UPDATE).
+      2. Validates the If-Match header (RFC 7232).
+      3. Returns the locked itinerary on success.
+
+    Usage in a router:
+        itinerary = Depends(make_etag_checker())
+    """
+    def _check(
+        request: Request,
+        itinerary_id: uuid.UUID,
+        db: Session = Depends(get_db),
+        current_user: User = Depends(get_current_user),
+    ):
+        from app.models.itinerary import Itinerary  # late import avoids circular
+
+        stmt = select(Itinerary).where(Itinerary.id == itinerary_id)
+        # SELECT FOR UPDATE on PostgreSQL; SQLite ignores it gracefully.
+        try:
+            stmt = stmt.with_for_update()
+        except Exception:
+            pass
+        itinerary = db.execute(stmt).scalar_one_or_none()
+
+        if not itinerary:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Itinerary not found.",
+            )
+
+        if itinerary.user_id != current_user.id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You do not have permission to modify this itinerary.",
+            )
+
+        if_match = request.headers.get("If-Match")
+        if not if_match:
+            raise HTTPException(
+                status_code=status.HTTP_428_PRECONDITION_REQUIRED,
+                detail="If-Match header is required for mutations.",
+            )
+
+        client_etag = _normalize_etag(if_match)
+        server_etag = _normalize_etag(_etag_value(itinerary))
+
+        if client_etag != server_etag:
+            raise HTTPException(
+                status_code=status.HTTP_412_PRECONDITION_FAILED,
+                detail="itinerary modified, please reload",
+            )
+
+        return itinerary
+
+    return _check
+
+
+# Singleton dependency instances for the standard itinerary_id path parameter.
+require_etag = make_etag_checker()

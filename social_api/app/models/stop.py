@@ -2,15 +2,16 @@
 models/stop.py — SQLAlchemy ORM model for the stops table.
 
 Design decisions:
-  - type is 'origin' | 'waypoint' | 'arrival'. 'transit' was removed in
-    the transit_segments refactor — transport between stops is now modelled
-    as TransitSegment + TransportLeg rows.
-  - Location fields (lat, lng) use NUMERIC(9, 6) — enough precision for
-    ~11cm accuracy globally.
+  - Stops belong to a track (track_id FK). A track groups parallel alternatives
+    at the same point in a journey.
+  - rank is a fractional-index string (TEXT COLLATE "C") so stops within a
+    track are ordered byte-wise identically to Python string comparison.
+  - UNIQUE(track_id, rank) prevents two stops at the same rank in a track.
+  - StopType (origin/waypoint/arrival) is frontend-derived from track position;
+    it is never stored. No 'type' column exists on this table.
+  - Location fields (lat, lng) use NUMERIC(9, 6) — ~11cm accuracy globally.
   - is_free=True means explicitly free (e.g. public park). is_free=False
     with cost=0.00 means the user forgot to enter the cost.
-  - UNIQUE(itinerary_id, position) prevents two stops sharing the same
-    position index. The reorder endpoint reassigns positions atomically.
   - outgoing_segment / incoming_segment expose the TransitSegment that
     starts or ends at this stop (uselist=False — at most one each).
 """
@@ -21,7 +22,7 @@ from datetime import datetime
 
 from sqlalchemy import (
     Boolean, DateTime, ForeignKey, Integer,
-    Numeric, SmallInteger, String, Text, UniqueConstraint, func,
+    Numeric, String, Text, UniqueConstraint, func,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.dialects.postgresql import UUID
@@ -33,10 +34,7 @@ class Stop(Base):
     __tablename__ = "stops"
 
     __table_args__ = (
-        UniqueConstraint(
-            "itinerary_id", "position", "parallel_position",
-            name="uq_stop_position_parallel",
-        ),
+        UniqueConstraint("track_id", "rank", name="uq_stop_rank"),
     )
 
     id: Mapped[uuid.UUID] = mapped_column(
@@ -53,10 +51,14 @@ class Stop(Base):
         index=True,
     )
 
-    position: Mapped[int] = mapped_column(SmallInteger, nullable=False)
-    parallel_position: Mapped[int] = mapped_column(
-        SmallInteger, default=0, server_default="0", nullable=False
+    track_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("tracks.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
     )
+
+    rank: Mapped[str] = mapped_column(String, nullable=False)
 
     place_name: Mapped[str | None] = mapped_column(String(200), nullable=True)
     place_address: Mapped[str | None] = mapped_column(Text, nullable=True)
@@ -86,6 +88,11 @@ class Stop(Base):
         back_populates="stops",
     )
 
+    track: Mapped["Track"] = relationship(
+        "Track",
+        back_populates="stops",
+    )
+
     annotations: Mapped[list["Annotation"]] = relationship(
         "Annotation",
         back_populates="stop",
@@ -112,4 +119,4 @@ class Stop(Base):
     )
 
     def __repr__(self) -> str:
-        return f"<Stop id={self.id} pos={self.position}-{self.parallel_position}>"
+        return f"<Stop id={self.id} track={self.track_id} rank={self.rank!r}>"

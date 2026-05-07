@@ -1,16 +1,12 @@
-// widgets/parallel_stop_group.dart — Swipeable group of parallel stops at the same position.
+// widgets/parallel_stop_group.dart — Swipeable group of stops within one track.
 //
-// Displays 1–3 stops at identical itinerary positions as swipeable pages.
-// When only one stop exists at a position this renders identically to a plain
-// StopCard row. When multiple parallels exist the user can swipe left/right
-// and dots below the card show which alternative is active.
+// Displays the stops in a track as swipeable pages (1–N stops per track).
+// When only one stop exists the card renders as a plain StopCard row.
+// When multiple alternatives exist the user can swipe left/right; dots below
+// show which alternative is active.
 //
-// The segment shown below the card always belongs to the currently visible
-// parallel stop (segments are keyed by from_stop_id, so they naturally differ
-// per parallel).
-//
-// "// stop" button: appears to the right of the card in edit mode whenever
-// fewer than 3 parallels exist at this position.
+// "// stop" button: appears to the right of the card in edit mode and triggers
+// adding another stop to the same track (parallel alternative).
 
 import 'package:flutter/material.dart';
 import 'package:social_flutter/features/itineraries/domain/annotation.dart';
@@ -20,17 +16,20 @@ import 'package:social_flutter/features/itineraries/presentation/widgets/segment
 import 'package:social_flutter/features/itineraries/presentation/widgets/stop_card.dart';
 
 class ParallelStopGroup extends StatefulWidget {
-  /// All stops at the same position, sorted by parallel_position ascending.
+  /// All stops in this track, sorted by rank ascending.
   final List<Stop> stops;
   final String currency;
   final String itineraryId;
   final bool editMode;
 
+  /// 1-based track index shown on the stop card avatar.
+  final int trackIndex;
+
   /// Returns the outgoing segment for a given stop ID (null if none).
   final TransitSegment? Function(String stopId) getSegment;
 
-  /// Called when "+ // stop" is tapped — receives the position to add at.
-  final void Function(int position)? onAddParallel;
+  /// Called when "+ // stop" is tapped — receives the track ID to add to.
+  final void Function(String trackId)? onAddParallel;
 
   /// Edit/delete/annotation callbacks forwarded to StopCard.
   final void Function(Stop stop)? onEditStop;
@@ -58,6 +57,7 @@ class ParallelStopGroup extends StatefulWidget {
     required this.currency,
     required this.itineraryId,
     required this.editMode,
+    required this.trackIndex,
     required this.getSegment,
     this.onAddParallel,
     this.onEditStop,
@@ -135,7 +135,7 @@ class _ParallelStopGroupState extends State<ParallelStopGroup> {
               _AddParallelButton(
                 onTap: widget.onAddParallel == null
                     ? null
-                    : () => widget.onAddParallel!(_activeStop.position),
+                    : () => widget.onAddParallel!(_activeStop.trackId),
               ),
             ],
           ],
@@ -211,6 +211,7 @@ class _ParallelStopGroupState extends State<ParallelStopGroup> {
       key: ValueKey(stop.id),
       stop: stop,
       currency: widget.currency,
+      trackIndex: widget.trackIndex,
       onEdit: widget.editMode && widget.onEditStop != null
           ? () => widget.onEditStop!(stop)
           : null,

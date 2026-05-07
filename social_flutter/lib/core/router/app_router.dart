@@ -138,9 +138,9 @@ final appRouter = GoRouter(
             final extra = state.extra as Map<String, dynamic>?;
             return StopFormScreen(
               itineraryId: state.pathParameters['id']!,
-              insertAfterPosition: extra?['insertAfterPosition'] as int?,
-              atPosition: extra?['atPosition'] as int?,
-              parallelPosition: extra?['parallelPosition'] as int? ?? 0,
+              trackId: extra?['trackId'] as String?,
+              afterStopId: extra?['afterStopId'] as String?,
+              afterTrackId: extra?['afterTrackId'] as String?,
             );
           },
         ),

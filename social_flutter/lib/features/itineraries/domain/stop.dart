@@ -1,4 +1,8 @@
 // features/itineraries/domain/stop.dart — Stop Dart model and related enums.
+//
+// StopType is frontend-derived from track position — never sent to or received
+// from the API. Stop.fromJson always sets a placeholder of StopType.waypoint;
+// the real value is assigned by Itinerary._parseTracks() after deserialization.
 
 import 'package:social_flutter/features/itineraries/domain/annotation.dart';
 
@@ -77,8 +81,8 @@ enum PlaceType {
 class Stop {
   final String id;
   final String itineraryId;
-  final int position;
-  final int parallelPosition;
+  final String trackId;
+  final String rank;
   final StopType type;
 
   final String? placeName;
@@ -98,8 +102,8 @@ class Stop {
   const Stop({
     required this.id,
     required this.itineraryId,
-    required this.position,
-    this.parallelPosition = 0,
+    required this.trackId,
+    required this.rank,
     required this.type,
     this.placeName,
     this.placeAddress,
@@ -118,9 +122,9 @@ class Stop {
     return Stop(
       id: json['id'] as String,
       itineraryId: json['itinerary_id'] as String,
-      position: json['position'] as int,
-      parallelPosition: json['parallel_position'] as int? ?? 0,
-      type: StopType.waypoint,
+      trackId: json['track_id'] as String,
+      rank: json['rank'] as String,
+      type: StopType.waypoint, // overwritten by Itinerary._parseTracks()
       placeName: json['place_name'] as String?,
       placeAddress: json['place_address'] as String?,
       lat: (json['lat'] as num?)?.toDouble(),
@@ -142,9 +146,8 @@ class Stop {
     return {
       'id': id,
       'itinerary_id': itineraryId,
-      'position': position,
-      'parallel_position': parallelPosition,
-      'type': type.name,
+      'track_id': trackId,
+      'rank': rank,
       if (placeName != null) 'place_name': placeName,
       if (placeAddress != null) 'place_address': placeAddress,
       if (lat != null) 'lat': lat,
@@ -161,8 +164,8 @@ class Stop {
   Stop copyWith({
     String? id,
     String? itineraryId,
-    int? position,
-    int? parallelPosition,
+    String? trackId,
+    String? rank,
     StopType? type,
     String? placeName,
     String? placeAddress,
@@ -179,8 +182,8 @@ class Stop {
     return Stop(
       id: id ?? this.id,
       itineraryId: itineraryId ?? this.itineraryId,
-      position: position ?? this.position,
-      parallelPosition: parallelPosition ?? this.parallelPosition,
+      trackId: trackId ?? this.trackId,
+      rank: rank ?? this.rank,
       type: type ?? this.type,
       placeName: placeName ?? this.placeName,
       placeAddress: placeAddress ?? this.placeAddress,

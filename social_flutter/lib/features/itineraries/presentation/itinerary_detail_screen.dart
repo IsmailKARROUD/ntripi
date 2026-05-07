@@ -49,7 +49,6 @@ import 'package:social_flutter/features/itineraries/domain/stop.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/annotation_chip.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/rate_itinerary_dialog.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/parallel_stop_group.dart';
-import 'package:social_flutter/features/itineraries/presentation/widgets/stop_card.dart';
 import 'package:social_flutter/core/utils/platform_utils.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/leg_form_dialog.dart';
 import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
@@ -66,20 +65,9 @@ class ItineraryDetailScreen extends ConsumerStatefulWidget {
 
 class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
   bool _editMode = false;
-  // Tracks which parallel index is active per position (position → index).
-  // Default is 0 (primary stop). Used to filter segments by both endpoints.
-  final Map<int, int> _activeParallelByPosition = {};
-  // Reorder mode replaces the interleaved list with a standalone
-  // ReorderableListView so drag gestures aren't stolen by CustomScrollView.
-  bool _reorderMode = false;
-  bool _saving = false;
+  // Active parallel-stop index per track (trackId → page index).
+  final Map<String, int> _activeParallelByTrack = {};
   bool _mapVisible = true;
-  // Captured on edit-mode entry; compared on exit to detect unsaved reorders.
-  List<String> _originalStopOrder = [];
-  // Null = no drag has happened yet (provider order is authoritative).
-  // Non-null = user dragged at least once; this order is rendered locally
-  // until the user saves (sends to server) or discards.
-  List<String>? _pendingOrder;
 
   static const _markerColors = {
     StopType.origin: Colors.green,
@@ -87,129 +75,12 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
     StopType.arrival: Colors.red,
   };
 
-  void _enterEditMode(List<Stop> stops) {
-    setState(() {
-      _editMode = true;
-      _originalStopOrder = stops.map((s) => s.id).toList();
-      _pendingOrder = null;
-    });
+  void _enterEditMode() {
+    setState(() => _editMode = true);
   }
 
-  // Re-orders providerStops according to _pendingOrder.
-  // We always use the fresh provider objects (not stale snapshots) so that
-  // edits made in sub-screens (place name, cost…) are reflected immediately.
-  List<Stop> _applyPendingOrder(List<Stop> providerStops) {
-    if (_pendingOrder == null) return providerStops;
-    final map = {for (final s in providerStops) s.id: s};
-    final ordered =
-        _pendingOrder!.map((id) => map[id]).whereType<Stop>().toList();
-    // Stops added from sub-screens while in edit mode won't be in _pendingOrder
-    // yet — append them at the end so they're never invisible.
-    for (final s in providerStops) {
-      if (!_pendingOrder!.contains(s.id)) ordered.add(s);
-    }
-    return ordered;
-  }
-
-  // Keeps _pendingOrder consistent when sub-screens add or delete stops.
-  // Uses addPostFrameCallback because this is called from ref.listen, which
-  // fires during the provider's build phase — calling setState directly there
-  // would schedule a rebuild inside a rebuild and trigger an assertion.
-  void _syncPendingOrder(List<Stop> providerStops) {
-    if (_pendingOrder == null) return;
-    final newIds = providerStops.map((s) => s.id).toSet();
-    final synced = [
-      ..._pendingOrder!.where(newIds.contains), // keep existing, drop deleted
-      ...newIds.where((id) => !_pendingOrder!.contains(id)), // append new
-    ];
-    if (!_listsEqual(synced, _pendingOrder!)) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) setState(() => _pendingOrder = synced);
-      });
-    }
-  }
-
-  // Records the new order locally without touching the server.
-  // ReorderableListView passes newIndex AFTER removal, so we decrement when
-  // moving downward to get the correct insertion index.
-  void _onReorder(List<Stop> displayStops, int oldIndex, int newIndex) {
-    if (newIndex > oldIndex) newIndex--;
-    final ids = displayStops.map((s) => s.id).toList();
-    final moved = ids.removeAt(oldIndex);
-    ids.insert(newIndex, moved);
-    setState(() => _pendingOrder = ids);
-  }
-
-  // Only stop reordering is "pending" — every other mutation (stop edit/delete,
-  // segment edit/delete, add stop) commits immediately via the sub-screen.
-  bool get _hasChanges =>
-      _pendingOrder != null && !_listsEqual(_pendingOrder!, _originalStopOrder);
-
-  /// Save pending reorder to the server and exit edit mode.
-  Future<void> _saveAndExit() async {
-    setState(() => _saving = true);
-    try {
-      if (_hasChanges) {
-        await ref
-            .read(itineraryDetailProvider(widget.itineraryId).notifier)
-            .reorderStops(_pendingOrder!);
-      }
-    } on Exception catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(extractErrorMessage(e as dynamic))),
-      );
-      setState(() => _saving = false);
-      return;
-    }
-    if (!mounted) return;
-    setState(() {
-      _saving = false;
-      _editMode = false;
-      _reorderMode = false;
-      _pendingOrder = null;
-    });
-  }
-
-  /// Called by the back button when in edit mode with unsaved changes.
-  /// Shows Stay / Discard / Save.
-  Future<void> _confirmExitEditMode() async {
-    final result = await showDialog<_ExitAction>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Unsaved changes'),
-        content: const Text(
-          'You have unsaved changes. What do you want to do?',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(_ExitAction.stay),
-            child: const Text('Stay'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(_ExitAction.discard),
-            child: const Text('Discard'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(ctx).pop(_ExitAction.save),
-            child: const Text('Save'),
-          ),
-        ],
-      ),
-    );
-
-    if (!mounted) return;
-
-    if (result == _ExitAction.save) {
-      await _saveAndExit();
-    } else if (result == _ExitAction.discard) {
-      setState(() {
-        _editMode = false;
-        _reorderMode = false;
-        _pendingOrder = null;
-      });
-    }
-    // _ExitAction.stay → do nothing, stay in edit mode.
+  void _exitEditMode() {
+    setState(() => _editMode = false);
   }
 
   Future<void> _addItineraryAnnotation() async {
@@ -374,14 +245,6 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
     }
   }
 
-  bool _listsEqual(List<String> a, List<String> b) {
-    if (a.length != b.length) return false;
-    for (var i = 0; i < a.length; i++) {
-      if (a[i] != b[i]) return false;
-    }
-    return true;
-  }
-
   @override
   Widget build(BuildContext context) {
     final itineraryAsync =
@@ -390,24 +253,11 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
     final isOwner = currentUserId != null &&
         itineraryAsync.valueOrNull?.userId == currentUserId;
 
-    // Keep _pendingOrder in sync when sub-screens add or delete stops.
-    ref.listen(itineraryDetailProvider(widget.itineraryId), (_, next) {
-      _syncPendingOrder(next.valueOrNull?.stops ?? []);
-    });
-
     return PopScope(
       canPop: !_editMode,
       onPopInvokedWithResult: (didPop, _) async {
         if (didPop) return;
-        if (_hasChanges) {
-          await _confirmExitEditMode();
-        } else {
-          setState(() {
-            _editMode = false;
-            _reorderMode = false;
-            _pendingOrder = null;
-          });
-        }
+        setState(() => _editMode = false);
       },
       child: Stack(
         children: [
@@ -423,22 +273,14 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                   IconButton(
                     icon: const Icon(Icons.add_location_alt_outlined),
                     tooltip: 'Add stop',
-                    onPressed: _reorderMode
-                        ? null
-                        : () => context.push(
-                              '/itineraries/${widget.itineraryId}/stops/new',
-                            ),
+                    onPressed: () => context.push(
+                      '/itineraries/${widget.itineraryId}/stops/new',
+                    ),
                   ),
                   IconButton(
-                    icon: Icon(
-                      Icons.reorder,
-                      color: _reorderMode
-                          ? Theme.of(context).colorScheme.primary
-                          : null,
-                    ),
-                    tooltip: _reorderMode ? 'Exit reorder' : 'Reorder stops',
-                    onPressed: () =>
-                        setState(() => _reorderMode = !_reorderMode),
+                    icon: const Icon(Icons.check),
+                    tooltip: 'Done',
+                    onPressed: _exitEditMode,
                   ),
                 ] else ...[
                   if (itineraryAsync.valueOrNull != null &&
@@ -458,8 +300,7 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                       onSelected: (action) async {
                         switch (action) {
                           case _OwnerAction.editStops:
-                            _enterEditMode(
-                                itineraryAsync.valueOrNull?.stops ?? []);
+                            _enterEditMode();
                           case _OwnerAction.editDetails:
                             context.push(
                                 '/itineraries/${widget.itineraryId}/edit');
@@ -529,34 +370,7 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
             body: Center(
               child: ConstrainedBox(
                 constraints: BoxConstraints(maxWidth: isDesktopWeb() ? kDesktopMaxWidth : double.infinity),
-              child: _reorderMode
-                  ? itineraryAsync.when(
-                      loading: () =>
-                          const Center(child: CircularProgressIndicator()),
-                      error: (e, _) =>
-                          Center(child: Text(extractErrorMessage(e as dynamic))),
-                      data: (itinerary) {
-                        final displayStops = _applyPendingOrder(itinerary.stops);
-                        // Reorder operates on primary stops only (parallel_position == 0).
-                        final primaryStops = displayStops
-                            .where((s) => s.parallelPosition == 0)
-                            .toList();
-                        final stopWidgets = primaryStops
-                            .map((stop) => StopCard(
-                                  key: ValueKey(stop.id),
-                                  stop: stop,
-                                  currency: itinerary.currency,
-                                ))
-                            .toList();
-                        return ReorderableListView(
-                          padding: const EdgeInsets.only(top: 8, bottom: 16),
-                          onReorder: (oldIndex, newIndex) =>
-                              _onReorder(primaryStops, oldIndex, newIndex),
-                          children: stopWidgets,
-                        );
-                      },
-                    )
-                  : itineraryAsync.when(
+              child: itineraryAsync.when(
                       loading: () =>
                           const Center(child: CircularProgressIndicator()),
                       error: (error, _) => Center(
@@ -580,111 +394,60 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                         ),
                       ),
                       data: (itinerary) {
-                        final displayStops = _applyPendingOrder(itinerary.stops);
-              
-                        // Build a lookup from fromStopId → segment for interleaved display.
+                        final allStops = itinerary.stops;
+                        final tracks = itinerary.tracks;
+                        final canEdit = isOwner && _editMode;
+
                         final segmentByFromStop = {
                           for (final seg in itinerary.segments)
                             seg.fromStopId: seg,
                         };
-                        final mappableStops = displayStops
+                        final mappableStops = allStops
                             .where((s) => s.lat != null && s.lng != null)
                             .toList();
-              
                         final polylinePoints = mappableStops
                             .map((s) => LatLng(s.lat!, s.lng!))
                             .toList();
-              
                         final mapCenter = mappableStops.isNotEmpty
                             ? LatLng(mappableStops.first.lat!,
                                 mappableStops.first.lng!)
                             : const LatLng(48.8566, 2.3522);
-              
-                        final canEdit = isOwner && _editMode;
 
-                        // Group displayStops by position (preserves pending-order).
-                        final Map<int, List<Stop>> byPos = {};
-                        for (final s in displayStops) {
-                          byPos.putIfAbsent(s.position, () => []).add(s);
-                        }
-                        final sortedPos = byPos.keys.toList()..sort();
-                        final displayGroups = [
-                          for (final pos in sortedPos) byPos[pos]!
-                        ];
-
-                        // stopWidgets used only in reorder mode (primary stops only).
-                        final stopWidgets = displayStops
-                            .where((s) => s.parallelPosition == 0)
-                            .map((stop) => StopCard(
-                                  key: ValueKey(stop.id),
-                                  stop: stop,
-                                  currency: itinerary.currency,
-                                ))
-                            .toList();
-
-                        // Interleaved list: ParallelStopGroup per position, then
-                        // optional inline separator (add stop / add transit).
+                        // Build interleaved list from tracks (server already sorted by rank).
                         List<Widget> buildInterleavedList() {
                           final items = <Widget>[];
-                          final isOnlyGroup = displayGroups.length == 1;
-
-                          for (var i = 0; i < displayGroups.length; i++) {
-                            final group = displayGroups[i];
-                            final primaryStop = group.first;
-                            final hasNextGroup = i < displayGroups.length - 1;
-                            // Pre-capture next group as a final so closures
-                            // below don't capture the mutable loop variable i.
-                            final nextGroup =
-                                hasNextGroup ? displayGroups[i + 1] : null;
-
-                            // Single-group: "Add stop" above for non-origin.
-                            if (canEdit &&
-                                isOnlyGroup &&
-                                primaryStop.type != StopType.origin) {
-                              items.add(_InlineSeparator(
-                                key: ValueKey('above-${primaryStop.id}'),
-                                onAddStop: () => context.push(
-                                  '/itineraries/${widget.itineraryId}/stops/new',
-                                  extra: {
-                                    'insertAfterPosition':
-                                        primaryStop.position - 1,
-                                  },
-                                ),
-                              ));
-                            }
+                          for (var i = 0; i < tracks.length; i++) {
+                            final track = tracks[i];
+                            final trackStops = track.stops;
+                            if (trackStops.isEmpty) continue;
+                            final hasNextTrack = i < tracks.length - 1;
+                            final nextTrack = hasNextTrack ? tracks[i + 1] : null;
+                            final trackIndex = i + 1;
 
                             items.add(ParallelStopGroup(
-                              key: ValueKey('group-${primaryStop.position}'),
-                              stops: group,
+                              key: ValueKey('track-${track.id}'),
+                              stops: trackStops,
                               currency: itinerary.currency,
                               itineraryId: widget.itineraryId,
                               editMode: canEdit,
+                              trackIndex: trackIndex,
                               getSegment: (fromStopId) {
                                 final seg = segmentByFromStop[fromStopId];
                                 if (seg == null) return null;
-                                // Only show the segment when its toStopId
-                                // matches the active parallel at the next group.
-                                if (nextGroup != null) {
-                                  final nextActiveIdx =
-                                      _activeParallelByPosition[nextGroup.first.position] ?? 0;
-                                  final nextActiveStop = nextGroup.length > nextActiveIdx
-                                      ? nextGroup[nextActiveIdx]
-                                      : nextGroup.first;
-                                  if (seg.toStopId != nextActiveStop.id) return null;
+                                if (nextTrack != null) {
+                                  final nextIdx = _activeParallelByTrack[nextTrack.id] ?? 0;
+                                  final nextStop = nextTrack.stops.length > nextIdx
+                                      ? nextTrack.stops[nextIdx]
+                                      : nextTrack.stops.first;
+                                  if (seg.toStopId != nextStop.id) return null;
                                 }
                                 return seg;
                               },
                               onAddParallel: canEdit
-                                  ? (position) {
-                                      final nextParallel = group.length;
-                                      context.push(
+                                  ? (trackId) => context.push(
                                         '/itineraries/${widget.itineraryId}/stops/new',
-                                        extra: {
-                                          'atPosition': position,
-                                          'parallelPosition': nextParallel,
-                                        },
-                                      );
-                                    }
+                                        extra: {'trackId': trackId},
+                                      )
                                   : null,
                               onEditStop: canEdit
                                   ? (stop) => context.push(
@@ -698,39 +461,30 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                                   ? (stop, a) => _editAnnotation(stop.id, a)
                                   : null,
                               onDeleteAnnotation: canEdit
-                                  ? (stop, a) =>
-                                      _deleteAnnotation(stop.id, a)
+                                  ? (stop, a) => _deleteAnnotation(stop.id, a)
                                   : null,
                               onEditSegment: canEdit
                                   ? (seg) => context.push(
                                         '/itineraries/${widget.itineraryId}/segments/${seg.id}/edit',
                                       )
                                   : null,
-                              onDeleteSegment: canEdit
-                                  ? _confirmDeleteSegment
-                                  : null,
-                              onAddTransit: canEdit && nextGroup != null
+                              onDeleteSegment: canEdit ? _confirmDeleteSegment : null,
+                              onAddTransit: canEdit && nextTrack != null
                                   ? (fromStopId) {
-                                      final nextActiveIdx =
-                                          _activeParallelByPosition[nextGroup.first.position] ?? 0;
-                                      final toStop = nextGroup.length > nextActiveIdx
-                                          ? nextGroup[nextActiveIdx]
-                                          : nextGroup.first;
+                                      final nextIdx = _activeParallelByTrack[nextTrack.id] ?? 0;
+                                      final toStop = nextTrack.stops.length > nextIdx
+                                          ? nextTrack.stops[nextIdx]
+                                          : nextTrack.stops.first;
                                       return _addSegmentWithLeg(fromStopId, toStop.id);
                                     }
                                   : null,
                               onPageChanged: (idx) => setState(() {
-                                _activeParallelByPosition[primaryStop.position] = idx;
+                                _activeParallelByTrack[track.id] = idx;
                               }),
-                              onAddStopAfter: canEdit &&
-                                      (hasNextGroup ||
-                                          primaryStop.type != StopType.arrival)
+                              onAddStopAfter: canEdit
                                   ? () => context.push(
                                         '/itineraries/${widget.itineraryId}/stops/new',
-                                        extra: {
-                                          'insertAfterPosition':
-                                              primaryStop.position,
-                                        },
+                                        extra: {'afterTrackId': track.id},
                                       )
                                   : null,
                             ));
@@ -738,7 +492,6 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                           return items;
                         }
 
-              
                         return RefreshIndicator(
                           onRefresh: () => ref
                               .read(itineraryDetailProvider(widget.itineraryId)
@@ -747,9 +500,6 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                           child: CustomScrollView(
                             physics: const AlwaysScrollableScrollPhysics(),
                             slivers: [
-                              // ------------------------------------------------------------
-                              // Cover image hero banner
-                              // ------------------------------------------------------------
                               if (itinerary.coverImageUrl != null)
                                 SliverToBoxAdapter(
                                   child: _CoverImage(
@@ -758,10 +508,6 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                                         : itinerary.coverImageUrl!,
                                   ),
                                 ),
-              
-                              // ------------------------------------------------------------
-                              // Summary chips
-                              // ------------------------------------------------------------
                               SliverToBoxAdapter(
                                 child: Padding(
                                   padding: const EdgeInsets.symmetric(
@@ -780,8 +526,7 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                                       ),
                                       _SummaryChip(
                                         icon: Icons.place_outlined,
-                                        label:
-                                            '${displayStops.length} stop${displayStops.length == 1 ? '' : 's'}',
+                                        label: '${allStops.length} stop${allStops.length == 1 ? '' : 's'}',
                                       ),
                                       if (isOwner && _editMode)
                                         GestureDetector(
@@ -801,10 +546,6 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                                   ),
                                 ),
                               ),
-              
-                              // ------------------------------------------------------------
-                              // Description
-                              // ------------------------------------------------------------
                               if (itinerary.description != null &&
                                   itinerary.description!.isNotEmpty)
                                 SliverToBoxAdapter(
@@ -820,18 +561,12 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                                     ),
                                   ),
                                 ),
-              
-                              // ------------------------------------------------------------
-                              // Itinerary-level annotations (Notes)
-                              // ------------------------------------------------------------
                               if (itinerary.annotations.isNotEmpty || canEdit)
                                 SliverToBoxAdapter(
                                   child: Padding(
-                                    padding: const EdgeInsets.fromLTRB(
-                                        16, 10, 16, 4),
+                                    padding: const EdgeInsets.fromLTRB(16, 10, 16, 4),
                                     child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
+                                      crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
                                         Row(
                                           children: [
@@ -840,21 +575,16 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                                               style: Theme.of(context)
                                                   .textTheme
                                                   .titleSmall
-                                                  ?.copyWith(
-                                                    fontWeight: FontWeight.w600,
-                                                  ),
+                                                  ?.copyWith(fontWeight: FontWeight.w600),
                                             ),
                                             if (canEdit) ...[
                                               const Spacer(),
                                               TextButton.icon(
-                                                onPressed:
-                                                    _addItineraryAnnotation,
-                                                icon: const Icon(Icons.add,
-                                                    size: 16),
+                                                onPressed: _addItineraryAnnotation,
+                                                icon: const Icon(Icons.add, size: 16),
                                                 label: const Text('Add note'),
                                                 style: TextButton.styleFrom(
-                                                  visualDensity:
-                                                      VisualDensity.compact,
+                                                  visualDensity: VisualDensity.compact,
                                                 ),
                                               ),
                                             ],
@@ -862,23 +592,18 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                                         ),
                                         if (itinerary.annotations.isEmpty)
                                           Padding(
-                                            padding: const EdgeInsets.only(
-                                                top: 4, bottom: 4),
+                                            padding: const EdgeInsets.only(top: 4, bottom: 4),
                                             child: Text(
                                               'No notes yet.',
                                               style: Theme.of(context)
                                                   .textTheme
                                                   .bodySmall
-                                                  ?.copyWith(
-                                                    color:
-                                                        Colors.grey.shade500,
-                                                  ),
+                                                  ?.copyWith(color: Colors.grey.shade500),
                                             ),
                                           )
                                         else
                                           Padding(
-                                            padding:
-                                                const EdgeInsets.only(top: 6),
+                                            padding: const EdgeInsets.only(top: 6),
                                             child: Wrap(
                                               spacing: 6,
                                               runSpacing: 6,
@@ -894,14 +619,10 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                                                         updatedAt: a.updatedAt,
                                                       ),
                                                       onEdit: canEdit
-                                                          ? () =>
-                                                              _editItineraryAnnotation(
-                                                                  a)
+                                                          ? () => _editItineraryAnnotation(a)
                                                           : null,
                                                       onDelete: canEdit
-                                                          ? () =>
-                                                              _deleteItineraryAnnotation(
-                                                                  a)
+                                                          ? () => _deleteItineraryAnnotation(a)
                                                           : null,
                                                     ),
                                                   )
@@ -912,202 +633,111 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                                     ),
                                   ),
                                 ),
-
-                              // ------------------------------------------------------------
-                              // Rating section (read) / Save button (edit mode)
-                              // ------------------------------------------------------------
                               SliverToBoxAdapter(
                                 child: canEdit
-                                    ? Padding(
-                                        padding: const EdgeInsets.fromLTRB(
-                                            64, 10, 64, 10),
-                                        child: SizedBox(
-                                          width: double.infinity,
-                                          child: FilledButton(
-                                            onPressed:
-                                                _saving ? null : _saveAndExit,
-                                            child: _saving
-                                                ? const SizedBox(
-                                                    width: 20,
-                                                    height: 20,
-                                                    child:
-                                                        CircularProgressIndicator(
-                                                      strokeWidth: 2,
-                                                      color: kSand,
-                                                    ),
-                                                  )
-                                                : const Text(
-                                                    'Save',
-                                                    style: TextStyle(
-                                                      color: kSand,
-                                                      fontWeight: FontWeight.bold,
-                                                      fontSize: 20,
-                                                    ),
-                                                  ),
-                                          ),
-                                        ),
-                                      )
+                                    ? const SizedBox.shrink()
                                     : _RatingSection(
                                         itineraryId: widget.itineraryId,
                                         itinerary: itinerary,
                                       ),
                               ),
-              
-                              // ------------------------------------------------------------
-                              // Map section
-                              // ------------------------------------------------------------
                               SliverToBoxAdapter(
                                 child: InkWell(
-                                  onTap: () =>
-                                      setState(() => _mapVisible = !_mapVisible),
+                                  onTap: () => setState(() => _mapVisible = !_mapVisible),
                                   child: Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 16, vertical: 10),
+                                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                                     child: Row(
                                       children: [
                                         const Icon(Icons.map_outlined, size: 18),
                                         const SizedBox(width: 8),
-                                        const Text(
-                                          'Map',
-                                          style: TextStyle(
-                                              fontWeight: FontWeight.w600,
-                                              fontSize: 15),
-                                        ),
+                                        const Text('Map', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
                                         const Spacer(),
-                                        Icon(
-                                          _mapVisible
-                                              ? Icons.expand_less
-                                              : Icons.expand_more,
-                                          size: 20,
-                                        ),
+                                        Icon(_mapVisible ? Icons.expand_less : Icons.expand_more, size: 20),
                                       ],
                                     ),
                                   ),
                                 ),
                               ),
                               if (_mapVisible)
-                              SliverToBoxAdapter(
-                                child: Padding(
-                                  padding:
-                                      const EdgeInsets.only(right: 4, left: 4),
-                                  child: SizedBox(
-                                    height: 240,
-                                    child: Stack(
-                                      children: [
-                                        FlutterMap(
-                                          options: MapOptions(
-                                            initialCenter: mapCenter,
-                                            initialZoom:
-                                                mappableStops.isNotEmpty
-                                                    ? 12
-                                                    : 5,
-                                          ),
-                                          children: [
-                                            TileLayer(
-                                              urlTemplate:
-                                                  'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                                              userAgentPackageName:
-                                                  'com.ntripi.app',
+                                SliverToBoxAdapter(
+                                  child: Padding(
+                                    padding: const EdgeInsets.only(right: 4, left: 4),
+                                    child: SizedBox(
+                                      height: 240,
+                                      child: Stack(
+                                        children: [
+                                          FlutterMap(
+                                            options: MapOptions(
+                                              initialCenter: mapCenter,
+                                              initialZoom: mappableStops.isNotEmpty ? 12 : 5,
                                             ),
-                                            if (polylinePoints.length >= 2)
-                                              PolylineLayer(
-                                                polylines: [
-                                                  Polyline(
-                                                    points: polylinePoints,
-                                                    color: Colors.blue
-                                                        .withOpacity(0.6),
-                                                    strokeWidth: 3,
-                                                  ),
+                                            children: [
+                                              TileLayer(
+                                                urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                                                userAgentPackageName: 'com.ntripi.app',
+                                              ),
+                                              if (polylinePoints.length >= 2)
+                                                PolylineLayer(
+                                                  polylines: [
+                                                    Polyline(
+                                                      points: polylinePoints,
+                                                      color: Colors.blue.withValues(alpha: 0.6),
+                                                      strokeWidth: 3,
+                                                    ),
+                                                  ],
+                                                ),
+                                              MarkerLayer(
+                                                markers: mappableStops.map((stop) {
+                                                  final color = _markerColors[stop.type] ?? Colors.grey;
+                                                  return Marker(
+                                                    point: LatLng(stop.lat!, stop.lng!),
+                                                    child: Column(
+                                                      mainAxisSize: MainAxisSize.min,
+                                                      children: [
+                                                        Container(
+                                                          padding: const EdgeInsets.all(3),
+                                                          decoration: BoxDecoration(
+                                                            color: color,
+                                                            shape: BoxShape.circle,
+                                                            border: Border.all(color: Colors.white, width: 2),
+                                                          ),
+                                                          child: Icon(Icons.place, color: Colors.white, size: 10),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  );
+                                                }).toList(),
+                                              ),
+                                              RichAttributionWidget(
+                                                attributions: [
+                                                  TextSourceAttribution('OpenStreetMap contributors'),
                                                 ],
                                               ),
-                                            MarkerLayer(
-                                              markers:
-                                                  mappableStops.map((stop) {
-                                                final color =
-                                                    _markerColors[stop.type] ??
-                                                        Colors.grey;
-                                                return Marker(
-                                                  point: LatLng(
-                                                      stop.lat!, stop.lng!),
-                                                  child: Column(
-                                                    mainAxisSize:
-                                                        MainAxisSize.min,
-                                                    children: [
-                                                      Container(
-                                                        padding:
-                                                            const EdgeInsets
-                                                                .all(3),
-                                                        decoration:
-                                                            BoxDecoration(
-                                                          color: color,
-                                                          shape:
-                                                              BoxShape.circle,
-                                                          border: Border.all(
-                                                            color: Colors.white,
-                                                            width: 2,
-                                                          ),
-                                                        ),
-                                                        child: Text(
-                                                          '${stop.position}',
-                                                          style:
-                                                              const TextStyle(
-                                                            color: Colors.white,
-                                                            fontSize: 10,
-                                                            fontWeight:
-                                                                FontWeight.bold,
-                                                          ),
-                                                        ),
-                                                      ),
-                                                    ],
-                                                  ),
-                                                );
-                                              }).toList(),
-                                            ),
-                                            RichAttributionWidget(
-                                              attributions: [
-                                                TextSourceAttribution(
-                                                  'OpenStreetMap contributors',
-                                                ),
-                                              ],
-                                            ),
-                                          ],
-                                        ),
-                                        Positioned(
-                                          bottom: 28,
-                                          left: 8,
-                                          child: Container(
-                                            padding: const EdgeInsets.symmetric(
-                                                horizontal: 6, vertical: 2),
-                                            decoration: BoxDecoration(
-                                              color:
-                                                  Colors.white.withOpacity(0.8),
-                                              borderRadius:
-                                                  BorderRadius.circular(4),
-                                            ),
-                                            child: const Text(
-                                              'Powered by OpenStreetMap',
-                                              style: TextStyle(
-                                                  fontSize: 9,
-                                                  color: Colors.black54),
+                                            ],
+                                          ),
+                                          Positioned(
+                                            bottom: 28,
+                                            left: 8,
+                                            child: Container(
+                                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                              decoration: BoxDecoration(
+                                                color: Colors.white.withValues(alpha: 0.8),
+                                                borderRadius: BorderRadius.circular(4),
+                                              ),
+                                              child: const Text('Powered by OpenStreetMap',
+                                                  style: TextStyle(fontSize: 9, color: Colors.black54)),
                                             ),
                                           ),
-                                        ),
-                                      ],
+                                        ],
+                                      ),
                                     ),
                                   ),
                                 ),
-                              ),
-              
                               const SliverToBoxAdapter(child: Divider(height: 1)),
-              
-                              // ------------------------------------------------------------
-                              // Stop list (edit: reorderable stops only; read: interleaved)
-                              // ------------------------------------------------------------
-                              if (displayStops.isEmpty)
+                              if (tracks.isEmpty)
                                 SliverToBoxAdapter(
                                   child: Padding(
-                                    padding:
-                                        const EdgeInsets.symmetric(vertical: 48),
+                                    padding: const EdgeInsets.symmetric(vertical: 48),
                                     child: canEdit
                                         ? GestureDetector(
                                             onTap: () => context.push(
@@ -1115,35 +745,19 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                                             ),
                                             child: Column(
                                               children: [
-                                                Icon(Icons.place_outlined,
-                                                    size: 48,
-                                                    color: Colors.grey.shade400),
+                                                Icon(Icons.place_outlined, size: 48, color: Colors.grey.shade400),
                                                 const SizedBox(height: 12),
-                                                const Text(
-                                                    'No stops yet. Tap + to add one.'),
+                                                const Text('No stops yet. Tap + to add one.'),
                                               ],
                                             ),
                                           )
                                         : Column(
                                             children: [
-                                              Icon(Icons.place_outlined,
-                                                  size: 48,
-                                                  color: Colors.grey.shade400),
+                                              Icon(Icons.place_outlined, size: 48, color: Colors.grey.shade400),
                                               const SizedBox(height: 12),
                                               const Text('No stops yet.'),
                                             ],
                                           ),
-                                  ),
-                                )
-                              else if (_reorderMode)
-                                SliverToBoxAdapter(
-                                  child: ReorderableListView(
-                                    shrinkWrap: true,
-                                    physics: const NeverScrollableScrollPhysics(),
-                                    padding: const EdgeInsets.only(bottom: 16),
-                                    onReorder: (oldIndex, newIndex) => _onReorder(
-                                        displayStops, oldIndex, newIndex),
-                                    children: stopWidgets,
                                   ),
                                 )
                               else
@@ -1377,71 +991,6 @@ class _SummaryChip extends StatelessWidget {
   }
 }
 
-class _InlineSeparator extends StatelessWidget {
-  final VoidCallback onAddStop;
-
-  const _InlineSeparator({
-    super.key,
-    required this.onAddStop,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 36, vertical: 2),
-      child: Row(
-        children: [
-          Expanded(child: Divider(color: Colors.grey.shade300, height: 1)),
-          const SizedBox(width: 8),
-          _ActionButton(
-            icon: Icons.add_location_alt_outlined,
-            label: 'Add stop',
-            onTap: onAddStop,
-          ),
-          const SizedBox(width: 8),
-          Expanded(child: Divider(color: Colors.grey.shade300, height: 1)),
-        ],
-      ),
-    );
-  }
-}
-
-class _ActionButton extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final VoidCallback onTap;
-
-  const _ActionButton({
-    required this.icon,
-    required this.label,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(6),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 13, color: Colors.grey.shade500),
-            const SizedBox(width: 3),
-            Text(
-              label,
-              style: Theme.of(context)
-                  .textTheme
-                  .bodySmall
-                  ?.copyWith(color: Colors.grey.shade500),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
 
 class _CoverImage extends StatefulWidget {
   final String url;
@@ -1472,7 +1021,5 @@ class _CoverImageState extends State<_CoverImage> {
     );
   }
 }
-
-enum _ExitAction { stay, discard, save }
 
 enum _OwnerAction { editStops, editDetails, delete }

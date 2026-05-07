@@ -27,6 +27,7 @@ from app.config import Settings, get_settings
 from app.database import get_db
 from app.models.itinerary import Itinerary
 from app.models.stop import Stop
+from app.models.track import Track
 from app.models.transit_segment import TransitSegment
 from app.models.user import User
 from app.services.share_service import prepare_share_context, _resolve_preview_image_url
@@ -55,12 +56,18 @@ def share_itinerary(
     itinerary = db.execute(
         select(Itinerary)
         .options(
-            selectinload(Itinerary.stops).selectinload(Stop.outgoing_segment).selectinload(
-                TransitSegment.legs
-            )
+            selectinload(Itinerary.tracks)
+            .selectinload(Track.stops)
+            .selectinload(Stop.outgoing_segment)
+            .selectinload(TransitSegment.legs)
         )
         .where(Itinerary.id == itinerary_id)
     ).scalar_one_or_none()
+
+    if itinerary:
+        itinerary.tracks.sort(key=lambda t: t.rank)
+        for track in itinerary.tracks:
+            track.stops.sort(key=lambda s: s.rank)
 
     # Not found or only_me → identical 404 response to avoid leaking existence.
     if itinerary is None or itinerary.visibility == "only_me":
@@ -98,7 +105,8 @@ def share_itinerary(
         )
 
     # Public — build the full rich context.
-    stops = sorted(itinerary.stops, key=lambda s: s.position)
+    # Stops are ordered by track rank then stop rank (tracks already sorted by loader).
+    stops = [s for track in itinerary.tracks for s in sorted(track.stops, key=lambda s: s.rank)]
     segments = [
         stop.outgoing_segment
         for stop in stops

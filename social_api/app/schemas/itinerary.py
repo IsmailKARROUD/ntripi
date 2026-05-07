@@ -4,11 +4,11 @@ schemas/itinerary.py — Pydantic schemas for itinerary-related requests and res
 Hierarchy:
   AnnotationCreate / AnnotationResponse
   StopCreate / StopUpdate / StopResponse
+  TrackResponse
   TransportLegCreate / TransportLegUpdate / TransportLegResponse
   TransitSegmentCreate / TransitSegmentResponse
   ItineraryCreate / ItineraryUpdate / ItinerarySummary / ItineraryDetail
   AllowedUserAdd / AllowedUserResponse
-  ReorderRequest
 """
 
 import uuid
@@ -86,12 +86,21 @@ class AnnotationResponse(BaseModel):
 
 
 # ---------------------------------------------------------------------------
-# Stop schemas  — 'transit' type removed
+# Stop schemas
 # ---------------------------------------------------------------------------
 
 class StopCreate(BaseModel):
-    position: int = Field(..., ge=1)
-    parallel_position: int = Field(default=0, ge=0, le=2)
+    # Track placement: provide an existing track_id to add within that track,
+    # or omit (null) to create a new track.
+    track_id: Optional[uuid.UUID] = None
+
+    # Anchor stops for rank computation. Both optional; the server bisects.
+    after_stop_id: Optional[uuid.UUID] = None
+    before_stop_id: Optional[uuid.UUID] = None
+
+    # Anchor tracks for rank computation when creating a new track (track_id=null).
+    after_track_id: Optional[uuid.UUID] = None
+    before_track_id: Optional[uuid.UUID] = None
 
     place_name: Optional[str] = Field(None, max_length=200)
     place_address: Optional[str] = None
@@ -110,7 +119,6 @@ class StopCreate(BaseModel):
 
 
 class StopUpdate(BaseModel):
-    position: Optional[int] = Field(None, ge=1)
     place_name: Optional[str] = Field(None, max_length=200)
     place_address: Optional[str] = None
     lat: Optional[float] = Field(None, ge=-90, le=90)
@@ -124,12 +132,17 @@ class StopUpdate(BaseModel):
     is_free: Optional[bool] = None
     notes: Optional[str] = None
 
+    # Optional move: if track_id provided and differs from current, stop is moved.
+    track_id: Optional[uuid.UUID] = None
+    after_stop_id: Optional[uuid.UUID] = None
+    before_stop_id: Optional[uuid.UUID] = None
+
 
 class StopResponse(BaseModel):
     id: uuid.UUID
     itinerary_id: uuid.UUID
-    position: int
-    parallel_position: int
+    track_id: uuid.UUID
+    rank: str
     place_name: Optional[str]
     place_address: Optional[str]
     lat: Optional[float]
@@ -141,6 +154,19 @@ class StopResponse(BaseModel):
     notes: Optional[str]
     created_at: datetime
     annotations: list[AnnotationResponse] = []
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+# ---------------------------------------------------------------------------
+# Track schemas
+# ---------------------------------------------------------------------------
+
+class TrackResponse(BaseModel):
+    id: uuid.UUID
+    itinerary_id: uuid.UUID
+    rank: str
+    stops: list[StopResponse] = []
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -270,8 +296,6 @@ class RatingResponse(BaseModel):
 
 class RaterInfo(BaseModel):
     # All fields are Optional because the rater may have deleted their account.
-    # ItineraryRating.user_id is SET NULL on user delete (GDPR anonymization),
-    # so these fields can all be None for historical ratings.
     user_id: Optional[uuid.UUID]
     username: Optional[str]
     display_name: Optional[str]
@@ -313,6 +337,7 @@ class ItinerarySummary(BaseModel):
     currency: str
     visibility: Literal['public', 'followers', 'restricted', 'only_me']
     created_at: datetime
+    updated_at: datetime
     rating_avg: Optional[float]
     rating_count: int = 0
     stops_count: int = 0
@@ -320,11 +345,10 @@ class ItinerarySummary(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
-# ItineraryDetail extends ItinerarySummary with the full stop + segment lists.
-# Used by GET /itineraries/{id} and the reorder endpoint.
+# ItineraryDetail extends ItinerarySummary with tracks (ordered) + segments.
 class ItineraryDetail(ItinerarySummary):
     description: Optional[str]
-    stops: list[StopResponse] = []
+    tracks: list[TrackResponse] = []
     segments: list[TransitSegmentResponse] = []
     annotations: list[ItineraryAnnotationResponse] = []
 
@@ -350,11 +374,3 @@ class AllowedUserResponse(BaseModel):
 
 class ItineraryImageResponse(BaseModel):
     cover_image_url: str
-
-
-# ---------------------------------------------------------------------------
-# Reorder schema
-# ---------------------------------------------------------------------------
-
-class ReorderRequest(BaseModel):
-    stop_ids: list[uuid.UUID] = Field(..., min_length=1)

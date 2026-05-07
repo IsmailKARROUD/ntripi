@@ -8,6 +8,10 @@ import 'package:social_flutter/features/itineraries/presentation/widgets/annotat
 class StopCard extends StatelessWidget {
   final Stop stop;
   final String currency;
+
+  /// 1-based display index (track number). If null, the type icon is shown instead.
+  final int? trackIndex;
+
   final VoidCallback? onEdit;
   final VoidCallback? onAddAnnotation;
   final void Function(Annotation)? onEditAnnotation;
@@ -17,6 +21,7 @@ class StopCard extends StatelessWidget {
     super.key,
     required this.stop,
     required this.currency,
+    this.trackIndex,
     this.onEdit,
     this.onAddAnnotation,
     this.onEditAnnotation,
@@ -63,14 +68,20 @@ class StopCard extends StatelessWidget {
                     CircleAvatar(
                       radius: 14,
                       backgroundColor: typeColor.withOpacity(0.15),
-                      child: Text(
-                        '${stop.position}',
-                        style: TextStyle(
-                          color: typeColor,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 12,
-                        ),
-                      ),
+                      child: trackIndex != null
+                          ? Text(
+                              '$trackIndex',
+                              style: TextStyle(
+                                color: typeColor,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 12,
+                              ),
+                            )
+                          : Icon(
+                              _typeIcons[stop.type] ?? Icons.place_outlined,
+                              color: typeColor,
+                              size: 14,
+                            ),
                     ),
                     const SizedBox(height: 4),
                     Icon(typeIcon, size: 16, color: typeColor),

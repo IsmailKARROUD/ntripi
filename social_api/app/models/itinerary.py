@@ -94,16 +94,24 @@ class Itinerary(Base):
         nullable=False,
     )
 
-    # Ordered relationship — stops are always returned sorted by position.
+    # Tracks ordered by rank (fractional index). Each track contains stops.
+    tracks: Mapped[list["Track"]] = relationship(
+        "Track",
+        back_populates="itinerary",
+        cascade="all, delete-orphan",
+        order_by="Track.rank",
+    )
+
+    # Flat stop list via itinerary_id FK (for totals recalculation).
     stops: Mapped[list["Stop"]] = relationship(
         "Stop",
         back_populates="itinerary",
         cascade="all, delete-orphan",
-        order_by="Stop.position",
+        viewonly=True,
     )
 
     # Transit segments for this itinerary (order maintained in Python by
-    # from_stop.position after eager loading — see _sort_segments in router).
+    # from_stop track+rank after eager loading — see _sort_segments in router).
     segments: Mapped[list["TransitSegment"]] = relationship(
         "TransitSegment",
         back_populates="itinerary",
@@ -120,7 +128,7 @@ class Itinerary(Base):
 
     @property
     def stops_count(self) -> int:
-        return len(self.stops)
+        return sum(len(t.stops) for t in self.tracks) if self.tracks else len(self.stops)
 
     def __repr__(self) -> str:
         return f"<Itinerary id={self.id} title={self.title!r}>"
