@@ -1,9 +1,20 @@
 // features/itineraries/data/itinerary_repository.dart — Itinerary API calls.
 //
-// Every mutation method accepts an [etag] parameter (the itinerary's current
-// ETag, i.e. '"<updatedAt ISO>"') and sends it as the If-Match header.
-// On 412 Precondition Failed the repository throws ItineraryStaleException
-// so the presentation layer can show a "reload" dialog.
+// ETAG / IF-MATCH FLOW:
+//   Every mutation method (addStop, deleteStop, addAnnotation, …) requires an
+//   [etag] parameter — the quoted updated_at timestamp from the last server
+//   response, e.g. '"2026-05-07T14:23:11Z"'.
+//
+//   The repository adds this as the HTTP If-Match header. The server compares
+//   it to the itinerary's current updated_at:
+//     - Match  → mutation proceeds; new ETag returned in response header.
+//     - Stale  → 412 Precondition Failed → repository throws ItineraryStaleException.
+//     - Missing→ 428 Precondition Required (shouldn't happen from this repo).
+//
+// WHO PROVIDES THE ETAG?
+//   ItineraryDetailNotifier._etag reads it from the currently loaded state
+//   (state.value?.eTag). Every mutation in the notifier passes that value down
+//   to the repository without the presentation layer needing to think about it.
 
 import 'dart:typed_data';
 
@@ -20,14 +31,20 @@ import 'package:social_flutter/features/itineraries/domain/ratings_page.dart';
 import 'package:social_flutter/features/itineraries/domain/stop.dart';
 import 'package:social_flutter/features/itineraries/domain/transit_segment.dart';
 
-/// Thrown when the server returns 412 Precondition Failed, meaning the
-/// itinerary has been modified elsewhere since the client last fetched it.
+/// Thrown when the server returns 412 Precondition Failed.
+///
+/// This means the itinerary was modified from another device (or another tab)
+/// after the client's last fetch. The presentation layer should catch this,
+/// show a "reload" dialog, and re-fetch the itinerary before retrying.
 class ItineraryStaleException implements Exception {
   const ItineraryStaleException();
   @override
-  String toString() => 'ItineraryStaleException: itinerary modified remotely, please reload';
+  String toString() =>
+      'ItineraryStaleException: itinerary modified remotely, please reload';
 }
 
+/// Convenience helper to build Dio options with the If-Match header.
+/// The [etag] value must already be quoted: '"2026-05-07T14:23:11Z"'.
 Options _ifMatch(String etag) => Options(headers: {'If-Match': etag});
 
 class ItineraryRepository {

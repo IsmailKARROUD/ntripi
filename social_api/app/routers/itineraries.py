@@ -164,7 +164,21 @@ def _recalculate_totals(itinerary: Itinerary, db: Session) -> None:
 
 
 def _load_itinerary_detail(itinerary_id: uuid.UUID, db: Session) -> Itinerary:
-    """Load itinerary with tracks → stops → annotations, plus segments+legs."""
+    """
+    Load itinerary with all related data for the detail response.
+
+    Uses selectinload chains to avoid N+1 queries:
+      itinerary → tracks → stops → annotations   (3 levels deep)
+      itinerary → segments → legs
+      itinerary → segments → from_stop  (needed to order segments later)
+      itinerary → itinerary_annotations
+
+    WHY SORT AFTER LOADING?
+      selectinload ignores the relationship's order_by when loading eagerly.
+      We re-sort in Python after loading. The DB index on (itinerary_id, rank)
+      and (track_id, rank) means the data arrives roughly sorted anyway, so
+      Python sort is O(n log n) on nearly-sorted data — very fast.
+    """
     itinerary = db.execute(
         select(Itinerary)
         .options(
@@ -180,7 +194,9 @@ def _load_itinerary_detail(itinerary_id: uuid.UUID, db: Session) -> Itinerary:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                             detail="Itinerary not found.")
 
-    # Sort tracks by rank, stops within each track by rank.
+    # Sort tracks and stops by rank. Because rank is COLLATE "C" in the DB
+    # and Python uses the same byte ordering by default, the Python sort and
+    # the DB ORDER BY produce identical results.
     itinerary.tracks.sort(key=lambda t: t.rank)
     for track in itinerary.tracks:
         track.stops.sort(key=lambda s: s.rank)
@@ -211,7 +227,16 @@ def _get_track_or_404(track_id: uuid.UUID, itinerary_id: uuid.UUID, db: Session)
 
 
 def _delete_track_if_empty(track_id: uuid.UUID, db: Session) -> None:
-    """Delete track if it has no remaining stops."""
+    """
+    Delete the track if it has no remaining stops.
+
+    Called after every stop deletion and after every cross-track move.
+    The DB model allows ON DELETE CASCADE from tracks to stops, but we don't
+    use it here because we want this logic to be explicit and auditable —
+    a database trigger would be invisible to the application code.
+
+    LIMIT 1 is intentional: we only need to know if any stop exists, not count them all.
+    """
     remaining = db.execute(
         select(Stop).where(Stop.track_id == track_id).limit(1)
     ).scalar_one_or_none()
@@ -227,10 +252,25 @@ def _resolve_stop_rank(
     before_stop_id: uuid.UUID | None,
     db: Session,
 ) -> str:
-    """Compute a rank for a new stop within track using the provided anchors.
+    """
+    Compute a fractional-index rank for a new stop within a track.
 
-    When both anchors are None, places the stop after all existing stops
-    in the track (tail insert).
+    The client sends anchor stop IDs:
+      after_stop_id  → the new stop goes after this one  (lower bound)
+      before_stop_id → the new stop goes before this one (upper bound)
+
+    key_between(after.rank, before.rank) produces a rank string strictly
+    between the two. If no anchors are provided, the stop is placed at the
+    tail (after the current last stop in the track).
+
+    WHY VALIDATE THAT ANCHORS BELONG TO THIS TRACK?
+      A stale client could send an anchor from a different track, or one that
+      was deleted. Either case is a client bug — we return 422 rather than
+      silently placing the stop at the wrong position.
+
+    WHY 412 WHEN after.rank >= before.rank?
+      The client's view of stop order is stale (someone else reordered between
+      the client's last fetch and this insert). 412 signals "reload first".
     """
     after_rank: str | None = None
     before_rank: str | None = None
@@ -569,28 +609,41 @@ def add_stop(
     itinerary: Itinerary = Depends(require_etag),
 ) -> Response:
     """
-    Add a new stop. If track_id is provided, add within that track; otherwise
-    create a new track using after_track_id / before_track_id anchors.
-    Requires If-Match header.
+    Add a new stop. Requires If-Match header (validated by require_etag dependency).
+
+    Two modes:
+      track_id provided  → add the stop inside that existing track, using
+                           after_stop_id / before_stop_id as rank anchors.
+      track_id = null    → create a brand-new track, using after_track_id /
+                           before_track_id to place it within the itinerary,
+                           then add the stop at the start of the new track.
+
+    WHY A RETRY LOOP?
+      Two concurrent requests might compute the same rank for the same anchor
+      pair. The UNIQUE(track_id, rank) constraint catches this as an
+      IntegrityError. We retry up to 3 times (re-fetching ranks each time)
+      before giving up with 409. In practice collisions are extremely rare.
     """
     for attempt in range(3):
         try:
             if body.track_id is not None:
-                # Add to existing track.
+                # Add to an existing track.
                 track = _get_track_or_404(body.track_id, itinerary_id, db)
                 stop_rank = _resolve_stop_rank(
                     track, body.after_stop_id, body.before_stop_id, db
                 )
             else:
-                # Create a new track, then add the stop.
+                # Create a brand-new track at the computed position, then add
+                # the first (and only) stop with rank "a0" — the initial key.
                 track_rank = _resolve_track_rank(
                     itinerary_id, body.after_track_id, body.before_track_id, db
                 )
                 track = Track(itinerary_id=itinerary_id, rank=track_rank)
                 db.add(track)
-                db.flush()
-                stop_rank = key_between(None, None)
+                db.flush()  # flush to get track.id before creating the stop
+                stop_rank = key_between(None, None)  # "a0" — first key in empty range
 
+            # Exclude the positioning fields — they're not columns on the stops table.
             stop_fields = body.model_dump(exclude={
                 'track_id', 'after_stop_id', 'before_stop_id',
                 'after_track_id', 'before_track_id',
@@ -603,24 +656,27 @@ def add_stop(
             )
             db.add(stop)
             db.flush()
-            break
+            break  # success — exit the retry loop
 
         except IntegrityError:
             db.rollback()
             if attempt == 2:
                 raise HTTPException(status_code=status.HTTP_409_CONFLICT,
                                     detail="Rank collision — please retry.")
-            # Re-fetch anchors and retry.
+            # The rank we computed collided with a concurrent insert at the same
+            # anchor. Roll back, let the loop re-run _resolve_*_rank with fresh DB
+            # state, which will now see the concurrent row and bisect around it.
 
     _recalculate_totals(itinerary, db)
     db.commit()
     db.refresh(stop)
-    db.refresh(itinerary)
+    db.refresh(itinerary)  # refresh to get the new updated_at for the ETag
 
     from fastapi.encoders import jsonable_encoder
     from fastapi.responses import JSONResponse
     data = jsonable_encoder(StopResponse.model_validate(stop))
     resp = JSONResponse(content=data, status_code=status.HTTP_201_CREATED)
+    # Return the new ETag so the client can immediately use it for the next mutation.
     resp.headers["ETag"] = _etag_value(itinerary)
     return resp
 

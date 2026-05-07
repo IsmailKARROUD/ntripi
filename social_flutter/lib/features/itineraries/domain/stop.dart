@@ -1,8 +1,20 @@
 // features/itineraries/domain/stop.dart — Stop Dart model and related enums.
 //
-// StopType is frontend-derived from track position — never sent to or received
-// from the API. Stop.fromJson always sets a placeholder of StopType.waypoint;
-// the real value is assigned by Itinerary._parseTracks() after deserialization.
+// KEY CHANGE FROM THE OLD MODEL:
+//   Before: stops had `position` (1-based integer slot within the itinerary)
+//   and `parallelPosition` (0-based index within that slot).
+//
+//   After: stops belong to a `track` (trackId) and have a `rank` — a
+//   fractional-index string that determines their order within the track.
+//   No integer positions exist anywhere in the model.
+//
+// WHY STOPTYPE IS A PLACEHOLDER IN fromJson:
+//   StopType (origin / waypoint / arrival) is derived from the stop's TRACK
+//   position in the itinerary, not from the stop itself. A stop doesn't know
+//   whether its track is first, last, or in the middle — only the itinerary
+//   knows that after all tracks are loaded. So fromJson always sets the
+//   placeholder value `StopType.waypoint`, and Itinerary._parseTracks()
+//   overwrites it with the correct value after deserialization.
 
 import 'package:social_flutter/features/itineraries/domain/annotation.dart';
 
@@ -40,6 +52,8 @@ enum PlaceType {
         PlaceType.sight => 'Sight',
       };
 
+  // Legacy DB values (stored before the camelCase rename) mapped to their
+  // current enum members. fromString handles these transparently.
   static const _legacyMap = {
     'restaurant': PlaceType.eatDrink,
     'cafe': PlaceType.eatDrink,
@@ -53,6 +67,8 @@ enum PlaceType {
     'other': null,
   };
 
+  /// Always use this — never PlaceType.values.byName() directly.
+  /// Returns null for unknown values instead of throwing.
   static PlaceType? fromString(String? value) {
     if (value == null) return null;
     if (_legacyMap.containsKey(value)) return _legacyMap[value];
@@ -81,8 +97,15 @@ enum PlaceType {
 class Stop {
   final String id;
   final String itineraryId;
+
+  /// Which track (column of alternatives) this stop belongs to.
   final String trackId;
+
+  /// Fractional-index rank — determines order within the track.
   final String rank;
+
+  /// Role of this stop in the journey. Set to `waypoint` as a placeholder by
+  /// fromJson; overwritten by Itinerary._parseTracks() with the real value.
   final StopType type;
 
   final String? placeName;
@@ -124,7 +147,8 @@ class Stop {
       itineraryId: json['itinerary_id'] as String,
       trackId: json['track_id'] as String,
       rank: json['rank'] as String,
-      type: StopType.waypoint, // overwritten by Itinerary._parseTracks()
+      // Placeholder — Itinerary._parseTracks() assigns the real StopType.
+      type: StopType.waypoint,
       placeName: json['place_name'] as String?,
       placeAddress: json['place_address'] as String?,
       lat: (json['lat'] as num?)?.toDouble(),
@@ -148,6 +172,7 @@ class Stop {
       'itinerary_id': itineraryId,
       'track_id': trackId,
       'rank': rank,
+      // StopType is NOT sent to the server — it is derived on the client.
       if (placeName != null) 'place_name': placeName,
       if (placeAddress != null) 'place_address': placeAddress,
       if (lat != null) 'lat': lat,

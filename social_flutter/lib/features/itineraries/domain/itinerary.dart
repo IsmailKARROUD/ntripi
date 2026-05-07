@@ -95,17 +95,25 @@ class Itinerary {
     );
   }
 
-  /// Derive StopType for every stop based on its track's position.
+  /// Assign the correct StopType to every stop based on its track's position
+  /// in the overall list.
   ///
-  /// Rule (per spec):
-  ///   0 tracks  → nothing to do
-  ///   1 track   → every stop in it gets StopType.origin
+  /// WHY THIS IS DONE HERE AND NOT IN Stop.fromJson:
+  ///   A stop doesn't know whether its track is the first or last — only the
+  ///   itinerary knows that. So Stop.fromJson sets a placeholder (waypoint)
+  ///   and this method overwrites it with the real value after all tracks are
+  ///   loaded.
+  ///
+  /// Rules:
+  ///   0 tracks  → nothing to do (empty itinerary)
+  ///   1 track   → all stops in it are StopType.origin (it is both origin AND arrival)
   ///   2+ tracks → first track = origin, last track = arrival, rest = waypoint
+  ///
+  /// The server pre-sorts both tracks (by rank) and stops within each track
+  /// (by rank) before returning them, so we trust that order here.
   static List<Track> _parseTracks(List<dynamic>? raw) {
     if (raw == null || raw.isEmpty) return const [];
 
-    // Server returns tracks pre-sorted by rank; stops within each track
-    // are also pre-sorted by rank. We trust the server order.
     final tracks = raw
         .map((t) => Track.fromJson(t as Map<String, dynamic>))
         .toList();
@@ -259,6 +267,11 @@ class Itinerary {
     }
   }
 
-  /// ETag value for use in If-Match headers. Quoted per RFC 7232.
+  /// ETag value for use in If-Match mutation headers (RFC 7232 — quotes required).
+  ///
+  /// The server computes the same value from itinerary.updated_at. On PostgreSQL
+  /// this produces "+00:00" timezone; Dart's toIso8601String() on a UTC DateTime
+  /// produces "Z". The server normalizes both forms before comparing, so either
+  /// format is accepted. See _normalize_etag() in app/dependencies.py.
   String get eTag => '"${updatedAt.toIso8601String()}"';
 }

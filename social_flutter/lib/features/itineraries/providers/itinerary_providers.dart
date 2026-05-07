@@ -66,10 +66,20 @@ class ItineraryDetailNotifier
     return ref.read(itineraryRepositoryProvider).getItinerary(id);
   }
 
-  /// Current ETag for If-Match header. Returns empty string if state not loaded.
+  /// Current ETag for the If-Match header on every mutation.
+  ///
+  /// Reads the itinerary's updatedAt from the currently loaded state and
+  /// formats it as a quoted RFC 7232 string, e.g. '"2026-05-07T14:23:11Z"'.
+  ///
+  /// Returns '' if state is not yet loaded (AsyncLoading / AsyncError). In
+  /// practice this shouldn't happen because the user has to view the itinerary
+  /// detail screen (which loads state) before any mutation is possible. If it
+  /// does happen the server returns 412 / ItineraryStaleException which prompts
+  /// a reload — a safe fallback.
   String get _etag => state.value?.eTag ?? '';
 
   /// Full re-fetch from the server.
+  /// Called after every mutation so totals and track structure are up-to-date.
   Future<void> refresh() async {
     state = const AsyncLoading();
     state = await AsyncValue.guard(
@@ -78,6 +88,8 @@ class ItineraryDetailNotifier
   }
 
   /// Add a stop, then refresh so totals and track structure are accurate.
+  /// The ETag is attached automatically via _etag — the presentation layer
+  /// does not need to know about concurrency control.
   Future<void> addStop(Map<String, dynamic> data) async {
     await ref.read(itineraryRepositoryProvider).addStop(arg, data, etag: _etag);
     await refresh();

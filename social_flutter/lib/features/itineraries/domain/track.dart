@@ -1,18 +1,35 @@
 // features/itineraries/domain/track.dart — Track Dart model.
 //
-// A track groups parallel stop alternatives at the same point in a journey.
-// Tracks are ordered by their fractional-index rank string; stops within a
-// track are also ordered by rank.
+// WHAT IS A TRACK?
+//   A track is a vertical column of parallel stop alternatives at the same
+//   point in a journey. For example, at night 2 the user might have two hotel
+//   options — "Hotel A" or "Hotel B". Both live in the same track.
 //
-// StopType is derived from track position in Itinerary._parseTracks(), not
-// stored here. Stop.fromJson always sets a placeholder of StopType.waypoint.
+// HOW TRACKS ARE ORDERED:
+//   Each track has a `rank` — a short string like "a0", "b", "aV". Tracks are
+//   displayed in ascending lexicographic order of rank. The rank is computed
+//   server-side using fractional indexing (services/ordering.py) so inserting
+//   a new track between two existing ones never requires updating other tracks.
+//
+// STOP TYPE DERIVATION:
+//   The track's position in the list determines the StopType of its stops:
+//     - First track  → StopType.origin
+//     - Last track   → StopType.arrival
+//     - All others   → StopType.waypoint
+//   This assignment happens in Itinerary._parseTracks(), not here.
 
 import 'package:social_flutter/features/itineraries/domain/stop.dart';
 
 class Track {
   final String id;
   final String itineraryId;
+
+  /// Fractional-index rank string — tracks are displayed sorted by this value.
   final String rank;
+
+  /// Stops within this track, sorted by their own rank (ascending).
+  /// The server pre-sorts stops before returning them, so this list is already
+  /// in display order when deserialized.
   final List<Stop> stops;
 
   const Track({

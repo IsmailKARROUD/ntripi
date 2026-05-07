@@ -483,13 +483,30 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                               }),
                               onAddStopAfter: canEdit
                                   ? () async {
+                                      // Capture router before any await — accessing
+                                      // BuildContext across async gaps is a lint error.
                                       final router = GoRouter.of(context);
-                                      // Warn if a segment connects this track to
-                                      // the next one — inserting between them hides it.
+
+                                      // SEGMENT ORPHAN CHECK:
+                                      // A transit segment is displayed between two
+                                      // ADJACENT tracks. If we insert a new track
+                                      // between track[i] and track[i+1], any segment
+                                      // that currently connects a stop in track[i] to
+                                      // a stop in track[i+1] becomes invisible — it
+                                      // still exists in the DB but is no longer between
+                                      // adjacent tracks so the UI won't render it.
+                                      // We detect this situation and warn the user,
+                                      // offering to delete the orphaned segment(s)
+                                      // before proceeding.
                                       if (nextTrack != null) {
+                                        // Build a set of stop IDs in the next track
+                                        // for fast membership tests below.
                                         final nextStopIds = nextTrack.stops
                                             .map((s) => s.id)
                                             .toSet();
+                                        // Find segments whose fromStop is in the
+                                        // current track AND whose toStop is in the
+                                        // next track — these would become orphaned.
                                         final orphaned = trackStops
                                             .map((s) => segmentByFromStop[s.id])
                                             .whereType<TransitSegment>()
