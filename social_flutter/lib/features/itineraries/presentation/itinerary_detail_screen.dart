@@ -482,14 +482,77 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                                 _activeParallelByTrack[track.id] = idx;
                               }),
                               onAddStopAfter: canEdit
-                                  ? () => context.push(
+                                  ? () async {
+                                      final router = GoRouter.of(context);
+                                      // Warn if a segment connects this track to
+                                      // the next one — inserting between them hides it.
+                                      if (nextTrack != null) {
+                                        final nextStopIds = nextTrack.stops
+                                            .map((s) => s.id)
+                                            .toSet();
+                                        final orphaned = trackStops
+                                            .map((s) => segmentByFromStop[s.id])
+                                            .whereType<TransitSegment>()
+                                            .where((seg) =>
+                                                nextStopIds.contains(seg.toStopId))
+                                            .toList();
+
+                                        if (orphaned.isNotEmpty) {
+                                          final n = orphaned.length;
+                                          final confirmed = await showDialog<bool>(
+                                            context: context,
+                                            builder: (ctx) => AlertDialog(
+                                              title: Text(
+                                                'Delete transit segment${n > 1 ? 's' : ''}?',
+                                              ),
+                                              content: Text(
+                                                'There ${n == 1 ? 'is 1 transit segment' : 'are $n transit segments'} '
+                                                'connecting these two stops. '
+                                                'Adding a stop between them will hide ${n == 1 ? 'it' : 'them'} '
+                                                'because the stops will no longer be adjacent.\n\n'
+                                                'Delete the segment${n > 1 ? 's' : ''} and continue?',
+                                              ),
+                                              actions: [
+                                                TextButton(
+                                                  onPressed: () =>
+                                                      Navigator.of(ctx).pop(false),
+                                                  child: const Text('Cancel'),
+                                                ),
+                                                FilledButton(
+                                                  onPressed: () =>
+                                                      Navigator.of(ctx).pop(true),
+                                                  style: FilledButton.styleFrom(
+                                                    backgroundColor: Colors.red,
+                                                  ),
+                                                  child: const Text('Delete & continue'),
+                                                ),
+                                              ],
+                                            ),
+                                          );
+
+                                          if (confirmed != true || !mounted) return;
+
+                                          final notifier = ref.read(
+                                            itineraryDetailProvider(
+                                                    widget.itineraryId)
+                                                .notifier,
+                                          );
+                                          for (final seg in orphaned) {
+                                            await notifier.deleteSegment(seg.id);
+                                          }
+                                          if (!mounted) return;
+                                        }
+                                      }
+
+                                      router.push(
                                         '/itineraries/${widget.itineraryId}/stops/new',
                                         extra: {
                                           'afterTrackId': track.id,
                                           if (nextTrack != null)
                                             'beforeTrackId': nextTrack.id,
                                         },
-                                      )
+                                      );
+                                    }
                                   : null,
                             ));
                           }
