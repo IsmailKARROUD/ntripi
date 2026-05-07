@@ -38,6 +38,9 @@ dependencies:
   # Photo/file picker — used for itinerary cover image uploads.
   image_picker: ^1.0.7
 
+  # Open URLs in browser — used for store download links in the web banner.
+  url_launcher: ^6.3.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

@@ -1,8 +1,11 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:social_flutter/core/api/api_client.dart';
+import 'package:social_flutter/core/api/api_endpoints.dart';
 import 'package:social_flutter/core/storage/secure_storage.dart';
 import 'package:social_flutter/core/ui/app_theme.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:social_flutter/features/auth/presentation/login_screen.dart';
 import 'package:social_flutter/features/auth/presentation/register_screen.dart';
 import 'package:social_flutter/features/auth/presentation/splash_screen.dart';
@@ -186,9 +189,20 @@ final appRouter = GoRouter(
 );
 
 /// Shell with persistent bottom navigation bar.
-class _AppShell extends StatelessWidget {
+class _AppShell extends StatefulWidget {
   final Widget child;
   const _AppShell({required this.child});
+
+  @override
+  State<_AppShell> createState() => _AppShellState();
+}
+
+class _AppShellState extends State<_AppShell> {
+  // Shown only on the web build. Users reach the web app via "Continue on web"
+  // on the marketing page, so we nudge them toward the native app once they're
+  // inside. Dismissed for the session — intentionally not persisted so it
+  // reappears on the next visit as a soft reminder.
+  bool _showDownloadBanner = kIsWeb;
 
   int _selectedIndex(BuildContext context) {
     final loc = GoRouterState.of(context).matchedLocation;
@@ -201,7 +215,12 @@ class _AppShell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: child,
+      body: Column(
+        children: [
+          if (_showDownloadBanner) _DownloadBanner(onDismiss: () => setState(() => _showDownloadBanner = false)),
+          Expanded(child: widget.child),
+        ],
+      ),
       bottomNavigationBar: Container(
         decoration: const BoxDecoration(
           color: Colors.white,
@@ -249,6 +268,53 @@ class _AppShell extends StatelessWidget {
               label: 'Feed',
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _DownloadBanner extends StatelessWidget {
+  final VoidCallback onDismiss;
+  const _DownloadBanner({required this.onDismiss});
+
+  @override
+  Widget build(BuildContext context) {
+    return ColoredBox(
+      color: kForest,
+      child: SafeArea(
+        bottom: false,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          child: Row(
+            children: [
+              const Icon(Icons.smartphone, color: Colors.white, size: 18),
+              const SizedBox(width: 10),
+              const Expanded(
+                child: Text(
+                  'For a better experience, download the Ntripi app.',
+                  style: TextStyle(color: Colors.white, fontSize: 13, height: 1.4),
+                ),
+              ),
+              if (kAndroidDownloadUrl.isNotEmpty)
+                TextButton(
+                  onPressed: () => launchUrl(Uri.parse(kAndroidDownloadUrl), mode: LaunchMode.externalApplication),
+                  style: TextButton.styleFrom(
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+                  ),
+                  child: const Text('Download'),
+                ),
+              IconButton(
+                icon: const Icon(Icons.close, color: Colors.white, size: 18),
+                onPressed: onDismiss,
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+                tooltip: 'Dismiss',
+              ),
+            ],
+          ),
         ),
       ),
     );

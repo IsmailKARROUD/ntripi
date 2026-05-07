@@ -138,6 +138,9 @@ const kShareBaseUrl = String.fromEnvironment(
   defaultValue: 'http://localhost:8000',
 );
 
+/// Android APK / Play Store download URL. Empty string means no link.
+const kAndroidDownloadUrl = String.fromEnvironment('ANDROID_DOWNLOAD_URL', defaultValue: '');
+
 /// Returns the public share URL for a given itinerary ID.
 String shareUrlFor(String itineraryId) => '$kShareBaseUrl/share/i/$itineraryId';
 
