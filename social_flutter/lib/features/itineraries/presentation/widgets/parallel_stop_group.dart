@@ -369,7 +369,7 @@ class _ReorderParallelsButton extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.swap_vert, size: 16, color: Colors.grey.shade700),
+              Icon(Icons.swap_horiz, size: 16, color: Colors.grey.shade700),
               const SizedBox(height: 2),
               Text(
                 'reorder',
