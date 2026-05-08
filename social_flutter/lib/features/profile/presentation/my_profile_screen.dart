@@ -219,7 +219,7 @@ class _MyProfileScreenState extends ConsumerState<MyProfileScreen> {
                         UserAvatar(avatarUrl: user.avatarUrl, radius: 48),
                         const SizedBox(height: 12),
                         Text(
-                          user.displayName ?? user.username,
+                          user.nameForDisplay,
                           style:
                               Theme.of(context).textTheme.titleLarge?.copyWith(
                                     fontWeight: FontWeight.bold,
@@ -227,7 +227,7 @@ class _MyProfileScreenState extends ConsumerState<MyProfileScreen> {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          '@${user.username}',
+                          user.handle,
                           style: Theme.of(context)
                               .textTheme
                               .bodyMedium

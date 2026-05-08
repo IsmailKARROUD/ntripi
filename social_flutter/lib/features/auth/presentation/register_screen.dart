@@ -187,7 +187,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 const SizedBox(height: 24),
 
                 // Display name
-                _FieldLabel('Display Name'),
+                const _FieldLabel('Display Name'),
                 const SizedBox(height: 6),
                 TextFormField(
                   controller: _displayNameController,

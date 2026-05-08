@@ -33,7 +33,7 @@ class UserProfileScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         title: profileAsync.when(
-          data: (user) => Text('@${user.username}'),
+          data: (user) => Text(user.handle),
           loading: () => const Text('Loading...'),
           error: (_, __) => const Text('Profile'),
         ),
@@ -82,7 +82,7 @@ class _ProfileBody extends ConsumerWidget {
                         UserAvatar(avatarUrl: user.avatarUrl, radius: 48),
                         const SizedBox(height: 12),
                         Text(
-                          user.displayName ?? user.username,
+                          user.nameForDisplay,
                           style:
                               Theme.of(context).textTheme.titleLarge?.copyWith(
                                     fontWeight: FontWeight.bold,
@@ -93,7 +93,7 @@ class _ProfileBody extends ConsumerWidget {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Text(
-                              '@${user.username}',
+                              user.handle,
                               style: Theme.of(context)
                                   .textTheme
                                   .bodyMedium
@@ -172,7 +172,7 @@ class _ProfileBody extends ConsumerWidget {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          'Follow @${user.username} to see their posts.',
+                          'Follow ${user.handle} to see their posts.',
                           style: Theme.of(context)
                               .textTheme
                               .bodySmall

@@ -126,7 +126,7 @@ class _FollowRequestTileState extends ConsumerState<_FollowRequestTile> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  r.displayName ?? r.username,
+                  r.displayName ?? '@${r.username}',
                   style: const TextStyle(fontWeight: FontWeight.w600),
                   overflow: TextOverflow.ellipsis,
                 ),

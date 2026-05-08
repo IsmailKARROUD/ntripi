@@ -125,7 +125,7 @@ class _SearchResultTile extends StatelessWidget {
         children: [
           Flexible(
             child: Text(
-              user.displayName ?? user.username,
+              user.nameForDisplay,
               overflow: TextOverflow.ellipsis,
               style: const TextStyle(fontWeight: FontWeight.w600),
             ),
@@ -137,7 +137,7 @@ class _SearchResultTile extends StatelessWidget {
         ],
       ),
       subtitle: Text(
-        '@${user.username}',
+        user.handle,
         style: const TextStyle(color: Colors.grey),
       ),
       trailing: Text(
