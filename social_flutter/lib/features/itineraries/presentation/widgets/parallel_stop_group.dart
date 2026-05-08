@@ -15,6 +15,7 @@ import 'package:social_flutter/features/itineraries/domain/transit_segment.dart'
 import 'package:social_flutter/features/itineraries/presentation/widgets/reorder_parallels_sheet.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/segment_card.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/stop_card.dart';
+import 'package:expandable_page_view/expandable_page_view.dart';
 
 class ParallelStopGroup extends StatefulWidget {
   /// All stops in this track, sorted by rank ascending.
@@ -112,6 +113,7 @@ class _ParallelStopGroupState extends State<ParallelStopGroup> {
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
       children: [
         // ── Stop card row (swipeable) + side controls ─────────────────────
         Row(
@@ -119,20 +121,17 @@ class _ParallelStopGroupState extends State<ParallelStopGroup> {
           children: [
             Expanded(
               child: hasParallels
-                  ? SizedBox(
-                      // Constrain height so the PageView doesn't expand unboundedly.
-                      // StopCard is intrinsically ~100-180px; 260 covers annotations.
-                      height: 230,
-                      child: PageView.builder(
-                        controller: _pageController,
-                        itemCount: widget.stops.length,
-                        onPageChanged: (i) {
-                          setState(() => _currentPage = i);
-                          widget.onPageChanged?.call(i);
-                        },
-                        itemBuilder: (_, i) => _buildStopCard(widget.stops[i]),
-                      ),
-                    )
+                  ? ExpandablePageView.builder(
+                    controller: _pageController,
+                    itemCount: widget.stops.length,
+                    onPageChanged: (i) {
+                      setState(() => _currentPage = i);
+                      widget.onPageChanged?.call(i);
+                    },
+                    itemBuilder: (_, i) => Align(
+                        alignment: Alignment.topCenter,
+                        child: IntrinsicHeight(child: _buildStopCard(widget.stops[i]))),
+                  )
                   : _buildStopCard(widget.stops.first),
             ),
             if (widget.editMode && (canAddMore || hasParallels)) ...[

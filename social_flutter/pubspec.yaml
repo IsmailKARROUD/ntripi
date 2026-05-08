@@ -11,6 +11,7 @@ dependencies:
   flutter:
     sdk: flutter
 
+  expandable_page_view: ^1.0.17
   # State management: Riverpod — compile-safe, testable, no BuildContext required
   flutter_riverpod: ^2.5.1
   riverpod_annotation: ^2.3.5

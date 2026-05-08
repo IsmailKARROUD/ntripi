@@ -63,12 +63,15 @@ class StopCard extends StatelessWidget {
         padding: const EdgeInsets.all(12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
           children: [
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
                 // Position + type icon column
                 Column(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     CircleAvatar(
                       radius: 14,
@@ -98,6 +101,7 @@ class StopCard extends StatelessWidget {
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
                         stop.placeName ??
