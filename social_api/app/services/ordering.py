@@ -46,6 +46,13 @@ _DIGITS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
 _N = len(_DIGITS)  # 62
 _INITIAL = "a0"  # first key returned for an empty list
 
+# When a freshly computed rank exceeds this length the caller should rebalance
+# the surrounding column before persisting. After ~6 halvings each subsequent
+# insert at the same edge appends one character, so a track that drives the
+# leading rank past this threshold is in pathological territory and a single
+# pass of n_keys_between(None, None, count) brings every rank back to ≤2 chars.
+MAX_RANK_LENGTH = 32
+
 
 def _idx(c: str) -> int:
     return _DIGITS.index(c)

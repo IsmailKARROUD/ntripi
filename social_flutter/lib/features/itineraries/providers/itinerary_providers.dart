@@ -104,6 +104,30 @@ class ItineraryDetailNotifier
     await refresh();
   }
 
+  /// Move a stop to a new position by sending its target neighbours.
+  ///
+  /// At least one of [afterStopId] / [beforeStopId] must be non-null. If
+  /// [targetTrackId] is provided and differs from the stop's current track the
+  /// server moves the stop across tracks (and deletes the source track if it
+  /// becomes empty). Bumps the ETag and refreshes the local state.
+  Future<void> moveStop(
+    String stopId, {
+    String? afterStopId,
+    String? beforeStopId,
+    String? targetTrackId,
+  }) async {
+    final body = <String, dynamic>{
+      if (afterStopId != null) 'after_stop_id': afterStopId,
+      if (beforeStopId != null) 'before_stop_id': beforeStopId,
+      if (targetTrackId != null) 'track_id': targetTrackId,
+    };
+    await ref.read(itineraryRepositoryProvider).updateStop(
+          arg, stopId, body,
+          etag: _etag,
+        );
+    await refresh();
+  }
+
   /// Delete a stop, then refresh.
   Future<void> deleteStop(String stopId) async {
     await ref

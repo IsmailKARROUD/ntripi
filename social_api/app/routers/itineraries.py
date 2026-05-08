@@ -79,7 +79,7 @@ from app.schemas.itinerary import (
 )
 from app.services.image_service import ImageProcessingError, process_cover_image
 from app.services.itinerary_access import can_view_itinerary, recalculate_rating
-from app.services.ordering import key_between
+from app.services.ordering import MAX_RANK_LENGTH, key_between, n_keys_between
 from app.storage.factory import storage
 
 router = APIRouter(tags=["Itineraries"])
@@ -246,6 +246,39 @@ def _delete_track_if_empty(track_id: uuid.UUID, db: Session) -> None:
             db.delete(track)
 
 
+def _rebalance_track(track: Track, db: Session) -> None:
+    """
+    Renumber every stop in `track` with evenly spaced fractional-index ranks.
+
+    Called when `_resolve_stop_rank` would otherwise produce a key longer than
+    MAX_RANK_LENGTH — typically because a user repeatedly inserts at the same
+    edge of a track, which adds one character per insert past the halving range.
+    After this pass every rank is ≤ 2 chars regardless of prior history.
+
+    TWO-PHASE WRITE:
+      UNIQUE(track_id, rank) is enforced immediately, so we cannot rewrite ranks
+      in place — a stop's new rank could collide with another stop's still-old
+      rank. Phase 1 parks every stop on a temp rank starting with '!' (ASCII 33,
+      which sorts below every digit/letter that key_between can produce, so the
+      relative ordering during phase 1 is irrelevant). Phase 2 assigns the final
+      keys in the same order they previously had.
+    """
+    stops = db.execute(
+        select(Stop).where(Stop.track_id == track.id).order_by(Stop.rank)
+    ).scalars().all()
+    if len(stops) <= 1:
+        return
+
+    for stop in stops:
+        stop.rank = f"!{stop.id}"
+    db.flush()
+
+    new_ranks = n_keys_between(None, None, len(stops))
+    for stop, new_rank in zip(stops, new_ranks):
+        stop.rank = new_rank
+    db.flush()
+
+
 def _resolve_stop_rank(
     track: Track,
     after_stop_id: uuid.UUID | None,
@@ -271,47 +304,60 @@ def _resolve_stop_rank(
     WHY 412 WHEN after.rank >= before.rank?
       The client's view of stop order is stale (someone else reordered between
       the client's last fetch and this insert). 412 signals "reload first".
+
+    REBALANCE FALLBACK:
+      If the freshly computed key exceeds MAX_RANK_LENGTH the track is
+      pathologically long; we rebalance it in-place and recompute against the
+      now-fresh anchor ranks. The rebalance shares this transaction so the move
+      and the renumber commit atomically (and bump the same ETag).
     """
-    after_rank: str | None = None
-    before_rank: str | None = None
+    def _resolve(allow_rebalance: bool) -> str:
+        after_rank: str | None = None
+        before_rank: str | None = None
 
-    if after_stop_id:
-        after_stop = db.execute(
-            select(Stop).where(Stop.id == after_stop_id, Stop.track_id == track.id)
-        ).scalar_one_or_none()
-        if not after_stop:
+        if after_stop_id:
+            after_stop = db.execute(
+                select(Stop).where(Stop.id == after_stop_id, Stop.track_id == track.id)
+            ).scalar_one_or_none()
+            if not after_stop:
+                raise HTTPException(
+                    status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                    detail="after_stop_id does not belong to the target track.",
+                )
+            after_rank = after_stop.rank
+
+        if before_stop_id:
+            before_stop = db.execute(
+                select(Stop).where(Stop.id == before_stop_id, Stop.track_id == track.id)
+            ).scalar_one_or_none()
+            if not before_stop:
+                raise HTTPException(
+                    status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                    detail="before_stop_id does not belong to the target track.",
+                )
+            before_rank = before_stop.rank
+
+        if after_rank and before_rank and after_rank >= before_rank:
             raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                detail="after_stop_id does not belong to the target track.",
+                status_code=status.HTTP_412_PRECONDITION_FAILED,
+                detail="itinerary modified, please reload",
             )
-        after_rank = after_stop.rank
 
-    if before_stop_id:
-        before_stop = db.execute(
-            select(Stop).where(Stop.id == before_stop_id, Stop.track_id == track.id)
-        ).scalar_one_or_none()
-        if not before_stop:
-            raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                detail="before_stop_id does not belong to the target track.",
-            )
-        before_rank = before_stop.rank
+        # No anchors → tail insert: place after the last existing stop in this track.
+        if after_rank is None and before_rank is None:
+            last = db.execute(
+                select(Stop).where(Stop.track_id == track.id).order_by(Stop.rank.desc()).limit(1)
+            ).scalar_one_or_none()
+            if last is not None:
+                after_rank = last.rank
 
-    if after_rank and before_rank and after_rank >= before_rank:
-        raise HTTPException(
-            status_code=status.HTTP_412_PRECONDITION_FAILED,
-            detail="itinerary modified, please reload",
-        )
+        new_rank = key_between(after_rank, before_rank)
+        if len(new_rank) > MAX_RANK_LENGTH and allow_rebalance:
+            _rebalance_track(track, db)
+            return _resolve(allow_rebalance=False)
+        return new_rank
 
-    # No anchors → tail insert: place after the last existing stop in this track.
-    if after_rank is None and before_rank is None:
-        last = db.execute(
-            select(Stop).where(Stop.track_id == track.id).order_by(Stop.rank.desc()).limit(1)
-        ).scalar_one_or_none()
-        if last is not None:
-            after_rank = last.rank
-
-    return key_between(after_rank, before_rank)
+    return _resolve(allow_rebalance=True)
 
 
 def _resolve_track_rank(

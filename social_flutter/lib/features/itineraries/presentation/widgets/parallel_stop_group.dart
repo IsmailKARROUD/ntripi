@@ -12,6 +12,7 @@ import 'package:flutter/material.dart';
 import 'package:social_flutter/features/itineraries/domain/annotation.dart';
 import 'package:social_flutter/features/itineraries/domain/stop.dart';
 import 'package:social_flutter/features/itineraries/domain/transit_segment.dart';
+import 'package:social_flutter/features/itineraries/presentation/widgets/reorder_parallels_sheet.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/segment_card.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/stop_card.dart';
 
@@ -112,7 +113,7 @@ class _ParallelStopGroupState extends State<ParallelStopGroup> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // ── Stop card row (swipeable) + "// stop" button ──────────────────
+        // ── Stop card row (swipeable) + side controls ─────────────────────
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -134,12 +135,26 @@ class _ParallelStopGroupState extends State<ParallelStopGroup> {
                     )
                   : _buildStopCard(widget.stops.first),
             ),
-            if (widget.editMode && canAddMore) ...[
+            if (widget.editMode && (canAddMore || hasParallels)) ...[
               const SizedBox(width: 4),
-              _AddParallelButton(
-                onTap: widget.onAddParallel == null
-                    ? null
-                    : () => widget.onAddParallel!(_activeStop.trackId),
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (canAddMore)
+                    _AddParallelButton(
+                      onTap: widget.onAddParallel == null
+                          ? null
+                          : () => widget.onAddParallel!(_activeStop.trackId),
+                    ),
+                  if (hasParallels)
+                    _ReorderParallelsButton(
+                      onTap: () => showReorderParallelsSheet(
+                        context: context,
+                        itineraryId: widget.itineraryId,
+                        stops: widget.stops,
+                      ),
+                    ),
+                ],
               ),
             ],
           ],
@@ -328,6 +343,44 @@ class _ActionChip extends StatelessWidget {
                   ),
                 ],
               ),
+      ),
+    );
+  }
+}
+
+class _ReorderParallelsButton extends StatelessWidget {
+  final VoidCallback? onTap;
+  const _ReorderParallelsButton({this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.only(top: 6, right: 8),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(8),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+          decoration: BoxDecoration(
+            border: Border.all(color: Colors.grey.shade400),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.swap_vert, size: 16, color: Colors.grey.shade700),
+              const SizedBox(height: 2),
+              Text(
+                'reorder',
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: Colors.grey.shade700,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

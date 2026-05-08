@@ -206,3 +206,143 @@ class TestTrackAndStopSmoke:
             headers={**hdrs, "If-Match": '"2000-01-01T00:00:00+00:00"'},
         )
         assert r.status_code == 412
+
+
+# ---------------------------------------------------------------------------
+# Within-track reorder + rebalance defense
+# ---------------------------------------------------------------------------
+
+class TestReorderAndRebalance:
+    """Cover the new use cases for the move endpoint and the >32-char defense."""
+
+    def _three_stops(self, client: TestClient):
+        """Create an itinerary with three stops in one track (A → B → C)."""
+        user = register_user(client, "alice", "alice@example.com")
+        hdrs = auth_headers(user["access_token"])
+        r = client.post("/itineraries/", json={"title": "Trip", "currency": "EUR"},
+                        headers=hdrs)
+        itin = r.json()
+        etag = f'"{itin["updated_at"]}"'
+
+        ids = []
+        prev = None
+        for name in ("A", "B", "C"):
+            payload = {"place_name": name, "is_free": True}
+            if ids:
+                payload["track_id"] = track_id  # noqa: F821 — set after first iter
+                payload["after_stop_id"] = prev
+            r = client.post(f"/itineraries/{itin['id']}/stops",
+                            json=payload, headers={**hdrs, "If-Match": etag})
+            assert r.status_code == 201, r.text
+            stop = r.json()
+            ids.append(stop["id"])
+            track_id = stop["track_id"]
+            prev = stop["id"]
+            etag = r.headers["etag"]
+
+        return itin["id"], hdrs, etag, track_id, ids  # ids = [A, B, C]
+
+    def test_reorder_within_track(self, client: TestClient):
+        """PATCH with after/before stop IDs reorders within a track."""
+        itin_id, hdrs, etag, track_id, ids = self._three_stops(client)
+        a_id, b_id, c_id = ids
+
+        # Move C between A and B → final order A < C < B.
+        r = client.patch(
+            f"/itineraries/{itin_id}/stops/{c_id}",
+            json={"after_stop_id": a_id, "before_stop_id": b_id},
+            headers={**hdrs, "If-Match": etag},
+        )
+        assert r.status_code == 200, r.text
+
+        # Verify by ranks.
+        r = client.get(f"/itineraries/{itin_id}", headers=hdrs)
+        track = next(t for t in r.json()["tracks"] if t["id"] == track_id)
+        by_id = {s["id"]: s["rank"] for s in track["stops"]}
+        assert by_id[a_id] < by_id[c_id] < by_id[b_id]
+        # The track stops list is server-sorted by rank.
+        assert [s["id"] for s in track["stops"]] == [a_id, c_id, b_id]
+
+    def test_cross_track_move(self, client: TestClient):
+        """PATCH with track_id moves a stop into a different track."""
+        itin_id, hdrs, etag, track1_id, ids = self._three_stops(client)
+        a_id, _, c_id = ids
+
+        # Add a fourth stop in a brand-new track 2.
+        r = client.post(
+            f"/itineraries/{itin_id}/stops",
+            json={"track_id": None, "after_track_id": track1_id,
+                  "place_name": "D", "is_free": True},
+            headers={**hdrs, "If-Match": etag},
+        )
+        assert r.status_code == 201, r.text
+        d = r.json()
+        track2_id = d["track_id"]
+        etag = r.headers["etag"]
+
+        # Move C from track1 into track2 (after D).
+        r = client.patch(
+            f"/itineraries/{itin_id}/stops/{c_id}",
+            json={"track_id": track2_id, "after_stop_id": d["id"]},
+            headers={**hdrs, "If-Match": etag},
+        )
+        assert r.status_code == 200, r.text
+
+        r = client.get(f"/itineraries/{itin_id}", headers=hdrs)
+        tracks = {t["id"]: t for t in r.json()["tracks"]}
+        assert [s["id"] for s in tracks[track1_id]["stops"]] == [a_id, ids[1]]
+        assert [s["id"] for s in tracks[track2_id]["stops"]] == [d["id"], c_id]
+
+    def test_rebalance_kicks_in_when_rank_would_exceed_max(
+        self, client: TestClient,
+    ):
+        """If `_resolve_stop_rank` would produce >MAX_RANK_LENGTH chars the track
+        gets renumbered transparently and the move still succeeds."""
+        from app.services.ordering import MAX_RANK_LENGTH
+        from app.models.stop import Stop
+        from conftest import TestingSessionLocal
+        import uuid as _uuid
+
+        itin_id, hdrs, etag, track_id, ids = self._three_stops(client)
+        a_id, b_id, c_id = ids
+
+        # Force pathological adjacent ranks on A and B so any midpoint would
+        # exceed MAX_RANK_LENGTH. Bisecting "0"*(L) and "0"*(L-1)+"1" gives a
+        # key of length L+1 — picking L = MAX_RANK_LENGTH+1 guarantees overflow.
+        long_len = MAX_RANK_LENGTH + 1
+        rank_a = "0" * long_len
+        rank_b = "0" * (long_len - 1) + "1"
+        # Also put C above B so its rank stays valid relative to the new A/B.
+        rank_c = "1"
+
+        db = TestingSessionLocal()
+        try:
+            db.get(Stop, _uuid.UUID(a_id)).rank = rank_a
+            db.get(Stop, _uuid.UUID(b_id)).rank = rank_b
+            db.get(Stop, _uuid.UUID(c_id)).rank = rank_c
+            db.commit()
+        finally:
+            db.close()
+
+        # Refresh ETag — direct DB writes didn't bump it; reload the itinerary
+        # so the next PATCH matches the current updated_at.
+        r = client.get(f"/itineraries/{itin_id}", headers=hdrs)
+        etag = r.headers.get("etag") or r.headers["ETag"]
+
+        # Trigger a move that lands between A and B → would require a >32-char
+        # rank → must rebalance instead. Move C between A and B.
+        r = client.patch(
+            f"/itineraries/{itin_id}/stops/{c_id}",
+            json={"after_stop_id": a_id, "before_stop_id": b_id},
+            headers={**hdrs, "If-Match": etag},
+        )
+        assert r.status_code == 200, r.text
+
+        # Every rank in the track should now be short again.
+        r = client.get(f"/itineraries/{itin_id}", headers=hdrs)
+        track = next(t for t in r.json()["tracks"] if t["id"] == track_id)
+        for s in track["stops"]:
+            assert len(s["rank"]) <= MAX_RANK_LENGTH, \
+                f"rank still long after rebalance: {s['rank']!r}"
+        # Order preserved: A < C < B.
+        assert [s["id"] for s in track["stops"]] == [a_id, c_id, b_id]
