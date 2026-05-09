@@ -38,13 +38,15 @@ Public API:
 """
 
 from __future__ import annotations
+from typing import cast
 
 # Base-62 alphabet. Order matters: '0' < '9' < 'A' < 'Z' < 'a' < 'z' in
 # ASCII, so byte-wise sort (COLLATE "C") puts digits before uppercase before
 # lowercase — exactly the order of this string.
 _DIGITS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
+_DIGIT_TO_INDEX = {c: i for i, c in enumerate(_DIGITS)}
 _N = len(_DIGITS)  # 62
-_INITIAL = "a0"  # first key returned for an empty list
+_INITIAL = "a0"  # first key returned for an empty list, because it leaves huge space below and above
 
 # When a freshly computed rank exceeds this length the caller should rebalance
 # the surrounding column before persisting. After ~6 halvings each subsequent
@@ -55,7 +57,10 @@ MAX_RANK_LENGTH = 32
 
 
 def _idx(c: str) -> int:
-    return _DIGITS.index(c)
+    try:
+        return _DIGIT_TO_INDEX[c]
+    except KeyError:
+        raise ValueError(f"invalid rank character: {c!r}") from None
 
 
 def key_between(a: str | None, b: str | None) -> str:
@@ -73,9 +78,9 @@ def key_between(a: str | None, b: str | None) -> str:
     if a is not None and b is not None and a >= b:
         raise ValueError(f"key_between: a ({a!r}) must be < b ({b!r})")
 
-    # Convert each character to its index in _DIGITS.
-    a_d = [_idx(c) for c in a] if a else []
-    b_d = [_idx(c) for c in b] if b else []
+
+    a_len = len(a) if a else 0
+    b_len = len(b) if b else 0
 
     result: list[str] = []
     i = 0
@@ -86,7 +91,7 @@ def key_between(a: str | None, b: str | None) -> str:
 
     while True:
         # Past the end of a → pad with 0 (the minimum digit).
-        av = a_d[i] if i < len(a_d) else 0
+        av = _idx(a[i]) if i < a_len else 0
 
         if b_open:
             # b provides no upper constraint. Step one digit above a.
@@ -99,8 +104,8 @@ def key_between(a: str | None, b: str | None) -> str:
                 result.append(_DIGITS[1])
             return "".join(result)
 
-        # Past the end of b → pad with 0.
-        bv = b_d[i] if i < len(b_d) else 0
+        # Treat missing digits as the minimum digit.
+        bv = _idx(b[i]) if i < b_len else 0
 
         if av == bv:
             # Same digit: no room to split here, move to the next position.
@@ -112,7 +117,7 @@ def key_between(a: str | None, b: str | None) -> str:
         gap = bv - av
         if gap > 1:
             # There is at least one digit between av and bv — take the midpoint.
-            result.append(_DIGITS[av + gap // 2])
+            result.append(_DIGITS[av + (gap // 2)])
             return "".join(result)
 
         # gap == 1: the two digits are adjacent (e.g. 'a' and 'b'). We can't
@@ -125,23 +130,34 @@ def key_between(a: str | None, b: str | None) -> str:
 
 
 def n_keys_between(a: str | None, b: str | None, n: int) -> list[str]:
-    """
-    Return n keys evenly distributed between a and b.
-
-    Uses recursive binary bisection so keys stay well-spread rather than
-    crowding toward one end. For example, n=3 between "a0" and "z" gives
-    roughly ["G", "a0", "m"] — evenly spaced across the space.
-    """
-    if n == 0:
+    if n <= 0:
         return []
-    if n == 1:
-        return [key_between(a, b)]
-    # Split at the midpoint, then recurse on each half independently.
-    # This ensures all n keys are roughly equidistant.
-    mid_i = n // 2
-    mid = key_between(a, b)
-    return (
-        n_keys_between(a, mid, mid_i)
-        + [mid]
-        + n_keys_between(mid, b, n - mid_i - 1)
-    )
+
+    result: list[str | None] = [None] * n
+
+    def _fill(
+        lo: str | None,
+        hi: str | None,
+        start: int,
+        stop: int,
+    ) -> None:
+        m = stop - start
+
+        if m <= 0:
+            return
+
+        if m == 1:
+            result[start] = key_between(lo, hi)
+            return
+
+        mid = start + m // 2
+        mid_key = key_between(lo, hi)
+
+        result[mid] = mid_key
+
+        _fill(lo, mid_key, start, mid)
+        _fill(mid_key, hi, mid + 1, stop)
+
+    _fill(a, b, 0, n)
+
+    return cast(list[str], result)
