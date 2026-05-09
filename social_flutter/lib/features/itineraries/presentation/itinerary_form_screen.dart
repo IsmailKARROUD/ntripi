@@ -22,6 +22,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:social_flutter/core/api/api_client.dart';
+import 'package:social_flutter/core/services/currency.dart';
 import 'package:social_flutter/core/ui/destructive_actions.dart';
 import 'package:social_flutter/core/api/api_endpoints.dart';
 import 'package:social_flutter/features/itineraries/data/itinerary_repository.dart';
@@ -30,6 +31,8 @@ import 'package:social_flutter/features/itineraries/presentation/widgets/cover_i
 import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
 import 'package:social_flutter/shared/models/user.dart';
 import 'package:social_flutter/core/utils/platform_utils.dart';
+import 'package:flutter/services.dart';
+import 'dart:convert';
 
 /// Whether this form is creating a new itinerary or editing an existing one.
 enum ItineraryFormMode { create, edit }
@@ -60,8 +63,10 @@ class _ItineraryFormScreenState extends ConsumerState<ItineraryFormScreen> {
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
+  List<Currency> _currencies = [];
 
-  String _currency = 'EUR';
+  String? _currency = 'EUR';
+
   ItineraryVisibility _visibility = ItineraryVisibility.onlyMe;
   bool _saving = false;
   // Guards _initFromProvider so rebuilds don't overwrite the user's edits.
@@ -72,11 +77,44 @@ class _ItineraryFormScreenState extends ConsumerState<ItineraryFormScreen> {
   String? _pendingImageFilename;
   bool _removeExistingImage = false;
 
-  static const _currencies = ['EUR', 'USD', 'GBP', 'MAD', 'Other'];
+Future<void> loadCurrencies() async {
+  try {
+    // 1. Load the string
+    final String response = await rootBundle.loadString('assets/data/currencies.json');
+
+    // 2. Decode and cast
+    final List<dynamic> data = json.decode(response);
+
+    // 3. Filter the raw maps FIRST, then convert to Dart objects
+    final currencies = data
+        .where((item) => item['type'] == 'currency') // <-- Optimization here
+        .map((item) => Currency.fromJson(item))
+        .toList();
+
+    // 4. Sort
+    currencies.sort((a, b) => a.code.compareTo(b.code));
+
+    // 5. Update State
+    setState(() {
+      _currencies = currencies;
+      if (_currencies.isNotEmpty) {
+        _currency = _currencies.first.code;
+      }
+    });
+
+  } catch (e) {
+    // Handle the error gracefully
+    print('Failed to load currencies: $e');
+    // Optional: setState to show an error message in the UI
+  }
+}
+
+  // static const _currencies = ['EUR', 'USD', 'GBP', 'MAD', 'Other'];
 
   @override
   void initState() {
     super.initState();
+    loadCurrencies();
     if (widget.mode == ItineraryFormMode.edit) {
       // postFrameCallback: setState can't be called during initState itself.
       WidgetsBinding.instance.addPostFrameCallback((_) => _initFromProvider());
@@ -274,14 +312,26 @@ class _ItineraryFormScreenState extends ConsumerState<ItineraryFormScreen> {
                 // Currency
                 DropdownButtonFormField<String>(
                   value: _currency,
+                  isExpanded: true,
                   decoration: const InputDecoration(
                     labelText: 'Currency',
                     border: OutlineInputBorder(),
                   ),
-                  items: _currencies
-                      .map((c) => DropdownMenuItem(value: c, child: Text(c)))
-                      .toList(),
-                  onChanged: (v) => setState(() => _currency = v ?? 'EUR'),
+                  items: _currencies.map((currency) {
+                    return DropdownMenuItem<String>(
+                      value: currency.code,
+                      child: Text(
+                        '${currency.code} - ${currency.name}',
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    );
+                  }).toList(),
+                  onChanged: (v) {
+                    setState(() {
+                      _currency = v;
+                    });
+                  },
                 ),
                 const SizedBox(height: 16),
 

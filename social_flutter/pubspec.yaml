@@ -2,7 +2,7 @@ name: social_flutter
 description: Ntripi — social media app frontend (Flutter)
 publish_to: 'none'
 
-version: 0.1.0+1
+version: 0.2.1
 
 environment:
   sdk: '>=3.3.0 <4.0.0'
@@ -10,7 +10,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-
+  
   expandable_page_view: ^1.0.17
   # State management: Riverpod — compile-safe, testable, no BuildContext required
   flutter_riverpod: ^2.5.1
@@ -54,3 +54,5 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  assets:
+   - assets/data/currencies.json
