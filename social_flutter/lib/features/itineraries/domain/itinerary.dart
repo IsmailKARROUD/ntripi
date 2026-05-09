@@ -237,11 +237,18 @@ class Itinerary {
 
   String get formattedDuration {
     if (totalDurationMin <= 0) return '—';
-    final hours = totalDurationMin ~/ 60;
-    final minutes = totalDurationMin % 60;
-    if (hours == 0) return '${minutes}min';
-    if (minutes == 0) return '${hours}h';
-    return '${hours}h ${minutes}min';
+    final years = totalDurationMin ~/ (60 * 24 * 365);
+    int remainingMin = totalDurationMin % (60 * 24 * 365);
+    final days = remainingMin ~/ (60 * 24);
+    remainingMin = remainingMin % (60 * 24);
+    final hours = remainingMin ~/ 60;
+    final minutes = remainingMin % 60;
+    String returnvalue = '';
+    if (years > 0) returnvalue += '${years}y ';
+    if (days > 0) returnvalue += '${days}d ';
+    if (hours > 0) returnvalue += '${hours}h ';
+    if (minutes > 0) returnvalue += '${minutes}min';
+    return returnvalue;
   }
 
   String get formattedCost {

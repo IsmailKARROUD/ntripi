@@ -48,6 +48,8 @@ class StopCard extends StatelessWidget {
     return '${cost.toStringAsFixed(2)} $currency';
   }
 
+  
+
   @override
   Widget build(BuildContext context) {
     final typeColor = _typeColors[stop.type] ?? Colors.blue;
@@ -136,7 +138,7 @@ class StopCard extends StatelessWidget {
                               if (stop.durationMin != null)
                                 _InfoChip(
                                   icon: Icons.timer_outlined,
-                                  label: '${stop.durationMin} min',
+                                  label: stop.formattedDuration,
                                 ),
                               if (costLabel.isNotEmpty)
                                 _InfoChip(

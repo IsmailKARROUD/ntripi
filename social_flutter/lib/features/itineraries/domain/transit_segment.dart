@@ -73,11 +73,18 @@ class TransitSegment {
 
   String get formattedDuration {
     if (totalDurationMin <= 0) return '—';
-    final h = totalDurationMin ~/ 60;
-    final m = totalDurationMin % 60;
-    if (h == 0) return '${m}min';
-    if (m == 0) return '${h}h';
-    return '${h}h ${m}min';
+    final years = totalDurationMin ~/ (60 * 24 * 365);
+    int remainingMin = totalDurationMin % (60 * 24 * 365);
+    final days = remainingMin ~/ (60 * 24);
+    remainingMin = remainingMin % (60 * 24);
+    final hours = remainingMin ~/ 60;
+    final minutes = remainingMin % 60;
+    String returnvalue = '';
+    if (years > 0) returnvalue += '${years}y ';
+    if (days > 0) returnvalue += '${days}d ';
+    if (hours > 0) returnvalue += '${hours}h ';
+    if (minutes > 0) returnvalue += '${minutes}min';
+    return returnvalue;
   }
 
   String formattedCost(String currency) {

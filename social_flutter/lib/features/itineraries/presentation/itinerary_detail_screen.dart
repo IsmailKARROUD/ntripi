@@ -67,7 +67,8 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
   bool _editMode = false;
   // Active parallel-stop index per track (trackId → page index).
   final Map<String, int> _activeParallelByTrack = {};
-  bool _mapVisible = true;
+  //start with map hidden on mobile to avoid unnecessary API calls and improve performance, since the map is less likely to be used on mobile and can be accessed via a button
+  bool _mapVisible = false;
 
   static const _markerColors = {
     StopType.origin: Colors.green,
