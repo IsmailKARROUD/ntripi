@@ -19,6 +19,9 @@ dependencies:
   # HTTP client with interceptor support — used for the auth token injection
   dio: ^5.4.3
 
+  # Check network status (online/offline) and type (WiFi/mobile)
+  connectivity_plus: ^7.1.1 
+
   # Secure token storage — uses iOS Keychain / Android Keystore under the hood
   flutter_secure_storage: ^9.0.0
 

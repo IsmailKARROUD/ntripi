@@ -1,3 +1,7 @@
+import 'dart:async';
+
+import 'package:connectivity_plus/connectivity_plus.dart'
+    show ConnectivityResult, Connectivity;
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -28,7 +32,6 @@ import 'package:social_flutter/features/search/presentation/search_screen.dart';
 final appRouter = GoRouter(
   navigatorKey: navigatorKey,
   initialLocation: '/splash',
-
   redirect: (context, state) async {
     final token = await readToken();
     final hasAuth = token != null && token.isNotEmpty && !isJwtExpired(token);
@@ -38,14 +41,14 @@ final appRouter = GoRouter(
     final isPublic = publicRoutes.contains(state.matchedLocation);
 
     if (!hasAuth && !isPublic) return '/login';
-    if (hasAuth && (state.matchedLocation == '/login' ||
-        state.matchedLocation == '/register')) {
+    if (hasAuth &&
+        (state.matchedLocation == '/login' ||
+            state.matchedLocation == '/register')) {
       return '/profile/me';
     }
 
     return null;
   },
-
   routes: [
     // Splash — shown on cold launch, navigates to login or home
     GoRoute(
@@ -132,7 +135,8 @@ final appRouter = GoRouter(
           path: '/itineraries/:id/ratings/:dimension',
           builder: (context, state) => DimensionRatingsScreen(
             itineraryId: state.pathParameters['id']!,
-            dimension: DimensionKey.fromPath(state.pathParameters['dimension']!),
+            dimension:
+                DimensionKey.fromPath(state.pathParameters['dimension']!),
           ),
         ),
         GoRoute(
@@ -211,6 +215,7 @@ class _AppShellState extends State<_AppShell> {
   // inside. Dismissed for the session — intentionally not persisted so it
   // reappears on the next visit as a soft reminder.
   bool _showDownloadBanner = kIsWeb;
+  bool _isOffline = false;
 
   int _selectedIndex(BuildContext context) {
     final loc = GoRouterState.of(context).matchedLocation;
@@ -221,11 +226,75 @@ class _AppShellState extends State<_AppShell> {
   }
 
   @override
+  void initState() {
+    super.initState();
+
+    // Listen for changes and update the state
+    Connectivity().onConnectivityChanged.listen((results) {
+      setState(() {
+        _isOffline = results.contains(ConnectivityResult.none);
+      });
+    });
+  }
+
+  // Check connection as soon as the app opens
+  Future<void> _checkInitialConnection() async {
+    final results = await Connectivity().checkConnectivity();
+    setState(() {
+      _isOffline = results.contains(ConnectivityResult.none);
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    if (_isOffline){
+      return Scaffold(
+        backgroundColor: Colors.redAccent,
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 30),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.wifi_off_rounded,
+                    color: Colors.white, size: 80),
+                const SizedBox(height: 24),
+                const Text(
+                  'No Connection',
+                  style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 12),
+                const Text(
+                  'You are currently offline. Please check your network settings to continue using the app.',
+                  textAlign: TextAlign.center,
+                  style:
+                      TextStyle(color: Colors.white, fontSize: 16, height: 1.4),
+                ),
+                const SizedBox(height: 30),
+                ElevatedButton.icon(
+                  onPressed: () { _checkInitialConnection(); },
+                  icon: const Icon(Icons.refresh),
+                  label: const Text("Try Again"),
+                  style: ElevatedButton.styleFrom(
+                    foregroundColor: Colors.redAccent,
+                    backgroundColor: Colors.white,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );} 
+   else {
+      return Scaffold(
       body: Column(
         children: [
-          if (_showDownloadBanner) _DownloadBanner(onDismiss: () => setState(() => _showDownloadBanner = false)),
+          if (_showDownloadBanner)
+            _DownloadBanner(
+                onDismiss: () => setState(() => _showDownloadBanner = false)),
           Expanded(child: widget.child),
         ],
       ),
@@ -279,6 +348,7 @@ class _AppShellState extends State<_AppShell> {
         ),
       ),
     );
+    }
   }
 }
 
@@ -301,16 +371,20 @@ class _DownloadBanner extends StatelessWidget {
               const Expanded(
                 child: Text(
                   'For a better experience, download the Ntripi app.',
-                  style: TextStyle(color: Colors.white, fontSize: 13, height: 1.4),
+                  style:
+                      TextStyle(color: Colors.white, fontSize: 13, height: 1.4),
                 ),
               ),
               if (kAndroidDownloadUrl.isNotEmpty)
                 TextButton(
-                  onPressed: () => launchUrl(Uri.parse(kAndroidDownloadUrl), mode: LaunchMode.externalApplication),
+                  onPressed: () => launchUrl(Uri.parse(kAndroidDownloadUrl),
+                      mode: LaunchMode.externalApplication),
                   style: TextButton.styleFrom(
                     foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    textStyle: const TextStyle(
+                        fontSize: 13, fontWeight: FontWeight.w700),
                   ),
                   child: const Text('Download'),
                 ),
