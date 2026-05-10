@@ -370,234 +370,242 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
             ),
             body: Center(
               child: ConstrainedBox(
-                constraints: BoxConstraints(maxWidth: isDesktopWeb() ? kDesktopMaxWidth : double.infinity),
-              child: itineraryAsync.when(
-                      loading: () =>
-                          const Center(child: CircularProgressIndicator()),
-                      error: (error, _) => Center(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              extractErrorMessage(error as dynamic),
-                              textAlign: TextAlign.center,
-                            ),
-                            const SizedBox(height: 16),
-                            FilledButton(
-                              onPressed: () => ref
-                                  .read(
-                                      itineraryDetailProvider(widget.itineraryId)
-                                          .notifier)
-                                  .refresh(),
-                              child: const Text('Retry'),
-                            ),
-                          ],
+                constraints: BoxConstraints(
+                    maxWidth:
+                        isDesktopWeb() ? kDesktopMaxWidth : double.infinity),
+                child: itineraryAsync.when(
+                  loading: () =>
+                      const Center(child: CircularProgressIndicator()),
+                  error: (error, _) => Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          extractErrorMessage(error as dynamic),
+                          textAlign: TextAlign.center,
                         ),
-                      ),
-                      data: (itinerary) {
-                        final allStops = itinerary.stops;
-                        final tracks = itinerary.tracks;
-                        final canEdit = isOwner && _editMode;
-
-                        final segmentByFromStop = {
-                          for (final seg in itinerary.segments)
-                            seg.fromStopId: seg,
-                        };
-                        final mappableStops = allStops
-                            .where((s) => s.lat != null && s.lng != null)
-                            .toList();
-                        final polylinePoints = mappableStops
-                            .map((s) => LatLng(s.lat!, s.lng!))
-                            .toList();
-                        final mapCenter = mappableStops.isNotEmpty
-                            ? LatLng(mappableStops.first.lat!,
-                                mappableStops.first.lng!)
-                            : const LatLng(48.8566, 2.3522);
-
-                        // Build interleaved list from tracks (server already sorted by rank).
-                        List<Widget> buildInterleavedList() {
-                          final items = <Widget>[];
-                          for (var i = 0; i < tracks.length; i++) {
-                            final track = tracks[i];
-                            final trackStops = track.stops;
-                            if (trackStops.isEmpty) continue;
-                            final hasNextTrack = i < tracks.length - 1;
-                            final nextTrack = hasNextTrack ? tracks[i + 1] : null;
-                            final trackIndex = i + 1;
-
-                            items.add(ParallelStopGroup(
-                              key: ValueKey('track-${track.id}'),
-                              stops: trackStops,
-                              currency: itinerary.currency,
-                              itineraryId: widget.itineraryId,
-                              editMode: canEdit,
-                              trackIndex: trackIndex,
-                              getSegment: (fromStopId) {
-                                final seg = segmentByFromStop[fromStopId];
-                                if (seg == null) return null;
-                                if (nextTrack != null) {
-                                  final nextIdx = _activeParallelByTrack[nextTrack.id] ?? 0;
-                                  final nextStop = nextTrack.stops.length > nextIdx
-                                      ? nextTrack.stops[nextIdx]
-                                      : nextTrack.stops.first;
-                                  if (seg.toStopId != nextStop.id) return null;
-                                }
-                                return seg;
-                              },
-                              onViewStop: (stop) => context.push(
-                                '/itineraries/${widget.itineraryId}/stops/${stop.id}',
-                              ),
-                              onAddParallel: canEdit
-                                  ? (trackId) => context.push(
-                                        '/itineraries/${widget.itineraryId}/stops/new',
-                                        extra: {'trackId': trackId},
-                                      )
-                                  : null,
-                              onEditStop: canEdit
-                                  ? (stop) => context.push(
-                                        '/itineraries/${widget.itineraryId}/stops/${stop.id}/edit',
-                                      )
-                                  : null,
-                              onAddAnnotation: canEdit
-                                  ? (stop) => _addAnnotation(stop.id)
-                                  : null,
-                              onEditAnnotation: canEdit
-                                  ? (stop, a) => _editAnnotation(stop.id, a)
-                                  : null,
-                              onDeleteAnnotation: canEdit
-                                  ? (stop, a) => _deleteAnnotation(stop.id, a)
-                                  : null,
-                              onEditSegment: canEdit
-                                  ? (seg) => context.push(
-                                        '/itineraries/${widget.itineraryId}/segments/${seg.id}/edit',
-                                      )
-                                  : null,
-                              onDeleteSegment: canEdit ? _confirmDeleteSegment : null,
-                              onAddTransit: canEdit && nextTrack != null
-                                  ? (fromStopId) {
-                                      final nextIdx = _activeParallelByTrack[nextTrack.id] ?? 0;
-                                      final toStop = nextTrack.stops.length > nextIdx
-                                          ? nextTrack.stops[nextIdx]
-                                          : nextTrack.stops.first;
-                                      return _addSegmentWithLeg(fromStopId, toStop.id);
-                                    }
-                                  : null,
-                              onPageChanged: (idx) => setState(() {
-                                _activeParallelByTrack[track.id] = idx;
-                              }),
-                              onAddStopAfter: canEdit
-                                  ? () async {
-                                      // Capture router before any await — accessing
-                                      // BuildContext across async gaps is a lint error.
-                                      final router = GoRouter.of(context);
-
-                                      // SEGMENT ORPHAN CHECK:
-                                      // A transit segment is displayed between two
-                                      // ADJACENT tracks. If we insert a new track
-                                      // between track[i] and track[i+1], any segment
-                                      // that currently connects a stop in track[i] to
-                                      // a stop in track[i+1] becomes invisible — it
-                                      // still exists in the DB but is no longer between
-                                      // adjacent tracks so the UI won't render it.
-                                      // We detect this situation and warn the user,
-                                      // offering to delete the orphaned segment(s)
-                                      // before proceeding.
-                                      if (nextTrack != null) {
-                                        // Build a set of stop IDs in the next track
-                                        // for fast membership tests below.
-                                        final nextStopIds = nextTrack.stops
-                                            .map((s) => s.id)
-                                            .toSet();
-                                        // Find segments whose fromStop is in the
-                                        // current track AND whose toStop is in the
-                                        // next track — these would become orphaned.
-                                        final orphaned = trackStops
-                                            .map((s) => segmentByFromStop[s.id])
-                                            .whereType<TransitSegment>()
-                                            .where((seg) =>
-                                                nextStopIds.contains(seg.toStopId))
-                                            .toList();
-
-                                        if (orphaned.isNotEmpty) {
-                                          final n = orphaned.length;
-                                          final confirmed = await showDialog<bool>(
-                                            context: context,
-                                            builder: (ctx) => AlertDialog(
-                                              title: Text(
-                                                'Delete transit segment${n > 1 ? 's' : ''}?',
-                                              ),
-                                              content: Text(
-                                                'There ${n == 1 ? 'is 1 transit segment' : 'are $n transit segments'} '
-                                                'connecting these two stops. '
-                                                'Adding a stop between them will hide ${n == 1 ? 'it' : 'them'} '
-                                                'because the stops will no longer be adjacent.\n\n'
-                                                'Delete the segment${n > 1 ? 's' : ''} and continue?',
-                                              ),
-                                              actions: [
-                                                TextButton(
-                                                  onPressed: () =>
-                                                      Navigator.of(ctx).pop(false),
-                                                  child: const Text('Cancel'),
-                                                ),
-                                                FilledButton(
-                                                  onPressed: () =>
-                                                      Navigator.of(ctx).pop(true),
-                                                  style: FilledButton.styleFrom(
-                                                    backgroundColor: Colors.red,
-                                                  ),
-                                                  child: const Text('Delete & continue'),
-                                                ),
-                                              ],
-                                            ),
-                                          );
-
-                                          if (confirmed != true || !mounted) return;
-
-                                          final notifier = ref.read(
-                                            itineraryDetailProvider(
-                                                    widget.itineraryId)
-                                                .notifier,
-                                          );
-                                          for (final seg in orphaned) {
-                                            await notifier.deleteSegment(seg.id);
-                                          }
-                                          if (!mounted) return;
-                                        }
-                                      }
-
-                                      router.push(
-                                        '/itineraries/${widget.itineraryId}/stops/new',
-                                        extra: {
-                                          'afterTrackId': track.id,
-                                          if (nextTrack != null)
-                                            'beforeTrackId': nextTrack.id,
-                                        },
-                                      );
-                                    }
-                                  : null,
-                            ));
-                          }
-                          return items;
-                        }
-
-                        return RefreshIndicator(
-                          onRefresh: () => ref
+                        const SizedBox(height: 16),
+                        FilledButton(
+                          onPressed: () => ref
                               .read(itineraryDetailProvider(widget.itineraryId)
                                   .notifier)
                               .refresh(),
-                          child: CustomScrollView(
-                            physics: const AlwaysScrollableScrollPhysics(),
-                            slivers: [
-                              if (itinerary.coverImageUrl != null)
-                                SliverToBoxAdapter(
-                                  child: _CoverImage(
-                                    url: itinerary.coverImageUrl!.startsWith('/')
+                          child: const Text('Retry'),
+                        ),
+                      ],
+                    ),
+                  ),
+                  data: (itinerary) {
+                    final allStops = itinerary.stops;
+                    final tracks = itinerary.tracks;
+                    final canEdit = isOwner && _editMode;
+
+                    final segmentByFromStop = {
+                      for (final seg in itinerary.segments) seg.fromStopId: seg,
+                    };
+                    final mappableStops = allStops
+                        .where((s) => s.lat != null && s.lng != null)
+                        .toList();
+                    final polylinePoints = mappableStops
+                        .map((s) => LatLng(s.lat!, s.lng!))
+                        .toList();
+                    final mapCenter = mappableStops.isNotEmpty
+                        ? LatLng(
+                            mappableStops.first.lat!, mappableStops.first.lng!)
+                        : const LatLng(48.8566, 2.3522);
+
+                    // Build interleaved list from tracks (server already sorted by rank).
+                    List<Widget> buildInterleavedList() {
+                      final items = <Widget>[];
+                      for (var i = 0; i < tracks.length; i++) {
+                        final track = tracks[i];
+                        final trackStops = track.stops;
+                        if (trackStops.isEmpty) continue;
+                        final hasNextTrack = i < tracks.length - 1;
+                        final nextTrack = hasNextTrack ? tracks[i + 1] : null;
+                        final trackIndex = i + 1;
+
+                        items.add(ParallelStopGroup(
+                          key: ValueKey('track-${track.id}'),
+                          stops: trackStops,
+                          currency: itinerary.currency,
+                          itineraryId: widget.itineraryId,
+                          editMode: canEdit,
+                          trackIndex: trackIndex,
+                          getSegment: (fromStopId) {
+                            final seg = segmentByFromStop[fromStopId];
+                            if (seg == null) return null;
+                            if (nextTrack != null) {
+                              final nextIdx =
+                                  _activeParallelByTrack[nextTrack.id] ?? 0;
+                              final nextStop = nextTrack.stops.length > nextIdx
+                                  ? nextTrack.stops[nextIdx]
+                                  : nextTrack.stops.first;
+                              if (seg.toStopId != nextStop.id) return null;
+                            }
+                            return seg;
+                          },
+                          onViewStop: (stop) => context.push(
+                            '/itineraries/${widget.itineraryId}/stops/${stop.id}',
+                          ),
+                          onAddParallel: canEdit
+                              ? (trackId) => context.push(
+                                    '/itineraries/${widget.itineraryId}/stops/new',
+                                    extra: {'trackId': trackId},
+                                  )
+                              : null,
+                          onEditStop: canEdit
+                              ? (stop) => context.push(
+                                    '/itineraries/${widget.itineraryId}/stops/${stop.id}/edit',
+                                  )
+                              : null,
+                          onAddAnnotation: canEdit
+                              ? (stop) => _addAnnotation(stop.id)
+                              : null,
+                          onEditAnnotation: canEdit
+                              ? (stop, a) => _editAnnotation(stop.id, a)
+                              : null,
+                          onDeleteAnnotation: canEdit
+                              ? (stop, a) => _deleteAnnotation(stop.id, a)
+                              : null,
+                          onEditSegment: canEdit
+                              ? (seg) => context.push(
+                                    '/itineraries/${widget.itineraryId}/segments/${seg.id}/edit',
+                                  )
+                              : null,
+                          onDeleteSegment:
+                              canEdit ? _confirmDeleteSegment : null,
+                          onAddTransit: canEdit && nextTrack != null
+                              ? (fromStopId) {
+                                  final nextIdx =
+                                      _activeParallelByTrack[nextTrack.id] ?? 0;
+                                  final toStop =
+                                      nextTrack.stops.length > nextIdx
+                                          ? nextTrack.stops[nextIdx]
+                                          : nextTrack.stops.first;
+                                  return _addSegmentWithLeg(
+                                      fromStopId, toStop.id);
+                                }
+                              : null,
+                          onPageChanged: (idx) => setState(() {
+                            _activeParallelByTrack[track.id] = idx;
+                          }),
+                          onAddStopAfter: canEdit
+                              ? () async {
+                                  // Capture router before any await — accessing
+                                  // BuildContext across async gaps is a lint error.
+                                  final router = GoRouter.of(context);
+
+                                  // SEGMENT ORPHAN CHECK:
+                                  // A transit segment is displayed between two
+                                  // ADJACENT tracks. If we insert a new track
+                                  // between track[i] and track[i+1], any segment
+                                  // that currently connects a stop in track[i] to
+                                  // a stop in track[i+1] becomes invisible — it
+                                  // still exists in the DB but is no longer between
+                                  // adjacent tracks so the UI won't render it.
+                                  // We detect this situation and warn the user,
+                                  // offering to delete the orphaned segment(s)
+                                  // before proceeding.
+                                  if (nextTrack != null) {
+                                    // Build a set of stop IDs in the next track
+                                    // for fast membership tests below.
+                                    final nextStopIds = nextTrack.stops
+                                        .map((s) => s.id)
+                                        .toSet();
+                                    // Find segments whose fromStop is in the
+                                    // current track AND whose toStop is in the
+                                    // next track — these would become orphaned.
+                                    final orphaned = trackStops
+                                        .map((s) => segmentByFromStop[s.id])
+                                        .whereType<TransitSegment>()
+                                        .where((seg) =>
+                                            nextStopIds.contains(seg.toStopId))
+                                        .toList();
+
+                                    if (orphaned.isNotEmpty) {
+                                      final n = orphaned.length;
+                                      final confirmed = await showDialog<bool>(
+                                        context: context,
+                                        builder: (ctx) => AlertDialog(
+                                          title: Text(
+                                            'Delete transit segment${n > 1 ? 's' : ''}?',
+                                          ),
+                                          content: Text(
+                                            'There ${n == 1 ? 'is 1 transit segment' : 'are $n transit segments'} '
+                                            'connecting these two stops. '
+                                            'Adding a stop between them will hide ${n == 1 ? 'it' : 'them'} '
+                                            'because the stops will no longer be adjacent.\n\n'
+                                            'Delete the segment${n > 1 ? 's' : ''} and continue?',
+                                          ),
+                                          actions: [
+                                            TextButton(
+                                              onPressed: () =>
+                                                  Navigator.of(ctx).pop(false),
+                                              child: const Text('Cancel'),
+                                            ),
+                                            FilledButton(
+                                              onPressed: () =>
+                                                  Navigator.of(ctx).pop(true),
+                                              style: FilledButton.styleFrom(
+                                                backgroundColor: Colors.red,
+                                              ),
+                                              child: const Text(
+                                                  'Delete & continue'),
+                                            ),
+                                          ],
+                                        ),
+                                      );
+
+                                      if (confirmed != true || !mounted) return;
+
+                                      final notifier = ref.read(
+                                        itineraryDetailProvider(
+                                                widget.itineraryId)
+                                            .notifier,
+                                      );
+                                      for (final seg in orphaned) {
+                                        await notifier.deleteSegment(seg.id);
+                                      }
+                                      if (!mounted) return;
+                                    }
+                                  }
+
+                                  router.push(
+                                    '/itineraries/${widget.itineraryId}/stops/new',
+                                    extra: {
+                                      'afterTrackId': track.id,
+                                      if (nextTrack != null)
+                                        'beforeTrackId': nextTrack.id,
+                                    },
+                                  );
+                                }
+                              : null,
+                        ));
+                      }
+                      return items;
+                    }
+
+                    return RefreshIndicator(
+                      onRefresh: () => ref
+                          .read(itineraryDetailProvider(widget.itineraryId)
+                              .notifier)
+                          .refresh(),
+                      child: CustomScrollView(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        slivers: [
+                          SliverToBoxAdapter(
+                            child: Stack(
+                              alignment: AlignmentDirectional.topStart,
+                              children: [
+                                if (itinerary.coverImageUrl != null)
+                                  _CoverImage(
+                                    url: itinerary.coverImageUrl!
+                                            .startsWith('/')
                                         ? '$kApiBaseUrl${itinerary.coverImageUrl}'
                                         : itinerary.coverImageUrl!,
                                   ),
-                                ),
-                              SliverToBoxAdapter(
-                                child: Padding(
+                                Padding(
                                   padding: const EdgeInsets.symmetric(
                                       horizontal: 16, vertical: 10),
                                   child: Wrap(
@@ -614,7 +622,8 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                                       ),
                                       _SummaryChip(
                                         icon: Icons.place_outlined,
-                                        label: '${allStops.length} stop${allStops.length == 1 ? '' : 's'}',
+                                        label:
+                                            '${allStops.length} stop${allStops.length == 1 ? '' : 's'}',
                                       ),
                                       if (isOwner && _editMode)
                                         GestureDetector(
@@ -633,240 +642,289 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                                     ],
                                   ),
                                 ),
-                              ),
-                              if (itinerary.description != null &&
-                                  itinerary.description!.isNotEmpty)
-                                SliverToBoxAdapter(
-                                  child: Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 16),
-                                    child: Text(
-                                      itinerary.description!,
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .bodyMedium
-                                          ?.copyWith(color: Colors.grey.shade700),
-                                    ),
-                                  ),
+                              ],
+                            ),
+                          ),
+                          if (itinerary.description != null &&
+                              itinerary.description!.isNotEmpty)
+                            SliverToBoxAdapter(
+                              child: Padding(
+                                padding:
+                                    const EdgeInsets.symmetric(horizontal: 16),
+                                child: Text(
+                                  itinerary.description!,
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .bodyMedium
+                                      ?.copyWith(color: Colors.grey.shade700),
                                 ),
-                              if (itinerary.annotations.isNotEmpty || canEdit)
-                                SliverToBoxAdapter(
-                                  child: Padding(
-                                    padding: const EdgeInsets.fromLTRB(16, 10, 16, 4),
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                              ),
+                            ),
+                          if (itinerary.annotations.isNotEmpty || canEdit)
+                            SliverToBoxAdapter(
+                              child: Padding(
+                                padding:
+                                    const EdgeInsets.fromLTRB(16, 10, 16, 4),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
                                       children: [
-                                        Row(
-                                          children: [
-                                            Text(
-                                              'Notes',
-                                              style: Theme.of(context)
-                                                  .textTheme
-                                                  .titleSmall
-                                                  ?.copyWith(fontWeight: FontWeight.w600),
-                                            ),
-                                            if (canEdit) ...[
-                                              const Spacer(),
-                                              TextButton.icon(
-                                                onPressed: _addItineraryAnnotation,
-                                                icon: const Icon(Icons.add, size: 16),
-                                                label: const Text('Add note'),
-                                                style: TextButton.styleFrom(
-                                                  visualDensity: VisualDensity.compact,
-                                                ),
-                                              ),
-                                            ],
-                                          ],
+                                        Text(
+                                          'Notes',
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .titleSmall
+                                              ?.copyWith(
+                                                  fontWeight: FontWeight.w600),
                                         ),
-                                        if (itinerary.annotations.isEmpty)
-                                          Padding(
-                                            padding: const EdgeInsets.only(top: 4, bottom: 4),
-                                            child: Text(
-                                              'No notes yet.',
-                                              style: Theme.of(context)
-                                                  .textTheme
-                                                  .bodySmall
-                                                  ?.copyWith(color: Colors.grey.shade500),
-                                            ),
-                                          )
-                                        else
-                                          Padding(
-                                            padding: const EdgeInsets.only(top: 6),
-                                            child: Wrap(
-                                              spacing: 6,
-                                              runSpacing: 6,
-                                              children: itinerary.annotations
-                                                  .map(
-                                                    (a) => AnnotationChip(
-                                                      annotation: Annotation(
-                                                        id: a.id,
-                                                        stopId: a.itineraryId,
-                                                        type: a.type,
-                                                        content: a.content,
-                                                        createdAt: a.createdAt,
-                                                        updatedAt: a.updatedAt,
-                                                      ),
-                                                      onEdit: canEdit
-                                                          ? () => _editItineraryAnnotation(a)
-                                                          : null,
-                                                      onDelete: canEdit
-                                                          ? () => _deleteItineraryAnnotation(a)
-                                                          : null,
-                                                    ),
-                                                  )
-                                                  .toList(),
-                                            ),
-                                          ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              SliverToBoxAdapter(
-                                child: canEdit
-                                    ? const SizedBox.shrink()
-                                    : _RatingSection(
-                                        itineraryId: widget.itineraryId,
-                                        itinerary: itinerary,
-                                      ),
-                              ),
-                              SliverToBoxAdapter(
-                                child: InkWell(
-                                  onTap: () => setState(() => _mapVisible = !_mapVisible),
-                                  child: Padding(
-                                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                                    child: Row(
-                                      children: [
-                                        const Icon(Icons.map_outlined, size: 18),
-                                        const SizedBox(width: 8),
-                                        const Text('Map', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
-                                        const Spacer(),
-                                        Icon(_mapVisible ? Icons.expand_less : Icons.expand_more, size: 20),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              if (_mapVisible)
-                                SliverToBoxAdapter(
-                                  child: Padding(
-                                    padding: const EdgeInsets.only(right: 4, left: 4),
-                                    child: SizedBox(
-                                      height: 240,
-                                      child: Stack(
-                                        children: [
-                                          FlutterMap(
-                                            options: MapOptions(
-                                              initialCenter: mapCenter,
-                                              initialZoom: mappableStops.isNotEmpty ? 12 : 5,
-                                            ),
-                                            children: [
-                                              TileLayer(
-                                                urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                                                userAgentPackageName: 'com.ntripi.app',
-                                              ),
-                                              if (polylinePoints.length >= 2)
-                                                PolylineLayer(
-                                                  polylines: [
-                                                    Polyline(
-                                                      points: polylinePoints,
-                                                      color: Colors.blue.withValues(alpha: 0.6),
-                                                      strokeWidth: 3,
-                                                    ),
-                                                  ],
-                                                ),
-                                              MarkerLayer(
-                                                markers: mappableStops.map((stop) {
-                                                  final color = _markerColors[stop.type] ?? Colors.grey;
-                                                  return Marker(
-                                                    point: LatLng(stop.lat!, stop.lng!),
-                                                    child: Column(
-                                                      mainAxisSize: MainAxisSize.min,
-                                                      children: [
-                                                        Container(
-                                                          padding: const EdgeInsets.all(3),
-                                                          decoration: BoxDecoration(
-                                                            color: color,
-                                                            shape: BoxShape.circle,
-                                                            border: Border.all(color: Colors.white, width: 2),
-                                                          ),
-                                                          child: Icon(Icons.place, color: Colors.white, size: 10),
-                                                        ),
-                                                      ],
-                                                    ),
-                                                  );
-                                                }).toList(),
-                                              ),
-                                              RichAttributionWidget(
-                                                attributions: [
-                                                  TextSourceAttribution('OpenStreetMap contributors'),
-                                                ],
-                                              ),
-                                            ],
-                                          ),
-                                          Positioned(
-                                            bottom: 28,
-                                            left: 8,
-                                            child: Container(
-                                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                              decoration: BoxDecoration(
-                                                color: Colors.white.withValues(alpha: 0.8),
-                                                borderRadius: BorderRadius.circular(4),
-                                              ),
-                                              child: const Text('Powered by OpenStreetMap',
-                                                  style: TextStyle(fontSize: 9, color: Colors.black54)),
+                                        if (canEdit) ...[
+                                          const Spacer(),
+                                          TextButton.icon(
+                                            onPressed: _addItineraryAnnotation,
+                                            icon:
+                                                const Icon(Icons.add, size: 16),
+                                            label: const Text('Add note'),
+                                            style: TextButton.styleFrom(
+                                              visualDensity:
+                                                  VisualDensity.compact,
                                             ),
                                           ),
                                         ],
-                                      ),
+                                      ],
                                     ),
-                                  ),
+                                    if (itinerary.annotations.isEmpty)
+                                      Padding(
+                                        padding: const EdgeInsets.only(
+                                            top: 4, bottom: 4),
+                                        child: Text(
+                                          'No notes yet.',
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .bodySmall
+                                              ?.copyWith(
+                                                  color: Colors.grey.shade500),
+                                        ),
+                                      )
+                                    else
+                                      Padding(
+                                        padding: const EdgeInsets.only(top: 6),
+                                        child: Wrap(
+                                          spacing: 6,
+                                          runSpacing: 6,
+                                          children: itinerary.annotations
+                                              .map(
+                                                (a) => AnnotationChip(
+                                                  annotation: Annotation(
+                                                    id: a.id,
+                                                    stopId: a.itineraryId,
+                                                    type: a.type,
+                                                    content: a.content,
+                                                    createdAt: a.createdAt,
+                                                    updatedAt: a.updatedAt,
+                                                  ),
+                                                  onEdit: canEdit
+                                                      ? () =>
+                                                          _editItineraryAnnotation(
+                                                              a)
+                                                      : null,
+                                                  onDelete: canEdit
+                                                      ? () =>
+                                                          _deleteItineraryAnnotation(
+                                                              a)
+                                                      : null,
+                                                ),
+                                              )
+                                              .toList(),
+                                        ),
+                                      ),
+                                  ],
                                 ),
-                              const SliverToBoxAdapter(child: Divider(height: 1)),
-                              if (tracks.isEmpty)
-                                SliverToBoxAdapter(
-                                  child: Padding(
-                                    padding: const EdgeInsets.symmetric(vertical: 48),
-                                    child: canEdit
-                                        ? GestureDetector(
-                                            onTap: () => context.push(
-                                              '/itineraries/${widget.itineraryId}/stops/new',
-                                            ),
-                                            child: Column(
-                                              children: [
-                                                Icon(Icons.place_outlined, size: 48, color: Colors.grey.shade400),
-                                                const SizedBox(height: 12),
-                                                const Text('No stops yet. Tap + to add one.'),
+                              ),
+                            ),
+                          SliverToBoxAdapter(
+                            child: canEdit
+                                ? const SizedBox.shrink()
+                                : _RatingSection(
+                                    itineraryId: widget.itineraryId,
+                                    itinerary: itinerary,
+                                  ),
+                          ),
+                          SliverToBoxAdapter(
+                            child: InkWell(
+                              onTap: () =>
+                                  setState(() => _mapVisible = !_mapVisible),
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 16, vertical: 10),
+                                child: Row(
+                                  children: [
+                                    const Icon(Icons.map_outlined, size: 18),
+                                    const SizedBox(width: 8),
+                                    const Text('Map',
+                                        style: TextStyle(
+                                            fontWeight: FontWeight.w600,
+                                            fontSize: 15)),
+                                    const Spacer(),
+                                    Icon(
+                                        _mapVisible
+                                            ? Icons.expand_less
+                                            : Icons.expand_more,
+                                        size: 20),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                          if (_mapVisible)
+                            SliverToBoxAdapter(
+                              child: Padding(
+                                padding:
+                                    const EdgeInsets.only(right: 4, left: 4),
+                                child: SizedBox(
+                                  height: 240,
+                                  child: Stack(
+                                    children: [
+                                      FlutterMap(
+                                        options: MapOptions(
+                                          initialCenter: mapCenter,
+                                          initialZoom:
+                                              mappableStops.isNotEmpty ? 12 : 5,
+                                        ),
+                                        children: [
+                                          TileLayer(
+                                            urlTemplate:
+                                                'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                                            userAgentPackageName:
+                                                'com.ntripi.app',
+                                          ),
+                                          if (polylinePoints.length >= 2)
+                                            PolylineLayer(
+                                              polylines: [
+                                                Polyline(
+                                                  points: polylinePoints,
+                                                  color: Colors.blue
+                                                      .withValues(alpha: 0.6),
+                                                  strokeWidth: 3,
+                                                ),
                                               ],
                                             ),
-                                          )
-                                        : Column(
-                                            children: [
-                                              Icon(Icons.place_outlined, size: 48, color: Colors.grey.shade400),
-                                              const SizedBox(height: 12),
-                                              const Text('No stops yet.'),
+                                          MarkerLayer(
+                                            markers: mappableStops.map((stop) {
+                                              final color =
+                                                  _markerColors[stop.type] ??
+                                                      Colors.grey;
+                                              return Marker(
+                                                point: LatLng(
+                                                    stop.lat!, stop.lng!),
+                                                child: Column(
+                                                  mainAxisSize:
+                                                      MainAxisSize.min,
+                                                  children: [
+                                                    Container(
+                                                      padding:
+                                                          const EdgeInsets.all(
+                                                              3),
+                                                      decoration: BoxDecoration(
+                                                        color: color,
+                                                        shape: BoxShape.circle,
+                                                        border: Border.all(
+                                                            color: Colors.white,
+                                                            width: 2),
+                                                      ),
+                                                      child: Icon(Icons.place,
+                                                          color: Colors.white,
+                                                          size: 10),
+                                                    ),
+                                                  ],
+                                                ),
+                                              );
+                                            }).toList(),
+                                          ),
+                                          RichAttributionWidget(
+                                            attributions: [
+                                              TextSourceAttribution(
+                                                  'OpenStreetMap contributors'),
                                             ],
                                           ),
-                                  ),
-                                )
-                              else
-                                SliverPadding(
-                                  padding: const EdgeInsets.only(bottom: 16),
-                                  sliver: SliverList(
-                                    delegate: SliverChildListDelegate(
-                                      buildInterleavedList(),
-                                    ),
+                                        ],
+                                      ),
+                                      Positioned(
+                                        bottom: 28,
+                                        left: 8,
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(
+                                              horizontal: 6, vertical: 2),
+                                          decoration: BoxDecoration(
+                                            color: Colors.white
+                                                .withValues(alpha: 0.8),
+                                            borderRadius:
+                                                BorderRadius.circular(4),
+                                          ),
+                                          child: const Text(
+                                              'Powered by OpenStreetMap',
+                                              style: TextStyle(
+                                                  fontSize: 9,
+                                                  color: Colors.black54)),
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
-                            ],
-                          ),
-                        );
-                      },
-                    ),
-            ),
+                              ),
+                            ),
+                          const SliverToBoxAdapter(child: Divider(height: 1)),
+                          if (tracks.isEmpty)
+                            SliverToBoxAdapter(
+                              child: Padding(
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 48),
+                                child: canEdit
+                                    ? GestureDetector(
+                                        onTap: () => context.push(
+                                          '/itineraries/${widget.itineraryId}/stops/new',
+                                        ),
+                                        child: Column(
+                                          children: [
+                                            Icon(Icons.place_outlined,
+                                                size: 48,
+                                                color: Colors.grey.shade400),
+                                            const SizedBox(height: 12),
+                                            const Text(
+                                                'No stops yet. Tap + to add one.'),
+                                          ],
+                                        ),
+                                      )
+                                    : Column(
+                                        children: [
+                                          Icon(Icons.place_outlined,
+                                              size: 48,
+                                              color: Colors.grey.shade400),
+                                          const SizedBox(height: 12),
+                                          const Text('No stops yet.'),
+                                        ],
+                                      ),
+                              ),
+                            )
+                          else
+                            SliverPadding(
+                              padding: const EdgeInsets.only(bottom: 16),
+                              sliver: SliverList(
+                                delegate: SliverChildListDelegate(
+                                  buildInterleavedList(),
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
               ),
             ),
-          ],
-        ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -929,7 +987,9 @@ class _RatingSection extends ConsumerWidget {
                                 textBaseline: TextBaseline.alphabetic,
                                 children: [
                                   Icon(Icons.star_rounded,
-                                      size: 20, color: ratingColor(itinerary.ratingAvg ?? 3)),
+                                      size: 20,
+                                      color: ratingColor(
+                                          itinerary.ratingAvg ?? 3)),
                                   const SizedBox(width: 4),
                                   Text(
                                     itinerary.ratingAvg != null
@@ -1026,7 +1086,8 @@ class _RatingSection extends ConsumerWidget {
                                           : Icons.star_outline_rounded,
                                       size: 22,
                                       color: filled
-                                          ? ratingColor(myRating.stars.toDouble())
+                                          ? ratingColor(
+                                              myRating.stars.toDouble())
                                           : cs.onSurfaceVariant
                                               .withValues(alpha: 0.4),
                                     ),
@@ -1057,28 +1118,27 @@ class _SummaryChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
-        color: Colors.grey.shade100,
+        color: Colors.grey.shade100.withValues(alpha: 0.6),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade300),
+        border: Border.all(color: Colors.grey.shade300.withValues(alpha: 0.8),),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 14, color: Colors.grey.shade600),
+          Icon(icon, size: 14, color: Colors.black),
           const SizedBox(width: 5),
           Text(
             label,
             style: Theme.of(context)
                 .textTheme
                 .bodySmall
-                ?.copyWith(fontWeight: FontWeight.w500),
+                ?.copyWith(fontWeight: FontWeight.w500,color: Colors.black),
           ),
         ],
       ),
     );
   }
 }
-
 
 class _CoverImage extends StatefulWidget {
   final String url;
