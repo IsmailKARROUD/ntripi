@@ -52,6 +52,7 @@ import 'package:social_flutter/features/itineraries/presentation/widgets/paralle
 import 'package:social_flutter/core/utils/platform_utils.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/leg_form_dialog.dart';
 import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
+import 'package:photo_view/photo_view.dart';
 
 class ItineraryDetailScreen extends ConsumerStatefulWidget {
   final String itineraryId;
@@ -1153,18 +1154,49 @@ class _CoverImageState extends State<_CoverImage> {
 
   @override
   Widget build(BuildContext context) {
-    if (_error) return const SizedBox.shrink();
-    return AspectRatio(
-      aspectRatio: 1200 / 630,
-      child: Image.network(
-        widget.url,
-        fit: BoxFit.cover,
-        errorBuilder: (_, __, ___) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (mounted) setState(() => _error = true);
-          });
-          return const SizedBox.shrink();
-        },
+    if (_error) {
+      return const SizedBox.shrink();
+    }
+
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => Scaffold(
+              backgroundColor: Colors.black,
+              appBar: AppBar(
+                automaticallyImplyLeading: false,
+                backgroundColor: Colors.black,
+                iconTheme: const IconThemeData(color: Colors.white),
+              ),
+              body: Center(
+                child: PhotoView(
+                  enableRotation: true,
+                  imageProvider: NetworkImage(widget.url),
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+      child: AspectRatio(
+        aspectRatio: 1200 / 630,
+        child: Image.network(
+          widget.url,
+          fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) {
+            if (!_error) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (mounted) {
+                  setState(() => _error = true);
+                }
+              });
+            }
+
+            return const SizedBox.shrink();
+          },
+        ),
       ),
     );
   }

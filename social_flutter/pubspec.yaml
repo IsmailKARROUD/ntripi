@@ -44,6 +44,9 @@ dependencies:
 
   # Open URLs in browser — used for store download links in the web banner.
   url_launcher: ^6.3.0
+  photo_view: ^0.15.0
+
+
 
 dev_dependencies:
   flutter_test:
