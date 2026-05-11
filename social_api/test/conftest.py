@@ -151,3 +151,21 @@ def auth_headers(token: str) -> dict:
     Flutter app will send on every protected request.
     """
     return {"Authorization": f"Bearer {token}"}
+
+
+def etag_from_updated_at(updated_at_iso: str) -> str:
+    """
+    Derive the same hashed ETag the server emits for a given `updated_at`.
+
+    The wire ETag is opaque (a SHA-256 prefix), so tests that previously
+    built it inline as `f'"{updated_at}"'` need to hash instead. Tests can
+    also read the value from `r.headers["etag"]` after a GET; this helper
+    is for the (more common) case where we've just done a POST that
+    returned `updated_at` in its JSON body but no ETag header.
+    """
+    from types import SimpleNamespace
+    from datetime import datetime
+    from app.dependencies import _etag_value
+
+    ts = datetime.fromisoformat(updated_at_iso.replace("Z", "+00:00"))
+    return _etag_value(SimpleNamespace(updated_at=ts))

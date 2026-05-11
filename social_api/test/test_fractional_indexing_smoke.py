@@ -15,7 +15,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from app.services.ordering import key_between, n_keys_between
-from conftest import register_user, auth_headers
+from conftest import register_user, auth_headers, etag_from_updated_at
 
 
 # ---------------------------------------------------------------------------
@@ -98,7 +98,7 @@ class TestTrackAndStopSmoke:
 
     def test_full_smoke(self, client: TestClient):
         itin_id, hdrs, etag_val = self._setup(client)
-        etag = f'"{etag_val}"'
+        etag = etag_from_updated_at(etag_val)
 
         # --- Add stop 1 → creates track 1 ---
         r = client.post(
@@ -222,7 +222,7 @@ class TestReorderAndRebalance:
         r = client.post("/itineraries/", json={"title": "Trip", "currency": "EUR"},
                         headers=hdrs)
         itin = r.json()
-        etag = f'"{itin["updated_at"]}"'
+        etag = etag_from_updated_at(itin["updated_at"])
 
         ids = []
         prev = None
@@ -363,7 +363,7 @@ class TestBatchReorder:
         r = client.post("/itineraries/", json={"title": "Trip", "currency": "EUR"},
                         headers=hdrs)
         itin = r.json()
-        etag = f'"{itin["updated_at"]}"'
+        etag = etag_from_updated_at(itin["updated_at"])
 
         ids = []
         track_id = None
@@ -537,7 +537,7 @@ class TestTrackReorder:
         r = client.post("/itineraries/", json={"title": "Trip", "currency": "EUR"},
                         headers=hdrs)
         itin = r.json()
-        etag = f'"{itin["updated_at"]}"'
+        etag = etag_from_updated_at(itin["updated_at"])
 
         track_ids = []
         stop_ids = []
@@ -675,7 +675,7 @@ class TestTrackReorder:
                         json={"title": "Trip 2", "currency": "EUR"},
                         headers=hdrs)
         other_itin_id = r.json()["id"]
-        other_etag = f'"{r.json()["updated_at"]}"'
+        other_etag = etag_from_updated_at(r.json()["updated_at"])
         r = client.post(
             f"/itineraries/{other_itin_id}/stops",
             json={"place_name": "X", "is_free": True},
@@ -755,7 +755,7 @@ class TestMoveToNewTrack:
         r = client.post("/itineraries/", json={"title": "Trip", "currency": "EUR"},
                         headers=hdrs)
         itin = r.json()
-        etag = f'"{itin["updated_at"]}"'
+        etag = etag_from_updated_at(itin["updated_at"])
 
         track_ids = []
         stop_ids = []
@@ -809,7 +809,7 @@ class TestMoveToNewTrack:
         r = client.post("/itineraries/", json={"title": "Trip", "currency": "EUR"},
                         headers=hdrs)
         itin = r.json()
-        etag = f'"{itin["updated_at"]}"'
+        etag = etag_from_updated_at(itin["updated_at"])
 
         # Track 1 with three parallels X, Y, Z.
         ids = []
@@ -934,7 +934,7 @@ class TestMoveToNewTrack:
                         json={"title": "Trip 2", "currency": "EUR"},
                         headers=hdrs)
         other_itin_id = r.json()["id"]
-        other_etag = f'"{r.json()["updated_at"]}"'
+        other_etag = etag_from_updated_at(r.json()["updated_at"])
         r = client.post(
             f"/itineraries/{other_itin_id}/stops",
             json={"place_name": "X", "is_free": True},

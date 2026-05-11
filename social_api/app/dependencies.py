@@ -9,20 +9,23 @@ WHY ETAG / IF-MATCH?
   Without concurrency control, two users (or two browser tabs) can silently
   overwrite each other's changes. The ETag pattern works like this:
 
-    1. Client fetches the itinerary → server returns ETag: "2026-05-07T14:23:11+00:00"
+    1. Client fetches the itinerary → server returns ETag: "<16 hex>"
     2. Client stores that value alongside the data.
-    3. Client sends a mutation → includes If-Match: "2026-05-07T14:23:11+00:00"
-    4. Server compares the header to the current DB updated_at:
+    3. Client sends a mutation → includes If-Match: "<16 hex>"
+    4. Server compares the header to the current ETag derived from updated_at:
          - Match  → proceed, return new ETag.
          - Stale  → 412 Precondition Failed ("please reload").
          - Missing→ 428 Precondition Required.
 
-  The ETag value IS the itinerary's updated_at timestamp. This is simpler than
-  a separate version counter and still guarantees uniqueness per mutation.
+  The ETag is a SHA-256 hash of the itinerary's `updated_at` (first 16 hex
+  chars) — opaque, byte-stable across clients/proxies/serializers. We do not
+  ship the raw ISO datetime: format drift (`Z` vs `+00:00`, microsecond
+  truncation, naive-vs-aware) would silently break byte-compared headers,
+  and the response-body ETagMiddleware also relies on opaque hashes.
 """
 
+import hashlib
 import uuid
-from datetime import timezone
 from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy import select
@@ -87,38 +90,17 @@ def get_current_user(
 
 def _etag_value(itinerary) -> str:
     """
-    Format the itinerary's updated_at as a quoted ETag string (RFC 7232).
-    Naive datetimes (from SQLite in tests) are treated as UTC.
-    Example output: '"2026-05-07T14:23:11.456789+00:00"'
+    SHA-256 hash of `updated_at.isoformat()`, truncated to 16 hex chars,
+    wrapped in quotes per RFC 7232. Opaque to clients — never returned as a
+    parseable timestamp, only round-tripped via If-Match.
     """
-    ts = itinerary.updated_at
-    if ts.tzinfo is None:
-        # SQLite stores datetimes without timezone. Treat as UTC.
-        ts = ts.replace(tzinfo=timezone.utc)
-    return f'"{ts.isoformat()}"'
+    digest = hashlib.sha256(itinerary.updated_at.isoformat().encode()).hexdigest()
+    return f'"{digest[:16]}"'
 
 
 def _normalize_etag(raw: str) -> str:
-    """
-    Strip quotes and normalize the timezone suffix before string comparison.
-
-    WHY THIS IS NEEDED:
-      Different clients and serializers produce different UTC representations:
-        - Pydantic (Python)     → "2026-05-07T14:23:11.456789+00:00"
-        - Dart toIso8601String  → "2026-05-07T14:23:11.456789Z"   (UTC uses Z)
-        - Naive datetime        → "2026-05-07T14:23:11.456789"    (no suffix)
-
-      All three mean the same instant. Comparing them as raw strings would
-      produce false mismatches. We normalize everything to the +00:00 form.
-    """
-    s = raw.strip('"').strip()
-    if s.endswith("Z"):
-        # Dart UTC format: replace trailing Z with +00:00
-        s = s[:-1] + "+00:00"
-    elif "T" in s and "+" not in s:
-        # Naive format: assume UTC and append +00:00
-        s += "+00:00"
-    return s
+    """Strip optional surrounding quotes / whitespace before byte comparison."""
+    return raw.strip().strip('"')
 
 
 def make_etag_checker(itinerary_id_param: str = "itinerary_id"):

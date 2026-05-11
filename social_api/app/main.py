@@ -21,6 +21,7 @@ from fastapi.staticfiles import StaticFiles
 from starlette.exceptions import HTTPException
 
 from app.config import get_settings
+from app.middleware.etag import ETagMiddleware
 from app.routers import auth, users, follows, itineraries, share, web
 from app.storage.factory import storage
 
@@ -77,6 +78,14 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# ---------------------------------------------------------------------------
+# ETag / 304 Not Modified
+# ---------------------------------------------------------------------------
+# Hash JSON GET response bodies into a short opaque ETag and serve 304 when
+# the client returns it via If-None-Match. Added after CORS so CORS runs
+# inner — its response headers are then copied into 304 replies by ETagMiddleware.
+app.add_middleware(ETagMiddleware)
 
 # ---------------------------------------------------------------------------
 # Routers

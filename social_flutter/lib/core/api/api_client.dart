@@ -44,22 +44,19 @@ Dio createDioClient({CacheStore? cacheStore}) {
   instance.interceptors.add(AuthInterceptor());
 
   if (cacheStore != null) {
-    // Cache GET responses. On any Dio error (including offline / timeout)
-    // the interceptor falls back to the most recent cached response, so
-    // previously-viewed screens remain readable without a connection.
-    //
-    // `refreshForceCache` rather than `request` because the FastAPI backend
-    // does not emit ETag/Last-Modified/Expires/Cache-Control headers, and
-    // the default `request` policy will refuse to store a response that
-    // carries none of those directives — leaving the cache permanently
-    // empty. `refreshForceCache` always hits the network when online
-    // (fresh data) and stores every successful response regardless of
-    // server cache directives.
+    // Cache GET responses. The backend's ETagMiddleware emits
+    // `Cache-Control: private, no-cache` + an opaque ETag on every JSON GET,
+    // so the `request` policy works as intended: the interceptor stores
+    // responses, sends `If-None-Match` on the next request, and the server
+    // can reply with a tiny `304 Not Modified` when the body is unchanged.
+    // On any Dio error (offline / timeout) the most recent cached entry is
+    // returned, keeping previously-viewed screens readable without a
+    // connection.
     instance.interceptors.add(
       DioCacheInterceptor(
         options: CacheOptions(
           store: cacheStore,
-          policy: CachePolicy.refreshForceCache,
+          policy: CachePolicy.request,
           hitCacheOnErrorExcept: const [],
           maxStale: const Duration(days: 7),
           priority: CachePriority.normal,

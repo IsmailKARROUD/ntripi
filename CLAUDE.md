@@ -53,11 +53,17 @@ Monorepo at `/Users/ismac/project/Ntripi/`:
 
 ### ETag / If-Match (optimistic concurrency)
 - Scope: whole-itinerary. Any mutation bumps `itinerary.updated_at`.
-- ETag value = `itinerary.updated_at` ISO-8601 string in quotes: `"2026-05-07T14:23:11+00:00"`.
+- ETag value = opaque `SHA-256(updated_at.isoformat())[:16]` in quotes: `"7a3f8b1e2c9d4a05"`. Never ship a raw ISO datetime as an ETag — proxies/serializers reformat them (`Z` ↔ `+00:00`, microsecond truncation) and break byte-compared headers.
 - Every GET returns `ETag` header. Every mutation requires `If-Match` header.
 - Missing `If-Match` → 428. Mismatch → 412 `{"detail":"itinerary modified, please reload"}`.
-- `_normalize_etag()` handles bare, `+00:00`, and `Z` suffixes — all treated as UTC.
+- `_normalize_etag()` strips surrounding quotes only — the value is already format-stable.
 - Dependency: `require_etag` in `app/dependencies.py` (SELECT FOR UPDATE + ownership + ETag compare).
+
+### ETag / If-None-Match (cache validation, bandwidth-saving)
+- `ETagMiddleware` in `app/middleware/etag.py` hashes every GET JSON response body to a 16-char opaque ETag and sets `Cache-Control: private, no-cache`. When the client returns the value via `If-None-Match`, the middleware replies `304 Not Modified` with an empty body.
+- The middleware skips non-GET, non-JSON, non-2xx responses, and the `/uploads`, `/static`, `/app` static mounts.
+- If an endpoint sets its own `ETag` header (e.g. `GET /itineraries/{id}` reusing the concurrency token), the middleware leaves it alone — the 304 round-trip still works against the endpoint-set value.
+- Flutter side: `CachePolicy.request` in `lib/core/api/api_client.dart` honors `Cache-Control` + `ETag` automatically — no per-call changes.
 
 ### Frontend
 - Feature-first: `features/<feature>/{data,domain,presentation,providers}`
