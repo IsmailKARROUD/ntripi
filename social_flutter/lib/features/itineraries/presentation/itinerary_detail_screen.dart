@@ -155,8 +155,8 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
       ItineraryAnnotation annotation) async {
     final confirmed = await confirmDestructiveAction(
       context: context,
-      title: 'Delete note?',
-      message: 'This will permanently remove this note from the itinerary.',
+      title: 'Delete annotation?',
+      message: 'This will permanently remove this annotation from the itinerary.',
       confirmLabel: 'Delete',
     );
     if (!confirmed || !mounted) return;
@@ -215,7 +215,7 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
     final confirmed = await confirmDestructiveAction(
       context: context,
       title: 'Delete annotation?',
-      message: 'This will permanently remove this note.',
+      message: 'This will permanently remove this annotation from the itinerary.',
       confirmLabel: 'Delete',
     );
     if (!confirmed || !mounted) return;
@@ -734,7 +734,7 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                                     Row(
                                       children: [
                                         Text(
-                                          'Notes',
+                                          'Annotations',
                                           style: Theme.of(context)
                                               .textTheme
                                               .titleSmall
@@ -747,7 +747,7 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                                             onPressed: _addItineraryAnnotation,
                                             icon:
                                                 const Icon(Icons.add, size: 16),
-                                            label: const Text('Add note'),
+                                            label: const Text('Add annotation'),
                                             style: TextButton.styleFrom(
                                               visualDensity:
                                                   VisualDensity.compact,
@@ -761,7 +761,7 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                                         padding: const EdgeInsets.only(
                                             top: 4, bottom: 4),
                                         child: Text(
-                                          'No notes yet.',
+                                          'No annotations yet.',
                                           style: Theme.of(context)
                                               .textTheme
                                               .bodySmall
