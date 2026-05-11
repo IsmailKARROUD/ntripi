@@ -53,16 +53,17 @@ Monorepo at `/Users/ismac/project/Ntripi/`:
 
 ### ETag / If-Match (optimistic concurrency)
 - Scope: whole-itinerary. Any mutation bumps `itinerary.updated_at`.
-- ETag value = opaque `SHA-256(updated_at.isoformat())[:16]` in quotes: `"7a3f8b1e2c9d4a05"`. Never ship a raw ISO datetime as an ETag — proxies/serializers reformat them (`Z` ↔ `+00:00`, microsecond truncation) and break byte-compared headers.
+- ETag value = quoted ISO datetime of `updated_at`: `"2026-05-11T14:18:05.079393+00:00"`. The Flutter client emits the same field as `…Z` (Dart's `toIso8601String()`); the server's `_normalize_etag()` collapses both forms before byte-compare.
 - Every GET returns `ETag` header. Every mutation requires `If-Match` header.
 - Missing `If-Match` → 428. Mismatch → 412 `{"detail":"itinerary modified, please reload"}`.
-- `_normalize_etag()` strips surrounding quotes only — the value is already format-stable.
+- `_normalize_etag()` handles three intermediary mutations: whitespace, `W/` weak prefix (added by Cloudflare when it recompresses), and `Z` ↔ `+00:00` timezone serialization.
 - Dependency: `require_etag` in `app/dependencies.py` (SELECT FOR UPDATE + ownership + ETag compare).
 
 ### ETag / If-None-Match (cache validation, bandwidth-saving)
 - `ETagMiddleware` in `app/middleware/etag.py` hashes every GET JSON response body to a 16-char opaque ETag and sets `Cache-Control: private, no-cache`. When the client returns the value via `If-None-Match`, the middleware replies `304 Not Modified` with an empty body.
 - The middleware skips non-GET, non-JSON, non-2xx responses, and the `/uploads`, `/static`, `/app` static mounts.
-- If an endpoint sets its own `ETag` header (e.g. `GET /itineraries/{id}` reusing the concurrency token), the middleware leaves it alone — the 304 round-trip still works against the endpoint-set value.
+- If an endpoint sets its own `ETag` header (e.g. `GET /itineraries/{id}` reusing the concurrency token), the middleware leaves it alone — the 304 round-trip still works against the endpoint-set ISO value via `_normalize_etag`.
+- The middleware uses `_normalize_etag` on both sides of the comparison, so Cloudflare's `W/` weak downgrade still matches.
 - Flutter side: `CachePolicy.request` in `lib/core/api/api_client.dart` honors `Cache-Control` + `ETag` automatically — no per-call changes.
 
 ### Frontend

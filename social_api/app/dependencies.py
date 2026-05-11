@@ -17,14 +17,13 @@ WHY ETAG / IF-MATCH?
          - Stale  → 412 Precondition Failed ("please reload").
          - Missing→ 428 Precondition Required.
 
-  The ETag is a SHA-256 hash of the itinerary's `updated_at` (first 16 hex
-  chars) — opaque, byte-stable across clients/proxies/serializers. We do not
-  ship the raw ISO datetime: format drift (`Z` vs `+00:00`, microsecond
-  truncation, naive-vs-aware) would silently break byte-compared headers,
-  and the response-body ETagMiddleware also relies on opaque hashes.
+  The concurrency ETag is the itinerary's `updated_at` as an ISO datetime
+  string, wrapped in quotes. _normalize_etag normalizes both sides so
+  `Z` ↔ `+00:00` and `W/`-prefix differences (added by intermediaries like
+  Cloudflare) are tolerated. The cache ETag emitted by `ETagMiddleware` is
+  a separate, body-hash-based opaque token — they don't share a format.
 """
 
-import hashlib
 import uuid
 from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
@@ -89,24 +88,26 @@ def get_current_user(
 # ---------------------------------------------------------------------------
 
 def _etag_value(itinerary) -> str:
-    """
-    SHA-256 hash of `updated_at.isoformat()`, truncated to 16 hex chars,
-    wrapped in quotes per RFC 7232. Opaque to clients — never returned as a
-    parseable timestamp, only round-tripped via If-Match.
-    """
-    digest = hashlib.sha256(itinerary.updated_at.isoformat().encode()).hexdigest()
-    return f'"{digest[:16]}"'
+    """Quoted ISO datetime of the itinerary's `updated_at`. Round-tripped by
+    clients via If-Match. `_normalize_etag` handles format differences."""
+    return f'"{itinerary.updated_at.isoformat()}"'
 
 
 def _normalize_etag(raw: str) -> str:
-    """Strip whitespace, optional `W/` weak-validator prefix, and surrounding
-    quotes before byte comparison. RFC 7232 weak-compare semantics — needed
-    because intermediaries (e.g. Cloudflare) downgrade strong ETags to weak
-    when they recompress the response."""
+    """Normalize an ETag for byte comparison:
+      - strip whitespace
+      - strip optional `W/` weak-validator prefix (RFC 7232 §2.3, added by
+        intermediaries like Cloudflare when they recompress the body)
+      - strip surrounding quotes
+      - normalize `Z` → `+00:00` so Dart's `toIso8601String()` ("…Z") and
+        Python's `datetime.isoformat()` ("…+00:00") compare equal."""
     s = raw.strip()
     if s.startswith("W/"):
         s = s[2:]
-    return s.strip('"')
+    s = s.strip('"')
+    if s.endswith("Z"):
+        s = s[:-1] + "+00:00"
+    return s
 
 
 def make_etag_checker(itinerary_id_param: str = "itinerary_id"):

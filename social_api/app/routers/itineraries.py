@@ -92,8 +92,8 @@ user_itineraries_router = APIRouter(tags=["Itineraries"])
 # ---------------------------------------------------------------------------
 
 def _etag_value(itinerary: Itinerary) -> str:
-    # Opaque SHA-256 hash of updated_at (canonical version lives in dependencies).
-    # Re-exported here so endpoints in this router don't reach across modules.
+    # Quoted ISO datetime of updated_at. Canonical version lives in
+    # app.dependencies; re-exported here so router code stays self-contained.
     from app.dependencies import _etag_value as _canonical_etag
     return _canonical_etag(itinerary)
 

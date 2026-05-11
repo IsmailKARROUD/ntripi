@@ -156,7 +156,7 @@ class TestETagMiddleware:
         assert detail.status_code == 200
         endpoint_etag = detail.headers["etag"]
 
-        # The endpoint's ETag is a 16-hex-char hash of updated_at — different
+        # The endpoint's ETag is a quoted ISO datetime — different format
         # from a body hash, but byte-comparable. The middleware should leave
         # it alone, and the 304 round-trip should still work with it.
         revisit = client.get(
