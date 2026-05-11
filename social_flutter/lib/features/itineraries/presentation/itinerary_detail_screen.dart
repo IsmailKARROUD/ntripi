@@ -46,7 +46,6 @@ import 'package:social_flutter/features/itineraries/domain/transit_segment.dart'
 import 'package:social_flutter/features/itineraries/presentation/widgets/annotation_form_dialog.dart';
 import 'package:social_flutter/features/profile/providers/profile_provider.dart';
 import 'package:social_flutter/features/itineraries/domain/stop.dart';
-import 'package:social_flutter/features/itineraries/domain/track.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/annotation_chip.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/move_stop_to_track_sheet.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/rate_itinerary_dialog.dart';
@@ -484,15 +483,12 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                           itineraryId: widget.itineraryId,
                           editMode: canEdit,
                           trackIndex: trackIndex,
-                          canMoveToTrack: canEdit &&
-                              tracks.any((t) =>
-                                  t.id != track.id &&
-                                  t.stops.length < Track.maxParallelStops),
-                          onMoveToTrack: canEdit &&
-                                  tracks.any((t) =>
-                                      t.id != track.id &&
-                                      t.stops.length <
-                                          Track.maxParallelStops)
+                          // Phase 2c: visible whenever editing — the sheet
+                          // always has *some* valid action (an existing track
+                          // with capacity, a gap to create a new track, or an
+                          // extract row when the source has parallels).
+                          canMoveToTrack: canEdit,
+                          onMoveToTrack: canEdit
                               ? (activeStop) => showMoveStopToTrackSheet(
                                     context: context,
                                     itineraryId: widget.itineraryId,

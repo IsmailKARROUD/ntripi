@@ -1,24 +1,26 @@
 // widgets/move_stop_to_track_sheet.dart — Bottom sheet for moving a single
-// stop into a different existing track.
+// stop into a different track (existing OR brand-new).
 //
-// FLOW:
-//   1. Sheet lists every track in the itinerary EXCEPT the stop's current one.
-//   2. User taps a target row.
-//   3. If the move would (a) delete the source track because it goes empty,
-//      and/or (b) orphan one or more transit segments (because the moved stop
-//      is a segment endpoint and the resulting track relationship is no longer
-//      adjacent), a single combined confirm dialog summarises the consequences.
-//   4. On confirm: delete the orphaned segments (one DELETE each), then PATCH
-//      the stop with the new track_id. The backend appends to the target tail.
-//   5. On success: pop the sheet, surface a snackbar, and tell the caller to
-//      scroll to the destination (so the user can see where the stop landed).
+// THREE ROW TYPES, ONE SHEET (Phase 2c):
+//   1. Extract row (only when source has ≥ 2 stops) — promotes the stop into
+//      its own new track placed immediately after the source. Quick path.
+//   2. Existing-track row (Phase 1) — moves the stop into the chosen track.
+//      Disabled with a "Full N/N" badge when the target is at capacity.
+//   3. Insertion-gap row (Phase 2c) — creates a brand-new track at the
+//      chosen position (before Track 1 / between i and i+1 / after Track N).
+//
+// SHARED CONSEQUENCES FLOW:
+//   Every tap computes the post-move track sequence, checks for orphaned
+//   transit segments + whether the source track will empty, and surfaces
+//   both via a single combined confirm dialog (`confirmDestructiveAction`).
+//   On confirm: delete orphaned segments first, then PATCH the stop with the
+//   appropriate body (existing-track or new-track anchors).
 //
 // WHY DELETE ORPHANED SEGMENTS BEFORE THE MOVE?
-//   The existing "Add stop between tracks" flow at
-//   itinerary_detail_screen.dart already deletes orphaned segments client-side
-//   for the same reason: a hidden-but-still-present segment in the DB would
-//   silently re-appear later if track adjacency is ever restored (e.g. during
-//   Phase 2's whole-track reorder). Clearing them now keeps the data honest.
+//   The existing "Add stop between tracks" flow does the same: a hidden-but-
+//   still-present segment in the DB would silently re-appear later if track
+//   adjacency is ever restored (Phase 2b's whole-track reorder). Clearing
+//   them now keeps the data honest.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -31,7 +33,9 @@ import 'package:social_flutter/features/itineraries/domain/transit_segment.dart'
 import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
 
 /// Launches the sheet. [onMoved] is invoked with the destination track ID
-/// after a successful move so the caller can scroll the destination into view.
+/// after a successful move so the caller can scroll the destination into
+/// view. For new-track moves this is the freshly created track's id (read
+/// from the API response).
 Future<void> showMoveStopToTrackSheet({
   required BuildContext context,
   required String itineraryId,
@@ -52,6 +56,28 @@ Future<void> showMoveStopToTrackSheet({
       onMoved: onMoved,
     ),
   );
+}
+
+// ---------------------------------------------------------------------------
+// Target model — three row kinds the user can tap.
+// ---------------------------------------------------------------------------
+
+sealed class _MoveTarget {
+  const _MoveTarget();
+}
+
+class _ExistingTarget extends _MoveTarget {
+  final Track track;
+  const _ExistingTarget(this.track);
+}
+
+/// New-track target with optional anchors. afterTrack=null → new first track.
+/// beforeTrack=null → new last track. Both null is invalid (caller must ensure).
+class _NewTrackTarget extends _MoveTarget {
+  final Track? afterTrack;
+  final Track? beforeTrack;
+  final bool isExtract; // pure label hint — mechanically same as a gap
+  const _NewTrackTarget({this.afterTrack, this.beforeTrack, this.isExtract = false});
 }
 
 class _MoveStopToTrackSheet extends ConsumerStatefulWidget {
@@ -77,38 +103,90 @@ class _MoveStopToTrackSheet extends ConsumerStatefulWidget {
 class _MoveStopToTrackSheetState extends ConsumerState<_MoveStopToTrackSheet> {
   bool _busy = false;
 
-  /// Simulate the post-move track order, then return every segment that loses
-  /// its from→to track adjacency. Active-parallel selection is intentionally
-  /// ignored — that's a transient UI state, not a data-level concern.
+  Track get _sourceTrack => widget.tracks.firstWhere(
+        (t) => t.id == widget.stop.trackId,
+        orElse: () => widget.tracks.first,
+      );
+
+  String _primaryName(Track t) {
+    if (t.stops.isEmpty) return '(empty track)';
+    return t.stops.first.placeName ?? '(unnamed)';
+  }
+
+  bool _isAtCapacity(Track t) => t.stops.length >= Track.maxParallelStops;
+
+  /// Simulate the post-move track order for [target] and return every segment
+  /// that loses its from→to adjacency. The simulation also drops the source
+  /// track when it empties so segments referencing the moved stop are
+  /// correctly resolved.
   ///
   /// Skip-track example: tracks [A, B, C], stop X in A is the from-stop of
   /// segment X→Y where Y is in B. User moves X to C.
   ///   - After move: X in C (index 2), Y still in B (index 1).
   ///   - fi=2, ti=1 → ti != fi+1 → orphaned (correct).
   /// The stops are still in adjacent tracks (B and C), but the from→to
-  /// direction is reversed. The segment is logically broken and must be
-  /// deleted.
-  List<TransitSegment> _computeOrphanedSegments(String targetTrackId) {
+  /// direction is reversed. The segment is logically broken and must be deleted.
+  List<TransitSegment> _computeOrphanedSegments(_MoveTarget target) {
     final stop = widget.stop;
     final sourceTrackId = stop.trackId;
 
-    // Build the post-move track list. Tracks come in pre-sorted by rank.
-    final List<Track> newOrder = [];
+    // Step 1: build post-move track list with the stop removed from source.
+    // Use a synthetic id for the new track to keep stopToTrack stable.
+    const newTrackSyntheticId = '__new_track__';
+    final List<Track> withoutStop = [];
     for (final t in widget.tracks) {
       if (t.id == sourceTrackId) {
-        // Strip the moved stop. If the track empties, drop it from the order.
         final remaining = t.stops.where((s) => s.id != stop.id).toList();
-        if (remaining.isEmpty) continue;
-        newOrder.add(t.copyWith(stops: remaining));
-      } else if (t.id == targetTrackId) {
-        // Append the moved stop to the target's tail.
-        newOrder.add(t.copyWith(stops: [...t.stops, stop]));
+        if (remaining.isEmpty) continue; // source dropped
+        withoutStop.add(t.copyWith(stops: remaining));
       } else {
-        newOrder.add(t);
+        withoutStop.add(t);
       }
     }
 
-    // Map every stop ID to its post-move track ID for O(1) lookup.
+    // Step 2: place the stop at its destination.
+    final List<Track> newOrder;
+    switch (target) {
+      case _ExistingTarget(:final track):
+        newOrder = [
+          for (final t in withoutStop)
+            if (t.id == track.id)
+              t.copyWith(stops: [...t.stops, stop])
+            else
+              t,
+        ];
+      case _NewTrackTarget(:final afterTrack, :final beforeTrack):
+        final synthetic = Track(
+          id: newTrackSyntheticId,
+          itineraryId: widget.itineraryId,
+          rank: '',
+          stops: [stop],
+        );
+        if (afterTrack == null && beforeTrack == null) {
+          // Defensive — shouldn't happen from the UI. Append to end.
+          newOrder = [...withoutStop, synthetic];
+          break;
+        }
+        if (afterTrack == null) {
+          // Insert before [beforeTrack] (typically index 0).
+          final idx = withoutStop.indexWhere((t) => t.id == beforeTrack!.id);
+          newOrder = [
+            ...withoutStop.sublist(0, idx == -1 ? 0 : idx),
+            synthetic,
+            ...withoutStop.sublist(idx == -1 ? 0 : idx),
+          ];
+        } else {
+          // Insert after [afterTrack].
+          final idx = withoutStop.indexWhere((t) => t.id == afterTrack.id);
+          newOrder = [
+            ...withoutStop.sublist(0, idx == -1 ? withoutStop.length : idx + 1),
+            synthetic,
+            ...withoutStop.sublist(idx == -1 ? withoutStop.length : idx + 1),
+          ];
+        }
+    }
+
+    // Step 3: orphan detection against the simulated order.
     final stopToTrack = <String, String>{};
     for (final t in newOrder) {
       for (final s in t.stops) {
@@ -132,27 +210,17 @@ class _MoveStopToTrackSheetState extends ConsumerState<_MoveStopToTrackSheet> {
     return orphaned;
   }
 
-  String _primaryName(Track t) {
-    if (t.stops.isEmpty) return '(empty track)';
-    return t.stops.first.placeName ?? '(unnamed)';
-  }
-
-  bool _isAtCapacity(Track t) => t.stops.length >= Track.maxParallelStops;
-
-  Future<void> _onSelectTarget(Track target) async {
+  Future<void> _onSelectTarget(_MoveTarget target) async {
     if (_busy) return;
-    if (target.id == widget.stop.trackId) return;
-    // Defensive: a stale tap on a row whose track has filled up since the
-    // sheet was opened should not slip through. The disabled-state UI already
-    // sets onTap: null for capacity-bound rows, but data can change underfoot.
-    if (_isAtCapacity(target)) return;
+    // Defensive checks for the existing-track path.
+    if (target is _ExistingTarget) {
+      if (target.track.id == widget.stop.trackId) return;
+      if (_isAtCapacity(target.track)) return;
+    }
 
-    final sourceTrack = widget.tracks
-        .firstWhere((t) => t.id == widget.stop.trackId, orElse: () => target);
-    final sourceWillEmpty = sourceTrack.stops.length == 1;
-    final orphaned = _computeOrphanedSegments(target.id);
+    final sourceWillEmpty = _sourceTrack.stops.length == 1;
+    final orphaned = _computeOrphanedSegments(target);
 
-    // Build a single confirm message for the combined consequences.
     if (sourceWillEmpty || orphaned.isNotEmpty) {
       final lines = <String>[];
       if (sourceWillEmpty) {
@@ -180,8 +248,6 @@ class _MoveStopToTrackSheetState extends ConsumerState<_MoveStopToTrackSheet> {
       if (!confirmed || !mounted) return;
     }
 
-    // Capture messenger + navigator before the awaits — context may be gone
-    // by the time we want to use them after the move (sheet pops first).
     final messenger = ScaffoldMessenger.of(context);
     final navigator = Navigator.of(context);
 
@@ -189,11 +255,27 @@ class _MoveStopToTrackSheetState extends ConsumerState<_MoveStopToTrackSheet> {
     final notifier =
         ref.read(itineraryDetailProvider(widget.itineraryId).notifier);
 
+    final String destinationTrackId;
+    final String destinationLabel;
     try {
       for (final seg in orphaned) {
         await notifier.deleteSegment(seg.id);
       }
-      await notifier.moveStop(widget.stop.id, targetTrackId: target.id);
+      final moved = await switch (target) {
+        _ExistingTarget(:final track) =>
+          notifier.moveStop(widget.stop.id, targetTrackId: track.id),
+        _NewTrackTarget(:final afterTrack, :final beforeTrack) =>
+          notifier.moveStop(
+            widget.stop.id,
+            afterTrackId: afterTrack?.id,
+            beforeTrackId: beforeTrack?.id,
+          ),
+      };
+      destinationTrackId = moved.trackId;
+      destinationLabel = switch (target) {
+        _ExistingTarget(:final track) => '"${_primaryName(track)}"',
+        _NewTrackTarget() => 'new track',
+      };
     } on ItineraryStaleException {
       if (!mounted) return;
       setState(() => _busy = false);
@@ -216,21 +298,181 @@ class _MoveStopToTrackSheetState extends ConsumerState<_MoveStopToTrackSheet> {
 
     if (!mounted) return;
     navigator.pop();
-    widget.onMoved(target.id);
+    widget.onMoved(destinationTrackId);
     messenger.showSnackBar(
-      SnackBar(
-        content: Text('Moved to "${_primaryName(target)}"'),
-      ),
+      SnackBar(content: Text('Moved to $destinationLabel')),
     );
   }
+
+  // ───── Row builders ────────────────────────────────────────────────────
+
+  Widget _buildExtractRow(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    return ListTile(
+      contentPadding: const EdgeInsets.symmetric(horizontal: 4),
+      leading: CircleAvatar(
+        radius: 14,
+        backgroundColor: cs.tertiaryContainer,
+        child: Icon(Icons.call_split, size: 14, color: cs.onTertiaryContainer),
+      ),
+      title: const Text('Extract into its own new track'),
+      subtitle: Text(
+        'Splits this stop out of "${_primaryName(_sourceTrack)}" — new track lands right after.',
+        style: theme.textTheme.bodySmall,
+      ),
+      onTap: _busy
+          ? null
+          : () => _onSelectTarget(_NewTrackTarget(
+                afterTrack: _sourceTrack,
+                beforeTrack: _trackAfter(_sourceTrack),
+                isExtract: true,
+              )),
+    );
+  }
+
+  /// The track immediately after [t] in display order, or null if [t] is last.
+  Track? _trackAfter(Track t) {
+    final idx = widget.tracks.indexWhere((x) => x.id == t.id);
+    if (idx < 0 || idx >= widget.tracks.length - 1) return null;
+    return widget.tracks[idx + 1];
+  }
+
+  Widget _buildGapRow(BuildContext context,
+      {required Track? after, required Track? before}) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final label = _gapLabel(after, before);
+    return ListTile(
+      contentPadding: const EdgeInsets.symmetric(horizontal: 4),
+      leading: Container(
+        width: 28,
+        height: 28,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          border: Border.all(
+            color: cs.outlineVariant,
+            style: BorderStyle.solid,
+          ),
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: Icon(Icons.add, size: 14, color: cs.onSurfaceVariant),
+      ),
+      title: Text(label, style: theme.textTheme.bodyMedium),
+      onTap: _busy
+          ? null
+          : () => _onSelectTarget(
+                _NewTrackTarget(afterTrack: after, beforeTrack: before),
+              ),
+    );
+  }
+
+  String _gapLabel(Track? after, Track? before) {
+    if (after == null && before != null) {
+      final n = widget.tracks.indexWhere((t) => t.id == before.id) + 1;
+      return 'New track before Track $n';
+    }
+    if (after != null && before == null) {
+      final n = widget.tracks.indexWhere((t) => t.id == after.id) + 1;
+      return 'New track after Track $n';
+    }
+    if (after != null && before != null) {
+      final ai = widget.tracks.indexWhere((t) => t.id == after.id) + 1;
+      final bi = widget.tracks.indexWhere((t) => t.id == before.id) + 1;
+      return 'New track between Track $ai and Track $bi';
+    }
+    return 'New track';
+  }
+
+  Widget _buildExistingTrackRow(
+    BuildContext context, {
+    required Track t,
+    required int displayedNumber,
+  }) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final isSource = t.id == widget.stop.trackId;
+    final full = _isAtCapacity(t);
+    final disabled = isSource || full;
+    final mutedColor = Colors.grey.shade400;
+
+    return ListTile(
+      enabled: !disabled,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 4),
+      leading: CircleAvatar(
+        radius: 14,
+        backgroundColor: disabled
+            ? Colors.grey.shade200
+            : cs.primary.withValues(alpha: 0.12),
+        child: Text(
+          '$displayedNumber',
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: disabled ? mutedColor : cs.primary,
+          ),
+        ),
+      ),
+      title: Text(
+        _primaryName(t),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: disabled ? TextStyle(color: mutedColor) : null,
+      ),
+      subtitle: Text(
+        '${t.stops.length} stop${t.stops.length == 1 ? '' : 's'}'
+        '${isSource ? '  •  current' : ''}',
+        style: theme.textTheme.bodySmall
+            ?.copyWith(color: disabled ? mutedColor : null),
+      ),
+      trailing: full && !isSource
+          ? Container(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade200,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Text(
+                'Full ${Track.maxParallelStops}/${Track.maxParallelStops}',
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: Colors.grey.shade700,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            )
+          : null,
+      onTap: (_busy || disabled)
+          ? null
+          : () => _onSelectTarget(_ExistingTarget(t)),
+    );
+  }
+
+  // ───── Build ───────────────────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    // Filter out the source track so the user can't pick it.
-    final targets = widget.tracks
-        .where((t) => t.id != widget.stop.trackId)
-        .toList();
+
+    final rows = <Widget>[];
+
+    // 1. Extract row — only when source has parallels.
+    if (_sourceTrack.stops.length >= 2) {
+      rows.add(_buildExtractRow(context));
+      rows.add(const Divider(height: 1));
+    }
+
+    // 2. Interleaved insertion-gap + existing-track rows.
+    for (var i = 0; i < widget.tracks.length; i++) {
+      final prev = i == 0 ? null : widget.tracks[i - 1];
+      final t = widget.tracks[i];
+      rows.add(_buildGapRow(context, after: prev, before: t));
+      rows.add(_buildExistingTrackRow(context, t: t, displayedNumber: i + 1));
+    }
+    // Trailing gap after the last track.
+    if (widget.tracks.isNotEmpty) {
+      rows.add(_buildGapRow(context, after: widget.tracks.last, before: null));
+    }
 
     return SafeArea(
       child: Padding(
@@ -240,82 +482,23 @@ class _MoveStopToTrackSheetState extends ConsumerState<_MoveStopToTrackSheet> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Move to another track',
+              'Move stop',
               style: theme.textTheme.titleMedium
                   ?.copyWith(fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 4),
             Text(
-              'Choose a target track. The stop will be appended to its end — '
-              'you can reorder within the track afterwards. Tracks already at '
-              'the ${Track.maxParallelStops}-stop maximum are shown disabled.',
+              'Choose an existing track, a gap to create a new track, or '
+              'extract into its own track. Tracks at the '
+              '${Track.maxParallelStops}-stop maximum are disabled.',
               style: theme.textTheme.bodySmall
                   ?.copyWith(color: Colors.grey.shade600),
             ),
             const SizedBox(height: 12),
             Flexible(
-              child: ListView.builder(
+              child: ListView(
                 shrinkWrap: true,
-                itemCount: targets.length,
-                itemBuilder: (_, i) {
-                  final t = targets[i];
-                  // 1-based track number from the FULL track list (not the
-                  // filtered one) so the user sees the same numbering as in
-                  // the main view.
-                  final displayedTrackNumber =
-                      widget.tracks.indexWhere((x) => x.id == t.id) + 1;
-                  final full = _isAtCapacity(t);
-                  final mutedColor = Colors.grey.shade400;
-                  return ListTile(
-                    enabled: !full,
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 4),
-                    leading: CircleAvatar(
-                      radius: 14,
-                      backgroundColor: full
-                          ? Colors.grey.shade200
-                          : theme.colorScheme.primary
-                              .withValues(alpha: 0.12),
-                      child: Text(
-                        '$displayedTrackNumber',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color:
-                              full ? mutedColor : theme.colorScheme.primary,
-                        ),
-                      ),
-                    ),
-                    title: Text(
-                      _primaryName(t),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: full ? TextStyle(color: mutedColor) : null,
-                    ),
-                    subtitle: Text(
-                      '${t.stops.length} stop${t.stops.length == 1 ? '' : 's'}',
-                      style: theme.textTheme.bodySmall
-                          ?.copyWith(color: full ? mutedColor : null),
-                    ),
-                    trailing: full
-                        ? Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 8, vertical: 3),
-                            decoration: BoxDecoration(
-                              color: Colors.grey.shade200,
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: Text(
-                              'Full ${Track.maxParallelStops}/${Track.maxParallelStops}',
-                              style: theme.textTheme.labelSmall?.copyWith(
-                                color: Colors.grey.shade700,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          )
-                        : null,
-                    onTap: (_busy || full) ? null : () => _onSelectTarget(t),
-                  );
-                },
+                children: rows,
               ),
             ),
             if (_busy)

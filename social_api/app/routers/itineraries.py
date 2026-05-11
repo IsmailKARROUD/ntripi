@@ -747,14 +747,32 @@ def update_stop(
 
     # Apply scalar field updates.
     scalar_fields = body.model_dump(exclude_unset=True, exclude={
-        'track_id', 'after_stop_id', 'before_stop_id'
+        'track_id', 'after_stop_id', 'before_stop_id',
+        'after_track_id', 'before_track_id',
     })
     for field, value in scalar_fields.items():
         setattr(stop, field, value)
 
     # Handle move / reorder.
     target_track_id = body.track_id
-    if target_track_id is not None or body.after_stop_id is not None or body.before_stop_id is not None:
+    new_track_created = False
+    if (target_track_id is None
+            and (body.after_track_id is not None or body.before_track_id is not None)):
+        # New-track move: create a track at the requested position, place the
+        # stop as its first (and only) member. _resolve_track_rank validates
+        # the anchors belong to this itinerary (422 otherwise).
+        new_track_rank = _resolve_track_rank(
+            itinerary_id, body.after_track_id, body.before_track_id, db,
+        )
+        new_track = Track(itinerary_id=itinerary_id, rank=new_track_rank)
+        db.add(new_track)
+        db.flush()
+        stop.track_id = new_track.id
+        stop.rank = key_between(None, None)
+        new_track_created = True
+    elif (target_track_id is not None
+            or body.after_stop_id is not None
+            or body.before_stop_id is not None):
         effective_track_id = target_track_id or old_track_id
         track = _get_track_or_404(effective_track_id, itinerary_id, db)
         new_rank = _resolve_stop_rank(track, body.after_stop_id, body.before_stop_id, db)
@@ -764,8 +782,11 @@ def update_stop(
     _recalculate_totals(itinerary, db)
     db.commit()
 
-    # If source track is now empty, delete it.
-    if target_track_id is not None and target_track_id != old_track_id:
+    # If source track is now empty, delete it. Applies to both the existing
+    # cross-track move path and the new-track path.
+    if (new_track_created and old_track_id != stop.track_id) or (
+        target_track_id is not None and target_track_id != old_track_id
+    ):
         _delete_track_if_empty(old_track_id, db)
         db.commit()
 

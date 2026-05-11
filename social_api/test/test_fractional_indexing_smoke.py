@@ -736,3 +736,253 @@ class TestTrackReorder:
         body = r.json()
         a_track = next(t for t in body["tracks"] if t["id"] == a_t)
         assert [s["id"] for s in a_track["stops"]] == [a2, a_s]
+
+
+# ---------------------------------------------------------------------------
+# PATCH /stops/{id} with new-track anchors — Phase 2c
+# ---------------------------------------------------------------------------
+
+class TestMoveToNewTrack:
+    """Cover the extended PATCH /stops/{id} that creates a brand-new track
+    when track_id is null and at least one of after_track_id/before_track_id
+    is provided."""
+
+    def _three_single_stop_tracks(self, client: TestClient):
+        """Three tracks A, B, C, each with a single stop. Returns
+        (itin_id, hdrs, etag, [t_a, t_b, t_c], [s_a, s_b, s_c])."""
+        user = register_user(client, "alice", "alice@example.com")
+        hdrs = auth_headers(user["access_token"])
+        r = client.post("/itineraries/", json={"title": "Trip", "currency": "EUR"},
+                        headers=hdrs)
+        itin = r.json()
+        etag = f'"{itin["updated_at"]}"'
+
+        track_ids = []
+        stop_ids = []
+        prev_track = None
+        for name in ("A", "B", "C"):
+            payload = {"place_name": name, "is_free": True}
+            if prev_track is not None:
+                payload["after_track_id"] = prev_track
+            r = client.post(f"/itineraries/{itin['id']}/stops",
+                            json=payload, headers={**hdrs, "If-Match": etag})
+            assert r.status_code == 201, r.text
+            stop = r.json()
+            track_ids.append(stop["track_id"])
+            stop_ids.append(stop["id"])
+            prev_track = stop["track_id"]
+            etag = r.headers["etag"]
+
+        return itin["id"], hdrs, etag, track_ids, stop_ids
+
+    def test_new_track_between_two_existing(self, client: TestClient):
+        """Move C's stop to a new track between A and B. Source C is deleted."""
+        itin_id, hdrs, etag, track_ids, stop_ids = self._three_single_stop_tracks(client)
+        t_a, t_b, t_c = track_ids
+        s_c = stop_ids[2]
+
+        r = client.patch(
+            f"/itineraries/{itin_id}/stops/{s_c}",
+            json={"track_id": None,
+                  "after_track_id": t_a,
+                  "before_track_id": t_b},
+            headers={**hdrs, "If-Match": etag},
+        )
+        assert r.status_code == 200, r.text
+        new_track_id = r.json()["track_id"]
+        # The new track is freshly created so its id differs from every original.
+        assert new_track_id not in {t_a, t_b, t_c}
+
+        r = client.get(f"/itineraries/{itin_id}", headers=hdrs)
+        order = [t["id"] for t in r.json()["tracks"]]
+        # Original C track is deleted (was only this one stop).
+        assert t_c not in order
+        # Final order: A → NewTrack → B.
+        assert order == [t_a, new_track_id, t_b]
+        new_track = next(t for t in r.json()["tracks"] if t["id"] == new_track_id)
+        assert [s["id"] for s in new_track["stops"]] == [s_c]
+
+    def test_extract_parallel(self, client: TestClient):
+        """Track with [X, Y, Z]; extract Y to a new track right after source."""
+        user = register_user(client, "alice", "alice@example.com")
+        hdrs = auth_headers(user["access_token"])
+        r = client.post("/itineraries/", json={"title": "Trip", "currency": "EUR"},
+                        headers=hdrs)
+        itin = r.json()
+        etag = f'"{itin["updated_at"]}"'
+
+        # Track 1 with three parallels X, Y, Z.
+        ids = []
+        prev = None
+        track_id = None
+        for name in ("X", "Y", "Z"):
+            payload = {"place_name": name, "is_free": True}
+            if ids:
+                payload["track_id"] = track_id
+                payload["after_stop_id"] = prev
+            r = client.post(f"/itineraries/{itin['id']}/stops",
+                            json=payload, headers={**hdrs, "If-Match": etag})
+            stop = r.json()
+            ids.append(stop["id"])
+            track_id = stop["track_id"]
+            prev = stop["id"]
+            etag = r.headers["etag"]
+
+        x_id, y_id, z_id = ids
+
+        # Extract Y: new track right after source track.
+        r = client.patch(
+            f"/itineraries/{itin['id']}/stops/{y_id}",
+            json={"track_id": None, "after_track_id": track_id},
+            headers={**hdrs, "If-Match": etag},
+        )
+        assert r.status_code == 200, r.text
+        new_track_id = r.json()["track_id"]
+        assert new_track_id != track_id
+
+        r = client.get(f"/itineraries/{itin['id']}", headers=hdrs)
+        tracks = r.json()["tracks"]
+        assert [t["id"] for t in tracks] == [track_id, new_track_id]
+        # Source track keeps X and Z.
+        source = next(t for t in tracks if t["id"] == track_id)
+        assert {s["id"] for s in source["stops"]} == {x_id, z_id}
+        # New track has only Y.
+        new = next(t for t in tracks if t["id"] == new_track_id)
+        assert [s["id"] for s in new["stops"]] == [y_id]
+
+    def test_new_track_at_the_start(self, client: TestClient):
+        """before_track_id only → new track at the head of the list."""
+        itin_id, hdrs, etag, track_ids, stop_ids = self._three_single_stop_tracks(client)
+        t_a, t_b, t_c = track_ids
+        s_c = stop_ids[2]
+
+        r = client.patch(
+            f"/itineraries/{itin_id}/stops/{s_c}",
+            json={"track_id": None, "before_track_id": t_a},
+            headers={**hdrs, "If-Match": etag},
+        )
+        assert r.status_code == 200, r.text
+        new_track_id = r.json()["track_id"]
+
+        r = client.get(f"/itineraries/{itin_id}", headers=hdrs)
+        order = [t["id"] for t in r.json()["tracks"]]
+        assert order[0] == new_track_id
+        assert t_c not in order  # source deleted
+
+    def test_new_track_at_the_end(self, client: TestClient):
+        """after_track_id of the last existing track → new track at the tail."""
+        itin_id, hdrs, etag, track_ids, stop_ids = self._three_single_stop_tracks(client)
+        t_a, t_b, t_c = track_ids
+        s_a = stop_ids[0]
+
+        r = client.patch(
+            f"/itineraries/{itin_id}/stops/{s_a}",
+            json={"track_id": None, "after_track_id": t_c},
+            headers={**hdrs, "If-Match": etag},
+        )
+        assert r.status_code == 200, r.text
+        new_track_id = r.json()["track_id"]
+
+        r = client.get(f"/itineraries/{itin_id}", headers=hdrs)
+        order = [t["id"] for t in r.json()["tracks"]]
+        # Original A track is deleted (had only one stop).
+        assert t_a not in order
+        assert order[-1] == new_track_id
+
+    def test_source_track_deleted_when_empties(self, client: TestClient):
+        """Move A's only stop to a new track between B and C → source A deleted."""
+        itin_id, hdrs, etag, track_ids, stop_ids = self._three_single_stop_tracks(client)
+        t_a, t_b, t_c = track_ids
+        s_a = stop_ids[0]
+
+        r = client.patch(
+            f"/itineraries/{itin_id}/stops/{s_a}",
+            json={"track_id": None,
+                  "after_track_id": t_b,
+                  "before_track_id": t_c},
+            headers={**hdrs, "If-Match": etag},
+        )
+        assert r.status_code == 200, r.text
+        new_track_id = r.json()["track_id"]
+
+        r = client.get(f"/itineraries/{itin_id}", headers=hdrs)
+        order = [t["id"] for t in r.json()["tracks"]]
+        assert t_a not in order
+        assert order == [t_b, new_track_id, t_c]
+
+    def test_conflicting_anchors_with_track_id_returns_422(self, client: TestClient):
+        """Sending both track_id and new-track anchors is ambiguous → 422."""
+        itin_id, hdrs, etag, track_ids, stop_ids = self._three_single_stop_tracks(client)
+        t_a, t_b, _ = track_ids
+        s_c = stop_ids[2]
+
+        r = client.patch(
+            f"/itineraries/{itin_id}/stops/{s_c}",
+            json={"track_id": str(t_a), "after_track_id": str(t_b)},
+            headers={**hdrs, "If-Match": etag},
+        )
+        # Pydantic validator → 422 with a clear message.
+        assert r.status_code == 422, r.text
+
+    def test_foreign_anchor_track_id_returns_422(self, client: TestClient):
+        """after_track_id referencing a different itinerary's track → 422."""
+        itin_id, hdrs, etag, track_ids, stop_ids = self._three_single_stop_tracks(client)
+        s_c = stop_ids[2]
+
+        # Second itinerary owned by the same user.
+        r = client.post("/itineraries/",
+                        json={"title": "Trip 2", "currency": "EUR"},
+                        headers=hdrs)
+        other_itin_id = r.json()["id"]
+        other_etag = f'"{r.json()["updated_at"]}"'
+        r = client.post(
+            f"/itineraries/{other_itin_id}/stops",
+            json={"place_name": "X", "is_free": True},
+            headers={**hdrs, "If-Match": other_etag},
+        )
+        foreign_track_id = r.json()["track_id"]
+
+        r = client.patch(
+            f"/itineraries/{itin_id}/stops/{s_c}",
+            json={"track_id": None, "after_track_id": foreign_track_id},
+            headers={**hdrs, "If-Match": etag},
+        )
+        assert r.status_code == 422, r.text
+
+    def test_segment_remains_in_db_when_new_track_orphans_it(
+        self, client: TestClient,
+    ):
+        """Backend does not auto-delete segments orphaned by a new-track move.
+        Orphan cleanup is client-driven via the delete-then-move pattern in
+        the move sheet (same convention as the Phase 1 cross-track move)."""
+        itin_id, hdrs, etag, track_ids, stop_ids = self._three_single_stop_tracks(client)
+        t_a, t_b, t_c = track_ids
+        s_a, s_b, _ = stop_ids
+
+        # Create segment A → B (currently adjacent).
+        r = client.post(
+            f"/itineraries/{itin_id}/segments",
+            json={
+                "from_stop_id": s_a,
+                "to_stop_id": s_b,
+                "legs": [{"position": 1, "mode": "train"}],
+            },
+            headers=hdrs,
+        )
+        seg_id = r.json()["id"]
+        r = client.get(f"/itineraries/{itin_id}", headers=hdrs)
+        etag = r.headers.get("etag") or r.headers["ETag"]
+
+        # Insert a new track between A and B → segment endpoints no longer adjacent.
+        r = client.patch(
+            f"/itineraries/{itin_id}/stops/{stop_ids[2]}",
+            json={"track_id": None,
+                  "after_track_id": t_a,
+                  "before_track_id": t_b},
+            headers={**hdrs, "If-Match": etag},
+        )
+        assert r.status_code == 200, r.text
+
+        # Segment still exists in the DB — client is responsible for cleanup.
+        r = client.get(f"/itineraries/{itin_id}", headers=hdrs)
+        assert any(s["id"] == seg_id for s in r.json()["segments"])

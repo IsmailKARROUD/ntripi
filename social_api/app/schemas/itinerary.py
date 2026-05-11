@@ -137,6 +137,25 @@ class StopUpdate(BaseModel):
     after_stop_id: Optional[uuid.UUID] = None
     before_stop_id: Optional[uuid.UUID] = None
 
+    # New-track move: when track_id is null and either anchor is provided,
+    # the server creates a brand-new track at that position and moves this
+    # stop into it. Mirrors the StopCreate API for "create new track" inserts.
+    after_track_id: Optional[uuid.UUID] = None
+    before_track_id: Optional[uuid.UUID] = None
+
+    @model_validator(mode='after')
+    def _validate_move_target(self) -> 'StopUpdate':
+        # New-track anchors are only valid when track_id is null. Otherwise
+        # the intent is ambiguous (move to existing track vs create new one).
+        if self.track_id is not None and (
+            self.after_track_id is not None or self.before_track_id is not None
+        ):
+            raise ValueError(
+                "after_track_id / before_track_id are only valid when "
+                "track_id is null (new-track move)."
+            )
+        return self
+
 
 class ReorderRequest(BaseModel):
     """

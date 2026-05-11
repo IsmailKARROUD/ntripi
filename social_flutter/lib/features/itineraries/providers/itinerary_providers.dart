@@ -15,6 +15,7 @@ import 'package:social_flutter/features/itineraries/domain/annotation.dart';
 import 'package:social_flutter/features/itineraries/domain/itinerary.dart';
 import 'package:social_flutter/features/itineraries/domain/my_rating.dart';
 import 'package:social_flutter/features/itineraries/domain/ratings_page.dart';
+import 'package:social_flutter/features/itineraries/domain/stop.dart';
 
 // ---------------------------------------------------------------------------
 // MyItinerariesNotifier
@@ -126,28 +127,37 @@ class ItineraryDetailNotifier
     await refresh();
   }
 
-  /// Move a stop to a new position by sending its target neighbours.
+  /// Move a stop to a new position.
   ///
-  /// At least one of [afterStopId] / [beforeStopId] must be non-null. If
-  /// [targetTrackId] is provided and differs from the stop's current track the
-  /// server moves the stop across tracks (and deletes the source track if it
-  /// becomes empty). Bumps the ETag and refreshes the local state.
-  Future<void> moveStop(
+  /// Three move modes, mutually exclusive:
+  ///   1. Within-track reorder: pass [afterStopId] / [beforeStopId] only.
+  ///   2. Cross-track move into an existing track: pass [targetTrackId].
+  ///   3. New-track move: pass [afterTrackId] and/or [beforeTrackId]
+  ///      (with [targetTrackId] null). Server creates a brand-new track at
+  ///      that position and moves this stop into it as the sole member.
+  ///
+  /// Bumps the ETag and refreshes the local state. Returns the moved [Stop]
+  /// so callers can read its (possibly newly created) `trackId`.
+  Future<Stop> moveStop(
     String stopId, {
     String? afterStopId,
     String? beforeStopId,
     String? targetTrackId,
+    String? afterTrackId,
+    String? beforeTrackId,
   }) async {
     final body = <String, dynamic>{
       if (afterStopId != null) 'after_stop_id': afterStopId,
       if (beforeStopId != null) 'before_stop_id': beforeStopId,
       if (targetTrackId != null) 'track_id': targetTrackId,
+      if (afterTrackId != null) 'after_track_id': afterTrackId,
+      if (beforeTrackId != null) 'before_track_id': beforeTrackId,
     };
-    await ref.read(itineraryRepositoryProvider).updateStop(
-          arg, stopId, body,
-          etag: _etag,
-        );
+    final updated = await ref
+        .read(itineraryRepositoryProvider)
+        .updateStop(arg, stopId, body, etag: _etag);
     await refresh();
+    return updated;
   }
 
   /// Delete a stop, then refresh.
