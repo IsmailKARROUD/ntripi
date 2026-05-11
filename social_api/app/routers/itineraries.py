@@ -27,7 +27,7 @@ Track lifecycle:
 
 import uuid
 from decimal import Decimal
-from datetime import timezone
+from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile, status
 from fastapi.responses import Response
@@ -98,6 +98,15 @@ def _etag_value(itinerary: Itinerary) -> str:
     return _canonical_etag(itinerary)
 
 
+def _touch_itinerary(itinerary: Itinerary) -> None:
+    # SQLAlchemy only emits an UPDATE when at least one column actually
+    # changed, so `onupdate=now()` doesn't fire for mutations that only
+    # touch child rows (annotations) or set the same total back (e.g. a
+    # zero-duration stop). Without an updated_at bump the GET ETag stays
+    # the same and the Dio cache interceptor 304s with stale local data.
+    itinerary.updated_at = datetime.now(timezone.utc)
+
+
 def _bump_and_etag(itinerary: Itinerary, db: Session) -> str:
     """Touch updated_at and return the new ETag string."""
     db.execute(
@@ -162,6 +171,7 @@ def _recalculate_totals(itinerary: Itinerary, db: Session) -> None:
 
     itinerary.total_duration_min = stop_duration + seg_duration
     itinerary.total_cost = stop_cost + seg_cost
+    _touch_itinerary(itinerary)
 
 
 def _load_itinerary_detail(itinerary_id: uuid.UUID, db: Session) -> Itinerary:
@@ -999,6 +1009,7 @@ def add_itinerary_annotation(
         content=body.content,
     )
     db.add(annotation)
+    _touch_itinerary(itinerary)
     db.commit()
     db.refresh(annotation)
     return annotation  # type: ignore[return-value]
@@ -1032,6 +1043,7 @@ def update_itinerary_annotation(
     if body.content is not None:
         annotation.content = body.content
 
+    _touch_itinerary(itinerary)
     db.commit()
     db.refresh(annotation)
     return annotation  # type: ignore[return-value]
@@ -1060,6 +1072,7 @@ def delete_itinerary_annotation(
                             detail="Annotation not found.")
 
     db.delete(annotation)
+    _touch_itinerary(itinerary)
     db.commit()
 
 
@@ -1089,6 +1102,7 @@ def add_annotation(
 
     annotation = Annotation(stop_id=stop_id, type=body.type, content=body.content)
     db.add(annotation)
+    _touch_itinerary(itinerary)
     db.commit()
     db.refresh(annotation)
     return annotation  # type: ignore[return-value]
@@ -1121,6 +1135,7 @@ def delete_annotation(
                             detail="Annotation not found.")
 
     db.delete(annotation)
+    _touch_itinerary(itinerary)
     db.commit()
 
 
@@ -1155,6 +1170,7 @@ def update_annotation(
     if body.type is not None:
         annotation.type = body.type
 
+    _touch_itinerary(itinerary)
     db.commit()
     db.refresh(annotation)
     return annotation  # type: ignore[return-value]

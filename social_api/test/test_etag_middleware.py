@@ -168,3 +168,53 @@ class TestETagMiddleware:
         )
         assert revisit.status_code == 304
         assert revisit.headers["etag"] == endpoint_etag
+
+    def test_child_mutation_bumps_etag(self, client: TestClient):
+        # The cache ETag for GET /itineraries/{id} is the itinerary's
+        # updated_at. SQLAlchemy only emits an UPDATE on the itineraries
+        # row when one of its own columns actually changes, so a mutation
+        # that only touches a child table (annotation, segment with the
+        # same totals) wouldn't bump updated_at — the client's conditional
+        # GET would get a 304 and never see the new child row. Every
+        # mutation endpoint must explicitly touch updated_at to invalidate
+        # the cache.
+        owner = register_user(client, "alice1", "alice@test.com")
+        create = client.post(
+            "/itineraries/",
+            json={"title": "Trip", "visibility": "only_me"},
+            headers=auth_headers(owner["access_token"]),
+        )
+        itin_id = create.json()["id"]
+
+        first = client.get(
+            f"/itineraries/{itin_id}",
+            headers=auth_headers(owner["access_token"]),
+        )
+        first_etag = first.headers["etag"]
+
+        # Itinerary-level annotation — no totals change, pure child-row write.
+        ann = client.post(
+            f"/itineraries/{itin_id}/annotations",
+            json={"type": "info", "content": "remember sunscreen"},
+            headers={
+                **auth_headers(owner["access_token"]),
+                "If-Match": first_etag,
+            },
+        )
+        assert ann.status_code == 201
+
+        # Without the _touch_itinerary fix this would be a silent 304 and
+        # the cached body wouldn't include the new annotation.
+        revisit = client.get(
+            f"/itineraries/{itin_id}",
+            headers={
+                **auth_headers(owner["access_token"]),
+                "If-None-Match": first_etag,
+            },
+        )
+        assert revisit.status_code == 200
+        assert revisit.headers["etag"] != first_etag
+        assert any(
+            a["content"] == "remember sunscreen"
+            for a in revisit.json().get("annotations", [])
+        )
