@@ -67,6 +67,7 @@ from app.schemas.itinerary import (
     RatingSubmit,
     RatingWithUser,
     RatingsPageResponse,
+    ReorderRequest,
     StopCreate,
     StopResponse,
     StopUpdate,
@@ -812,6 +813,97 @@ def delete_stop(
     from fastapi.responses import Response as FastAPIResponse
     resp = FastAPIResponse(status_code=status.HTTP_204_NO_CONTENT)
     resp.headers["ETag"] = _etag_value(itinerary)
+    return resp
+
+
+# ---------------------------------------------------------------------------
+# POST /itineraries/{itinerary_id}/reorder — Batch reorder of stops within tracks
+# ---------------------------------------------------------------------------
+
+@router.post("/{itinerary_id}/reorder", response_model=ItineraryDetail,
+             summary="Batch reorder stops within one or more tracks")
+def reorder_itinerary(
+    itinerary_id: uuid.UUID,
+    body: ReorderRequest,
+    request: Request,
+    db: Session = Depends(get_db),
+    itinerary: Itinerary = Depends(require_etag),
+) -> Response:
+    """
+    Apply a batch reorder of stops within tracks.
+
+    Client sends the new ORDER (list of stop_ids per track); server computes
+    the fractional-index ranks via n_keys_between. Keeps all ordering logic
+    on the backend — no Dart port of key_between needed.
+
+    Atomicity: every track in stop_orders is validated up front, then the
+    rank rewrites are applied. Any validation failure aborts before any
+    writes; any IntegrityError during write rolls back the whole transaction.
+
+    Two-phase write per track avoids the UNIQUE(track_id, rank) constraint:
+    phase 1 parks every stop on a temp rank starting with '!' (ASCII 33,
+    below every digit/letter key_between can produce), phase 2 assigns the
+    final keys.
+    """
+    # ── Validate every (track_id, stop_ids) pair before mutating anything ──
+    # Build per-track validation context once so we can report which track
+    # the error refers to.
+    for track_id, stop_ids in body.stop_orders.items():
+        track = db.execute(
+            select(Track)
+            .options(selectinload(Track.stops))
+            .where(Track.id == track_id,
+                   Track.itinerary_id == itinerary_id)
+        ).scalar_one_or_none()
+        if not track:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=f"track_id {track_id} does not belong to this itinerary.",
+            )
+
+        provided_set = set(stop_ids)
+        if len(provided_set) != len(stop_ids):
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=f"stop_orders[{track_id}] contains duplicate stop_ids.",
+            )
+
+        current_set = {s.id for s in track.stops}
+        if provided_set != current_set:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=(
+                    f"stop_orders[{track_id}] must contain exactly the "
+                    "current stops of that track."
+                ),
+            )
+
+    # ── Apply per-track two-phase rank rewrite ─────────────────────────────
+    for track_id, stop_ids in body.stop_orders.items():
+        # Phase 1: temp ranks below every key_between output.
+        for sid in stop_ids:
+            stop = db.get(Stop, sid)
+            stop.rank = f"!{sid}"
+        db.flush()
+
+        # Phase 2: final keys evenly spaced across the full range.
+        new_ranks = n_keys_between(None, None, len(stop_ids))
+        for sid, rank in zip(stop_ids, new_ranks):
+            stop = db.get(Stop, sid)
+            stop.rank = rank
+        db.flush()
+
+    _recalculate_totals(itinerary, db)
+    db.commit()
+    db.refresh(itinerary)
+
+    detail = _load_itinerary_detail(itinerary_id, db)
+
+    from fastapi.encoders import jsonable_encoder
+    from fastapi.responses import JSONResponse
+    data = jsonable_encoder(ItineraryDetail.model_validate(detail))
+    resp = JSONResponse(content=data)
+    resp.headers["ETag"] = _etag_value(detail)
     return resp
 
 

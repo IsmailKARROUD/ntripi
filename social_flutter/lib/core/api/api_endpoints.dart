@@ -62,8 +62,9 @@ String itineraryEndpoint(String id) => '/itineraries/$id';
 /// Add a stop to an itinerary / list stops.
 String itineraryStopsEndpoint(String id) => '/itineraries/$id/stops';
 
-/// Reorder all stops in an itinerary.
-String itineraryStopsReorderEndpoint(String id) => '/itineraries/$id/stops/reorder';
+/// Batch reorder of stops within tracks (POST). Server computes new
+/// fractional-index ranks from the order the client sends.
+String itineraryReorderEndpoint(String id) => '/itineraries/$id/reorder';
 
 /// Update or delete a single stop.
 String itineraryStopEndpoint(String id, String stopId) =>

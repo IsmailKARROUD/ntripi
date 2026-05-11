@@ -104,6 +104,22 @@ class ItineraryDetailNotifier
     await refresh();
   }
 
+  /// Commit a batch reorder of stops within tracks in one server transaction.
+  ///
+  /// [stopOrders] maps `trackId → [stopId, ...]` in the desired order. The
+  /// server validates that each track's set matches the current set, computes
+  /// new fractional-index ranks, and returns the full updated itinerary. A
+  /// `refresh()` after the call adopts the server-confirmed ranks locally.
+  Future<void> applyReorder({
+    required Map<String, List<String>> stopOrders,
+  }) async {
+    await ref.read(itineraryRepositoryProvider).reorderItinerary(
+          arg, stopOrders,
+          etag: _etag,
+        );
+    await refresh();
+  }
+
   /// Move a stop to a new position by sending its target neighbours.
   ///
   /// At least one of [afterStopId] / [beforeStopId] must be non-null. If

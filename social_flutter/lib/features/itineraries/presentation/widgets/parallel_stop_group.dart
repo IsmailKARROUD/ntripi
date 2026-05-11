@@ -11,6 +11,7 @@
 import 'package:flutter/material.dart';
 import 'package:social_flutter/features/itineraries/domain/annotation.dart';
 import 'package:social_flutter/features/itineraries/domain/stop.dart';
+import 'package:social_flutter/features/itineraries/domain/track.dart';
 import 'package:social_flutter/features/itineraries/domain/transit_segment.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/reorder_parallels_sheet.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/segment_card.dart';
@@ -56,6 +57,14 @@ class ParallelStopGroup extends StatefulWidget {
   /// Called whenever the user swipes to a different parallel, with the new index.
   final void Function(int index)? onPageChanged;
 
+  /// True when the itinerary has another track to move this group's active
+  /// stop into. Controls visibility of the move-to-track button in edit mode.
+  final bool canMoveToTrack;
+
+  /// Called when the user taps the move-to-track button. Receives the active
+  /// parallel stop so the parent can launch the target-picker sheet.
+  final void Function(Stop activeStop)? onMoveToTrack;
+
   const ParallelStopGroup({
     super.key,
     required this.stops,
@@ -75,6 +84,8 @@ class ParallelStopGroup extends StatefulWidget {
     this.onAddStopAfter,
     this.onAddTransit,
     this.onPageChanged,
+    this.canMoveToTrack = false,
+    this.onMoveToTrack,
   });
 
   /// The stop currently visible (parallel_position=0 by default).
@@ -108,7 +119,7 @@ class _ParallelStopGroupState extends State<ParallelStopGroup> {
   @override
   Widget build(BuildContext context) {
     final hasParallels = widget.stops.length > 1;
-    final canAddMore = widget.stops.length < 3;
+    final canAddMore = widget.stops.length < Track.maxParallelStops;
     final segment = widget.getSegment(_activeStop.id);
 
     return Column(
@@ -134,7 +145,8 @@ class _ParallelStopGroupState extends State<ParallelStopGroup> {
                   )
                   : _buildStopCard(widget.stops.first),
             ),
-            if (widget.editMode && (canAddMore || hasParallels)) ...[
+            if (widget.editMode &&
+                (canAddMore || hasParallels || widget.canMoveToTrack)) ...[
               const SizedBox(width: 4),
               Column(
                 mainAxisSize: MainAxisSize.min,
@@ -152,6 +164,12 @@ class _ParallelStopGroupState extends State<ParallelStopGroup> {
                         itineraryId: widget.itineraryId,
                         stops: widget.stops,
                       ),
+                    ),
+                  if (widget.canMoveToTrack)
+                    _MoveToTrackButton(
+                      onTap: widget.onMoveToTrack == null
+                          ? null
+                          : () => widget.onMoveToTrack!(_activeStop),
                     ),
                 ],
               ),
@@ -342,6 +360,44 @@ class _ActionChip extends StatelessWidget {
                   ),
                 ],
               ),
+      ),
+    );
+  }
+}
+
+class _MoveToTrackButton extends StatelessWidget {
+  final VoidCallback? onTap;
+  const _MoveToTrackButton({this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.only(top: 6, right: 8),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(8),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+          decoration: BoxDecoration(
+            border: Border.all(color: Colors.grey.shade400),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.swap_vert, size: 16, color: Colors.grey.shade700),
+              const SizedBox(height: 2),
+              Text(
+                'move',
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: Colors.grey.shade700,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

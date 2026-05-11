@@ -46,7 +46,9 @@ import 'package:social_flutter/features/itineraries/domain/transit_segment.dart'
 import 'package:social_flutter/features/itineraries/presentation/widgets/annotation_form_dialog.dart';
 import 'package:social_flutter/features/profile/providers/profile_provider.dart';
 import 'package:social_flutter/features/itineraries/domain/stop.dart';
+import 'package:social_flutter/features/itineraries/domain/track.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/annotation_chip.dart';
+import 'package:social_flutter/features/itineraries/presentation/widgets/move_stop_to_track_sheet.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/rate_itinerary_dialog.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/parallel_stop_group.dart';
 import 'package:social_flutter/core/utils/platform_utils.dart';
@@ -68,6 +70,9 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
   bool _editMode = false;
   // Active parallel-stop index per track (trackId → page index).
   final Map<String, int> _activeParallelByTrack = {};
+  // GlobalKey per track widget so we can call Scrollable.ensureVisible after a
+  // cross-track move to scroll the destination track into view.
+  final Map<String, GlobalKey> _trackKeys = {};
   //start with map hidden on mobile to avoid unnecessary API calls and improve performance, since the map is less likely to be used on mobile and can be accessed via a button
   bool _mapVisible = false;
 
@@ -83,6 +88,23 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
 
   void _exitEditMode() {
     setState(() => _editMode = false);
+  }
+
+  /// Scrolls the outer CustomScrollView so that the track with the given ID
+  /// becomes visible near the top. The post-frame callback waits for the
+  /// detail-provider refresh to rebuild the list before resolving the key's
+  /// context, otherwise the destination track may not yet be laid out.
+  void _scrollToTrack(String trackId) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final ctx = _trackKeys[trackId]?.currentContext;
+      if (ctx != null) {
+        Scrollable.ensureVisible(
+          ctx,
+          alignment: 0.1,
+          duration: const Duration(milliseconds: 300),
+        );
+      }
+    });
   }
 
   Future<void> _addItineraryAnnotation() async {
@@ -427,12 +449,31 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                         final trackIndex = i + 1;
 
                         items.add(ParallelStopGroup(
-                          key: ValueKey('track-${track.id}'),
+                          key: _trackKeys.putIfAbsent(
+                              track.id, () => GlobalKey()),
                           stops: trackStops,
                           currency: itinerary.currency,
                           itineraryId: widget.itineraryId,
                           editMode: canEdit,
                           trackIndex: trackIndex,
+                          canMoveToTrack: canEdit &&
+                              tracks.any((t) =>
+                                  t.id != track.id &&
+                                  t.stops.length < Track.maxParallelStops),
+                          onMoveToTrack: canEdit &&
+                                  tracks.any((t) =>
+                                      t.id != track.id &&
+                                      t.stops.length <
+                                          Track.maxParallelStops)
+                              ? (activeStop) => showMoveStopToTrackSheet(
+                                    context: context,
+                                    itineraryId: widget.itineraryId,
+                                    stop: activeStop,
+                                    tracks: tracks,
+                                    segments: itinerary.segments,
+                                    onMoved: _scrollToTrack,
+                                  )
+                              : null,
                           getSegment: (fromStopId) {
                             final seg = segmentByFromStop[fromStopId];
                             if (seg == null) return null;

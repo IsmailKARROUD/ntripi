@@ -21,6 +21,14 @@
 import 'package:social_flutter/features/itineraries/domain/stop.dart';
 
 class Track {
+  /// Maximum number of parallel stops allowed per track.
+  ///
+  /// Used by every UI affordance that gates on track capacity (the
+  /// add-parallel button, the move-to-track sheet picker, and the move
+  /// button's visibility predicate). Changing this number — should the UX
+  /// ever support more parallels — only requires updating this constant.
+  static const int maxParallelStops = 4;
+
   final String id;
   final String itineraryId;
 

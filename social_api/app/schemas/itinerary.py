@@ -138,6 +138,33 @@ class StopUpdate(BaseModel):
     before_stop_id: Optional[uuid.UUID] = None
 
 
+class ReorderRequest(BaseModel):
+    """
+    Batch reorder of stops within one or more tracks.
+
+    stop_orders is a map of track_id → list of stop_ids in the desired display
+    order. For each entry, the provided stop_id set must exactly match the
+    track's current stop_id set (no missing, no extra, no duplicates). Every
+    track must belong to the itinerary referenced in the URL.
+
+    Server computes new fractional-index ranks (via n_keys_between) — the
+    client never sends rank strings, only order.
+    """
+
+    stop_orders: dict[uuid.UUID, list[uuid.UUID]]
+
+    @model_validator(mode='after')
+    def _non_empty(self) -> 'ReorderRequest':
+        if not self.stop_orders:
+            raise ValueError("stop_orders must be non-empty")
+        for track_id, stop_ids in self.stop_orders.items():
+            if not stop_ids:
+                raise ValueError(
+                    f"stop_orders[{track_id}] must contain at least one stop"
+                )
+        return self
+
+
 class StopResponse(BaseModel):
     id: uuid.UUID
     itinerary_id: uuid.UUID

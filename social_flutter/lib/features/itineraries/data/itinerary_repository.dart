@@ -155,6 +155,29 @@ class ItineraryRepository {
     }
   }
 
+  /// Apply a batch reorder of stops within tracks in one atomic transaction.
+  ///
+  /// [stopOrders] maps `trackId → [stopId, ...]` in the desired display order.
+  /// The provided stop-id set per track must exactly match the track's current
+  /// stop-id set, or the server returns 422.
+  Future<Itinerary> reorderItinerary(
+    String itineraryId,
+    Map<String, List<String>> stopOrders, {
+    required String etag,
+  }) async {
+    try {
+      final response = await _dio.post<Map<String, dynamic>>(
+        itineraryReorderEndpoint(itineraryId),
+        data: {'stop_orders': stopOrders},
+        options: _ifMatch(etag),
+      );
+      return Itinerary.fromJson(response.data!);
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 412) throw const ItineraryStaleException();
+      rethrow;
+    }
+  }
+
   // ---------------------------------------------------------------------------
   // Annotation CRUD — all require ETag
   // ---------------------------------------------------------------------------
