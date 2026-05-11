@@ -265,7 +265,17 @@ class _AppShellState extends State<_AppShell> {
             _DownloadBanner(
                 onDismiss: () => setState(() => _showDownloadBanner = false)),
           if (_isOffline) const _OfflineBanner(),
-          Expanded(child: widget.child),
+          // Banners above use SafeArea(bottom: false) and consume the top
+          // status-bar inset. MediaQuery still reports that inset to the
+          // child Scaffold's AppBar, which would re-add it and leave a gap
+          // below the status bar. Strip the top inset when a banner shows.
+          Expanded(
+            child: MediaQuery.removePadding(
+              context: context,
+              removeTop: _showDownloadBanner || _isOffline,
+              child: widget.child,
+            ),
+          ),
         ],
       ),
       bottomNavigationBar: Container(
@@ -331,7 +341,7 @@ class _OfflineBanner extends StatelessWidget {
       child: SafeArea(
         bottom: false,
         child: Padding(
-          padding: EdgeInsets.only(left: 12, right: 12,top: 0, bottom: 2),
+          padding: EdgeInsets.only(left: 12, right: 12, top: 0, bottom: 2),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -339,8 +349,8 @@ class _OfflineBanner extends StatelessWidget {
               SizedBox(width: 8),
               Text(
                 'You\'re Offline! Some features may be unavailable.',
-                style: TextStyle(
-                    color: Colors.white, fontSize: 13, height: 1.3),
+                style:
+                    TextStyle(color: Colors.white, fontSize: 13, height: 1.3),
               ),
             ],
           ),
