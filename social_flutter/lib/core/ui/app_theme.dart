@@ -98,7 +98,7 @@ ThemeData buildNtripiTheme() {
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
       fillColor: _surface,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 2, vertical: 15),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14),
         borderSide: const BorderSide(color: _border),

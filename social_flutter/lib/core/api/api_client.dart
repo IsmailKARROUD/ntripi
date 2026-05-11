@@ -15,6 +15,7 @@
 //     from being stuck in a broken authenticated state.
 
 import 'package:dio/dio.dart';
+import 'package:dio_cache_interceptor/dio_cache_interceptor.dart';
 import 'package:flutter/widgets.dart';
 import 'package:go_router/go_router.dart';
 import 'package:social_flutter/core/api/api_endpoints.dart';
@@ -26,7 +27,10 @@ late final Dio dio;
 
 /// Create and configure the Dio client.
 /// Call this once in main() before runApp().
-Dio createDioClient() {
+///
+/// [cacheStore] persists GET responses so the app remains browsable while
+/// offline. Pass null only when caching is intentionally disabled (tests).
+Dio createDioClient({CacheStore? cacheStore}) {
   final instance = Dio(
     BaseOptions(
       baseUrl: kApiBaseUrl,
@@ -38,6 +42,32 @@ Dio createDioClient() {
   );
 
   instance.interceptors.add(AuthInterceptor());
+
+  if (cacheStore != null) {
+    // Cache GET responses. On any Dio error (including offline / timeout)
+    // the interceptor falls back to the most recent cached response, so
+    // previously-viewed screens remain readable without a connection.
+    //
+    // `refreshForceCache` rather than `request` because the FastAPI backend
+    // does not emit ETag/Last-Modified/Expires/Cache-Control headers, and
+    // the default `request` policy will refuse to store a response that
+    // carries none of those directives — leaving the cache permanently
+    // empty. `refreshForceCache` always hits the network when online
+    // (fresh data) and stores every successful response regardless of
+    // server cache directives.
+    instance.interceptors.add(
+      DioCacheInterceptor(
+        options: CacheOptions(
+          store: cacheStore,
+          policy: CachePolicy.refreshForceCache,
+          hitCacheOnErrorExcept: const [],
+          maxStale: const Duration(days: 7),
+          priority: CachePriority.normal,
+          keyBuilder: CacheOptions.defaultCacheKeyBuilder,
+        ),
+      ),
+    );
+  }
 
   // In debug mode, log requests and responses for easier development.
   // Remove or disable in production builds.
@@ -130,6 +160,15 @@ class AuthInterceptor extends Interceptor {
 /// For ItineraryStaleException and other typed exceptions, uses toString().
 String extractErrorMessage(dynamic e) {
   if (e is DioException) {
+    switch (e.type) {
+      case DioExceptionType.connectionError:
+      case DioExceptionType.connectionTimeout:
+      case DioExceptionType.receiveTimeout:
+      case DioExceptionType.sendTimeout:
+        return 'No internet connection. Please check your network and try again.';
+      default:
+        break;
+    }
     try {
       final data = e.response?.data;
       if (data is Map<String, dynamic>) {

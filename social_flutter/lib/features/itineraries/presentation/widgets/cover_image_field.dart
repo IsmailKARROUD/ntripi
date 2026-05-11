@@ -18,6 +18,7 @@ import 'dart:math' as math;
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -505,10 +506,10 @@ class _ImagePreview extends StatelessWidget {
           if (pickedBytes != null)
             Image.memory(pickedBytes!, fit: BoxFit.cover)
           else if (networkUrl != null)
-            Image.network(
-              _absoluteUrl(networkUrl!),
+            CachedNetworkImage(
+              imageUrl: _absoluteUrl(networkUrl!),
               fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => _broken(),
+              errorWidget: (_, __, ___) => _broken(),
             ),
           // Subtle darkening hint that the image is tappable
           Positioned(

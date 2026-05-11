@@ -3,6 +3,7 @@
 // Displays title, visibility badge, and summary stats (duration, cost, stops,
 // safety rating). Tapping navigates to the itinerary detail screen.
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -139,10 +140,10 @@ class _CardCoverImageState extends State<_CardCoverImage> {
       borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
       child: AspectRatio(
         aspectRatio: 1200 / 630,
-        child: Image.network(
-          widget.url,
+        child: CachedNetworkImage(
+          imageUrl: widget.url,
           fit: BoxFit.cover,
-          errorBuilder: (_, __, ___) {
+          errorWidget: (_, __, ___) {
             WidgetsBinding.instance.addPostFrameCallback((_) {
               if (mounted) setState(() => _error = true);
             });

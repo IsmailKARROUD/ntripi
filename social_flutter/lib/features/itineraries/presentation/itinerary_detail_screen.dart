@@ -30,6 +30,7 @@
 //
 // OSM attribution is required by the ODbL license and is always visible.
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:social_flutter/core/api/api_endpoints.dart';
@@ -1235,7 +1236,7 @@ class _CoverImageState extends State<_CoverImage> {
               body: Center(
                 child: PhotoView(
                   enableRotation: true,
-                  imageProvider: NetworkImage(widget.url),
+                  imageProvider: CachedNetworkImageProvider(widget.url),
                 ),
               ),
             ),
@@ -1244,10 +1245,10 @@ class _CoverImageState extends State<_CoverImage> {
       },
       child: AspectRatio(
         aspectRatio: 1200 / 630,
-        child: Image.network(
-          widget.url,
+        child: CachedNetworkImage(
+          imageUrl: widget.url,
           fit: BoxFit.cover,
-          errorBuilder: (_, __, ___) {
+          errorWidget: (_, __, ___) {
             if (!_error) {
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 if (mounted) {

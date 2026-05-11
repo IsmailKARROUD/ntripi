@@ -449,7 +449,7 @@ class _AllowlistSection extends ConsumerWidget {
             ),
             error: (e, _) => Padding(
               padding: const EdgeInsets.symmetric(vertical: 8),
-              child: Text('Error loading allowlist: $e'),
+              child: Text(extractErrorMessage(e)),
             ),
             data: (users) {
               if (users.isEmpty) {

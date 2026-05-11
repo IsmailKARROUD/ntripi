@@ -225,21 +225,32 @@ class _AppShellState extends State<_AppShell> {
     return 1;
   }
 
+  StreamSubscription<List<ConnectivityResult>>? _connectivitySub;
+
   @override
   void initState() {
     super.initState();
 
-    // Listen for changes and update the state
-    Connectivity().onConnectivityChanged.listen((results) {
+    // Reflect connectivity on cold launch — the stream only fires on changes.
+    _checkInitialConnection();
+
+    _connectivitySub = Connectivity().onConnectivityChanged.listen((results) {
+      if (!mounted) return;
       setState(() {
         _isOffline = results.contains(ConnectivityResult.none);
       });
     });
   }
 
-  // Check connection as soon as the app opens
+  @override
+  void dispose() {
+    _connectivitySub?.cancel();
+    super.dispose();
+  }
+
   Future<void> _checkInitialConnection() async {
     final results = await Connectivity().checkConnectivity();
+    if (!mounted) return;
     setState(() {
       _isOffline = results.contains(ConnectivityResult.none);
     });
@@ -247,54 +258,13 @@ class _AppShellState extends State<_AppShell> {
 
   @override
   Widget build(BuildContext context) {
-    if (_isOffline){
-      return Scaffold(
-        backgroundColor: Colors.redAccent,
-        body: Center(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 30),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(Icons.wifi_off_rounded,
-                    color: Colors.white, size: 80),
-                const SizedBox(height: 24),
-                const Text(
-                  'No Connection',
-                  style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 12),
-                const Text(
-                  'You are currently offline. Please check your network settings to continue using the app.',
-                  textAlign: TextAlign.center,
-                  style:
-                      TextStyle(color: Colors.white, fontSize: 16, height: 1.4),
-                ),
-                const SizedBox(height: 30),
-                ElevatedButton.icon(
-                  onPressed: () { _checkInitialConnection(); },
-                  icon: const Icon(Icons.refresh),
-                  label: const Text("Try Again"),
-                  style: ElevatedButton.styleFrom(
-                    foregroundColor: Colors.redAccent,
-                    backgroundColor: Colors.white,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      );} 
-   else {
-      return Scaffold(
+    return Scaffold(
       body: Column(
         children: [
           if (_showDownloadBanner)
             _DownloadBanner(
                 onDismiss: () => setState(() => _showDownloadBanner = false)),
+          if (_isOffline) const _OfflineBanner(),
           Expanded(child: widget.child),
         ],
       ),
@@ -348,7 +318,35 @@ class _AppShellState extends State<_AppShell> {
         ),
       ),
     );
-    }
+  }
+}
+
+class _OfflineBanner extends StatelessWidget {
+  const _OfflineBanner();
+
+  @override
+  Widget build(BuildContext context) {
+    return const ColoredBox(
+      color: kRatingRed,
+      child: SafeArea(
+        bottom: false,
+        child: Padding(
+          padding: EdgeInsets.only(left: 12, right: 12,top: 0, bottom: 2),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.wifi_off_rounded, color: Colors.white, size: 16),
+              SizedBox(width: 8),
+              Text(
+                'You\'re Offline! Some features may be unavailable.',
+                style: TextStyle(
+                    color: Colors.white, fontSize: 13, height: 1.3),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }
 

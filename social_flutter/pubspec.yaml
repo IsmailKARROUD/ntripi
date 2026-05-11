@@ -19,8 +19,21 @@ dependencies:
   # HTTP client with interceptor support — used for the auth token injection
   dio: ^5.4.3
 
+  # Cache GET responses so the app stays browsable while offline.
+  # Serves stale data on Dio connection errors; never caches mutations.
+  dio_cache_interceptor: ^3.5.0
+  dio_cache_interceptor_hive_store: ^4.0.0
+
+  # Resolve a writable directory for the Hive cache store.
+  path_provider: ^2.1.4
+
+  # Cache network images on disk so cover photos / avatars survive offline.
+  # Dio's cache interceptor only handles JSON; image bytes need their own
+  # cache layer.
+  cached_network_image: ^3.4.1
+
   # Check network status (online/offline) and type (WiFi/mobile)
-  connectivity_plus: ^7.1.1 
+  connectivity_plus: ^7.1.1
 
   # Secure token storage — uses iOS Keychain / Android Keystore under the hood
   flutter_secure_storage: ^9.0.0
