@@ -99,9 +99,10 @@ def key_between(a: str | None, b: str | None) -> str:
                 result.append(_DIGITS[av + 1])
             else:
                 # a's digit is already at the maximum — we can't go one higher
-                # at this position, so write it and add a small extra digit.
+                # at this position, so write it and add a midpoint extra digit
+                # so future inserts have room on both sides.
                 result.append(_DIGITS[av])
-                result.append(_DIGITS[1])
+                result.append(_DIGITS[_N // 2])
             return "".join(result)
 
         # Treat missing digits as the minimum digit.
