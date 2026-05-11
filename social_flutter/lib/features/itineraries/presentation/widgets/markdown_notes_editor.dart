@@ -216,9 +216,7 @@ class _Toolbar extends StatelessWidget {
     final start = hasSel ? sel.start : text.length;
     final end = hasSel ? sel.end : text.length;
 
-    int lineStart = text.lastIndexOf('\n', start - 1) + 1;
-    int lineEnd = text.indexOf('\n', end);
-    if (lineEnd == -1) lineEnd = text.length;
+    final (lineStart, lineEnd) = _lineRange(text, start, end);
 
     final block = text.substring(lineStart, lineEnd);
     final newBlock =
@@ -240,9 +238,7 @@ class _Toolbar extends StatelessWidget {
     final start = hasSel ? sel.start : text.length;
     final end = hasSel ? sel.end : text.length;
 
-    int lineStart = text.lastIndexOf('\n', start - 1) + 1;
-    int lineEnd = text.indexOf('\n', end);
-    if (lineEnd == -1) lineEnd = text.length;
+    final (lineStart, lineEnd) = _lineRange(text, start, end);
 
     final block = text.substring(lineStart, lineEnd);
     final lines = block.split('\n');
@@ -256,6 +252,18 @@ class _Toolbar extends StatelessWidget {
       text: newText,
       selection: TextSelection.collapsed(offset: end + addedTotal),
     );
+  }
+
+  // Returns the (lineStart, lineEnd) byte range of all lines touched by the
+  // [start, end] selection. lineStart is 0 when the selection starts at the
+  // very beginning of the document — guarded explicitly because
+  // String.lastIndexOf throws RangeError on a negative start argument.
+  static (int, int) _lineRange(String text, int start, int end) {
+    final lineStart =
+        start == 0 ? 0 : text.lastIndexOf('\n', start - 1) + 1;
+    var lineEnd = text.indexOf('\n', end);
+    if (lineEnd == -1) lineEnd = text.length;
+    return (lineStart, lineEnd);
   }
 
   @override
