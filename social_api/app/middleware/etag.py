@@ -26,6 +26,8 @@ from starlette.requests import Request
 from starlette.responses import Response
 from starlette.types import ASGIApp
 
+from app.dependencies import _normalize_etag
+
 # Paths under these prefixes are served by Starlette StaticFiles and should
 # bypass body buffering — they may be large binaries (images, web bundles).
 _STATIC_PREFIXES = ("/uploads", "/static", "/app")
@@ -74,7 +76,12 @@ class ETagMiddleware(BaseHTTPMiddleware):
         headers["etag"] = etag
         headers["cache-control"] = "private, no-cache"
 
-        if request.headers.get("if-none-match") == etag:
+        # Weak-compare per RFC 7232 §2.3.2: intermediaries (Cloudflare,
+        # nginx) downgrade strong ETags to `W/"…"` when they recompress.
+        # _normalize_etag strips the `W/` prefix and surrounding quotes so
+        # the comparison still succeeds.
+        client_etag = request.headers.get("if-none-match")
+        if client_etag and _normalize_etag(client_etag) == _normalize_etag(etag):
             # Body unchanged: send headers only. Strip content-length since
             # 304 must not carry one matching a non-empty body.
             headers.pop("content-length", None)

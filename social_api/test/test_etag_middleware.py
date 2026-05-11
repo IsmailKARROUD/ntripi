@@ -113,6 +113,29 @@ class TestETagMiddleware:
         assert r.status_code == 200
         assert "etag" in {k.lower() for k in r.headers}
 
+    def test_if_none_match_with_weak_prefix_returns_304(
+        self, client: TestClient
+    ):
+        # Cloudflare and other intermediaries downgrade strong ETags to weak
+        # (`W/"…"`) when they recompress the response body. The client then
+        # echoes the weak form back as If-None-Match. RFC 7232 §2.3.2 says
+        # weak comparison should still match — verify the middleware honors
+        # that, otherwise warm requests pay full-body bandwidth in production.
+        user = register_user(client, "alice1", "alice@test.com")
+        first = client.get("/users/me", headers=auth_headers(user["access_token"]))
+        strong_etag = first.headers["etag"]  # e.g. "abcd1234…"
+        weak_etag = f"W/{strong_etag}"
+
+        second = client.get(
+            "/users/me",
+            headers={
+                **auth_headers(user["access_token"]),
+                "If-None-Match": weak_etag,
+            },
+        )
+        assert second.status_code == 304
+        assert second.content == b""
+
     def test_endpoint_set_etag_is_preserved(self, client: TestClient):
         # GET /itineraries/{id} sets its own ETag from _etag_value() — the
         # middleware must NOT overwrite it, or the If-Match concurrency

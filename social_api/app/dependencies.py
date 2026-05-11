@@ -99,8 +99,14 @@ def _etag_value(itinerary) -> str:
 
 
 def _normalize_etag(raw: str) -> str:
-    """Strip optional surrounding quotes / whitespace before byte comparison."""
-    return raw.strip().strip('"')
+    """Strip whitespace, optional `W/` weak-validator prefix, and surrounding
+    quotes before byte comparison. RFC 7232 weak-compare semantics — needed
+    because intermediaries (e.g. Cloudflare) downgrade strong ETags to weak
+    when they recompress the response."""
+    s = raw.strip()
+    if s.startswith("W/"):
+        s = s[2:]
+    return s.strip('"')
 
 
 def make_etag_checker(itinerary_id_param: str = "itinerary_id"):
