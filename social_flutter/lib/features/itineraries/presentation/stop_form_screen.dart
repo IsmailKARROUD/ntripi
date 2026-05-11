@@ -21,6 +21,7 @@ import 'package:social_flutter/features/itineraries/domain/stop.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/annotation_chip.dart';
 import 'package:social_flutter/core/ui/destructive_actions.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/annotation_form_dialog.dart';
+import 'package:social_flutter/features/itineraries/presentation/widgets/markdown_notes_editor.dart';
 import 'package:social_flutter/features/itineraries/data/itinerary_repository.dart';
 import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
 import 'package:social_flutter/features/profile/providers/profile_provider.dart';
@@ -870,16 +871,10 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                     const SizedBox(height: 12),
                   ],
 
-                  // Notes
-                  TextFormField(
+                  // Notes — Markdown source with toolbar (edit) or rendered (readOnly).
+                  MarkdownNotesEditor(
                     controller: _notesController,
                     readOnly: readOnly,
-                    decoration: const InputDecoration(
-                      labelText: 'Notes',
-                      border: OutlineInputBorder(),
-                      alignLabelWithHint: true,
-                    ),
-                    maxLines: 3,
                   ),
                   const SizedBox(height: 20),
 

@@ -343,6 +343,7 @@ class RatingSubmit(BaseModel):
     experience_stars: Optional[int] = Field(None, ge=1, le=5)
     accessibility_stars: Optional[int] = Field(None, ge=1, le=5)
     family_friendly_stars: Optional[int] = Field(None, ge=1, le=5)
+    note: Optional[str] = None
 
 
 class RatingResponse(BaseModel):
@@ -351,6 +352,7 @@ class RatingResponse(BaseModel):
     experience_stars: Optional[int]
     accessibility_stars: Optional[int]
     family_friendly_stars: Optional[int]
+    note: Optional[str]
     updated_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
@@ -370,6 +372,7 @@ class RatingWithUser(BaseModel):
     experience_score: Optional[int]
     accessibility_score: Optional[int]
     family_friendly_score: Optional[int]
+    note: Optional[str]
     updated_at: datetime
     user: RaterInfo
 

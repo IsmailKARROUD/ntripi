@@ -4,8 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:social_flutter/features/itineraries/domain/annotation.dart';
 import 'package:social_flutter/features/itineraries/domain/stop.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/annotation_chip.dart';
+import 'package:social_flutter/features/itineraries/presentation/widgets/markdown_notes_editor.dart';
 
-class StopCard extends StatelessWidget {
+class StopCard extends StatefulWidget {
   final Stop stop;
   final String currency;
 
@@ -30,6 +31,13 @@ class StopCard extends StatelessWidget {
     this.onDeleteAnnotation,
   });
 
+  @override
+  State<StopCard> createState() => _StopCardState();
+}
+
+class _StopCardState extends State<StopCard> {
+  bool _notesExpanded = false;
+
   static const _typeIcons = {
     StopType.origin: Icons.trip_origin,
     StopType.waypoint: Icons.place_outlined,
@@ -48,13 +56,21 @@ class StopCard extends StatelessWidget {
     return '${cost.toStringAsFixed(2)} $currency';
   }
 
-  
-
   @override
   Widget build(BuildContext context) {
+    final stop = widget.stop;
+    final currency = widget.currency;
+    final trackIndex = widget.trackIndex;
+    final onTap = widget.onTap;
+    final onEdit = widget.onEdit;
+    final onAddAnnotation = widget.onAddAnnotation;
+    final onEditAnnotation = widget.onEditAnnotation;
+    final onDeleteAnnotation = widget.onDeleteAnnotation;
+
     final typeColor = _typeColors[stop.type] ?? Colors.blue;
     final typeIcon = _typeIcons[stop.type] ?? Icons.place;
     final costLabel = _formatCost(stop.cost, stop.isFree, currency);
+    final hasNotes = stop.notes != null && stop.notes!.trim().isNotEmpty;
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
@@ -212,10 +228,81 @@ class StopCard extends StatelessWidget {
                   ],
                 ),
               ),
+
+            if (hasNotes)
+              Padding(
+                padding: const EdgeInsets.only(top: 8, left: 40),
+                child: _NotesSection(
+                  notes: stop.notes!,
+                  expanded: _notesExpanded,
+                  onToggle: () => setState(() {
+                    _notesExpanded = !_notesExpanded;
+                  }),
+                ),
+              ),
           ],
         ),
       ),
       ),
+    );
+  }
+}
+
+class _NotesSection extends StatelessWidget {
+  final String notes;
+  final bool expanded;
+  final VoidCallback onToggle;
+
+  const _NotesSection({
+    required this.notes,
+    required this.expanded,
+    required this.onToggle,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        InkWell(
+          onTap: onToggle,
+          borderRadius: BorderRadius.circular(4),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 4),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.notes, size: 14, color: Colors.grey.shade600),
+                const SizedBox(width: 4),
+                Text(
+                  'Notes',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Colors.grey.shade700,
+                        fontWeight: FontWeight.w500,
+                      ),
+                ),
+                Icon(
+                  expanded ? Icons.expand_less : Icons.expand_more,
+                  size: 18,
+                  color: Colors.grey.shade600,
+                ),
+              ],
+            ),
+          ),
+        ),
+        AnimatedSize(
+          duration: const Duration(milliseconds: 180),
+          curve: Curves.easeInOut,
+          alignment: Alignment.topLeft,
+          child: expanded
+              ? Padding(
+                  padding: const EdgeInsets.only(top: 4, right: 4),
+                  child: InertMarkdownBody(data: notes),
+                )
+              : const SizedBox(width: double.infinity),
+        ),
+      ],
     );
   }
 }

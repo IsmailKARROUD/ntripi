@@ -28,6 +28,7 @@ import 'package:social_flutter/core/api/api_endpoints.dart';
 import 'package:social_flutter/features/itineraries/data/itinerary_repository.dart';
 import 'package:social_flutter/features/itineraries/domain/itinerary.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/cover_image_field.dart';
+import 'package:social_flutter/features/itineraries/presentation/widgets/markdown_notes_editor.dart';
 import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
 import 'package:social_flutter/shared/models/user.dart';
 import 'package:social_flutter/core/utils/platform_utils.dart';
@@ -296,16 +297,11 @@ Future<void> loadCurrencies() async {
                 ),
                 const SizedBox(height: 16),
 
-                // Description
-                TextFormField(
+                // Description — Markdown source with toolbar.
+                MarkdownNotesEditor(
                   controller: _descriptionController,
-                  decoration: const InputDecoration(
-                    labelText: 'Description',
-                    border: OutlineInputBorder(),
-                    alignLabelWithHint: true,
-                  ),
-                  maxLines: 4,
-                  textInputAction: TextInputAction.newline,
+                  readOnly: false,
+                  label: 'Description',
                 ),
                 const SizedBox(height: 16),
 

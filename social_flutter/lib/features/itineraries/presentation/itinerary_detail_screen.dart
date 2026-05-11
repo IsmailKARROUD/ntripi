@@ -47,6 +47,7 @@ import 'package:social_flutter/features/itineraries/presentation/widgets/annotat
 import 'package:social_flutter/features/profile/providers/profile_provider.dart';
 import 'package:social_flutter/features/itineraries/domain/stop.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/annotation_chip.dart';
+import 'package:social_flutter/features/itineraries/presentation/widgets/markdown_notes_editor.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/move_stop_to_track_sheet.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/rate_itinerary_dialog.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/parallel_stop_group.dart';
@@ -717,12 +718,8 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                               child: Padding(
                                 padding:
                                     const EdgeInsets.symmetric(horizontal: 16),
-                                child: Text(
-                                  itinerary.description!,
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .bodyMedium
-                                      ?.copyWith(color: Colors.grey.shade700),
+                                child: InertMarkdownBody(
+                                  data: itinerary.description!,
                                 ),
                               ),
                             ),

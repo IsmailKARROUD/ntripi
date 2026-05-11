@@ -46,6 +46,13 @@ dependencies:
   url_launcher: ^6.3.0
   photo_view: ^0.15.0
 
+  # Render user-authored Markdown notes (bold, italic, headings, lists).
+  # Configured link-inert: no clickable URLs in user content (phishing surface).
+  # flutter_markdown_plus is the maintained successor to the discontinued flutter_markdown.
+  flutter_markdown_plus: ^1.0.3
+  # Direct dep so we can reference `md.ExtensionSet` to lock down the parser.
+  markdown: ^7.3.0
+
 
 
 dev_dependencies:

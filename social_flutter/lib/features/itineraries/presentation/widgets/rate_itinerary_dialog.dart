@@ -11,6 +11,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:social_flutter/core/ui/app_theme.dart';
 import 'package:social_flutter/core/ui/destructive_actions.dart';
 import 'package:social_flutter/features/itineraries/domain/my_rating.dart';
+import 'package:social_flutter/features/itineraries/presentation/widgets/markdown_notes_editor.dart';
 import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
 
 /// Opens the rating bottom sheet and returns when the user saves or dismisses.
@@ -58,6 +59,7 @@ class _RateItinerarySheetState extends State<_RateItinerarySheet> {
   late int? _experience;
   late int? _accessibility;
   late int? _familyFriendly;
+  final _noteController = TextEditingController();
 
   bool _saving = false;
 
@@ -69,6 +71,13 @@ class _RateItinerarySheetState extends State<_RateItinerarySheet> {
     _experience = widget.current?.experienceStars;
     _accessibility = widget.current?.accessibilityStars;
     _familyFriendly = widget.current?.familyFriendlyStars;
+    _noteController.text = widget.current?.note ?? '';
+  }
+
+  @override
+  void dispose() {
+    _noteController.dispose();
+    super.dispose();
   }
 
   Future<void> _deleteRating() async {
@@ -99,6 +108,7 @@ class _RateItinerarySheetState extends State<_RateItinerarySheet> {
     if (_overall == null) return;
     setState(() => _saving = true);
     try {
+      final trimmedNote = _noteController.text.trim();
       await widget.parentRef
           .read(myRatingProvider(widget.itineraryId).notifier)
           .submitRating(MyRating(
@@ -107,6 +117,7 @@ class _RateItinerarySheetState extends State<_RateItinerarySheet> {
             experienceStars: _experience,
             accessibilityStars: _accessibility,
             familyFriendlyStars: _familyFriendly,
+            note: trimmedNote.isEmpty ? null : trimmedNote,
           ));
       if (mounted) Navigator.of(context).pop();
     } on Exception catch (e) {
@@ -130,7 +141,8 @@ class _RateItinerarySheetState extends State<_RateItinerarySheet> {
         16,
         MediaQuery.viewInsetsOf(context).bottom + 16,
       ),
-      child: Column(
+      child: SingleChildScrollView(
+        child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -196,6 +208,22 @@ class _RateItinerarySheetState extends State<_RateItinerarySheet> {
                 : const SizedBox.shrink(),
           ),
 
+          // Optional Markdown note — only shown after overall is selected
+          AnimatedSize(
+            duration: const Duration(milliseconds: 250),
+            curve: Curves.easeOut,
+            child: _overall != null
+                ? Padding(
+                    padding: const EdgeInsets.only(top: 16),
+                    child: MarkdownNotesEditor(
+                      controller: _noteController,
+                      readOnly: false,
+                      label: 'Your note (optional)',
+                    ),
+                  )
+                : const SizedBox.shrink(),
+          ),
+
           const SizedBox(height: 24),
 
           // Action buttons
@@ -235,6 +263,7 @@ class _RateItinerarySheetState extends State<_RateItinerarySheet> {
             ],
           ),
         ],
+      ),
       ),
     );
   }
