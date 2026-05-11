@@ -25,6 +25,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:social_flutter/core/api/api_client.dart';
+import 'package:social_flutter/core/services/segment_orphan_service.dart';
 import 'package:social_flutter/core/ui/destructive_actions.dart';
 import 'package:social_flutter/features/itineraries/data/itinerary_repository.dart';
 import 'package:social_flutter/features/itineraries/domain/stop.dart';
@@ -58,27 +59,8 @@ Future<void> showMoveStopToTrackSheet({
   );
 }
 
-// ---------------------------------------------------------------------------
-// Target model — three row kinds the user can tap.
-// ---------------------------------------------------------------------------
-
-sealed class _MoveTarget {
-  const _MoveTarget();
-}
-
-class _ExistingTarget extends _MoveTarget {
-  final Track track;
-  const _ExistingTarget(this.track);
-}
-
-/// New-track target with optional anchors. afterTrack=null → new first track.
-/// beforeTrack=null → new last track. Both null is invalid (caller must ensure).
-class _NewTrackTarget extends _MoveTarget {
-  final Track? afterTrack;
-  final Track? beforeTrack;
-  final bool isExtract; // pure label hint — mechanically same as a gap
-  const _NewTrackTarget({this.afterTrack, this.beforeTrack, this.isExtract = false});
-}
+// Target row types. The MoveTarget sealed hierarchy (used both here and by
+// the orphan-detection service) is imported from segment_orphan_service.dart.
 
 class _MoveStopToTrackSheet extends ConsumerStatefulWidget {
   final String itineraryId;
@@ -115,111 +97,21 @@ class _MoveStopToTrackSheetState extends ConsumerState<_MoveStopToTrackSheet> {
 
   bool _isAtCapacity(Track t) => t.stops.length >= Track.maxParallelStops;
 
-  /// Simulate the post-move track order for [target] and return every segment
-  /// that loses its from→to adjacency. The simulation also drops the source
-  /// track when it empties so segments referencing the moved stop are
-  /// correctly resolved.
-  ///
-  /// Skip-track example: tracks [A, B, C], stop X in A is the from-stop of
-  /// segment X→Y where Y is in B. User moves X to C.
-  ///   - After move: X in C (index 2), Y still in B (index 1).
-  ///   - fi=2, ti=1 → ti != fi+1 → orphaned (correct).
-  /// The stops are still in adjacent tracks (B and C), but the from→to
-  /// direction is reversed. The segment is logically broken and must be deleted.
-  List<TransitSegment> _computeOrphanedSegments(_MoveTarget target) {
-    final stop = widget.stop;
-    final sourceTrackId = stop.trackId;
-
-    // Step 1: build post-move track list with the stop removed from source.
-    // Use a synthetic id for the new track to keep stopToTrack stable.
-    const newTrackSyntheticId = '__new_track__';
-    final List<Track> withoutStop = [];
-    for (final t in widget.tracks) {
-      if (t.id == sourceTrackId) {
-        final remaining = t.stops.where((s) => s.id != stop.id).toList();
-        if (remaining.isEmpty) continue; // source dropped
-        withoutStop.add(t.copyWith(stops: remaining));
-      } else {
-        withoutStop.add(t);
-      }
-    }
-
-    // Step 2: place the stop at its destination.
-    final List<Track> newOrder;
-    switch (target) {
-      case _ExistingTarget(:final track):
-        newOrder = [
-          for (final t in withoutStop)
-            if (t.id == track.id)
-              t.copyWith(stops: [...t.stops, stop])
-            else
-              t,
-        ];
-      case _NewTrackTarget(:final afterTrack, :final beforeTrack):
-        final synthetic = Track(
-          id: newTrackSyntheticId,
-          itineraryId: widget.itineraryId,
-          rank: '',
-          stops: [stop],
-        );
-        if (afterTrack == null && beforeTrack == null) {
-          // Defensive — shouldn't happen from the UI. Append to end.
-          newOrder = [...withoutStop, synthetic];
-          break;
-        }
-        if (afterTrack == null) {
-          // Insert before [beforeTrack] (typically index 0).
-          final idx = withoutStop.indexWhere((t) => t.id == beforeTrack!.id);
-          newOrder = [
-            ...withoutStop.sublist(0, idx == -1 ? 0 : idx),
-            synthetic,
-            ...withoutStop.sublist(idx == -1 ? 0 : idx),
-          ];
-        } else {
-          // Insert after [afterTrack].
-          final idx = withoutStop.indexWhere((t) => t.id == afterTrack.id);
-          newOrder = [
-            ...withoutStop.sublist(0, idx == -1 ? withoutStop.length : idx + 1),
-            synthetic,
-            ...withoutStop.sublist(idx == -1 ? withoutStop.length : idx + 1),
-          ];
-        }
-    }
-
-    // Step 3: orphan detection against the simulated order.
-    final stopToTrack = <String, String>{};
-    for (final t in newOrder) {
-      for (final s in t.stops) {
-        stopToTrack[s.id] = t.id;
-      }
-    }
-    final trackIndex = <String, int>{
-      for (var i = 0; i < newOrder.length; i++) newOrder[i].id: i,
-    };
-
-    final orphaned = <TransitSegment>[];
-    for (final seg in widget.segments) {
-      final fromTrack = stopToTrack[seg.fromStopId];
-      final toTrack = stopToTrack[seg.toStopId];
-      if (fromTrack == null || toTrack == null) continue;
-      final fi = trackIndex[fromTrack];
-      final ti = trackIndex[toTrack];
-      if (fi == null || ti == null) continue;
-      if (ti != fi + 1) orphaned.add(seg);
-    }
-    return orphaned;
-  }
-
-  Future<void> _onSelectTarget(_MoveTarget target) async {
+  Future<void> _onSelectTarget(MoveTarget target) async {
     if (_busy) return;
     // Defensive checks for the existing-track path.
-    if (target is _ExistingTarget) {
+    if (target is MoveToExistingTrack) {
       if (target.track.id == widget.stop.trackId) return;
       if (_isAtCapacity(target.track)) return;
     }
 
     final sourceWillEmpty = _sourceTrack.stops.length == 1;
-    final orphaned = _computeOrphanedSegments(target);
+    final orphaned = computeOrphansForStopMove(
+      movedStop: widget.stop,
+      target: target,
+      tracks: widget.tracks,
+      segments: widget.segments,
+    );
 
     if (sourceWillEmpty || orphaned.isNotEmpty) {
       final lines = <String>[];
@@ -262,9 +154,9 @@ class _MoveStopToTrackSheetState extends ConsumerState<_MoveStopToTrackSheet> {
         await notifier.deleteSegment(seg.id);
       }
       final moved = await switch (target) {
-        _ExistingTarget(:final track) =>
+        MoveToExistingTrack(:final track) =>
           notifier.moveStop(widget.stop.id, targetTrackId: track.id),
-        _NewTrackTarget(:final afterTrack, :final beforeTrack) =>
+        MoveToNewTrack(:final afterTrack, :final beforeTrack) =>
           notifier.moveStop(
             widget.stop.id,
             afterTrackId: afterTrack?.id,
@@ -273,8 +165,8 @@ class _MoveStopToTrackSheetState extends ConsumerState<_MoveStopToTrackSheet> {
       };
       destinationTrackId = moved.trackId;
       destinationLabel = switch (target) {
-        _ExistingTarget(:final track) => '"${_primaryName(track)}"',
-        _NewTrackTarget() => 'new track',
+        MoveToExistingTrack(:final track) => '"${_primaryName(track)}"',
+        MoveToNewTrack() => 'new track',
       };
     } on ItineraryStaleException {
       if (!mounted) return;
@@ -323,10 +215,9 @@ class _MoveStopToTrackSheetState extends ConsumerState<_MoveStopToTrackSheet> {
       ),
       onTap: _busy
           ? null
-          : () => _onSelectTarget(_NewTrackTarget(
+          : () => _onSelectTarget(MoveToNewTrack(
                 afterTrack: _sourceTrack,
                 beforeTrack: _trackAfter(_sourceTrack),
-                isExtract: true,
               )),
     );
   }
@@ -362,7 +253,7 @@ class _MoveStopToTrackSheetState extends ConsumerState<_MoveStopToTrackSheet> {
       onTap: _busy
           ? null
           : () => _onSelectTarget(
-                _NewTrackTarget(afterTrack: after, beforeTrack: before),
+                MoveToNewTrack(afterTrack: after, beforeTrack: before),
               ),
     );
   }
@@ -444,7 +335,7 @@ class _MoveStopToTrackSheetState extends ConsumerState<_MoveStopToTrackSheet> {
           : null,
       onTap: (_busy || disabled)
           ? null
-          : () => _onSelectTarget(_ExistingTarget(t)),
+          : () => _onSelectTarget(MoveToExistingTrack(t)),
     );
   }
 

@@ -14,6 +14,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:social_flutter/core/api/api_client.dart';
+import 'package:social_flutter/core/services/segment_orphan_service.dart';
 import 'package:social_flutter/core/ui/destructive_actions.dart';
 import 'package:social_flutter/features/itineraries/data/itinerary_repository.dart';
 import 'package:social_flutter/features/itineraries/domain/track.dart';
@@ -59,31 +60,6 @@ class _TrackReorderViewState extends ConsumerState<TrackReorderView> {
       if (_local[i].id != _initialOrder[i]) return true;
     }
     return false;
-  }
-
-  /// Simulate the post-reorder track sequence and return every segment whose
-  /// from-track no longer immediately precedes its to-track. Stops don't
-  /// change tracks in this view — only the tracks themselves are reordered.
-  List<TransitSegment> _computeOrphanedSegments(List<Track> order) {
-    final stopToTrack = <String, String>{};
-    final trackIndex = <String, int>{};
-    for (var i = 0; i < order.length; i++) {
-      trackIndex[order[i].id] = i;
-      for (final s in order[i].stops) {
-        stopToTrack[s.id] = order[i].id;
-      }
-    }
-    final orphaned = <TransitSegment>[];
-    for (final seg in widget.segments) {
-      final fromTrack = stopToTrack[seg.fromStopId];
-      final toTrack = stopToTrack[seg.toStopId];
-      if (fromTrack == null || toTrack == null) continue;
-      final fi = trackIndex[fromTrack];
-      final ti = trackIndex[toTrack];
-      if (fi == null || ti == null) continue;
-      if (ti != fi + 1) orphaned.add(seg);
-    }
-    return orphaned;
   }
 
   /// Map of trackId → segments whose from-stop is in that track AND would be
@@ -147,7 +123,7 @@ class _TrackReorderViewState extends ConsumerState<TrackReorderView> {
   Future<void> _onSave() async {
     if (_busy || !_dirty) return;
 
-    final orphaned = _computeOrphanedSegments(_local);
+    final orphaned = computeOrphansForTrackReorder(newTrackOrder: _local, segments: widget.segments);
     final messenger = ScaffoldMessenger.of(context);
 
     if (orphaned.isNotEmpty) {
@@ -200,7 +176,7 @@ class _TrackReorderViewState extends ConsumerState<TrackReorderView> {
 
   @override
   Widget build(BuildContext context) {
-    final orphans = _computeOrphanedSegments(_local);
+    final orphans = computeOrphansForTrackReorder(newTrackOrder: _local, segments: widget.segments);
     final orphansByTrack = _orphansByFromTrack(orphans);
 
     return PopScope(
