@@ -51,6 +51,7 @@ import 'package:social_flutter/features/itineraries/presentation/widgets/annotat
 import 'package:social_flutter/features/itineraries/presentation/widgets/move_stop_to_track_sheet.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/rate_itinerary_dialog.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/parallel_stop_group.dart';
+import 'package:social_flutter/features/itineraries/presentation/widgets/track_reorder_view.dart';
 import 'package:social_flutter/core/utils/platform_utils.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/leg_form_dialog.dart';
 import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
@@ -68,6 +69,10 @@ class ItineraryDetailScreen extends ConsumerStatefulWidget {
 
 class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
   bool _editMode = false;
+  // Phase 2b: when true, the body renders TrackReorderView instead of the
+  // normal CustomScrollView. The view manages its own dirty/Save/Cancel state
+  // and calls back via onExit to flip this off.
+  bool _reorderMode = false;
   // Active parallel-stop index per track (trackId → page index).
   final Map<String, int> _activeParallelByTrack = {};
   // GlobalKey per track widget so we can call Scrollable.ensureVisible after a
@@ -287,13 +292,20 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
         children: [
           Scaffold(
             appBar: AppBar(
-              title: itineraryAsync.when(
-                data: (i) => Text(i.title),
-                loading: () => const Text('Loading...'),
-                error: (_, __) => const Text('Itinerary'),
-              ),
+              title: _reorderMode
+                  ? const Text('Reorder tracks')
+                  : itineraryAsync.when(
+                      data: (i) => Text(i.title),
+                      loading: () => const Text('Loading...'),
+                      error: (_, __) => const Text('Itinerary'),
+                    ),
               actions: [
-                if (isOwner && _editMode) ...[
+                if (_reorderMode) ...[
+                  // Reorder mode hides all other actions. The TrackReorderView
+                  // has its own bottom Cancel + Save buttons, and the AppBar
+                  // back arrow routes through the view's PopScope (which runs
+                  // the discard-confirm when dirty).
+                ] else if (isOwner && _editMode) ...[
                   IconButton(
                     icon: const Icon(Icons.add_location_alt_outlined),
                     tooltip: 'Add stop',
@@ -301,6 +313,13 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                       '/itineraries/${widget.itineraryId}/stops/new',
                     ),
                   ),
+                  if (itineraryAsync.valueOrNull != null &&
+                      itineraryAsync.valueOrNull!.tracks.length >= 2)
+                    IconButton(
+                      icon: const Icon(Icons.reorder),
+                      tooltip: 'Reorder tracks',
+                      onPressed: () => setState(() => _reorderMode = true),
+                    ),
                   IconButton(
                     icon: const Icon(Icons.check),
                     tooltip: 'Done',
@@ -419,6 +438,15 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                     ),
                   ),
                   data: (itinerary) {
+                    if (_reorderMode) {
+                      return TrackReorderView(
+                        itineraryId: widget.itineraryId,
+                        tracks: itinerary.tracks,
+                        segments: itinerary.segments,
+                        onExit: () =>
+                            setState(() => _reorderMode = false),
+                      );
+                    }
                     final allStops = itinerary.stops;
                     final tracks = itinerary.tracks;
                     final canEdit = isOwner && _editMode;

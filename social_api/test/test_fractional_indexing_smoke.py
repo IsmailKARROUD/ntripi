@@ -520,3 +520,219 @@ class TestBatchReorder:
         tracks = {t["id"]: t for t in body["tracks"]}
         assert [s["id"] for s in tracks[track1_id]["stops"]] == [c_id, a_id, b_id]
         assert [s["id"] for s in tracks[track2_id]["stops"]] == [e["id"], d["id"]]
+
+
+# ---------------------------------------------------------------------------
+# Track reorder + segment deletion via POST /reorder (Phase 2b)
+# ---------------------------------------------------------------------------
+
+class TestTrackReorder:
+    """Cover the extended POST /reorder that also accepts track_order + segments_to_delete."""
+
+    def _three_tracks(self, client: TestClient):
+        """Three tracks, each with a single stop: A → B → C. Returns
+        (itin_id, hdrs, etag, [track_a, track_b, track_c], [stop_a, stop_b, stop_c])."""
+        user = register_user(client, "alice", "alice@example.com")
+        hdrs = auth_headers(user["access_token"])
+        r = client.post("/itineraries/", json={"title": "Trip", "currency": "EUR"},
+                        headers=hdrs)
+        itin = r.json()
+        etag = f'"{itin["updated_at"]}"'
+
+        track_ids = []
+        stop_ids = []
+        prev_track = None
+        for name in ("A", "B", "C"):
+            payload = {"place_name": name, "is_free": True}
+            if prev_track is not None:
+                payload["after_track_id"] = prev_track
+            r = client.post(f"/itineraries/{itin['id']}/stops",
+                            json=payload, headers={**hdrs, "If-Match": etag})
+            assert r.status_code == 201, r.text
+            stop = r.json()
+            track_ids.append(stop["track_id"])
+            stop_ids.append(stop["id"])
+            prev_track = stop["track_id"]
+            etag = r.headers["etag"]
+
+        return itin["id"], hdrs, etag, track_ids, stop_ids
+
+    def test_track_order_reverse(self, client: TestClient):
+        """Reverse the track order via POST /reorder with track_order."""
+        itin_id, hdrs, etag, track_ids, stop_ids = self._three_tracks(client)
+        a_t, b_t, c_t = track_ids
+
+        r = client.post(
+            f"/itineraries/{itin_id}/reorder",
+            json={"track_order": [c_t, b_t, a_t]},
+            headers={**hdrs, "If-Match": etag},
+        )
+        assert r.status_code == 200, r.text
+
+        # GET to confirm the server-sorted order matches.
+        r = client.get(f"/itineraries/{itin_id}", headers=hdrs)
+        assert [t["id"] for t in r.json()["tracks"]] == [c_t, b_t, a_t]
+
+    def test_track_order_with_segment_deletion(self, client: TestClient):
+        """Combine track_order + segments_to_delete in one atomic call."""
+        itin_id, hdrs, etag, track_ids, stop_ids = self._three_tracks(client)
+        a_t, b_t, c_t = track_ids
+        a_s, b_s, c_s = stop_ids
+
+        # Create a segment A→B (adjacent today).
+        r = client.post(
+            f"/itineraries/{itin_id}/segments",
+            json={
+                "from_stop_id": a_s,
+                "to_stop_id": b_s,
+                "legs": [{"position": 1, "mode": "train"}],
+            },
+            headers=hdrs,
+        )
+        assert r.status_code == 201, r.text
+        seg_id = r.json()["id"]
+        # ETag bumped by segment creation; reload.
+        r = client.get(f"/itineraries/{itin_id}", headers=hdrs)
+        etag = r.headers.get("etag") or r.headers["ETag"]
+
+        # Move B to the end → A→B is orphaned. Delete the segment in the same call.
+        r = client.post(
+            f"/itineraries/{itin_id}/reorder",
+            json={
+                "track_order": [a_t, c_t, b_t],
+                "segments_to_delete": [seg_id],
+            },
+            headers={**hdrs, "If-Match": etag},
+        )
+        assert r.status_code == 200, r.text
+
+        body = r.json()
+        assert [t["id"] for t in body["tracks"]] == [a_t, c_t, b_t]
+        # Segment is gone.
+        assert all(s["id"] != seg_id for s in body["segments"])
+
+    def test_track_order_plus_stop_orders_atomic(self, client: TestClient):
+        """track_order + stop_orders in the same call both apply."""
+        itin_id, hdrs, etag, track_ids, stop_ids = self._three_tracks(client)
+        a_t, b_t, c_t = track_ids
+
+        # Add a parallel to track B so we can reorder its stops.
+        r = client.post(
+            f"/itineraries/{itin_id}/stops",
+            json={"track_id": b_t, "after_stop_id": stop_ids[1],
+                  "place_name": "B2", "is_free": True},
+            headers={**hdrs, "If-Match": etag},
+        )
+        assert r.status_code == 201, r.text
+        b2_id = r.json()["id"]
+        etag = r.headers["etag"]
+
+        # Reverse track order AND reverse B's parallels.
+        r = client.post(
+            f"/itineraries/{itin_id}/reorder",
+            json={
+                "track_order": [c_t, b_t, a_t],
+                "stop_orders": {b_t: [b2_id, stop_ids[1]]},
+            },
+            headers={**hdrs, "If-Match": etag},
+        )
+        assert r.status_code == 200, r.text
+
+        body = r.json()
+        assert [t["id"] for t in body["tracks"]] == [c_t, b_t, a_t]
+        b_track = next(t for t in body["tracks"] if t["id"] == b_t)
+        assert [s["id"] for s in b_track["stops"]] == [b2_id, stop_ids[1]]
+
+    def test_track_order_missing_track_returns_422(self, client: TestClient):
+        itin_id, hdrs, etag, track_ids, _ = self._three_tracks(client)
+        a_t, b_t, _ = track_ids
+        # Only two of three tracks listed.
+        r = client.post(
+            f"/itineraries/{itin_id}/reorder",
+            json={"track_order": [a_t, b_t]},
+            headers={**hdrs, "If-Match": etag},
+        )
+        assert r.status_code == 422, r.text
+
+    def test_track_order_duplicate_returns_422(self, client: TestClient):
+        itin_id, hdrs, etag, track_ids, _ = self._three_tracks(client)
+        a_t, b_t, _ = track_ids
+        # Duplicated id, count matches but set doesn't.
+        r = client.post(
+            f"/itineraries/{itin_id}/reorder",
+            json={"track_order": [a_t, b_t, b_t]},
+            headers={**hdrs, "If-Match": etag},
+        )
+        assert r.status_code == 422, r.text
+
+    def test_track_order_foreign_track_returns_422(self, client: TestClient):
+        """A track id from another itinerary in track_order must fail."""
+        itin_id, hdrs, etag, track_ids, _ = self._three_tracks(client)
+        a_t, b_t, c_t = track_ids
+
+        # Create a second itinerary (same user) to get a track id from elsewhere.
+        r = client.post("/itineraries/",
+                        json={"title": "Trip 2", "currency": "EUR"},
+                        headers=hdrs)
+        other_itin_id = r.json()["id"]
+        other_etag = f'"{r.json()["updated_at"]}"'
+        r = client.post(
+            f"/itineraries/{other_itin_id}/stops",
+            json={"place_name": "X", "is_free": True},
+            headers={**hdrs, "If-Match": other_etag},
+        )
+        foreign_track_id = r.json()["track_id"]
+
+        # Use the foreign id in place of c_t — same count, but mismatched set.
+        r = client.post(
+            f"/itineraries/{itin_id}/reorder",
+            json={"track_order": [a_t, b_t, foreign_track_id]},
+            headers={**hdrs, "If-Match": etag},
+        )
+        assert r.status_code == 422, r.text
+
+    def test_segments_to_delete_foreign_segment_returns_422(self, client: TestClient):
+        import uuid as _uuid
+        itin_id, hdrs, etag, _, _ = self._three_tracks(client)
+        # A random uuid that won't match any segment.
+        r = client.post(
+            f"/itineraries/{itin_id}/reorder",
+            json={"segments_to_delete": [str(_uuid.uuid4())]},
+            headers={**hdrs, "If-Match": etag},
+        )
+        assert r.status_code == 422, r.text
+
+    def test_empty_payload_returns_422(self, client: TestClient):
+        itin_id, hdrs, etag, _, _ = self._three_tracks(client)
+        r = client.post(
+            f"/itineraries/{itin_id}/reorder",
+            json={},
+            headers={**hdrs, "If-Match": etag},
+        )
+        assert r.status_code == 422, r.text
+
+    def test_phase_2a_payload_still_works(self, client: TestClient):
+        """A request with only stop_orders (Phase 2a shape) still succeeds."""
+        itin_id, hdrs, etag, track_ids, stop_ids = self._three_tracks(client)
+        a_t = track_ids[0]
+        a_s = stop_ids[0]
+
+        # Add a parallel so stop_orders has something to reorder.
+        r = client.post(
+            f"/itineraries/{itin_id}/stops",
+            json={"track_id": a_t, "after_stop_id": a_s,
+                  "place_name": "A2", "is_free": True},
+            headers={**hdrs, "If-Match": etag},
+        )
+        a2 = r.json()["id"]
+        etag = r.headers["etag"]
+
+        r = client.post(
+            f"/itineraries/{itin_id}/reorder",
+            json={"stop_orders": {a_t: [a2, a_s]}},
+            headers={**hdrs, "If-Match": etag},
+        )
+        assert r.status_code == 200, r.text
+        body = r.json()
+        a_track = next(t for t in body["tracks"] if t["id"] == a_t)
+        assert [s["id"] for s in a_track["stops"]] == [a2, a_s]

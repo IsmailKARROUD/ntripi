@@ -140,23 +140,39 @@ class StopUpdate(BaseModel):
 
 class ReorderRequest(BaseModel):
     """
-    Batch reorder of stops within one or more tracks.
+    Batch reorder of tracks and/or stops, plus optional segment deletions.
 
-    stop_orders is a map of track_id → list of stop_ids in the desired display
-    order. For each entry, the provided stop_id set must exactly match the
-    track's current stop_id set (no missing, no extra, no duplicates). Every
-    track must belong to the itinerary referenced in the URL.
+    At least one of the three fields must be provided.
+
+    stop_orders   — map of track_id → list of stop_ids in the desired display
+                    order. For each entry, the provided stop_id set must
+                    exactly match the track's current stop_id set (no missing,
+                    no extra, no duplicates). Every track must belong to the
+                    itinerary referenced in the URL.
+    track_order   — full track order for the itinerary. If provided, must
+                    contain exactly the current track-id set (no missing, no
+                    extra, no duplicates).
+    segments_to_delete
+                  — segment IDs to delete in the same transaction (typically
+                    those orphaned by a track reorder).
 
     Server computes new fractional-index ranks (via n_keys_between) — the
     client never sends rank strings, only order.
     """
 
-    stop_orders: dict[uuid.UUID, list[uuid.UUID]]
+    stop_orders: dict[uuid.UUID, list[uuid.UUID]] = Field(default_factory=dict)
+    track_order: Optional[list[uuid.UUID]] = None
+    segments_to_delete: list[uuid.UUID] = Field(default_factory=list)
 
     @model_validator(mode='after')
-    def _non_empty(self) -> 'ReorderRequest':
-        if not self.stop_orders:
-            raise ValueError("stop_orders must be non-empty")
+    def _validate(self) -> 'ReorderRequest':
+        if (not self.stop_orders
+                and self.track_order is None
+                and not self.segments_to_delete):
+            raise ValueError(
+                "at least one of stop_orders, track_order, or "
+                "segments_to_delete must be provided"
+            )
         for track_id, stop_ids in self.stop_orders.items():
             if not stop_ids:
                 raise ValueError(

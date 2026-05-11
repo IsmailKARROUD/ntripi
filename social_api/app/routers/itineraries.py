@@ -817,11 +817,11 @@ def delete_stop(
 
 
 # ---------------------------------------------------------------------------
-# POST /itineraries/{itinerary_id}/reorder — Batch reorder of stops within tracks
+# POST /itineraries/{itinerary_id}/reorder — Batch reorder (stops, tracks, segments)
 # ---------------------------------------------------------------------------
 
 @router.post("/{itinerary_id}/reorder", response_model=ItineraryDetail,
-             summary="Batch reorder stops within one or more tracks")
+             summary="Batch reorder tracks and/or stops, plus optional segment deletions")
 def reorder_itinerary(
     itinerary_id: uuid.UUID,
     body: ReorderRequest,
@@ -830,24 +830,23 @@ def reorder_itinerary(
     itinerary: Itinerary = Depends(require_etag),
 ) -> Response:
     """
-    Apply a batch reorder of stops within tracks.
+    Apply a batch reorder of stops within tracks, a new track order, and/or
+    delete one or more segments, all in a single transaction.
 
-    Client sends the new ORDER (list of stop_ids per track); server computes
-    the fractional-index ranks via n_keys_between. Keeps all ordering logic
-    on the backend — no Dart port of key_between needed.
+    Client sends the new ORDER (list of ids); server computes the
+    fractional-index ranks via n_keys_between. Keeps all ordering logic on
+    the backend — no Dart port of key_between needed.
 
-    Atomicity: every track in stop_orders is validated up front, then the
-    rank rewrites are applied. Any validation failure aborts before any
-    writes; any IntegrityError during write rolls back the whole transaction.
+    Atomicity: everything is validated up front. Any validation failure
+    raises before any writes; any IntegrityError during write rolls back the
+    whole transaction.
 
-    Two-phase write per track avoids the UNIQUE(track_id, rank) constraint:
-    phase 1 parks every stop on a temp rank starting with '!' (ASCII 33,
+    Two-phase write per rank rewrite avoids the UNIQUE constraint:
+    phase 1 parks every row on a temp rank starting with '!' (ASCII 33,
     below every digit/letter key_between can produce), phase 2 assigns the
     final keys.
     """
-    # ── Validate every (track_id, stop_ids) pair before mutating anything ──
-    # Build per-track validation context once so we can report which track
-    # the error refers to.
+    # ── Validate stop_orders ────────────────────────────────────────────────
     for track_id, stop_ids in body.stop_orders.items():
         track = db.execute(
             select(Track)
@@ -878,20 +877,72 @@ def reorder_itinerary(
                 ),
             )
 
-    # ── Apply per-track two-phase rank rewrite ─────────────────────────────
+    # ── Validate track_order ───────────────────────────────────────────────
+    if body.track_order is not None:
+        if len(set(body.track_order)) != len(body.track_order):
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="track_order contains duplicate ids.",
+            )
+        current_track_ids = {
+            t_id for (t_id,) in db.execute(
+                select(Track.id).where(Track.itinerary_id == itinerary_id)
+            ).all()
+        }
+        if set(body.track_order) != current_track_ids:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=(
+                    "track_order must contain exactly the current tracks "
+                    "of this itinerary."
+                ),
+            )
+
+    # ── Validate segments_to_delete ────────────────────────────────────────
+    for seg_id in body.segments_to_delete:
+        seg = db.execute(
+            select(TransitSegment).where(
+                TransitSegment.id == seg_id,
+                TransitSegment.itinerary_id == itinerary_id,
+            )
+        ).scalar_one_or_none()
+        if not seg:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=f"segment {seg_id} does not belong to this itinerary.",
+            )
+
+    # ── Apply track_order via two-phase rank rewrite ───────────────────────
+    if body.track_order is not None:
+        for tid in body.track_order:
+            t = db.get(Track, tid)
+            t.rank = f"!{tid}"
+        db.flush()
+        new_ranks = n_keys_between(None, None, len(body.track_order))
+        for tid, rank in zip(body.track_order, new_ranks):
+            t = db.get(Track, tid)
+            t.rank = rank
+        db.flush()
+
+    # ── Apply stop_orders per-track two-phase rank rewrite ─────────────────
     for track_id, stop_ids in body.stop_orders.items():
-        # Phase 1: temp ranks below every key_between output.
         for sid in stop_ids:
             stop = db.get(Stop, sid)
             stop.rank = f"!{sid}"
         db.flush()
 
-        # Phase 2: final keys evenly spaced across the full range.
         new_ranks = n_keys_between(None, None, len(stop_ids))
         for sid, rank in zip(stop_ids, new_ranks):
             stop = db.get(Stop, sid)
             stop.rank = rank
         db.flush()
+
+    # ── Delete segments (cascade-removes legs) ─────────────────────────────
+    for seg_id in body.segments_to_delete:
+        seg = db.get(TransitSegment, seg_id)
+        if seg is not None:
+            db.delete(seg)
+    db.flush()
 
     _recalculate_totals(itinerary, db)
     db.commit()

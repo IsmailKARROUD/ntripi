@@ -155,20 +155,35 @@ class ItineraryRepository {
     }
   }
 
-  /// Apply a batch reorder of stops within tracks in one atomic transaction.
+  /// Apply a batch reorder in one atomic transaction.
   ///
-  /// [stopOrders] maps `trackId → [stopId, ...]` in the desired display order.
-  /// The provided stop-id set per track must exactly match the track's current
-  /// stop-id set, or the server returns 422.
+  /// At least one of [stopOrders], [trackOrder], or [segmentIdsToDelete] must
+  /// be non-empty / non-null.
+  ///
+  /// - [stopOrders] maps `trackId → [stopId, ...]` in the desired display
+  ///   order. The provided stop-id set per track must exactly match the
+  ///   track's current stop-id set, or the server returns 422.
+  /// - [trackOrder] is the full track order. If provided, must contain
+  ///   exactly the current track set.
+  /// - [segmentIdsToDelete] is the list of segment IDs to remove in the
+  ///   same transaction (typically those orphaned by a track reorder).
   Future<Itinerary> reorderItinerary(
-    String itineraryId,
-    Map<String, List<String>> stopOrders, {
+    String itineraryId, {
+    Map<String, List<String>>? stopOrders,
+    List<String>? trackOrder,
+    List<String>? segmentIdsToDelete,
     required String etag,
   }) async {
+    final body = <String, dynamic>{
+      if (stopOrders != null && stopOrders.isNotEmpty) 'stop_orders': stopOrders,
+      if (trackOrder != null) 'track_order': trackOrder,
+      if (segmentIdsToDelete != null && segmentIdsToDelete.isNotEmpty)
+        'segments_to_delete': segmentIdsToDelete,
+    };
     try {
       final response = await _dio.post<Map<String, dynamic>>(
         itineraryReorderEndpoint(itineraryId),
-        data: {'stop_orders': stopOrders},
+        data: body,
         options: _ifMatch(etag),
       );
       return Itinerary.fromJson(response.data!);

@@ -104,17 +104,23 @@ class ItineraryDetailNotifier
     await refresh();
   }
 
-  /// Commit a batch reorder of stops within tracks in one server transaction.
+  /// Commit a batch reorder in one server transaction.
   ///
-  /// [stopOrders] maps `trackId → [stopId, ...]` in the desired order. The
-  /// server validates that each track's set matches the current set, computes
-  /// new fractional-index ranks, and returns the full updated itinerary. A
-  /// `refresh()` after the call adopts the server-confirmed ranks locally.
+  /// At least one of [stopOrders], [trackOrder], or [segmentIdsToDelete] must
+  /// be provided. The server validates set-equality (for stop_orders and
+  /// track_order), recomputes fractional-index ranks, deletes any requested
+  /// segments, and returns the full updated itinerary. A `refresh()` after
+  /// the call adopts the server-confirmed state locally.
   Future<void> applyReorder({
-    required Map<String, List<String>> stopOrders,
+    Map<String, List<String>>? stopOrders,
+    List<String>? trackOrder,
+    List<String>? segmentIdsToDelete,
   }) async {
     await ref.read(itineraryRepositoryProvider).reorderItinerary(
-          arg, stopOrders,
+          arg,
+          stopOrders: stopOrders,
+          trackOrder: trackOrder,
+          segmentIdsToDelete: segmentIdsToDelete,
           etag: _etag,
         );
     await refresh();
