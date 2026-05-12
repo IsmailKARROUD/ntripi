@@ -1,9 +1,11 @@
 // presentation/itinerary_list_screen.dart — Shows the current user's itineraries.
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:social_flutter/core/api/api_client.dart';
+import 'package:social_flutter/core/api/api_endpoints.dart';
 import 'package:social_flutter/core/ui/destructive_actions.dart';
 import 'package:social_flutter/features/itineraries/domain/itinerary.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/itinerary_summary_card.dart';
@@ -81,8 +83,22 @@ class ItineraryListScreen extends ConsumerWidget {
           ),
         ),
         data: (itineraries) => RefreshIndicator(
-          onRefresh: () =>
-              ref.read(myItinerariesProvider.notifier).refresh(),
+          onRefresh: () async {
+            // R2 reuses the same key on cover replacement, so the URL string
+            // never changes. Evict CachedNetworkImage's disk + memory entries
+            // for every visible cover so pull-to-refresh actually shows the
+            // new images when they've been replaced from another device.
+            await Future.wait([
+              for (final it in itineraries)
+                if (it.coverImageUrl != null)
+                  CachedNetworkImage.evictFromCache(
+                    it.coverImageUrl!.startsWith('/')
+                        ? '$kApiBaseUrl${it.coverImageUrl}'
+                        : it.coverImageUrl!,
+                  ),
+            ]);
+            await ref.read(myItinerariesProvider.notifier).refresh();
+          },
           child: itineraries.isEmpty
               ? ListView(
                   // physics that allow pull-to-refresh even when empty

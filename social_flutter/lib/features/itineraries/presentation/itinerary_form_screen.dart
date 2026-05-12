@@ -18,6 +18,7 @@
 import 'dart:async';
 import 'dart:typed_data';
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -146,16 +147,17 @@ Future<void> loadCurrencies() async {
   }
 
   // The R2 storage key never changes between uploads (always itineraries/{id}.jpg),
-  // so Flutter's Image.network cache would keep serving the old bytes.
-  // Evicting the entry forces a fresh fetch on the next render.
-  void _evictCoverImageCache() {
+  // so CachedNetworkImage's disk cache would keep serving the old bytes.
+  // evictFromCache clears both the on-disk file (DefaultCacheManager) and the
+  // in-memory ImageCache entry, forcing the next render to refetch.
+  Future<void> _evictCoverImageCache() async {
     final url = ref
         .read(itineraryDetailProvider(widget.itineraryId!))
         .valueOrNull
         ?.coverImageUrl;
     if (url == null) return;
     final absUrl = url.startsWith('/') ? '$kApiBaseUrl$url' : url;
-    PaintingBinding.instance.imageCache.evict(NetworkImage(absUrl));
+    await CachedNetworkImage.evictFromCache(absUrl);
   }
 
   Future<void> _save() async {
@@ -215,18 +217,19 @@ Future<void> loadCurrencies() async {
         if (_removeExistingImage) {
           // User tapped "Remove" — delete the file from R2.
           await repo.deleteCoverImage(widget.itineraryId!);
-          _evictCoverImageCache();
+          await _evictCoverImageCache();
         } else if (_pendingImageBytes != null) {
           // User picked a new image — replace the file in R2.
-          // _evictCoverImageCache() clears Flutter's image cache so the next
-          // render fetches the fresh file instead of the stale cached bytes
-          // (the R2 key is always itineraries/{id}.jpg and never changes).
+          // _evictCoverImageCache() clears CachedNetworkImage's disk + memory
+          // cache so the next render fetches the fresh file instead of the
+          // stale cached bytes (the R2 key is always itineraries/{id}.jpg and
+          // never changes).
           await repo.uploadCoverImage(
             itineraryId: widget.itineraryId!,
             bytes: _pendingImageBytes!,
             filename: _pendingImageFilename ?? 'cover.jpg',
           );
-          _evictCoverImageCache();
+          await _evictCoverImageCache();
         }
 
         await ref

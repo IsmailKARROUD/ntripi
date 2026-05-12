@@ -656,10 +656,24 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                     }
 
                     return RefreshIndicator(
-                      onRefresh: () => ref
-                          .read(itineraryDetailProvider(widget.itineraryId)
-                              .notifier)
-                          .refresh(),
+                      onRefresh: () async {
+                        // R2 reuses the same key on cover replacement, so the
+                        // URL string never changes. Evict CachedNetworkImage's
+                        // disk + memory entry for the current cover URL so a
+                        // pull-to-refresh actually shows the new image when
+                        // the owner has replaced it from another device.
+                        final coverUrl = itinerary.coverImageUrl;
+                        if (coverUrl != null) {
+                          final absUrl = coverUrl.startsWith('/')
+                              ? '$kApiBaseUrl$coverUrl'
+                              : coverUrl;
+                          await CachedNetworkImage.evictFromCache(absUrl);
+                        }
+                        await ref
+                            .read(itineraryDetailProvider(widget.itineraryId)
+                                .notifier)
+                            .refresh();
+                      },
                       child: CustomScrollView(
                         physics: const AlwaysScrollableScrollPhysics(),
                         slivers: [
