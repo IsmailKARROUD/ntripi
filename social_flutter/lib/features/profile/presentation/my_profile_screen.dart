@@ -10,6 +10,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:social_flutter/core/api/api_client.dart';
+import 'package:social_flutter/core/ui/destructive_actions.dart';
 import 'package:social_flutter/features/auth/providers/auth_provider.dart';
 import 'package:social_flutter/features/follows/providers/follow_provider.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/itinerary_summary_card.dart';
@@ -132,6 +133,29 @@ class _MyProfileScreenState extends ConsumerState<MyProfileScreen> {
   }
 
   Future<void> _saveEdits() async {
+    // Warn before switching from private → public when there are pending
+    // follow requests: the backend auto-accepts all of them in one atomic
+    // transaction, and the user may want to triage requests first.
+    final currentUser = ref.read(myProfileProvider).valueOrNull;
+    final pendingCount =
+        ref.read(followRequestsProvider).valueOrNull?.length ?? 0;
+    final switchingToPublic = currentUser != null &&
+        currentUser.isPrivate &&
+        _editIsPrivate == false;
+    if (switchingToPublic && pendingCount > 0) {
+      final confirmed = await confirmDestructiveAction(
+        context: context,
+        title: 'Switch to public?',
+        message: pendingCount == 1
+            ? 'You have 1 pending follow request. Switching to public will '
+                'automatically accept it. Continue?'
+            : 'You have $pendingCount pending follow requests. Switching to '
+                'public will automatically accept all of them. Continue?',
+        confirmLabel: 'Switch to public',
+      );
+      if (!confirmed) return;
+    }
+
     final avatarText = _avatarUrlController.text.trim();
     await ref.read(myProfileProvider.notifier).updateProfile(
           displayName: _displayNameController.text.trim().isEmpty
