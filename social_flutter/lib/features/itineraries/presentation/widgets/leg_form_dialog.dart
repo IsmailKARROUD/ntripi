@@ -16,6 +16,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:social_flutter/features/itineraries/domain/transport_leg.dart';
+import 'package:social_flutter/shared/widgets/field_help.dart';
 
 // Modes that use numbered/named transit lines and directions.
 const _transitLineModes = {
@@ -188,7 +189,12 @@ class _LegFormDialogState extends State<LegFormDialog> {
           DropdownButtonFormField<TransportMode>(
             value: _mode,
             decoration: const InputDecoration(
-              labelText: 'Mode',
+              label: LabelWithHelp(
+                label: 'Mode',
+                helpTitle: 'Transport mode',
+                helpMessage:
+                    'How you travel on this leg (walk, bus, train, ferry, etc.). Some modes reveal extra fields for line and direction.',
+              ),
               border: OutlineInputBorder(),
             ),
             items: TransportMode.values
@@ -217,7 +223,12 @@ class _LegFormDialogState extends State<LegFormDialog> {
                   child: TextField(
                     controller: _lineCtrl,
                     decoration: const InputDecoration(
-                      labelText: 'Line (optional)',
+                      label: LabelWithHelp(
+                        label: 'Line (optional)',
+                        helpTitle: 'Line',
+                        helpMessage:
+                            'Optional. The line number or name (e.g. "Bus 42", "M1").',
+                      ),
                       border: OutlineInputBorder(),
                     ),
                   ),
@@ -227,7 +238,12 @@ class _LegFormDialogState extends State<LegFormDialog> {
                   child: TextField(
                     controller: _directionCtrl,
                     decoration: const InputDecoration(
-                      labelText: 'Direction (optional)',
+                      label: LabelWithHelp(
+                        label: 'Direction (optional)',
+                        helpTitle: 'Direction',
+                        helpMessage:
+                            'Optional. Where the line is headed (e.g. "Northbound", "Châtelet").',
+                      ),
                       border: OutlineInputBorder(),
                     ),
                   ),
@@ -237,7 +253,27 @@ class _LegFormDialogState extends State<LegFormDialog> {
             const SizedBox(height: 12),
           ],
 
-          // Duration (h + min) + Cost
+          // Duration (h + min) + Cost — help icons sit on the section header
+          // above; the narrow h/min fields keep their short labels for space.
+          const Row(
+            children: [
+              LabelWithHelp(
+                label: 'Duration',
+                helpTitle: 'Duration',
+                helpMessage:
+                    'How long this leg takes in hours and minutes.',
+              ),
+              Spacer(),
+              LabelWithHelp(
+                label: 'Cost',
+                helpTitle: 'Cost',
+                helpMessage:
+                    "Approximate cost in the itinerary's currency. Disabled when \"Free\" is on.",
+              ),
+              SizedBox(width: 12),
+            ],
+          ),
+          const SizedBox(height: 6),
           Row(
             children: [
               // Hours field
@@ -283,7 +319,6 @@ class _LegFormDialogState extends State<LegFormDialog> {
                   keyboardType:
                       const TextInputType.numberWithOptions(decimal: true),
                   decoration: const InputDecoration(
-                    labelText: 'Cost',
                     border: OutlineInputBorder(),
                   ),
                 ),
@@ -295,16 +330,32 @@ class _LegFormDialogState extends State<LegFormDialog> {
           SwitchListTile.adaptive(
             value: _isFree,
             onChanged: (v) => setState(() => _isFree = v),
-            title: const Text('Free'),
+            title: const Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text('Free'),
+                SizedBox(width: 2),
+                FieldHelpIcon(
+                  helpTitle: 'Free',
+                  helpMessage:
+                      'Toggle on if this leg costs nothing (walking, included transfer, etc.).',
+                ),
+              ],
+            ),
             contentPadding: EdgeInsets.zero,
           ),
 
-          // Notes
+          // Thoughts (renamed from Notes)
           TextField(
             controller: _notesCtrl,
             maxLines: 2,
             decoration: const InputDecoration(
-              labelText: 'Notes (optional)',
+              label: LabelWithHelp(
+                label: 'Thoughts (optional)',
+                helpTitle: 'Thoughts',
+                helpMessage:
+                    'Optional. Anything useful to know about this leg — booking tips, transfer instructions, where to sit, ticket cost surprises.',
+              ),
               border: OutlineInputBorder(),
             ),
           ),

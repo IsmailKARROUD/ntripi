@@ -9,17 +9,22 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 import 'package:markdown/markdown.dart' as md;
+import 'package:social_flutter/shared/widgets/field_help.dart';
 
 class MarkdownNotesEditor extends StatefulWidget {
   final TextEditingController controller;
   final bool readOnly;
   final String label;
+  final String? helpTitle;
+  final String? helpMessage;
 
   const MarkdownNotesEditor({
     super.key,
     required this.controller,
     required this.readOnly,
     this.label = 'Notes',
+    this.helpTitle,
+    this.helpMessage,
   });
 
   @override
@@ -36,6 +41,12 @@ class _MarkdownNotesEditorState extends State<MarkdownNotesEditor> {
     }
 
     final borderColor = Theme.of(context).dividerColor;
+    final labelStyle = Theme.of(context).textTheme.bodySmall?.copyWith(
+          color: Theme.of(context).colorScheme.primary,
+          fontWeight: FontWeight.w500,
+        );
+    final hasHelp =
+        widget.helpTitle != null && widget.helpMessage != null;
 
     return Container(
       decoration: BoxDecoration(
@@ -48,13 +59,20 @@ class _MarkdownNotesEditorState extends State<MarkdownNotesEditor> {
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(12, 8, 4, 0),
-            child: Text(
-              widget.label,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.primary,
-                    fontWeight: FontWeight.w500,
-                  ),
-            ),
+            child: hasHelp
+                ? Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(widget.label, style: labelStyle),
+                      const SizedBox(width: 2),
+                      FieldHelpIcon(
+                        helpTitle: widget.helpTitle!,
+                        helpMessage: widget.helpMessage!,
+                        size: 16,
+                      ),
+                    ],
+                  )
+                : Text(widget.label, style: labelStyle),
           ),
           _Toolbar(
             controller: widget.controller,

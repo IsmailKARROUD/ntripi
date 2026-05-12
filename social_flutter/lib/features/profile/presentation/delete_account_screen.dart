@@ -12,6 +12,7 @@ import 'package:social_flutter/features/auth/providers/auth_provider.dart';
 import 'package:social_flutter/features/profile/data/profile_repository.dart';
 import 'package:social_flutter/features/profile/providers/profile_provider.dart';
 import 'package:social_flutter/core/utils/platform_utils.dart';
+import 'package:social_flutter/shared/widgets/field_help.dart';
 
 class DeleteAccountScreen extends ConsumerStatefulWidget {
   const DeleteAccountScreen({super.key});
@@ -164,7 +165,12 @@ class _DeleteAccountScreenState extends ConsumerState<DeleteAccountScreen> {
               controller: _passwordController,
               obscureText: _obscurePassword,
               decoration: InputDecoration(
-                labelText: 'Password',
+                label: const LabelWithHelp(
+                  label: 'Password',
+                  helpTitle: 'Confirm password',
+                  helpMessage:
+                      'Re-enter your password to confirm deletion. Account deletion is permanent and cannot be undone.',
+                ),
                 border: const OutlineInputBorder(),
                 prefixIcon: const Icon(Icons.lock_outlined),
                 suffixIcon: IconButton(

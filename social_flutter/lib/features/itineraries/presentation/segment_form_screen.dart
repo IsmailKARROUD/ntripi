@@ -18,6 +18,7 @@ import 'package:social_flutter/features/itineraries/domain/transport_leg.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/leg_form_dialog.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/leg_tile.dart';
 import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
+import 'package:social_flutter/shared/widgets/field_help.dart';
 
 class SegmentFormScreen extends ConsumerStatefulWidget {
   final String itineraryId;
@@ -326,7 +327,11 @@ class _SegmentFormScreenState extends ConsumerState<SegmentFormScreen> {
                   value: _fromStopId,
                   isExpanded: true,
                   decoration: const InputDecoration(
-                    labelText: 'From Stop',
+                    label: LabelWithHelp(
+                      label: 'From Stop',
+                      helpTitle: 'From',
+                      helpMessage: "The stop you're traveling from.",
+                    ),
                     border: OutlineInputBorder(),
                   ),
                   items: stops
@@ -352,7 +357,11 @@ class _SegmentFormScreenState extends ConsumerState<SegmentFormScreen> {
                   value: _toStopId,
                   isExpanded: true,
                   decoration: const InputDecoration(
-                    labelText: 'To Stop',
+                    label: LabelWithHelp(
+                      label: 'To Stop',
+                      helpTitle: 'To',
+                      helpMessage: "The stop you're traveling to.",
+                    ),
                     border: OutlineInputBorder(),
                   ),
                   items: eligibleTo
@@ -374,9 +383,12 @@ class _SegmentFormScreenState extends ConsumerState<SegmentFormScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      'Legs',
-                      style: Theme.of(context)
+                    LabelWithHelp(
+                      label: 'Legs',
+                      helpTitle: 'Legs',
+                      helpMessage:
+                          'The transport steps between these two stops. Chain multiple legs if you change vehicles (e.g. walk → bus → walk).',
+                      labelStyle: Theme.of(context)
                           .textTheme
                           .titleSmall
                           ?.copyWith(fontWeight: FontWeight.w600),

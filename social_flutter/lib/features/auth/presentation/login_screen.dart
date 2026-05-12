@@ -10,6 +10,7 @@ import 'package:social_flutter/features/auth/providers/auth_provider.dart';
 import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
 import 'package:social_flutter/features/profile/providers/profile_provider.dart';
 import 'package:social_flutter/core/utils/platform_utils.dart';
+import 'package:social_flutter/shared/widgets/field_help.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -98,7 +99,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 const SizedBox(height: 28),
 
                 // Email or username field
-                const _FieldLabel('Email or username'),
+                const _FieldLabel(
+                  'Email or username',
+                  helpTitle: 'Email or username',
+                  helpMessage:
+                      'Sign in with the email you registered with, or your @username handle.',
+                ),
                 const SizedBox(height: 6),
                 TextFormField(
                   controller: _identifierController,
@@ -114,7 +120,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 const SizedBox(height: 14),
 
                 // Password field
-                const _FieldLabel('Password'),
+                const _FieldLabel(
+                  'Password',
+                  helpTitle: 'Password',
+                  helpMessage:
+                      'Your account password. Tap the eye icon to show or hide it.',
+                ),
                 const SizedBox(height: 6),
                 TextFormField(
                   controller: _passwordController,
@@ -243,17 +254,33 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
 class _FieldLabel extends StatelessWidget {
   final String text;
-  const _FieldLabel(this.text);
+  final String? helpTitle;
+  final String? helpMessage;
+  const _FieldLabel(this.text, {this.helpTitle, this.helpMessage});
 
   @override
   Widget build(BuildContext context) {
-    return Text(
-      text,
-      style: const TextStyle(
-        fontSize: 12,
-        fontWeight: FontWeight.w600,
-        color: Color(0xFF5A7562),
-      ),
+    const labelStyle = TextStyle(
+      fontSize: 12,
+      fontWeight: FontWeight.w600,
+      color: Color(0xFF5A7562),
+    );
+    if (helpTitle == null || helpMessage == null) {
+      return Text(text, style: labelStyle);
+    }
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Text(text, style: labelStyle),
+        const SizedBox(width: 2),
+        FieldHelpIcon(
+          helpTitle: helpTitle!,
+          helpMessage: helpMessage!,
+          size: 16,
+          color: const Color(0xFF5A7562),
+        ),
+      ],
     );
   }
 }

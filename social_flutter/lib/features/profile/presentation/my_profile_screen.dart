@@ -17,6 +17,7 @@ import 'package:social_flutter/features/itineraries/providers/itinerary_provider
 import 'package:social_flutter/features/profile/providers/profile_provider.dart';
 import 'package:social_flutter/shared/models/user.dart';
 import 'package:social_flutter/shared/widgets/user_avatar.dart';
+import 'package:social_flutter/shared/widgets/field_help.dart';
 import 'package:social_flutter/core/utils/platform_utils.dart';
 
 class MyProfileScreen extends ConsumerStatefulWidget {
@@ -413,7 +414,12 @@ class _MyProfileScreenState extends ConsumerState<MyProfileScreen> {
           TextFormField(
             controller: _displayNameController,
             decoration: const InputDecoration(
-              labelText: 'Display Name',
+              label: LabelWithHelp(
+                label: 'Display Name',
+                helpTitle: 'Display name',
+                helpMessage:
+                    'How your name appears on your profile and posts. Up to 50 characters; supports emoji.',
+              ),
               border: OutlineInputBorder(),
             ),
           ),
@@ -423,7 +429,12 @@ class _MyProfileScreenState extends ConsumerState<MyProfileScreen> {
             controller: _bioController,
             maxLines: 3,
             decoration: const InputDecoration(
-              labelText: 'Bio',
+              label: LabelWithHelp(
+                label: 'Bio',
+                helpTitle: 'Bio',
+                helpMessage:
+                    'A short description shown on your profile. A few hundred characters max; supports emoji.',
+              ),
               border: OutlineInputBorder(),
             ),
           ),
@@ -432,7 +443,12 @@ class _MyProfileScreenState extends ConsumerState<MyProfileScreen> {
           TextFormField(
             controller: _avatarUrlController,
             decoration: const InputDecoration(
-              labelText: 'Avatar URL',
+              label: LabelWithHelp(
+                label: 'Avatar URL',
+                helpTitle: 'Avatar URL',
+                helpMessage:
+                    'Direct link to an image hosted online. Leave blank to keep your current avatar.',
+              ),
               border: OutlineInputBorder(),
               hintText: 'https://...',
             ),
@@ -441,7 +457,18 @@ class _MyProfileScreenState extends ConsumerState<MyProfileScreen> {
 
           // Privacy toggle
           SwitchListTile(
-            title: const Text('Private Account'),
+            title: const Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text('Private Account'),
+                SizedBox(width: 2),
+                FieldHelpIcon(
+                  helpTitle: 'Private account',
+                  helpMessage:
+                      'When private, people must request to follow you before they can see your itineraries. Switching back to public auto-accepts every pending request.',
+                ),
+              ],
+            ),
             subtitle: const Text(
                 'When private, people must request to follow you.'),
             value: _editIsPrivate ?? user.isPrivate,

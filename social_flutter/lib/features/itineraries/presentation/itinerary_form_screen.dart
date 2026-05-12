@@ -31,6 +31,7 @@ import 'package:social_flutter/features/itineraries/presentation/widgets/cover_i
 import 'package:social_flutter/features/itineraries/presentation/widgets/markdown_notes_editor.dart';
 import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
 import 'package:social_flutter/shared/models/user.dart';
+import 'package:social_flutter/shared/widgets/field_help.dart';
 import 'package:social_flutter/core/utils/platform_utils.dart';
 import 'package:flutter/services.dart';
 import 'dart:convert';
@@ -263,6 +264,14 @@ Future<void> loadCurrencies() async {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 // Cover image — deferred upload on create, immediate on edit
+                LabelWithHelp(
+                  label: 'Cover image',
+                  helpTitle: 'Cover image',
+                  helpMessage:
+                      'A 1200×630 image shown on the itinerary card and link previews. Drag inside the crop box to reposition.',
+                  labelStyle: Theme.of(context).textTheme.labelLarge,
+                ),
+                const SizedBox(height: 8),
                 CoverImageField(
                   initialUrl: widget.mode == ItineraryFormMode.edit
                       ? ref
@@ -287,7 +296,12 @@ Future<void> loadCurrencies() async {
                 TextFormField(
                   controller: _titleController,
                   decoration: const InputDecoration(
-                    labelText: 'Title *',
+                    label: LabelWithHelp(
+                      label: 'Title *',
+                      helpTitle: 'Title',
+                      helpMessage:
+                          'A short, clear name for this trip. Shown on the itinerary card and share previews.',
+                    ),
                     border: OutlineInputBorder(),
                   ),
                   validator: (v) => (v == null || v.trim().isEmpty)
@@ -302,6 +316,9 @@ Future<void> loadCurrencies() async {
                   controller: _descriptionController,
                   readOnly: false,
                   label: 'Description',
+                  helpTitle: 'Description',
+                  helpMessage:
+                      'Optional. A summary of the trip. Use the toolbar to make text bold or italic, add headings, and create bullet or numbered lists. Switch to the Preview tab to see how it will look to readers.',
                 ),
                 const SizedBox(height: 16),
 
@@ -310,7 +327,12 @@ Future<void> loadCurrencies() async {
                   value: _currency,
                   isExpanded: true,
                   decoration: const InputDecoration(
-                    labelText: 'Currency',
+                    label: LabelWithHelp(
+                      label: 'Currency',
+                      helpTitle: 'Currency',
+                      helpMessage:
+                          "Default currency for all stop costs and transport costs in this itinerary.",
+                    ),
                     border: OutlineInputBorder(),
                   ),
                   items: _currencies.map((currency) {
@@ -332,9 +354,12 @@ Future<void> loadCurrencies() async {
                 const SizedBox(height: 16),
 
                 // Visibility picker
-                Text(
-                  'Visibility',
-                  style: Theme.of(context).textTheme.labelLarge,
+                LabelWithHelp(
+                  label: 'Visibility',
+                  helpTitle: 'Visibility',
+                  helpMessage:
+                      'Public: anyone can view. Followers: only people who follow you. Restricted: only the users you allowlist below. Only me: private to you.',
+                  labelStyle: Theme.of(context).textTheme.labelLarge,
                 ),
                 const SizedBox(height: 8),
                 SingleChildScrollView(
@@ -431,9 +456,12 @@ class _AllowlistSection extends ConsumerWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                'People with access',
-                style: Theme.of(context).textTheme.titleSmall,
+              LabelWithHelp(
+                label: 'People with access',
+                helpTitle: 'Allowlist',
+                helpMessage:
+                    'Users who can view this restricted itinerary. Search by @username to add or remove people.',
+                labelStyle: Theme.of(context).textTheme.titleSmall,
               ),
               TextButton.icon(
                 icon: const Icon(Icons.person_add_outlined, size: 18),

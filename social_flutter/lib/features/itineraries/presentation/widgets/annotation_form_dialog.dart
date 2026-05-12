@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:social_flutter/features/itineraries/domain/annotation.dart';
+import 'package:social_flutter/shared/widgets/field_help.dart';
 
 /// Result returned when the user confirms the dialog.
 typedef AnnotationFormResult = ({String content, AnnotationType type});
@@ -52,7 +53,15 @@ class _AnnotationFormDialogState extends State<AnnotationFormDialog> {
         key: _formKey,
         child: Column(
           mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            const LabelWithHelp(
+              label: 'Type',
+              helpTitle: 'Annotation type',
+              helpMessage:
+                  "Advice: a helpful tip. Caution: be careful. Avoid: don't go. Info: a neutral note.",
+            ),
+            const SizedBox(height: 8),
             SegmentedButton<AnnotationType>(
               segments: const [
                 ButtonSegment(
@@ -86,7 +95,12 @@ class _AnnotationFormDialogState extends State<AnnotationFormDialog> {
               maxLines: 3,
               autofocus: true,
               decoration: const InputDecoration(
-                labelText: 'Content *',
+                label: LabelWithHelp(
+                  label: 'Content *',
+                  helpTitle: 'Content',
+                  helpMessage:
+                      'Describe your advice, caution, warning, or note in one or two sentences.',
+                ),
                 border: OutlineInputBorder(),
                 alignLabelWithHint: true,
               ),

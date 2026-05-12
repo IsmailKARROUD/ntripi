@@ -14,6 +14,7 @@ import 'package:social_flutter/core/ui/destructive_actions.dart';
 import 'package:social_flutter/features/itineraries/domain/my_rating.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/markdown_notes_editor.dart';
 import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
+import 'package:social_flutter/shared/widgets/field_help.dart';
 
 /// Opens the rating bottom sheet and returns when the user saves or dismisses.
 Future<void> showRateItineraryDialog(
@@ -152,9 +153,12 @@ class _RateItinerarySheetState extends State<_RateItinerarySheet> {
           const SizedBox(height: 20),
 
           // Overall — required
-          Text(
-            'Overall *',
-            style: theme.textTheme.bodyMedium
+          LabelWithHelp(
+            label: 'Overall *',
+            helpTitle: 'Overall rating',
+            helpMessage:
+                'Required. Your overall rating of this itinerary, from 1 to 5 stars.',
+            labelStyle: theme.textTheme.bodyMedium
                 ?.copyWith(fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 8),
@@ -219,7 +223,10 @@ class _RateItinerarySheetState extends State<_RateItinerarySheet> {
                     child: MarkdownNotesEditor(
                       controller: _noteController,
                       readOnly: false,
-                      label: 'Your note (optional)',
+                      label: 'Your impression (optional)',
+                      helpTitle: 'Your impression',
+                      helpMessage:
+                          "Optional. Share what stood out — highlights, regrets, who you'd recommend it to. Use the toolbar to add bold, italic, headings, or bullet lists.",
                     ),
                   )
                 : const SizedBox.shrink(),
@@ -320,24 +327,36 @@ class _OptionalSection extends StatelessWidget {
             const SizedBox(height: 14),
             _SubRatingRow(
               label: 'Safety',
+              helpTitle: 'Safety',
+              helpMessage:
+                  'Optional. How safe you felt during this trip.',
               value: safety,
               onChanged: onSafetyChanged,
             ),
             const SizedBox(height: 12),
             _SubRatingRow(
               label: 'Experience',
+              helpTitle: 'Experience',
+              helpMessage:
+                  'Optional. How enjoyable and memorable the trip was.',
               value: experience,
               onChanged: onExperienceChanged,
             ),
             const SizedBox(height: 12),
             _SubRatingRow(
               label: 'Accessibility',
+              helpTitle: 'Accessibility',
+              helpMessage:
+                  'Optional. How accessible the itinerary is (mobility, language, signage).',
               value: accessibility,
               onChanged: onAccessibilityChanged,
             ),
             const SizedBox(height: 12),
             _SubRatingRow(
               label: 'Family-friendly',
+              helpTitle: 'Family-friendly',
+              helpMessage:
+                  'Optional. How suitable the trip is for families with children.',
               value: familyFriendly,
               onChanged: onFamilyFriendlyChanged,
             ),
@@ -350,11 +369,15 @@ class _OptionalSection extends StatelessWidget {
 
 class _SubRatingRow extends StatelessWidget {
   final String label;
+  final String helpTitle;
+  final String helpMessage;
   final int? value;
   final ValueChanged<int?> onChanged;
 
   const _SubRatingRow({
     required this.label,
+    required this.helpTitle,
+    required this.helpMessage,
     required this.value,
     required this.onChanged,
   });
@@ -365,7 +388,12 @@ class _SubRatingRow extends StatelessWidget {
       children: [
         SizedBox(
           width: 110,
-          child: Text(label, style: Theme.of(context).textTheme.bodyMedium),
+          child: LabelWithHelp(
+            label: label,
+            helpTitle: helpTitle,
+            helpMessage: helpMessage,
+            labelStyle: Theme.of(context).textTheme.bodyMedium,
+          ),
         ),
         _StarRow(value: value, onChanged: onChanged, starSize: 24),
       ],

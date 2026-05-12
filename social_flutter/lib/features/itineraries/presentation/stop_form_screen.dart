@@ -26,6 +26,7 @@ import 'package:social_flutter/features/itineraries/data/itinerary_repository.da
 import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
 import 'package:social_flutter/features/profile/providers/profile_provider.dart';
 import 'package:social_flutter/core/utils/platform_utils.dart';
+import 'package:social_flutter/shared/widgets/field_help.dart';
 
 class StopFormScreen extends ConsumerStatefulWidget {
   final String itineraryId;
@@ -594,9 +595,12 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                   // Section 1: Place search (hidden in view mode)
                   // ----------------------------------------------------------------
                   if (!readOnly) ...[
-                    Text(
-                      'Search for a place',
-                      style: Theme.of(context).textTheme.titleSmall,
+                    LabelWithHelp(
+                      label: 'Search for a place',
+                      helpTitle: 'Search a place',
+                      helpMessage:
+                          'Type a place, restaurant, or landmark name. Pick a result to autofill the place name, address, and coordinates below.',
+                      labelStyle: Theme.of(context).textTheme.titleSmall,
                     ),
                     const SizedBox(height: 8),
                     TextField(
@@ -667,7 +671,12 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                     controller: _placeNameController,
                     readOnly: readOnly,
                     decoration: const InputDecoration(
-                      labelText: 'Place name',
+                      label: LabelWithHelp(
+                        label: 'Place name',
+                        helpTitle: 'Place name',
+                        helpMessage:
+                            'Name of the place, restaurant, landmark, or stop.',
+                      ),
                       border: OutlineInputBorder(),
                     ),
                     validator: (v) => (v == null || v.trim().isEmpty)
@@ -681,7 +690,12 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                     controller: _placeAddressController,
                     readOnly: readOnly,
                     decoration: const InputDecoration(
-                      labelText: 'Address',
+                      label: LabelWithHelp(
+                        label: 'Address',
+                        helpTitle: 'Address',
+                        helpMessage:
+                            'Street address or area description. Optional.',
+                      ),
                       border: OutlineInputBorder(),
                     ),
                   ),
@@ -700,6 +714,11 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                               .bodySmall
                               ?.copyWith(color: Colors.grey.shade600),
                         ),
+                      ),
+                      const FieldHelpIcon(
+                        helpTitle: 'Coordinates',
+                        helpMessage:
+                            'The map location for this stop. Tap "Pick on map" to set or adjust it.',
                       ),
                       if (!readOnly)
                         OutlinedButton.icon(
@@ -746,7 +765,12 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                   if (readOnly)
                     InputDecorator(
                       decoration: const InputDecoration(
-                        labelText: 'Place type',
+                        label: LabelWithHelp(
+                          label: 'Place type',
+                          helpTitle: 'Place type',
+                          helpMessage:
+                              'What kind of place this is (e.g. eat & drink, sleep, sight). Used for filtering and the map icon.',
+                        ),
                         border: OutlineInputBorder(),
                       ),
                       child: Text(
@@ -758,7 +782,12 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                     DropdownButtonFormField<PlaceType>(
                       value: _placeType,
                       decoration: const InputDecoration(
-                        labelText: 'Place type',
+                        label: LabelWithHelp(
+                          label: 'Place type',
+                          helpTitle: 'Place type',
+                          helpMessage:
+                              'What kind of place this is (e.g. eat & drink, sleep, sight). Used for filtering and the map icon.',
+                        ),
                         border: OutlineInputBorder(),
                       ),
                       hint: const Text('Select place type'),
@@ -802,7 +831,12 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                     borderRadius: BorderRadius.circular(4),
                     child: InputDecorator(
                       decoration: InputDecoration(
-                        labelText: 'Recommended time to spend',
+                        label: const LabelWithHelp(
+                          label: 'Recommended time to spend',
+                          helpTitle: 'Time to spend',
+                          helpMessage:
+                              'Roughly how long you expect to stay here. Tap to set days, hours, and minutes.',
+                        ),
                         border: const OutlineInputBorder(),
                         prefixIcon: const Icon(Icons.schedule_outlined),
                         suffixIcon: readOnly
@@ -838,11 +872,33 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                         _isFree ? Icons.check_circle_outline : Icons.money_off_outlined,
                         color: _isFree ? Colors.green : null,
                       ),
-                      title: Text(_isFree ? 'This stop is free' : 'This stop has a cost'),
+                      title: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(_isFree ? 'This stop is free' : 'This stop has a cost'),
+                          const SizedBox(width: 2),
+                          const FieldHelpIcon(
+                            helpTitle: 'Free',
+                            helpMessage:
+                                'Toggle on if visiting this place costs nothing.',
+                          ),
+                        ],
+                      ),
                     )
                   else
                     SwitchListTile(
-                      title: const Text('This stop is free'),
+                      title: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text('This stop is free'),
+                          SizedBox(width: 2),
+                          FieldHelpIcon(
+                            helpTitle: 'Free',
+                            helpMessage:
+                                'Toggle on if visiting this place costs nothing.',
+                          ),
+                        ],
+                      ),
                       value: _isFree,
                       onChanged: (v) => setState(() => _isFree = v),
                       contentPadding: EdgeInsets.zero,
@@ -854,7 +910,12 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                       controller: _costController,
                       readOnly: readOnly,
                       decoration: const InputDecoration(
-                        labelText: 'Cost',
+                        label: LabelWithHelp(
+                          label: 'Cost',
+                          helpTitle: 'Cost',
+                          helpMessage:
+                              "Approximate cost per person, in the itinerary's currency.",
+                        ),
                         border: OutlineInputBorder(),
                         prefixText: '€ ',
                       ),
@@ -871,10 +932,14 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                     const SizedBox(height: 12),
                   ],
 
-                  // Notes — Markdown source with toolbar (edit) or rendered (readOnly).
+                  // Thoughts — Markdown source with toolbar (edit) or rendered (readOnly).
                   MarkdownNotesEditor(
                     controller: _notesController,
                     readOnly: readOnly,
+                    label: 'Thoughts',
+                    helpTitle: 'Thoughts',
+                    helpMessage:
+                        'Your personal take on this stop — what to expect, what you loved, things to skip, opening tips. Use the toolbar to add bold, italic, headings, or bullet lists.',
                   ),
                   const SizedBox(height: 20),
 
@@ -884,9 +949,12 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
-                        'Annotations',
-                        style: Theme.of(context).textTheme.titleSmall,
+                      LabelWithHelp(
+                        label: 'Annotations',
+                        helpTitle: 'Annotations',
+                        helpMessage:
+                            'Short tagged notes (advice, caution, avoid, info) attached to this stop. Useful for warnings or tips.',
+                        labelStyle: Theme.of(context).textTheme.titleSmall,
                       ),
                       if (!readOnly)
                         TextButton.icon(

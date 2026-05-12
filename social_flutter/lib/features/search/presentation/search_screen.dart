@@ -15,6 +15,7 @@ import 'package:social_flutter/core/api/api_client.dart';
 import 'package:social_flutter/features/search/providers/search_provider.dart';
 import 'package:social_flutter/shared/models/user.dart';
 import 'package:social_flutter/shared/widgets/user_avatar.dart';
+import 'package:social_flutter/shared/widgets/field_help.dart';
 import 'package:social_flutter/core/utils/platform_utils.dart';
 
 class SearchScreen extends ConsumerStatefulWidget {
@@ -72,6 +73,17 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
           ),
           onChanged: _onSearchChanged,
         ),
+        actions: const [
+          Padding(
+            padding: EdgeInsets.only(right: 8),
+            child: FieldHelpIcon(
+              helpTitle: 'Search users',
+              helpMessage:
+                  'Find people by their @username or by their display name. Tap a result to view their profile.',
+              size: 22,
+            ),
+          ),
+        ],
       ),
       body: Center(
         child: ConstrainedBox(

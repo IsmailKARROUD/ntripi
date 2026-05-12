@@ -10,6 +10,7 @@ import 'package:social_flutter/features/auth/providers/auth_provider.dart';
 import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
 import 'package:social_flutter/features/profile/providers/profile_provider.dart';
 import 'package:social_flutter/core/utils/platform_utils.dart';
+import 'package:social_flutter/shared/widgets/field_help.dart';
 
 class RegisterScreen extends ConsumerStatefulWidget {
   const RegisterScreen({super.key});
@@ -187,7 +188,12 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 const SizedBox(height: 24),
 
                 // Display name
-                const _FieldLabel('Display Name'),
+                const _FieldLabel(
+                  'Display Name',
+                  helpTitle: 'Display name',
+                  helpMessage:
+                      'How your name appears to others. Up to 50 characters, any language and emoji. Falls back to @username if blank.',
+                ),
                 const SizedBox(height: 6),
                 TextFormField(
                   controller: _displayNameController,
@@ -198,7 +204,12 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 const SizedBox(height: 12),
 
                 // Username
-                const _FieldLabel('Username *'),
+                const _FieldLabel(
+                  'Username *',
+                  helpTitle: 'Username',
+                  helpMessage:
+                      'Your unique @handle. Lowercase letters, digits, and underscores only. This cannot be changed later.',
+                ),
                 const SizedBox(height: 6),
                 TextFormField(
                   controller: _usernameController,
@@ -219,7 +230,12 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 const SizedBox(height: 12),
 
                 // Email
-                const _FieldLabel('Email *'),
+                const _FieldLabel(
+                  'Email *',
+                  helpTitle: 'Email',
+                  helpMessage:
+                      'Used to sign in and recover your account. We never display it publicly.',
+                ),
                 const SizedBox(height: 6),
                 TextFormField(
                   controller: _emailController,
@@ -237,7 +253,12 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 const SizedBox(height: 12),
 
                 // Password
-                const _FieldLabel('Password *'),
+                const _FieldLabel(
+                  'Password *',
+                  helpTitle: 'Password',
+                  helpMessage:
+                      'At least 8 characters with at least one digit.',
+                ),
                 const SizedBox(height: 6),
                 TextFormField(
                   controller: _passwordController,
@@ -269,7 +290,12 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 const SizedBox(height: 12),
 
                 // Confirm password
-                const _FieldLabel('Confirm Password *'),
+                const _FieldLabel(
+                  'Confirm Password *',
+                  helpTitle: 'Confirm password',
+                  helpMessage:
+                      'Type your password again to make sure it matches.',
+                ),
                 const SizedBox(height: 6),
                 TextFormField(
                   controller: _confirmPasswordController,
@@ -351,6 +377,12 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                           ],
                         ),
                       ),
+                      const FieldHelpIcon(
+                        helpTitle: 'Terms of Service',
+                        helpMessage:
+                            'You must agree to the Terms of Service and Privacy Policy to create an account. Tap the underlined links to read them.',
+                        color: Color(0xFF5A7562),
+                      ),
                     ],
                   ),
                 ),
@@ -415,17 +447,33 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
 class _FieldLabel extends StatelessWidget {
   final String text;
-  const _FieldLabel(this.text);
+  final String? helpTitle;
+  final String? helpMessage;
+  const _FieldLabel(this.text, {this.helpTitle, this.helpMessage});
 
   @override
   Widget build(BuildContext context) {
-    return Text(
-      text,
-      style: const TextStyle(
-        fontSize: 12,
-        fontWeight: FontWeight.w600,
-        color: Color(0xFF5A7562),
-      ),
+    const labelStyle = TextStyle(
+      fontSize: 12,
+      fontWeight: FontWeight.w600,
+      color: Color(0xFF5A7562),
+    );
+    if (helpTitle == null || helpMessage == null) {
+      return Text(text, style: labelStyle);
+    }
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Text(text, style: labelStyle),
+        const SizedBox(width: 2),
+        FieldHelpIcon(
+          helpTitle: helpTitle!,
+          helpMessage: helpMessage!,
+          size: 16,
+          color: const Color(0xFF5A7562),
+        ),
+      ],
     );
   }
 }
