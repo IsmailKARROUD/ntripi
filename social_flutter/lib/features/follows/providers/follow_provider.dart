@@ -20,7 +20,9 @@ class FollowRequestsNotifier extends AsyncNotifier<List<FollowRequestItem>> {
   Future<void> refresh() async {
     state = const AsyncLoading();
     state = await AsyncValue.guard(
-      () => ref.read(followRepositoryProvider).getFollowRequests(),
+      () => ref
+          .read(followRepositoryProvider)
+          .getFollowRequests(forceRefresh: true),
     );
   }
 
@@ -78,11 +80,15 @@ class FollowersNotifier extends FamilyAsyncNotifier<List<FollowerListItem>, Stri
   }
 
   /// Re-fetches from the server and replaces the current state.
-  /// Called by the RefreshIndicator (pull-to-refresh).
+  /// Called by the RefreshIndicator (pull-to-refresh). Forces a fresh server
+  /// fetch so a 304 with the cached body can't silently no-op the refresh.
   Future<void> refresh() async {
     state = const AsyncLoading();
     state = await AsyncValue.guard(
-      () => ref.read(followRepositoryProvider).getFollowers(arg),
+      () => ref.read(followRepositoryProvider).getFollowers(
+            arg,
+            forceRefresh: true,
+          ),
     );
   }
 }
@@ -104,7 +110,10 @@ class FollowingNotifier extends FamilyAsyncNotifier<List<FollowerListItem>, Stri
   Future<void> refresh() async {
     state = const AsyncLoading();
     state = await AsyncValue.guard(
-      () => ref.read(followRepositoryProvider).getFollowing(arg),
+      () => ref.read(followRepositoryProvider).getFollowing(
+            arg,
+            forceRefresh: true,
+          ),
     );
   }
 }

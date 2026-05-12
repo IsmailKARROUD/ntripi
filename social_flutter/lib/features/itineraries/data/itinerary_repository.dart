@@ -56,17 +56,10 @@ class ItineraryRepository {
   // Itinerary CRUD
   // ---------------------------------------------------------------------------
 
-  Future<List<Itinerary>> getMyItineraries() async {
-    final response = await _dio.get<List<dynamic>>(kMyItinerariesEndpoint);
-    return (response.data ?? [])
-        .cast<Map<String, dynamic>>()
-        .map(Itinerary.fromJson)
-        .toList();
-  }
-
-  Future<List<Itinerary>> getUserItineraries(String userId) async {
+  Future<List<Itinerary>> getMyItineraries({bool forceRefresh = false}) async {
     final response = await _dio.get<List<dynamic>>(
-      userItinerariesEndpoint(userId),
+      kMyItinerariesEndpoint,
+      options: forceRefresh ? forceRefreshOptions() : null,
     );
     return (response.data ?? [])
         .cast<Map<String, dynamic>>()
@@ -74,9 +67,25 @@ class ItineraryRepository {
         .toList();
   }
 
-  Future<Itinerary> getItinerary(String id) async {
-    final response =
-        await _dio.get<Map<String, dynamic>>(itineraryEndpoint(id));
+  Future<List<Itinerary>> getUserItineraries(
+    String userId, {
+    bool forceRefresh = false,
+  }) async {
+    final response = await _dio.get<List<dynamic>>(
+      userItinerariesEndpoint(userId),
+      options: forceRefresh ? forceRefreshOptions() : null,
+    );
+    return (response.data ?? [])
+        .cast<Map<String, dynamic>>()
+        .map(Itinerary.fromJson)
+        .toList();
+  }
+
+  Future<Itinerary> getItinerary(String id, {bool forceRefresh = false}) async {
+    final response = await _dio.get<Map<String, dynamic>>(
+      itineraryEndpoint(id),
+      options: forceRefresh ? forceRefreshOptions() : null,
+    );
     return Itinerary.fromJson(response.data!);
   }
 
@@ -411,9 +420,13 @@ class ItineraryRepository {
     await _dio.delete(itineraryMyRatingEndpoint(itineraryId));
   }
 
-  Future<RatingsPage> getRatingsPage(String itineraryId) async {
+  Future<RatingsPage> getRatingsPage(
+    String itineraryId, {
+    bool forceRefresh = false,
+  }) async {
     final response = await _dio.get<Map<String, dynamic>>(
       itineraryRatingsEndpoint(itineraryId),
+      options: forceRefresh ? forceRefreshOptions() : null,
     );
     return RatingsPage.fromJson(response.data!);
   }

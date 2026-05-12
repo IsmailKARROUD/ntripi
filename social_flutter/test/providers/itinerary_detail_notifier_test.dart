@@ -40,7 +40,7 @@ class _FakeRepo extends ItineraryRepository {
   final List<_ReorderCall> reorderCalls = [];
 
   @override
-  Future<Itinerary> getItinerary(String id) async {
+  Future<Itinerary> getItinerary(String id, {bool forceRefresh = false}) async {
     getItineraryCalls.add(id);
     return itineraryToReturn;
   }

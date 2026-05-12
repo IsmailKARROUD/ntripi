@@ -25,6 +25,21 @@ import 'package:social_flutter/core/storage/secure_storage.dart';
 /// Lazily initialised via [createDioClient].
 late final Dio dio;
 
+/// Per-request override that bypasses the dio_cache_interceptor's conditional
+/// GET validator. The interceptor skips cache lookup, omits `If-None-Match`,
+/// hits the network unconditionally, and stores the new response.
+///
+/// Use this for pull-to-refresh and error-state Retry — explicit user signals
+/// that mean "ignore whatever I have locally, go to the server." Without it,
+/// the request still carries `If-None-Match` and may come back as a 304
+/// reusing the same local body, which feels like the refresh did nothing.
+Options forceRefreshOptions() => Options(
+      extra: const CacheOptions(
+        store: null,
+        policy: CachePolicy.refresh,
+      ).toExtra(),
+    );
+
 /// Create and configure the Dio client.
 /// Call this once in main() before runApp().
 ///

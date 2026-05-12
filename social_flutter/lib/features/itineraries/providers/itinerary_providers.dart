@@ -30,7 +30,9 @@ class MyItinerariesNotifier extends AsyncNotifier<List<Itinerary>> {
   Future<void> refresh() async {
     state = const AsyncLoading();
     state = await AsyncValue.guard(
-      () => ref.read(itineraryRepositoryProvider).getMyItineraries(),
+      () => ref
+          .read(itineraryRepositoryProvider)
+          .getMyItineraries(forceRefresh: true),
     );
   }
 
@@ -80,11 +82,16 @@ class ItineraryDetailNotifier
   String get _etag => state.value?.eTag ?? '';
 
   /// Full re-fetch from the server.
-  /// Called after every mutation so totals and track structure are up-to-date.
+  /// Called after every mutation so totals and track structure are up-to-date,
+  /// and by RefreshIndicator on the detail screen. Forces a fresh server fetch
+  /// (bypasses the cache validator) so a 304 with a stale local body can't
+  /// silently no-op a pull-to-refresh.
   Future<void> refresh() async {
     state = const AsyncLoading();
     state = await AsyncValue.guard(
-      () => ref.read(itineraryRepositoryProvider).getItinerary(arg),
+      () => ref
+          .read(itineraryRepositoryProvider)
+          .getItinerary(arg, forceRefresh: true),
     );
   }
 
@@ -322,7 +329,9 @@ class UserItinerariesNotifier
   Future<void> refresh() async {
     state = const AsyncLoading();
     state = await AsyncValue.guard(
-      () => ref.read(itineraryRepositoryProvider).getUserItineraries(arg),
+      () => ref
+          .read(itineraryRepositoryProvider)
+          .getUserItineraries(arg, forceRefresh: true),
     );
   }
 }
@@ -375,7 +384,9 @@ class RatingsPageNotifier extends FamilyAsyncNotifier<RatingsPage, String> {
   Future<void> refresh() async {
     state = const AsyncLoading();
     state = await AsyncValue.guard(
-      () => ref.read(itineraryRepositoryProvider).getRatingsPage(arg),
+      () => ref
+          .read(itineraryRepositoryProvider)
+          .getRatingsPage(arg, forceRefresh: true),
     );
   }
 }

@@ -1,6 +1,7 @@
 // features/follows/data/follow_repository.dart — Follow/unfollow API calls.
 
 import 'package:dio/dio.dart';
+import 'package:social_flutter/core/api/api_client.dart';
 import 'package:social_flutter/core/api/api_endpoints.dart';
 import 'package:social_flutter/shared/models/follow.dart';
 
@@ -24,8 +25,13 @@ class FollowRepository {
 
   /// GET /users/me/follow-requests
   /// Returns the list of pending incoming follow requests.
-  Future<List<FollowRequestItem>> getFollowRequests() async {
-    final response = await _dio.get(kFollowRequestsEndpoint);
+  Future<List<FollowRequestItem>> getFollowRequests({
+    bool forceRefresh = false,
+  }) async {
+    final response = await _dio.get(
+      kFollowRequestsEndpoint,
+      options: forceRefresh ? forceRefreshOptions() : null,
+    );
     final list = response.data as List<dynamic>;
     return list
         .map((item) => FollowRequestItem.fromJson(item as Map<String, dynamic>))
@@ -45,8 +51,14 @@ class FollowRepository {
   }
 
   /// GET /users/{userId}/followers — accepted followers of a user.
-  Future<List<FollowerListItem>> getFollowers(String userId) async {
-    final response = await _dio.get(followersEndpoint(userId));
+  Future<List<FollowerListItem>> getFollowers(
+    String userId, {
+    bool forceRefresh = false,
+  }) async {
+    final response = await _dio.get(
+      followersEndpoint(userId),
+      options: forceRefresh ? forceRefreshOptions() : null,
+    );
     final list = response.data as List<dynamic>;
     return list
         .map((item) => FollowerListItem.fromJson(item as Map<String, dynamic>))
@@ -54,8 +66,14 @@ class FollowRepository {
   }
 
   /// GET /users/{userId}/following — users that this user follows.
-  Future<List<FollowerListItem>> getFollowing(String userId) async {
-    final response = await _dio.get(followingEndpoint(userId));
+  Future<List<FollowerListItem>> getFollowing(
+    String userId, {
+    bool forceRefresh = false,
+  }) async {
+    final response = await _dio.get(
+      followingEndpoint(userId),
+      options: forceRefresh ? forceRefreshOptions() : null,
+    );
     final list = response.data as List<dynamic>;
     return list
         .map((item) => FollowerListItem.fromJson(item as Map<String, dynamic>))
