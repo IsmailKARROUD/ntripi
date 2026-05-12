@@ -177,6 +177,7 @@ void showUndoableActionSnackbar({
     SnackBar(
       content: Text(message),
       duration: duration,
+      persist: false,
       action: SnackBarAction(
         label: 'UNDO',
         onPressed: () async {

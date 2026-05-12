@@ -529,6 +529,7 @@ class _AllowlistSection extends ConsumerWidget {
                                 user.displayName ?? user.username;
                             showUndoableActionSnackbar(
                               context: context,
+                              duration: const Duration(seconds: 5),
                               message: 'Removed $displayLabel from allowlist',
                               onUndo: () async {
                                 await ref
