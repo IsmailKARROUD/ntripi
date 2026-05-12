@@ -137,12 +137,7 @@ class _RateItinerarySheetState extends State<_RateItinerarySheet> {
     final canSave = _overall != null && !_saving;
 
     return Padding(
-      padding: EdgeInsets.fromLTRB(
-        16,
-        16,
-        16,
-        MediaQuery.viewInsetsOf(context).bottom + 16,
-      ),
+      padding: const EdgeInsets.all(16),
       child: SingleChildScrollView(
         child: Column(
         mainAxisSize: MainAxisSize.min,

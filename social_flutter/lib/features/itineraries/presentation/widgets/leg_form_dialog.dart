@@ -153,13 +153,9 @@ class _LegFormDialogState extends State<LegFormDialog> {
   Widget build(BuildContext context) {
     final isEdit = widget.existing != null;
     return Padding(
-      padding: EdgeInsets.only(
-        left: 16,
-        right: 16,
-        top: 16,
-        bottom: MediaQuery.of(context).viewInsets.bottom + 24,
-      ),
-      child: Column(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+      child: SingleChildScrollView(
+        child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -383,6 +379,7 @@ class _LegFormDialogState extends State<LegFormDialog> {
             ],
           ),
         ],
+      ),
       ),
     );
   }
