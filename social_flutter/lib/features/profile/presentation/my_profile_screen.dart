@@ -179,6 +179,7 @@ class _MyProfileScreenState extends ConsumerState<MyProfileScreen> {
     final followRequestsAsync = ref.watch(followRequestsProvider);
 
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       appBar: AppBar(
         title: const Text('My Profile'),
         actions: [

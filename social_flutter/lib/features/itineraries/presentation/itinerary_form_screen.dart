@@ -248,6 +248,7 @@ Future<void> loadCurrencies() async {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       appBar: AppBar(
         title: Text(widget.mode == ItineraryFormMode.create
             ? 'New Itinerary'

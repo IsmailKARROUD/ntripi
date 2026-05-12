@@ -32,6 +32,7 @@ class UserProfileScreen extends ConsumerWidget {
     final profileAsync = ref.watch(userProfileProvider(userId));
 
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       appBar: AppBar(
         title: profileAsync.when(
           data: (user) => Text(user.handle),

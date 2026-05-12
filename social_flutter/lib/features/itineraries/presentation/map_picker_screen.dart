@@ -71,6 +71,7 @@ class _MapPickerScreenState extends ConsumerState<MapPickerScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       appBar: AppBar(
         title: const Text('Pick Location'),
         actions: [

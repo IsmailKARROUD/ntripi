@@ -292,6 +292,7 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
       child: Stack(
         children: [
           Scaffold(
+            resizeToAvoidBottomInset: false,
             appBar: AppBar(
               title: _reorderMode
                   ? const Text('Reorder tracks')
@@ -1227,6 +1228,7 @@ class _CoverImageState extends State<_CoverImage> {
           context,
           MaterialPageRoute(
             builder: (_) => Scaffold(
+              resizeToAvoidBottomInset: false,
               backgroundColor: Colors.black,
               appBar: AppBar(
                 automaticallyImplyLeading: false,

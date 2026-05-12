@@ -20,6 +20,7 @@ class FollowRequestsScreen extends ConsumerWidget {
     final requestsAsync = ref.watch(followRequestsProvider);
 
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       appBar: AppBar(
         title: const Text('Follow Requests'),
       ),

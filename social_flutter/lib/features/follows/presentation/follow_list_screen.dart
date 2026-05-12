@@ -47,6 +47,7 @@ class FollowListScreen extends ConsumerWidget {
     final title = type == FollowListType.followers ? 'Followers' : 'Following';
 
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       appBar: AppBar(title: Text(title)),
       body: Center(
         child: ConstrainedBox(

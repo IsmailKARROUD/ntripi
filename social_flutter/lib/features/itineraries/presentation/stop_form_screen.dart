@@ -569,6 +569,7 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
     }
 
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       appBar: AppBar(
         title: Text(appBarTitle),
         actions: [

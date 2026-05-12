@@ -243,9 +243,12 @@ class _SegmentFormScreenState extends ConsumerState<SegmentFormScreen> {
         ref.watch(itineraryDetailProvider(widget.itineraryId));
 
     return itineraryAsync.when(
-      loading: () =>
-          const Scaffold(body: Center(child: CircularProgressIndicator())),
+      loading: () => const Scaffold(
+        resizeToAvoidBottomInset: false,
+        body: Center(child: CircularProgressIndicator()),
+      ),
       error: (e, _) => Scaffold(
+        resizeToAvoidBottomInset: false,
         appBar: AppBar(),
         body: Center(child: Text(extractErrorMessage(e as dynamic))),
       ),
@@ -270,6 +273,7 @@ class _SegmentFormScreenState extends ConsumerState<SegmentFormScreen> {
             stops.where((s) => s.id != _fromStopId).toList();
 
         return Scaffold(
+          resizeToAvoidBottomInset: false,
           appBar: AppBar(
             title: Text(_isEdit ? 'Edit Segment' : 'Add Segment'),
             actions: [

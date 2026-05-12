@@ -47,6 +47,7 @@ class ItineraryListScreen extends ConsumerWidget {
     final itinerariesAsync = ref.watch(myItinerariesProvider);
 
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       appBar: AppBar(
         title: const Text('My Itineraries'),
         actions: [

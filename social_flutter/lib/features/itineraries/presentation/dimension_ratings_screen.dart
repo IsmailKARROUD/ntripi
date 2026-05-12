@@ -55,6 +55,7 @@ class DimensionRatingsScreen extends ConsumerWidget {
     final dist = _distribution(filtered);
 
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       appBar: AppBar(title: Text('${dimension.label} Rating')),
       body: Center(
         child: ConstrainedBox(

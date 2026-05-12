@@ -32,6 +32,7 @@ class RatingsHubScreen extends ConsumerWidget {
     final page = ratingsAsync.valueOrNull;
 
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       appBar: AppBar(title: const Text('Ratings')),
       body: Center(
         child: ConstrainedBox(
