@@ -19,6 +19,7 @@
 import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:social_flutter/core/api/api_client.dart';
 import 'package:social_flutter/core/api/api_endpoints.dart';
@@ -86,7 +87,27 @@ class ItineraryRepository {
       itineraryEndpoint(id),
       options: forceRefresh ? forceRefreshOptions() : null,
     );
-    return Itinerary.fromJson(response.data!);
+    final data = response.data!;
+    final itinerary = Itinerary.fromJson(data);
+    // Diagnostic: which path served the body and did parsing keep the tracks?
+    // `assert(() { … return true; }())` is the same trick api_client.dart uses
+    // for its LogInterceptor — the whole block is tree-shaken in release.
+    assert(() {
+      final tracksRaw = data['tracks'];
+      debugPrint(
+        '[itinerary.detail] id=$id '
+        'forceRefresh=$forceRefresh '
+        'statusCode=${response.statusCode} '
+        'fromCache=${response.extra['@fromNetwork@'] == false} '
+        'tracks_runtime=${tracksRaw.runtimeType} '
+        'tracks_len=${tracksRaw is List ? tracksRaw.length : "n/a"} '
+        'stops_count=${data['stops_count']} '
+        '→ parsed tracks=${itinerary.tracks.length} '
+        'stops=${itinerary.stops.length}',
+      );
+      return true;
+    }());
+    return itinerary;
   }
 
   Future<Itinerary> createItinerary(Map<String, dynamic> data) async {
