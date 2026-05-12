@@ -15,6 +15,7 @@
 //     from being stuck in a broken authenticated state.
 
 import 'package:dio/dio.dart';
+import 'package:dio_cache_interceptor/dio_cache_interceptor.dart';
 import 'package:flutter/widgets.dart';
 import 'package:go_router/go_router.dart';
 import 'package:social_flutter/core/api/api_endpoints.dart';
@@ -24,9 +25,27 @@ import 'package:social_flutter/core/storage/secure_storage.dart';
 /// Lazily initialised via [createDioClient].
 late final Dio dio;
 
+/// Per-request override that bypasses the dio_cache_interceptor's conditional
+/// GET validator. The interceptor skips cache lookup, omits `If-None-Match`,
+/// hits the network unconditionally, and stores the new response.
+///
+/// Use this for pull-to-refresh and error-state Retry — explicit user signals
+/// that mean "ignore whatever I have locally, go to the server." Without it,
+/// the request still carries `If-None-Match` and may come back as a 304
+/// reusing the same local body, which feels like the refresh did nothing.
+Options forceRefreshOptions() => Options(
+      extra: const CacheOptions(
+        store: null,
+        policy: CachePolicy.refresh,
+      ).toExtra(),
+    );
+
 /// Create and configure the Dio client.
 /// Call this once in main() before runApp().
-Dio createDioClient() {
+///
+/// [cacheStore] persists GET responses so the app remains browsable while
+/// offline. Pass null only when caching is intentionally disabled (tests).
+Dio createDioClient({CacheStore? cacheStore}) {
   final instance = Dio(
     BaseOptions(
       baseUrl: kApiBaseUrl,
@@ -38,6 +57,29 @@ Dio createDioClient() {
   );
 
   instance.interceptors.add(AuthInterceptor());
+
+  if (cacheStore != null) {
+    // Cache GET responses. The backend's ETagMiddleware emits
+    // `Cache-Control: private, no-cache` + an opaque ETag on every JSON GET,
+    // so the `request` policy works as intended: the interceptor stores
+    // responses, sends `If-None-Match` on the next request, and the server
+    // can reply with a tiny `304 Not Modified` when the body is unchanged.
+    // On any Dio error (offline / timeout) the most recent cached entry is
+    // returned, keeping previously-viewed screens readable without a
+    // connection.
+    instance.interceptors.add(
+      DioCacheInterceptor(
+        options: CacheOptions(
+          store: cacheStore,
+          policy: CachePolicy.request,
+          hitCacheOnErrorExcept: const [],
+          maxStale: const Duration(days: 7),
+          priority: CachePriority.normal,
+          keyBuilder: CacheOptions.defaultCacheKeyBuilder,
+        ),
+      ),
+    );
+  }
 
   // In debug mode, log requests and responses for easier development.
   // Remove or disable in production builds.
@@ -125,15 +167,27 @@ class AuthInterceptor extends Interceptor {
   }
 }
 
-/// Helper: extract the 'detail' string from a Dio error response.
-/// The Ntripi API always returns {"detail": "..."} for errors.
-/// Returns a generic fallback message if the format is unexpected.
-String extractErrorMessage(DioException e) {
-  try {
-    final data = e.response?.data;
-    if (data is Map<String, dynamic>) {
-      return data['detail']?.toString() ?? 'An error occurred.';
+/// Helper: extract a human-readable message from any exception.
+/// For DioException, reads the API's {"detail": "..."} response body.
+/// For ItineraryStaleException and other typed exceptions, uses toString().
+String extractErrorMessage(dynamic e) {
+  if (e is DioException) {
+    switch (e.type) {
+      case DioExceptionType.connectionError:
+      case DioExceptionType.connectionTimeout:
+      case DioExceptionType.receiveTimeout:
+      case DioExceptionType.sendTimeout:
+        return 'No internet connection. Please check your network and try again.';
+      default:
+        break;
     }
-  } catch (_) {}
-  return 'An error occurred. Please try again.';
+    try {
+      final data = e.response?.data;
+      if (data is Map<String, dynamic>) {
+        return data['detail']?.toString() ?? 'An error occurred.';
+      }
+    } catch (_) {}
+    return 'An error occurred. Please try again.';
+  }
+  return e?.toString() ?? 'An error occurred.';
 }

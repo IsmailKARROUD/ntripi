@@ -260,6 +260,8 @@ def search_users(
     Using %query% means the query can appear anywhere in the field.
     """
     search_term = f"%{q}%"
+    q_lower = q.lower()
+    prefix_term = f"{q_lower}%"
 
     results = db.execute(
         select(User)
@@ -267,11 +269,15 @@ def search_users(
             User.id != current_user.id,
             User.is_active == True,
             or_(
-                User.username.ilike(search_term),
+                User.username_lower.ilike(search_term.lower()),
                 User.display_name.ilike(search_term),
             ),
         )
-        .order_by(User.followers_count.desc())
+        .order_by(
+            (User.username_lower == q_lower).desc(),
+            User.username_lower.ilike(prefix_term).desc(),
+            User.followers_count.desc(),
+        )
         .limit(limit)
         .offset(offset)
     ).scalars().all()
@@ -280,26 +286,34 @@ def search_users(
 
 
 @router.get(
-    "/{user_id}",
+    "/{identifier}",
     response_model=UserPublicProfile,
-    summary="Get a user's public profile",
+    summary="Get a user's public profile (by UUID or username)",
 )
 def get_user_profile(
-    user_id: uuid.UUID,
+    identifier: str,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> UserPublicProfile:
     """
     Return a user's public profile with follow-status context.
 
+    Accepts either a UUID or a username (case-insensitive) as the path parameter,
+    so existing UUID-based clients keep working while new code can use usernames.
+
     The response includes two computed fields:
       is_following: True if the current user has an ACCEPTED follow to this user.
       follow_is_pending: True if the current user has a PENDING follow request.
-
-    These are computed by querying the follows table for the relationship
-    between current_user and the target user.
     """
-    target_user = db.get(User, user_id)
+    target_user = None
+    try:
+        user_uuid = uuid.UUID(identifier)
+        target_user = db.get(User, user_uuid)
+    except ValueError:
+        target_user = db.execute(
+            select(User).where(User.username_lower == identifier.lower())
+        ).scalar_one_or_none()
+
     if not target_user or not target_user.is_active:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

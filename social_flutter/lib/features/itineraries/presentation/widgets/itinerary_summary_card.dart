@@ -3,6 +3,7 @@
 // Displays title, visibility badge, and summary stats (duration, cost, stops,
 // safety rating). Tapping navigates to the itinerary detail screen.
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -27,12 +28,14 @@ class ItinerarySummaryCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      clipBehavior: Clip.antiAlias, // This forces the child to follow the shape
       child: InkWell(
         onTap: () => context.push('/itineraries/${itinerary.id}'),
         onLongPress: onLongPress,
         borderRadius: BorderRadius.circular(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        child: Stack(
+          alignment: AlignmentDirectional.bottomStart,
           children: [
             // Cover image thumbnail — shown only when the itinerary has one
             if (itinerary.coverImageUrl != null)
@@ -41,74 +44,77 @@ class ItinerarySummaryCard extends ConsumerWidget {
                     ? '$kApiBaseUrl${itinerary.coverImageUrl}'
                     : itinerary.coverImageUrl!,
               ),
-            Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Title + visibility badge + optional share icon
-              Row(
+            Container(
+              padding: const EdgeInsets.all(16),
+              color: Colors.white.withValues(alpha: 0.95),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Expanded(
-                    child: Text(
-                      itinerary.title,
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w600,
-                          ),
-                    ),
-                  ),
-                  _VisibilityBadge(itinerary: itinerary),
-                  if (itinerary.visibility != ItineraryVisibility.onlyMe) ...[
-                    const SizedBox(width: 4),
-                    InkWell(
-                      onTap: () => ref
-                          .read(shareServiceProvider)
-                          .shareItinerary(itinerary),
-                      borderRadius: BorderRadius.circular(16),
-                      child: Padding(
-                        padding: const EdgeInsets.all(4),
-                        child: Icon(
-                          Icons.share_outlined,
-                          size: 16,
-                          color: Colors.grey.shade500,
+                  // Title + visibility badge + optional share icon
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          itinerary.title,
+                          style:
+                              Theme.of(context).textTheme.titleMedium?.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                  ),
                         ),
                       ),
-                    ),
-                  ],
-                ],
-              ),
-              const SizedBox(height: 10),
+                      _VisibilityBadge(itinerary: itinerary),
+                      if (itinerary.visibility !=
+                          ItineraryVisibility.onlyMe) ...[
+                        const SizedBox(width: 4),
+                        InkWell(
+                          onTap: () => ref
+                              .read(shareServiceProvider)
+                              .shareItinerary(itinerary),
+                          borderRadius: BorderRadius.circular(16),
+                          child: Padding(
+                            padding: const EdgeInsets.all(4),
+                            child: Icon(
+                              Icons.share_outlined,
+                              size: 16,
+                              color: Colors.grey.shade500,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                  const SizedBox(height: 10),
 
-              // Stats row
-              Wrap(
-                spacing: 12,
-                runSpacing: 6,
-                children: [
-                  _Stat(
-                    icon: Icons.timer_outlined,
-                    label: itinerary.formattedDuration,
+                  // Stats row
+                  Wrap(
+                    spacing: 12,
+                    runSpacing: 6,
+                    children: [
+                      _Stat(
+                        icon: Icons.timer_outlined,
+                        label: itinerary.formattedDuration,
+                      ),
+                      _Stat(
+                        icon: Icons.payments_outlined,
+                        label: itinerary.formattedCost,
+                      ),
+                      _Stat(
+                        icon: Icons.place_outlined,
+                        label:
+                            '${itinerary.stopsCount} stop${itinerary.stopsCount == 1 ? '' : 's'}',
+                      ),
+                      if (itinerary.ratingAvg != null)
+                        _Stat(
+                          icon: Icons.star_rounded,
+                          label:
+                              '${itinerary.ratingAvg!.toStringAsFixed(1)} (${itinerary.ratingCount})',
+                          iconColor: ratingColor(itinerary.ratingAvg!),
+                        ),
+                    ],
                   ),
-                  _Stat(
-                    icon: Icons.payments_outlined,
-                    label: itinerary.formattedCost,
-                  ),
-                  _Stat(
-                    icon: Icons.place_outlined,
-                    label:
-                        '${itinerary.stopsCount} stop${itinerary.stopsCount == 1 ? '' : 's'}',
-                  ),
-                  if (itinerary.ratingAvg != null)
-                    _Stat(
-                      icon: Icons.star_rounded,
-                      label:
-                          '${itinerary.ratingAvg!.toStringAsFixed(1)} (${itinerary.ratingCount})',
-                      iconColor: ratingColor(itinerary.ratingAvg!),
-                    ),
                 ],
               ),
-            ],
-          ),
-        ),
+            ),
           ],
         ),
       ),
@@ -134,10 +140,10 @@ class _CardCoverImageState extends State<_CardCoverImage> {
       borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
       child: AspectRatio(
         aspectRatio: 1200 / 630,
-        child: Image.network(
-          widget.url,
+        child: CachedNetworkImage(
+          imageUrl: widget.url,
           fit: BoxFit.cover,
-          errorBuilder: (_, __, ___) {
+          errorWidget: (_, __, ___) {
             WidgetsBinding.instance.addPostFrameCallback((_) {
               if (mounted) setState(() => _error = true);
             });

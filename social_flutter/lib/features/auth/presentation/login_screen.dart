@@ -97,8 +97,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 ),
                 const SizedBox(height: 28),
 
-                // Email field
-                _FieldLabel('Email'),
+                // Email or username field
+                const _FieldLabel('Email or username'),
                 const SizedBox(height: 6),
                 TextFormField(
                   controller: _identifierController,
@@ -114,7 +114,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 const SizedBox(height: 14),
 
                 // Password field
-                _FieldLabel('Password'),
+                const _FieldLabel('Password'),
                 const SizedBox(height: 6),
                 TextFormField(
                   controller: _passwordController,
@@ -289,16 +289,16 @@ class _OrDivider extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Row(
-      children: [
-        const Expanded(child: Divider()),
+      children: const [
+        Expanded(child: Divider()),
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12),
+          padding: EdgeInsets.symmetric(horizontal: 12),
           child: Text(
             'or continue with',
-            style: const TextStyle(fontSize: 12, color: Color(0xFF93A898)),
+            style: TextStyle(fontSize: 12, color: Color(0xFF93A898)),
           ),
         ),
-        const Expanded(child: Divider()),
+        Expanded(child: Divider()),
       ],
     );
   }

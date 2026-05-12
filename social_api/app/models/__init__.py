@@ -5,6 +5,7 @@ from app.models.user import User
 from app.models.follow import Follow, FollowStatus
 from app.models.itinerary import Itinerary
 from app.models.itinerary_allowed_user import ItineraryAllowedUser
+from app.models.track import Track
 from app.models.stop import Stop
 from app.models.annotation import Annotation
 from app.models.itinerary_rating import ItineraryRating
@@ -14,7 +15,7 @@ from app.models.transport_leg import TransportLeg
 
 __all__ = [
     "User", "Follow", "FollowStatus",
-    "Itinerary", "ItineraryAllowedUser",
+    "Itinerary", "ItineraryAllowedUser", "Track",
     "Stop", "Annotation", "ItineraryRating", "ItineraryAnnotation",
     "TransitSegment", "TransportLeg",
 ]

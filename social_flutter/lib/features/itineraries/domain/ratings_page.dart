@@ -52,6 +52,10 @@ class RatingWithUser {
   final int? scoreExperience;
   final int? scoreAccessibility;
   final int? scoreFamilyFriendly;
+
+  /// Optional Markdown-source review note left by the rater.
+  final String? note;
+
   final DateTime updatedAt;
   final RaterInfo user;
 
@@ -61,6 +65,7 @@ class RatingWithUser {
     this.scoreExperience,
     this.scoreAccessibility,
     this.scoreFamilyFriendly,
+    this.note,
     required this.updatedAt,
     required this.user,
   });
@@ -90,6 +95,7 @@ class RatingWithUser {
         scoreExperience: json['experience_score'] as int?,
         scoreAccessibility: json['accessibility_score'] as int?,
         scoreFamilyFriendly: json['family_friendly_score'] as int?,
+        note: json['note'] as String?,
         updatedAt: DateTime.parse(json['updated_at'] as String),
         user: RaterInfo.fromJson(json['user'] as Map<String, dynamic>),
       );
@@ -100,6 +106,7 @@ class RatingWithUser {
         if (scoreExperience != null) 'experience_score': scoreExperience,
         if (scoreAccessibility != null) 'accessibility_score': scoreAccessibility,
         if (scoreFamilyFriendly != null) 'family_friendly_score': scoreFamilyFriendly,
+        if (note != null) 'note': note,
         'updated_at': updatedAt.toIso8601String(),
         'user': user.toJson(),
       };

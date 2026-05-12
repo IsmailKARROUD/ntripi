@@ -4,11 +4,11 @@ schemas/itinerary.py — Pydantic schemas for itinerary-related requests and res
 Hierarchy:
   AnnotationCreate / AnnotationResponse
   StopCreate / StopUpdate / StopResponse
+  TrackResponse
   TransportLegCreate / TransportLegUpdate / TransportLegResponse
   TransitSegmentCreate / TransitSegmentResponse
   ItineraryCreate / ItineraryUpdate / ItinerarySummary / ItineraryDetail
   AllowedUserAdd / AllowedUserResponse
-  ReorderRequest
 """
 
 import uuid
@@ -86,11 +86,21 @@ class AnnotationResponse(BaseModel):
 
 
 # ---------------------------------------------------------------------------
-# Stop schemas  — 'transit' type removed
+# Stop schemas
 # ---------------------------------------------------------------------------
 
 class StopCreate(BaseModel):
-    position: int = Field(..., ge=1)
+    # Track placement: provide an existing track_id to add within that track,
+    # or omit (null) to create a new track.
+    track_id: Optional[uuid.UUID] = None
+
+    # Anchor stops for rank computation. Both optional; the server bisects.
+    after_stop_id: Optional[uuid.UUID] = None
+    before_stop_id: Optional[uuid.UUID] = None
+
+    # Anchor tracks for rank computation when creating a new track (track_id=null).
+    after_track_id: Optional[uuid.UUID] = None
+    before_track_id: Optional[uuid.UUID] = None
 
     place_name: Optional[str] = Field(None, max_length=200)
     place_address: Optional[str] = None
@@ -109,7 +119,6 @@ class StopCreate(BaseModel):
 
 
 class StopUpdate(BaseModel):
-    position: Optional[int] = Field(None, ge=1)
     place_name: Optional[str] = Field(None, max_length=200)
     place_address: Optional[str] = None
     lat: Optional[float] = Field(None, ge=-90, le=90)
@@ -123,11 +132,79 @@ class StopUpdate(BaseModel):
     is_free: Optional[bool] = None
     notes: Optional[str] = None
 
+    # Optional move: if track_id provided and differs from current, stop is moved.
+    track_id: Optional[uuid.UUID] = None
+    after_stop_id: Optional[uuid.UUID] = None
+    before_stop_id: Optional[uuid.UUID] = None
+
+    # New-track move: when track_id is null and either anchor is provided,
+    # the server creates a brand-new track at that position and moves this
+    # stop into it. Mirrors the StopCreate API for "create new track" inserts.
+    after_track_id: Optional[uuid.UUID] = None
+    before_track_id: Optional[uuid.UUID] = None
+
+    @model_validator(mode='after')
+    def _validate_move_target(self) -> 'StopUpdate':
+        # New-track anchors are only valid when track_id is null. Otherwise
+        # the intent is ambiguous (move to existing track vs create new one).
+        if self.track_id is not None and (
+            self.after_track_id is not None or self.before_track_id is not None
+        ):
+            raise ValueError(
+                "after_track_id / before_track_id are only valid when "
+                "track_id is null (new-track move)."
+            )
+        return self
+
+
+class ReorderRequest(BaseModel):
+    """
+    Batch reorder of tracks and/or stops, plus optional segment deletions.
+
+    At least one of the three fields must be provided.
+
+    stop_orders   — map of track_id → list of stop_ids in the desired display
+                    order. For each entry, the provided stop_id set must
+                    exactly match the track's current stop_id set (no missing,
+                    no extra, no duplicates). Every track must belong to the
+                    itinerary referenced in the URL.
+    track_order   — full track order for the itinerary. If provided, must
+                    contain exactly the current track-id set (no missing, no
+                    extra, no duplicates).
+    segments_to_delete
+                  — segment IDs to delete in the same transaction (typically
+                    those orphaned by a track reorder).
+
+    Server computes new fractional-index ranks (via n_keys_between) — the
+    client never sends rank strings, only order.
+    """
+
+    stop_orders: dict[uuid.UUID, list[uuid.UUID]] = Field(default_factory=dict)
+    track_order: Optional[list[uuid.UUID]] = None
+    segments_to_delete: list[uuid.UUID] = Field(default_factory=list)
+
+    @model_validator(mode='after')
+    def _validate(self) -> 'ReorderRequest':
+        if (not self.stop_orders
+                and self.track_order is None
+                and not self.segments_to_delete):
+            raise ValueError(
+                "at least one of stop_orders, track_order, or "
+                "segments_to_delete must be provided"
+            )
+        for track_id, stop_ids in self.stop_orders.items():
+            if not stop_ids:
+                raise ValueError(
+                    f"stop_orders[{track_id}] must contain at least one stop"
+                )
+        return self
+
 
 class StopResponse(BaseModel):
     id: uuid.UUID
     itinerary_id: uuid.UUID
-    position: int
+    track_id: uuid.UUID
+    rank: str
     place_name: Optional[str]
     place_address: Optional[str]
     lat: Optional[float]
@@ -139,6 +216,19 @@ class StopResponse(BaseModel):
     notes: Optional[str]
     created_at: datetime
     annotations: list[AnnotationResponse] = []
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+# ---------------------------------------------------------------------------
+# Track schemas
+# ---------------------------------------------------------------------------
+
+class TrackResponse(BaseModel):
+    id: uuid.UUID
+    itinerary_id: uuid.UUID
+    rank: str
+    stops: list[StopResponse] = []
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -258,6 +348,7 @@ class RatingSubmit(BaseModel):
     experience_stars: Optional[int] = Field(None, ge=1, le=5)
     accessibility_stars: Optional[int] = Field(None, ge=1, le=5)
     family_friendly_stars: Optional[int] = Field(None, ge=1, le=5)
+    note: Optional[str] = None
 
 
 class RatingResponse(BaseModel):
@@ -266,6 +357,7 @@ class RatingResponse(BaseModel):
     experience_stars: Optional[int]
     accessibility_stars: Optional[int]
     family_friendly_stars: Optional[int]
+    note: Optional[str]
     updated_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
@@ -273,8 +365,6 @@ class RatingResponse(BaseModel):
 
 class RaterInfo(BaseModel):
     # All fields are Optional because the rater may have deleted their account.
-    # ItineraryRating.user_id is SET NULL on user delete (GDPR anonymization),
-    # so these fields can all be None for historical ratings.
     user_id: Optional[uuid.UUID]
     username: Optional[str]
     display_name: Optional[str]
@@ -287,6 +377,7 @@ class RatingWithUser(BaseModel):
     experience_score: Optional[int]
     accessibility_score: Optional[int]
     family_friendly_score: Optional[int]
+    note: Optional[str]
     updated_at: datetime
     user: RaterInfo
 
@@ -316,6 +407,7 @@ class ItinerarySummary(BaseModel):
     currency: str
     visibility: Literal['public', 'followers', 'restricted', 'only_me']
     created_at: datetime
+    updated_at: datetime
     rating_avg: Optional[float]
     rating_count: int = 0
     stops_count: int = 0
@@ -323,11 +415,10 @@ class ItinerarySummary(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
-# ItineraryDetail extends ItinerarySummary with the full stop + segment lists.
-# Used by GET /itineraries/{id} and the reorder endpoint.
+# ItineraryDetail extends ItinerarySummary with tracks (ordered) + segments.
 class ItineraryDetail(ItinerarySummary):
     description: Optional[str]
-    stops: list[StopResponse] = []
+    tracks: list[TrackResponse] = []
     segments: list[TransitSegmentResponse] = []
     annotations: list[ItineraryAnnotationResponse] = []
 
@@ -353,11 +444,3 @@ class AllowedUserResponse(BaseModel):
 
 class ItineraryImageResponse(BaseModel):
     cover_image_url: str
-
-
-# ---------------------------------------------------------------------------
-# Reorder schema
-# ---------------------------------------------------------------------------
-
-class ReorderRequest(BaseModel):
-    stop_ids: list[uuid.UUID] = Field(..., min_length=1)

@@ -4,10 +4,16 @@ import 'package:flutter/material.dart';
 import 'package:social_flutter/features/itineraries/domain/annotation.dart';
 import 'package:social_flutter/features/itineraries/domain/stop.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/annotation_chip.dart';
+import 'package:social_flutter/features/itineraries/presentation/widgets/markdown_notes_editor.dart';
 
-class StopCard extends StatelessWidget {
+class StopCard extends StatefulWidget {
   final Stop stop;
   final String currency;
+
+  /// 1-based display index (track number). If null, the type icon is shown instead.
+  final int? trackIndex;
+
+  final VoidCallback? onTap;
   final VoidCallback? onEdit;
   final VoidCallback? onAddAnnotation;
   final void Function(Annotation)? onEditAnnotation;
@@ -17,11 +23,20 @@ class StopCard extends StatelessWidget {
     super.key,
     required this.stop,
     required this.currency,
+    this.trackIndex,
+    this.onTap,
     this.onEdit,
     this.onAddAnnotation,
     this.onEditAnnotation,
     this.onDeleteAnnotation,
   });
+
+  @override
+  State<StopCard> createState() => _StopCardState();
+}
+
+class _StopCardState extends State<StopCard> {
+  bool _notesExpanded = false;
 
   static const _typeIcons = {
     StopType.origin: Icons.trip_origin,
@@ -43,34 +58,56 @@ class StopCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final stop = widget.stop;
+    final currency = widget.currency;
+    final trackIndex = widget.trackIndex;
+    final onTap = widget.onTap;
+    final onEdit = widget.onEdit;
+    final onAddAnnotation = widget.onAddAnnotation;
+    final onEditAnnotation = widget.onEditAnnotation;
+    final onDeleteAnnotation = widget.onDeleteAnnotation;
+
     final typeColor = _typeColors[stop.type] ?? Colors.blue;
     final typeIcon = _typeIcons[stop.type] ?? Icons.place;
     final costLabel = _formatCost(stop.cost, stop.isFree, currency);
+    final hasNotes = stop.notes != null && stop.notes!.trim().isNotEmpty;
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      child: Padding(
+      clipBehavior: Clip.hardEdge,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
         padding: const EdgeInsets.all(12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
           children: [
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
                 // Position + type icon column
                 Column(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     CircleAvatar(
                       radius: 14,
                       backgroundColor: typeColor.withOpacity(0.15),
-                      child: Text(
-                        '${stop.position}',
-                        style: TextStyle(
-                          color: typeColor,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 12,
-                        ),
-                      ),
+                      child: trackIndex != null
+                          ? Text(
+                              '$trackIndex',
+                              style: TextStyle(
+                                color: typeColor,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 12,
+                              ),
+                            )
+                          : Icon(
+                              _typeIcons[stop.type] ?? Icons.place_outlined,
+                              color: typeColor,
+                              size: 14,
+                            ),
                     ),
                     const SizedBox(height: 4),
                     Icon(typeIcon, size: 16, color: typeColor),
@@ -82,6 +119,7 @@ class StopCard extends StatelessWidget {
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
                         stop.placeName ??
@@ -116,7 +154,7 @@ class StopCard extends StatelessWidget {
                               if (stop.durationMin != null)
                                 _InfoChip(
                                   icon: Icons.timer_outlined,
-                                  label: '${stop.durationMin} min',
+                                  label: stop.formattedDuration,
                                 ),
                               if (costLabel.isNotEmpty)
                                 _InfoChip(
@@ -190,9 +228,81 @@ class StopCard extends StatelessWidget {
                   ],
                 ),
               ),
+
+            if (hasNotes)
+              Padding(
+                padding: const EdgeInsets.only(top: 8, left: 40),
+                child: _NotesSection(
+                  notes: stop.notes!,
+                  expanded: _notesExpanded,
+                  onToggle: () => setState(() {
+                    _notesExpanded = !_notesExpanded;
+                  }),
+                ),
+              ),
           ],
         ),
       ),
+      ),
+    );
+  }
+}
+
+class _NotesSection extends StatelessWidget {
+  final String notes;
+  final bool expanded;
+  final VoidCallback onToggle;
+
+  const _NotesSection({
+    required this.notes,
+    required this.expanded,
+    required this.onToggle,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        InkWell(
+          onTap: onToggle,
+          borderRadius: BorderRadius.circular(4),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 4),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.notes, size: 14, color: Colors.grey.shade600),
+                const SizedBox(width: 4),
+                Text(
+                  'Notes',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Colors.grey.shade700,
+                        fontWeight: FontWeight.w500,
+                      ),
+                ),
+                Icon(
+                  expanded ? Icons.expand_less : Icons.expand_more,
+                  size: 18,
+                  color: Colors.grey.shade600,
+                ),
+              ],
+            ),
+          ),
+        ),
+        AnimatedSize(
+          duration: const Duration(milliseconds: 180),
+          curve: Curves.easeInOut,
+          alignment: Alignment.topLeft,
+          child: expanded
+              ? Padding(
+                  padding: const EdgeInsets.only(top: 4, right: 4),
+                  child: InertMarkdownBody(data: notes),
+                )
+              : const SizedBox(width: double.infinity),
+        ),
+      ],
     );
   }
 }

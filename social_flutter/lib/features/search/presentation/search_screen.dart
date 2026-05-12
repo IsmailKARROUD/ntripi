@@ -11,6 +11,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:social_flutter/core/api/api_client.dart';
 import 'package:social_flutter/features/search/providers/search_provider.dart';
 import 'package:social_flutter/shared/models/user.dart';
 import 'package:social_flutter/shared/widgets/user_avatar.dart';
@@ -77,7 +78,15 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
           constraints: BoxConstraints(maxWidth: isDesktopWeb() ? kDesktopMaxWidth : double.infinity),
           child: resultsAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, _) => Center(child: Text('Error: $error')),
+        error: (error, _) => Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Text(
+              extractErrorMessage(error),
+              textAlign: TextAlign.center,
+            ),
+          ),
+        ),
         data: (users) {
           if (_searchController.text.isEmpty) {
             return const Center(
@@ -125,7 +134,7 @@ class _SearchResultTile extends StatelessWidget {
         children: [
           Flexible(
             child: Text(
-              user.displayName ?? user.username,
+              user.nameForDisplay,
               overflow: TextOverflow.ellipsis,
               style: const TextStyle(fontWeight: FontWeight.w600),
             ),
@@ -137,7 +146,7 @@ class _SearchResultTile extends StatelessWidget {
         ],
       ),
       subtitle: Text(
-        '@${user.username}',
+        user.handle,
         style: const TextStyle(color: Colors.grey),
       ),
       trailing: Text(

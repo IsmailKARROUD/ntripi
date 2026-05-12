@@ -11,7 +11,7 @@ import uuid
 from datetime import datetime
 
 from sqlalchemy import (
-    CheckConstraint, DateTime, ForeignKey, SmallInteger, UniqueConstraint, func,
+    CheckConstraint, DateTime, ForeignKey, SmallInteger, Text, UniqueConstraint, func,
 )
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.dialects.postgresql import UUID
@@ -74,6 +74,11 @@ class ItineraryRating(Base):
     experience_stars: Mapped[int | None] = mapped_column(SmallInteger, nullable=True)
     accessibility_stars: Mapped[int | None] = mapped_column(SmallInteger, nullable=True)
     family_friendly_stars: Mapped[int | None] = mapped_column(SmallInteger, nullable=True)
+
+    # Optional free-text review note (Markdown source). Rendered client-side
+    # with link-inert config (no clickable URLs) to keep the surface free of
+    # phishing vectors on public itineraries.
+    note: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),

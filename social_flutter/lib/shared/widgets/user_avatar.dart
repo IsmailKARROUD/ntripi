@@ -4,6 +4,7 @@
 // Falls back to a person icon placeholder if null or on load error.
 // Used in profile screens, search results, and follow request lists.
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
 class UserAvatar extends StatelessWidget {
@@ -33,7 +34,7 @@ class UserAvatar extends StatelessWidget {
 
     return CircleAvatar(
       radius: radius,
-      backgroundImage: NetworkImage(avatarUrl!),
+      backgroundImage: CachedNetworkImageProvider(avatarUrl!),
       // Show placeholder on network image load error.
       onBackgroundImageError: (exception, stackTrace) {},
       backgroundColor: Theme.of(context).colorScheme.primaryContainer,

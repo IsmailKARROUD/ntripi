@@ -1,85 +1,92 @@
-// widgets/transport_badge.dart — Compact badge: mode · line/direction · duration · cost.
-// When the leg has a noteType the badge adopts the annotation colour palette.
+// widgets/transport_badge.dart — Compact chip for one transport leg inside a SegmentCard.
+//
+// Displays: mode icon · leg summary · per-leg cost · segment total duration.
+// formattedDuration is the segment-level total, not per-leg — it's shown once
+// per badge because the badge is the only visible unit in the card's Wrap.
 
 import 'package:flutter/material.dart';
 import 'package:social_flutter/core/ui/app_theme.dart';
-import 'package:social_flutter/features/itineraries/domain/annotation.dart';
 import 'package:social_flutter/features/itineraries/domain/transport_leg.dart';
-
-const _noteTypeConfigs = {
-  AnnotationType.advice: (
-    bg: kMist,
-    fg: kForest,
-    icon: Icons.lightbulb_outline,
-  ),
-  AnnotationType.caution: (
-    bg: Color(0xFFFFF0CC),
-    fg: kAmber,
-    icon: Icons.warning_amber_outlined,
-  ),
-  AnnotationType.avoid: (
-    bg: Color(0xFFFFDAD6),
-    fg: Color(0xFFBA1A1A),
-    icon: Icons.block,
-  ),
-  AnnotationType.info: (
-    bg: Color(0xFFD0EDD8),
-    fg: kCanopy,
-    icon: Icons.info_outline,
-  ),
-};
 
 class TransportBadge extends StatelessWidget {
   final TransportLeg leg;
-  /// Currency code shown after the cost amount (e.g. "EUR"). Omit to hide cost.
-  final String? currency;
+  final String currency;
+  // Segment-level total duration passed in from SegmentCard — not a per-leg value.
+  final String formattedDuration;
 
-  const TransportBadge({super.key, required this.leg, this.currency});
+  const TransportBadge(
+      {super.key,
+      required this.leg,
+      required this.currency,
+      required this.formattedDuration});
 
-  String get _label {
-    final parts = <String>[leg.summary];
-    if (leg.durationMin != null && leg.durationMin! > 0) {
-      final h = leg.durationMin! ~/ 60;
-      final m = leg.durationMin! % 60;
-      parts.add(h == 0 ? '${m}min' : (m == 0 ? '${h}h' : '${h}h ${m}min'));
-    }
-    if (currency != null) {
-      if (leg.isFree) {
-        parts.add('Free');
-      } else if (leg.cost > 0) {
-        parts.add('${leg.cost.toStringAsFixed(2)} $currency');
-      }
-    }
-    return parts.join(' · ');
+  // Returns null when the leg has no cost info at all (cost == 0 and not free),
+  // so the badge doesn't show a misleading "0.00" or empty label.
+  String? get _costLabel {
+    if (leg.isFree) return 'Free';
+    if (leg.cost > 0) return '${leg.cost.toStringAsFixed(2)} $currency';
+    return null;
   }
 
   @override
   Widget build(BuildContext context) {
-    final config = leg.noteType != null ? _noteTypeConfigs[leg.noteType!] : null;
-    final bg = config?.bg ?? Colors.grey.shade200;
-    final fg = config?.fg ?? Colors.grey.shade700;
-
+    final costLabel = _costLabel;
+    String _legString = leg.summary;
+    if (costLabel != null) {
+      _legString += ' · $costLabel';
+    }
+    if (formattedDuration.isNotEmpty && formattedDuration != '—') {
+      _legString += ' · $formattedDuration';
+    }
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: bg,
+        color: kSand,
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(leg.mode.icon, size: 13, color: fg),
+          Icon(leg.mode.icon, size: 13, color: kCanopy),
           const SizedBox(width: 4),
-          Flexible(
-            child: Text(
-              _label,
-              style: Theme.of(context)
-                  .textTheme
-                  .bodySmall
-                  ?.copyWith(color: fg),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
+          Text(
+            _legString,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: kCanopy,
+                ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class AddTransportBadge extends StatelessWidget {
+  // ignore: use_key_in_widget_constructors
+  final String label;
+  const AddTransportBadge({super.key, this.label = 'Add transit'});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: kSand,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.add, size: 13, color: kCanopy),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: Theme.of(context)
+                .textTheme
+                .bodySmall
+                ?.copyWith(color: kCanopy),
           ),
         ],
       ),

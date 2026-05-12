@@ -8,12 +8,16 @@ class MyRating {
   final int? accessibilityStars;
   final int? familyFriendlyStars;
 
+  /// Optional Markdown-source review note. Rendered link-inert client-side.
+  final String? note;
+
   const MyRating({
     required this.stars,
     this.safetyStars,
     this.experienceStars,
     this.accessibilityStars,
     this.familyFriendlyStars,
+    this.note,
   });
 
   factory MyRating.fromJson(Map<String, dynamic> json) => MyRating(
@@ -22,6 +26,7 @@ class MyRating {
         experienceStars: json['experience_stars'] as int?,
         accessibilityStars: json['accessibility_stars'] as int?,
         familyFriendlyStars: json['family_friendly_stars'] as int?,
+        note: json['note'] as String?,
       );
 
   Map<String, dynamic> toJson() => {
@@ -30,6 +35,7 @@ class MyRating {
         if (experienceStars != null) 'experience_stars': experienceStars,
         if (accessibilityStars != null) 'accessibility_stars': accessibilityStars,
         if (familyFriendlyStars != null) 'family_friendly_stars': familyFriendlyStars,
+        if (note != null) 'note': note,
       };
 
   MyRating copyWith({
@@ -38,6 +44,7 @@ class MyRating {
     Object? experienceStars = _absent,
     Object? accessibilityStars = _absent,
     Object? familyFriendlyStars = _absent,
+    Object? note = _absent,
   }) =>
       MyRating(
         stars: stars ?? this.stars,
@@ -45,6 +52,7 @@ class MyRating {
         experienceStars: experienceStars == _absent ? this.experienceStars : experienceStars as int?,
         accessibilityStars: accessibilityStars == _absent ? this.accessibilityStars : accessibilityStars as int?,
         familyFriendlyStars: familyFriendlyStars == _absent ? this.familyFriendlyStars : familyFriendlyStars as int?,
+        note: note == _absent ? this.note : note as String?,
       );
 }
 

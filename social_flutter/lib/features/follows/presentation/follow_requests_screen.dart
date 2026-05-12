@@ -28,7 +28,26 @@ class FollowRequestsScreen extends ConsumerWidget {
           constraints: BoxConstraints(maxWidth: isDesktopWeb() ? kDesktopMaxWidth : double.infinity),
           child: requestsAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, _) => Center(child: Text('Error: $error')),
+        error: (error, _) => Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  extractErrorMessage(error),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 16),
+                FilledButton(
+                  onPressed: () =>
+                      ref.read(followRequestsProvider.notifier).refresh(),
+                  child: const Text('Retry'),
+                ),
+              ],
+            ),
+          ),
+        ),
         data: (requests) {
           if (requests.isEmpty) {
             return const Center(
@@ -126,7 +145,7 @@ class _FollowRequestTileState extends ConsumerState<_FollowRequestTile> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  r.displayName ?? r.username,
+                  r.displayName ?? '@${r.username}',
                   style: const TextStyle(fontWeight: FontWeight.w600),
                   overflow: TextOverflow.ellipsis,
                 ),

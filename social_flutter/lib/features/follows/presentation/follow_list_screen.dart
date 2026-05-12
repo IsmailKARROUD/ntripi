@@ -120,10 +120,10 @@ class _UserTile extends StatelessWidget {
       leading: UserAvatar(avatarUrl: user.avatarUrl, radius: 22),
       title: Row(
         children: [
-          // Use display name if set, otherwise fall back to username.
+          // Use display name if set, otherwise fall back to @username.
           Flexible(
             child: Text(
-              user.displayName ?? user.username,
+              user.displayName ?? '@${user.username}',
               overflow: TextOverflow.ellipsis,
               style: const TextStyle(fontWeight: FontWeight.w600),
             ),

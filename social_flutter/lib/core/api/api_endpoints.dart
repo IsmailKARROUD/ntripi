@@ -62,8 +62,9 @@ String itineraryEndpoint(String id) => '/itineraries/$id';
 /// Add a stop to an itinerary / list stops.
 String itineraryStopsEndpoint(String id) => '/itineraries/$id/stops';
 
-/// Reorder all stops in an itinerary.
-String itineraryStopsReorderEndpoint(String id) => '/itineraries/$id/stops/reorder';
+/// Batch reorder of stops within tracks (POST). Server computes new
+/// fractional-index ranks from the order the client sends.
+String itineraryReorderEndpoint(String id) => '/itineraries/$id/reorder';
 
 /// Update or delete a single stop.
 String itineraryStopEndpoint(String id, String stopId) =>
@@ -137,6 +138,9 @@ const kShareBaseUrl = String.fromEnvironment(
   'SHARE_BASE_URL',
   defaultValue: 'http://localhost:8000',
 );
+
+/// Android APK / Play Store download URL. Empty string means no link.
+const kAndroidDownloadUrl = String.fromEnvironment('ANDROID_DOWNLOAD_URL', defaultValue: '');
 
 /// Returns the public share URL for a given itinerary ID.
 String shareUrlFor(String itineraryId) => '$kShareBaseUrl/share/i/$itineraryId';

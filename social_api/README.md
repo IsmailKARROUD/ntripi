@@ -15,32 +15,39 @@ social_api/
 │   │   ├── user.py                    ← users table
 │   │   ├── follow.py                  ← follows table + FollowStatus enum
 │   │   ├── itinerary.py               ← itineraries table
-│   │   ├── stop.py                    ← stops table
+│   │   ├── track.py                   ← tracks table (groups parallel stops, ordered by rank)
+│   │   ├── stop.py                    ← stops table (track_id + rank, no position)
 │   │   ├── annotation.py              ← annotations table (per stop)
+│   │   ├── itinerary_annotation.py    ← itinerary_annotations table (trip-level notes)
 │   │   ├── transit_segment.py         ← transit_segments table
 │   │   ├── transport_leg.py           ← transport_legs table
-│   │   ├── itinerary_rating.py        ← itinerary_ratings table
+│   │   ├── itinerary_rating.py        ← itinerary_ratings table (5 dimensions)
 │   │   └── itinerary_allowed_user.py  ← itinerary_allowed_users table
 │   ├── schemas/
 │   │   ├── auth.py          ← Register/Login request + Token response
 │   │   ├── user.py          ← User profile schemas
 │   │   ├── follow.py        ← Follow response + request list schemas
-│   │   └── itinerary.py     ← All itinerary/stop/segment/leg/rating schemas
+│   │   └── itinerary.py     ← All itinerary/stop/segment/leg/rating/annotation schemas
 │   ├── routers/
 │   │   ├── auth.py          ← POST /auth/register, POST /auth/login
 │   │   ├── users.py         ← GET/PATCH /users/me, search, public profile
 │   │   ├── follows.py       ← All follow/unfollow endpoints
-│   │   └── itineraries.py   ← All itinerary, stop, segment, leg, rating endpoints
+│   │   ├── itineraries.py   ← All itinerary, stop, segment, leg, rating, image endpoints
+│   │   ├── share.py         ← GET /share/i/{id} public share landing page
+│   │   └── web.py           ← Web HTML routes (login, register, marketing pages)
 │   └── services/
 │       ├── auth.py               ← bcrypt hashing + JWT create/decode
-│       └── itinerary_access.py   ← Visibility logic + rating recalculation
+│       ├── auth_service.py       ← Shared login/session logic for web + API
+│       ├── itinerary_access.py   ← Visibility logic + rating recalculation
+│       ├── image_service.py      ← Pillow: resize + EXIF strip + 1200×630 crop + JPEG
+│       ├── ordering.py           ← Fractional indexing: key_between / n_keys_between
+│       └── share_service.py      ← OG metadata builder for share pages
 ├── alembic/
 │   ├── env.py               ← Alembic config (reads DATABASE_URL from settings)
 │   └── versions/            ← Generated migration scripts go here
 ├── alembic.ini              ← Alembic CLI config
 ├── requirements.txt
 ├── .env.example
-├── Procfile                 ← Railway/Render deployment
 └── README.md
 ```
 
@@ -50,21 +57,23 @@ social_api/
 
 ### Table: users
 
-| Column          | Type         | Notes                                              |
-|-----------------|--------------|----------------------------------------------------|
-| id              | UUID         | Primary key, auto-generated                        |
-| username        | VARCHAR(30)  | Unique, indexed, lowercase/digits/underscores only |
-| email           | VARCHAR(255) | Unique, indexed                                    |
-| password_hash   | VARCHAR(255) | bcrypt hash only — plain password never stored     |
-| display_name    | VARCHAR(100) | Nullable                                           |
-| bio             | TEXT         | Nullable                                           |
-| avatar_url      | TEXT         | Nullable                                           |
-| is_private      | BOOLEAN      | Default false — drives follow flow                 |
-| followers_count | INTEGER      | Denormalized counter, default 0                    |
-| following_count | INTEGER      | Denormalized counter, default 0                    |
-| is_active       | BOOLEAN      | Default true — soft delete/suspension flag         |
-| created_at      | TIMESTAMP    | Auto-set on insert                                 |
-| updated_at      | TIMESTAMP    | Auto-updated on every change                       |
+| Column          | Type         | Notes                                                    |
+|-----------------|--------------|----------------------------------------------------------|
+| id              | UUID         | Primary key, auto-generated                              |
+| username        | VARCHAR(30)  | Display form — a-z A-Z 0-9 period underscore             |
+| username_lower  | VARCHAR(30)  | Unique, indexed — always used for lookups                |
+| email           | VARCHAR(255) | Unique, indexed, lowercased before storage               |
+| password_hash   | VARCHAR(255) | bcrypt hash only — plain password never stored           |
+| display_name    | VARCHAR(50)  | Nullable — free Unicode                                  |
+| bio             | TEXT         | Nullable                                                 |
+| avatar_url      | TEXT         | Nullable                                                 |
+| is_private      | BOOLEAN      | Default false — drives follow flow                       |
+| followers_count | INTEGER      | Denormalized counter, default 0                          |
+| following_count | INTEGER      | Denormalized counter, default 0                          |
+| is_active       | BOOLEAN      | Default true — soft delete/suspension flag               |
+| tos_accepted_at | TIMESTAMP    | Captured at registration (GDPR)                          |
+| created_at      | TIMESTAMP    | Auto-set on insert                                       |
+| updated_at      | TIMESTAMP    | Auto-updated on every change                             |
 
 ### Table: follows
 
@@ -81,47 +90,63 @@ Constraints: UNIQUE(follower_id, following_id), CHECK follower_id != following_i
 
 ### Table: itineraries
 
-| Column            | Type          | Notes                                                     |
-|-------------------|---------------|-----------------------------------------------------------|
-| id                | UUID          | Primary key                                               |
-| user_id           | UUID          | FK → users.id ON DELETE CASCADE, indexed                  |
-| title             | VARCHAR(200)  |                                                           |
-| description       | TEXT          | Nullable                                                  |
-| cover_image_url   | TEXT          | Nullable                                                  |
-| total_duration_min| INTEGER       | Denormalized sum of stops + segments. Recalculated server-side |
-| total_cost        | NUMERIC(10,2) | Denormalized sum of stops + segments. Recalculated server-side |
-| currency          | VARCHAR(3)    | ISO 4217 code, default `EUR`                              |
-| safety_rating     | SMALLINT      | Nullable, 1–5 (owner's own rating of the route)           |
-| rating_avg        | NUMERIC(3,2)  | Denormalized community average. Recalculated after every rating |
-| rating_count      | INTEGER       | Denormalized count of community ratings                   |
-| visibility        | VARCHAR(20)   | `public` / `followers` / `restricted` / `only_me`        |
-| created_at        | TIMESTAMP     |                                                           |
-| updated_at        | TIMESTAMP     |                                                           |
+| Column             | Type          | Notes                                                     |
+|--------------------|---------------|-----------------------------------------------------------|
+| id                 | UUID          | Primary key                                               |
+| user_id            | UUID          | FK → users.id ON DELETE CASCADE, indexed                  |
+| title              | VARCHAR(200)  |                                                           |
+| description        | TEXT          | Nullable                                                  |
+| cover_image_url    | TEXT          | Nullable — path to uploaded cover image                   |
+| total_duration_min | INTEGER       | Denormalized sum of stops + segments. Recalculated server-side |
+| total_cost         | NUMERIC(10,2) | Denormalized sum of stops + segments. Recalculated server-side |
+| currency           | VARCHAR(3)    | ISO 4217 code, default `EUR`                              |
+| safety_rating      | SMALLINT      | Nullable, 1–5 (owner's personal route-safety rating)      |
+| rating_avg         | NUMERIC(3,2)  | Denormalized community average overall. NULL when count=0 |
+| rating_count       | INTEGER       | Count of community overall ratings                        |
+| visibility         | VARCHAR(20)   | `public` / `followers` / `restricted` / `only_me`        |
+| created_at         | TIMESTAMP     |                                                           |
+| updated_at         | TIMESTAMP     |                                                           |
+
+### Table: tracks
+
+A track is a vertical column of parallel stop alternatives at the same point in the journey. Tracks are ordered within an itinerary by `rank` (fractional indexing).
+
+| Column       | Type      | Notes                                                    |
+|--------------|-----------|----------------------------------------------------------|
+| id           | UUID      | Primary key                                              |
+| itinerary_id | UUID      | FK → itineraries.id ON DELETE CASCADE, indexed           |
+| rank         | TEXT COLLATE "C" | Fractional-index key — byte-wise sorted            |
+| created_at   | TIMESTAMP |                                                          |
+| updated_at   | TIMESTAMP |                                                          |
+
+Constraints: UNIQUE(itinerary_id, rank). A track is always non-empty — it is created with its first stop and deleted when its last stop is deleted.
 
 ### Table: stops
 
-> **Stop role (origin / waypoint / arrival) is not stored here.** Flutter derives it
-> from sorted position at read time: first stop = origin, last = arrival, rest = waypoint.
+> **Stop role (origin / waypoint / arrival) is not stored here.** Flutter derives it from track position: first track = origin, last track = arrival, rest = waypoint. Computed in `Itinerary._parseTracks()`. No `type` column exists.
 
-| Column       | Type          | Notes                                                            |
-|--------------|---------------|------------------------------------------------------------------|
-| id           | UUID          | Primary key                                                      |
-| itinerary_id | UUID          | FK → itineraries.id ON DELETE CASCADE, indexed                   |
-| position     | SMALLINT      | 1-based order within the itinerary                               |
-| place_name   | VARCHAR(200)  | Nullable                                                         |
-| place_address| TEXT          | Nullable                                                         |
-| lat          | NUMERIC(9,6)  | Nullable — ~11cm precision                                       |
-| lng          | NUMERIC(9,6)  | Nullable                                                         |
-| place_type   | VARCHAR(50)   | Nullable — restaurant/cafe/museum/hotel/park/station/airport/beach/landmark/other |
-| duration_min | INTEGER       | Nullable — time spent at this stop                               |
-| cost         | NUMERIC(10,2) | Default 0.00                                                     |
-| is_free      | BOOLEAN       | Explicitly free (park, beach, etc.)                              |
-| notes        | TEXT          | Nullable                                                         |
-| created_at   | TIMESTAMP     |                                                                  |
+| Column       | Type          | Notes                                                                |
+|--------------|---------------|----------------------------------------------------------------------|
+| id           | UUID          | Primary key                                                          |
+| itinerary_id | UUID          | FK → itineraries.id ON DELETE CASCADE, indexed                       |
+| track_id     | UUID          | FK → tracks.id ON DELETE CASCADE, indexed                            |
+| rank         | TEXT COLLATE "C" | Fractional-index key within the track                             |
+| place_name   | VARCHAR(200)  | Nullable                                                             |
+| place_address| TEXT          | Nullable                                                             |
+| lat          | NUMERIC(9,6)  | Nullable — ~11cm precision                                           |
+| lng          | NUMERIC(9,6)  | Nullable                                                             |
+| place_type   | VARCHAR(50)   | Nullable — camelCase: eatDrink/sleep/pray/learnSee/buy/playWatch/nature/travel/healBathe/entertainment/sight |
+| duration_min | INTEGER       | Nullable                                                             |
+| cost         | NUMERIC(10,2) | Default 0.00                                                         |
+| is_free      | BOOLEAN       | Explicitly free (park, beach, etc.)                                  |
+| notes        | TEXT          | Nullable                                                             |
+| created_at   | TIMESTAMP     |                                                                      |
 
-Constraints: UNIQUE(itinerary_id, position)
+Constraints: UNIQUE(track_id, rank)
 
 ### Table: annotations
+
+Stop-level annotations. Each belongs to a single stop.
 
 | Column     | Type        | Notes                                                  |
 |------------|-------------|--------------------------------------------------------|
@@ -130,6 +155,21 @@ Constraints: UNIQUE(itinerary_id, position)
 | type       | VARCHAR(20) | `advice` / `caution` / `avoid` / `info`                |
 | content    | TEXT        | Required                                               |
 | created_at | TIMESTAMP   |                                                        |
+| updated_at | TIMESTAMP   | Auto-updated on every PATCH                            |
+
+### Table: itinerary_annotations
+
+Trip-level annotations. Each belongs to a single itinerary (not a stop).
+Used for general notes about the trip as a whole.
+
+| Column       | Type        | Notes                                                  |
+|--------------|-------------|--------------------------------------------------------|
+| id           | UUID        | Primary key                                            |
+| itinerary_id | UUID        | FK → itineraries.id ON DELETE CASCADE, indexed         |
+| type         | VARCHAR(20) | `advice` / `caution` / `avoid` / `info`                |
+| content      | TEXT        | Required                                               |
+| created_at   | TIMESTAMP   |                                                        |
+| updated_at   | TIMESTAMP   | Auto-updated on every PATCH                            |
 
 ### Table: transit_segments
 
@@ -165,14 +205,18 @@ Constraints: UNIQUE(segment_id, position)
 
 ### Table: itinerary_ratings
 
-| Column       | Type      | Notes                                                                 |
-|--------------|-----------|-----------------------------------------------------------------------|
-| id           | UUID      | Primary key                                                           |
-| itinerary_id | UUID      | FK → itineraries.id ON DELETE CASCADE, indexed                        |
-| user_id      | UUID      | FK → users.id ON DELETE **SET NULL** — GDPR: rating kept anonymized   |
-| stars        | SMALLINT  | 1–5                                                                   |
-| created_at   | TIMESTAMP |                                                                       |
-| updated_at   | TIMESTAMP |                                                                       |
+| Column                | Type          | Notes                                                              |
+|-----------------------|---------------|--------------------------------------------------------------------|
+| id                    | UUID          | Primary key                                                        |
+| itinerary_id          | UUID          | FK → itineraries.id ON DELETE CASCADE, indexed                     |
+| user_id               | UUID          | FK → users.id ON DELETE **SET NULL** — GDPR: rating kept anonymized|
+| stars                 | SMALLINT      | 1–5 (required — overall score)                                     |
+| safety_stars          | SMALLINT      | Nullable, 1–5                                                      |
+| experience_stars      | SMALLINT      | Nullable, 1–5                                                      |
+| accessibility_stars   | SMALLINT      | Nullable, 1–5                                                      |
+| family_friendly_stars | SMALLINT      | Nullable, 1–5                                                      |
+| created_at            | TIMESTAMP     |                                                                    |
+| updated_at            | TIMESTAMP     |                                                                    |
 
 Constraints: UNIQUE(itinerary_id, user_id)
 
@@ -230,21 +274,38 @@ Composite primary key (itinerary_id, user_id).
 | DELETE | /itineraries/{id}          | Yes  | Delete itinerary and all its data                  |
 | GET    | /users/{id}/itineraries    | Yes  | List another user's itineraries (visibility-filtered) |
 
+### Cover Image
+
+| Method | Path                       | Auth | Description                                              |
+|--------|----------------------------|------|----------------------------------------------------------|
+| POST   | /itineraries/{id}/image    | Yes  | Upload cover image (multipart/form-data). Processes via Pillow. |
+| DELETE | /itineraries/{id}/image    | Yes  | Delete cover image and clear cover_image_url             |
+
 ### Stops
 
-| Method | Path                                   | Auth | Description                              |
-|--------|----------------------------------------|------|------------------------------------------|
-| POST   | /itineraries/{id}/stops                | Yes  | Add a stop (inserts at position, shifts others up) |
-| PATCH  | /itineraries/{id}/stops/reorder        | Yes  | Reorder all stops by providing ordered ID list |
-| PATCH  | /itineraries/{id}/stops/{stopId}       | Yes  | Partial update a stop                    |
-| DELETE | /itineraries/{id}/stops/{stopId}       | Yes  | Delete a stop and its annotations        |
+All mutation endpoints require an `If-Match` header matching the itinerary's current ETag. Missing header → 428. Stale header → 412. Successful response includes the new `ETag` header.
 
-### Annotations
+| Method | Path                             | Auth | Description                                                       |
+|--------|----------------------------------|------|-------------------------------------------------------------------|
+| POST   | /itineraries/{id}/stops          | Yes  | Add a stop. `track_id=null` creates a new track; otherwise adds to existing track. Anchors: `after_stop_id`, `before_stop_id`, `after_track_id`, `before_track_id`. |
+| PATCH  | /itineraries/{id}/stops/{stopId} | Yes  | Partial update. Optional `track_id` change moves the stop across tracks. |
+| DELETE | /itineraries/{id}/stops/{stopId} | Yes  | Delete a stop; deletes its track too if it becomes empty.         |
 
-| Method | Path                                                   | Auth | Description             |
-|--------|--------------------------------------------------------|------|-------------------------|
-| POST   | /itineraries/{id}/stops/{stopId}/annotations           | Yes  | Add annotation to stop  |
-| DELETE | /itineraries/{id}/stops/{stopId}/annotations/{annId}   | Yes  | Delete annotation       |
+### Stop Annotations
+
+| Method | Path                                                       | Auth | Description                   |
+|--------|------------------------------------------------------------|------|-------------------------------|
+| POST   | /itineraries/{id}/stops/{stopId}/annotations               | Yes  | Add annotation to stop        |
+| PATCH  | /itineraries/{id}/stops/{stopId}/annotations/{annId}       | Yes  | Update type and/or content    |
+| DELETE | /itineraries/{id}/stops/{stopId}/annotations/{annId}       | Yes  | Delete annotation             |
+
+### Itinerary Annotations (trip-level notes)
+
+| Method | Path                                          | Auth | Description                         |
+|--------|-----------------------------------------------|------|-------------------------------------|
+| POST   | /itineraries/{id}/annotations                 | Yes  | Add trip-level annotation           |
+| PATCH  | /itineraries/{id}/annotations/{annId}         | Yes  | Update type and/or content          |
+| DELETE | /itineraries/{id}/annotations/{annId}         | Yes  | Delete trip-level annotation        |
 
 ### Transit Segments
 
@@ -257,7 +318,7 @@ Composite primary key (itinerary_id, user_id).
 
 ### Transport Legs
 
-> These endpoints are **not called by the Flutter app**. Flutter uses `PATCH /segments/{id}` (full leg replacement) for all leg changes. These endpoints are available for future API consumers (web client, third-party integrations).
+> These endpoints are **not called by the Flutter app**. Flutter uses `PATCH /segments/{id}` (full leg replacement) for all leg changes. These endpoints exist for future API consumers.
 
 | Method | Path                                               | Auth | Description                     |
 |--------|----------------------------------------------------|------|---------------------------------|
@@ -267,12 +328,12 @@ Composite primary key (itinerary_id, user_id).
 
 ### Ratings
 
-| Method | Path                            | Auth | Description                               |
-|--------|---------------------------------|------|-------------------------------------------|
-| POST   | /itineraries/{id}/ratings       | Yes  | Submit or update a 1–5 star rating        |
-| GET    | /itineraries/{id}/ratings       | Yes  | Full ratings page (avg, distribution, list) |
-| GET    | /itineraries/{id}/ratings/me    | Yes  | Own rating (404 if not rated)             |
-| DELETE | /itineraries/{id}/ratings/me    | Yes  | Delete own rating                         |
+| Method | Path                            | Auth | Description                                                          |
+|--------|---------------------------------|------|----------------------------------------------------------------------|
+| POST   | /itineraries/{id}/ratings       | Yes  | Submit or update rating (overall required + 4 optional dimensions)   |
+| GET    | /itineraries/{id}/ratings       | Yes  | Full ratings page (avg, distribution, rater list per dimension)      |
+| GET    | /itineraries/{id}/ratings/me    | Yes  | Own rating (404 if not rated)                                        |
+| DELETE | /itineraries/{id}/ratings/me    | Yes  | Delete own rating                                                    |
 
 ### Allowlist (restricted visibility)
 
@@ -282,38 +343,53 @@ Composite primary key (itinerary_id, user_id).
 | GET    | /itineraries/{id}/allowed-users         | Yes  | List users in the allowlist          |
 | DELETE | /itineraries/{id}/allowed-users/{userId}| Yes  | Revoke a user's access               |
 
-### Health
+### Health / Share
 
-| Method | Path | Auth | Description               |
-|--------|------|------|---------------------------|
-| GET    | /    | No   | Returns `{"status":"ok"}` |
+| Method | Path          | Auth | Description                        |
+|--------|---------------|------|------------------------------------|
+| GET    | /             | No   | Returns `{"status":"ok"}`          |
+| GET    | /share/i/{id} | No   | Public share landing page (HTML)   |
 
 ---
 
 ## Key Design Decisions
 
 ### Visibility system
-Four levels enforced by `can_view_itinerary()` in `services/itinerary_access.py` — the single source of truth, never duplicated inline:
+Four levels enforced by `can_view_itinerary()` in `services/itinerary_access.py` — single source of truth, never duplicated inline:
 - `public` — any authenticated user
 - `followers` — owner + accepted followers
 - `restricted` — owner + explicit allowlist
 - `only_me` — owner only (default)
 
+### Tracks and fractional indexing
+Stops are grouped into **tracks**. A track is a column of parallel alternative stops at the same point in the journey (e.g. two hotel options for the same night). Tracks and stops within a track are ordered by `rank` — a lexicographic string key produced by the fractional-indexing algorithm (`services/ordering.py`). Both columns use `TEXT COLLATE "C"` so PostgreSQL sorts by raw byte value, identical to Python's default string comparison. Inserting between two existing items never requires touching other rows — only the new rank needs to be computed.
+
+### ETag / If-Match concurrency control
+Every GET on an itinerary returns an `ETag` header equal to the itinerary's `updated_at` ISO string (quoted per RFC 7232). Every mutation (stop, annotation, segment) requires a matching `If-Match` header. Missing → 428. Stale → 412. This prevents silent overwrites when two sessions edit the same itinerary concurrently. Implemented in `app/dependencies.py` via the `require_etag` dependency (SELECT FOR UPDATE).
+
+### Track lifecycle
+A track is always non-empty. Creating a stop with `track_id=null` creates a new track + stop atomically. Deleting the last stop in a track also deletes the track. This invariant is enforced in application code (`_delete_track_if_empty`), not by a DB trigger, so it is auditable.
+
+### Rank collision retry
+On `IntegrityError` (UNIQUE constraint on rank), the endpoint retries up to 3 times with freshly computed ranks before returning 409. This handles the rare case of two concurrent inserts at the same anchor pair.
+
+### Cover image processing
+`services/image_service.py` uses Pillow to: strip all EXIF metadata (privacy / GPS), resize to fit within 1200×630, and JPEG re-encode at 85% quality. This happens synchronously before the file is written via the storage abstraction.
+
 ### Denormalized totals
-`total_duration_min` and `total_cost` on itineraries, and `total_duration_min` / `total_cost` on transit segments are computed aggregates. They are recalculated by `_recalculate_totals()` / `_recalculate_segment_totals()` after every stop/leg mutation — never updated directly by callers.
+`total_duration_min` and `total_cost` on itineraries, and on transit segments, are recalculated by `_recalculate_totals()` / `_recalculate_segment_totals()` after every stop/leg mutation — never updated directly by callers.
 
-### Two-phase position shifting
-Inserting a stop at an occupied position uses a two-phase UPDATE to avoid UNIQUE(itinerary_id, position) violations:
-1. Park conflicting stops at high temporary positions (offset = max + 1)
-2. Write the final 1-based positions
-
-The same pattern is used in the reorder endpoint.
+### Multi-dimensional ratings
+`stars` (overall) is always required. `safety_stars`, `experience_stars`, `accessibility_stars`, and `family_friendly_stars` are all nullable — `NULL` means the rater didn't score that dimension. Aggregate averages are computed in SQL (`AVG()`), never in Python. Averages are returned as `NULL` (not `0.0`) when count = 0. The Flutter client hides dimension averages when fewer than 3 users have rated that dimension.
 
 ### GDPR: rating anonymization
-`itinerary_ratings.user_id` is `ON DELETE SET NULL`. When a user deletes their account, their star scores are preserved as anonymous community data (ratings are not personal data once detached from an identity). The `RaterInfo` schema handles nullable user fields.
+`itinerary_ratings.user_id` is `ON DELETE SET NULL`. When a user deletes their account, their star scores are preserved as anonymous community data. The `RaterInfo` schema handles nullable user fields.
 
 ### is_free vs cost=0
 Both stops and legs distinguish between *explicitly free* (`is_free=True`) and *cost unknown* (`is_free=False, cost=0.00`). Only non-free rows are summed into totals.
+
+### Two annotation systems
+`annotations` (FK: `stop_id`) and `itinerary_annotations` (FK: `itinerary_id`) are separate tables with the same four type values. Stop annotations are shown inline per stop; itinerary annotations are shown in a "Notes" section on the detail screen. Both support PATCH for updating type and/or content.
 
 ---
 
@@ -379,7 +455,7 @@ createdb ntripi_db
 alembic upgrade head
 
 # 7. Start the dev server
-uvicorn app.main:app --reload
+PYTHONPATH=. uvicorn app.main:app --reload
 ```
 
 API: http://localhost:8000  
@@ -387,23 +463,20 @@ Docs: http://localhost:8000/docs
 
 ---
 
-## Deployment (Railway / Render)
+## Deployment (Railway)
 
-1. Set environment variables in the platform dashboard:
-   - `DATABASE_URL` — managed PostgreSQL URL
+1. Set environment variables:
+   - `DATABASE_URL` — private PostgreSQL URL (`${{Postgres.DATABASE_URL}}`)
    - `SECRET_KEY` — generate with `openssl rand -hex 32`
    - `DEBUG=False`
-   - `ALLOWED_ORIGINS=https://your-frontend-domain.com`
+   - `ALLOWED_ORIGINS=https://ntripi.app`
+   - `STORAGE_BACKEND=filesystem`
+   - `STORAGE_FILESYSTEM_PATH=/app/uploads`
+   - `STORAGE_PUBLIC_URL_PREFIX=/uploads`
 
-2. `Procfile` starts the server:
-   ```
-   web: uvicorn app.main:app --host 0.0.0.0 --port $PORT
-   ```
+2. Persistent volume must be mounted at `/app/uploads` — cover images will be lost on redeploy without it.
 
-3. Release command (runs before each deploy):
-   ```
-   alembic upgrade head
-   ```
+3. Build triggered automatically on push to `main` via the repo-root Dockerfile.
 
 ---
 
@@ -417,3 +490,5 @@ Docs: http://localhost:8000/docs
 - Self-follow prevented at both application and database level.
 - Duplicate follows prevented at both application and database level.
 - All mutating itinerary endpoints verify ownership before proceeding.
+- EXIF metadata (including GPS coordinates) stripped from all uploaded images.
+- Web sessions use `ntripi_session` HTTP-only cookie (Secure when `DEBUG=False`, SameSite=Lax).

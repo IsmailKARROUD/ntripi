@@ -13,12 +13,12 @@ import 'package:social_flutter/features/itineraries/data/share_service.dart';
 import 'package:social_flutter/features/itineraries/domain/allowed_user.dart';
 import 'package:social_flutter/features/itineraries/domain/annotation.dart';
 import 'package:social_flutter/features/itineraries/domain/itinerary.dart';
-import 'package:social_flutter/features/itineraries/domain/itinerary_annotation.dart';
 import 'package:social_flutter/features/itineraries/domain/my_rating.dart';
 import 'package:social_flutter/features/itineraries/domain/ratings_page.dart';
+import 'package:social_flutter/features/itineraries/domain/stop.dart';
 
 // ---------------------------------------------------------------------------
-// MyItinerariesNotifier — list of all itineraries owned by the current user
+// MyItinerariesNotifier
 // ---------------------------------------------------------------------------
 
 class MyItinerariesNotifier extends AsyncNotifier<List<Itinerary>> {
@@ -27,15 +27,15 @@ class MyItinerariesNotifier extends AsyncNotifier<List<Itinerary>> {
     return ref.read(itineraryRepositoryProvider).getMyItineraries();
   }
 
-  /// Re-fetch the full list from the server.
   Future<void> refresh() async {
     state = const AsyncLoading();
     state = await AsyncValue.guard(
-      () => ref.read(itineraryRepositoryProvider).getMyItineraries(),
+      () => ref
+          .read(itineraryRepositoryProvider)
+          .getMyItineraries(forceRefresh: true),
     );
   }
 
-  /// Create a new itinerary and prepend it to the list (optimistic).
   Future<Itinerary> addItinerary(Map<String, dynamic> data) async {
     final itinerary =
         await ref.read(itineraryRepositoryProvider).createItinerary(data);
@@ -45,7 +45,6 @@ class MyItinerariesNotifier extends AsyncNotifier<List<Itinerary>> {
     return itinerary;
   }
 
-  /// Delete an itinerary and remove it from the list (optimistic).
   Future<void> removeItinerary(String id) async {
     await ref.read(itineraryRepositoryProvider).deleteItinerary(id);
     state.whenData((list) {
@@ -60,7 +59,7 @@ final myItinerariesProvider =
 );
 
 // ---------------------------------------------------------------------------
-// ItineraryDetailNotifier — full detail for one itinerary (family by ID)
+// ItineraryDetailNotifier
 // ---------------------------------------------------------------------------
 
 class ItineraryDetailNotifier
@@ -70,63 +69,113 @@ class ItineraryDetailNotifier
     return ref.read(itineraryRepositoryProvider).getItinerary(id);
   }
 
-  /// Full re-fetch from the server — used after stop mutations so totals
-  /// (total_duration_min, total_cost) reflect the server-recalculated values.
-  /// Also called by MyRatingNotifier after a rating change to update rating_avg.
+  /// Current ETag for the If-Match header on every mutation.
+  ///
+  /// Reads the itinerary's updatedAt from the currently loaded state and
+  /// formats it as a quoted RFC 7232 string, e.g. '"2026-05-07T14:23:11Z"'.
+  ///
+  /// Returns '' if state is not yet loaded (AsyncLoading / AsyncError). In
+  /// practice this shouldn't happen because the user has to view the itinerary
+  /// detail screen (which loads state) before any mutation is possible. If it
+  /// does happen the server returns 412 / ItineraryStaleException which prompts
+  /// a reload — a safe fallback.
+  String get _etag => state.value?.eTag ?? '';
+
+  /// Full re-fetch from the server.
+  /// Called after every mutation so totals and track structure are up-to-date,
+  /// and by RefreshIndicator on the detail screen. Forces a fresh server fetch
+  /// (bypasses the cache validator) so a 304 with a stale local body can't
+  /// silently no-op a pull-to-refresh.
   Future<void> refresh() async {
     state = const AsyncLoading();
     state = await AsyncValue.guard(
-      () => ref.read(itineraryRepositoryProvider).getItinerary(arg),
+      () => ref
+          .read(itineraryRepositoryProvider)
+          .getItinerary(arg, forceRefresh: true),
     );
   }
 
-  /// Add a stop, then refresh the full itinerary so totals are accurate.
+  /// Add a stop, then refresh so totals and track structure are accurate.
+  /// The ETag is attached automatically via _etag — the presentation layer
+  /// does not need to know about concurrency control.
   Future<void> addStop(Map<String, dynamic> data) async {
-    await ref.read(itineraryRepositoryProvider).addStop(arg, data);
+    await ref.read(itineraryRepositoryProvider).addStop(arg, data, etag: _etag);
     await refresh();
   }
 
   /// Update a stop, then refresh.
   Future<void> updateStop(String stopId, Map<String, dynamic> data) async {
-    await ref.read(itineraryRepositoryProvider).updateStop(arg, stopId, data);
+    await ref.read(itineraryRepositoryProvider).updateStop(
+          arg, stopId, data,
+          etag: _etag,
+        );
     await refresh();
+  }
+
+  /// Commit a batch reorder in one server transaction.
+  ///
+  /// At least one of [stopOrders], [trackOrder], or [segmentIdsToDelete] must
+  /// be provided. The server validates set-equality (for stop_orders and
+  /// track_order), recomputes fractional-index ranks, deletes any requested
+  /// segments, and returns the full updated itinerary. A `refresh()` after
+  /// the call adopts the server-confirmed state locally.
+  Future<void> applyReorder({
+    Map<String, List<String>>? stopOrders,
+    List<String>? trackOrder,
+    List<String>? segmentIdsToDelete,
+  }) async {
+    await ref.read(itineraryRepositoryProvider).reorderItinerary(
+          arg,
+          stopOrders: stopOrders,
+          trackOrder: trackOrder,
+          segmentIdsToDelete: segmentIdsToDelete,
+          etag: _etag,
+        );
+    await refresh();
+  }
+
+  /// Move a stop to a new position.
+  ///
+  /// Three move modes, mutually exclusive:
+  ///   1. Within-track reorder: pass [afterStopId] / [beforeStopId] only.
+  ///   2. Cross-track move into an existing track: pass [targetTrackId].
+  ///   3. New-track move: pass [afterTrackId] and/or [beforeTrackId]
+  ///      (with [targetTrackId] null). Server creates a brand-new track at
+  ///      that position and moves this stop into it as the sole member.
+  ///
+  /// Bumps the ETag and refreshes the local state. Returns the moved [Stop]
+  /// so callers can read its (possibly newly created) `trackId`.
+  Future<Stop> moveStop(
+    String stopId, {
+    String? afterStopId,
+    String? beforeStopId,
+    String? targetTrackId,
+    String? afterTrackId,
+    String? beforeTrackId,
+  }) async {
+    final body = <String, dynamic>{
+      if (afterStopId != null) 'after_stop_id': afterStopId,
+      if (beforeStopId != null) 'before_stop_id': beforeStopId,
+      if (targetTrackId != null) 'track_id': targetTrackId,
+      if (afterTrackId != null) 'after_track_id': afterTrackId,
+      if (beforeTrackId != null) 'before_track_id': beforeTrackId,
+    };
+    final updated = await ref
+        .read(itineraryRepositoryProvider)
+        .updateStop(arg, stopId, body, etag: _etag);
+    await refresh();
+    return updated;
   }
 
   /// Delete a stop, then refresh.
   Future<void> deleteStop(String stopId) async {
-    await ref.read(itineraryRepositoryProvider).deleteStop(arg, stopId);
+    await ref
+        .read(itineraryRepositoryProvider)
+        .deleteStop(arg, stopId, etag: _etag);
     await refresh();
   }
 
-  /// Reorder stops. The backend returns the updated ItineraryDetail, so we
-  /// replace state directly without a second fetch.
-  Future<void> reorderStops(List<String> stopIds) async {
-    final itinerary = await ref
-        .read(itineraryRepositoryProvider)
-        .reorderStops(arg, stopIds);
-    state = AsyncData(itinerary);
-  }
-
-  /// Add an annotation and update local state without a full refresh —
-  /// annotations don't affect itinerary totals.
-  Future<void> addAnnotation(String stopId, Map<String, dynamic> data) async {
-    final annotation = await ref
-        .read(itineraryRepositoryProvider)
-        .addAnnotation(arg, stopId, data);
-
-    state.whenData((itinerary) {
-      final updatedStops = itinerary.stops.map((s) {
-        if (s.id == stopId) {
-          return s.copyWith(annotations: [...s.annotations, annotation]);
-        }
-        return s;
-      }).toList();
-      state = AsyncData(itinerary.copyWith(stops: updatedStops));
-    });
-  }
-
-  /// Update itinerary header fields (title, description, visibility, etc.).
-  /// Returns the updated Itinerary so callers can redirect if needed.
+  /// Update itinerary header fields.
   Future<Itinerary> updateHeader(Map<String, dynamic> data) async {
     final updated = await ref
         .read(itineraryRepositoryProvider)
@@ -136,6 +185,7 @@ class ItineraryDetailNotifier
         title: updated.title,
         visibility: updated.visibility,
         currency: updated.currency,
+        updatedAt: updated.updatedAt,
       ));
     });
     return updated;
@@ -148,10 +198,7 @@ class ItineraryDetailNotifier
   }
 
   /// Update (replace) a transit segment and refresh.
-  Future<void> updateSegment(
-    String segmentId,
-    Map<String, dynamic> data,
-  ) async {
+  Future<void> updateSegment(String segmentId, Map<String, dynamic> data) async {
     await ref
         .read(itineraryRepositoryProvider)
         .updateSegment(arg, segmentId, data);
@@ -166,100 +213,65 @@ class ItineraryDetailNotifier
     await refresh();
   }
 
-  /// Update an annotation and patch it in local state.
+  /// Add a stop-level annotation, then refresh.
+  Future<void> addAnnotation(String stopId, Map<String, dynamic> data) async {
+    await ref
+        .read(itineraryRepositoryProvider)
+        .addAnnotation(arg, stopId, data, etag: _etag);
+    await refresh();
+  }
+
+  /// Update a stop-level annotation, then refresh.
   Future<void> updateAnnotation(
     String stopId,
     String annotationId, {
     String? content,
     AnnotationType? type,
   }) async {
-    final updated = await ref
-        .read(itineraryRepositoryProvider)
-        .updateAnnotation(arg, stopId, annotationId, content: content, type: type);
-
-    state.whenData((itinerary) {
-      final updatedStops = itinerary.stops.map((s) {
-        if (s.id == stopId) {
-          return s.copyWith(
-            annotations: s.annotations
-                .map((a) => a.id == annotationId ? updated : a)
-                .toList(),
-          );
-        }
-        return s;
-      }).toList();
-      state = AsyncData(itinerary.copyWith(stops: updatedStops));
-    });
+    await ref.read(itineraryRepositoryProvider).updateAnnotation(
+          arg, stopId, annotationId,
+          content: content, type: type,
+          etag: _etag,
+        );
+    await refresh();
   }
 
-  /// Delete an annotation and remove it from local state.
-  Future<void> deleteAnnotation(
-    String stopId,
-    String annotationId,
-  ) async {
+  /// Delete a stop-level annotation, then refresh.
+  Future<void> deleteAnnotation(String stopId, String annotationId) async {
     await ref
         .read(itineraryRepositoryProvider)
-        .deleteAnnotation(arg, stopId, annotationId);
-
-    state.whenData((itinerary) {
-      final updatedStops = itinerary.stops.map((s) {
-        if (s.id == stopId) {
-          return s.copyWith(
-            annotations:
-                s.annotations.where((a) => a.id != annotationId).toList(),
-          );
-        }
-        return s;
-      }).toList();
-      state = AsyncData(itinerary.copyWith(stops: updatedStops));
-    });
+        .deleteAnnotation(arg, stopId, annotationId, etag: _etag);
+    await refresh();
   }
 
-  /// Add an itinerary-level annotation and patch local state.
+  /// Add an itinerary-level annotation, then refresh.
   Future<void> addItineraryAnnotation(Map<String, dynamic> data) async {
-    final annotation = await ref
+    await ref
         .read(itineraryRepositoryProvider)
-        .addItineraryAnnotation(arg, data);
-
-    state.whenData((itinerary) {
-      state = AsyncData(itinerary.copyWith(
-        annotations: [...itinerary.annotations, annotation],
-      ));
-    });
+        .addItineraryAnnotation(arg, data, etag: _etag);
+    await refresh();
   }
 
-  /// Update an itinerary-level annotation and patch local state.
+  /// Update an itinerary-level annotation, then refresh.
   Future<void> updateItineraryAnnotation(
     String annotationId, {
     String? content,
     AnnotationType? type,
   }) async {
-    final updated = await ref
-        .read(itineraryRepositoryProvider)
-        .updateItineraryAnnotation(arg, annotationId,
-            content: content, type: type);
-
-    state.whenData((itinerary) {
-      state = AsyncData(itinerary.copyWith(
-        annotations: itinerary.annotations
-            .map((a) => a.id == annotationId ? updated : a)
-            .toList(),
-      ));
-    });
+    await ref.read(itineraryRepositoryProvider).updateItineraryAnnotation(
+          arg, annotationId,
+          content: content, type: type,
+          etag: _etag,
+        );
+    await refresh();
   }
 
-  /// Delete an itinerary-level annotation and remove it from local state.
+  /// Delete an itinerary-level annotation, then refresh.
   Future<void> deleteItineraryAnnotation(String annotationId) async {
     await ref
         .read(itineraryRepositoryProvider)
-        .deleteItineraryAnnotation(arg, annotationId);
-
-    state.whenData((itinerary) {
-      state = AsyncData(itinerary.copyWith(
-        annotations:
-            itinerary.annotations.where((a) => a.id != annotationId).toList(),
-      ));
-    });
+        .deleteItineraryAnnotation(arg, annotationId, etag: _etag);
+    await refresh();
   }
 }
 
@@ -269,7 +281,7 @@ final itineraryDetailProvider =
 );
 
 // ---------------------------------------------------------------------------
-// AllowedUsersNotifier — restricted allowlist for one itinerary (family by ID)
+// AllowedUsersNotifier
 // ---------------------------------------------------------------------------
 
 class AllowedUsersNotifier
@@ -279,7 +291,6 @@ class AllowedUsersNotifier
     return ref.read(itineraryRepositoryProvider).getAllowedUsers(itineraryId);
   }
 
-  /// Add a user to the allowlist and update local state.
   Future<void> addUser(String userId) async {
     final added = await ref
         .read(itineraryRepositoryProvider)
@@ -289,7 +300,6 @@ class AllowedUsersNotifier
     });
   }
 
-  /// Remove a user from the allowlist and update local state.
   Future<void> removeUser(String userId) async {
     await ref
         .read(itineraryRepositoryProvider)
@@ -306,7 +316,7 @@ final allowedUsersProvider =
 );
 
 // ---------------------------------------------------------------------------
-// UserItinerariesNotifier — itineraries on another user's profile (family by userId)
+// UserItinerariesNotifier
 // ---------------------------------------------------------------------------
 
 class UserItinerariesNotifier
@@ -316,11 +326,12 @@ class UserItinerariesNotifier
     return ref.read(itineraryRepositoryProvider).getUserItineraries(userId);
   }
 
-  /// Re-fetch from the server.
   Future<void> refresh() async {
     state = const AsyncLoading();
     state = await AsyncValue.guard(
-      () => ref.read(itineraryRepositoryProvider).getUserItineraries(arg),
+      () => ref
+          .read(itineraryRepositoryProvider)
+          .getUserItineraries(arg, forceRefresh: true),
     );
   }
 }
@@ -331,37 +342,27 @@ final userItinerariesProvider = AsyncNotifierProviderFamily<
 );
 
 // ---------------------------------------------------------------------------
-// MyRatingNotifier — current user's star rating for one itinerary (family by ID)
+// MyRatingNotifier
 // ---------------------------------------------------------------------------
 
-/// State: the user's current rating, or null if they have not rated.
 class MyRatingNotifier extends FamilyAsyncNotifier<MyRating?, String> {
   @override
   Future<MyRating?> build(String itineraryId) {
     return ref.read(itineraryRepositoryProvider).getMyRating(itineraryId);
   }
 
-  /// Submit (or update) the rating and update itinerary aggregate locally.
   Future<void> submitRating(MyRating rating) async {
     final saved = await ref
         .read(itineraryRepositoryProvider)
         .submitRating(arg, rating);
     state = AsyncData(saved);
-
-    // Refresh the detail so rating_avg / rating_count reflect the new value.
-    await ref
-        .read(itineraryDetailProvider(arg).notifier)
-        .refresh();
+    await ref.read(itineraryDetailProvider(arg).notifier).refresh();
   }
 
-  /// Delete the rating and clear local state.
   Future<void> deleteRating() async {
     await ref.read(itineraryRepositoryProvider).deleteMyRating(arg);
     state = const AsyncData(null);
-
-    await ref
-        .read(itineraryDetailProvider(arg).notifier)
-        .refresh();
+    await ref.read(itineraryDetailProvider(arg).notifier).refresh();
   }
 }
 
@@ -371,7 +372,7 @@ final myRatingProvider =
 );
 
 // ---------------------------------------------------------------------------
-// RatingsPageNotifier — full ratings page for one itinerary (family by ID)
+// RatingsPageNotifier
 // ---------------------------------------------------------------------------
 
 class RatingsPageNotifier extends FamilyAsyncNotifier<RatingsPage, String> {
@@ -380,11 +381,12 @@ class RatingsPageNotifier extends FamilyAsyncNotifier<RatingsPage, String> {
     return ref.read(itineraryRepositoryProvider).getRatingsPage(itineraryId);
   }
 
-  /// Re-fetch from the server — called after a rating is submitted or deleted.
   Future<void> refresh() async {
     state = const AsyncLoading();
     state = await AsyncValue.guard(
-      () => ref.read(itineraryRepositoryProvider).getRatingsPage(arg),
+      () => ref
+          .read(itineraryRepositoryProvider)
+          .getRatingsPage(arg, forceRefresh: true),
     );
   }
 }
@@ -395,17 +397,13 @@ final ratingsPageProvider =
 );
 
 // ---------------------------------------------------------------------------
-// PlaceSearchNotifier — Nominatim suggestions for the stop form search field
+// PlaceSearchNotifier
 // ---------------------------------------------------------------------------
 
 class PlaceSearchNotifier extends AsyncNotifier<List<PlaceSuggestion>> {
   @override
-  Future<List<PlaceSuggestion>> build() async {
-    // Start empty — no search has been performed yet.
-    return [];
-  }
+  Future<List<PlaceSuggestion>> build() async => [];
 
-  /// Perform a Nominatim search and replace the suggestion list.
   Future<void> search(String query) async {
     if (query.trim().isEmpty) {
       state = const AsyncData([]);
@@ -417,7 +415,6 @@ class PlaceSearchNotifier extends AsyncNotifier<List<PlaceSuggestion>> {
     );
   }
 
-  /// Clear suggestions (e.g. after the user selects one).
   void clear() {
     state = const AsyncData([]);
   }

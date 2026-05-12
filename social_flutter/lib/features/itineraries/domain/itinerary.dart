@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:social_flutter/features/itineraries/domain/itinerary_annotation.dart';
 import 'package:social_flutter/features/itineraries/domain/stop.dart';
+import 'package:social_flutter/features/itineraries/domain/track.dart';
 import 'package:social_flutter/features/itineraries/domain/transit_segment.dart';
 
 /// Four-level visibility for an itinerary.
@@ -10,9 +11,8 @@ enum ItineraryVisibility { public, followers, restricted, onlyMe }
 
 /// A travel itinerary owned by a user.
 ///
-/// The same class is used for both summary (list view) and detail (full view)
-/// responses. In summary responses, [stops] is an empty list. In detail
-/// responses, [stops] is populated with the full ordered stop list.
+/// In summary responses [tracks] is empty. In detail responses it is populated
+/// with the full ordered track/stop structure.
 class Itinerary {
   final String id;
   final String userId;
@@ -24,22 +24,23 @@ class Itinerary {
   final String currency;
   final ItineraryVisibility visibility;
   final DateTime createdAt;
+  final DateTime updatedAt;
 
   /// Community rating aggregate. Null until at least one rating exists.
   final double? ratingAvg;
   final int ratingCount;
 
-  /// Empty in summary views, populated in detail views.
-  final List<Stop> stops;
+  /// Ordered tracks. Empty in summary views, populated in detail views.
+  final List<Track> tracks;
 
-  /// Empty in summary views, populated in detail views.
+  /// Transit segments. Empty in summary views.
   final List<TransitSegment> segments;
 
   /// Itinerary-level annotations. Empty in summary views.
   final List<ItineraryAnnotation> annotations;
 
-  /// Count of stops. Populated from `stops_count` in summary responses,
-  /// or derived from [stops] in detail responses.
+  /// Count of stops across all tracks. Populated from stops_count in summary
+  /// responses, or derived from [tracks] in detail responses.
   final int stopsCount;
 
   const Itinerary({
@@ -53,16 +54,17 @@ class Itinerary {
     required this.currency,
     required this.visibility,
     required this.createdAt,
+    required this.updatedAt,
     this.ratingAvg,
     this.ratingCount = 0,
-    this.stops = const [],
+    this.tracks = const [],
     this.segments = const [],
     this.annotations = const [],
     this.stopsCount = 0,
   });
 
   factory Itinerary.fromJson(Map<String, dynamic> json) {
-    final stops = _parseStops(json['stops'] as List<dynamic>?);
+    final tracks = _parseTracks(json['tracks'] as List<dynamic>?);
     return Itinerary(
       id: json['id'] as String,
       userId: json['user_id'] as String,
@@ -74,9 +76,10 @@ class Itinerary {
       currency: json['currency'] as String? ?? 'EUR',
       visibility: _parseVisibility(json['visibility'] as String? ?? 'only_me'),
       createdAt: DateTime.parse(json['created_at'] as String),
+      updatedAt: DateTime.parse(json['updated_at'] as String),
       ratingAvg: (json['rating_avg'] as num?)?.toDouble(),
       ratingCount: json['rating_count'] as int? ?? 0,
-      stops: stops,
+      tracks: tracks,
       segments: (json['segments'] as List<dynamic>?)
               ?.map((s) => TransitSegment.fromJson(s as Map<String, dynamic>))
               .toList() ??
@@ -86,28 +89,57 @@ class Itinerary {
                   ItineraryAnnotation.fromJson(a as Map<String, dynamic>))
               .toList() ??
           [],
-      stopsCount: (json['stops'] as List<dynamic>?)?.length ??
-          (json['stops_count'] as int? ?? 0),
+      stopsCount: tracks.isNotEmpty
+          ? tracks.fold(0, (sum, t) => sum + t.stops.length)
+          : (json['stops_count'] as int? ?? 0),
     );
   }
 
-  static List<Stop> _parseStops(List<dynamic>? raw) {
+  /// Assign the correct StopType to every stop based on its track's position
+  /// in the overall list.
+  ///
+  /// WHY THIS IS DONE HERE AND NOT IN Stop.fromJson:
+  ///   A stop doesn't know whether its track is the first or last — only the
+  ///   itinerary knows that. So Stop.fromJson sets a placeholder (waypoint)
+  ///   and this method overwrites it with the real value after all tracks are
+  ///   loaded.
+  ///
+  /// Rules:
+  ///   0 tracks  → nothing to do (empty itinerary)
+  ///   1 track   → all stops in it are StopType.origin (it is both origin AND arrival)
+  ///   2+ tracks → first track = origin, last track = arrival, rest = waypoint
+  ///
+  /// The server pre-sorts both tracks (by rank) and stops within each track
+  /// (by rank) before returning them, so we trust that order here.
+  static List<Track> _parseTracks(List<dynamic>? raw) {
     if (raw == null || raw.isEmpty) return const [];
-    final stops = raw
-        .map((s) => Stop.fromJson(s as Map<String, dynamic>))
-        .toList()
-      ..sort((a, b) => a.position.compareTo(b.position));
+
+    final tracks = raw
+        .map((t) => Track.fromJson(t as Map<String, dynamic>))
+        .toList();
+
+    if (tracks.isEmpty) return tracks;
+
+    StopType typeForTrackIndex(int idx) {
+      if (tracks.length == 1) return StopType.origin;
+      if (idx == 0) return StopType.origin;
+      if (idx == tracks.length - 1) return StopType.arrival;
+      return StopType.waypoint;
+    }
+
     return [
-      for (var i = 0; i < stops.length; i++)
-        stops[i].copyWith(
-          type: i == 0
-              ? StopType.origin
-              : i == stops.length - 1
-                  ? StopType.arrival
-                  : StopType.waypoint,
+      for (var i = 0; i < tracks.length; i++)
+        tracks[i].copyWith(
+          stops: [
+            for (final stop in tracks[i].stops)
+              stop.copyWith(type: typeForTrackIndex(i))
+          ],
         ),
     ];
   }
+
+  /// Flat list of all stops across all tracks (for legacy helpers / display).
+  List<Stop> get stops => tracks.expand((t) => t.stops).toList();
 
   static ItineraryVisibility _parseVisibility(String raw) {
     const map = {
@@ -137,6 +169,7 @@ class Itinerary {
       'currency': currency,
       'visibility': reverseMap[visibility],
       'created_at': createdAt.toIso8601String(),
+      'updated_at': updatedAt.toIso8601String(),
     };
   }
 
@@ -151,9 +184,10 @@ class Itinerary {
     String? currency,
     ItineraryVisibility? visibility,
     DateTime? createdAt,
+    DateTime? updatedAt,
     double? ratingAvg,
     int? ratingCount,
-    List<Stop>? stops,
+    List<Track>? tracks,
     List<TransitSegment>? segments,
     List<ItineraryAnnotation>? annotations,
     int? stopsCount,
@@ -169,9 +203,10 @@ class Itinerary {
       currency: currency ?? this.currency,
       visibility: visibility ?? this.visibility,
       createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
       ratingAvg: ratingAvg ?? this.ratingAvg,
       ratingCount: ratingCount ?? this.ratingCount,
-      stops: stops ?? this.stops,
+      tracks: tracks ?? this.tracks,
       segments: segments ?? this.segments,
       annotations: annotations ?? this.annotations,
       stopsCount: stopsCount ?? this.stopsCount,
@@ -182,7 +217,6 @@ class Itinerary {
   // Visibility helpers
   // ---------------------------------------------------------------------------
 
-  /// Human-readable label for the current visibility level.
   String get visibilityLabel => switch (visibility) {
         ItineraryVisibility.public => 'Public',
         ItineraryVisibility.followers => 'Followers',
@@ -190,7 +224,6 @@ class Itinerary {
         ItineraryVisibility.onlyMe => 'Only Me',
       };
 
-  /// Icon representing the current visibility level.
   IconData get visibilityIcon => switch (visibility) {
         ItineraryVisibility.public => Icons.public,
         ItineraryVisibility.followers => Icons.people,
@@ -202,23 +235,28 @@ class Itinerary {
   // Duration / cost helpers
   // ---------------------------------------------------------------------------
 
-  /// Human-readable duration: "2h 30min", "45min", or "—" if zero.
   String get formattedDuration {
     if (totalDurationMin <= 0) return '—';
-    final hours = totalDurationMin ~/ 60;
-    final minutes = totalDurationMin % 60;
-    if (hours == 0) return '${minutes}min';
-    if (minutes == 0) return '${hours}h';
-    return '${hours}h ${minutes}min';
+    final years = totalDurationMin ~/ (60 * 24 * 365);
+    int remainingMin = totalDurationMin % (60 * 24 * 365);
+    final days = remainingMin ~/ (60 * 24);
+    remainingMin = remainingMin % (60 * 24);
+    final hours = remainingMin ~/ 60;
+    final minutes = remainingMin % 60;
+    String returnvalue = '';
+    if (years > 0) returnvalue += '${years}y ';
+    if (days > 0) returnvalue += '${days}d ';
+    if (hours > 0) returnvalue += '${hours}h ';
+    if (minutes > 0) returnvalue += '${minutes}min';
+    return returnvalue;
   }
 
-  /// Human-readable cost: "52.90 EUR" or "Free" when total is 0.
   String get formattedCost {
     if (totalCost <= 0.0) return 'Free';
     return '${totalCost.toStringAsFixed(2)} $currency';
   }
 
-  /// The origin stop, if one exists.
+  /// The origin stop (first stop in the first track), if any.
   Stop? get origin {
     try {
       return stops.firstWhere((s) => s.type == StopType.origin);
@@ -227,7 +265,7 @@ class Itinerary {
     }
   }
 
-  /// The arrival stop, if one exists.
+  /// The arrival stop (first stop in the last track), if any.
   Stop? get arrival {
     try {
       return stops.firstWhere((s) => s.type == StopType.arrival);
@@ -235,4 +273,12 @@ class Itinerary {
       return null;
     }
   }
+
+  /// ETag value for use in If-Match mutation headers (RFC 7232 — quotes required).
+  ///
+  /// The server computes the same value from itinerary.updated_at. On PostgreSQL
+  /// this produces "+00:00" timezone; Dart's toIso8601String() on a UTC DateTime
+  /// produces "Z". The server normalizes both forms before comparing, so either
+  /// format is accepted. See _normalize_etag() in app/dependencies.py.
+  String get eTag => '"${updatedAt.toIso8601String()}"';
 }

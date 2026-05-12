@@ -233,7 +233,7 @@ class _SegmentFormScreenState extends ConsumerState<SegmentFormScreen> {
   String _stopLabel(Stop s) {
     final name = s.placeName;
     if (name != null && name.isNotEmpty) return name;
-    return '${s.type.name[0].toUpperCase()}${s.type.name.substring(1)} ${s.position}';
+    return '${s.type.name[0].toUpperCase()}${s.type.name.substring(1)} stop';
   }
 
   @override
@@ -384,7 +384,7 @@ class _SegmentFormScreenState extends ConsumerState<SegmentFormScreen> {
                     TextButton.icon(
                       onPressed: _addLeg,
                       icon: const Icon(Icons.add, size: 18),
-                      label: const Text('Add transit'),
+                      label: const Text('Add Transit'),
                     ),
                   ],
                 ),

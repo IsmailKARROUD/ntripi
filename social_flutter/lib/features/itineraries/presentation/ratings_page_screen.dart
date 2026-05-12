@@ -13,6 +13,7 @@ import 'package:go_router/go_router.dart';
 import 'package:social_flutter/core/ui/app_theme.dart';
 import 'package:social_flutter/features/itineraries/domain/dimension_key.dart';
 import 'package:social_flutter/features/itineraries/domain/ratings_page.dart';
+import 'package:social_flutter/features/itineraries/presentation/widgets/markdown_notes_editor.dart';
 import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
 import 'package:social_flutter/shared/widgets/user_avatar.dart';
 import 'package:social_flutter/core/utils/platform_utils.dart';
@@ -314,8 +315,9 @@ class RatingDistributionBars extends StatelessWidget {
   }
 }
 
-/// One rater tile — shows avatar, name, time, and a 5-star trailing widget.
-class _RatingListTile extends StatelessWidget {
+/// One rater tile — shows avatar, name, time, a 5-star trailing widget,
+/// and an expandable Markdown review note when the rater left one.
+class _RatingListTile extends StatefulWidget {
   final RatingWithUser rating;
   final DimensionKey dimension;
 
@@ -325,9 +327,18 @@ class _RatingListTile extends StatelessWidget {
   });
 
   @override
+  State<_RatingListTile> createState() => _RatingListTileState();
+}
+
+class _RatingListTileState extends State<_RatingListTile> {
+  bool _noteExpanded = false;
+
+  @override
   Widget build(BuildContext context) {
+    final rating = widget.rating;
     final user = rating.user;
-    final score = rating.scoreForDimension(dimension) ?? rating.score;
+    final score = rating.scoreForDimension(widget.dimension) ?? rating.score;
+    final hasNote = rating.note != null && rating.note!.trim().isNotEmpty;
 
     final Widget tile = ListTile(
       leading: user.isDeleted
@@ -366,7 +377,86 @@ class _RatingListTile extends StatelessWidget {
           : () => context.push('/profile/${user.userId}'),
     );
 
-    return user.isDeleted ? Opacity(opacity: 0.6, child: tile) : tile;
+    final Widget body = hasNote
+        ? Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              tile,
+              Padding(
+                padding: const EdgeInsets.only(left: 72, right: 16, bottom: 4),
+                child: _ReviewNote(
+                  note: rating.note!,
+                  expanded: _noteExpanded,
+                  onToggle: () =>
+                      setState(() => _noteExpanded = !_noteExpanded),
+                ),
+              ),
+            ],
+          )
+        : tile;
+
+    return user.isDeleted ? Opacity(opacity: 0.6, child: body) : body;
+  }
+}
+
+class _ReviewNote extends StatelessWidget {
+  final String note;
+  final bool expanded;
+  final VoidCallback onToggle;
+
+  const _ReviewNote({
+    required this.note,
+    required this.expanded,
+    required this.onToggle,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        InkWell(
+          onTap: onToggle,
+          borderRadius: BorderRadius.circular(4),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 2),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.format_quote,
+                    size: 14, color: Colors.grey.shade600),
+                const SizedBox(width: 4),
+                Text(
+                  expanded ? 'Hide review' : 'Read review',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Colors.grey.shade700,
+                        fontWeight: FontWeight.w500,
+                      ),
+                ),
+                Icon(
+                  expanded ? Icons.expand_less : Icons.expand_more,
+                  size: 18,
+                  color: Colors.grey.shade600,
+                ),
+              ],
+            ),
+          ),
+        ),
+        AnimatedSize(
+          duration: const Duration(milliseconds: 180),
+          curve: Curves.easeInOut,
+          alignment: Alignment.topLeft,
+          child: expanded
+              ? Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: InertMarkdownBody(data: note),
+                )
+              : const SizedBox(width: double.infinity),
+        ),
+      ],
+    );
   }
 }
 

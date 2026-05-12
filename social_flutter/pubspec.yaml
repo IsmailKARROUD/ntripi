@@ -2,7 +2,7 @@ name: social_flutter
 description: Ntripi — social media app frontend (Flutter)
 publish_to: 'none'
 
-version: 0.1.0+1
+version: 0.2.1
 
 environment:
   sdk: '>=3.3.0 <4.0.0'
@@ -10,13 +10,30 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-
+  
+  expandable_page_view: ^1.0.17
   # State management: Riverpod — compile-safe, testable, no BuildContext required
   flutter_riverpod: ^2.5.1
   riverpod_annotation: ^2.3.5
 
   # HTTP client with interceptor support — used for the auth token injection
   dio: ^5.4.3
+
+  # Cache GET responses so the app stays browsable while offline.
+  # Serves stale data on Dio connection errors; never caches mutations.
+  dio_cache_interceptor: ^3.5.0
+  dio_cache_interceptor_hive_store: ^4.0.0
+
+  # Resolve a writable directory for the Hive cache store.
+  path_provider: ^2.1.4
+
+  # Cache network images on disk so cover photos / avatars survive offline.
+  # Dio's cache interceptor only handles JSON; image bytes need their own
+  # cache layer.
+  cached_network_image: ^3.4.1
+
+  # Check network status (online/offline) and type (WiFi/mobile)
+  connectivity_plus: ^7.1.1
 
   # Secure token storage — uses iOS Keychain / Android Keystore under the hood
   flutter_secure_storage: ^9.0.0
@@ -38,6 +55,19 @@ dependencies:
   # Photo/file picker — used for itinerary cover image uploads.
   image_picker: ^1.0.7
 
+  # Open URLs in browser — used for store download links in the web banner.
+  url_launcher: ^6.3.0
+  photo_view: ^0.15.0
+
+  # Render user-authored Markdown notes (bold, italic, headings, lists).
+  # Configured link-inert: no clickable URLs in user content (phishing surface).
+  # flutter_markdown_plus is the maintained successor to the discontinued flutter_markdown.
+  flutter_markdown_plus: ^1.0.3
+  # Direct dep so we can reference `md.ExtensionSet` to lock down the parser.
+  markdown: ^7.3.0
+
+
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -50,3 +80,5 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  assets:
+   - assets/data/currencies.json

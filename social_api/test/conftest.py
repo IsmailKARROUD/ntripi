@@ -151,3 +151,20 @@ def auth_headers(token: str) -> dict:
     Flutter app will send on every protected request.
     """
     return {"Authorization": f"Bearer {token}"}
+
+
+def etag_from_updated_at(updated_at_iso: str) -> str:
+    """
+    Derive the wire ETag the server emits for a given `updated_at`.
+
+    The concurrency ETag is just the quoted ISO datetime; the server's
+    `_normalize_etag` collapses `Z` ↔ `+00:00` so either form works. We
+    return the form the server actually emits (Python's `isoformat()`,
+    which uses `+00:00`) so tests can also compare to response headers.
+    """
+    from types import SimpleNamespace
+    from datetime import datetime
+    from app.dependencies import _etag_value
+
+    ts = datetime.fromisoformat(updated_at_iso.replace("Z", "+00:00"))
+    return _etag_value(SimpleNamespace(updated_at=ts))

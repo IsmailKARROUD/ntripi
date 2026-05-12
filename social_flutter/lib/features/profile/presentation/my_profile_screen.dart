@@ -9,6 +9,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:social_flutter/core/api/api_client.dart';
 import 'package:social_flutter/features/auth/providers/auth_provider.dart';
 import 'package:social_flutter/features/follows/providers/follow_provider.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/itinerary_summary_card.dart';
@@ -184,7 +185,26 @@ class _MyProfileScreenState extends ConsumerState<MyProfileScreen> {
           constraints: BoxConstraints(maxWidth: isDesktopWeb() ? kDesktopMaxWidth : double.infinity),
           child: profileAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, _) => Center(child: Text('Error: $error')),
+        error: (error, _) => Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  extractErrorMessage(error),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 16),
+                FilledButton(
+                  onPressed: () =>
+                      ref.read(myProfileProvider.notifier).refresh(),
+                  child: const Text('Retry'),
+                ),
+              ],
+            ),
+          ),
+        ),
         data: (user) => _isEditing
             ? _buildEditForm(user)
             : _buildProfileView(user, followRequestsAsync),
@@ -219,7 +239,7 @@ class _MyProfileScreenState extends ConsumerState<MyProfileScreen> {
                         UserAvatar(avatarUrl: user.avatarUrl, radius: 48),
                         const SizedBox(height: 12),
                         Text(
-                          user.displayName ?? user.username,
+                          user.nameForDisplay,
                           style:
                               Theme.of(context).textTheme.titleLarge?.copyWith(
                                     fontWeight: FontWeight.bold,
@@ -227,7 +247,7 @@ class _MyProfileScreenState extends ConsumerState<MyProfileScreen> {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          '@${user.username}',
+                          user.handle,
                           style: Theme.of(context)
                               .textTheme
                               .bodyMedium

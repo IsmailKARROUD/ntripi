@@ -1,8 +1,15 @@
+import 'dart:async';
+
+import 'package:connectivity_plus/connectivity_plus.dart'
+    show ConnectivityResult, Connectivity;
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:social_flutter/core/api/api_client.dart';
+import 'package:social_flutter/core/api/api_endpoints.dart';
 import 'package:social_flutter/core/storage/secure_storage.dart';
 import 'package:social_flutter/core/ui/app_theme.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:social_flutter/features/auth/presentation/login_screen.dart';
 import 'package:social_flutter/features/auth/presentation/register_screen.dart';
 import 'package:social_flutter/features/auth/presentation/splash_screen.dart';
@@ -25,7 +32,6 @@ import 'package:social_flutter/features/search/presentation/search_screen.dart';
 final appRouter = GoRouter(
   navigatorKey: navigatorKey,
   initialLocation: '/splash',
-
   redirect: (context, state) async {
     final token = await readToken();
     final hasAuth = token != null && token.isNotEmpty && !isJwtExpired(token);
@@ -35,14 +41,14 @@ final appRouter = GoRouter(
     final isPublic = publicRoutes.contains(state.matchedLocation);
 
     if (!hasAuth && !isPublic) return '/login';
-    if (hasAuth && (state.matchedLocation == '/login' ||
-        state.matchedLocation == '/register')) {
+    if (hasAuth &&
+        (state.matchedLocation == '/login' ||
+            state.matchedLocation == '/register')) {
       return '/profile/me';
     }
 
     return null;
   },
-
   routes: [
     // Splash — shown on cold launch, navigates to login or home
     GoRoute(
@@ -129,7 +135,8 @@ final appRouter = GoRouter(
           path: '/itineraries/:id/ratings/:dimension',
           builder: (context, state) => DimensionRatingsScreen(
             itineraryId: state.pathParameters['id']!,
-            dimension: DimensionKey.fromPath(state.pathParameters['dimension']!),
+            dimension:
+                DimensionKey.fromPath(state.pathParameters['dimension']!),
           ),
         ),
         GoRoute(
@@ -138,9 +145,20 @@ final appRouter = GoRouter(
             final extra = state.extra as Map<String, dynamic>?;
             return StopFormScreen(
               itineraryId: state.pathParameters['id']!,
-              insertAfterPosition: extra?['insertAfterPosition'] as int?,
+              trackId: extra?['trackId'] as String?,
+              afterStopId: extra?['afterStopId'] as String?,
+              afterTrackId: extra?['afterTrackId'] as String?,
+              beforeTrackId: extra?['beforeTrackId'] as String?,
             );
           },
+        ),
+        GoRoute(
+          path: '/itineraries/:id/stops/:stopId',
+          builder: (context, state) => StopFormScreen(
+            itineraryId: state.pathParameters['id']!,
+            stopId: state.pathParameters['stopId']!,
+            viewOnly: true,
+          ),
         ),
         GoRoute(
           path: '/itineraries/:id/stops/:stopId/edit',
@@ -183,9 +201,21 @@ final appRouter = GoRouter(
 );
 
 /// Shell with persistent bottom navigation bar.
-class _AppShell extends StatelessWidget {
+class _AppShell extends StatefulWidget {
   final Widget child;
   const _AppShell({required this.child});
+
+  @override
+  State<_AppShell> createState() => _AppShellState();
+}
+
+class _AppShellState extends State<_AppShell> {
+  // Shown only on the web build. Users reach the web app via "Continue on web"
+  // on the marketing page, so we nudge them toward the native app once they're
+  // inside. Dismissed for the session — intentionally not persisted so it
+  // reappears on the next visit as a soft reminder.
+  bool _showDownloadBanner = kIsWeb;
+  bool _isOffline = false;
 
   int _selectedIndex(BuildContext context) {
     final loc = GoRouterState.of(context).matchedLocation;
@@ -195,10 +225,59 @@ class _AppShell extends StatelessWidget {
     return 1;
   }
 
+  StreamSubscription<List<ConnectivityResult>>? _connectivitySub;
+
+  @override
+  void initState() {
+    super.initState();
+
+    // Reflect connectivity on cold launch — the stream only fires on changes.
+    _checkInitialConnection();
+
+    _connectivitySub = Connectivity().onConnectivityChanged.listen((results) {
+      if (!mounted) return;
+      setState(() {
+        _isOffline = results.contains(ConnectivityResult.none);
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _connectivitySub?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _checkInitialConnection() async {
+    final results = await Connectivity().checkConnectivity();
+    if (!mounted) return;
+    setState(() {
+      _isOffline = results.contains(ConnectivityResult.none);
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: child,
+      body: Column(
+        children: [
+          if (_showDownloadBanner)
+            _DownloadBanner(
+                onDismiss: () => setState(() => _showDownloadBanner = false)),
+          if (_isOffline) const _OfflineBanner(),
+          // Banners above use SafeArea(bottom: false) and consume the top
+          // status-bar inset. MediaQuery still reports that inset to the
+          // child Scaffold's AppBar, which would re-add it and leave a gap
+          // below the status bar. Strip the top inset when a banner shows.
+          Expanded(
+            child: MediaQuery.removePadding(
+              context: context,
+              removeTop: _showDownloadBanner || _isOffline,
+              child: widget.child,
+            ),
+          ),
+        ],
+      ),
       bottomNavigationBar: Container(
         decoration: const BoxDecoration(
           color: Colors.white,
@@ -246,6 +325,86 @@ class _AppShell extends StatelessWidget {
               label: 'Feed',
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _OfflineBanner extends StatelessWidget {
+  const _OfflineBanner();
+
+  @override
+  Widget build(BuildContext context) {
+    return const ColoredBox(
+      color: kRatingRed,
+      child: SafeArea(
+        bottom: false,
+        child: Padding(
+          padding: EdgeInsets.only(left: 12, right: 12, top: 0, bottom: 2),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.wifi_off_rounded, color: Colors.white, size: 16),
+              SizedBox(width: 8),
+              Text(
+                'You\'re Offline! Some features may be unavailable.',
+                style:
+                    TextStyle(color: Colors.white, fontSize: 13, height: 1.3),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _DownloadBanner extends StatelessWidget {
+  final VoidCallback onDismiss;
+  const _DownloadBanner({required this.onDismiss});
+
+  @override
+  Widget build(BuildContext context) {
+    return ColoredBox(
+      color: kForest,
+      child: SafeArea(
+        bottom: false,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          child: Row(
+            children: [
+              const Icon(Icons.smartphone, color: Colors.white, size: 18),
+              const SizedBox(width: 10),
+              const Expanded(
+                child: Text(
+                  'For a better experience, download the Ntripi app.',
+                  style:
+                      TextStyle(color: Colors.white, fontSize: 13, height: 1.4),
+                ),
+              ),
+              if (kAndroidDownloadUrl.isNotEmpty)
+                TextButton(
+                  onPressed: () => launchUrl(Uri.parse(kAndroidDownloadUrl),
+                      mode: LaunchMode.externalApplication),
+                  style: TextButton.styleFrom(
+                    foregroundColor: Colors.white,
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    textStyle: const TextStyle(
+                        fontSize: 13, fontWeight: FontWeight.w700),
+                  ),
+                  child: const Text('Download'),
+                ),
+              IconButton(
+                icon: const Icon(Icons.close, color: Colors.white, size: 18),
+                onPressed: onDismiss,
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+                tooltip: 'Dismiss',
+              ),
+            ],
+          ),
         ),
       ),
     );
