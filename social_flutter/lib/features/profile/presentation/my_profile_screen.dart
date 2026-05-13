@@ -14,6 +14,7 @@ import 'package:social_flutter/core/ui/destructive_actions.dart';
 import 'package:social_flutter/features/auth/providers/auth_provider.dart';
 import 'package:social_flutter/features/follows/providers/follow_provider.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/itinerary_summary_card.dart';
+import 'package:social_flutter/features/itineraries/presentation/widgets/markdown_notes_editor.dart';
 import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
 import 'package:social_flutter/features/profile/providers/profile_provider.dart';
 import 'package:social_flutter/shared/models/user.dart';
@@ -323,11 +324,7 @@ class _MyProfileScreenState extends ConsumerState<MyProfileScreen> {
 
                   // Bio
                   if (user.bio != null && user.bio!.isNotEmpty) ...[
-                    Text(
-                      user.bio!,
-                      textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.bodyMedium,
-                    ),
+                    InertMarkdownBody(data: user.bio!),
                     const SizedBox(height: 16),
                   ],
 
@@ -361,7 +358,7 @@ class _MyProfileScreenState extends ConsumerState<MyProfileScreen> {
                                   ),
                         ),
                         TextButton(
-                          onPressed: () => context.push('/itineraries'),
+                          onPressed: () => context.go('/itineraries'),
                           child: const Text('See all'),
                         ),
                       ],
@@ -450,18 +447,13 @@ class _MyProfileScreenState extends ConsumerState<MyProfileScreen> {
           ),
           const SizedBox(height: 16),
 
-          TextFormField(
+          MarkdownNotesEditor(
             controller: _bioController,
-            maxLines: 3,
-            decoration: const InputDecoration(
-              label: LabelWithHelp(
-                label: 'Bio',
-                helpTitle: 'Bio',
-                helpMessage:
-                    'A short description shown on your profile. A few hundred characters max; supports emoji.',
-              ),
-              border: OutlineInputBorder(),
-            ),
+            readOnly: false,
+            label: 'Bio',
+            helpTitle: 'Bio',
+            helpMessage:
+                'A short description shown on your profile. A few hundred characters max; supports markdown and emoji.',
           ),
           const SizedBox(height: 16),
 

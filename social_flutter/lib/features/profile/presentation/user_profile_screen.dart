@@ -15,6 +15,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:social_flutter/core/api/api_client.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/itinerary_summary_card.dart';
+import 'package:social_flutter/features/itineraries/presentation/widgets/markdown_notes_editor.dart';
 import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
 import 'package:social_flutter/features/profile/providers/profile_provider.dart';
 import 'package:social_flutter/shared/models/user.dart';
@@ -202,11 +203,7 @@ class _ProfileBody extends ConsumerWidget {
                       ],
                     ),
                   ] else if (user.bio != null && user.bio!.isNotEmpty) ...[
-                    Text(
-                      user.bio!,
-                      textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.bodyMedium,
-                    ),
+                    InertMarkdownBody(data: user.bio!),
                   ],
 
                   // Itineraries section header (only when content is visible)
