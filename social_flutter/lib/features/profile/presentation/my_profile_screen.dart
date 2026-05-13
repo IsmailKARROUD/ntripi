@@ -1,15 +1,29 @@
-// features/profile/presentation/my_profile_screen.dart — Own profile screen.
+// features/profile/presentation/my_profile_screen.dart
 //
-// Shows the current user's profile with:
-//   - Avatar, display name, username, bio, follower/following counts.
-//   - Inline edit mode (toggled by an icon, no separate screen needed).
-//   - Privacy toggle (public/private account switch).
-//   - "Follow Requests (N)" banner if private and there are pending requests.
+// "Editorial" profile redesign (Profile Redesign.html).
+// Layout (top → bottom):
+//   · Full-bleed OSM map hero (260 px) with gradient + glass Edit/Settings
+//     buttons. Avatar overlaps the hero bottom edge by 36 px.
+//   · Identity row: avatar + display-name + @handle.
+//   · Bio + Followers/Following tally in one horizontal row.
+//   · Optional follow-requests banner (private accounts).
+//   · "LATEST TRIP" section header + itinerary cards.
+//   · Empty-state invitation card when no itineraries yet.
+//
+// Edit mode is an inline full-screen form: Cancel · Edit profile · Save at
+// the top, grouped card sections below (Identity / Privacy).
+//
+// Settings is a bottom sheet with grouped rows: Account · Support ·
+// Destructive (Log out / Delete account).
 
+import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:social_flutter/core/api/api_client.dart';
+import 'package:social_flutter/core/ui/app_theme.dart';
 import 'package:social_flutter/core/ui/destructive_actions.dart';
 import 'package:social_flutter/features/auth/providers/auth_provider.dart';
 import 'package:social_flutter/features/follows/providers/follow_provider.dart';
@@ -19,8 +33,13 @@ import 'package:social_flutter/features/itineraries/providers/itinerary_provider
 import 'package:social_flutter/features/profile/providers/profile_provider.dart';
 import 'package:social_flutter/shared/models/user.dart';
 import 'package:social_flutter/shared/widgets/user_avatar.dart';
-import 'package:social_flutter/shared/widgets/field_help.dart';
 import 'package:social_flutter/core/utils/platform_utils.dart';
+
+// ── Extra palette tokens used only in this screen ──────────────────────────
+const _text2 = Color(0xFF5A7562);
+const _text3 = Color(0xFF93A898);
+const _border = Color(0xFFE4EDE6);
+const _surface = Colors.white;
 
 class MyProfileScreen extends ConsumerStatefulWidget {
   const MyProfileScreen({super.key});
@@ -63,48 +82,22 @@ class _MyProfileScreenState extends ConsumerState<MyProfileScreen> {
   void _showSettingsSheet() {
     showModalBottomSheet(
       context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      builder: (ctx) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const SizedBox(height: 8),
-            Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Colors.grey.shade300,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            ListTile(
-              leading: const Icon(Icons.logout),
-              title: const Text('Log out'),
-              onTap: () {
-                Navigator.pop(ctx);
-                _logout();
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.delete_forever, color: Colors.red),
-              title: const Text('Delete Account',
-                  style: TextStyle(color: Colors.red)),
-              onTap: () {
-                Navigator.pop(ctx);
-                context.push('/settings/delete-account');
-              },
-            ),
-            const SizedBox(height: 8),
-          ],
-        ),
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => _SettingsSheet(
+        onLogout: () {
+          Navigator.pop(ctx);
+          _logout();
+        },
+        onDeleteAccount: () {
+          Navigator.pop(ctx);
+          context.push('/settings/delete-account');
+        },
       ),
     );
   }
 
   Future<void> _logout() async {
-    // Ask for confirmation before logging out.
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -123,26 +116,18 @@ class _MyProfileScreenState extends ConsumerState<MyProfileScreen> {
         ],
       ),
     );
-
     if (confirmed != true) return;
-
-    // Delete the stored token and clear auth state.
     await ref.read(authNotifierProvider.notifier).logout();
-
-    // Replace the entire navigation stack with the login screen.
     if (mounted) context.go('/login');
   }
 
   Future<void> _saveEdits() async {
-    // Warn before switching from private → public when there are pending
-    // follow requests: the backend auto-accepts all of them in one atomic
-    // transaction, and the user may want to triage requests first.
     final currentUser = ref.read(myProfileProvider).valueOrNull;
     final pendingCount =
         ref.read(followRequestsProvider).valueOrNull?.length ?? 0;
-    final switchingToPublic = currentUser != null &&
-        currentUser.isPrivate &&
-        _editIsPrivate == false;
+    final switchingToPublic =
+        currentUser != null && currentUser.isPrivate && _editIsPrivate == false;
+
     if (switchingToPublic && pendingCount > 0) {
       final confirmed = await confirmDestructiveAction(
         context: context,
@@ -169,10 +154,10 @@ class _MyProfileScreenState extends ConsumerState<MyProfileScreen> {
           clearAvatarUrl: avatarText.isEmpty,
           isPrivate: _editIsPrivate,
         );
-    if (mounted) {
-      setState(() => _isEditing = false);
-    }
+    if (mounted) setState(() => _isEditing = false);
   }
+
+  // ── Build ─────────────────────────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
@@ -180,68 +165,52 @@ class _MyProfileScreenState extends ConsumerState<MyProfileScreen> {
     final followRequestsAsync = ref.watch(followRequestsProvider);
 
     return Scaffold(
+      backgroundColor: _surface,
       resizeToAvoidBottomInset: false,
-      appBar: AppBar(
-        title: const Text('My Profile'),
-        actions: [
-          profileAsync.when(
-            data: (user) => IconButton(
-              icon: Icon(_isEditing ? Icons.close : Icons.edit_outlined),
-              tooltip: _isEditing ? 'Cancel editing' : 'Edit profile',
-              onPressed: () {
-                if (_isEditing) {
-                  setState(() => _isEditing = false);
-                } else {
-                  _startEditing(user);
-                }
-              },
-            ),
-            loading: () => const SizedBox.shrink(),
-            error: (_, __) => const SizedBox.shrink(),
-          ),
-          // Settings button — opens logout / delete account sheet.
-          IconButton(
-            icon: const Icon(Icons.settings_outlined),
-            tooltip: 'Settings',
-            onPressed: _showSettingsSheet,
-          ),
-        ],
-      ),
-    body: Center(
+      body: Center(
         child: ConstrainedBox(
-          constraints: BoxConstraints(maxWidth: isDesktopWeb() ? kDesktopMaxWidth : double.infinity),
+          constraints: BoxConstraints(
+            maxWidth: isDesktopWeb() ? kDesktopMaxWidth : double.infinity,
+          ),
           child: profileAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, _) => Center(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  extractErrorMessage(error),
-                  textAlign: TextAlign.center,
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (error, _) => Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      extractErrorMessage(error),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 16),
+                    FilledButton(
+                      onPressed: () =>
+                          ref.read(myProfileProvider.notifier).refresh(),
+                      child: const Text('Retry'),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 16),
-                FilledButton(
-                  onPressed: () =>
-                      ref.read(myProfileProvider.notifier).refresh(),
-                  child: const Text('Retry'),
-                ),
-              ],
+              ),
             ),
+            data: (user) => _isEditing
+                ? _buildEditForm(user)
+                : _buildProfileView(user, followRequestsAsync),
           ),
         ),
-        data: (user) => _isEditing
-            ? _buildEditForm(user)
-            : _buildProfileView(user, followRequestsAsync),
       ),
-    ),),);
+    );
   }
+
+  // ── Profile view ──────────────────────────────────────────────────────────
 
   Widget _buildProfileView(User user, AsyncValue followRequestsAsync) {
     final pendingCount = followRequestsAsync.valueOrNull?.length ?? 0;
     final itinerariesAsync = ref.watch(myItinerariesProvider);
+    final totalStops = itinerariesAsync.valueOrNull
+            ?.fold<int>(0, (sum, it) => sum + it.stopsCount) ??
+        0;
 
     return RefreshIndicator(
       onRefresh: () async {
@@ -251,127 +220,106 @@ class _MyProfileScreenState extends ConsumerState<MyProfileScreen> {
       },
       child: CustomScrollView(
         slivers: [
-          // ----------------------------------------------------------------
-          // Profile header
-          // ----------------------------------------------------------------
           SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                children: [
-                  // Avatar + display name
-                  Center(
-                    child: Column(
-                      children: [
-                        UserAvatar(avatarUrl: user.avatarUrl, radius: 48),
-                        const SizedBox(height: 12),
-                        Text(
-                          user.nameForDisplay,
-                          style:
-                              Theme.of(context).textTheme.titleLarge?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          user.handle,
-                          style: Theme.of(context)
-                              .textTheme
-                              .bodyMedium
-                              ?.copyWith(color: Colors.grey),
-                        ),
-                        if (user.isPrivate) ...[
-                          const SizedBox(height: 4),
-                          Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(Icons.lock,
-                                  size: 14, color: Colors.grey.shade600),
-                              const SizedBox(width: 4),
-                              Text(
-                                'Private account',
-                                style: TextStyle(
-                                    color: Colors.grey.shade600, fontSize: 12),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // ── Hero + identity overlap ──────────────────────────────
+                _HeroAndIdentity(
+                  user: user,
+                  totalStops: totalStops,
+                  isSelf: true,
+                  onEdit: () => _startEditing(user),
+                  onSettings: _showSettingsSheet,
+                ),
 
-                  // Follow counts — tappable to open the full list.
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
+                // ── Bio + social tally ───────────────────────────────────
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
-                      _StatBox(
+                      _Tally(
+                        n: user.followersCount,
                         label: 'Followers',
-                        count: user.followersCount,
                         onTap: () =>
                             context.push('/profile/${user.id}/followers'),
                       ),
-                      const SizedBox(width: 40),
-                      _StatBox(
+                      _Tally(
+                        n: user.followingCount,
                         label: 'Following',
-                        count: user.followingCount,
                         onTap: () =>
                             context.push('/profile/${user.id}/following'),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 16),
-
-                  // Bio
-                  if (user.bio != null && user.bio!.isNotEmpty) ...[
-                    InertMarkdownBody(data: user.bio!),
-                    const SizedBox(height: 16),
-                  ],
-
-                  // Follow requests banner
-                  if (user.isPrivate && pendingCount > 0) ...[
-                    Card(
-                      color: Theme.of(context).colorScheme.primaryContainer,
-                      child: ListTile(
-                        leading: const Icon(Icons.person_add),
-                        title: Text('Follow Requests ($pendingCount)'),
-                        subtitle: const Text('Tap to review'),
-                        trailing: const Icon(Icons.chevron_right),
-                        onTap: () => context.push('/follow-requests'),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                  ],
-
-                  // Itineraries section header
-                  const Divider(),
+                ),
+                if (user.bio != null && user.bio!.isNotEmpty)
                   Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'My Itineraries',
-                          style:
-                              Theme.of(context).textTheme.titleMedium?.copyWith(
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                        ),
-                        TextButton(
-                          onPressed: () => context.go('/itineraries'),
-                          child: const Text('See all'),
-                        ),
-                      ],
+                    padding: const EdgeInsets.all(4.0),
+                    child: Expanded(
+                      child: user.bio != null && user.bio!.isNotEmpty
+                          ? InertMarkdownBody(data: user.bio!)
+                          : const SizedBox.shrink(),
                     ),
                   ),
-                ],
-              ),
+
+                // ── Follow-requests banner ───────────────────────────────
+                if (user.isPrivate && pendingCount > 0)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                    child: _FollowRequestsBanner(
+                      count: pendingCount,
+                      onTap: () => context.push('/follow-requests'),
+                    ),
+                  ),
+
+                // ── "Latest trip" section header ─────────────────────────
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 20, 16, 0),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      const Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'LATEST TRIP',
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                              color: _text2,
+                              letterSpacing: 0.8,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const Spacer(),
+                      GestureDetector(
+                        onTap: () => context.go('/itineraries'),
+                        child: const Row(
+                          children: [
+                            Text(
+                              'See all',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: kForest,
+                              ),
+                            ),
+                            Icon(Icons.chevron_right, size: 16, color: kForest),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 10),
+              ],
             ),
           ),
 
-          // ----------------------------------------------------------------
-          // Itinerary cards
-          // ----------------------------------------------------------------
+          // ── Itinerary cards / empty state ──────────────────────────────
           itinerariesAsync.when(
             loading: () => const SliverToBoxAdapter(
               child: Padding(
@@ -389,19 +337,10 @@ class _MyProfileScreenState extends ConsumerState<MyProfileScreen> {
               if (itineraries.isEmpty) {
                 return SliverToBoxAdapter(
                   child: Padding(
-                    padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
-                    child: Column(
-                      children: [
-                        Icon(Icons.map_outlined,
-                            size: 48, color: Colors.grey.shade400),
-                        const SizedBox(height: 12),
-                        const Text('No itineraries yet.'),
-                        const SizedBox(height: 8),
-                        TextButton(
-                          onPressed: () => context.push('/itineraries/new'),
-                          child: const Text('Create your first trip'),
-                        ),
-                      ],
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+                    child: _EmptyItinerariesCard(
+                      onCreateTap: () => context.push('/itineraries/new'),
+                      onExploreTap: () => context.go('/itineraries'),
                     ),
                   ),
                 );
@@ -410,10 +349,9 @@ class _MyProfileScreenState extends ConsumerState<MyProfileScreen> {
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 80),
                 sliver: SliverList(
                   delegate: SliverChildBuilderDelegate(
-                    (context, index) => ItinerarySummaryCard(
-                      itinerary: itineraries[index],
-                    ),
-                    childCount: itineraries.length,
+                    (context, index) =>
+                        ItinerarySummaryCard(itinerary: itineraries[index]),
+                    childCount: 1, //just the latest trip on the profile view
                   ),
                 ),
               );
@@ -424,83 +362,298 @@ class _MyProfileScreenState extends ConsumerState<MyProfileScreen> {
     );
   }
 
+  // ── Edit form ─────────────────────────────────────────────────────────────
+
   Widget _buildEditForm(User user) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Center(child: UserAvatar(avatarUrl: user.avatarUrl, radius: 48)),
-          const SizedBox(height: 24),
-
-          TextFormField(
-            controller: _displayNameController,
-            decoration: const InputDecoration(
-              label: LabelWithHelp(
-                label: 'Display Name',
-                helpTitle: 'Display name',
-                helpMessage:
-                    'How your name appears on your profile and posts. Up to 50 characters; supports emoji.',
-              ),
-              border: OutlineInputBorder(),
-            ),
-          ),
-          const SizedBox(height: 16),
-
-          MarkdownNotesEditor(
-            controller: _bioController,
-            readOnly: false,
-            label: 'Bio',
-            helpTitle: 'Bio',
-            helpMessage:
-                'A short description shown on your profile. A few hundred characters max; supports markdown and emoji.',
-          ),
-          const SizedBox(height: 16),
-
-          TextFormField(
-            controller: _avatarUrlController,
-            decoration: const InputDecoration(
-              label: LabelWithHelp(
-                label: 'Avatar URL',
-                helpTitle: 'Avatar URL',
-                helpMessage:
-                    'Direct link to an image hosted online. Leave blank to keep your current avatar.',
-              ),
-              border: OutlineInputBorder(),
-              hintText: 'https://...',
-            ),
-          ),
-          const SizedBox(height: 16),
-
-          // Privacy toggle
-          SwitchListTile(
-            title: const Row(
-              mainAxisSize: MainAxisSize.min,
+    return Column(
+      children: [
+        // Cancel · Edit profile · Save
+        SafeArea(
+          bottom: false,
+          child: Container(
+            color: kSand,
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            child: Row(
               children: [
-                Text('Private Account'),
-                SizedBox(width: 2),
-                FieldHelpIcon(
-                  helpTitle: 'Private account',
-                  helpMessage:
-                      'When private, people must request to follow you before they can see your itineraries. Switching back to public auto-accepts every pending request.',
+                TextButton(
+                  onPressed: () => setState(() => _isEditing = false),
+                  style: TextButton.styleFrom(foregroundColor: _text2),
+                  child: const Text('Cancel',
+                      style:
+                          TextStyle(fontWeight: FontWeight.w500, fontSize: 15)),
+                ),
+                const Expanded(
+                  child: Text(
+                    'Edit profile',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: kBark,
+                      letterSpacing: -0.2,
+                    ),
+                  ),
+                ),
+                TextButton(
+                  onPressed: _saveEdits,
+                  child: const Text('Save',
+                      style:
+                          TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
                 ),
               ],
             ),
-            subtitle: const Text(
-                'When private, people must request to follow you.'),
-            value: _editIsPrivate ?? user.isPrivate,
-            onChanged: (value) {
-              setState(() => _editIsPrivate = value);
-            },
           ),
-          const SizedBox(height: 24),
+        ),
+        const Divider(height: 1),
 
-          FilledButton(
-            onPressed: _saveEdits,
-            style: FilledButton.styleFrom(
-              padding: const EdgeInsets.symmetric(vertical: 16),
+        // Scrollable form
+        Expanded(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.only(bottom: 80),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Avatar
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 20),
+                  child: Center(
+                    child: Column(
+                      children: [
+                        Stack(
+                          clipBehavior: Clip.none,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(4),
+                              decoration: const BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: kSand,
+                              ),
+                              child: UserAvatar(
+                                  avatarUrl: user.avatarUrl, radius: 46),
+                            ),
+                            Positioned(
+                              bottom: 0,
+                              right: 0,
+                              child: Container(
+                                width: 32,
+                                height: 32,
+                                decoration: BoxDecoration(
+                                  color: kForest,
+                                  shape: BoxShape.circle,
+                                  border: Border.all(color: kSand, width: 3),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color:
+                                          Colors.black.withValues(alpha: 0.15),
+                                      blurRadius: 8,
+                                    ),
+                                  ],
+                                ),
+                                child: const Icon(
+                                  Icons.photo_camera,
+                                  color: Colors.white,
+                                  size: 15,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        const Text(
+                          'Change photo',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: kForest,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
+                // Identity section
+                const _SectionLabel(
+                    icon: Icons.person_outline_rounded, label: 'Identity'),
+                _SectionCard(children: [
+                  _EditFieldRow(
+                    icon: Icons.badge_outlined,
+                    label: 'Display name',
+                    child: TextField(
+                      controller: _displayNameController,
+                      style: const TextStyle(
+                          fontSize: 15,
+                          color: kBark,
+                          fontWeight: FontWeight.w500),
+                      decoration: const InputDecoration(
+                        border: InputBorder.none,
+                        contentPadding: EdgeInsets.zero,
+                        isDense: true,
+                      ),
+                    ),
+                  ),
+                  const _FieldDivider(),
+                  _EditFieldRow(
+                    icon: Icons.alternate_email_rounded,
+                    label: 'Username',
+                    child: Text(
+                      user.handle,
+                      style: const TextStyle(
+                          fontSize: 15,
+                          color: _text2,
+                          fontWeight: FontWeight.w500),
+                    ),
+                  ),
+                  const _FieldDivider(),
+                  _EditFieldRow(
+                    icon: Icons.notes_rounded,
+                    label: 'Bio',
+                    child: MarkdownNotesEditor(
+                      controller: _bioController,
+                      readOnly: false,
+                      label: '',
+                      helpTitle: 'Bio',
+                      helpMessage:
+                          'A short description. Supports **bold** markdown and emoji.',
+                    ),
+                  ),
+                  const _FieldDivider(),
+                  _EditFieldRow(
+                    icon: Icons.link_rounded,
+                    label: 'Avatar URL',
+                    child: TextField(
+                      controller: _avatarUrlController,
+                      style: const TextStyle(
+                          fontSize: 15,
+                          color: kBark,
+                          fontWeight: FontWeight.w500),
+                      decoration: const InputDecoration(
+                        hintText: 'https://…',
+                        hintStyle: TextStyle(color: _text3, fontSize: 14),
+                        border: InputBorder.none,
+                        contentPadding: EdgeInsets.zero,
+                        isDense: true,
+                      ),
+                    ),
+                  ),
+                ]),
+
+                // Privacy section
+                const _SectionLabel(
+                    icon: Icons.lock_outline_rounded, label: 'Privacy'),
+                _SectionCard(children: [
+                  _ToggleRow(
+                    icon: Icons.lock_rounded,
+                    label: 'Private account',
+                    subtitle:
+                        'People must request to follow you to see your itineraries.',
+                    value: _editIsPrivate ?? user.isPrivate,
+                    onChanged: (v) => setState(() => _editIsPrivate = v),
+                  ),
+                ]),
+              ],
             ),
-            child: const Text('Save Changes'),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Hero + Identity overlap
+// ═══════════════════════════════════════════════════════════════════════════
+
+/// Renders the OSM map hero (260 px) with the avatar + name/handle
+/// row overlapping it by 36 px at the bottom. Used for both self
+/// and other-user profiles via [isSelf].
+class _HeroAndIdentity extends StatelessWidget {
+  final User user;
+  final int totalStops;
+  final bool isSelf;
+  final VoidCallback? onEdit;
+  final VoidCallback? onSettings;
+  // For other-user profile, back/share callbacks.
+  const _HeroAndIdentity({
+    required this.user,
+    required this.totalStops,
+    this.isSelf = true,
+    this.onEdit,
+    this.onSettings,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    const heroH = 260.0;
+    // Avatar total display height inside the row = 92 px (88 radius×2 + ring 4)
+    // Identity row height ≈ 92 px. Overlap = 36 px.
+    // Total section height = heroH + (92 − 36) = 316 px.
+    const identityH = 92.0;
+    const overlap = 36.0;
+    const totalH = heroH + identityH - overlap;
+
+    return SizedBox(
+      height: totalH,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          // ── OSM map tile layer ─────────────────────────────────────────
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            height: heroH,
+            child: _MapHero(
+              isSelf: isSelf,
+              totalStops: totalStops,
+              isPrivate: user.isPrivate,
+              onEdit: onEdit,
+              onSettings: onSettings,
+            ),
+          ),
+
+          // ── Identity row (avatar + name/handle) ───────────────────────
+          Positioned(
+            top: heroH - overlap,
+            left: 16,
+            right: 16,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                _AvatarWithBadge(
+                  avatarUrl: user.avatarUrl,
+                  isPrivate: user.isPrivate,
+                ),
+                const SizedBox(width: 14),
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 6),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        user.nameForDisplay,
+                        style: const TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w700,
+                          color: kBark,
+                          letterSpacing: -0.3,
+                          height: 1.15,
+                        ),
+                      ),
+                      Text(
+                        user.handle,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                          color: _text2,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),
@@ -508,40 +661,973 @@ class _MyProfileScreenState extends ConsumerState<MyProfileScreen> {
   }
 }
 
-/// Displays a single statistic (count + label) on the profile screen.
-///
-/// [onTap] is optional — when provided, the whole widget becomes tappable
-/// (wrapped in a GestureDetector). This is used to navigate to the
-/// followers / following list when the user taps the count.
-class _StatBox extends StatelessWidget {
-  final String label;
-  final int count;
+// ── Map hero ─────────────────────────────────────────────────────────────
+
+class _MapHero extends StatelessWidget {
+  final bool isSelf;
+  final int totalStops;
+  final bool isPrivate;
+  final VoidCallback? onEdit;
+  final VoidCallback? onSettings;
+  const _MapHero({
+    required this.isSelf,
+    required this.totalStops,
+    required this.isPrivate,
+    this.onEdit,
+    this.onSettings,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRect(
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          // OSM tile layer — non-interactive, decorative.
+          IgnorePointer(
+            child: FlutterMap(
+              options: const MapOptions(
+                initialCenter: LatLng(20.0, 10.0),
+                initialZoom: 2.5,
+                interactionOptions: InteractionOptions(
+                  flags: InteractiveFlag.none,
+                ),
+              ),
+              children: [
+                TileLayer(
+                  urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                  userAgentPackageName: 'app.ntripi',
+                ),
+              ],
+            ),
+          ),
+
+          // Sand tint overlay for brand warmth
+          Container(
+            color: const Color(0x30F5F2EC),
+          ),
+
+          // Gradient: dark top + dark bottom for chrome legibility
+          Container(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                stops: [0.0, 0.35, 0.55, 1.0],
+                colors: [
+                  Color(0x801A2A1E),
+                  Color(0x001A2A1E),
+                  Color(0x001A2A1E),
+                  Color(0xC71A2A1E),
+                ],
+              ),
+            ),
+          ),
+
+          // Chrome: buttons — Positioned so the Row sizes to its children
+          // instead of stretching to the full Stack height.
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            child: SafeArea(
+              bottom: false,
+              child: Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: isSelf
+                      ? [
+                          _GlassIconButton(
+                            icon: Icons.edit_outlined,
+                            tooltip: 'Edit profile',
+                            onTap: onEdit,
+                          ),
+                          _GlassIconButton(
+                            icon: Icons.settings_outlined,
+                            tooltip: 'Settings',
+                            onTap: onSettings,
+                          ),
+                        ]
+                      : [
+                          _GlassIconButton(
+                            icon: Icons.arrow_back,
+                            tooltip: 'Back',
+                            onTap: () =>
+                                Navigator.of(context).maybePop(),
+                          ),
+                          const _GlassIconButton(
+                            icon: Icons.share_outlined,
+                            tooltip: 'Share profile',
+                          ),
+                        ],
+                ),
+              ),
+            ),
+          ),
+         // const Spacer(),
+          // Bottom label: "WHERE I'VE BEEN · X stops"
+          Positioned(
+            left: 16,
+            right: 16,
+            bottom: 52,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text(
+                      "WHERE I'VE BEEN",
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                        letterSpacing: 1.0,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      totalStops > 0
+                          ? '$totalStops stop${totalStops == 1 ? '' : 's'}'
+                          : 'No stops yet',
+                      style: const TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                        letterSpacing: -0.3,
+                        height: 1.15,
+                      ),
+                    ),
+                  ],
+                ),
+                const Spacer(),
+                // "Expand" pill
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.18),
+                    borderRadius: BorderRadius.circular(999),
+                    border:
+                        Border.all(color: Colors.white.withValues(alpha: 0.25)),
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.open_in_full,
+                          size: 12, color: Colors.white, weight: 600),
+                      SizedBox(width: 4),
+                      Text(
+                        'Expand',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Avatar with privacy badge ─────────────────────────────────────────────
+
+class _AvatarWithBadge extends StatelessWidget {
+  final String? avatarUrl;
+  final bool isPrivate;
+
+  const _AvatarWithBadge({required this.avatarUrl, required this.isPrivate});
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        // White ring around avatar
+        Container(
+          width: 96,
+          height: 96,
+          padding: const EdgeInsets.all(4),
+          decoration: const BoxDecoration(
+            shape: BoxShape.circle,
+            color: Colors.white,
+          ),
+          child: ClipOval(
+            child: UserAvatar(avatarUrl: avatarUrl, radius: 44),
+          ),
+        ),
+        // Privacy badge (bottom-right)
+        Positioned(
+          bottom: 2,
+          right: 2,
+          child: Container(
+            width: 24,
+            height: 24,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.white.withValues(alpha: 0.9),
+                  spreadRadius: 2,
+                )
+              ],
+            ),
+            child: Icon(
+              isPrivate ? Icons.lock_rounded : Icons.public_rounded,
+              size: 14,
+              color: kForest,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ── Glass icon button (overlaid on map) ──────────────────────────────────
+
+class _GlassIconButton extends StatelessWidget {
+  final IconData icon;
+  final String tooltip;
   final VoidCallback? onTap;
 
-  const _StatBox({required this.label, required this.count, this.onTap});
+  const _GlassIconButton({
+    required this.icon,
+    required this.tooltip,
+    this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: tooltip,
+      child: GestureDetector(
+        onTap: onTap,
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(12),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+            child: Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.20),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.22)),
+              ),
+              child: Icon(icon, color: Colors.white, size: 22),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Profile-view sub-widgets
+// ═══════════════════════════════════════════════════════════════════════════
+
+class _Tally extends StatelessWidget {
+  final int n;
+  final String label;
+  final VoidCallback? onTap;
+
+  const _Tally({required this.n, required this.label, this.onTap});
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
           Text(
-            count.toString(),
-            style: Theme.of(context)
-                .textTheme
-                .titleLarge
-                ?.copyWith(fontWeight: FontWeight.bold),
+            n.toString(),
+            style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+              color: kBark,
+              letterSpacing: -0.3,
+              height: 1,
+            ),
           ),
+          const SizedBox(height: 2),
           Text(
             label,
-            style: Theme.of(context)
-                .textTheme
-                .bodySmall
-                ?.copyWith(color: Colors.grey),
+            style: const TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: _text2,
+            ),
           ),
         ],
       ),
+    );
+  }
+}
+
+class _FollowRequestsBanner extends StatelessWidget {
+  final int count;
+  final VoidCallback onTap;
+
+  const _FollowRequestsBanner({required this.count, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: const Color(0xFFD0EBDA),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.person_add_rounded, size: 20, color: kForest),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Follow Requests ($count)',
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: kForest,
+                    ),
+                  ),
+                  const Text(
+                    'Tap to review',
+                    style: TextStyle(
+                        fontSize: 12,
+                        color: kForest,
+                        fontWeight: FontWeight.w400),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(Icons.chevron_right, color: kForest, size: 20),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _EmptyItinerariesCard extends StatelessWidget {
+  final VoidCallback onCreateTap;
+  final VoidCallback onExploreTap;
+
+  const _EmptyItinerariesCard(
+      {required this.onCreateTap, required this.onExploreTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        // Primary invitation card
+        Container(
+          padding: const EdgeInsets.all(18),
+          decoration: BoxDecoration(
+            color: const Color(0xFFD0EBDA),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: _border),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  color: kForest,
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: kForest.withValues(alpha: 0.25),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: const Icon(Icons.map_rounded,
+                    color: Colors.white, size: 20),
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                'Plan your first journey',
+                style: TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w700,
+                  color: kBark,
+                  letterSpacing: -0.2,
+                ),
+              ),
+              const SizedBox(height: 4),
+              const Text(
+                'Add stops, transit segments and notes. Share it with friends or keep it private.',
+                style: TextStyle(fontSize: 13, color: _text2, height: 1.5),
+              ),
+              const SizedBox(height: 14),
+              GestureDetector(
+                onTap: onCreateTap,
+                child: Container(
+                  height: 42,
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  decoration: BoxDecoration(
+                    color: kForest,
+                    borderRadius: BorderRadius.circular(14),
+                    boxShadow: [
+                      BoxShadow(
+                        color: kForest.withValues(alpha: 0.25),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.add_rounded, color: Colors.white, size: 18),
+                      SizedBox(width: 6),
+                      Text(
+                        'Create itinerary',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 10),
+        // Secondary path — browse/explore
+        GestureDetector(
+          onTap: onExploreTap,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            decoration: BoxDecoration(
+              color: _surface,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: _border),
+            ),
+            child: const Row(
+              children: [
+                _SmallIconBox(icon: Icons.explore_rounded),
+                SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Need inspiration?',
+                        style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                            color: kBark),
+                      ),
+                      Text(
+                        'Browse your itineraries for ideas.',
+                        style: TextStyle(fontSize: 11, color: _text2),
+                      ),
+                    ],
+                  ),
+                ),
+                Icon(Icons.chevron_right, size: 20, color: _text3),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _SmallIconBox extends StatelessWidget {
+  final IconData icon;
+  const _SmallIconBox({required this.icon});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 34,
+      height: 34,
+      decoration: BoxDecoration(
+        color: kSand,
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Icon(icon, size: 18, color: kForest),
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Edit-form sub-widgets
+// ═══════════════════════════════════════════════════════════════════════════
+
+class _SectionLabel extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  const _SectionLabel({required this.icon, required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(22, 14, 22, 8),
+      child: Row(
+        children: [
+          Icon(icon, size: 14, color: _text2),
+          const SizedBox(width: 6),
+          Text(
+            label.toUpperCase(),
+            style: const TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              color: _text2,
+              letterSpacing: 0.6,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SectionCard extends StatelessWidget {
+  final List<Widget> children;
+  const _SectionCard({required this.children});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      decoration: BoxDecoration(
+        color: _surface,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: _border),
+      ),
+      child: Column(children: children),
+    );
+  }
+}
+
+class _FieldDivider extends StatelessWidget {
+  const _FieldDivider();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+        height: 1, margin: const EdgeInsets.only(left: 16), color: _border);
+  }
+}
+
+class _EditFieldRow extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Widget child;
+
+  const _EditFieldRow({
+    required this.icon,
+    required this.label,
+    required this.child,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 32,
+            height: 32,
+            decoration: BoxDecoration(
+              color: const Color(0xFFD0EBDA),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(icon, size: 16, color: kForest),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label.toUpperCase(),
+                  style: const TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    color: _text2,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                child,
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ToggleRow extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String? subtitle;
+  final bool value;
+  final ValueChanged<bool> onChanged;
+
+  const _ToggleRow({
+    required this.icon,
+    required this.label,
+    this.subtitle,
+    required this.value,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Container(
+            width: 32,
+            height: 32,
+            decoration: BoxDecoration(
+              color: value ? const Color(0xFFD0EBDA) : const Color(0xFFF5F2EC),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(
+              icon,
+              size: 16,
+              color: value ? kForest : _text2,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(label,
+                    style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        color: kBark)),
+                if (subtitle != null)
+                  Text(subtitle!,
+                      style: const TextStyle(
+                          fontSize: 12, color: _text2, height: 1.4)),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          Switch(
+            value: value,
+            onChanged: onChanged,
+            activeThumbColor: kForest,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Settings bottom sheet
+// ═══════════════════════════════════════════════════════════════════════════
+
+class _SettingsSheet extends StatelessWidget {
+  final VoidCallback onLogout;
+  final VoidCallback onDeleteAccount;
+
+  const _SettingsSheet({
+    required this.onLogout,
+    required this.onDeleteAccount,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: const BoxDecoration(
+        color: _surface,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      padding:
+          EdgeInsets.only(bottom: MediaQuery.of(context).padding.bottom + 16),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Drag handle
+          Container(
+            margin: const EdgeInsets.only(top: 10, bottom: 6),
+            width: 36,
+            height: 4,
+            decoration: BoxDecoration(
+              color: _text3.withValues(alpha: 0.55),
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+
+          // Title
+          const Padding(
+            padding: EdgeInsets.fromLTRB(20, 4, 20, 8),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                'Settings',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: kBark,
+                  letterSpacing: -0.2,
+                ),
+              ),
+            ),
+          ),
+
+          // Account section
+          _SheetSection(
+            label: 'Account',
+            children: [
+              _SheetRow(
+                icon: Icons.notifications_outlined,
+                iconBg: const Color(0xFFD0EBDA),
+                iconColor: kForest,
+                label: 'Notifications',
+                detail: 'On',
+                onTap: () => _comingSoon(context),
+              ),
+              _SheetRow(
+                icon: Icons.lock_outline_rounded,
+                iconBg: const Color(0xFFD0EBDA),
+                iconColor: kForest,
+                label: 'Privacy & security',
+                detail: 'Private',
+                onTap: () => _comingSoon(context),
+              ),
+              _SheetRow(
+                icon: Icons.language_rounded,
+                iconBg: const Color(0xFFD0EBDA),
+                iconColor: kForest,
+                label: 'Language',
+                detail: 'English',
+                isLast: true,
+                onTap: () => _comingSoon(context),
+              ),
+            ],
+          ),
+
+          // Support section
+          _SheetSection(
+            label: 'Support',
+            children: [
+              _SheetRow(
+                icon: Icons.help_outline_rounded,
+                iconBg: const Color(0xFFD0EBDA),
+                iconColor: kForest,
+                label: 'Help center',
+                onTap: () => _comingSoon(context),
+              ),
+              _SheetRow(
+                icon: Icons.info_outline_rounded,
+                iconBg: const Color(0xFFD0EBDA),
+                iconColor: kForest,
+                label: 'About Ntripi',
+                onTap: () => _comingSoon(context),
+              ),
+              _SheetRow(
+                icon: Icons.gavel_rounded,
+                iconBg: const Color(0xFFD0EBDA),
+                iconColor: kForest,
+                label: 'Terms & Privacy',
+                isLast: true,
+                onTap: () => _comingSoon(context),
+              ),
+            ],
+          ),
+
+          // Destructive section
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+            child: Container(
+              decoration: BoxDecoration(
+                color: _surface,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: _border),
+              ),
+              child: Column(
+                children: [
+                  _SheetRow(
+                    icon: Icons.logout_rounded,
+                    iconBg: const Color(0xFFD0EBDA),
+                    iconColor: kForest,
+                    label: 'Log out',
+                    showChevron: false,
+                    onTap: onLogout,
+                  ),
+                  Container(
+                      height: 1,
+                      margin: const EdgeInsets.only(left: 56),
+                      color: _border),
+                  _SheetRow(
+                    icon: Icons.delete_outline_rounded,
+                    iconBg: const Color(0xFFFFDAD6),
+                    iconColor: const Color(0xFFBA1A1A),
+                    label: 'Delete account',
+                    labelColor: const Color(0xFFBA1A1A),
+                    showChevron: false,
+                    isLast: true,
+                    onTap: onDeleteAccount,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  static void _comingSoon(BuildContext context) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Coming soon')),
+    );
+  }
+}
+
+class _SheetSection extends StatelessWidget {
+  final String label;
+  final List<Widget> children;
+  const _SheetSection({required this.label, required this.children});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(22, 10, 22, 6),
+          child: Text(
+            label.toUpperCase(),
+            style: const TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              color: _text2,
+              letterSpacing: 0.6,
+            ),
+          ),
+        ),
+        Container(
+          margin: const EdgeInsets.symmetric(horizontal: 16),
+          decoration: BoxDecoration(
+            color: _surface,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: _border),
+          ),
+          child: Column(children: children),
+        ),
+      ],
+    );
+  }
+}
+
+class _SheetRow extends StatelessWidget {
+  final IconData icon;
+  final Color iconBg;
+  final Color iconColor;
+  final String label;
+  final Color labelColor;
+  final String? detail;
+  final bool showChevron;
+  final bool isLast;
+  final VoidCallback? onTap;
+
+  const _SheetRow({
+    required this.icon,
+    required this.iconBg,
+    required this.iconColor,
+    required this.label,
+    this.labelColor = kBark,
+    this.detail,
+    this.showChevron = true,
+    this.isLast = false,
+    this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        InkWell(
+          onTap: onTap,
+          borderRadius: isLast
+              ? const BorderRadius.vertical(bottom: Radius.circular(16))
+              : BorderRadius.zero,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+            child: Row(
+              children: [
+                Container(
+                  width: 30,
+                  height: 30,
+                  decoration: BoxDecoration(
+                    color: iconBg,
+                    borderRadius: BorderRadius.circular(9),
+                  ),
+                  child: Icon(icon, size: 16, color: iconColor),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    label,
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: labelColor,
+                    ),
+                  ),
+                ),
+                if (detail != null) ...[
+                  Text(detail!,
+                      style: const TextStyle(fontSize: 13, color: _text2)),
+                  const SizedBox(width: 4),
+                ],
+                if (showChevron)
+                  const Icon(Icons.chevron_right, size: 20, color: _text3),
+              ],
+            ),
+          ),
+        ),
+        if (!isLast)
+          Container(
+              height: 1,
+              margin: const EdgeInsets.only(left: 56),
+              color: _border),
+      ],
     );
   }
 }
