@@ -367,7 +367,6 @@ class _MyProfileScreenState extends ConsumerState<MyProfileScreen> {
         SafeArea(
           bottom: false,
           child: Container(
-            color: kSand,
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             child: Row(
               children: [
@@ -400,7 +399,6 @@ class _MyProfileScreenState extends ConsumerState<MyProfileScreen> {
             ),
           ),
         ),
-        const Divider(height: 1),
 
         // Scrollable form
         Expanded(
@@ -456,7 +454,7 @@ class _MyProfileScreenState extends ConsumerState<MyProfileScreen> {
                         ),
                         const SizedBox(height: 8),
                         const Text(
-                          'Change photo',
+                          'Upload photo',
                           style: TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.w600,

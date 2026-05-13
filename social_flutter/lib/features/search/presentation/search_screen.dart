@@ -179,7 +179,7 @@ class _SearchTopBar extends StatelessWidget {
           ),
           if (controller.text.isNotEmpty)
             IconButton(
-              icon: const Icon(Icons.close_outlined),
+              icon: const Icon(Icons.playlist_remove_outlined),
               color: kBark,
               onPressed: onClear,
             ),
