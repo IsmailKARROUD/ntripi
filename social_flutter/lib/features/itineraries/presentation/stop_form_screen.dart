@@ -97,6 +97,9 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
   // false while showing read-only view; flips to true when owner taps edit
   bool _isEditing = false;
 
+  // Anchors the "tap Edit to make changes" popover onto the AppBar edit button.
+  final GlobalKey _editButtonKey = GlobalKey();
+
   @override
   void initState() {
     super.initState();
@@ -511,6 +514,16 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
     }
   }
 
+  void _showEditModeHint() {
+    final ctx = _editButtonKey.currentContext;
+    if (ctx == null) return;
+    showFieldHelp(
+      ctx,
+      title: 'View only',
+      message: 'Tap the Edit button to make changes.',
+    );
+  }
+
   Future<void> _deleteAnnotation(String annotationId) async {
     final confirmed = await confirmDestructiveAction(
       context: context,
@@ -545,6 +558,7 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
     final itineraryAsync = ref.watch(itineraryDetailProvider(widget.itineraryId));
     final isOwner = currentUserId != null &&
         itineraryAsync.valueOrNull?.userId == currentUserId;
+    final bool showEditHint = readOnly && isOwner;
 
     // In edit mode, keep local stop in sync when provider updates.
     if (widget.isEditMode && _initialized) {
@@ -575,6 +589,7 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
         actions: [
           if (readOnly && isOwner)
             IconButton(
+              key: _editButtonKey,
               icon: const Icon(Icons.edit_outlined),
               tooltip: 'Edit stop',
               onPressed: () => setState(() => _isEditing = true),
@@ -671,6 +686,7 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                   TextFormField(
                     controller: _placeNameController,
                     readOnly: readOnly,
+                    onTap: showEditHint ? _showEditModeHint : null,
                     decoration: const InputDecoration(
                       label: LabelWithHelp(
                         label: 'Place name',
@@ -690,6 +706,7 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                   TextFormField(
                     controller: _placeAddressController,
                     readOnly: readOnly,
+                    onTap: showEditHint ? _showEditModeHint : null,
                     decoration: const InputDecoration(
                       label: LabelWithHelp(
                         label: 'Address',
@@ -764,19 +781,23 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
 
                   // Place type
                   if (readOnly)
-                    InputDecorator(
-                      decoration: const InputDecoration(
-                        label: LabelWithHelp(
-                          label: 'Place type',
-                          helpTitle: 'Place type',
-                          helpMessage:
-                              'What kind of place this is (e.g. eat & drink, sleep, sight). Used for filtering and the map icon.',
+                    GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTap: showEditHint ? _showEditModeHint : null,
+                      child: InputDecorator(
+                        decoration: const InputDecoration(
+                          label: LabelWithHelp(
+                            label: 'Place type',
+                            helpTitle: 'Place type',
+                            helpMessage:
+                                'What kind of place this is (e.g. eat & drink, sleep, sight). Used for filtering and the map icon.',
+                          ),
+                          border: OutlineInputBorder(),
                         ),
-                        border: OutlineInputBorder(),
-                      ),
-                      child: Text(
-                        _placeType?.label ?? '—',
-                        style: Theme.of(context).textTheme.bodyMedium,
+                        child: Text(
+                          _placeType?.label ?? '—',
+                          style: Theme.of(context).textTheme.bodyMedium,
+                        ),
                       ),
                     )
                   else
@@ -828,7 +849,9 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
 
                   // Duration — recommended time to spend
                   InkWell(
-                    onTap: readOnly ? null : _showDurationPicker,
+                    onTap: readOnly
+                        ? (showEditHint ? _showEditModeHint : null)
+                        : _showDurationPicker,
                     borderRadius: BorderRadius.circular(4),
                     child: InputDecorator(
                       decoration: InputDecoration(
@@ -869,6 +892,7 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                   if (readOnly)
                     ListTile(
                       contentPadding: EdgeInsets.zero,
+                      onTap: showEditHint ? _showEditModeHint : null,
                       leading: Icon(
                         _isFree ? Icons.check_circle_outline : Icons.money_off_outlined,
                         color: _isFree ? Colors.green : null,
@@ -910,6 +934,7 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                     TextFormField(
                       controller: _costController,
                       readOnly: readOnly,
+                      onTap: showEditHint ? _showEditModeHint : null,
                       decoration: const InputDecoration(
                         label: LabelWithHelp(
                           label: 'Cost',

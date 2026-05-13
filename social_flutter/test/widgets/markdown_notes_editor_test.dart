@@ -31,6 +31,7 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         home: Scaffold(
+          resizeToAvoidBottomInset: false,
           body: SingleChildScrollView(
             child: MarkdownNotesEditor(
               controller: controller,
