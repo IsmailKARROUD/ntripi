@@ -23,13 +23,8 @@ import 'package:social_flutter/core/ui/app_theme.dart';
 import 'package:social_flutter/features/follows/providers/follow_provider.dart';
 import 'package:social_flutter/features/profile/providers/profile_provider.dart';
 import 'package:social_flutter/shared/models/follow.dart';
-import 'package:social_flutter/shared/widgets/user_avatar.dart';
+import 'package:social_flutter/shared/widgets/editorial_widgets.dart';
 import 'package:social_flutter/core/utils/platform_utils.dart';
-
-const _text2 = Color(0xFF5A7562);
-const _text3 = Color(0xFF93A898);
-const _border = Color(0xFFE4EDE6);
-const _surface = Colors.white;
 
 enum FollowListType { followers, following }
 
@@ -125,12 +120,12 @@ class _FollowListScreenState extends ConsumerState<FollowListScreen>
                   indicatorColor: kForest,
                   indicatorWeight: 2.5,
                   labelColor: kForest,
-                  unselectedLabelColor: _text2,
+                  unselectedLabelColor: kText2,
                   labelStyle: const TextStyle(
                       fontSize: 14, fontWeight: FontWeight.w700),
                   unselectedLabelStyle: const TextStyle(
                       fontSize: 14, fontWeight: FontWeight.w600),
-                  dividerColor: _border,
+                  dividerColor: kBorder,
                   tabs: [
                     Tab(
                         text: followerCount > 0
@@ -264,12 +259,12 @@ class _FollowersTab extends ConsumerWidget {
         children: [
           // Pending requests (own profile only)
           if (isOwnProfile && pendingRequests.isNotEmpty) ...[
-            _SectionLabel(
+            SectionLabel(
               icon: Icons.hourglass_empty_rounded,
               label: 'Follow requests · ${pendingRequests.length}',
               color: kAmber,
             ),
-            _SectionCard(
+            SectionCard(
               children: [
                 for (var i = 0; i < pendingRequests.length; i++)
                   _PendingRequestRow(
@@ -282,11 +277,11 @@ class _FollowersTab extends ConsumerWidget {
 
           // All followers
           if (followers.isNotEmpty) ...[
-            const _SectionLabel(
+            const SectionLabel(
               icon: Icons.group_rounded,
               label: 'All followers',
             ),
-            _SectionCard(
+            SectionCard(
               children: [
                 for (var i = 0; i < followers.length; i++)
                   _UserRow(
@@ -337,11 +332,11 @@ class _FollowingTab extends StatelessWidget {
         return ListView(
           padding: const EdgeInsets.only(bottom: 80),
           children: [
-            const _SectionLabel(
+            const SectionLabel(
               icon: Icons.person_rounded,
               label: 'People you follow',
             ),
-            _SectionCard(
+            SectionCard(
               children: [
                 for (var i = 0; i < following.length; i++)
                   _UserRow(
@@ -386,7 +381,7 @@ class _UserRow extends StatelessWidget {
                 horizontal: 14, vertical: 12),
             child: Row(
               children: [
-                _AvatarInitials(
+                AvatarInitials(
                     name: displayName, avatarUrl: user.avatarUrl),
                 const SizedBox(width: 12),
                 Expanded(
@@ -410,7 +405,7 @@ class _UserRow extends StatelessWidget {
                           if (user.isPrivate) ...[
                             const SizedBox(width: 4),
                             const Icon(Icons.lock_rounded,
-                                size: 13, color: _text3),
+                                size: 13, color: kText3),
                           ],
                         ],
                       ),
@@ -418,14 +413,14 @@ class _UserRow extends StatelessWidget {
                         '@${user.username}',
                         style: const TextStyle(
                             fontSize: 12,
-                            color: _text2,
+                            color: kText2,
                             fontWeight: FontWeight.w500),
                       ),
                     ],
                   ),
                 ),
                 const Icon(Icons.chevron_right,
-                    size: 18, color: _text3),
+                    size: 18, color: kText3),
               ],
             ),
           ),
@@ -434,7 +429,7 @@ class _UserRow extends StatelessWidget {
           Container(
               height: 1,
               margin: const EdgeInsets.only(left: 70),
-              color: _border),
+              color: kBorder),
       ],
     );
   }
@@ -504,7 +499,7 @@ class _PendingRequestRowState
               horizontal: 14, vertical: 12),
           child: Row(
             children: [
-              _AvatarInitials(
+              AvatarInitials(
                   name: displayName, avatarUrl: r.avatarUrl),
               const SizedBox(width: 12),
               Expanded(
@@ -525,7 +520,7 @@ class _PendingRequestRowState
                       '@${r.username}',
                       style: const TextStyle(
                           fontSize: 12,
-                          color: _text2,
+                          color: kText2,
                           fontWeight: FontWeight.w500),
                     ),
                   ],
@@ -544,11 +539,13 @@ class _PendingRequestRowState
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     _ActionPill(
+                        key: Key('confirmRequest_${widget.request.followId}'),
                         label: 'Confirm',
                         filled: true,
                         onTap: _accept),
                     const SizedBox(width: 6),
                     _ActionPill(
+                      key: Key('declineRequest_${widget.request.followId}'),
                       icon: Icons.close_rounded,
                       filled: false,
                       onTap: _decline,
@@ -562,7 +559,7 @@ class _PendingRequestRowState
           Container(
               height: 1,
               margin: const EdgeInsets.only(left: 70),
-              color: _border),
+              color: kBorder),
       ],
     );
   }
@@ -572,59 +569,6 @@ class _PendingRequestRowState
 // Small building blocks
 // ═══════════════════════════════════════════════════════════════════════════
 
-class _SectionLabel extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final Color color;
-
-  const _SectionLabel({
-    required this.icon,
-    required this.label,
-    this.color = _text2,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(22, 16, 22, 6),
-      child: Row(
-        children: [
-          Icon(icon, size: 13, color: color),
-          const SizedBox(width: 6),
-          Text(
-            label.toUpperCase(),
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w700,
-              color: color,
-              letterSpacing: 0.6,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _SectionCard extends StatelessWidget {
-  final List<Widget> children;
-  const _SectionCard({required this.children});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      decoration: BoxDecoration(
-        color: _surface,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: _border),
-      ),
-      child: Column(
-          mainAxisSize: MainAxisSize.min, children: children),
-    );
-  }
-}
-
 class _ActionPill extends StatelessWidget {
   final String? label;
   final IconData? icon;
@@ -632,6 +576,7 @@ class _ActionPill extends StatelessWidget {
   final VoidCallback onTap;
 
   const _ActionPill({
+    super.key,
     this.label,
     this.icon,
     required this.filled,
@@ -650,7 +595,7 @@ class _ActionPill extends StatelessWidget {
           borderRadius: BorderRadius.circular(10),
           border: filled
               ? null
-              : Border.all(color: _border, width: 1.5),
+              : Border.all(color: kBorder, width: 1.5),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -675,66 +620,6 @@ class _ActionPill extends StatelessWidget {
   }
 }
 
-// Avatar with initials fallback — shows the first letter(s) of the name
-// on a color-coded background when no photo is available.
-class _AvatarInitials extends StatelessWidget {
-  final String name;
-  final String? avatarUrl;
-  static const _size = 44.0;
-
-  const _AvatarInitials({required this.name, this.avatarUrl});
-
-  @override
-  Widget build(BuildContext context) {
-    if (avatarUrl != null && avatarUrl!.isNotEmpty) {
-      return UserAvatar(avatarUrl: avatarUrl, radius: _size / 2);
-    }
-    final initials = _initials(name);
-    final palette = _palette(name);
-    return Container(
-      width: _size,
-      height: _size,
-      decoration: BoxDecoration(
-        color: palette.$1,
-        shape: BoxShape.circle,
-      ),
-      alignment: Alignment.center,
-      child: Text(
-        initials,
-        style: TextStyle(
-          fontSize: _size * 0.38,
-          fontWeight: FontWeight.w700,
-          color: palette.$2,
-          letterSpacing: -0.4,
-        ),
-      ),
-    );
-  }
-
-  static String _initials(String name) {
-    final parts = name.trim().split(' ');
-    if (parts.length >= 2) {
-      return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
-    }
-    return name.isNotEmpty ? name[0].toUpperCase() : '?';
-  }
-
-  static (Color, Color) _palette(String name) {
-    const palettes = [
-      (Color(0xFFD0EBDA), Color(0xFF1F5E3A)),
-      (Color(0xFFFFE3CC), Color(0xFFA05D1F)),
-      (Color(0xFFE0DAF0), Color(0xFF5A3F8F)),
-      (Color(0xFFF4D4A8), Color(0xFF8A3A1F)),
-      (Color(0xFFCDE0D6), Color(0xFF3B6EA5)),
-    ];
-    int h = 0;
-    for (final c in name.codeUnits) {
-      h = (h * 31 + c) & 0xFFFFFFFF;
-    }
-    return palettes[h % palettes.length];
-  }
-}
-
 // Error / private-list placeholder.
 class _PrivateListPlaceholder extends StatelessWidget {
   final String message;
@@ -747,10 +632,10 @@ class _PrivateListPlaceholder extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           const Icon(Icons.lock_outline_rounded,
-              size: 48, color: _text3),
+              size: 48, color: kText3),
           const SizedBox(height: 8),
           Text(message,
-              style: const TextStyle(color: _text2),
+              style: const TextStyle(color: kText2),
               textAlign: TextAlign.center),
         ],
       ),
@@ -771,10 +656,10 @@ class _EmptyListPlaceholder extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 48, color: _text3),
+          Icon(icon, size: 48, color: kText3),
           const SizedBox(height: 8),
           Text(message,
-              style: const TextStyle(color: _text2)),
+              style: const TextStyle(color: kText2)),
         ],
       ),
     );

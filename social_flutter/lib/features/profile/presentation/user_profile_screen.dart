@@ -355,6 +355,7 @@ class _OtherMapHero extends StatelessWidget {
                   urlTemplate:
                       'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                   userAgentPackageName: 'app.ntripi',
+                  errorTileCallback: (_, __, ___) {},
                 ),
               ],
             ),

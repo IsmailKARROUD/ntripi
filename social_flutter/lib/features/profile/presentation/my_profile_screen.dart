@@ -235,10 +235,11 @@ class _MyProfileScreenState extends ConsumerState<MyProfileScreen> {
 
                 // ── Bio + social tally ───────────────────────────────────
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
+                  padding: const EdgeInsets.fromLTRB(25, 10, 25, 5),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
+                      const SizedBox(width: 24), // to align with avatar edge
                       _Tally(
                         n: user.followersCount,
                         label: 'Followers',
@@ -256,14 +257,9 @@ class _MyProfileScreenState extends ConsumerState<MyProfileScreen> {
                 ),
                 if (user.bio != null && user.bio!.isNotEmpty)
                   Padding(
-                    padding: const EdgeInsets.all(4.0),
-                    child: Expanded(
-                      child: user.bio != null && user.bio!.isNotEmpty
-                          ? InertMarkdownBody(data: user.bio!)
-                          : const SizedBox.shrink(),
-                    ),
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                    child: InertMarkdownBody(data: user.bio!),
                   ),
-
                 // ── Follow-requests banner ───────────────────────────────
                 if (user.isPrivate && pendingCount > 0)
                   Padding(
@@ -697,6 +693,8 @@ class _MapHero extends StatelessWidget {
                 TileLayer(
                   urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                   userAgentPackageName: 'app.ntripi',
+                  // Silently discard tile errors (offline / test mode).
+                  errorTileCallback: (_, __, ___) {},
                 ),
               ],
             ),
@@ -754,8 +752,7 @@ class _MapHero extends StatelessWidget {
                           _GlassIconButton(
                             icon: Icons.arrow_back,
                             tooltip: 'Back',
-                            onTap: () =>
-                                Navigator.of(context).maybePop(),
+                            onTap: () => Navigator.of(context).maybePop(),
                           ),
                           const _GlassIconButton(
                             icon: Icons.share_outlined,
@@ -766,7 +763,7 @@ class _MapHero extends StatelessWidget {
               ),
             ),
           ),
-         // const Spacer(),
+          // const Spacer(),
           // Bottom label: "WHERE I'VE BEEN · X stops"
           Positioned(
             left: 16,

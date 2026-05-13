@@ -1,0 +1,282 @@
+// test/widgets/user_profile_screen_test.dart
+//
+// Widget tests for the Editorial other-user profile (UserProfileScreen).
+// Covers the four follow states and the private-account lock state.
+
+import 'dart:async';
+
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:social_flutter/features/itineraries/domain/itinerary.dart';
+import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
+import 'package:social_flutter/features/profile/presentation/user_profile_screen.dart';
+import 'package:social_flutter/features/profile/providers/profile_provider.dart';
+import 'package:social_flutter/shared/models/user.dart';
+
+// ignore_for_file: invalid_use_of_internal_member
+
+// ── Fixtures ──────────────────────────────────────────────────────────────
+
+const _userId = 'other-1';
+
+User _makeUser({
+  bool isPrivate = false,
+  bool isFollowing = false,
+  bool followIsPending = false,
+}) =>
+    User(
+      id: _userId,
+      username: 'aminad',
+      displayName: 'Amina Diallo',
+      bio: 'Storyteller from Dakar',
+      avatarUrl: null,
+      isPrivate: isPrivate,
+      followersCount: 247,
+      followingCount: 38,
+      isFollowing: isFollowing,
+      followIsPending: followIsPending,
+      createdAt: DateTime(2024),
+    );
+
+final _testItinerary = Itinerary(
+  id: 'it-1',
+  userId: _userId,
+  title: 'Dakar to Saint-Louis',
+  totalDurationMin: 260,
+  totalCost: 210,
+  currency: 'EUR',
+  visibility: ItineraryVisibility.public,
+  createdAt: DateTime(2025),
+  updatedAt: DateTime(2025),
+  stopsCount: 9,
+);
+
+// ── Fake notifiers ────────────────────────────────────────────────────────
+
+class _FakeUserProfile extends UserProfileNotifier {
+  _FakeUserProfile(this._user);
+  final User _user;
+  @override
+  Future<User> build(String userId) async => _user;
+}
+
+class _FakeUserProfileLoading extends UserProfileNotifier {
+  @override
+  Future<User> build(String userId) => Completer<User>().future;
+}
+
+class _FakeUserProfileError extends UserProfileNotifier {
+  @override
+  Future<User> build(String userId) async =>
+      throw Exception('Not found');
+}
+
+class _FakeUserItineraries extends UserItinerariesNotifier {
+  _FakeUserItineraries(this._items);
+  final List<Itinerary> _items;
+  @override
+  Future<List<Itinerary>> build(String userId) async => _items;
+}
+
+// ── Widget builder ────────────────────────────────────────────────────────
+
+Widget _buildScreen({
+  User? user,
+  List<Itinerary>? itineraries,
+  UserProfileNotifier Function()? profileNotifier,
+}) {
+  FlutterSecureStorage.setMockInitialValues({});
+  final u = user ?? _makeUser();
+  return ProviderScope(
+    overrides: [
+      userProfileProvider.overrideWith(
+          profileNotifier ?? () => _FakeUserProfile(u)),
+      userItinerariesProvider.overrideWith(
+          () => _FakeUserItineraries(itineraries ?? [_testItinerary])),
+    ],
+    child: const MaterialApp(
+      home: UserProfileScreen(userId: _userId),
+    ),
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+
+void main() {
+  // Same tile-error suppression as my_profile_screen_test — OSM requests
+  // fail with HTTP 400 in test mode and would otherwise fail every test.
+  setUp(() {
+    final orig = FlutterError.onError;
+    FlutterError.onError = (FlutterErrorDetails details) {
+      if (details.library == 'image resource service') return;
+      orig?.call(details);
+    };
+    addTearDown(() => FlutterError.onError = orig);
+  });
+
+  group('UserProfileScreen', () {
+    // ── Profile data ─────────────────────────────────────────────────────
+
+    group('profile data', () {
+      testWidgets(
+          'Given public user, When screen builds, '
+          'Then shows display name and handle', (tester) async {
+        tester.view.physicalSize = const Size(1080, 1920);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        await tester.pumpWidget(_buildScreen());
+        await tester.pump();
+
+        expect(find.text('Amina Diallo'), findsOneWidget);
+        expect(find.text('@aminad'), findsOneWidget);
+      });
+
+      testWidgets(
+          'Given public user, When screen builds, '
+          'Then shows followers and following counts', (tester) async {
+        tester.view.physicalSize = const Size(1080, 1920);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        await tester.pumpWidget(_buildScreen());
+        await tester.pump();
+
+        expect(find.text('Followers'), findsOneWidget);
+        expect(find.text('Following'), findsOneWidget);
+      });
+
+      testWidgets(
+          'Given public user, When screen builds, '
+          'Then shows back button', (tester) async {
+        tester.view.physicalSize = const Size(1080, 1920);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        await tester.pumpWidget(_buildScreen());
+        await tester.pump();
+
+        expect(find.byTooltip('Back'), findsOneWidget);
+      });
+
+      testWidgets(
+          'Given public user with itineraries, When screen builds, '
+          'Then shows ITINERARIES section label', (tester) async {
+        tester.view.physicalSize = const Size(1080, 1920);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        await tester.pumpWidget(
+            _buildScreen(itineraries: [_testItinerary]));
+        await tester.pump();
+
+        expect(find.text('ITINERARIES'), findsOneWidget);
+      });
+    });
+
+    // ── Private account — locked content ─────────────────────────────────
+
+    group('private account', () {
+      testWidgets(
+          'Given private user not following, When screen builds, '
+          'Then shows "This account is private" message', (tester) async {
+        tester.view.physicalSize = const Size(1080, 1920);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        await tester.pumpWidget(
+            _buildScreen(user: _makeUser(isPrivate: true)));
+        await tester.pump();
+
+        expect(find.text('This account is private'), findsOneWidget);
+      });
+
+      testWidgets(
+          'Given private user with pending follow request, '
+          'When screen builds, Then shows "Request sent"', (tester) async {
+        tester.view.physicalSize = const Size(1080, 1920);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        await tester.pumpWidget(_buildScreen(
+            user: _makeUser(isPrivate: true, followIsPending: true)));
+        await tester.pump();
+
+        expect(find.text('Request sent'), findsOneWidget);
+      });
+
+      testWidgets(
+          'Given private account not following, When screen builds, '
+          'Then ITINERARIES section is not shown', (tester) async {
+        tester.view.physicalSize = const Size(1080, 1920);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        await tester.pumpWidget(
+            _buildScreen(user: _makeUser(isPrivate: true)));
+        await tester.pump();
+
+        expect(find.text('ITINERARIES'), findsNothing);
+      });
+
+      testWidgets(
+          'Given private user that current user follows, '
+          'When screen builds, Then shows itineraries section', (tester) async {
+        tester.view.physicalSize = const Size(1080, 1920);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        await tester.pumpWidget(_buildScreen(
+            user: _makeUser(isPrivate: true, isFollowing: true)));
+        await tester.pump();
+
+        expect(find.text('ITINERARIES'), findsOneWidget);
+      });
+    });
+
+    // ── Loading / error ───────────────────────────────────────────────────
+
+    group('loading and error states', () {
+      testWidgets(
+          'Given profile is loading, When screen builds, '
+          'Then shows CircularProgressIndicator', (tester) async {
+        tester.view.physicalSize = const Size(1080, 1920);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        await tester.pumpWidget(
+            _buildScreen(profileNotifier: _FakeUserProfileLoading.new));
+        await tester.pump();
+
+        expect(
+            find.byType(CircularProgressIndicator), findsOneWidget);
+      });
+
+      testWidgets(
+          'Given profile fetch fails, When screen builds, '
+          'Then shows Retry button', (tester) async {
+        tester.view.physicalSize = const Size(1080, 1920);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        await tester.pumpWidget(
+            _buildScreen(profileNotifier: _FakeUserProfileError.new));
+        await tester.pump();
+
+        expect(find.text('Retry'), findsOneWidget);
+      });
+    });
+  });
+}

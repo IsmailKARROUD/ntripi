@@ -1,0 +1,469 @@
+// test/widgets/follow_list_screen_test.dart
+//
+// Widget tests for the redesigned tabbed FollowListScreen.
+// Covers:
+//   · Tab selection (initial tab driven by `type` param)
+//   · Followers tab — populated list, empty state, error/private state
+//   · Pending requests section (own profile only) — visibility and actions
+//   · Following tab — populated list, empty state
+//
+// All HTTP + secure-storage calls are prevented by faking the Riverpod
+// notifiers that the screen depends on.
+
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:social_flutter/features/follows/presentation/follow_list_screen.dart';
+import 'package:social_flutter/features/follows/providers/follow_provider.dart';
+import 'package:social_flutter/features/profile/providers/profile_provider.dart';
+import 'package:social_flutter/shared/models/follow.dart';
+import 'package:social_flutter/shared/models/user.dart';
+
+// ── Fixtures ──────────────────────────────────────────────────────────────
+
+const _ownUserId = 'me-1';
+const _otherUserId = 'other-1';
+
+final _ownUser = User(
+  id: _ownUserId,
+  username: 'ismauo',
+  displayName: 'Ismail duo',
+  avatarUrl: null,
+  isPrivate: true,
+  followersCount: 2,
+  followingCount: 1,
+  createdAt: DateTime(2024),
+);
+
+const _follower1 = FollowerListItem(
+  id: 'f-1',
+  username: 'yac',
+  displayName: 'Yacine Coulibaly',
+  isPrivate: false,
+);
+
+const _follower2 = FollowerListItem(
+  id: 'f-2',
+  username: 'linab',
+  displayName: 'Lina Bensaïd',
+  isPrivate: false,
+);
+
+const _following1 = FollowerListItem(
+  id: 'other-1',
+  username: 'aminad',
+  displayName: 'Amina Diallo',
+  isPrivate: false,
+);
+
+final _pendingRequest = FollowRequestItem(
+  followId: 'req-1',
+  followerId: 'req-user-1',
+  username: 'kma',
+  displayName: 'Karim Maalouf',
+  requestedAt: DateTime(2025),
+);
+
+// ── Fake notifiers ────────────────────────────────────────────────────────
+
+class _FakeMyProfile extends MyProfileNotifier {
+  _FakeMyProfile(this._user);
+  final User _user;
+  @override
+  Future<User> build() async => _user;
+}
+
+class _FakeFollowers extends FollowersNotifier {
+  _FakeFollowers(this._items);
+  final List<FollowerListItem> _items;
+  @override
+  Future<List<FollowerListItem>> build(String userId) async => _items;
+}
+
+class _FakeFollowersError extends FollowersNotifier {
+  @override
+  Future<List<FollowerListItem>> build(String userId) async =>
+      throw Exception('403 Forbidden');
+}
+
+class _FakeFollowing extends FollowingNotifier {
+  _FakeFollowing(this._items);
+  final List<FollowerListItem> _items;
+  @override
+  Future<List<FollowerListItem>> build(String userId) async => _items;
+}
+
+class _FakeFollowRequests extends FollowRequestsNotifier {
+  _FakeFollowRequests(this._items);
+  final List<FollowRequestItem> _items;
+  @override
+  Future<List<FollowRequestItem>> build() async => _items;
+  @override
+  Future<void> acceptRequest(String followId) async {
+    state.whenData((r) =>
+        state = AsyncData(r.where((x) => x.followId != followId).toList()));
+  }
+  @override
+  Future<void> rejectRequest(String followId) async {
+    state.whenData((r) =>
+        state = AsyncData(r.where((x) => x.followId != followId).toList()));
+  }
+}
+
+// ── Widget builder ────────────────────────────────────────────────────────
+
+Widget _buildScreen({
+  required String userId,
+  FollowListType type = FollowListType.followers,
+  User? myProfile,
+  List<FollowerListItem>? followers,
+  List<FollowerListItem>? following,
+  List<FollowRequestItem>? requests,
+  bool followersError = false,
+}) {
+  FlutterSecureStorage.setMockInitialValues({});
+  return ProviderScope(
+    overrides: [
+      myProfileProvider.overrideWith(
+          () => _FakeMyProfile(myProfile ?? _ownUser)),
+      followersProvider.overrideWith(followersError
+          ? () => _FakeFollowersError()
+          : () => _FakeFollowers(followers ?? [])),
+      followingProvider
+          .overrideWith(() => _FakeFollowing(following ?? [])),
+      followRequestsProvider.overrideWith(
+          () => _FakeFollowRequests(requests ?? [])),
+    ],
+    child: MaterialApp(
+      home: FollowListScreen(userId: userId, type: type),
+    ),
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+
+void main() {
+  group('FollowListScreen', () {
+    // ── Tab selection ────────────────────────────────────────────────────
+
+    group('tab selection', () {
+      testWidgets(
+          'Given type followers, When screen builds, '
+          'Then Followers tab is visible', (tester) async {
+        tester.view.physicalSize = const Size(1080, 1920);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        await tester.pumpWidget(_buildScreen(
+          userId: _ownUserId,
+          type: FollowListType.followers,
+        ));
+        await tester.pump();
+
+        expect(find.text('Followers'), findsOneWidget);
+        expect(find.text('Following'), findsOneWidget);
+      });
+
+      testWidgets(
+          'Given type following, When screen builds, '
+          'Then Following tab is visible', (tester) async {
+        tester.view.physicalSize = const Size(1080, 1920);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        await tester.pumpWidget(_buildScreen(
+          userId: _ownUserId,
+          type: FollowListType.following,
+        ));
+        await tester.pump();
+
+        expect(find.text('Followers'), findsOneWidget);
+        expect(find.text('Following'), findsOneWidget);
+      });
+
+      testWidgets(
+          'Given type followers, When Following tab tapped, '
+          'Then following section becomes visible', (tester) async {
+        tester.view.physicalSize = const Size(1080, 1920);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        await tester.pumpWidget(_buildScreen(
+          userId: _ownUserId,
+          type: FollowListType.followers,
+          following: [_following1],
+        ));
+        await tester.pump();
+
+        await tester.pump(); // settle provider data
+
+        await tester.tap(find.textContaining('Following').last);
+        await tester.pumpAndSettle();
+
+        expect(find.text('Amina Diallo'), findsOneWidget);
+      });
+    });
+
+    // ── Followers tab ────────────────────────────────────────────────────
+
+    group('followers tab', () {
+      testWidgets(
+          'Given followers loaded, When on followers tab, '
+          'Then shows each follower display name', (tester) async {
+        tester.view.physicalSize = const Size(1080, 1920);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        await tester.pumpWidget(_buildScreen(
+          userId: _ownUserId,
+          type: FollowListType.followers,
+          followers: [_follower1, _follower2],
+        ));
+        await tester.pump();
+
+        expect(find.text('Yacine Coulibaly'), findsOneWidget);
+        expect(find.text('Lina Bensaïd'), findsOneWidget);
+      });
+
+      testWidgets(
+          'Given followers loaded, When follower row found, '
+          'Then the row is present and shows the @handle', (tester) async {
+        tester.view.physicalSize = const Size(1080, 1920);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        await tester.pumpWidget(_buildScreen(
+          userId: _ownUserId,
+          type: FollowListType.followers,
+          followers: [_follower1],
+        ));
+        await tester.pump();
+        await tester.pump();
+
+        expect(find.text('Yacine Coulibaly'), findsOneWidget);
+        expect(find.text('@yac'), findsOneWidget);
+      });
+
+      testWidgets(
+          'Given no followers, When on followers tab, '
+          'Then shows "No followers yet." placeholder', (tester) async {
+        tester.view.physicalSize = const Size(1080, 1920);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        await tester.pumpWidget(_buildScreen(
+          userId: _ownUserId,
+          type: FollowListType.followers,
+          followers: [],
+        ));
+        await tester.pump();
+
+        expect(find.text('No followers yet.'), findsOneWidget);
+      });
+
+      testWidgets(
+          'Given fetch error, When on followers tab, '
+          'Then shows lock placeholder', (tester) async {
+        tester.view.physicalSize = const Size(1080, 1920);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        await tester.pumpWidget(_buildScreen(
+          userId: _otherUserId,
+          type: FollowListType.followers,
+          followersError: true,
+        ));
+        await tester.pump();
+
+        expect(find.byIcon(Icons.lock_outline_rounded), findsOneWidget);
+      });
+    });
+
+    // ── Pending requests ─────────────────────────────────────────────────
+
+    group('pending requests section (own profile)', () {
+      testWidgets(
+          'Given own profile with pending requests, '
+          'When on followers tab, Then shows FOLLOW REQUESTS section',
+          (tester) async {
+        tester.view.physicalSize = const Size(1080, 1920);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        await tester.pumpWidget(_buildScreen(
+          userId: _ownUserId,
+          type: FollowListType.followers,
+          requests: [_pendingRequest],
+        ));
+        await tester.pump();
+        await tester.pump();
+
+        expect(
+            find.textContaining('FOLLOW REQUESTS'), findsOneWidget);
+        expect(find.text('Karim Maalouf'), findsOneWidget);
+        expect(find.text('Confirm'), findsOneWidget);
+      });
+
+      testWidgets(
+          'Given own profile without pending requests, '
+          'When on followers tab, Then no requests section', (tester) async {
+        tester.view.physicalSize = const Size(1080, 1920);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        await tester.pumpWidget(_buildScreen(
+          userId: _ownUserId,
+          type: FollowListType.followers,
+          requests: [],
+        ));
+        await tester.pump();
+
+        expect(
+            find.textContaining('FOLLOW REQUESTS'), findsNothing);
+      });
+
+      testWidgets(
+          'Given other profile viewed, '
+          'When on followers tab, Then pending requests never shown',
+          (tester) async {
+        tester.view.physicalSize = const Size(1080, 1920);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        // userId differs from myProfile.id → not own profile
+        await tester.pumpWidget(_buildScreen(
+          userId: _otherUserId,
+          type: FollowListType.followers,
+          requests: [_pendingRequest], // would show if own profile
+        ));
+        await tester.pump();
+
+        expect(
+            find.textContaining('FOLLOW REQUESTS'), findsNothing);
+      });
+
+      testWidgets(
+          'Given pending request visible, When Confirm tapped, '
+          'Then request row disappears', (tester) async {
+        tester.view.physicalSize = const Size(1080, 1920);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        await tester.pumpWidget(_buildScreen(
+          userId: _ownUserId,
+          type: FollowListType.followers,
+          requests: [_pendingRequest],
+        ));
+        await tester.pump();
+        await tester.pump(); // settle followRequestsProvider
+
+        expect(find.text('Karim Maalouf'), findsOneWidget);
+
+        await tester.tap(
+            find.byKey(const Key('confirmRequest_req-1')));
+        await tester.pump();
+
+        expect(find.text('Karim Maalouf'), findsNothing);
+      });
+
+      testWidgets(
+          'Given pending request visible, When Decline tapped, '
+          'Then request row disappears', (tester) async {
+        tester.view.physicalSize = const Size(1080, 1920);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        await tester.pumpWidget(_buildScreen(
+          userId: _ownUserId,
+          type: FollowListType.followers,
+          requests: [_pendingRequest],
+        ));
+        await tester.pump();
+        await tester.pump();
+
+        await tester.tap(
+            find.byKey(const Key('declineRequest_req-1')));
+        await tester.pump();
+
+        expect(find.text('Karim Maalouf'), findsNothing);
+      });
+    });
+
+    // ── Following tab ────────────────────────────────────────────────────
+
+    group('following tab', () {
+      testWidgets(
+          'Given following loaded, When on following tab, '
+          'Then shows each followed user name', (tester) async {
+        tester.view.physicalSize = const Size(1080, 1920);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        await tester.pumpWidget(_buildScreen(
+          userId: _ownUserId,
+          type: FollowListType.following,
+          following: [_following1],
+        ));
+        await tester.pump();
+
+        expect(find.text('Amina Diallo'), findsOneWidget);
+      });
+
+      testWidgets(
+          'Given no following, When on following tab, '
+          'Then shows "Not following anyone yet." placeholder',
+          (tester) async {
+        tester.view.physicalSize = const Size(1080, 1920);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        await tester.pumpWidget(_buildScreen(
+          userId: _ownUserId,
+          type: FollowListType.following,
+          following: [],
+        ));
+        await tester.pump();
+
+        // Navigate to the following tab
+        await tester.tap(find.text('Following'));
+        await tester.pumpAndSettle();
+
+        expect(
+            find.text('Not following anyone yet.'), findsOneWidget);
+      });
+    });
+
+    // ── Top bar ──────────────────────────────────────────────────────────
+
+    group('top bar', () {
+      testWidgets(
+          'Given own profile, When screen builds, '
+          'Then shows @handle in top bar', (tester) async {
+        tester.view.physicalSize = const Size(1080, 1920);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        await tester.pumpWidget(_buildScreen(userId: _ownUserId));
+        await tester.pump();
+
+        expect(find.text('@ismauo'), findsOneWidget);
+      });
+    });
+  });
+}

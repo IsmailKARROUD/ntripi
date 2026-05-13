@@ -24,11 +24,11 @@ Color ratingColor(double score) {
   return kRatingRed;
 }
 
-// Surface / border shades derived from the palette
-const _surface = Colors.white;
-const _border = Color(0xFFE4EDE6);
-const _text2 = Color(0xFF5A7562);
-const _text3 = Color(0xFF93A898);
+// Surface / border / secondary-text shades derived from the palette
+const kSurface = Colors.white;
+const kBorder = Color(0xFFE4EDE6);
+const kText2 = Color(0xFF5A7562);
+const kText3 = Color(0xFF93A898);
 ThemeData buildNtripiTheme() {
   const scheme = ColorScheme(
     brightness: Brightness.light,
@@ -48,11 +48,11 @@ ThemeData buildNtripiTheme() {
     onError: Colors.white,
     errorContainer:  Color(0xFFFFDAD6),
     onErrorContainer:  Color(0xFF410002),
-    surface: _surface,
+    surface: kSurface,
     onSurface: kBark,
     surfaceContainerHighest:  Color(0xFFEFF2EC),
     onSurfaceVariant:  Color(0xFF44483E),
-    outline: _border,
+    outline: kBorder,
     outlineVariant:  Color(0xFFC4CAC0),
     shadow: Colors.black,
     scrim: Colors.black,
@@ -85,27 +85,27 @@ ThemeData buildNtripiTheme() {
     ),
 
     cardTheme: CardThemeData(
-      color: _surface,
+      color: kSurface,
       elevation: 0,
       shadowColor: Colors.transparent,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: const BorderSide(color: _border),
+        side: const BorderSide(color: kBorder),
       ),
       margin: EdgeInsets.zero,
     ),
 
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
-      fillColor: _surface,
+      fillColor: kSurface,
       contentPadding: const EdgeInsets.symmetric(horizontal: 2, vertical: 15),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(color: _border),
+        borderSide: const BorderSide(color: kBorder),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(color: _border),
+        borderSide: const BorderSide(color: kBorder),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14),
@@ -119,8 +119,8 @@ ThemeData buildNtripiTheme() {
         borderRadius: BorderRadius.circular(14),
         borderSide: const BorderSide(color: Color(0xFFBA1A1A), width: 1.5),
       ),
-      labelStyle: GoogleFonts.dmSans(fontSize: 12, fontWeight: FontWeight.w600, color: _text2),
-      hintStyle: GoogleFonts.dmSans(color: _text3),
+      labelStyle: GoogleFonts.dmSans(fontSize: 12, fontWeight: FontWeight.w600, color: kText2),
+      hintStyle: GoogleFonts.dmSans(color: kText3),
     ),
 
     elevatedButtonTheme: ElevatedButtonThemeData(
@@ -150,7 +150,7 @@ ThemeData buildNtripiTheme() {
     outlinedButtonTheme: OutlinedButtonThemeData(
       style: OutlinedButton.styleFrom(
         foregroundColor: kForest,
-        side: const BorderSide(color: _border),
+        side: const BorderSide(color: kBorder),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
         padding: const EdgeInsets.symmetric(vertical: 14),
         textStyle: GoogleFonts.dmSans(fontSize: 14, fontWeight: FontWeight.w600),
@@ -174,23 +174,23 @@ ThemeData buildNtripiTheme() {
     ),
 
     bottomNavigationBarTheme: BottomNavigationBarThemeData(
-      backgroundColor: _surface,
+      backgroundColor: kSurface,
       selectedItemColor: kForest,
-      unselectedItemColor: _text3,
+      unselectedItemColor: kText3,
       selectedLabelStyle: GoogleFonts.dmSans(fontSize: 10, fontWeight: FontWeight.w600),
       unselectedLabelStyle: GoogleFonts.dmSans(fontSize: 10),
       type: BottomNavigationBarType.fixed,
       elevation: 0,
     ),
 
-    dividerTheme: const DividerThemeData(color: _border, space: 1, thickness: 1),
+    dividerTheme: const DividerThemeData(color: kBorder, space: 1, thickness: 1),
 
     checkboxTheme: CheckboxThemeData(
       fillColor: WidgetStateProperty.resolveWith((states) {
         if (states.contains(WidgetState.selected)) return kForest;
         return Colors.transparent;
       }),
-      side: const BorderSide(color: _border, width: 1.5),
+      side: const BorderSide(color: kBorder, width: 1.5),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
     ),
 
