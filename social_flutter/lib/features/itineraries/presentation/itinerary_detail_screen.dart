@@ -157,7 +157,8 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
     final confirmed = await confirmDestructiveAction(
       context: context,
       title: 'Delete annotation?',
-      message: 'This will permanently remove this annotation from the itinerary.',
+      message:
+          'This will permanently remove this annotation from the itinerary.',
       confirmLabel: 'Delete',
     );
     if (!confirmed || !mounted) return;
@@ -216,7 +217,8 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
     final confirmed = await confirmDestructiveAction(
       context: context,
       title: 'Delete annotation?',
-      message: 'This will permanently remove this annotation from the itinerary.',
+      message:
+          'This will permanently remove this annotation from the itinerary.',
       confirmLabel: 'Delete',
     );
     if (!confirmed || !mounted) return;
@@ -309,20 +311,6 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                   // the discard-confirm when dirty).
                 ] else if (isOwner && _editMode) ...[
                   IconButton(
-                    icon: const Icon(Icons.add_location_alt_outlined),
-                    tooltip: 'Add stop',
-                    onPressed: () => context.push(
-                      '/itineraries/${widget.itineraryId}/stops/new',
-                    ),
-                  ),
-                  if (itineraryAsync.valueOrNull != null &&
-                      itineraryAsync.valueOrNull!.tracks.length >= 2)
-                    IconButton(
-                      icon: const Icon(Icons.reorder),
-                      tooltip: 'Reorder tracks',
-                      onPressed: () => setState(() => _reorderMode = true),
-                    ),
-                  IconButton(
                     icon: const Icon(Icons.check),
                     tooltip: 'Done',
                     onPressed: _exitEditMode,
@@ -339,75 +327,11 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                           .shareItinerary(itineraryAsync.value!),
                     ),
                   if (isOwner)
-                    PopupMenuButton<_OwnerAction>(
-                      icon: const Icon(Icons.more_vert),
-                      tooltip: 'More options',
-                      onSelected: (action) async {
-                        switch (action) {
-                          case _OwnerAction.editStops:
-                            _enterEditMode();
-                          case _OwnerAction.editDetails:
-                            context.push(
-                                '/itineraries/${widget.itineraryId}/edit');
-                          case _OwnerAction.delete:
-                            final title = itineraryAsync.valueOrNull?.title ??
-                                'this itinerary';
-                            final router = GoRouter.of(context);
-                            final messenger = ScaffoldMessenger.of(context);
-                            final confirmed =
-                                await confirmTypedDestructiveAction(
-                              context: context,
-                              title: 'Delete itinerary',
-                              message:
-                                  'This will permanently delete "$title" and all its stops. Type the title to confirm.',
-                              requiredText: title,
-                              hintText: title,
-                            );
-                            if (!confirmed || !mounted) return;
-                            try {
-                              await ref
-                                  .read(myItinerariesProvider.notifier)
-                                  .removeItinerary(widget.itineraryId);
-                              if (!mounted) return;
-                              router.go('/itineraries');
-                            } on Exception catch (e) {
-                              messenger.showSnackBar(
-                                SnackBar(
-                                    content: Text(
-                                        extractErrorMessage(e as dynamic))),
-                              );
-                            }
-                        }
-                      },
-                      itemBuilder: (_) => [
-                        const PopupMenuItem(
-                          value: _OwnerAction.editStops,
-                          child: ListTile(
-                            leading: Icon(Icons.edit_outlined),
-                            title: Text('Edit stops'),
-                            contentPadding: EdgeInsets.zero,
-                          ),
-                        ),
-                        const PopupMenuItem(
-                          value: _OwnerAction.editDetails,
-                          child: ListTile(
-                            leading: Icon(Icons.tune_outlined),
-                            title: Text('Edit details & image'),
-                            contentPadding: EdgeInsets.zero,
-                          ),
-                        ),
-                        const PopupMenuDivider(),
-                        const PopupMenuItem(
-                          value: _OwnerAction.delete,
-                          child: ListTile(
-                            leading:
-                                Icon(Icons.delete_outline, color: Colors.red),
-                            title: Text('Delete itinerary',
-                                style: TextStyle(color: Colors.red)),
-                            contentPadding: EdgeInsets.zero,
-                          ),
-                        ),
-                      ],
+                    IconButton(
+                      icon: const Icon(Icons.tune_outlined),
+                      tooltip: 'Edit details & image',
+                      onPressed: () => context
+                          .push('/itineraries/${widget.itineraryId}/edit'),
                     ),
                 ],
               ],
@@ -445,8 +369,7 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                         itineraryId: widget.itineraryId,
                         tracks: itinerary.tracks,
                         segments: itinerary.segments,
-                        onExit: () =>
-                            setState(() => _reorderMode = false),
+                        onExit: () => setState(() => _reorderMode = false),
                       );
                     }
                     final allStops = itinerary.stops;
@@ -844,12 +767,49 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                                         style: TextStyle(
                                             fontWeight: FontWeight.w600,
                                             fontSize: 15)),
-                                    const Spacer(),
                                     Icon(
                                         _mapVisible
                                             ? Icons.expand_less
                                             : Icons.expand_more,
                                         size: 20),
+                                        const Spacer(),
+                                    if (isOwner &&
+                                        !_editMode &&
+                                        !_reorderMode) ...[
+                                      TextButton.icon(
+                                        onPressed: _enterEditMode,
+                                        icon: const Icon(Icons.edit_outlined,
+                                            size: 16),
+                                        label: const Text('Edit stops'),
+                                        style: TextButton.styleFrom(
+                                          padding: const EdgeInsets.symmetric(
+                                              horizontal: 8),
+                                          minimumSize: const Size(0, 32),
+                                          tapTargetSize:
+                                              MaterialTapTargetSize.shrinkWrap,
+                                          visualDensity: VisualDensity.compact,
+                                        ),
+                                      ),
+                                    ] else if (isOwner && _editMode) ...[
+                                      IconButton(
+                                        icon: const Icon(
+                                            Icons.add_location_alt_outlined),
+                                        tooltip: 'Add stop',
+                                        onPressed: () => context.push(
+                                          '/itineraries/${widget.itineraryId}/stops/new',
+                                        ),
+                                      ),
+                                      if (itineraryAsync.valueOrNull != null &&
+                                          itineraryAsync
+                                                  .valueOrNull!.tracks.length >=
+                                              2)
+                                        IconButton(
+                                          icon: const Icon(Icons.reorder),
+                                          tooltip: 'Reorder tracks',
+                                          onPressed: () => setState(
+                                              () => _reorderMode = true),
+                                        ),
+                                    ],
                                   ],
                                 ),
                               ),
@@ -1199,7 +1159,9 @@ class _SummaryChip extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.grey.shade100.withValues(alpha: 0.6),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade300.withValues(alpha: 0.8),),
+        border: Border.all(
+          color: Colors.grey.shade300.withValues(alpha: 0.8),
+        ),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -1211,7 +1173,7 @@ class _SummaryChip extends StatelessWidget {
             style: Theme.of(context)
                 .textTheme
                 .bodySmall
-                ?.copyWith(fontWeight: FontWeight.w500,color: Colors.black),
+                ?.copyWith(fontWeight: FontWeight.w500, color: Colors.black),
           ),
         ],
       ),

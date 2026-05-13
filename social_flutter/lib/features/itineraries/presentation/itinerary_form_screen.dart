@@ -24,6 +24,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:social_flutter/core/api/api_client.dart';
 import 'package:social_flutter/core/services/currency.dart';
+import 'package:social_flutter/core/ui/app_theme.dart';
 import 'package:social_flutter/core/ui/destructive_actions.dart';
 import 'package:social_flutter/core/api/api_endpoints.dart';
 import 'package:social_flutter/features/itineraries/data/itinerary_repository.dart';
@@ -248,6 +249,35 @@ Future<void> loadCurrencies() async {
     }
   }
 
+  Future<void> _deleteItinerary() async {
+    final itinerary =
+        ref.read(itineraryDetailProvider(widget.itineraryId!)).valueOrNull;
+    final title = itinerary?.title ?? 'this itinerary';
+    final router = GoRouter.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+
+    final confirmed = await confirmTypedDestructiveAction(
+      context: context,
+      title: 'Delete itinerary',
+      message:
+          'This will permanently delete "$title" and all its stops. Type the title to confirm.',
+      requiredText: title,
+      hintText: title,
+    );
+    if (!confirmed || !mounted) return;
+    try {
+      await ref
+          .read(myItinerariesProvider.notifier)
+          .removeItinerary(widget.itineraryId!);
+      if (!mounted) return;
+      router.go('/itineraries');
+    } on Exception catch (e) {
+      messenger.showSnackBar(
+        SnackBar(content: Text(extractErrorMessage(e as dynamic))),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -422,6 +452,32 @@ Future<void> loadCurrencies() async {
                           ? 'Create Itinerary'
                           : 'Save Changes'),
                 ),
+
+                if (widget.mode == ItineraryFormMode.edit) ...[
+                  const SizedBox(height: 32),
+                  const Divider(),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Danger zone',
+                    style: Theme.of(context).textTheme.labelLarge!.copyWith(color:kRatingRed,fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 4),
+                  const Text(
+                    'Permanently delete this itinerary and all its stops. '
+                    'This cannot be undone.',
+                    style: TextStyle(color: Colors.black54),
+                  ),
+                  const SizedBox(height: 12),
+                  OutlinedButton.icon(
+                    onPressed: _saving ? null : _deleteItinerary,
+                    icon: const Icon(Icons.delete_outline),
+                    label: const Text('Delete itinerary'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: kRatingRed,
+                      side: const BorderSide(color: kRatingRed),
+                    ),
+                  ),
+                ],
               ],
             ),
           ),

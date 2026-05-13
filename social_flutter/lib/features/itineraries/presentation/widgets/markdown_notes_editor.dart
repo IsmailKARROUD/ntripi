@@ -169,6 +169,7 @@ class InertMarkdownBody extends StatelessWidget {
     return MarkdownBody(
       data: data,
       selectable: true,
+      softLineBreak: true,
       extensionSet: md.ExtensionSet.none,
       styleSheet: base.copyWith(a: bodyStyle),
     );

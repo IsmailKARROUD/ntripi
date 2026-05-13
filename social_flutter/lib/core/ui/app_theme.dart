@@ -11,7 +11,7 @@ const kSand = Color(0xFFF5F2EC);   // oklch(97% 0.008 80) — warm cream bg
 const kBark = Color(0xFF1A2A1E);   // oklch(18% 0.03 150) — near-black text
 
 // Rating score colors: 1=red · 2=orange · 3=amber · 4=lime · 5=green
-const kRatingRed = Color(0xFFBA1A1A);
+const kRatingRed = Color(0xFFF01A1A);
 const kRatingOrange = Color(0xFFD4611A);
 const kRatingLimeGreen = Color(0xFF7AAE35);
 
