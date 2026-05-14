@@ -76,6 +76,18 @@ Monorepo at `/Users/ismac/project/Ntripi/`:
 
 ---
 
+## Code Comments
+
+Add a short inline comment whenever the **why** behind a line or block is non-obvious to a future reader — hidden constraints, project-specific invariants, workarounds, or architectural decisions that would otherwise require cross-referencing another file to understand.
+
+Rules:
+- One line max. If you need more, it's documentation — put it in the PR description.
+- Explain the *reason*, not the action (`# always hash even for missing users — timing-safe` not `# hash password`).
+- Target: complex or project-specific logic (ETag normalization, fractional-indexing rank generation, bcrypt direct, `COLLATE "C"` on rank columns, access-control single source of truth, etc.).
+- Do NOT comment self-evident code, standard library calls, or anything a reader can understand from the identifiers alone.
+
+---
+
 ## Data Conventions
 
 ### Stop Role (StopType)
