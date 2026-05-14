@@ -38,6 +38,12 @@ class MyProfileNotifier extends AsyncNotifier<User> {
     String? avatarUrl,
     bool clearAvatarUrl = false,
     bool? isPrivate,
+    List<String>? passportCountries,
+    bool passportCountriesChanged = false,
+    String? residentCountry,
+    bool clearResidentCountry = false,
+    List<String>? languages,
+    bool languagesChanged = false,
   }) async {
     state = await AsyncValue.guard(
       () => ref.read(profileRepositoryProvider).updateMyProfile(
@@ -46,6 +52,12 @@ class MyProfileNotifier extends AsyncNotifier<User> {
             avatarUrl: avatarUrl,
             clearAvatarUrl: clearAvatarUrl,
             isPrivate: isPrivate,
+            passportCountries: passportCountries,
+            passportCountriesChanged: passportCountriesChanged,
+            residentCountry: residentCountry,
+            clearResidentCountry: clearResidentCountry,
+            languages: languages,
+            languagesChanged: languagesChanged,
           ),
     );
   }

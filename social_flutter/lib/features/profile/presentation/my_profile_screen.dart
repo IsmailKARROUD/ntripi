@@ -30,7 +30,11 @@ import 'package:social_flutter/features/follows/providers/follow_provider.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/itinerary_summary_card.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/markdown_notes_editor.dart';
 import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
+import 'package:social_flutter/features/profile/presentation/country_picker_screen.dart';
+import 'package:social_flutter/features/profile/presentation/language_picker_sheet.dart';
+import 'package:social_flutter/features/profile/presentation/profile_identity_facts.dart';
 import 'package:social_flutter/features/profile/providers/profile_provider.dart';
+import 'package:social_flutter/shared/data/countries.dart';
 import 'package:social_flutter/shared/models/user.dart';
 import 'package:social_flutter/shared/widgets/user_avatar.dart';
 import 'package:social_flutter/core/utils/platform_utils.dart';
@@ -49,6 +53,12 @@ class _MyProfileScreenState extends ConsumerState<MyProfileScreen> {
   final _bioController = TextEditingController();
   final _avatarUrlController = TextEditingController();
   bool? _editIsPrivate;
+  List<String> _editPassportCountries = [];
+  bool _passportCountriesChanged = false;
+  String? _editResidentCountry;
+  bool _residentChanged = false;
+  List<String> _editLanguages = [];
+  bool _languagesChanged = false;
 
   @override
   void initState() {
@@ -71,6 +81,12 @@ class _MyProfileScreenState extends ConsumerState<MyProfileScreen> {
     _bioController.text = user.bio ?? '';
     _avatarUrlController.text = user.avatarUrl ?? '';
     _editIsPrivate = user.isPrivate;
+    _editPassportCountries = List.from(user.passportCountries ?? []);
+    _passportCountriesChanged = false;
+    _editResidentCountry = user.residentCountry;
+    _residentChanged = false;
+    _editLanguages = List.from(user.languages ?? []);
+    _languagesChanged = false;
     setState(() => _isEditing = true);
   }
 
@@ -148,6 +164,12 @@ class _MyProfileScreenState extends ConsumerState<MyProfileScreen> {
           avatarUrl: avatarText.isEmpty ? null : avatarText,
           clearAvatarUrl: avatarText.isEmpty,
           isPrivate: _editIsPrivate,
+          passportCountries: _editPassportCountries,
+          passportCountriesChanged: _passportCountriesChanged,
+          residentCountry: _editResidentCountry,
+          clearResidentCountry: _residentChanged && _editResidentCountry == null,
+          languages: _editLanguages,
+          languagesChanged: _languagesChanged,
         );
     if (mounted) setState(() => _isEditing = false);
   }
@@ -255,6 +277,11 @@ class _MyProfileScreenState extends ConsumerState<MyProfileScreen> {
                     padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
                     child: InertMarkdownBody(data: user.bio!),
                   ),
+                // ── Identity facts (passport · lives in · languages) ─────
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
+                  child: ProfileIdentityFacts(user: user),
+                ),
                 // ── Follow-requests banner ───────────────────────────────
                 if (user.isPrivate && pendingCount > 0)
                   Padding(
@@ -522,6 +549,82 @@ class _MyProfileScreenState extends ConsumerState<MyProfileScreen> {
                         isDense: true,
                       ),
                     ),
+                  ),
+                ]),
+
+                // Travel identity section
+                const _SectionLabel(
+                    icon: Icons.public_rounded, label: 'Travel identity'),
+                _SectionCard(children: [
+                  _CodeChipsRow(
+                    icon: Icons.badge_outlined,
+                    label: 'Passport',
+                    codes: _editPassportCountries,
+                    labelFor: (code) =>
+                        '${countryByCode(code)?.flag ?? ''} $code'.trim(),
+                    onAdd: () async {
+                      final code = await Navigator.of(context).push<String?>(
+                        MaterialPageRoute(
+                          builder: (_) => CountryPickerScreen(
+                            exclude: _editPassportCountries,
+                          ),
+                        ),
+                      );
+                      if (code != null && code.isNotEmpty && mounted) {
+                        setState(() {
+                          _editPassportCountries = [..._editPassportCountries, code];
+                          _passportCountriesChanged = true;
+                        });
+                      }
+                    },
+                    onRemove: (code) => setState(() {
+                      _editPassportCountries =
+                          _editPassportCountries.where((c) => c != code).toList();
+                      _passportCountriesChanged = true;
+                    }),
+                  ),
+                  const _FieldDivider(),
+                  _PickerRow(
+                    icon: Icons.location_on_outlined,
+                    label: 'Lives in',
+                    countryCode: _editResidentCountry,
+                    onTap: () async {
+                      final code = await Navigator.of(context).push<String?>(
+                        MaterialPageRoute(
+                          builder: (_) => const CountryPickerScreen(allowClear: true),
+                        ),
+                      );
+                      if (code != null && mounted) {
+                        setState(() {
+                          _editResidentCountry = code.isEmpty ? null : code;
+                          _residentChanged = true;
+                        });
+                      }
+                    },
+                  ),
+                  const _FieldDivider(),
+                  _CodeChipsRow(
+                    icon: Icons.translate_outlined,
+                    label: 'Languages',
+                    codes: _editLanguages,
+                    labelFor: (code) => code,
+                    onAdd: () async {
+                      final code = await showLanguagePickerSheet(
+                        context,
+                        exclude: _editLanguages,
+                      );
+                      if (code != null && mounted) {
+                        setState(() {
+                          _editLanguages = [..._editLanguages, code];
+                          _languagesChanged = true;
+                        });
+                      }
+                    },
+                    onRemove: (code) => setState(() {
+                      _editLanguages =
+                          _editLanguages.where((c) => c != code).toList();
+                      _languagesChanged = true;
+                    }),
                   ),
                 ]),
 
@@ -1608,6 +1711,219 @@ class _SheetRow extends StatelessWidget {
               margin: const EdgeInsets.only(left: 56),
               color: kBorder),
       ],
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Travel identity edit widgets
+// ═══════════════════════════════════════════════════════════════════════════
+
+/// Tappable row for single-value country fields (Lives in).
+/// Shows icon box + uppercase label + current flag+name + chevron.
+class _PickerRow extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String? countryCode;
+  final VoidCallback onTap;
+
+  const _PickerRow({
+    required this.icon,
+    required this.label,
+    required this.countryCode,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final country = countryCode != null ? countryByCode(countryCode!) : null;
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+        child: Row(
+          children: [
+            Container(
+              width: 32,
+              height: 32,
+              decoration: BoxDecoration(
+                color: const Color(0xFFD0EBDA),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(icon, size: 16, color: kForest),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    label.toUpperCase(),
+                    style: const TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700,
+                      color: kText2,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    country != null
+                        ? '${country.flag} ${country.name}'
+                        : 'Select a country',
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w500,
+                      color: country != null ? kBark : kText3,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(Icons.chevron_right, size: 20, color: kText3),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Chips row for multi-value fields (Passport countries, Languages).
+/// Shows icon box + uppercase label + removable chips + dashed "Add" button.
+class _CodeChipsRow extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final List<String> codes;
+  final String Function(String code) labelFor;
+  final VoidCallback onAdd;
+  final void Function(String code) onRemove;
+
+  const _CodeChipsRow({
+    required this.icon,
+    required this.label,
+    required this.codes,
+    required this.labelFor,
+    required this.onAdd,
+    required this.onRemove,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 32,
+            height: 32,
+            decoration: BoxDecoration(
+              color: const Color(0xFFD0EBDA),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(icon, size: 16, color: kForest),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label.toUpperCase(),
+                  style: const TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    color: kText2,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 6,
+                  children: [
+                    ...codes.map((code) => _Chip(
+                          label: labelFor(code),
+                          onRemove: () => onRemove(code),
+                        )),
+                    _AddChip(onTap: onAdd),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _Chip extends StatelessWidget {
+  final String label;
+  final VoidCallback onRemove;
+
+  const _Chip({required this.label, required this.onRemove});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.only(left: 10, right: 4, top: 5, bottom: 5),
+      decoration: BoxDecoration(
+        color: const Color(0xFFD0EBDA),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              color: kForest,
+            ),
+          ),
+          const SizedBox(width: 2),
+          GestureDetector(
+            onTap: onRemove,
+            child: const Icon(Icons.close_rounded, size: 14, color: kForest),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AddChip extends StatelessWidget {
+  final VoidCallback onTap;
+  const _AddChip({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(color: kText3, style: BorderStyle.solid, width: 1.5),
+        ),
+        child: const Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.add_rounded, size: 13, color: kText2),
+            SizedBox(width: 3),
+            Text(
+              'Add',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: kText2,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

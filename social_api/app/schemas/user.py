@@ -26,6 +26,9 @@ class UserBase(BaseModel):
     followers_count: int
     following_count: int
     created_at: datetime
+    passport_countries: list[str] | None = None
+    resident_country: str | None = None
+    languages: list[str] | None = None
 
     # model_config replaces class Config in Pydantic v2.
     # from_attributes=True (was orm_mode=True in v1) allows creating
@@ -69,12 +72,56 @@ class UserUpdateRequest(BaseModel):
     bio: str | None = Field(None, max_length=500)
     avatar_url: str | None = None
     is_private: bool | None = None
+    passport_countries: list[str] | None = None
+    resident_country: str | None = None
+    languages: list[str] | None = None
 
     @field_validator("display_name")
     @classmethod
     def _check_display_name(cls, v: str | None) -> str | None:
         from app.validators.username import validate_display_name
         return validate_display_name(v)
+
+    @field_validator("passport_countries", mode="before")
+    @classmethod
+    def _check_passports(cls, v: list | None) -> list[str] | None:
+        if v is None:
+            return None
+        if not isinstance(v, list):
+            raise ValueError("must be a list of country codes")
+        if len(v) > 5:
+            raise ValueError("at most 5 passport countries")
+        result = []
+        for code in v:
+            if not isinstance(code, str) or len(code) != 2 or not code.isalpha():
+                raise ValueError(f"'{code}' is not a valid 2-letter country code")
+            result.append(code.upper())
+        return result
+
+    @field_validator("resident_country", mode="before")
+    @classmethod
+    def _check_resident_country(cls, v: str | None) -> str | None:
+        if v is None:
+            return None
+        if not isinstance(v, str) or len(v) != 2 or not v.isalpha():
+            raise ValueError("must be a 2-letter ISO country code")
+        return v.upper()
+
+    @field_validator("languages", mode="before")
+    @classmethod
+    def _check_languages(cls, v: list | None) -> list[str] | None:
+        if v is None:
+            return None
+        if not isinstance(v, list):
+            raise ValueError("must be a list of language codes")
+        if len(v) > 10:
+            raise ValueError("at most 10 languages")
+        result = []
+        for code in v:
+            if not isinstance(code, str) or len(code) < 2 or len(code) > 3 or not code.isalpha():
+                raise ValueError(f"'{code}' is not a valid language code")
+            result.append(code.upper())
+        return result
 
 
 class DeleteAccountRequest(BaseModel):

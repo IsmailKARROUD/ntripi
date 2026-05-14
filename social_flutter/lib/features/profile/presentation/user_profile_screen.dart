@@ -22,6 +22,7 @@ import 'package:social_flutter/core/ui/app_theme.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/itinerary_summary_card.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/markdown_notes_editor.dart';
 import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
+import 'package:social_flutter/features/profile/presentation/profile_identity_facts.dart';
 import 'package:social_flutter/features/profile/providers/profile_provider.dart';
 import 'package:social_flutter/shared/models/user.dart';
 import 'package:social_flutter/shared/widgets/follow_button.dart';
@@ -155,6 +156,13 @@ class _ProfileBody extends ConsumerWidget {
                     ref: ref,
                   ),
                 ),
+
+                // ── Identity facts (unlocked only) ───────────────────
+                if (!isContentHidden)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                    child: ProfileIdentityFacts(user: user),
+                  ),
 
                 // ── Body: locked or unlocked ─────────────────────────
                 if (isContentHidden)

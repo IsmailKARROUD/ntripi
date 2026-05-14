@@ -50,19 +50,29 @@ class ProfileRepository {
     String? avatarUrl,
     bool clearAvatarUrl = false,
     bool? isPrivate,
+    List<String>? passportCountries,
+    bool passportCountriesChanged = false,
+    String? residentCountry,
+    bool clearResidentCountry = false,
+    List<String>? languages,
+    bool languagesChanged = false,
   }) async {
-    // Build the request body with only the non-null fields.
-    // This ensures we only update fields the user actually changed.
     final data = <String, dynamic>{};
     if (displayName != null) data['display_name'] = displayName;
     if (bio != null) data['bio'] = bio;
-    // clearAvatarUrl=true means the user explicitly cleared the field — send null.
     if (clearAvatarUrl) {
       data['avatar_url'] = null;
     } else if (avatarUrl != null) {
       data['avatar_url'] = avatarUrl;
     }
     if (isPrivate != null) data['is_private'] = isPrivate;
+    if (passportCountriesChanged) data['passport_countries'] = passportCountries ?? [];
+    if (clearResidentCountry) {
+      data['resident_country'] = null;
+    } else if (residentCountry != null) {
+      data['resident_country'] = residentCountry;
+    }
+    if (languagesChanged) data['languages'] = languages ?? [];
 
     final response = await _dio.patch(kMyProfileEndpoint, data: data);
     return User.fromJson(response.data as Map<String, dynamic>);

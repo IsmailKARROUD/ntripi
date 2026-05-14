@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime, timezone
 
-from sqlalchemy import Boolean, Integer, String, Text, DateTime, func
+from sqlalchemy import Boolean, Integer, JSON, String, Text, DateTime, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.dialects.postgresql import UUID
 
@@ -40,6 +40,10 @@ class User(Base):
 
     bio: Mapped[str | None] = mapped_column(Text, nullable=True)
     avatar_url: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    passport_countries: Mapped[list | None] = mapped_column(JSON, nullable=True)
+    resident_country: Mapped[str | None] = mapped_column(String(2), nullable=True)
+    languages: Mapped[list | None] = mapped_column(JSON, nullable=True)
 
     is_private: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
 

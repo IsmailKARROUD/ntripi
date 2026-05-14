@@ -33,6 +33,15 @@ class User {
 
   final DateTime createdAt;
 
+  /// ISO alpha-2 country codes for nationalities (multiple passports supported).
+  final List<String>? passportCountries;
+
+  /// ISO alpha-2 country code for primary country of residence.
+  final String? residentCountry;
+
+  /// ISO 639-1 language codes for spoken languages.
+  final List<String>? languages;
+
   /// Returns displayName if set, else "@username".
   String get nameForDisplay => displayName ?? '@$username';
 
@@ -52,6 +61,9 @@ class User {
     this.isFollowing = false,
     this.followIsPending = false,
     required this.createdAt,
+    this.passportCountries,
+    this.residentCountry,
+    this.languages,
   });
 
   factory User.fromJson(Map<String, dynamic> json) {
@@ -70,6 +82,13 @@ class User {
       createdAt: json['created_at'] != null
           ? DateTime.parse(json['created_at'] as String)
           : DateTime(2020),
+      passportCountries: (json['passport_countries'] as List?)
+          ?.map((e) => e as String)
+          .toList(),
+      residentCountry: json['resident_country'] as String?,
+      languages: (json['languages'] as List?)
+          ?.map((e) => e as String)
+          .toList(),
     );
   }
 
@@ -87,6 +106,9 @@ class User {
       'is_following': isFollowing,
       'follow_is_pending': followIsPending,
       'created_at': createdAt.toIso8601String(),
+      if (passportCountries != null) 'passport_countries': passportCountries,
+      if (residentCountry != null) 'resident_country': residentCountry,
+      if (languages != null) 'languages': languages,
     };
   }
 
@@ -105,6 +127,9 @@ class User {
     bool? isFollowing,
     bool? followIsPending,
     DateTime? createdAt,
+    List<String>? passportCountries,
+    String? residentCountry,
+    List<String>? languages,
   }) {
     return User(
       id: id ?? this.id,
@@ -119,6 +144,9 @@ class User {
       isFollowing: isFollowing ?? this.isFollowing,
       followIsPending: followIsPending ?? this.followIsPending,
       createdAt: createdAt ?? this.createdAt,
+      passportCountries: passportCountries ?? this.passportCountries,
+      residentCountry: residentCountry ?? this.residentCountry,
+      languages: languages ?? this.languages,
     );
   }
 }

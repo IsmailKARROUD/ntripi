@@ -225,6 +225,9 @@ def get_user_by_username(
         followers_count=target_user.followers_count,
         following_count=target_user.following_count,
         created_at=target_user.created_at,
+        passport_countries=target_user.passport_countries,
+        resident_country=target_user.resident_country,
+        languages=target_user.languages,
         is_following=(
             follow_record is not None
             and follow_record.status == FollowStatus.accepted
@@ -347,6 +350,9 @@ def get_user_profile(
         followers_count=target_user.followers_count,
         following_count=target_user.following_count,
         created_at=target_user.created_at,
+        passport_countries=target_user.passport_countries,
+        resident_country=target_user.resident_country,
+        languages=target_user.languages,
         is_following=is_following,
         follow_is_pending=follow_is_pending,
     )
