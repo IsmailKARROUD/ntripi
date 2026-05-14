@@ -43,7 +43,7 @@ class _CountryPickerScreenState extends State<CountryPickerScreen> {
     final excluded = widget.exclude.map((c) => c.toUpperCase()).toSet();
     final list = kCountries.where((c) => !excluded.contains(c.code)).toList();
     if (_query.isEmpty) return list;
-    final q = _query.toLowerCase();
+    final q = _query.toLowerCase().trim();
     return list
         .where((c) =>
             c.name.toLowerCase().contains(q) ||

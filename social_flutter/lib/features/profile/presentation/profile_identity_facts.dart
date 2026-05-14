@@ -20,55 +20,108 @@ class ProfileIdentityFacts extends StatelessWidget {
     final resident = user.residentCountry;
     final langs = user.languages ?? [];
 
-    final chips = <Widget>[];
+    final hasPassport = passports.isNotEmpty;
+    final hasResident = resident != null && resident.isNotEmpty;
+    final hasLanguages = langs.isNotEmpty;
 
-    if (passports.isNotEmpty) {
-      final flags = passports
-          .map((c) => countryByCode(c)?.flag ?? '')
-          .where((f) => f.isNotEmpty)
-          .join('');
-      final codes = passports.join(' · ');
-      chips.add(_IdentityFactChip(
-        icon: Icons.badge_rounded,
-        subLabel: 'Passport',
-        value: codes,
-        prefix: flags.isNotEmpty ? flags : null,
-      ));
+    if (!hasPassport && !hasResident && !hasLanguages) {
+      return const SizedBox.shrink();
     }
 
-    if (resident != null && resident.isNotEmpty) {
-      final country = countryByCode(resident);
-      chips.add(_IdentityFactChip(
-        icon: Icons.location_on_rounded,
-        subLabel: 'Lives in',
-        value: country?.name ?? resident,
-        prefix: country?.flag,
-      ));
+    // Passport: full-width row — one Text entry per country.
+    Widget? passportRow;
+    if (hasPassport) {
+      passportRow = _PassportRow(codes: passports);
     }
 
-    if (langs.isNotEmpty) {
-      final label = langs
-          .map((c) => languageByCode(c)?.code ?? c)
-          .join(' · ');
-      chips.add(_IdentityFactChip(
-        icon: Icons.translate_rounded,
-        subLabel: 'Speaks',
-        value: label,
-      ));
-    }
+    final residentChip = hasResident
+        ? _IdentityFactChip(
+            icon: Icons.location_on_rounded,
+            subLabel: 'Lives in',
+            value: countryByCode(resident)?.name ?? resident,
+            prefix: countryByCode(resident)?.flag,
+          )
+        : null;
 
-    if (chips.isEmpty) return const SizedBox.shrink();
+    final speaksChip = hasLanguages
+        ? _IdentityFactChip(
+            icon: Icons.translate_rounded,
+            subLabel: 'Speaks',
+            value: langs.map((c) => languageByCode(c)?.code ?? c).join(' · '),
+          )
+        : null;
 
-    return Row(
-      children: chips
-          .map((chip) => Expanded(child: chip))
-          .toList()
-          // Add 6px gaps between chips
-          .fold<List<Widget>>([], (acc, w) {
-            if (acc.isNotEmpty) acc.add(const SizedBox(width: 6));
-            acc.add(w);
-            return acc;
-          }),
+    return Wrap(
+      spacing: 6,
+      runSpacing: 6,
+      children: [
+        if (passportRow != null) passportRow,
+        if (residentChip != null) residentChip,
+        if (speaksChip != null) speaksChip,
+      ],
+    );
+  }
+}
+
+class _PassportRow extends StatelessWidget {
+  final List<String> codes;
+  const _PassportRow({required this.codes});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        color: kSurface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: kBorder),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.badge_rounded, size: 18, color: kForest),
+          const SizedBox(width: 6),
+          IntrinsicWidth(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  'PASSPORT',
+                  style: TextStyle(
+                    fontSize: 9,
+                    fontWeight: FontWeight.w700,
+                    color: kText2,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: codes.map((c) {
+                    final country = countryByCode(c);
+                    final flag = country?.flag ?? '';
+                    final name = country?.name ?? c;
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 12),
+                      child: Text(
+                        '$flag $name',
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          color: kBark,
+                          height: 1.2,
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -97,10 +150,11 @@ class _IdentityFactChip extends StatelessWidget {
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
+        mainAxisSize: MainAxisSize.min,
         children: [
           Icon(icon, size: 18, color: kForest),
           const SizedBox(width: 6),
-          Expanded(
+          IntrinsicWidth(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
@@ -118,13 +172,11 @@ class _IdentityFactChip extends StatelessWidget {
                 Text(
                   prefix != null ? '$prefix $value' : value,
                   style: const TextStyle(
-                    fontSize: 12,
+                    fontSize: 13,
                     fontWeight: FontWeight.w700,
                     color: kBark,
                     height: 1.2,
                   ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
                 ),
               ],
             ),

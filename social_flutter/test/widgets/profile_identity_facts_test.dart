@@ -78,7 +78,8 @@ void main() {
     testWidgets(
         'Given single passport country (MA), '
         'When widget builds, '
-        'Then shows PASSPORT sub-label and "MA" with flag', (tester) async {
+        'Then shows PASSPORT sub-label and full country name "Morocco"',
+        (tester) async {
       tester.view.physicalSize = const Size(1080, 300);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
@@ -87,13 +88,13 @@ void main() {
       await tester.pumpWidget(_wrap(_user(passportCountries: ['MA'])));
 
       expect(find.text('PASSPORT'), findsOneWidget);
-      expect(find.textContaining('MA'), findsWidgets);
+      expect(find.textContaining('Morocco'), findsOneWidget);
     });
 
     testWidgets(
         'Given two passport countries (MA, FR), '
         'When widget builds, '
-        'Then shows both codes joined by " · "', (tester) async {
+        'Then shows both full country names', (tester) async {
       tester.view.physicalSize = const Size(1080, 300);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
@@ -102,8 +103,8 @@ void main() {
       await tester.pumpWidget(_wrap(_user(passportCountries: ['MA', 'FR'])));
 
       expect(find.text('PASSPORT'), findsOneWidget);
-      // The chip value is prefixed with flag emojis, so use textContaining.
-      expect(find.textContaining('MA · FR'), findsOneWidget);
+      expect(find.textContaining('Morocco'), findsOneWidget);
+      expect(find.textContaining('France'), findsOneWidget);
     });
 
     testWidgets(
