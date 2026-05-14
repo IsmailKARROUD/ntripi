@@ -1247,7 +1247,7 @@ class _CoverImageState extends State<_CoverImage> {
                 return const SizedBox.shrink();
               },
             ),
-            Container(
+             Container(
               decoration: const BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,

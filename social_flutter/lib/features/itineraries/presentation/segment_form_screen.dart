@@ -331,8 +331,8 @@ class _SegmentFormScreenState extends ConsumerState<SegmentFormScreen> {
                   value: _fromStopId,
                   isExpanded: true,
                   decoration: const InputDecoration(
-                    label: LabelWithHelp(
-                      label: 'From Stop',
+                    labelText: 'From Stop',
+                    suffixIcon: FieldHelpIcon(
                       helpTitle: 'From',
                       helpMessage: "The stop you're traveling from.",
                     ),
@@ -361,8 +361,8 @@ class _SegmentFormScreenState extends ConsumerState<SegmentFormScreen> {
                   value: _toStopId,
                   isExpanded: true,
                   decoration: const InputDecoration(
-                    label: LabelWithHelp(
-                      label: 'To Stop',
+                    labelText: 'To Stop',
+                    suffixIcon: FieldHelpIcon(
                       helpTitle: 'To',
                       helpMessage: "The stop you're traveling to.",
                     ),

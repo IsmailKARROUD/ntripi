@@ -144,12 +144,13 @@ class _StopCardState extends State<StopCard> {
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
-
-                      if (stop.durationMin != null || costLabel.isNotEmpty)
+                      
+                      if (stop.durationMin != null || costLabel.isNotEmpty || stop.placeType != null)
                         Padding(
                           padding: const EdgeInsets.only(top: 6),
                           child: Wrap(
                             spacing: 6,
+                            runSpacing: 4,
                             children: [
                               if (stop.durationMin != null)
                                 _InfoChip(
@@ -161,6 +162,8 @@ class _StopCardState extends State<StopCard> {
                                   icon: Icons.euro_symbol,
                                   label: costLabel,
                                 ),
+                              if (stop.placeType != null)
+                                _PlaceTypeChip(placeType: stop.placeType!),
                             ],
                           ),
                         ),
@@ -333,6 +336,39 @@ class _InfoChip extends StatelessWidget {
                 .textTheme
                 .bodySmall
                 ?.copyWith(color: Colors.grey.shade700, fontSize: 11),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PlaceTypeChip extends StatelessWidget {
+  final PlaceType placeType;
+
+  const _PlaceTypeChip({required this.placeType});
+
+  @override
+  Widget build(BuildContext context) {
+    final color = placeType.color;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withValues(alpha: 0.35)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(placeType.icon, size: 12, color: color),
+          const SizedBox(width: 4),
+          Text(
+            placeType.label,
+            style: Theme.of(context)
+                .textTheme
+                .bodySmall
+                ?.copyWith(color: color, fontSize: 11),
           ),
         ],
       ),

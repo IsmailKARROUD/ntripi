@@ -95,8 +95,8 @@ class _AnnotationFormDialogState extends State<AnnotationFormDialog> {
               maxLines: 3,
               autofocus: true,
               decoration: const InputDecoration(
-                label: LabelWithHelp(
-                  label: 'Content *',
+                labelText: 'Content *',
+                suffixIcon: FieldHelpIcon(
                   helpTitle: 'Content',
                   helpMessage:
                       'Describe your advice, caution, warning, or note in one or two sentences.',

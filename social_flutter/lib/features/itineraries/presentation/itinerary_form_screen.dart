@@ -330,8 +330,8 @@ Future<void> loadCurrencies() async {
                 TextFormField(
                   controller: _titleController,
                   decoration: const InputDecoration(
-                    label: LabelWithHelp(
-                      label: 'Title *',
+                    labelText: 'Title *',
+                    suffixIcon: FieldHelpIcon(
                       helpTitle: 'Title',
                       helpMessage:
                           'A short, clear name for this trip. Shown on the itinerary card and share previews.',
@@ -361,8 +361,8 @@ Future<void> loadCurrencies() async {
                   value: _currency,
                   isExpanded: true,
                   decoration: const InputDecoration(
-                    label: LabelWithHelp(
-                      label: 'Currency',
+                    labelText: 'Currency',
+                    suffixIcon: FieldHelpIcon(
                       helpTitle: 'Currency',
                       helpMessage:
                           "Default currency for all stop costs and transport costs in this itinerary.",

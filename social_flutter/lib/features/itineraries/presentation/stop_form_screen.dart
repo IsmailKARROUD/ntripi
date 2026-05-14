@@ -690,8 +690,8 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                     readOnly: readOnly,
                     onTap: showEditHint ? _showEditModeHint : null,
                     decoration: const InputDecoration(
-                      label: LabelWithHelp(
-                        label: 'Place name',
+                      labelText: 'Place name',
+                      suffixIcon: FieldHelpIcon(
                         helpTitle: 'Place name',
                         helpMessage:
                             'Name of the place, restaurant, landmark, or stop.',
@@ -710,8 +710,8 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                     readOnly: readOnly,
                     onTap: showEditHint ? _showEditModeHint : null,
                     decoration: const InputDecoration(
-                      label: LabelWithHelp(
-                        label: 'Address',
+                      labelText: 'Address',
+                      suffixIcon: FieldHelpIcon(
                         helpTitle: 'Address',
                         helpMessage:
                             'Street address or area description. Optional.',
@@ -788,26 +788,38 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                       onTap: showEditHint ? _showEditModeHint : null,
                       child: InputDecorator(
                         decoration: const InputDecoration(
-                          label: LabelWithHelp(
-                            label: 'Place type',
+                          labelText: 'Place type',
+                          suffixIcon: FieldHelpIcon(
                             helpTitle: 'Place type',
                             helpMessage:
                                 'What kind of place this is (e.g. eat & drink, sleep, sight). Used for filtering and the map icon.',
                           ),
                           border: OutlineInputBorder(),
                         ),
-                        child: Text(
-                          _placeType?.label ?? '—',
-                          style: Theme.of(context).textTheme.bodyMedium,
-                        ),
+                        child: _placeType != null
+                            ? Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(_placeType!.icon, size: 16, color: _placeType!.color),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    _placeType!.label,
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .bodyMedium
+                                        ?.copyWith(color: _placeType!.color),
+                                  ),
+                                ],
+                              )
+                            : Text('—', style: Theme.of(context).textTheme.bodyMedium),
                       ),
                     )
                   else
                     DropdownButtonFormField<PlaceType>(
                       value: _placeType,
                       decoration: const InputDecoration(
-                        label: LabelWithHelp(
-                          label: 'Place type',
+                        labelText: 'Place type',
+                        suffixIcon: FieldHelpIcon(
                           helpTitle: 'Place type',
                           helpMessage:
                               'What kind of place this is (e.g. eat & drink, sleep, sight). Used for filtering and the map icon.',
@@ -817,28 +829,46 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                       hint: const Text('Select place type'),
                       isExpanded: true,
                       selectedItemBuilder: (context) => PlaceType.values
-                          .map((t) => Align(
-                                alignment: Alignment.centerLeft,
-                                child: Text(t.label),
+                          .map((t) => Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(t.icon, size: 16, color: t.color),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    t.label,
+                                    style: TextStyle(color: t.color),
+                                  ),
+                                ],
                               ))
                           .toList(),
                       items: PlaceType.values
                           .map(
                             (t) => DropdownMenuItem(
                               value: t,
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                mainAxisAlignment: MainAxisAlignment.center,
+                              child: Row(
                                 children: [
-                                  Text(t.label),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    t.hint,
-                                    style: TextStyle(
-                                      fontSize: 11,
-                                      color: Colors.grey.shade600,
-                                      fontStyle: FontStyle.italic,
-                                    ),
+                                  Icon(t.icon, size: 18, color: t.color),
+                                  const SizedBox(width: 10),
+                                  Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Text(
+                                        t.label,
+                                        style: TextStyle(
+                                          color: t.color,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                      Text(
+                                        t.hint,
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          color: Colors.grey.shade600,
+                                          fontStyle: FontStyle.italic,
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ],
                               ),
@@ -857,26 +887,17 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                     borderRadius: BorderRadius.circular(4),
                     child: InputDecorator(
                       decoration: InputDecoration(
-                        label: const LabelWithHelp(
-                          label: 'Recommended time to spend',
+                        labelText: 'Recommended time to spend',
+                        border: const OutlineInputBorder(),
+                        prefixIcon: const Icon(Icons.schedule_outlined),
+                        suffix: const FieldHelpIcon(
                           helpTitle: 'Time to spend',
                           helpMessage:
                               'Roughly how long you expect to stay here. Tap to set days, hours, and minutes.',
                         ),
-                        border: const OutlineInputBorder(),
-                        prefixIcon: const Icon(Icons.schedule_outlined),
                         suffixIcon: readOnly
                             ? null
-                            : (_totalDurationMin != null
-                                ? IconButton(
-                                    icon: const Icon(Icons.clear, size: 18),
-                                    onPressed: () => setState(() {
-                                      _durationDays = 0;
-                                      _durationHours = 0;
-                                      _durationMinutes = 0;
-                                    }),
-                                  )
-                                : const Icon(Icons.chevron_right)),
+                            :  const Icon(Icons.chevron_right),
                       ),
                       child: Text(
                         _durationLabel,
@@ -938,8 +959,8 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                       readOnly: readOnly,
                       onTap: showEditHint ? _showEditModeHint : null,
                       decoration: const InputDecoration(
-                        label: LabelWithHelp(
-                          label: 'Cost',
+                        labelText: 'Cost',
+                        suffixIcon: FieldHelpIcon(
                           helpTitle: 'Cost',
                           helpMessage:
                               "Approximate cost per person, in the itinerary's currency.",

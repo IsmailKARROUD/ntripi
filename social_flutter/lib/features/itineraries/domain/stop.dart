@@ -16,6 +16,7 @@
 //   placeholder value `StopType.waypoint`, and Itinerary._parseTracks()
 //   overwrites it with the correct value after deserialization.
 
+import 'package:flutter/material.dart';
 import 'package:social_flutter/features/itineraries/domain/annotation.dart';
 
 enum StopType {
@@ -91,6 +92,34 @@ enum PlaceType {
         PlaceType.healBathe => 'spa, hot spring, pool, sauna, bathhouse',
         PlaceType.entertainment => 'theater, cinema, concert hall, nightclub',
         PlaceType.sight => 'monument, viewpoint, castle, square, ruin',
+      };
+
+  Color get color => switch (this) {
+        PlaceType.eatDrink => const Color(0xFFE65100),
+        PlaceType.sleep => const Color(0xFF5E35B1),
+        PlaceType.pray => const Color(0xFF00897B),
+        PlaceType.learnSee => const Color(0xFF1E88E5),
+        PlaceType.buy => const Color(0xFFD81B60),
+        PlaceType.playWatch => const Color(0xFF43A047),
+        PlaceType.nature => const Color(0xFF2E7D32),
+        PlaceType.travel => const Color(0xFF546E7A),
+        PlaceType.healBathe => const Color(0xFF0097A7),
+        PlaceType.entertainment => const Color(0xFF6A1B9A),
+        PlaceType.sight => const Color(0xFFF57F17),
+      };
+
+  IconData get icon => switch (this) {
+        PlaceType.eatDrink => Icons.restaurant,
+        PlaceType.sleep => Icons.hotel,
+        PlaceType.pray => Icons.church,
+        PlaceType.learnSee => Icons.museum,
+        PlaceType.buy => Icons.shopping_bag_outlined,
+        PlaceType.playWatch => Icons.sports,
+        PlaceType.nature => Icons.park_outlined,
+        PlaceType.travel => Icons.directions_transit,
+        PlaceType.healBathe => Icons.spa_outlined,
+        PlaceType.entertainment => Icons.theater_comedy_outlined,
+        PlaceType.sight => Icons.photo_camera_outlined,
       };
 }
 

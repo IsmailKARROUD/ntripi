@@ -185,8 +185,8 @@ class _LegFormDialogState extends State<LegFormDialog> {
           DropdownButtonFormField<TransportMode>(
             value: _mode,
             decoration: const InputDecoration(
-              label: LabelWithHelp(
-                label: 'Mode',
+              labelText: 'Mode',
+              suffixIcon: FieldHelpIcon(
                 helpTitle: 'Transport mode',
                 helpMessage:
                     'How you travel on this leg (walk, bus, train, ferry, etc.). Some modes reveal extra fields for line and direction.',
@@ -219,8 +219,8 @@ class _LegFormDialogState extends State<LegFormDialog> {
                   child: TextField(
                     controller: _lineCtrl,
                     decoration: const InputDecoration(
-                      label: LabelWithHelp(
-                        label: 'Line (optional)',
+                      labelText: 'Line (optional)',
+                      suffixIcon: FieldHelpIcon(
                         helpTitle: 'Line',
                         helpMessage:
                             'Optional. The line number or name (e.g. "Bus 42", "M1").',
@@ -234,8 +234,8 @@ class _LegFormDialogState extends State<LegFormDialog> {
                   child: TextField(
                     controller: _directionCtrl,
                     decoration: const InputDecoration(
-                      label: LabelWithHelp(
-                        label: 'Direction (optional)',
+                      labelText: 'Direction (optional)',
+                      suffixIcon: FieldHelpIcon(
                         helpTitle: 'Direction',
                         helpMessage:
                             'Optional. Where the line is headed (e.g. "Northbound", "Châtelet").',
@@ -346,8 +346,8 @@ class _LegFormDialogState extends State<LegFormDialog> {
             controller: _notesCtrl,
             maxLines: 2,
             decoration: const InputDecoration(
-              label: LabelWithHelp(
-                label: 'Thoughts (optional)',
+              labelText: 'Thoughts (optional)',
+              suffixIcon: FieldHelpIcon(
                 helpTitle: 'Thoughts',
                 helpMessage:
                     'Optional. Anything useful to know about this leg — booking tips, transfer instructions, where to sit, ticket cost surprises.',
