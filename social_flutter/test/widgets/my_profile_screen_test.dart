@@ -77,6 +77,12 @@ class _FakeMyProfile extends MyProfileNotifier {
     String? avatarUrl,
     bool clearAvatarUrl = false,
     bool? isPrivate,
+    List<String>? passportCountries,
+    bool passportCountriesChanged = false,
+    String? residentCountry,
+    bool clearResidentCountry = false,
+    List<String>? languages,
+    bool languagesChanged = false,
   }) async {
     state = AsyncData(_user.copyWith(
       displayName: displayName,

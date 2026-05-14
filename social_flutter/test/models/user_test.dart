@@ -28,6 +28,9 @@ const _fullJson = {
   'is_following': true,
   'follow_is_pending': false,
   'created_at': '2024-01-15T10:30:00.000Z',
+  'passport_countries': ['MA', 'FR'],
+  'resident_country': 'BE',
+  'languages': ['FR', 'AR', 'EN'],
 };
 
 /// A minimal JSON object with only required fields — optional fields are absent.
@@ -92,6 +95,38 @@ void main() {
       final user = User.fromJson(json);
       expect(user.createdAt, DateTime(2020));
     });
+
+    test('parses passport_countries, resident_country, and languages from JSON',
+        () {
+      final user = User.fromJson(_fullJson);
+      expect(user.passportCountries, ['MA', 'FR']);
+      expect(user.residentCountry, 'BE');
+      expect(user.languages, ['FR', 'AR', 'EN']);
+    });
+
+    test(
+        'travel identity fields are null when absent — existing profiles unaffected',
+        () {
+      final user = User.fromJson(_minimalJson);
+      expect(user.passportCountries, isNull);
+      expect(user.residentCountry, isNull);
+      expect(user.languages, isNull);
+    });
+
+    test('passport_countries can hold multiple codes (dual nationality)', () {
+      final json = Map<String, dynamic>.from(_minimalJson)
+        ..['passport_countries'] = ['MA', 'FR', 'ES'];
+      final user = User.fromJson(json);
+      expect(user.passportCountries, hasLength(3));
+      expect(user.passportCountries, containsAll(['MA', 'FR', 'ES']));
+    });
+
+    test('languages can be an empty list', () {
+      final json = Map<String, dynamic>.from(_minimalJson)
+        ..['languages'] = <String>[];
+      final user = User.fromJson(json);
+      expect(user.languages, isEmpty);
+    });
   });
 
   group('User.toJson', () {
@@ -111,8 +146,6 @@ void main() {
     });
 
     test('omits null optional fields (email, display_name, bio, avatar_url)', () {
-      // The backend uses PATCH semantics — sending null fields should not
-      // overwrite existing data. Omitting them is the correct approach.
       final user = User.fromJson(_minimalJson);
       final json = user.toJson();
 
@@ -120,6 +153,25 @@ void main() {
       expect(json.containsKey('display_name'), false);
       expect(json.containsKey('bio'), false);
       expect(json.containsKey('avatar_url'), false);
+    });
+
+    test('includes passport_countries, resident_country, and languages when set',
+        () {
+      final user = User.fromJson(_fullJson);
+      final json = user.toJson();
+
+      expect(json['passport_countries'], ['MA', 'FR']);
+      expect(json['resident_country'], 'BE');
+      expect(json['languages'], ['FR', 'AR', 'EN']);
+    });
+
+    test('omits travel identity keys when all are null', () {
+      final user = User.fromJson(_minimalJson);
+      final json = user.toJson();
+
+      expect(json.containsKey('passport_countries'), false);
+      expect(json.containsKey('resident_country'), false);
+      expect(json.containsKey('languages'), false);
     });
   });
 
@@ -147,6 +199,32 @@ void main() {
       expect(copy.email, original.email);
       expect(copy.isPrivate, original.isPrivate);
       expect(copy.followersCount, original.followersCount);
+    });
+
+    test('copyWith can update travel identity fields independently', () {
+      final original = User.fromJson(_fullJson);
+
+      final updated = original.copyWith(
+        passportCountries: ['MA', 'FR', 'NL'],
+        residentCountry: 'NL',
+        languages: ['FR', 'NL'],
+      );
+
+      expect(updated.passportCountries, ['MA', 'FR', 'NL']);
+      expect(updated.residentCountry, 'NL');
+      expect(updated.languages, ['FR', 'NL']);
+      // Other fields unaffected
+      expect(updated.id, original.id);
+      expect(updated.username, original.username);
+    });
+
+    test('copyWith with no arguments preserves travel identity fields', () {
+      final original = User.fromJson(_fullJson);
+      final copy = original.copyWith();
+
+      expect(copy.passportCountries, original.passportCountries);
+      expect(copy.residentCountry, original.residentCountry);
+      expect(copy.languages, original.languages);
     });
 
     test('copyWith can update follow state for optimistic UI updates', () {
