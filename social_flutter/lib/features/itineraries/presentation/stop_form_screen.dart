@@ -27,6 +27,7 @@ import 'package:social_flutter/features/itineraries/providers/itinerary_provider
 import 'package:social_flutter/features/profile/providers/profile_provider.dart';
 import 'package:social_flutter/core/ui/app_theme.dart';
 import 'package:social_flutter/core/utils/platform_utils.dart';
+import 'package:social_flutter/l10n/app_localizations.dart';
 import 'package:social_flutter/shared/widgets/field_help.dart';
 
 class StopFormScreen extends ConsumerStatefulWidget {
@@ -124,7 +125,7 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
       if (_durationMinutes > 0)
         '${_durationMinutes.toString().padLeft(2, '0')}min',
     ];
-    return parts.isEmpty ? 'Not set' : parts.join(' ');
+    return parts.isEmpty ? AppLocalizations.of(context)!.notSet : parts.join(' ');
   }
 
   Future<void> _showDurationPicker() async {
@@ -151,10 +152,10 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                   children: [
                     TextButton(
                       onPressed: () => Navigator.of(ctx).pop(),
-                      child: const Text('Cancel'),
+                      child: Text(AppLocalizations.of(context)!.cancel),
                     ),
                     Text(
-                      'Time to spend',
+                      AppLocalizations.of(context)!.timeToSpendModalTitle,
                       style: Theme.of(ctx).textTheme.titleSmall,
                     ),
                     TextButton(
@@ -166,7 +167,7 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                         });
                         Navigator.of(ctx).pop();
                       },
-                      child: const Text('Done'),
+                      child: Text(AppLocalizations.of(context)!.doneTooltip),
                     ),
                   ],
                 ),
@@ -327,21 +328,20 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
       final duplicate = _findDuplicate();
       if (duplicate != null) {
         final stopLabel = duplicate.placeName ?? 'A stop';
+        final l10n = AppLocalizations.of(context)!;
         final confirmed = await showDialog<bool>(
           context: context,
           builder: (ctx) => AlertDialog(
-            title: const Text('Duplicate stop'),
-            content: Text(
-              '$stopLabel is already in this itinerary. Add it again anyway?',
-            ),
+            title: Text(l10n.duplicateStopTitle),
+            content: Text(l10n.duplicateStopMessage(stopLabel)),
             actions: [
               TextButton(
                 onPressed: () => Navigator.of(ctx).pop(false),
-                child: const Text('Cancel'),
+                child: Text(l10n.cancel),
               ),
               FilledButton(
                 onPressed: () => Navigator.of(ctx).pop(true),
-                child: const Text('Add anyway'),
+                child: Text(l10n.addAnyway),
               ),
             ],
           ),
@@ -403,22 +403,22 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
       if (!mounted) return;
       await showDialog<void>(
         context: context,
-        builder: (ctx) => AlertDialog(
-          title: const Text('Itinerary updated elsewhere'),
-          content: const Text(
-            'This itinerary was edited from another device. '
-            'Go back and reload to see the latest version.',
-          ),
-          actions: [
-            FilledButton(
-              onPressed: () {
-                Navigator.of(ctx).pop();
-                if (mounted) context.pop();
-              },
-              child: const Text('Go back'),
-            ),
-          ],
-        ),
+        builder: (ctx) {
+          final l10n = AppLocalizations.of(ctx)!;
+          return AlertDialog(
+            title: Text(l10n.itineraryUpdatedTitle),
+            content: Text(l10n.itineraryUpdatedMessage),
+            actions: [
+              FilledButton(
+                onPressed: () {
+                  Navigator.of(ctx).pop();
+                  if (mounted) context.pop();
+                },
+                child: Text(l10n.goBack),
+              ),
+            ],
+          );
+        },
       );
     } on Exception catch (e) {
       if (!mounted) return;
@@ -490,11 +490,11 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
   }
 
   Future<void> _confirmDelete() async {
+    final l10n = AppLocalizations.of(context)!;
     final confirmed = await confirmDestructiveAction(
       context: context,
-      title: 'Delete this stop?',
-      message: 'This will remove the stop, its annotations, and any transit '
-          'segments connecting it. The remaining stops will reorder.',
+      title: l10n.deleteStopTitle,
+      message: l10n.deleteStopMessage,
     );
 
     if (!confirmed || !mounted) return;
@@ -518,18 +518,20 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
   void _showEditModeHint() {
     final ctx = _editButtonKey.currentContext;
     if (ctx == null) return;
+    final l10n = AppLocalizations.of(ctx)!;
     showFieldHelp(
       ctx,
-      title: 'View only',
-      message: 'Tap the Edit button to make changes.',
+      title: l10n.viewOnlyTitle,
+      message: l10n.viewOnlyMessage,
     );
   }
 
   Future<void> _deleteAnnotation(String annotationId) async {
+    final l10n = AppLocalizations.of(context)!;
     final confirmed = await confirmDestructiveAction(
       context: context,
-      title: 'Delete annotation?',
-      message: 'This annotation will be permanently removed.',
+      title: l10n.deleteAnnotationTitle,
+      message: l10n.deleteAnnotationStopMessage,
     );
     if (!confirmed || !mounted) return;
     try {
@@ -574,14 +576,12 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
       });
     }
 
-    String appBarTitle;
-    if (readOnly) {
-      appBarTitle = 'Stop Details';
-    } else if (widget.isEditMode) {
-      appBarTitle = 'Edit Stop';
-    } else {
-      appBarTitle = 'Add Stop';
-    }
+    final l10n = AppLocalizations.of(context)!;
+    final appBarTitle = readOnly
+        ? l10n.stopDetailsView
+        : widget.isEditMode
+            ? l10n.editStopTitle
+            : l10n.addStopTitle;
 
     return Scaffold(
       backgroundColor: kSurface,
@@ -593,7 +593,7 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
             IconButton(
               key: _editButtonKey,
               icon: const Icon(Icons.edit_outlined),
-              tooltip: 'Edit stop',
+              tooltip: l10n.editStopTooltip,
               onPressed: () => setState(() => _isEditing = true),
             ),
         ],
@@ -614,17 +614,16 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                   // ----------------------------------------------------------------
                   if (!readOnly) ...[
                     LabelWithHelp(
-                      label: 'Search for a place',
-                      helpTitle: 'Search a place',
-                      helpMessage:
-                          'Type a place, restaurant, or landmark name. Pick a result to autofill the place name, address, and coordinates below.',
+                      label: l10n.searchForPlaceLabel,
+                      helpTitle: l10n.searchAPlaceHelpTitle,
+                      helpMessage: l10n.searchAPlaceHelpMessage,
                       labelStyle: Theme.of(context).textTheme.titleSmall,
                     ),
                     const SizedBox(height: 8),
                     TextField(
                       controller: _searchController,
                       decoration: InputDecoration(
-                        hintText: 'e.g. Eiffel Tower, Paris',
+                        hintText: l10n.searchPlaceHintText,
                         border: const OutlineInputBorder(),
                         prefixIcon: const Icon(Icons.search),
                         suffixIcon: _searchController.text.isNotEmpty
@@ -679,7 +678,7 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                   // Section 2: Stop details
                   // ----------------------------------------------------------------
                   Text(
-                    'Stop details',
+                    l10n.stopDetailsSectionLabel,
                     style: Theme.of(context).textTheme.titleSmall,
                   ),
                   const SizedBox(height: 12),
@@ -689,17 +688,16 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                     controller: _placeNameController,
                     readOnly: readOnly,
                     onTap: showEditHint ? _showEditModeHint : null,
-                    decoration: const InputDecoration(
-                      labelText: 'Place name',
+                    decoration: InputDecoration(
+                      labelText: l10n.placeNameLabel,
                       suffixIcon: FieldHelpIcon(
-                        helpTitle: 'Place name',
-                        helpMessage:
-                            'Name of the place, restaurant, landmark, or stop.',
+                        helpTitle: l10n.placeNameLabel,
+                        helpMessage: l10n.placeNameHelp,
                       ),
-                      border: OutlineInputBorder(),
+                      border: const OutlineInputBorder(),
                     ),
                     validator: (v) => (v == null || v.trim().isEmpty)
-                        ? 'Place name is required'
+                        ? l10n.placeNameRequired
                         : null,
                   ),
                   const SizedBox(height: 12),
@@ -709,14 +707,13 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                     controller: _placeAddressController,
                     readOnly: readOnly,
                     onTap: showEditHint ? _showEditModeHint : null,
-                    decoration: const InputDecoration(
-                      labelText: 'Address',
+                    decoration: InputDecoration(
+                      labelText: l10n.addressLabel,
                       suffixIcon: FieldHelpIcon(
-                        helpTitle: 'Address',
-                        helpMessage:
-                            'Street address or area description. Optional.',
+                        helpTitle: l10n.addressLabel,
+                        helpMessage: l10n.addressHelp,
                       ),
-                      border: OutlineInputBorder(),
+                      border: const OutlineInputBorder(),
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -735,16 +732,15 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                               ?.copyWith(color: Colors.grey.shade600),
                         ),
                       ),
-                      const FieldHelpIcon(
-                        helpTitle: 'Coordinates',
-                        helpMessage:
-                            'The map location for this stop. Tap "Pick on map" to set or adjust it.',
+                      FieldHelpIcon(
+                        helpTitle: l10n.placeNameLabel,
+                        helpMessage: l10n.coordinatesHelp,
                       ),
                       if (!readOnly)
                         OutlinedButton.icon(
                           onPressed: _pickOnMap,
                           icon: const Icon(Icons.map_outlined, size: 16),
-                          label: const Text('Pick on map'),
+                          label: Text(l10n.pickOnMap),
                         ),
                     ],
                   ),
@@ -787,14 +783,13 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                       behavior: HitTestBehavior.opaque,
                       onTap: showEditHint ? _showEditModeHint : null,
                       child: InputDecorator(
-                        decoration: const InputDecoration(
-                          labelText: 'Place type',
+                        decoration: InputDecoration(
+                          labelText: l10n.placeTypeLabel,
                           suffixIcon: FieldHelpIcon(
-                            helpTitle: 'Place type',
-                            helpMessage:
-                                'What kind of place this is (e.g. eat & drink, sleep, sight). Used for filtering and the map icon.',
+                            helpTitle: l10n.placeTypeLabel,
+                            helpMessage: l10n.placeTypeHelp,
                           ),
-                          border: OutlineInputBorder(),
+                          border: const OutlineInputBorder(),
                         ),
                         child: _placeType != null
                             ? Row(
@@ -817,16 +812,15 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                   else
                     DropdownButtonFormField<PlaceType>(
                       value: _placeType,
-                      decoration: const InputDecoration(
-                        labelText: 'Place type',
+                      decoration: InputDecoration(
+                        labelText: l10n.placeTypeLabel,
                         suffixIcon: FieldHelpIcon(
-                          helpTitle: 'Place type',
-                          helpMessage:
-                              'What kind of place this is (e.g. eat & drink, sleep, sight). Used for filtering and the map icon.',
+                          helpTitle: l10n.placeTypeLabel,
+                          helpMessage: l10n.placeTypeHelp,
                         ),
-                        border: OutlineInputBorder(),
+                        border: const OutlineInputBorder(),
                       ),
-                      hint: const Text('Select place type'),
+                      hint: Text(l10n.selectPlaceType),
                       isExpanded: true,
                       selectedItemBuilder: (context) => PlaceType.values
                           .map((t) => Row(
@@ -887,13 +881,12 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                     borderRadius: BorderRadius.circular(4),
                     child: InputDecorator(
                       decoration: InputDecoration(
-                        labelText: 'Recommended time to spend',
+                        labelText: l10n.recommendedTimeLabel,
                         border: const OutlineInputBorder(),
                         prefixIcon: const Icon(Icons.schedule_outlined),
-                        suffix: const FieldHelpIcon(
-                          helpTitle: 'Time to spend',
-                          helpMessage:
-                              'Roughly how long you expect to stay here. Tap to set days, hours, and minutes.',
+                        suffix: FieldHelpIcon(
+                          helpTitle: l10n.recommendedTimeLabel,
+                          helpMessage: l10n.timeToSpendHelp,
                         ),
                         suffixIcon: readOnly
                             ? null
@@ -923,27 +916,25 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                       title: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Text(_isFree ? 'This stop is free' : 'This stop has a cost'),
+                          Text(_isFree ? l10n.stopIsFree : l10n.stopIsFree),
                           const SizedBox(width: 2),
-                          const FieldHelpIcon(
-                            helpTitle: 'Free',
-                            helpMessage:
-                                'Toggle on if visiting this place costs nothing.',
+                          FieldHelpIcon(
+                            helpTitle: l10n.freeLegLabel,
+                            helpMessage: l10n.freeHelp,
                           ),
                         ],
                       ),
                     )
                   else
                     SwitchListTile(
-                      title: const Row(
+                      title: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Text('This stop is free'),
-                          SizedBox(width: 2),
+                          Text(l10n.stopIsFree),
+                          const SizedBox(width: 2),
                           FieldHelpIcon(
-                            helpTitle: 'Free',
-                            helpMessage:
-                                'Toggle on if visiting this place costs nothing.',
+                            helpTitle: l10n.freeLegLabel,
+                            helpMessage: l10n.freeHelp,
                           ),
                         ],
                       ),
@@ -958,14 +949,13 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                       controller: _costController,
                       readOnly: readOnly,
                       onTap: showEditHint ? _showEditModeHint : null,
-                      decoration: const InputDecoration(
-                        labelText: 'Cost',
+                      decoration: InputDecoration(
+                        labelText: l10n.costLabel,
                         suffixIcon: FieldHelpIcon(
-                          helpTitle: 'Cost',
-                          helpMessage:
-                              "Approximate cost per person, in the itinerary's currency.",
+                          helpTitle: l10n.costLabel,
+                          helpMessage: l10n.costHelp,
                         ),
-                        border: OutlineInputBorder(),
+                        border: const OutlineInputBorder(),
                         prefixText: '€ ',
                       ),
                       keyboardType:
@@ -973,7 +963,7 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                       validator: (v) {
                         if (v == null || v.isEmpty) return null;
                         if (double.tryParse(v) == null) {
-                          return 'Enter a valid number';
+                          return l10n.enterValidNumber;
                         }
                         return null;
                       },
@@ -985,10 +975,9 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                   MarkdownNotesEditor(
                     controller: _notesController,
                     readOnly: readOnly,
-                    label: 'Thoughts',
-                    helpTitle: 'Thoughts',
-                    helpMessage:
-                        'Your personal take on this stop — what to expect, what you loved, things to skip, opening tips. Use the toolbar to add bold, italic, headings, or bullet lists.',
+                    label: l10n.thoughtsLabel,
+                    helpTitle: l10n.thoughtsLabel,
+                    helpMessage: l10n.thoughtsHelp,
                   ),
                   const SizedBox(height: 20),
 
@@ -999,17 +988,16 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       LabelWithHelp(
-                        label: 'Annotations',
-                        helpTitle: 'Annotations',
-                        helpMessage:
-                            'Short tagged notes (advice, caution, avoid, info) attached to this stop. Useful for warnings or tips.',
+                        label: l10n.annotationsLabel,
+                        helpTitle: l10n.annotationsLabel,
+                        helpMessage: l10n.annotationsHelp,
                         labelStyle: Theme.of(context).textTheme.titleSmall,
                       ),
                       if (!readOnly)
                         TextButton.icon(
                           onPressed: () => _showAnnotationDialog(),
                           icon: const Icon(Icons.add, size: 16),
-                          label: const Text('Add'),
+                          label: Text(l10n.addButton),
                         ),
                     ],
                   ),
@@ -1019,7 +1007,7 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                     if (_existingStop == null ||
                         _existingStop!.annotations.isEmpty)
                       Text(
-                        'No annotations yet.',
+                        l10n.noAnnotationsYet,
                         style: TextStyle(color: Colors.grey.shade600),
                       )
                     else
@@ -1044,7 +1032,7 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                     // Create mode: show locally queued annotations.
                     if (_pendingAnnotations.isEmpty)
                       Text(
-                        'No annotations yet.',
+                        l10n.noAnnotationsYet,
                         style: TextStyle(color: Colors.grey.shade600),
                       )
                     else
@@ -1098,7 +1086,7 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                                 color: Colors.white,
                               ),
                             )
-                          : Text(widget.isEditMode ? 'Save Changes' : 'Add Stop'),
+                          : Text(widget.isEditMode ? l10n.saveChangesButton : l10n.addStopButton),
                     ),
 
                     // Delete stop — edit mode only
@@ -1107,9 +1095,9 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                       OutlinedButton.icon(
                         onPressed: _saving ? null : _confirmDelete,
                         icon: const Icon(Icons.delete_outline, color: Colors.red),
-                        label: const Text(
-                          'Delete Stop',
-                          style: TextStyle(color: Colors.red),
+                        label: Text(
+                          l10n.deleteStopButton,
+                          style: const TextStyle(color: Colors.red),
                         ),
                         style: OutlinedButton.styleFrom(
                           side: const BorderSide(color: Colors.red),

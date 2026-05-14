@@ -11,6 +11,7 @@ import 'package:social_flutter/features/itineraries/domain/itinerary.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/itinerary_summary_card.dart';
 import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
 import 'package:social_flutter/core/utils/platform_utils.dart';
+import 'package:social_flutter/l10n/app_localizations.dart';
 
 class ItineraryListScreen extends ConsumerWidget {
   const ItineraryListScreen({super.key});
@@ -20,13 +21,13 @@ class ItineraryListScreen extends ConsumerWidget {
     WidgetRef ref,
     Itinerary itinerary,
   ) async {
+    final l10n = AppLocalizations.of(context)!;
     final confirmed = await confirmTypedDestructiveAction(
       context: context,
-      title: 'Delete this itinerary?',
-      message: 'All stops, annotations, segments, ratings, and shared links '
-          'will be permanently destroyed. This cannot be undone.',
+      title: l10n.deleteItineraryTitle,
+      message: l10n.deleteItineraryMessage,
       requiredText: itinerary.title,
-      confirmLabel: 'Delete itinerary',
+      confirmLabel: l10n.deleteItineraryButton,
       hintText: itinerary.title,
     );
 
@@ -51,7 +52,7 @@ class ItineraryListScreen extends ConsumerWidget {
     return Scaffold(
       resizeToAvoidBottomInset: false,
       appBar: AppBar(
-        title: const Text('My Itineraries'),
+        title: Text(AppLocalizations.of(context)!.myItineraries),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -77,7 +78,7 @@ class ItineraryListScreen extends ConsumerWidget {
               FilledButton(
                 onPressed: () =>
                     ref.read(myItinerariesProvider.notifier).refresh(),
-                child: const Text('Retry'),
+                child: Text(AppLocalizations.of(context)!.retry),
               ),
             ],
           ),
@@ -114,11 +115,11 @@ class ItineraryListScreen extends ConsumerWidget {
                               size: 64, color: Colors.grey.shade400),
                           const SizedBox(height: 16),
                           Text(
-                            'No itineraries yet.',
+                            AppLocalizations.of(context)!.noItinerariesYet,
                             style: Theme.of(context).textTheme.titleMedium,
                           ),
                           const SizedBox(height: 8),
-                          const Text('Tap + to create your first trip.'),
+                          Text(AppLocalizations.of(context)!.tapToCreateFirst),
                         ],
                       ),
                     ),

@@ -1,0 +1,489 @@
+{
+  "@@locale": "en",
+
+  "save": "Save",
+  "cancel": "Cancel",
+  "delete": "Delete",
+  "required": "Required",
+  "retry": "Retry",
+  "dismiss": "Dismiss",
+  "seeAll": "See all",
+  "back": "Back",
+
+  "navSearch": "Search",
+  "navProfile": "Profile",
+  "navItineraries": "Itineraries",
+  "navFeed": "Feed",
+  "feedComingSoon": "Feed coming soon!",
+
+  "offlineBanner": "You're Offline! Some features may be unavailable.",
+  "downloadBanner": "For a better experience, download the Ntripi app.",
+  "downloadBannerButton": "Download",
+
+  "loginTitle": "Welcome back",
+  "loginSubtitle": "Sign in to continue your journey",
+  "loginEmailLabel": "Email or username",
+  "loginEmailHelp": "Sign in with the email you registered with, or your @username handle.",
+  "loginEmailHint": "you@example.com or @username",
+  "loginPasswordLabel": "Password",
+  "loginPasswordHelp": "Your account password. Tap the eye icon to show or hide it.",
+  "loginForgotPassword": "Forgot password?",
+  "loginSignIn": "Sign In",
+  "loginNoAccount": "Don't have an account? ",
+  "loginSignUp": "Sign up",
+  "loginOrContinueWith": "or continue with",
+
+  "registerTitle": "Create account",
+  "registerSubtitle": "Join thousands of explorers sharing routes",
+  "registerDisplayName": "Display Name",
+  "registerDisplayNameHelp": "How your name appears to others. Up to 50 characters, any language and emoji. Falls back to @username if blank.",
+  "registerDisplayNameHint": "Your name",
+  "registerUsername": "Username *",
+  "registerUsernameHelp": "Your unique @handle. Lowercase letters, digits, and underscores only. This cannot be changed later.",
+  "registerUsernameHint": "yourhandle",
+  "registerEmail": "Email *",
+  "registerEmailHelp": "Used to sign in and recover your account. We never display it publicly.",
+  "registerEmailHint": "you@example.com",
+  "registerEmailRequired": "Email is required.",
+  "registerEmailInvalid": "Please enter a valid email.",
+  "registerPassword": "Password *",
+  "registerPasswordHelp": "At least 8 characters with at least one digit.",
+  "registerPasswordHint": "Min. 8 characters",
+  "registerPasswordRequired": "Password is required.",
+  "registerPasswordTooShort": "Must be at least 8 characters.",
+  "registerPasswordNoDigit": "Must contain at least one digit.",
+  "registerConfirmPassword": "Confirm Password *",
+  "registerConfirmPasswordHelp": "Type your password again to make sure it matches.",
+  "registerConfirmRequired": "Please confirm your password.",
+  "registerConfirmMismatch": "Passwords do not match.",
+  "registerTosAgree": "I agree to the ",
+  "registerTos": "Terms of Service",
+  "registerTosAnd": " and ",
+  "registerPrivacyPolicy": "Privacy Policy",
+  "registerTosHelp": "You must agree to the Terms of Service and Privacy Policy to create an account. Tap the underlined links to read them.",
+  "registerTosRequired": "You must accept the Terms of Service.",
+  "registerTosTitle": "Terms of Service",
+  "registerTosLoading": "Loading…",
+  "registerCreateAccount": "Create Account",
+  "registerAlreadyHaveAccount": "Already have an account? ",
+  "registerSignIn": "Sign in",
+
+  "followers": "Followers",
+  "following": "Following",
+  "latestTrip": "LATEST TRIP",
+  "whereIveBeen": "WHERE I'VE BEEN",
+  "noStopsYet": "No stops yet",
+  "stopCount": "{count, plural, one{{count} stop} other{{count} stops}}",
+  "@stopCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "expand": "Expand",
+  "followRequestsBannerTitle": "Follow Requests ({count})",
+  "@followRequestsBannerTitle": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "tapToReview": "Tap to review",
+  "editProfileTooltip": "Edit profile",
+  "settingsTooltip": "Settings",
+  "shareProfileTooltip": "Share profile",
+  "couldNotLoadItineraries": "Could not load itineraries.",
+
+  "editProfileTitle": "Edit profile",
+  "uploadPhoto": "Upload photo",
+  "identitySection": "Identity",
+  "displayNameLabel": "Display name",
+  "usernameLabel": "Username",
+  "bioLabel": "BIO",
+  "bioHelpMessage": "A short description. Supports **bold** markdown and emoji.",
+  "avatarUrlLabel": "Avatar URL",
+  "travelIdentitySection": "Travel identity",
+  "passportLabel": "Passport",
+  "livesInLabel": "Lives in",
+  "languagesLabel": "Languages",
+  "privacySection": "Privacy",
+  "privateAccountLabel": "Private account",
+  "privateAccountSubtitle": "People must request to follow you to see your itineraries.",
+  "switchToPublicTitle": "Switch to public?",
+  "switchToPublicMessage": "{count, plural, one{You have 1 pending follow request. Switching to public will automatically accept it. Continue?} other{You have {count} pending follow requests. Switching to public will automatically accept all of them. Continue?}}",
+  "@switchToPublicMessage": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "switchToPublicButton": "Switch to public",
+
+  "planFirstJourney": "Plan your first journey",
+  "planFirstJourneyHint": "Add stops, transit segments and notes. Share it with friends or keep it private.",
+  "createItinerary": "Create itinerary",
+  "needInspiration": "Need inspiration?",
+  "browseForIdeas": "Browse your itineraries for ideas.",
+
+  "settingsTitle": "Settings",
+  "settingsAccount": "Account",
+  "settingsNotifications": "Notifications",
+  "settingsNotificationsOn": "On",
+  "settingsLanguage": "Language",
+  "settingsSupport": "Support",
+  "settingsHelpCenter": "Help center",
+  "settingsAbout": "About Ntripi",
+  "settingsTerms": "Terms & Privacy",
+  "settingsLogout": "Log out",
+  "settingsDeleteAccount": "Delete account",
+  "logoutConfirmTitle": "Log out",
+  "logoutConfirmMessage": "Are you sure you want to log out?",
+  "logoutConfirmButton": "Log out",
+
+  "languagePickerTitle": "Language",
+  "languageEnglish": "English",
+  "languageFrench": "Français",
+
+  "followRequestsTitle": "Follow Requests",
+  "noRequests": "No pending requests",
+  "requestsCountLabel": "Requests · {count}",
+  "@requestsCountLabel": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "acceptButton": "Accept",
+  "rejectButton": "Reject",
+
+  "followersTabLabel": "{count, plural, =0{Followers} other{{count} Followers}}",
+  "@followersTabLabel": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "followingTabLabel": "{count, plural, =0{Following} other{{count} Following}}",
+  "@followingTabLabel": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "followRequestsSectionLabel": "Follow requests · {count}",
+  "@followRequestsSectionLabel": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "allFollowersSection": "All followers",
+  "noFollowersYet": "No followers yet.",
+  "notFollowingAnyone": "Not following anyone yet.",
+  "peopleYouFollow": "People you follow",
+  "confirmButton": "Confirm",
+
+  "searchPeoplePlaceholder": "Search people…",
+  "searchForPeople": "Search for people to follow",
+  "noUsersFound": "No users found.",
+  "searchResultsCount": "Results · {count}",
+  "@searchResultsCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "followerCountLabel": "{count, plural, one{{count} follower} other{{count} followers}}",
+  "@followerCountLabel": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "searchUsersHelp": "Find people by their @username or by their display name. Tap a result to view their profile.",
+
+  "myItineraries": "My Itineraries",
+  "noItinerariesYet": "No itineraries yet.",
+  "tapToCreateFirst": "Tap + to create your first trip.",
+  "deleteItineraryTitle": "Delete this itinerary?",
+  "deleteItineraryMessage": "All stops, annotations, segments, ratings, and shared links will be permanently destroyed. This cannot be undone.",
+  "deleteItineraryButton": "Delete itinerary",
+
+  "newItinerary": "New Itinerary",
+  "editItinerary": "Edit Itinerary",
+  "coverImageLabel": "Cover image",
+  "coverImageHelp": "A 1200×630 image shown on the itinerary card and link previews. Drag inside the crop box to reposition.",
+  "itineraryTitleLabel": "Title *",
+  "itineraryTitleHelp": "A short, clear name for this trip. Shown on the itinerary card and share previews.",
+  "itineraryTitleRequired": "Title is required",
+  "descriptionLabel": "Description",
+  "descriptionHelp": "Optional. A summary of the trip. Use the toolbar to make text bold or italic, add headings, and create bullet or numbered lists. Switch to the Preview tab to see how it will look to readers.",
+  "currencyLabel": "Currency",
+  "currencyHelp": "Default currency for all stop costs and transport costs in this itinerary.",
+  "visibilityLabel": "Visibility",
+  "visibilityHelp": "Public: anyone can view. Followers: only people who follow you. Restricted: only the users you allowlist below. Only me: private to you.",
+  "visibilityPublic": "Public",
+  "visibilityFollowers": "Followers",
+  "visibilityRestricted": "Restricted",
+  "visibilityOnlyMe": "Only me",
+  "imageSaveButUploadFailed": "Itinerary saved, but image upload failed. Try again from the edit screen.",
+  "deleteItineraryFormTitle": "Delete itinerary",
+  "deleteItineraryFormMessage": "This will permanently delete \"{title}\" and all its stops. Type the title to confirm.",
+  "@deleteItineraryFormMessage": {
+    "placeholders": {
+      "title": { "type": "String" }
+    }
+  },
+
+  "followButton": "Follow",
+  "followingButton": "Following",
+  "requestedButton": "Requested",
+  "unfollowedSnackbar": "Unfollowed @{username}",
+  "@unfollowedSnackbar": {
+    "placeholders": {
+      "username": { "type": "String" }
+    }
+  },
+  "cancelRequestTitle": "Cancel request?",
+  "cancelRequestMessage": "Cancel your follow request to @{username}?",
+  "@cancelRequestMessage": {
+    "placeholders": {
+      "username": { "type": "String" }
+    }
+  },
+  "cancelRequestConfirm": "Cancel request",
+  "cancelRequestKeep": "Keep",
+
+  "undoButton": "UNDO",
+  "couldNotUndo": "Could not undo: {error}",
+  "@couldNotUndo": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+
+  "loadingLabel": "Loading…",
+  "usernameRequired": "Username is required",
+  "usernameTooShort": "Username must be at least 4 characters",
+  "usernameTooLong": "Username cannot exceed 30 characters",
+  "usernameInvalidFormat": "Letters, numbers, periods and underscores only. Must start with a letter, end with a letter or number.",
+  "usernameConsecutiveSpecial": "Cannot have consecutive periods or underscores",
+  "displayNameTooLong": "Display name cannot exceed 50 characters",
+  "comingSoon": "Coming soon",
+  "speaksLabel": "Speaks",
+  "removeButton": "Remove",
+  "doneTooltip": "Done",
+  "addButton": "Add",
+  "deleteButton": "Delete",
+
+  "deleteAccountTitle": "Delete Account",
+  "deleteAccountConfirmTitle": "Delete your account?",
+  "deleteAccountConfirmMessage": "Your account, itineraries, follows, and ratings will be anonymized or deleted per our privacy policy. You will be signed out immediately. This cannot be undone.",
+  "deleteAccountRequiredText": "DELETE MY ACCOUNT",
+  "deleteAccountConfirmLabel": "Delete my account",
+  "deleteAccountPasswordError": "Incorrect password. Please try again.",
+  "deleteAccountGenericError": "Something went wrong. Please try again.",
+  "deleteAccountCannotUndo": "This cannot be undone",
+  "deleteAccountWillRemove": "Deleting your account will permanently remove:",
+  "deleteAccountBullet1": "Your profile and all personal data",
+  "deleteAccountBullet2": "All your itineraries and stops",
+  "deleteAccountBullet3": "Your follow relationships",
+  "deleteAccountNote": "Ratings you gave to other itineraries will be kept anonymously as community data.",
+  "deleteAccountEnterPassword": "Enter your password to confirm",
+  "deleteAccountPasswordLabel": "Password",
+  "deleteAccountPasswordHelpTitle": "Confirm password",
+  "deleteAccountPasswordHelpMessage": "Re-enter your password to confirm deletion. Account deletion is permanent and cannot be undone.",
+  "deleteAccountButton": "Delete My Account",
+
+  "deleteAnnotationTitle": "Delete annotation?",
+  "deleteAnnotationMessage": "This will permanently remove this annotation from the itinerary.",
+  "deleteAnnotationStopMessage": "This annotation will be permanently removed.",
+  "removeTransitTitle": "Remove transit between stops?",
+  "removeTransitMessage": "The connection between these two stops will be cleared. You can add a new one later.",
+  "reorderTracksTitle": "Reorder tracks",
+  "shareTooltip": "Share",
+  "editDetailsTooltip": "Edit details & image",
+  "descriptionSection": "Description",
+  "annotationsSection": "Annotations",
+  "addAnnotationButton": "Add annotation",
+  "noAnnotationsYet": "No annotations yet.",
+  "editStopsButton": "Edit stops",
+  "addStopTooltip": "Add stop",
+  "reorderTracksTooltip": "Reorder tracks",
+  "mapSection": "Map",
+  "openStreetMapContributors": "OpenStreetMap contributors",
+  "poweredByOSM": "Powered by OpenStreetMap",
+  "noStopsYetTapPlus": "No stops yet. Tap + to add one.",
+  "communityRating": "Community",
+  "ratingCount": "{count, plural, one{1 rating} other{{count} ratings}}",
+  "@ratingCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "yourRating": "Your rating",
+  "rateIt": "Rate it",
+  "deleteOrphanSegmentsTitle": "{count, plural, one{Delete transit segment?} other{Delete transit segments?}}",
+  "@deleteOrphanSegmentsTitle": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "deleteOrphanSegmentsMessage": "{count, plural, one{There is 1 transit segment connecting these two stops. Adding a stop between them will hide it because the stops will no longer be adjacent. Delete the segment and continue?} other{There are {count} transit segments connecting these two stops. Adding a stop between them will hide them because the stops will no longer be adjacent. Delete the segments and continue?}}",
+  "@deleteOrphanSegmentsMessage": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "deleteAndContinue": "Delete & continue",
+
+  "notSet": "Not set",
+  "stopDetailsView": "Stop Details",
+  "editStopTitle": "Edit Stop",
+  "addStopTitle": "Add Stop",
+  "editStopTooltip": "Edit stop",
+  "duplicateStopTitle": "Duplicate stop",
+  "duplicateStopMessage": "{name} is already in this itinerary. Add it again anyway?",
+  "@duplicateStopMessage": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "addAnyway": "Add anyway",
+  "itineraryUpdatedTitle": "Itinerary updated elsewhere",
+  "itineraryUpdatedMessage": "This itinerary was edited from another device. Go back and reload to see the latest version.",
+  "goBack": "Go back",
+  "deleteStopTitle": "Delete this stop?",
+  "deleteStopMessage": "This will remove the stop, its annotations, and any transit segments connected to it. This cannot be undone.",
+  "viewOnlyTitle": "View only",
+  "viewOnlyMessage": "Tap the Edit button to make changes.",
+  "searchForPlaceLabel": "Search for a place",
+  "searchAPlaceHelpTitle": "Search a place",
+  "searchAPlaceHelpMessage": "Type a place, restaurant, or landmark name. Pick a result to autofill the place name, address, and coordinates below.",
+  "searchPlaceHintText": "e.g. Eiffel Tower, Paris",
+  "stopDetailsSectionLabel": "Stop details",
+  "placeNameLabel": "Place name",
+  "placeNameHelp": "Name of the place, restaurant, landmark, or stop.",
+  "placeNameRequired": "Place name is required",
+  "addressLabel": "Address",
+  "addressHelp": "Street address or area description. Optional.",
+  "coordinatesHelp": "The map location for this stop. Tap \"Pick on map\" to set or adjust it.",
+  "pickOnMap": "Pick on map",
+  "placeTypeLabel": "Place type",
+  "placeTypeHelp": "What kind of place this is (e.g. eat & drink, sleep, sight). Used for filtering and the map icon.",
+  "selectPlaceType": "Select place type",
+  "recommendedTimeLabel": "Recommended time to spend",
+  "timeToSpendHelp": "Roughly how long you expect to stay here. Tap to set days, hours, and minutes.",
+  "stopIsFree": "This stop is free",
+  "freeHelp": "Toggle on if visiting this place costs nothing.",
+  "costLabel": "Cost",
+  "costHelp": "Approximate cost per person, in the itinerary's currency.",
+  "enterValidNumber": "Enter a valid number",
+  "thoughtsLabel": "Thoughts",
+  "thoughtsHelp": "Your personal take on this stop — what to expect, what you loved, things to skip, opening tips. Use the toolbar to add bold, italic, headings, or bullet lists.",
+  "annotationsLabel": "Annotations",
+  "annotationsHelp": "Short tagged notes (advice, caution, avoid, info) attached to this stop. Useful for warnings or tips.",
+  "saveChangesButton": "Save Changes",
+  "addStopButton": "Add Stop",
+  "deleteStopButton": "Delete Stop",
+  "timeToSpendModalTitle": "Time to spend",
+
+  "editTransitTitle": "Edit Transit",
+  "addTransitTitle": "Add Transit",
+  "updateTransitButton": "Update Transit",
+  "transportModeLabel": "Mode",
+  "transportModeHelp": "How you travel on this leg (walk, bus, train, ferry, etc.). Some modes reveal extra fields for line and direction.",
+  "transitLineLabel": "Line (optional)",
+  "transitLineHelp": "Optional. The line number or name (e.g. \"Bus 42\", \"M1\").",
+  "transitDirectionLabel": "Direction (optional)",
+  "transitDirectionHelp": "Optional. Where the line is headed (e.g. \"Northbound\", \"Châtelet\").",
+  "durationLabel": "Duration",
+  "durationHelp": "How long this leg takes in hours and minutes.",
+  "legCostHelp": "Approximate cost in the itinerary's currency. Disabled when \"Free\" is on.",
+  "hoursLabel": "h",
+  "minutesLabel": "min",
+  "freeLegLabel": "Free",
+  "freeLegHelp": "Toggle on if this leg costs nothing (walking, included transfer, etc.).",
+  "legThoughtsLabel": "Thoughts (optional)",
+  "legThoughtsHelp": "Optional. Anything useful to know about this leg — booking tips, transfer instructions, where to sit, ticket cost surprises.",
+
+  "annotationTypeLabel": "Type",
+  "annotationTypeHelp": "Advice: a helpful tip. Caution: be careful. Avoid: don't go. Info: a neutral note.",
+  "annotationAdvice": "Advice",
+  "annotationCaution": "Caution",
+  "annotationAvoid": "Avoid",
+  "annotationInfo": "Info",
+  "annotationContentLabel": "Content *",
+  "annotationContentHelp": "Describe your advice, caution, warning, or note in one or two sentences.",
+  "annotationContentRequired": "Content is required",
+  "editAnnotationTitle": "Edit annotation",
+  "addAnnotationDialogTitle": "Add annotation",
+  "saveButton": "Save",
+
+  "moveStopTitle": "Move stop",
+  "moveStopDescription": "Choose an existing track, a gap to create a new track, or extract into its own track. Tracks at the {max}-stop maximum are disabled.",
+  "@moveStopDescription": {
+    "placeholders": {
+      "max": { "type": "int" }
+    }
+  },
+  "extractIntoOwnTrack": "Extract into its own new track",
+  "moveButton": "Move",
+  "moveStopMoved": "Moved to {destination}",
+  "@moveStopMoved": {
+    "placeholders": {
+      "destination": { "type": "String" }
+    }
+  },
+  "itineraryChangedElsewhere": "Itinerary changed elsewhere — close and reopen to see the latest order.",
+  "moveStopOrphan1": "This is the last stop in its track — the track will be removed from the itinerary.",
+  "moveStopOrphanSegments": "{count, plural, one{1 transit segment will be deleted because its stops will no longer be in adjacent tracks.} other{{count} transit segments will be deleted because their stops will no longer be in adjacent tracks.}}",
+  "@moveStopOrphanSegments": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "moveStopNewTrack": "New track",
+  "moveStopNewTrackBefore": "New track before Track {n}",
+  "@moveStopNewTrackBefore": {
+    "placeholders": {
+      "n": { "type": "int" }
+    }
+  },
+  "moveStopNewTrackAfter": "New track after Track {n}",
+  "@moveStopNewTrackAfter": {
+    "placeholders": {
+      "n": { "type": "int" }
+    }
+  },
+  "moveStopNewTrackBetween": "New track between Track {a} and Track {b}",
+  "@moveStopNewTrackBetween": {
+    "placeholders": {
+      "a": { "type": "int" },
+      "b": { "type": "int" }
+    }
+  },
+  "moveStopCurrentSuffix": "  •  current",
+  "moveStopFull": "Full {max}/{max}",
+  "@moveStopFull": {
+    "placeholders": {
+      "max": { "type": "int" }
+    }
+  },
+  "extractSubtitle": "Splits this stop out of \"{trackName}\" — new track lands right after.",
+  "@extractSubtitle": {
+    "placeholders": {
+      "trackName": { "type": "String" }
+    }
+  },
+
+  "removeRatingTitle": "Remove your rating?",
+  "removeRatingMessage": "Your rating will be deleted and the average will update for everyone viewing this itinerary.",
+  "rateItineraryTitle": "Rate this itinerary",
+  "overallRatingLabel": "Overall *",
+  "overallRatingHelp": "Required. Your overall rating of this itinerary, from 1 to 5 stars.",
+  "ratingThanksMessage": "Thanks! Your rating helps others.",
+  "yourImpressionLabel": "Your impression (optional)",
+  "yourImpressionHelp": "Optional. Share what stood out — highlights, regrets, who you'd recommend it to. Use the toolbar to add bold, italic, headings, or bullet lists.",
+  "removeMyRatingTooltip": "Remove my rating",
+  "wantToShareMore": "Want to share more? (optional)",
+  "safetyLabel": "Safety",
+  "safetyHelp": "Optional. How safe you felt during this trip.",
+  "experienceLabel": "Experience",
+  "experienceHelp": "Optional. How enjoyable and memorable the trip was.",
+  "accessibilityLabel": "Accessibility",
+  "accessibilityHelp": "Optional. How accessible the itinerary is (mobility, language, signage).",
+  "familyFriendlyLabel": "Family-friendly",
+  "familyFriendlyHelp": "Optional. How suitable the trip is for families with children."
+}

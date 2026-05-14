@@ -16,6 +16,7 @@ import 'package:social_flutter/core/ui/app_theme.dart';
 import 'package:social_flutter/core/utils/platform_utils.dart';
 import 'package:social_flutter/features/search/providers/search_provider.dart';
 import 'package:social_flutter/shared/models/user.dart';
+import 'package:social_flutter/l10n/app_localizations.dart';
 import 'package:social_flutter/shared/widgets/editorial_widgets.dart';
 import 'package:social_flutter/shared/widgets/field_help.dart';
 
@@ -89,16 +90,17 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                     ),
                   ),
                   data: (users) {
+                    final l10n = AppLocalizations.of(context)!;
                     if (_searchController.text.isEmpty) {
-                      return const _EmptyStatePlaceholder(
+                      return _EmptyStatePlaceholder(
                         icon: Icons.search_rounded,
-                        message: 'Search for people to follow',
+                        message: l10n.searchForPeople,
                       );
                     }
                     if (users.isEmpty) {
-                      return const _EmptyStatePlaceholder(
+                      return _EmptyStatePlaceholder(
                         icon: Icons.person_search_outlined,
-                        message: 'No users found.',
+                        message: l10n.noUsersFound,
                       );
                     }
                     return ListView(
@@ -106,7 +108,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                       children: [
                         SectionLabel(
                           icon: Icons.people_rounded,
-                          label: 'Results · ${users.length}',
+                          label: l10n.searchResultsCount(users.length),
                         ),
                         SectionCard(
                           children: [
@@ -157,9 +159,9 @@ class _SearchTopBar extends StatelessWidget {
               child: TextField(
                 controller: controller,
                 autofocus: true,
-                decoration: const InputDecoration(
-                  hintText: 'Search people…',
-                  hintStyle: TextStyle(
+                decoration: InputDecoration(
+                  hintText: AppLocalizations.of(context)!.searchPeoplePlaceholder,
+                  hintStyle: const TextStyle(
                     color: kText3,
                     fontWeight: FontWeight.w500,
                   ),
@@ -183,11 +185,10 @@ class _SearchTopBar extends StatelessWidget {
               color: kBark,
               onPressed: onClear,
             ),
-          const FieldHelpIcon(
-            helpTitle: 'Search users',
+          FieldHelpIcon(
+            helpTitle: AppLocalizations.of(context)!.navSearch,
             color: kBark,
-            helpMessage:
-                'Find people by their @username or by their display name. Tap a result to view their profile.',
+            helpMessage: AppLocalizations.of(context)!.searchUsersHelp,
             size: 22,
           ),
         ],
@@ -260,7 +261,7 @@ class _SearchResultRow extends StatelessWidget {
                       ),
                       if (user.followersCount > 0)
                         Text(
-                          '${user.followersCount} followers',
+                          AppLocalizations.of(context)!.followerCountLabel(user.followersCount),
                           style: const TextStyle(fontSize: 11, color: kText3),
                         ),
                     ],

@@ -3,13 +3,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:social_flutter/core/api/api_client.dart';
+import 'package:social_flutter/core/api/api_endpoints.dart';
 import 'package:social_flutter/core/ui/app_theme.dart';
 import 'package:social_flutter/core/ui/ntripi_logo.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:social_flutter/features/auth/domain/username_validator.dart';
 import 'package:social_flutter/features/auth/providers/auth_provider.dart';
 import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
 import 'package:social_flutter/features/profile/providers/profile_provider.dart';
 import 'package:social_flutter/core/utils/platform_utils.dart';
+import 'package:social_flutter/l10n/app_localizations.dart';
 import 'package:social_flutter/shared/widgets/field_help.dart';
 
 class RegisterScreen extends ConsumerStatefulWidget {
@@ -47,7 +50,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     } catch (_) {}
   }
 
-  void _showTosSheet() {
+  void _showTosSheet(AppLocalizations l10n) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -71,11 +74,11 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
-            const Padding(
-              padding: EdgeInsets.all(16),
+            Padding(
+              padding: const EdgeInsets.all(16),
               child: Text(
-                'Terms of Service',
-                style: TextStyle(
+                l10n.registerTosTitle,
+                style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w700,
                   color: kBark,
@@ -87,7 +90,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 controller: sc,
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
                 child: Text(
-                  _tosSummary ?? 'Loading…',
+                  _tosSummary ?? l10n.registerTosLoading,
                   style: const TextStyle(fontSize: 14, color: kText2, height: 1.6),
                 ),
               ),
@@ -98,10 +101,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     );
   }
 
-  Future<void> _register() async {
+  Future<void> _register(AppLocalizations l10n) async {
     if (!_formKey.currentState!.validate()) return;
     if (!_tosAccepted) {
-      setState(() => _errorMessage = 'You must accept the Terms of Service.');
+      setState(() => _errorMessage = l10n.registerTosRequired);
       return;
     }
     setState(() {
@@ -142,6 +145,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       backgroundColor: kSurface,
       body: Center(
@@ -171,9 +175,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 ),
 
                 // Heading
-                const Text(
-                  'Create account',
-                  style: TextStyle(
+                Text(
+                  l10n.registerTitle,
+                  style: const TextStyle(
                     fontSize: 26,
                     fontWeight: FontWeight.w800,
                     color: kBark,
@@ -181,34 +185,36 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   ),
                 ),
                 const SizedBox(height: 6),
-                const Text(
-                  'Join thousands of explorers sharing routes',
-                  style: TextStyle(fontSize: 14, color: kText2),
+                Text(
+                  l10n.registerSubtitle,
+                  style: const TextStyle(fontSize: 14, color: kText2),
                 ),
                 const SizedBox(height: 24),
 
                 // Display name
-                const _FieldLabel(
-                  'Display Name',
-                  helpTitle: 'Display name',
-                  helpMessage:
-                      'How your name appears to others. Up to 50 characters, any language and emoji. Falls back to @username if blank.',
+                _FieldLabel(
+                  l10n.registerDisplayName,
+                  helpTitle: l10n.registerDisplayName,
+                  helpMessage: l10n.registerDisplayNameHelp,
                 ),
                 const SizedBox(height: 6),
                 TextFormField(
                   controller: _displayNameController,
                   textInputAction: TextInputAction.next,
-                  decoration: const InputDecoration(hintText: 'Your name'),
-                  validator: DisplayNameValidator.validate,
+                  decoration: InputDecoration(hintText: l10n.registerDisplayNameHint),
+                  validator: (v) {
+                    if (v == null || v.trim().isEmpty) return null;
+                    if (v.trim().length > 50) return l10n.displayNameTooLong;
+                    return null;
+                  },
                 ),
                 const SizedBox(height: 12),
 
                 // Username
-                const _FieldLabel(
-                  'Username *',
-                  helpTitle: 'Username',
-                  helpMessage:
-                      'Your unique @handle. Lowercase letters, digits, and underscores only. This cannot be changed later.',
+                _FieldLabel(
+                  l10n.registerUsername,
+                  helpTitle: l10n.registerUsername,
+                  helpMessage: l10n.registerUsernameHelp,
                 ),
                 const SizedBox(height: 6),
                 TextFormField(
@@ -216,36 +222,43 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   textInputAction: TextInputAction.next,
                   autocorrect: false,
                   autovalidateMode: AutovalidateMode.onUserInteraction,
-                  decoration: const InputDecoration(
-                    hintText: 'yourhandle',
+                  decoration: InputDecoration(
+                    hintText: l10n.registerUsernameHint,
                     prefixText: '@',
-                    prefixStyle: TextStyle(
+                    prefixStyle: const TextStyle(
                       fontSize: 15,
                       color: kText3,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
-                  validator: UsernameValidator.validate,
+                  validator: (v) {
+                    if (v == null || v.isEmpty) return l10n.usernameRequired;
+                    final trimmed = v.trim();
+                    if (trimmed.length < 4) return l10n.usernameTooShort;
+                    if (trimmed.length > 30) return l10n.usernameTooLong;
+                    if (!UsernameValidator.isValidFormat(trimmed)) return l10n.usernameInvalidFormat;
+                    if (UsernameValidator.hasConsecutiveSpecial(trimmed)) return l10n.usernameConsecutiveSpecial;
+                    return null;
+                  },
                 ),
                 const SizedBox(height: 12),
 
                 // Email
-                const _FieldLabel(
-                  'Email *',
-                  helpTitle: 'Email',
-                  helpMessage:
-                      'Used to sign in and recover your account. We never display it publicly.',
+                _FieldLabel(
+                  l10n.registerEmail,
+                  helpTitle: l10n.registerEmail,
+                  helpMessage: l10n.registerEmailHelp,
                 ),
                 const SizedBox(height: 6),
                 TextFormField(
                   controller: _emailController,
                   keyboardType: TextInputType.emailAddress,
                   textInputAction: TextInputAction.next,
-                  decoration: const InputDecoration(hintText: 'you@example.com'),
+                  decoration: InputDecoration(hintText: l10n.registerEmailHint),
                   validator: (v) {
-                    if (v == null || v.trim().isEmpty) return 'Email is required.';
+                    if (v == null || v.trim().isEmpty) return l10n.registerEmailRequired;
                     if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(v.trim())) {
-                      return 'Please enter a valid email.';
+                      return l10n.registerEmailInvalid;
                     }
                     return null;
                   },
@@ -253,11 +266,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 const SizedBox(height: 12),
 
                 // Password
-                const _FieldLabel(
-                  'Password *',
-                  helpTitle: 'Password',
-                  helpMessage:
-                      'At least 8 characters with at least one digit.',
+                _FieldLabel(
+                  l10n.registerPassword,
+                  helpTitle: l10n.registerPassword,
+                  helpMessage: l10n.registerPasswordHelp,
                 ),
                 const SizedBox(height: 6),
                 TextFormField(
@@ -265,7 +277,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   obscureText: _obscurePassword,
                   textInputAction: TextInputAction.next,
                   decoration: InputDecoration(
-                    hintText: 'Min. 8 characters',
+                    hintText: l10n.registerPasswordHint,
                     suffixIcon: IconButton(
                       icon: Icon(
                         _obscurePassword
@@ -279,10 +291,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     ),
                   ),
                   validator: (v) {
-                    if (v == null || v.isEmpty) return 'Password is required.';
-                    if (v.length < 8) return 'Must be at least 8 characters.';
+                    if (v == null || v.isEmpty) return l10n.registerPasswordRequired;
+                    if (v.length < 8) return l10n.registerPasswordTooShort;
                     if (!v.contains(RegExp(r'[0-9]'))) {
-                      return 'Must contain at least one digit.';
+                      return l10n.registerPasswordNoDigit;
                     }
                     return null;
                   },
@@ -290,18 +302,17 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 const SizedBox(height: 12),
 
                 // Confirm password
-                const _FieldLabel(
-                  'Confirm Password *',
-                  helpTitle: 'Confirm password',
-                  helpMessage:
-                      'Type your password again to make sure it matches.',
+                _FieldLabel(
+                  l10n.registerConfirmPassword,
+                  helpTitle: l10n.registerConfirmPassword,
+                  helpMessage: l10n.registerConfirmPasswordHelp,
                 ),
                 const SizedBox(height: 6),
                 TextFormField(
                   controller: _confirmPasswordController,
                   obscureText: _obscureConfirm,
                   textInputAction: TextInputAction.done,
-                  onFieldSubmitted: (_) => _register(),
+                  onFieldSubmitted: (_) => _register(l10n),
                   decoration: InputDecoration(
                     hintText: '••••••••',
                     suffixIcon: IconButton(
@@ -317,8 +328,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     ),
                   ),
                   validator: (v) {
-                    if (v == null || v.isEmpty) return 'Please confirm your password.';
-                    if (v != _passwordController.text) return 'Passwords do not match.';
+                    if (v == null || v.isEmpty) return l10n.registerConfirmRequired;
+                    if (v != _passwordController.text) return l10n.registerConfirmMismatch;
                     return null;
                   },
                 ),
@@ -341,46 +352,51 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       Expanded(
                         child: Wrap(
                           children: [
-                            const Text(
-                              'I agree to the ',
-                              style: TextStyle(
+                            Text(
+                              l10n.registerTosAgree,
+                              style: const TextStyle(
                                 fontSize: 13,
                                 color: kText2,
                               ),
                             ),
                             GestureDetector(
-                              onTap: _showTosSheet,
-                              child: const Text(
-                                'Terms of Service',
-                                style: TextStyle(
+                              onTap: () => _showTosSheet(l10n),
+                              child: Text(
+                                l10n.registerTos,
+                                style: const TextStyle(
                                   fontSize: 13,
                                   fontWeight: FontWeight.w600,
                                   color: kForest,
                                 ),
                               ),
                             ),
-                            const Text(
-                              ' and ',
-                              style: TextStyle(
+                            Text(
+                              l10n.registerTosAnd,
+                              style: const TextStyle(
                                 fontSize: 13,
                                 color: kText2,
                               ),
                             ),
-                            const Text(
-                              'Privacy Policy',
-                              style: TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
-                                color: kForest,
+                            GestureDetector(
+                              onTap: () => launchUrl(
+                                Uri.parse(kPrivacyPolicyUrl),
+                                mode: LaunchMode.externalApplication,
+                              ),
+                              child: Text(
+                                l10n.registerPrivacyPolicy,
+                                style: const TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                  color: kForest,
+                                ),
                               ),
                             ),
                           ],
                         ),
                       ),
-                      const FieldHelpIcon(
-                        helpTitle: 'Terms of Service',
-                        helpMessage:
-                            'You must agree to the Terms of Service and Privacy Policy to create an account. Tap the underlined links to read them.',
+                      FieldHelpIcon(
+                        helpTitle: l10n.registerTos,
+                        helpMessage: l10n.registerTosHelp,
                         color: kText2,
                       ),
                     ],
@@ -398,7 +414,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 SizedBox(
                   height: 54,
                   child: ElevatedButton(
-                    onPressed: (_isLoading || !_tosAccepted) ? null : _register,
+                    onPressed: (_isLoading || !_tosAccepted) ? null : () => _register(l10n),
                     child: _isLoading
                         ? const SizedBox(
                             width: 22,
@@ -408,7 +424,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                               color: kSurface,
                             ),
                           )
-                        : const Text('Create Account'),
+                        : Text(l10n.registerCreateAccount),
                   ),
                 ),
                 const SizedBox(height: 28),
@@ -417,15 +433,15 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Text(
-                      'Already have an account? ',
-                      style: TextStyle(fontSize: 14, color: kText2),
+                    Text(
+                      l10n.registerAlreadyHaveAccount,
+                      style: const TextStyle(fontSize: 14, color: kText2),
                     ),
                     GestureDetector(
                       onTap: () => context.go('/login'),
-                      child: const Text(
-                        'Sign in',
-                        style: TextStyle(
+                      child: Text(
+                        l10n.registerSignIn,
+                        style: const TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w700,
                           color: kForest,

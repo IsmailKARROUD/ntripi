@@ -23,6 +23,7 @@ import 'package:social_flutter/core/ui/app_theme.dart';
 import 'package:social_flutter/features/follows/providers/follow_provider.dart';
 import 'package:social_flutter/features/profile/providers/profile_provider.dart';
 import 'package:social_flutter/shared/models/follow.dart';
+import 'package:social_flutter/l10n/app_localizations.dart';
 import 'package:social_flutter/shared/widgets/editorial_widgets.dart';
 import 'package:social_flutter/core/utils/platform_utils.dart';
 
@@ -127,14 +128,8 @@ class _FollowListScreenState extends ConsumerState<FollowListScreen>
                       fontSize: 14, fontWeight: FontWeight.w600),
                   dividerColor: kBorder,
                   tabs: [
-                    Tab(
-                        text: followerCount > 0
-                            ? '$followerCount Followers'
-                            : 'Followers'),
-                    Tab(
-                        text: followingCount > 0
-                            ? '$followingCount Following'
-                            : 'Following'),
+                    Tab(text: AppLocalizations.of(context)!.followersTabLabel(followerCount)),
+                    Tab(text: AppLocalizations.of(context)!.followingTabLabel(followingCount)),
                   ],
                 ),
               ),
@@ -261,7 +256,7 @@ class _FollowersTab extends ConsumerWidget {
           if (isOwnProfile && pendingRequests.isNotEmpty) ...[
             SectionLabel(
               icon: Icons.hourglass_empty_rounded,
-              label: 'Follow requests · ${pendingRequests.length}',
+              label: AppLocalizations.of(context)!.followRequestsSectionLabel(pendingRequests.length),
               color: kAmber,
             ),
             SectionCard(
@@ -277,9 +272,9 @@ class _FollowersTab extends ConsumerWidget {
 
           // All followers
           if (followers.isNotEmpty) ...[
-            const SectionLabel(
+            SectionLabel(
               icon: Icons.group_rounded,
-              label: 'All followers',
+              label: AppLocalizations.of(context)!.allFollowersSection,
             ),
             SectionCard(
               children: [
@@ -292,8 +287,8 @@ class _FollowersTab extends ConsumerWidget {
               ],
             ),
           ] else if (pendingRequests.isEmpty)
-            const _EmptyListPlaceholder(
-              message: 'No followers yet.',
+            _EmptyListPlaceholder(
+              message: AppLocalizations.of(context)!.noFollowersYet,
               icon: Icons.group_outlined,
             ),
         ],
@@ -324,17 +319,17 @@ class _FollowingTab extends StatelessWidget {
           message: extractErrorMessage(error)),
       data: (following) {
         if (following.isEmpty) {
-          return const _EmptyListPlaceholder(
-            message: 'Not following anyone yet.',
+          return _EmptyListPlaceholder(
+            message: AppLocalizations.of(context)!.notFollowingAnyone,
             icon: Icons.person_add_outlined,
           );
         }
         return ListView(
           padding: const EdgeInsets.only(bottom: 80),
           children: [
-            const SectionLabel(
+            SectionLabel(
               icon: Icons.person_rounded,
-              label: 'People you follow',
+              label: AppLocalizations.of(context)!.peopleYouFollow,
             ),
             SectionCard(
               children: [
@@ -540,7 +535,7 @@ class _PendingRequestRowState
                   children: [
                     _ActionPill(
                         key: Key('confirmRequest_${widget.request.followId}'),
-                        label: 'Confirm',
+                        label: AppLocalizations.of(context)!.confirmButton,
                         filled: true,
                         onTap: _accept),
                     const SizedBox(width: 6),

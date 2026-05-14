@@ -16,6 +16,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:social_flutter/features/itineraries/domain/transport_leg.dart';
+import 'package:social_flutter/l10n/app_localizations.dart';
 import 'package:social_flutter/shared/widgets/field_help.dart';
 
 // Modes that use numbered/named transit lines and directions.
@@ -173,7 +174,7 @@ class _LegFormDialogState extends State<LegFormDialog> {
           ),
 
           Text(
-            isEdit ? 'Edit Transit' : 'Add Transit',
+            isEdit ? AppLocalizations.of(context)!.editTransitTitle : AppLocalizations.of(context)!.addTransitTitle,
             style: Theme.of(context)
                 .textTheme
                 .titleMedium
@@ -184,14 +185,13 @@ class _LegFormDialogState extends State<LegFormDialog> {
           // Mode dropdown
           DropdownButtonFormField<TransportMode>(
             value: _mode,
-            decoration: const InputDecoration(
-              labelText: 'Mode',
+            decoration: InputDecoration(
+              labelText: AppLocalizations.of(context)!.transportModeLabel,
               suffixIcon: FieldHelpIcon(
-                helpTitle: 'Transport mode',
-                helpMessage:
-                    'How you travel on this leg (walk, bus, train, ferry, etc.). Some modes reveal extra fields for line and direction.',
+                helpTitle: AppLocalizations.of(context)!.transportModeLabel,
+                helpMessage: AppLocalizations.of(context)!.transportModeHelp,
               ),
-              border: OutlineInputBorder(),
+              border: const OutlineInputBorder(),
             ),
             items: TransportMode.values
                 .map(
@@ -218,14 +218,13 @@ class _LegFormDialogState extends State<LegFormDialog> {
                 Expanded(
                   child: TextField(
                     controller: _lineCtrl,
-                    decoration: const InputDecoration(
-                      labelText: 'Line (optional)',
+                    decoration: InputDecoration(
+                      labelText: AppLocalizations.of(context)!.transitLineLabel,
                       suffixIcon: FieldHelpIcon(
-                        helpTitle: 'Line',
-                        helpMessage:
-                            'Optional. The line number or name (e.g. "Bus 42", "M1").',
+                        helpTitle: AppLocalizations.of(context)!.transitLineLabel,
+                        helpMessage: AppLocalizations.of(context)!.transitLineHelp,
                       ),
-                      border: OutlineInputBorder(),
+                      border: const OutlineInputBorder(),
                     ),
                   ),
                 ),
@@ -233,14 +232,13 @@ class _LegFormDialogState extends State<LegFormDialog> {
                 Expanded(
                   child: TextField(
                     controller: _directionCtrl,
-                    decoration: const InputDecoration(
-                      labelText: 'Direction (optional)',
+                    decoration: InputDecoration(
+                      labelText: AppLocalizations.of(context)!.transitDirectionLabel,
                       suffixIcon: FieldHelpIcon(
-                        helpTitle: 'Direction',
-                        helpMessage:
-                            'Optional. Where the line is headed (e.g. "Northbound", "Châtelet").',
+                        helpTitle: AppLocalizations.of(context)!.transitDirectionLabel,
+                        helpMessage: AppLocalizations.of(context)!.transitDirectionHelp,
                       ),
-                      border: OutlineInputBorder(),
+                      border: const OutlineInputBorder(),
                     ),
                   ),
                 ),
@@ -251,22 +249,20 @@ class _LegFormDialogState extends State<LegFormDialog> {
 
           // Duration (h + min) + Cost — help icons sit on the section header
           // above; the narrow h/min fields keep their short labels for space.
-          const Row(
+          Row(
             children: [
               LabelWithHelp(
-                label: 'Duration',
-                helpTitle: 'Duration',
-                helpMessage:
-                    'How long this leg takes in hours and minutes.',
+                label: AppLocalizations.of(context)!.durationLabel,
+                helpTitle: AppLocalizations.of(context)!.durationLabel,
+                helpMessage: AppLocalizations.of(context)!.durationHelp,
               ),
-              Spacer(),
+              const Spacer(),
               LabelWithHelp(
-                label: 'Cost',
-                helpTitle: 'Cost',
-                helpMessage:
-                    "Approximate cost in the itinerary's currency. Disabled when \"Free\" is on.",
+                label: AppLocalizations.of(context)!.costLabel,
+                helpTitle: AppLocalizations.of(context)!.costLabel,
+                helpMessage: AppLocalizations.of(context)!.legCostHelp,
               ),
-              SizedBox(width: 12),
+              const SizedBox(width: 12),
             ],
           ),
           const SizedBox(height: 6),
@@ -281,9 +277,9 @@ class _LegFormDialogState extends State<LegFormDialog> {
                     FilteringTextInputFormatter.digitsOnly,
                   ],
                   keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(
-                    labelText: 'h',
-                    border: OutlineInputBorder(),
+                  decoration: InputDecoration(
+                    labelText: AppLocalizations.of(context)!.hoursLabel,
+                    border: const OutlineInputBorder(),
                   ),
                 ),
               ),
@@ -297,9 +293,9 @@ class _LegFormDialogState extends State<LegFormDialog> {
                     FilteringTextInputFormatter.digitsOnly,
                   ],
                   keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(
-                    labelText: 'min',
-                    border: OutlineInputBorder(),
+                  decoration: InputDecoration(
+                    labelText: AppLocalizations.of(context)!.minutesLabel,
+                    border: const OutlineInputBorder(),
                   ),
                 ),
               ),
@@ -326,15 +322,14 @@ class _LegFormDialogState extends State<LegFormDialog> {
           SwitchListTile.adaptive(
             value: _isFree,
             onChanged: (v) => setState(() => _isFree = v),
-            title: const Row(
+            title: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text('Free'),
-                SizedBox(width: 2),
+                Text(AppLocalizations.of(context)!.freeLegLabel),
+                const SizedBox(width: 2),
                 FieldHelpIcon(
-                  helpTitle: 'Free',
-                  helpMessage:
-                      'Toggle on if this leg costs nothing (walking, included transfer, etc.).',
+                  helpTitle: AppLocalizations.of(context)!.freeLegLabel,
+                  helpMessage: AppLocalizations.of(context)!.freeLegHelp,
                 ),
               ],
             ),
@@ -345,14 +340,13 @@ class _LegFormDialogState extends State<LegFormDialog> {
           TextField(
             controller: _notesCtrl,
             maxLines: 2,
-            decoration: const InputDecoration(
-              labelText: 'Thoughts (optional)',
+            decoration: InputDecoration(
+              labelText: AppLocalizations.of(context)!.legThoughtsLabel,
               suffixIcon: FieldHelpIcon(
-                helpTitle: 'Thoughts',
-                helpMessage:
-                    'Optional. Anything useful to know about this leg — booking tips, transfer instructions, where to sit, ticket cost surprises.',
+                helpTitle: AppLocalizations.of(context)!.thoughtsLabel,
+                helpMessage: AppLocalizations.of(context)!.legThoughtsHelp,
               ),
-              border: OutlineInputBorder(),
+              border: const OutlineInputBorder(),
             ),
           ),
           const SizedBox(height: 16),
@@ -364,17 +358,19 @@ class _LegFormDialogState extends State<LegFormDialog> {
                   onPressed: _deleteLeg,
                   style: TextButton.styleFrom(
                       foregroundColor: Colors.red.shade400),
-                  child: const Text('Delete'),
+                  child: Text(AppLocalizations.of(context)!.deleteButton),
                 ),
               const Spacer(),
               TextButton(
                 onPressed: () => Navigator.of(context).pop(),
-                child: const Text('Cancel'),
+                child: Text(AppLocalizations.of(context)!.cancel),
               ),
               const SizedBox(width: 8),
               FilledButton(
                 onPressed: _submit,
-                child: Text(isEdit ? 'Update Transit' : 'Add Transit'),
+                child: Text(isEdit
+                    ? AppLocalizations.of(context)!.updateTransitButton
+                    : AppLocalizations.of(context)!.addTransitTitle),
               ),
             ],
           ),

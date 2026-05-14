@@ -28,6 +28,7 @@ import 'package:social_flutter/features/profile/presentation/delete_account_scre
 import 'package:social_flutter/features/profile/presentation/my_profile_screen.dart';
 import 'package:social_flutter/features/profile/presentation/user_profile_screen.dart';
 import 'package:social_flutter/features/search/presentation/search_screen.dart';
+import 'package:social_flutter/l10n/app_localizations.dart';
 
 final appRouter = GoRouter(
   navigatorKey: navigatorKey,
@@ -290,6 +291,7 @@ class _AppShellState extends State<_AppShell> {
           selectedItemColor: kForest,
           unselectedItemColor: const Color(0xFF93A898),
           onTap: (i) {
+            final l10n = AppLocalizations.of(context)!;
             switch (i) {
               case 0:
                 context.go('/search');
@@ -299,30 +301,30 @@ class _AppShellState extends State<_AppShell> {
                 context.go('/itineraries');
               case 3:
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Feed coming soon!')),
+                  SnackBar(content: Text(l10n.feedComingSoon)),
                 );
             }
           },
-          items: const [
+          items: [
             BottomNavigationBarItem(
-              icon: Icon(Icons.search_outlined),
-              activeIcon: Icon(Icons.search),
-              label: 'Search',
+              icon: const Icon(Icons.search_outlined),
+              activeIcon: const Icon(Icons.search),
+              label: AppLocalizations.of(context)!.navSearch,
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.person_outline_rounded),
-              activeIcon: Icon(Icons.person_rounded),
-              label: 'Profile',
+              icon: const Icon(Icons.person_outline_rounded),
+              activeIcon: const Icon(Icons.person_rounded),
+              label: AppLocalizations.of(context)!.navProfile,
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.article_outlined),
-              activeIcon: Icon(Icons.article),
-              label: 'Itineraries',
+              icon: const Icon(Icons.article_outlined),
+              activeIcon: const Icon(Icons.article),
+              label: AppLocalizations.of(context)!.navItineraries,
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.dynamic_feed_outlined),
-              activeIcon: Icon(Icons.dynamic_feed),
-              label: 'Feed',
+              icon: const Icon(Icons.dynamic_feed_outlined),
+              activeIcon: const Icon(Icons.dynamic_feed),
+              label: AppLocalizations.of(context)!.navFeed,
             ),
           ],
         ),
@@ -336,21 +338,21 @@ class _OfflineBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const ColoredBox(
+    final l10n = AppLocalizations.of(context)!;
+    return ColoredBox(
       color: kRatingRed,
       child: SafeArea(
         bottom: false,
         child: Padding(
-          padding: EdgeInsets.only(left: 12, right: 12, top: 0, bottom: 2),
+          padding: const EdgeInsets.only(left: 12, right: 12, top: 0, bottom: 2),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.wifi_off_rounded, color: Colors.white, size: 16),
-              SizedBox(width: 8),
+              const Icon(Icons.wifi_off_rounded, color: Colors.white, size: 16),
+              const SizedBox(width: 8),
               Text(
-                'You\'re Offline! Some features may be unavailable.',
-                style:
-                    TextStyle(color: Colors.white, fontSize: 13, height: 1.3),
+                l10n.offlineBanner,
+                style: const TextStyle(color: Colors.white, fontSize: 13, height: 1.3),
               ),
             ],
           ),
@@ -376,11 +378,10 @@ class _DownloadBanner extends StatelessWidget {
             children: [
               const Icon(Icons.smartphone, color: Colors.white, size: 18),
               const SizedBox(width: 10),
-              const Expanded(
+              Expanded(
                 child: Text(
-                  'For a better experience, download the Ntripi app.',
-                  style:
-                      TextStyle(color: Colors.white, fontSize: 13, height: 1.4),
+                  AppLocalizations.of(context)!.downloadBanner,
+                  style: const TextStyle(color: Colors.white, fontSize: 13, height: 1.4),
                 ),
               ),
               if (kAndroidDownloadUrl.isNotEmpty)
@@ -394,14 +395,14 @@ class _DownloadBanner extends StatelessWidget {
                     textStyle: const TextStyle(
                         fontSize: 13, fontWeight: FontWeight.w700),
                   ),
-                  child: const Text('Download'),
+                  child: Text(AppLocalizations.of(context)!.downloadBannerButton),
                 ),
               IconButton(
                 icon: const Icon(Icons.close, color: Colors.white, size: 18),
                 onPressed: onDismiss,
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(),
-                tooltip: 'Dismiss',
+                tooltip: AppLocalizations.of(context)!.dismiss,
               ),
             ],
           ),

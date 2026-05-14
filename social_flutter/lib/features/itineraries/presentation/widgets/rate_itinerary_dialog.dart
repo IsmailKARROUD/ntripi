@@ -14,6 +14,7 @@ import 'package:social_flutter/core/ui/destructive_actions.dart';
 import 'package:social_flutter/features/itineraries/domain/my_rating.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/markdown_notes_editor.dart';
 import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
+import 'package:social_flutter/l10n/app_localizations.dart';
 import 'package:social_flutter/shared/widgets/field_help.dart';
 
 /// Opens the rating bottom sheet and returns when the user saves or dismisses.
@@ -83,12 +84,12 @@ class _RateItinerarySheetState extends State<_RateItinerarySheet> {
   }
 
   Future<void> _deleteRating() async {
+    final l10n = AppLocalizations.of(context)!;
     final confirmed = await confirmDestructiveAction(
       context: context,
-      title: 'Remove your rating?',
-      message: 'Your rating will be deleted and the average will update '
-          'for everyone viewing this itinerary.',
-      confirmLabel: 'Remove',
+      title: l10n.removeRatingTitle,
+      message: l10n.removeRatingMessage,
+      confirmLabel: l10n.removeButton,
     );
     if (!confirmed || !mounted) return;
     setState(() => _saving = true);
@@ -144,15 +145,14 @@ class _RateItinerarySheetState extends State<_RateItinerarySheet> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Title
-          Text('Rate this itinerary', style: theme.textTheme.titleMedium),
+          Text(AppLocalizations.of(context)!.rateItineraryTitle, style: theme.textTheme.titleMedium),
           const SizedBox(height: 20),
 
           // Overall — required
           LabelWithHelp(
-            label: 'Overall *',
-            helpTitle: 'Overall rating',
-            helpMessage:
-                'Required. Your overall rating of this itinerary, from 1 to 5 stars.',
+            label: AppLocalizations.of(context)!.overallRatingLabel,
+            helpTitle: AppLocalizations.of(context)!.overallRatingLabel,
+            helpMessage: AppLocalizations.of(context)!.overallRatingHelp,
             labelStyle: theme.textTheme.bodyMedium
                 ?.copyWith(fontWeight: FontWeight.w600),
           ),
@@ -175,7 +175,7 @@ class _RateItinerarySheetState extends State<_RateItinerarySheet> {
                             size: 16, color: Colors.green),
                         const SizedBox(width: 6),
                         Text(
-                          'Thanks! Your rating helps others.',
+                          AppLocalizations.of(context)!.ratingThanksMessage,
                           style: theme.textTheme.bodySmall
                               ?.copyWith(color: Colors.green.shade700),
                         ),
@@ -218,10 +218,9 @@ class _RateItinerarySheetState extends State<_RateItinerarySheet> {
                     child: MarkdownNotesEditor(
                       controller: _noteController,
                       readOnly: false,
-                      label: 'Your impression (optional)',
-                      helpTitle: 'Your impression',
-                      helpMessage:
-                          "Optional. Share what stood out — highlights, regrets, who you'd recommend it to. Use the toolbar to add bold, italic, headings, or bullet lists.",
+                      label: AppLocalizations.of(context)!.yourImpressionLabel,
+                      helpTitle: AppLocalizations.of(context)!.yourImpressionLabel,
+                      helpMessage: AppLocalizations.of(context)!.yourImpressionHelp,
                     ),
                   )
                 : const SizedBox.shrink(),
@@ -236,7 +235,7 @@ class _RateItinerarySheetState extends State<_RateItinerarySheet> {
                 IconButton(
                   icon: Icon(Icons.delete_outline,
                       color: Theme.of(context).colorScheme.error),
-                  tooltip: 'Remove my rating',
+                  tooltip: AppLocalizations.of(context)!.removeMyRatingTooltip,
                   onPressed: _saving ? null : _deleteRating,
                 ),
                 const SizedBox(width: 4),
@@ -244,7 +243,7 @@ class _RateItinerarySheetState extends State<_RateItinerarySheet> {
               Expanded(
                 child: OutlinedButton(
                   onPressed: _saving ? null : () => Navigator.of(context).pop(),
-                  child: const Text('Cancel'),
+                  child: Text(AppLocalizations.of(context)!.cancel),
                 ),
               ),
               const SizedBox(width: 12),
@@ -260,7 +259,7 @@ class _RateItinerarySheetState extends State<_RateItinerarySheet> {
                             color: Colors.white,
                           ),
                         )
-                      : const Text('Save'),
+                      : Text(AppLocalizations.of(context)!.saveButton),
                 ),
               ),
             ],
@@ -313,7 +312,7 @@ class _OptionalSection extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Want to share more? (optional)',
+              AppLocalizations.of(context)!.wantToShareMore,
               style: theme.textTheme.bodySmall?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
                 fontWeight: FontWeight.w500,
@@ -321,37 +320,33 @@ class _OptionalSection extends StatelessWidget {
             ),
             const SizedBox(height: 14),
             _SubRatingRow(
-              label: 'Safety',
-              helpTitle: 'Safety',
-              helpMessage:
-                  'Optional. How safe you felt during this trip.',
+              label: AppLocalizations.of(context)!.safetyLabel,
+              helpTitle: AppLocalizations.of(context)!.safetyLabel,
+              helpMessage: AppLocalizations.of(context)!.safetyHelp,
               value: safety,
               onChanged: onSafetyChanged,
             ),
             const SizedBox(height: 12),
             _SubRatingRow(
-              label: 'Experience',
-              helpTitle: 'Experience',
-              helpMessage:
-                  'Optional. How enjoyable and memorable the trip was.',
+              label: AppLocalizations.of(context)!.experienceLabel,
+              helpTitle: AppLocalizations.of(context)!.experienceLabel,
+              helpMessage: AppLocalizations.of(context)!.experienceHelp,
               value: experience,
               onChanged: onExperienceChanged,
             ),
             const SizedBox(height: 12),
             _SubRatingRow(
-              label: 'Accessibility',
-              helpTitle: 'Accessibility',
-              helpMessage:
-                  'Optional. How accessible the itinerary is (mobility, language, signage).',
+              label: AppLocalizations.of(context)!.accessibilityLabel,
+              helpTitle: AppLocalizations.of(context)!.accessibilityLabel,
+              helpMessage: AppLocalizations.of(context)!.accessibilityHelp,
               value: accessibility,
               onChanged: onAccessibilityChanged,
             ),
             const SizedBox(height: 12),
             _SubRatingRow(
-              label: 'Family-friendly',
-              helpTitle: 'Family-friendly',
-              helpMessage:
-                  'Optional. How suitable the trip is for families with children.',
+              label: AppLocalizations.of(context)!.familyFriendlyLabel,
+              helpTitle: AppLocalizations.of(context)!.familyFriendlyLabel,
+              helpMessage: AppLocalizations.of(context)!.familyFriendlyHelp,
               value: familyFriendly,
               onChanged: onFamilyFriendlyChanged,
             ),

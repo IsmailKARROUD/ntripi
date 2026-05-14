@@ -13,6 +13,7 @@ import 'package:social_flutter/features/auth/providers/auth_provider.dart';
 import 'package:social_flutter/features/profile/data/profile_repository.dart';
 import 'package:social_flutter/features/profile/providers/profile_provider.dart';
 import 'package:social_flutter/core/utils/platform_utils.dart';
+import 'package:social_flutter/l10n/app_localizations.dart';
 import 'package:social_flutter/shared/widgets/editorial_widgets.dart';
 import 'package:social_flutter/shared/widgets/field_help.dart';
 
@@ -42,15 +43,14 @@ class _DeleteAccountScreenState extends ConsumerState<DeleteAccountScreen> {
   }
 
   Future<void> _confirmAndDelete() async {
+    final l10n = AppLocalizations.of(context)!;
     final typed = await confirmTypedDestructiveAction(
       context: context,
-      title: 'Delete your account?',
-      message: 'Your account, itineraries, follows, and ratings will be '
-          'anonymized or deleted per our privacy policy. You will be signed '
-          'out immediately. This cannot be undone.',
-      requiredText: 'DELETE MY ACCOUNT',
-      confirmLabel: 'Delete my account',
-      hintText: 'DELETE MY ACCOUNT',
+      title: l10n.deleteAccountConfirmTitle,
+      message: l10n.deleteAccountConfirmMessage,
+      requiredText: l10n.deleteAccountRequiredText,
+      confirmLabel: l10n.deleteAccountConfirmLabel,
+      hintText: l10n.deleteAccountRequiredText,
     );
     if (!typed || !mounted) return;
 
@@ -65,9 +65,9 @@ class _DeleteAccountScreenState extends ConsumerState<DeleteAccountScreen> {
       await ref.read(authNotifierProvider.notifier).logout();
       if (mounted) context.go('/login');
     } on PasswordIncorrectException {
-      setState(() => _errorMessage = 'Incorrect password. Please try again.');
+      setState(() => _errorMessage = AppLocalizations.of(context)!.deleteAccountPasswordError);
     } catch (_) {
-      setState(() => _errorMessage = 'Something went wrong. Please try again.');
+      setState(() => _errorMessage = AppLocalizations.of(context)!.deleteAccountGenericError);
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -75,6 +75,7 @@ class _DeleteAccountScreenState extends ConsumerState<DeleteAccountScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       backgroundColor: kSurface,
       resizeToAvoidBottomInset: false,
@@ -85,9 +86,9 @@ class _DeleteAccountScreenState extends ConsumerState<DeleteAccountScreen> {
           ),
           child: Column(
             children: [
-              const SafeArea(
+              SafeArea(
                 bottom: false,
-                child: EditorialTopBar(title: 'Delete Account'),
+                child: EditorialTopBar(title: l10n.deleteAccountTitle),
               ),
               Container(height: 1, color: kBorder),
               Expanded(
@@ -107,14 +108,13 @@ class _DeleteAccountScreenState extends ConsumerState<DeleteAccountScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Row(
+                            Row(
                               children: [
-                                Icon(Icons.warning_amber_rounded,
-                                    color: _kError),
-                                SizedBox(width: 8),
+                                const Icon(Icons.warning_amber_rounded, color: _kError),
+                                const SizedBox(width: 8),
                                 Text(
-                                  'This cannot be undone',
-                                  style: TextStyle(
+                                  l10n.deleteAccountCannotUndo,
+                                  style: const TextStyle(
                                     color: _kError,
                                     fontWeight: FontWeight.w700,
                                     fontSize: 15,
@@ -123,28 +123,26 @@ class _DeleteAccountScreenState extends ConsumerState<DeleteAccountScreen> {
                               ],
                             ),
                             const SizedBox(height: 12),
-                            const Text(
-                              'Deleting your account will permanently remove:',
-                              style: TextStyle(color: _kErrorText, fontSize: 13),
+                            Text(
+                              l10n.deleteAccountWillRemove,
+                              style: const TextStyle(color: _kErrorText, fontSize: 13),
                             ),
                             const SizedBox(height: 8),
                             ...[
-                              'Your profile and all personal data',
-                              'All your itineraries and stops',
-                              'Your follow relationships',
+                              l10n.deleteAccountBullet1,
+                              l10n.deleteAccountBullet2,
+                              l10n.deleteAccountBullet3,
                             ].map(
                               (item) => Padding(
                                 padding: const EdgeInsets.only(bottom: 4),
                                 child: Row(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    const Text('• ',
-                                        style: TextStyle(color: _kErrorText)),
+                                    const Text('• ', style: TextStyle(color: _kErrorText)),
                                     Expanded(
                                       child: Text(
                                         item,
-                                        style: const TextStyle(
-                                            color: _kErrorText, fontSize: 13),
+                                        style: const TextStyle(color: _kErrorText, fontSize: 13),
                                       ),
                                     ),
                                   ],
@@ -152,10 +150,9 @@ class _DeleteAccountScreenState extends ConsumerState<DeleteAccountScreen> {
                               ),
                             ),
                             const SizedBox(height: 8),
-                            const Text(
-                              'Ratings you gave to other itineraries will be '
-                              'kept anonymously as community data.',
-                              style: TextStyle(
+                            Text(
+                              l10n.deleteAccountNote,
+                              style: const TextStyle(
                                 color: _kError,
                                 fontSize: 12,
                                 fontStyle: FontStyle.italic,
@@ -167,7 +164,7 @@ class _DeleteAccountScreenState extends ConsumerState<DeleteAccountScreen> {
                       const SizedBox(height: 32),
 
                       Text(
-                        'Enter your password to confirm',
+                        l10n.deleteAccountEnterPassword,
                         style: Theme.of(context).textTheme.titleMedium,
                       ),
                       const SizedBox(height: 12),
@@ -176,12 +173,10 @@ class _DeleteAccountScreenState extends ConsumerState<DeleteAccountScreen> {
                         controller: _passwordController,
                         obscureText: _obscurePassword,
                         decoration: InputDecoration(
-                          label: const LabelWithHelp(
-                            label: 'Password',
-                            helpTitle: 'Confirm password',
-                            helpMessage:
-                                'Re-enter your password to confirm deletion. '
-                                'Account deletion is permanent and cannot be undone.',
+                          label: LabelWithHelp(
+                            label: l10n.deleteAccountPasswordLabel,
+                            helpTitle: l10n.deleteAccountPasswordHelpTitle,
+                            helpMessage: l10n.deleteAccountPasswordHelpMessage,
                           ),
                           border: const OutlineInputBorder(),
                           prefixIcon: const Icon(Icons.lock_outlined),
@@ -222,8 +217,8 @@ class _DeleteAccountScreenState extends ConsumerState<DeleteAccountScreen> {
                                 child: CircularProgressIndicator(
                                     strokeWidth: 2, color: kSurface),
                               )
-                            : const Text('Delete My Account',
-                                style: TextStyle(fontSize: 16)),
+                            : Text(l10n.deleteAccountButton,
+                                style: const TextStyle(fontSize: 16)),
                       ),
                       const SizedBox(height: 12),
 
@@ -232,8 +227,7 @@ class _DeleteAccountScreenState extends ConsumerState<DeleteAccountScreen> {
                         style: OutlinedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 16),
                         ),
-                        child:
-                            const Text('Cancel', style: TextStyle(fontSize: 16)),
+                        child: Text(l10n.cancel, style: const TextStyle(fontSize: 16)),
                       ),
                     ],
                   ),

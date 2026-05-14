@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:social_flutter/features/itineraries/domain/annotation.dart';
+import 'package:social_flutter/l10n/app_localizations.dart';
 import 'package:social_flutter/shared/widgets/field_help.dart';
 
 /// Result returned when the user confirms the dialog.
@@ -47,6 +48,7 @@ class _AnnotationFormDialogState extends State<AnnotationFormDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return AlertDialog(
       title: Text(widget.title),
       content: Form(
@@ -55,34 +57,33 @@ class _AnnotationFormDialogState extends State<AnnotationFormDialog> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const LabelWithHelp(
-              label: 'Type',
-              helpTitle: 'Annotation type',
-              helpMessage:
-                  "Advice: a helpful tip. Caution: be careful. Avoid: don't go. Info: a neutral note.",
+            LabelWithHelp(
+              label: l10n.annotationTypeLabel,
+              helpTitle: l10n.annotationTypeLabel,
+              helpMessage: l10n.annotationTypeHelp,
             ),
             const SizedBox(height: 8),
             SegmentedButton<AnnotationType>(
-              segments: const [
+              segments: [
                 ButtonSegment(
                   value: AnnotationType.advice,
-                  label: Text('Advice'),
-                  icon: Icon(Icons.lightbulb_outline, size: 16),
+                  label: Text(l10n.annotationAdvice),
+                  icon: const Icon(Icons.lightbulb_outline, size: 16),
                 ),
                 ButtonSegment(
                   value: AnnotationType.caution,
-                  label: Text('Caution'),
-                  icon: Icon(Icons.warning_amber_outlined, size: 16),
+                  label: Text(l10n.annotationCaution),
+                  icon: const Icon(Icons.warning_amber_outlined, size: 16),
                 ),
                 ButtonSegment(
                   value: AnnotationType.avoid,
-                  label: Text('Avoid'),
-                  icon: Icon(Icons.block, size: 16),
+                  label: Text(l10n.annotationAvoid),
+                  icon: const Icon(Icons.block, size: 16),
                 ),
                 ButtonSegment(
                   value: AnnotationType.info,
-                  label: Text('Info'),
-                  icon: Icon(Icons.info_outline, size: 16),
+                  label: Text(l10n.annotationInfo),
+                  icon: const Icon(Icons.info_outline, size: 16),
                 ),
               ],
               selected: {_type},
@@ -94,18 +95,17 @@ class _AnnotationFormDialogState extends State<AnnotationFormDialog> {
               controller: _contentController,
               maxLines: 3,
               autofocus: true,
-              decoration: const InputDecoration(
-                labelText: 'Content *',
+              decoration: InputDecoration(
+                labelText: l10n.annotationContentLabel,
                 suffixIcon: FieldHelpIcon(
-                  helpTitle: 'Content',
-                  helpMessage:
-                      'Describe your advice, caution, warning, or note in one or two sentences.',
+                  helpTitle: l10n.annotationContentLabel,
+                  helpMessage: l10n.annotationContentHelp,
                 ),
-                border: OutlineInputBorder(),
+                border: const OutlineInputBorder(),
                 alignLabelWithHint: true,
               ),
               validator: (v) => (v == null || v.trim().isEmpty)
-                  ? 'Content is required'
+                  ? l10n.annotationContentRequired
                   : null,
             ),
           ],
@@ -114,7 +114,7 @@ class _AnnotationFormDialogState extends State<AnnotationFormDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('Cancel'),
+          child: Text(l10n.cancel),
         ),
         FilledButton(
           onPressed: () {
@@ -138,11 +138,12 @@ Future<AnnotationFormResult?> showAnnotationFormDialog(
   AnnotationType? initialType,
   required bool isEdit,
 }) {
+  final l10n = AppLocalizations.of(context)!;
   return showDialog<AnnotationFormResult>(
     context: context,
     builder: (_) => AnnotationFormDialog(
-      title: isEdit ? 'Edit annotation' : 'Add annotation',
-      submitLabel: isEdit ? 'Save' : 'Add',
+      title: isEdit ? l10n.editAnnotationTitle : l10n.addAnnotationDialogTitle,
+      submitLabel: isEdit ? l10n.saveButton : l10n.addButton,
       initialContent: initialContent ?? '',
       initialType: initialType ?? AnnotationType.advice,
     ),

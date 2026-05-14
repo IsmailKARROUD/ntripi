@@ -4,8 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:social_flutter/core/api/api_client.dart';
+import 'package:social_flutter/core/providers/locale_provider.dart';
 import 'package:social_flutter/core/router/app_router.dart';
 import 'package:social_flutter/core/ui/app_theme.dart';
+import 'package:social_flutter/l10n/app_localizations.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -26,11 +28,12 @@ Future<void> main() async {
   );
 }
 
-class NtripiApp extends StatelessWidget {
+class NtripiApp extends ConsumerWidget {
   const NtripiApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final locale = ref.watch(localeProvider);
     return GestureDetector(
       onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
       child: MaterialApp.router(
@@ -38,6 +41,9 @@ class NtripiApp extends StatelessWidget {
         debugShowCheckedModeBanner: false,
         routerConfig: appRouter,
         theme: buildNtripiTheme(),
+        locale: locale,
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
       ),
     );
   }

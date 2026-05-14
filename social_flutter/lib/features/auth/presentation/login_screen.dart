@@ -10,6 +10,7 @@ import 'package:social_flutter/features/auth/providers/auth_provider.dart';
 import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
 import 'package:social_flutter/features/profile/providers/profile_provider.dart';
 import 'package:social_flutter/core/utils/platform_utils.dart';
+import 'package:social_flutter/l10n/app_localizations.dart';
 import 'package:social_flutter/shared/widgets/field_help.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
@@ -60,6 +61,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       backgroundColor: kSurface,
       body: Center(
@@ -82,9 +84,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 ),
 
                 // Heading
-                const Text(
-                  'Welcome back',
-                  style: TextStyle(
+                Text(
+                  l10n.loginTitle,
+                  style: const TextStyle(
                     fontSize: 26,
                     fontWeight: FontWeight.w800,
                     color: kBark,
@@ -92,18 +94,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   ),
                 ),
                 const SizedBox(height: 6),
-                const Text(
-                  'Sign in to continue your journey',
-                  style: TextStyle(fontSize: 14, color: kText2),
+                Text(
+                  l10n.loginSubtitle,
+                  style: const TextStyle(fontSize: 14, color: kText2),
                 ),
                 const SizedBox(height: 28),
 
                 // Email or username field
-                const _FieldLabel(
-                  'Email or username',
-                  helpTitle: 'Email or username',
-                  helpMessage:
-                      'Sign in with the email you registered with, or your @username handle.',
+                _FieldLabel(
+                  l10n.loginEmailLabel,
+                  helpTitle: l10n.loginEmailLabel,
+                  helpMessage: l10n.loginEmailHelp,
                 ),
                 const SizedBox(height: 6),
                 TextFormField(
@@ -111,26 +112,24 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   keyboardType: TextInputType.emailAddress,
                   textInputAction: TextInputAction.next,
                   autocorrect: false,
-                  decoration: const InputDecoration(
-                    hintText: 'you@example.com or @username',
+                  decoration: InputDecoration(
+                    hintText: l10n.loginEmailHint,
                   ),
                   validator: (v) =>
-                      (v == null || v.trim().isEmpty) ? 'Required' : null,
+                      (v == null || v.trim().isEmpty) ? l10n.required : null,
                 ),
                 const SizedBox(height: 14),
 
                 // Password field
-                const _FieldLabel(
-                  'Password',
-                  helpTitle: 'Password',
-                  helpMessage:
-                      'Your account password. Tap the eye icon to show or hide it.',
+                _FieldLabel(
+                  l10n.loginPasswordLabel,
+                  helpTitle: l10n.loginPasswordLabel,
+                  helpMessage: l10n.loginPasswordHelp,
                 ),
                 const SizedBox(height: 6),
                 TextFormField(
                   controller: _passwordController,
                   obscureText: _obscurePassword,
-                  
                   textInputAction: TextInputAction.done,
                   onFieldSubmitted: (_) => _login(),
                   decoration: InputDecoration(
@@ -148,7 +147,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     ),
                   ),
                   validator: (v) =>
-                      (v == null || v.isEmpty) ? 'Required' : null,
+                      (v == null || v.isEmpty) ? l10n.required : null,
                 ),
 
                 // Forgot password
@@ -156,7 +155,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   alignment: Alignment.centerRight,
                   child: TextButton(
                     onPressed: () {},
-                    child: const Text('Forgot password?'),
+                    child: Text(l10n.loginForgotPassword),
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -181,13 +180,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               color: kSurface,
                             ),
                           )
-                        : const Text('Sign In'),
+                        : Text(l10n.loginSignIn),
                   ),
                 ),
                 const SizedBox(height: 20),
 
                 // Divider
-                const _OrDivider(),
+                _OrDivider(label: l10n.loginOrContinueWith),
                 const SizedBox(height: 20),
 
                 // Social placeholder buttons
@@ -221,18 +220,18 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Text(
-                      "Don't have an account? ",
-                      style: TextStyle(
+                    Text(
+                      l10n.loginNoAccount,
+                      style: const TextStyle(
                         fontSize: 14,
                         color: kText2,
                       ),
                     ),
                     GestureDetector(
                       onTap: () => context.go('/register'),
-                      child: const Text(
-                        'Sign up',
-                        style: TextStyle(
+                      child: Text(
+                        l10n.loginSignUp,
+                        style: const TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w700,
                           color: kForest,
@@ -311,21 +310,22 @@ class _ErrorBanner extends StatelessWidget {
 }
 
 class _OrDivider extends StatelessWidget {
-  const _OrDivider();
+  final String label;
+  const _OrDivider({required this.label});
 
   @override
   Widget build(BuildContext context) {
     return Row(
-      children: const [
-        Expanded(child: Divider()),
+      children: [
+        const Expanded(child: Divider()),
         Padding(
-          padding: EdgeInsets.symmetric(horizontal: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 12),
           child: Text(
-            'or continue with',
-            style: TextStyle(fontSize: 12, color: kText3),
+            label,
+            style: const TextStyle(fontSize: 12, color: kText3),
           ),
         ),
-        Expanded(child: Divider()),
+        const Expanded(child: Divider()),
       ],
     );
   }

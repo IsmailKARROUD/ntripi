@@ -142,6 +142,12 @@ const kShareBaseUrl = String.fromEnvironment(
 /// Android APK / Play Store download URL. Empty string means no link.
 const kAndroidDownloadUrl = String.fromEnvironment('ANDROID_DOWNLOAD_URL', defaultValue: '');
 
+/// Public-facing Terms of Service page URL.
+const kTermsUrl = '$kShareBaseUrl/terms';
+
+/// Public-facing Privacy Policy page URL.
+const kPrivacyPolicyUrl = '$kShareBaseUrl/privacy';
+
 /// Returns the public share URL for a given itinerary ID.
 String shareUrlFor(String itineraryId) => '$kShareBaseUrl/share/i/$itineraryId';
 

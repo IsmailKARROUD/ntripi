@@ -57,6 +57,7 @@ import 'package:social_flutter/core/utils/platform_utils.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/leg_form_dialog.dart';
 import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
 import 'package:photo_view/photo_view.dart';
+import 'package:social_flutter/l10n/app_localizations.dart';
 
 class ItineraryDetailScreen extends ConsumerStatefulWidget {
   final String itineraryId;
@@ -154,12 +155,12 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
 
   Future<void> _deleteItineraryAnnotation(
       ItineraryAnnotation annotation) async {
+    final l10n = AppLocalizations.of(context)!;
     final confirmed = await confirmDestructiveAction(
       context: context,
-      title: 'Delete annotation?',
-      message:
-          'This will permanently remove this annotation from the itinerary.',
-      confirmLabel: 'Delete',
+      title: l10n.deleteAnnotationTitle,
+      message: l10n.deleteAnnotationMessage,
+      confirmLabel: l10n.delete,
     );
     if (!confirmed || !mounted) return;
     try {
@@ -214,12 +215,12 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
   }
 
   Future<void> _deleteAnnotation(String stopId, Annotation annotation) async {
+    final l10n = AppLocalizations.of(context)!;
     final confirmed = await confirmDestructiveAction(
       context: context,
-      title: 'Delete annotation?',
-      message:
-          'This will permanently remove this annotation from the itinerary.',
-      confirmLabel: 'Delete',
+      title: l10n.deleteAnnotationTitle,
+      message: l10n.deleteAnnotationMessage,
+      confirmLabel: l10n.delete,
     );
     if (!confirmed || !mounted) return;
     try {
@@ -235,12 +236,12 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
   }
 
   Future<void> _confirmDeleteSegment(TransitSegment segment) async {
+    final l10n = AppLocalizations.of(context)!;
     final confirmed = await confirmDestructiveAction(
       context: context,
-      title: 'Remove transit between stops?',
-      message: 'The connection between these two stops will be cleared. '
-          'You can add a new one later.',
-      confirmLabel: 'Remove',
+      title: l10n.removeTransitTitle,
+      message: l10n.removeTransitMessage,
+      confirmLabel: l10n.removeButton,
     );
     if (!confirmed || !mounted) return;
     try {
@@ -297,11 +298,11 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
             resizeToAvoidBottomInset: false,
             appBar: AppBar(
               title: _reorderMode
-                  ? const Text('Reorder tracks')
+                  ? Text(AppLocalizations.of(context)!.reorderTracksTitle)
                   : itineraryAsync.when(
                       data: (i) => Text(i.title),
-                      loading: () => const Text('Loading...'),
-                      error: (_, __) => const Text('Itinerary'),
+                      loading: () => Text(AppLocalizations.of(context)!.loadingLabel),
+                      error: (_, __) => Text(AppLocalizations.of(context)!.navItineraries),
                     ),
               actions: [
                 if (_reorderMode) ...[
@@ -312,7 +313,7 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                 ] else if (isOwner && _editMode) ...[
                   IconButton(
                     icon: const Icon(Icons.check),
-                    tooltip: 'Done',
+                    tooltip: AppLocalizations.of(context)!.doneTooltip,
                     onPressed: _exitEditMode,
                   ),
                 ] else ...[
@@ -321,7 +322,7 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                           ItineraryVisibility.onlyMe)
                     IconButton(
                       icon: const Icon(Icons.share_outlined),
-                      tooltip: 'Share',
+                      tooltip: AppLocalizations.of(context)!.shareTooltip,
                       onPressed: () => ref
                           .read(shareServiceProvider)
                           .shareItinerary(itineraryAsync.value!),
@@ -329,7 +330,7 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                   if (isOwner)
                     IconButton(
                       icon: const Icon(Icons.tune_outlined),
-                      tooltip: 'Edit details & image',
+                      tooltip: AppLocalizations.of(context)!.editDetailsTooltip,
                       onPressed: () => context
                           .push('/itineraries/${widget.itineraryId}/edit'),
                     ),
@@ -358,7 +359,7 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                               .read(itineraryDetailProvider(widget.itineraryId)
                                   .notifier)
                               .refresh(),
-                          child: const Text('Retry'),
+                          child: Text(AppLocalizations.of(context)!.retry),
                         ),
                       ],
                     ),
@@ -517,24 +518,17 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
 
                                     if (orphaned.isNotEmpty) {
                                       final n = orphaned.length;
+                                      final l10n = AppLocalizations.of(context)!;
                                       final confirmed = await showDialog<bool>(
                                         context: context,
                                         builder: (ctx) => AlertDialog(
-                                          title: Text(
-                                            'Delete transit segment${n > 1 ? 's' : ''}?',
-                                          ),
-                                          content: Text(
-                                            'There ${n == 1 ? 'is 1 transit segment' : 'are $n transit segments'} '
-                                            'connecting these two stops. '
-                                            'Adding a stop between them will hide ${n == 1 ? 'it' : 'them'} '
-                                            'because the stops will no longer be adjacent.\n\n'
-                                            'Delete the segment${n > 1 ? 's' : ''} and continue?',
-                                          ),
+                                          title: Text(l10n.deleteOrphanSegmentsTitle(n)),
+                                          content: Text(l10n.deleteOrphanSegmentsMessage(n)),
                                           actions: [
                                             TextButton(
                                               onPressed: () =>
                                                   Navigator.of(ctx).pop(false),
-                                              child: const Text('Cancel'),
+                                              child: Text(l10n.cancel),
                                             ),
                                             FilledButton(
                                               onPressed: () =>
@@ -542,8 +536,7 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                                               style: FilledButton.styleFrom(
                                                 backgroundColor: kRatingRed,
                                               ),
-                                              child: const Text(
-                                                  'Delete & continue'),
+                                              child: Text(l10n.deleteAndContinue),
                                             ),
                                           ],
                                         ),
@@ -628,8 +621,7 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                                       ),
                                       _SummaryChip(
                                         icon: Icons.place_outlined,
-                                        label:
-                                            '${allStops.length} stop${allStops.length == 1 ? '' : 's'}',
+                                        label: AppLocalizations.of(context)!.stopCount(allStops.length),
                                       ),
                                       if (isOwner && _editMode)
                                         GestureDetector(
@@ -637,13 +629,13 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                                               '/itineraries/${widget.itineraryId}/edit'),
                                           child: _SummaryChip(
                                             icon: itinerary.visibilityIcon,
-                                            label: itinerary.visibilityLabel,
+                                            label: _visibilityLabel(AppLocalizations.of(context)!, itinerary.visibility),
                                           ),
                                         )
                                       else
                                         _SummaryChip(
                                           icon: itinerary.visibilityIcon,
-                                          label: itinerary.visibilityLabel,
+                                          label: _visibilityLabel(AppLocalizations.of(context)!, itinerary.visibility),
                                         ),
                                     ],
                                   ),
@@ -661,7 +653,7 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      'Description',
+                                      AppLocalizations.of(context)!.descriptionSection,
                                       style: Theme.of(context)
                                           .textTheme
                                           .titleSmall
@@ -686,7 +678,7 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                                     Row(
                                       children: [
                                         Text(
-                                          'Annotations',
+                                          AppLocalizations.of(context)!.annotationsSection,
                                           style: Theme.of(context)
                                               .textTheme
                                               .titleSmall
@@ -699,7 +691,7 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                                             onPressed: _addItineraryAnnotation,
                                             icon:
                                                 const Icon(Icons.add, size: 16),
-                                            label: const Text('Add annotation'),
+                                            label: Text(AppLocalizations.of(context)!.addAnnotationButton),
                                             style: TextButton.styleFrom(
                                               visualDensity:
                                                   VisualDensity.compact,
@@ -713,7 +705,7 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                                         padding: const EdgeInsets.only(
                                             top: 4, bottom: 4),
                                         child: Text(
-                                          'No annotations yet.',
+                                          AppLocalizations.of(context)!.noAnnotationsYet,
                                           style: Theme.of(context)
                                               .textTheme
                                               .bodySmall
@@ -775,8 +767,8 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                                   children: [
                                     const Icon(Icons.map_outlined, size: 18),
                                     const SizedBox(width: 8),
-                                    const Text('Map',
-                                        style: TextStyle(
+                                    Text(AppLocalizations.of(context)!.mapSection,
+                                        style: const TextStyle(
                                             fontWeight: FontWeight.w600,
                                             fontSize: 15)),
                                     Icon(
@@ -792,7 +784,7 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                                         onPressed: _enterEditMode,
                                         icon: const Icon(Icons.edit_outlined,
                                             size: 16),
-                                        label: const Text('Edit stops'),
+                                        label: Text(AppLocalizations.of(context)!.editStopsButton),
                                         style: TextButton.styleFrom(
                                           padding: const EdgeInsets.symmetric(
                                               horizontal: 8),
@@ -806,7 +798,7 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                                       IconButton(
                                         icon: const Icon(
                                             Icons.add_location_alt_outlined),
-                                        tooltip: 'Add stop',
+                                        tooltip: AppLocalizations.of(context)!.addStopTooltip,
                                         onPressed: () => context.push(
                                           '/itineraries/${widget.itineraryId}/stops/new',
                                         ),
@@ -817,7 +809,7 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                                               2)
                                         IconButton(
                                           icon: const Icon(Icons.reorder),
-                                          tooltip: 'Reorder tracks',
+                                          tooltip: AppLocalizations.of(context)!.reorderTracksTooltip,
                                           onPressed: () => setState(
                                               () => _reorderMode = true),
                                         ),
@@ -893,10 +885,10 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                                               );
                                             }).toList(),
                                           ),
-                                          const RichAttributionWidget(
+                                          RichAttributionWidget(
                                             attributions: [
                                               TextSourceAttribution(
-                                                  'OpenStreetMap contributors'),
+                                                  AppLocalizations.of(context)!.openStreetMapContributors),
                                             ],
                                           ),
                                         ],
@@ -913,9 +905,9 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                                             borderRadius:
                                                 BorderRadius.circular(4),
                                           ),
-                                          child: const Text(
-                                              'Powered by OpenStreetMap',
-                                              style: TextStyle(
+                                          child: Text(
+                                              AppLocalizations.of(context)!.poweredByOSM,
+                                              style: const TextStyle(
                                                   fontSize: 9, color: kText2)),
                                         ),
                                       ),
@@ -935,13 +927,12 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                                         onTap: () => context.push(
                                           '/itineraries/${widget.itineraryId}/stops/new',
                                         ),
-                                        child: const Column(
+                                        child: Column(
                                           children: [
-                                            Icon(Icons.place_outlined,
+                                            const Icon(Icons.place_outlined,
                                                 size: 48, color: kText3),
-                                            SizedBox(height: 12),
-                                            Text(
-                                                'No stops yet. Tap + to add one.'),
+                                            const SizedBox(height: 12),
+                                            Text(AppLocalizations.of(context)!.noStopsYetTapPlus),
                                           ],
                                         ),
                                       )
@@ -951,7 +942,7 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                                               size: 48,
                                               color: Colors.grey.shade400),
                                           const SizedBox(height: 12),
-                                          const Text('No stops yet.'),
+                                          Text(AppLocalizations.of(context)!.noStopsYet),
                                         ],
                                       ),
                               ),
@@ -1025,7 +1016,7 @@ class _RatingSection extends ConsumerWidget {
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               Text(
-                                'Community',
+                                AppLocalizations.of(context)!.communityRating,
                                 style: theme.textTheme.labelSmall?.copyWith(
                                   color: cs.onSurfaceVariant,
                                   letterSpacing: 0.4,
@@ -1055,7 +1046,7 @@ class _RatingSection extends ConsumerWidget {
                                   if (itinerary.ratingCount > 0) ...[
                                     const SizedBox(width: 5),
                                     Text(
-                                      '${itinerary.ratingCount} ratings',
+                                      AppLocalizations.of(context)!.ratingCount(itinerary.ratingCount),
                                       style:
                                           theme.textTheme.bodySmall?.copyWith(
                                         color: cs.onSurfaceVariant,
@@ -1112,7 +1103,7 @@ class _RatingSection extends ConsumerWidget {
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               Text(
-                                myRating != null ? 'Your rating' : 'Rate it',
+                                myRating != null ? AppLocalizations.of(context)!.yourRating : AppLocalizations.of(context)!.rateIt,
                                 style: theme.textTheme.labelSmall?.copyWith(
                                   color: myRating != null
                                       ? cs.onSurfaceVariant
@@ -1270,3 +1261,11 @@ class _CoverImageState extends State<_CoverImage> {
 }
 
 enum _OwnerAction { editStops, editDetails, delete }
+
+String _visibilityLabel(AppLocalizations l10n, ItineraryVisibility v) =>
+    switch (v) {
+      ItineraryVisibility.public => l10n.visibilityPublic,
+      ItineraryVisibility.followers => l10n.visibilityFollowers,
+      ItineraryVisibility.restricted => l10n.visibilityRestricted,
+      ItineraryVisibility.onlyMe => l10n.visibilityOnlyMe,
+    };

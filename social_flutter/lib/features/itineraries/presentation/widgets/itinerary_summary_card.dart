@@ -11,6 +11,7 @@ import 'package:social_flutter/core/api/api_endpoints.dart';
 import 'package:social_flutter/core/ui/app_theme.dart';
 import 'package:social_flutter/features/itineraries/domain/itinerary.dart';
 import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
+import 'package:social_flutter/l10n/app_localizations.dart';
 
 class ItinerarySummaryCard extends ConsumerWidget {
   final Itinerary itinerary;
@@ -179,7 +180,7 @@ class _VisibilityBadge extends StatelessWidget {
           ),
           const SizedBox(width: 4),
           Text(
-            itinerary.visibilityLabel,
+            _localizedVisibilityLabel(AppLocalizations.of(context)!, itinerary.visibility),
             style: TextStyle(
               fontSize: 11,
               color: Colors.grey.shade600,
@@ -215,3 +216,11 @@ class _Stat extends StatelessWidget {
     );
   }
 }
+
+String _localizedVisibilityLabel(AppLocalizations l10n, ItineraryVisibility v) =>
+    switch (v) {
+      ItineraryVisibility.public => l10n.visibilityPublic,
+      ItineraryVisibility.followers => l10n.visibilityFollowers,
+      ItineraryVisibility.restricted => l10n.visibilityRestricted,
+      ItineraryVisibility.onlyMe => l10n.visibilityOnlyMe,
+    };

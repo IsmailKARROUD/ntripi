@@ -35,6 +35,7 @@ import 'package:social_flutter/features/itineraries/providers/itinerary_provider
 import 'package:social_flutter/shared/models/user.dart';
 import 'package:social_flutter/shared/widgets/field_help.dart';
 import 'package:social_flutter/core/utils/platform_utils.dart';
+import 'package:social_flutter/l10n/app_localizations.dart';
 import 'package:flutter/services.dart';
 import 'dart:convert';
 
@@ -196,11 +197,8 @@ Future<void> loadCurrencies() async {
           } on Exception {
             if (mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text(
-                    'Itinerary saved, but image upload failed. '
-                    'Try again from the edit screen.',
-                  ),
+                SnackBar(
+                  content: Text(AppLocalizations.of(context)!.imageSaveButUploadFailed),
                 ),
               );
             }
@@ -256,11 +254,11 @@ Future<void> loadCurrencies() async {
     final router = GoRouter.of(context);
     final messenger = ScaffoldMessenger.of(context);
 
+    final l10n = AppLocalizations.of(context)!;
     final confirmed = await confirmTypedDestructiveAction(
       context: context,
-      title: 'Delete itinerary',
-      message:
-          'This will permanently delete "$title" and all its stops. Type the title to confirm.',
+      title: l10n.deleteItineraryFormTitle,
+      message: l10n.deleteItineraryFormMessage(title),
       requiredText: title,
       hintText: title,
     );
@@ -284,8 +282,8 @@ Future<void> loadCurrencies() async {
       resizeToAvoidBottomInset: false,
       appBar: AppBar(
         title: Text(widget.mode == ItineraryFormMode.create
-            ? 'New Itinerary'
-            : 'Edit Itinerary'),
+            ? AppLocalizations.of(context)!.newItinerary
+            : AppLocalizations.of(context)!.editItinerary),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
@@ -299,10 +297,9 @@ Future<void> loadCurrencies() async {
               children: [
                 // Cover image — deferred upload on create, immediate on edit
                 LabelWithHelp(
-                  label: 'Cover image',
-                  helpTitle: 'Cover image',
-                  helpMessage:
-                      'A 1200×630 image shown on the itinerary card and link previews. Drag inside the crop box to reposition.',
+                  label: AppLocalizations.of(context)!.coverImageLabel,
+                  helpTitle: AppLocalizations.of(context)!.coverImageLabel,
+                  helpMessage: AppLocalizations.of(context)!.coverImageHelp,
                   labelStyle: Theme.of(context).textTheme.labelLarge,
                 ),
                 const SizedBox(height: 8),
@@ -329,17 +326,16 @@ Future<void> loadCurrencies() async {
                 // Title
                 TextFormField(
                   controller: _titleController,
-                  decoration: const InputDecoration(
-                    labelText: 'Title *',
+                  decoration: InputDecoration(
+                    labelText: AppLocalizations.of(context)!.itineraryTitleLabel,
                     suffixIcon: FieldHelpIcon(
-                      helpTitle: 'Title',
-                      helpMessage:
-                          'A short, clear name for this trip. Shown on the itinerary card and share previews.',
+                      helpTitle: AppLocalizations.of(context)!.itineraryTitleLabel,
+                      helpMessage: AppLocalizations.of(context)!.itineraryTitleHelp,
                     ),
-                    border: OutlineInputBorder(),
+                    border: const OutlineInputBorder(),
                   ),
                   validator: (v) => (v == null || v.trim().isEmpty)
-                      ? 'Title is required'
+                      ? AppLocalizations.of(context)!.itineraryTitleRequired
                       : null,
                   textInputAction: TextInputAction.next,
                 ),
@@ -349,10 +345,9 @@ Future<void> loadCurrencies() async {
                 MarkdownNotesEditor(
                   controller: _descriptionController,
                   readOnly: false,
-                  label: 'Description',
-                  helpTitle: 'Description',
-                  helpMessage:
-                      'Optional. A summary of the trip. Use the toolbar to make text bold or italic, add headings, and create bullet or numbered lists. Switch to the Preview tab to see how it will look to readers.',
+                  label: AppLocalizations.of(context)!.descriptionLabel,
+                  helpTitle: AppLocalizations.of(context)!.descriptionLabel,
+                  helpMessage: AppLocalizations.of(context)!.descriptionHelp,
                 ),
                 const SizedBox(height: 16),
 
@@ -360,14 +355,13 @@ Future<void> loadCurrencies() async {
                 DropdownButtonFormField<String>(
                   value: _currency,
                   isExpanded: true,
-                  decoration: const InputDecoration(
-                    labelText: 'Currency',
+                  decoration: InputDecoration(
+                    labelText: AppLocalizations.of(context)!.currencyLabel,
                     suffixIcon: FieldHelpIcon(
-                      helpTitle: 'Currency',
-                      helpMessage:
-                          "Default currency for all stop costs and transport costs in this itinerary.",
+                      helpTitle: AppLocalizations.of(context)!.currencyLabel,
+                      helpMessage: AppLocalizations.of(context)!.currencyHelp,
                     ),
-                    border: OutlineInputBorder(),
+                    border: const OutlineInputBorder(),
                   ),
                   items: _currencies.map((currency) {
                     return DropdownMenuItem<String>(
@@ -389,36 +383,35 @@ Future<void> loadCurrencies() async {
 
                 // Visibility picker
                 LabelWithHelp(
-                  label: 'Visibility',
-                  helpTitle: 'Visibility',
-                  helpMessage:
-                      'Public: anyone can view. Followers: only people who follow you. Restricted: only the users you allowlist below. Only me: private to you.',
+                  label: AppLocalizations.of(context)!.visibilityLabel,
+                  helpTitle: AppLocalizations.of(context)!.visibilityLabel,
+                  helpMessage: AppLocalizations.of(context)!.visibilityHelp,
                   labelStyle: Theme.of(context).textTheme.labelLarge,
                 ),
                 const SizedBox(height: 8),
                 SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
                   child: SegmentedButton<ItineraryVisibility>(
-                    segments: const [
+                    segments: [
                       ButtonSegment(
                         value: ItineraryVisibility.public,
-                        label: Text('Public'),
-                        icon: Icon(Icons.public),
+                        label: Text(AppLocalizations.of(context)!.visibilityPublic),
+                        icon: const Icon(Icons.public),
                       ),
                       ButtonSegment(
                         value: ItineraryVisibility.followers,
-                        label: Text('Followers'),
-                        icon: Icon(Icons.people),
+                        label: Text(AppLocalizations.of(context)!.visibilityFollowers),
+                        icon: const Icon(Icons.people),
                       ),
                       ButtonSegment(
                         value: ItineraryVisibility.restricted,
-                        label: Text('Restricted'),
-                        icon: Icon(Icons.lock_outline),
+                        label: Text(AppLocalizations.of(context)!.visibilityRestricted),
+                        icon: const Icon(Icons.lock_outline),
                       ),
                       ButtonSegment(
                         value: ItineraryVisibility.onlyMe,
-                        label: Text('Only Me'),
-                        icon: Icon(Icons.lock),
+                        label: Text(AppLocalizations.of(context)!.visibilityOnlyMe),
+                        icon: const Icon(Icons.lock),
                       ),
                     ],
                     selected: {_visibility},
@@ -449,8 +442,8 @@ Future<void> loadCurrencies() async {
                           ),
                         )
                       : Text(widget.mode == ItineraryFormMode.create
-                          ? 'Create Itinerary'
-                          : 'Save Changes'),
+                          ? AppLocalizations.of(context)!.createItinerary
+                          : AppLocalizations.of(context)!.save),
                 ),
 
                 if (widget.mode == ItineraryFormMode.edit) ...[
@@ -471,7 +464,7 @@ Future<void> loadCurrencies() async {
                   OutlinedButton.icon(
                     onPressed: _saving ? null : _deleteItinerary,
                     icon: const Icon(Icons.delete_outline),
-                    label: const Text('Delete itinerary'),
+                    label: Text(AppLocalizations.of(context)!.deleteItineraryButton),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: kRatingRed,
                       side: const BorderSide(color: kRatingRed),

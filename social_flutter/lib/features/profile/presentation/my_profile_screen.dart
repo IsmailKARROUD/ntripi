@@ -36,6 +36,8 @@ import 'package:social_flutter/features/profile/presentation/profile_identity_fa
 import 'package:social_flutter/features/profile/providers/profile_provider.dart';
 import 'package:social_flutter/shared/data/countries.dart';
 import 'package:social_flutter/shared/models/user.dart';
+import 'package:social_flutter/core/providers/locale_provider.dart';
+import 'package:social_flutter/l10n/app_localizations.dart';
 import 'package:social_flutter/shared/widgets/user_avatar.dart';
 import 'package:social_flutter/core/utils/platform_utils.dart';
 
@@ -109,20 +111,21 @@ class _MyProfileScreenState extends ConsumerState<MyProfileScreen> {
   }
 
   Future<void> _logout() async {
+    final l10n = AppLocalizations.of(context)!;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Log out'),
-        content: const Text('Are you sure you want to log out?'),
+        title: Text(l10n.logoutConfirmTitle),
+        content: Text(l10n.logoutConfirmMessage),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('Cancel'),
+            child: Text(l10n.cancel),
           ),
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(true),
             style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('Log out'),
+            child: Text(l10n.logoutConfirmButton),
           ),
         ],
       ),
@@ -140,15 +143,12 @@ class _MyProfileScreenState extends ConsumerState<MyProfileScreen> {
         currentUser != null && currentUser.isPrivate && _editIsPrivate == false;
 
     if (switchingToPublic && pendingCount > 0) {
+      final l10n = AppLocalizations.of(context)!;
       final confirmed = await confirmDestructiveAction(
         context: context,
-        title: 'Switch to public?',
-        message: pendingCount == 1
-            ? 'You have 1 pending follow request. Switching to public will '
-                'automatically accept it. Continue?'
-            : 'You have $pendingCount pending follow requests. Switching to '
-                'public will automatically accept all of them. Continue?',
-        confirmLabel: 'Switch to public',
+        title: l10n.switchToPublicTitle,
+        message: l10n.switchToPublicMessage(pendingCount),
+        confirmLabel: l10n.switchToPublicButton,
       );
       if (!confirmed) return;
     }
@@ -205,7 +205,7 @@ class _MyProfileScreenState extends ConsumerState<MyProfileScreen> {
                     FilledButton(
                       onPressed: () =>
                           ref.read(myProfileProvider.notifier).refresh(),
-                      child: const Text('Retry'),
+                      child: Text(AppLocalizations.of(context)!.retry),
                     ),
                   ],
                 ),
@@ -259,13 +259,13 @@ class _MyProfileScreenState extends ConsumerState<MyProfileScreen> {
                       const SizedBox(width: 24), // to align with avatar edge
                       _Tally(
                         n: user.followersCount,
-                        label: 'Followers',
+                        label: AppLocalizations.of(context)!.followers,
                         onTap: () =>
                             context.push('/profile/${user.id}/followers'),
                       ),
                       _Tally(
                         n: user.followingCount,
-                        label: 'Following',
+                        label: AppLocalizations.of(context)!.following,
                         onTap: () =>
                             context.push('/profile/${user.id}/following'),
                       ),
@@ -298,12 +298,12 @@ class _MyProfileScreenState extends ConsumerState<MyProfileScreen> {
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
-                      const Column(
+                      Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'LATEST TRIP',
-                            style: TextStyle(
+                            AppLocalizations.of(context)!.latestTrip,
+                            style: const TextStyle(
                               fontSize: 10,
                               fontWeight: FontWeight.w700,
                               color: kText2,
@@ -315,17 +315,17 @@ class _MyProfileScreenState extends ConsumerState<MyProfileScreen> {
                       const Spacer(),
                       GestureDetector(
                         onTap: () => context.go('/itineraries'),
-                        child: const Row(
+                        child: Row(
                           children: [
                             Text(
-                              'See all',
-                              style: TextStyle(
+                              AppLocalizations.of(context)!.seeAll,
+                              style: const TextStyle(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w600,
                                 color: kForest,
                               ),
                             ),
-                            Icon(Icons.chevron_right, size: 16, color: kForest),
+                            const Icon(Icons.chevron_right, size: 16, color: kForest),
                           ],
                         ),
                       ),
@@ -345,10 +345,10 @@ class _MyProfileScreenState extends ConsumerState<MyProfileScreen> {
                 child: Center(child: CircularProgressIndicator()),
               ),
             ),
-            error: (_, __) => const SliverToBoxAdapter(
+            error: (_, __) => SliverToBoxAdapter(
               child: Padding(
-                padding: EdgeInsets.all(24),
-                child: Center(child: Text('Could not load itineraries.')),
+                padding: const EdgeInsets.all(24),
+                child: Center(child: Text(AppLocalizations.of(context)!.couldNotLoadItineraries)),
               ),
             ),
             data: (itineraries) {
@@ -395,15 +395,14 @@ class _MyProfileScreenState extends ConsumerState<MyProfileScreen> {
                 TextButton(
                   onPressed: () => setState(() => _isEditing = false),
                   style: TextButton.styleFrom(foregroundColor: kText2),
-                  child: const Text('Cancel',
-                      style:
-                          TextStyle(fontWeight: FontWeight.w500, fontSize: 15)),
+                  child: Text(AppLocalizations.of(context)!.cancel,
+                      style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 15)),
                 ),
-                const Expanded(
+                Expanded(
                   child: Text(
-                    'Edit profile',
+                    AppLocalizations.of(context)!.editProfileTitle,
                     textAlign: TextAlign.center,
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w700,
                       color: kBark,
@@ -413,9 +412,8 @@ class _MyProfileScreenState extends ConsumerState<MyProfileScreen> {
                 ),
                 TextButton(
                   onPressed: _saveEdits,
-                  child: const Text('Save',
-                      style:
-                          TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
+                  child: Text(AppLocalizations.of(context)!.save,
+                      style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
                 ),
               ],
             ),
@@ -474,9 +472,9 @@ class _MyProfileScreenState extends ConsumerState<MyProfileScreen> {
                           ],
                         ),
                         const SizedBox(height: 8),
-                        const Text(
-                          'Upload photo',
-                          style: TextStyle(
+                        Text(
+                          AppLocalizations.of(context)!.uploadPhoto,
+                          style: const TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.w600,
                             color: kForest,
@@ -488,12 +486,12 @@ class _MyProfileScreenState extends ConsumerState<MyProfileScreen> {
                 ),
 
                 // Identity section
-                const _SectionLabel(
-                    icon: Icons.person_outline_rounded, label: 'Identity'),
+                _SectionLabel(
+                    icon: Icons.person_outline_rounded, label: AppLocalizations.of(context)!.identitySection),
                 _SectionCard(children: [
                   _EditFieldRow(
                     icon: Icons.badge_outlined,
-                    label: 'Display name',
+                    label: AppLocalizations.of(context)!.displayNameLabel,
                     child: TextField(
                       controller: _displayNameController,
                       style: const TextStyle(
@@ -525,16 +523,15 @@ class _MyProfileScreenState extends ConsumerState<MyProfileScreen> {
                     child: MarkdownNotesEditor(
                       controller: _bioController,
                       readOnly: false,
-                      label: 'BIO',
-                      helpTitle: 'BIO',
-                      helpMessage:
-                          'A short description. Supports **bold** markdown and emoji.',
+                      label: AppLocalizations.of(context)!.bioLabel,
+                      helpTitle: AppLocalizations.of(context)!.bioLabel,
+                      helpMessage: AppLocalizations.of(context)!.bioHelpMessage,
                     ),
                   ),
                   const _FieldDivider(),
                   _EditFieldRow(
                     icon: Icons.link_rounded,
-                    label: 'Avatar URL',
+                    label: AppLocalizations.of(context)!.avatarUrlLabel,
                     child: TextField(
                       controller: _avatarUrlController,
                       style: const TextStyle(
@@ -553,12 +550,12 @@ class _MyProfileScreenState extends ConsumerState<MyProfileScreen> {
                 ]),
 
                 // Travel identity section
-                const _SectionLabel(
-                    icon: Icons.public_rounded, label: 'Travel identity'),
+                _SectionLabel(
+                    icon: Icons.public_rounded, label: AppLocalizations.of(context)!.travelIdentitySection),
                 _SectionCard(children: [
                   _CodeChipsRow(
                     icon: Icons.badge_outlined,
-                    label: 'Passport',
+                    label: AppLocalizations.of(context)!.passportLabel,
                     codes: _editPassportCountries,
                     labelFor: (code) =>
                         '${countryByCode(code)?.flag ?? ''} $code'.trim(),
@@ -586,7 +583,7 @@ class _MyProfileScreenState extends ConsumerState<MyProfileScreen> {
                   const _FieldDivider(),
                   _PickerRow(
                     icon: Icons.location_on_outlined,
-                    label: 'Lives in',
+                    label: AppLocalizations.of(context)!.livesInLabel,
                     countryCode: _editResidentCountry,
                     onTap: () async {
                       final code = await Navigator.of(context).push<String?>(
@@ -605,7 +602,7 @@ class _MyProfileScreenState extends ConsumerState<MyProfileScreen> {
                   const _FieldDivider(),
                   _CodeChipsRow(
                     icon: Icons.translate_outlined,
-                    label: 'Languages',
+                    label: AppLocalizations.of(context)!.languagesLabel,
                     codes: _editLanguages,
                     labelFor: (code) => code,
                     onAdd: () async {
@@ -629,14 +626,13 @@ class _MyProfileScreenState extends ConsumerState<MyProfileScreen> {
                 ]),
 
                 // Privacy section
-                const _SectionLabel(
-                    icon: Icons.lock_outline_rounded, label: 'Privacy'),
+                _SectionLabel(
+                    icon: Icons.lock_outline_rounded, label: AppLocalizations.of(context)!.privacySection),
                 _SectionCard(children: [
                   _ToggleRow(
                     icon: Icons.lock_rounded,
-                    label: 'Private account',
-                    subtitle:
-                        'People must request to follow you to see your itineraries.',
+                    label: AppLocalizations.of(context)!.privateAccountLabel,
+                    subtitle: AppLocalizations.of(context)!.privateAccountSubtitle,
                     value: _editIsPrivate ?? user.isPrivate,
                     onChanged: (v) => setState(() => _editIsPrivate = v),
                   ),
@@ -833,24 +829,24 @@ class _MapHero extends StatelessWidget {
                       ? [
                           _GlassIconButton(
                             icon: Icons.edit_outlined,
-                            tooltip: 'Edit profile',
+                            tooltip: AppLocalizations.of(context)!.editProfileTooltip,
                             onTap: onEdit,
                           ),
                           _GlassIconButton(
                             icon: Icons.settings_outlined,
-                            tooltip: 'Settings',
+                            tooltip: AppLocalizations.of(context)!.settingsTooltip,
                             onTap: onSettings,
                           ),
                         ]
                       : [
                           _GlassIconButton(
                             icon: Icons.arrow_back,
-                            tooltip: 'Back',
+                            tooltip: AppLocalizations.of(context)!.back,
                             onTap: () => Navigator.of(context).maybePop(),
                           ),
-                          const _GlassIconButton(
+                          _GlassIconButton(
                             icon: Icons.share_outlined,
-                            tooltip: 'Share profile',
+                            tooltip: AppLocalizations.of(context)!.shareProfileTooltip,
                           ),
                         ],
                 ),
@@ -870,9 +866,9 @@ class _MapHero extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Text(
-                      "WHERE I'VE BEEN",
-                      style: TextStyle(
+                    Text(
+                      AppLocalizations.of(context)!.whereIveBeen,
+                      style: const TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
                         color: Colors.white,
@@ -882,8 +878,8 @@ class _MapHero extends StatelessWidget {
                     const SizedBox(height: 2),
                     Text(
                       totalStops > 0
-                          ? '$totalStops stop${totalStops == 1 ? '' : 's'}'
-                          : 'No stops yet',
+                          ? AppLocalizations.of(context)!.stopCount(totalStops)
+                          : AppLocalizations.of(context)!.noStopsYet,
                       style: const TextStyle(
                         fontSize: 22,
                         fontWeight: FontWeight.w700,
@@ -905,15 +901,15 @@ class _MapHero extends StatelessWidget {
                     border:
                         Border.all(color: Colors.white.withValues(alpha: 0.25)),
                   ),
-                  child: const Row(
+                  child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.open_in_full,
+                      const Icon(Icons.open_in_full,
                           size: 12, color: Colors.white, weight: 600),
-                      SizedBox(width: 4),
+                      const SizedBox(width: 4),
                       Text(
-                        'Expand',
-                        style: TextStyle(
+                        AppLocalizations.of(context)!.expand,
+                        style: const TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w600,
                           color: Colors.white,
@@ -1094,16 +1090,16 @@ class _FollowRequestsBanner extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Follow Requests ($count)',
+                    AppLocalizations.of(context)!.followRequestsBannerTitle(count),
                     style: const TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w700,
                       color: kForest,
                     ),
                   ),
-                  const Text(
-                    'Tap to review',
-                    style: TextStyle(
+                  Text(
+                    AppLocalizations.of(context)!.tapToReview,
+                    style: const TextStyle(
                         fontSize: 12,
                         color: kForest,
                         fontWeight: FontWeight.w400),
@@ -1159,9 +1155,9 @@ class _EmptyItinerariesCard extends StatelessWidget {
                     color: Colors.white, size: 20),
               ),
               const SizedBox(height: 12),
-              const Text(
-                'Plan your first journey',
-                style: TextStyle(
+              Text(
+                AppLocalizations.of(context)!.planFirstJourney,
+                style: const TextStyle(
                   fontSize: 17,
                   fontWeight: FontWeight.w700,
                   color: kBark,
@@ -1169,9 +1165,9 @@ class _EmptyItinerariesCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 4),
-              const Text(
-                'Add stops, transit segments and notes. Share it with friends or keep it private.',
-                style: TextStyle(fontSize: 13, color: kText2, height: 1.5),
+              Text(
+                AppLocalizations.of(context)!.planFirstJourneyHint,
+                style: const TextStyle(fontSize: 13, color: kText2, height: 1.5),
               ),
               const SizedBox(height: 14),
               GestureDetector(
@@ -1190,14 +1186,14 @@ class _EmptyItinerariesCard extends StatelessWidget {
                       ),
                     ],
                   ),
-                  child: const Row(
+                  child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.add_rounded, color: Colors.white, size: 18),
-                      SizedBox(width: 6),
+                      const Icon(Icons.add_rounded, color: Colors.white, size: 18),
+                      const SizedBox(width: 6),
                       Text(
-                        'Create itinerary',
-                        style: TextStyle(
+                        AppLocalizations.of(context)!.createItinerary,
+                        style: const TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w700,
                           color: Colors.white,
@@ -1221,29 +1217,29 @@ class _EmptyItinerariesCard extends StatelessWidget {
               borderRadius: BorderRadius.circular(14),
               border: Border.all(color: kBorder),
             ),
-            child: const Row(
+            child: Row(
               children: [
-                _SmallIconBox(icon: Icons.explore_rounded),
-                SizedBox(width: 12),
+                const _SmallIconBox(icon: Icons.explore_rounded),
+                const SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Need inspiration?',
-                        style: TextStyle(
+                        AppLocalizations.of(context)!.needInspiration,
+                        style: const TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.w700,
                             color: kBark),
                       ),
                       Text(
-                        'Browse your itineraries for ideas.',
-                        style: TextStyle(fontSize: 11, color: kText2),
+                        AppLocalizations.of(context)!.browseForIdeas,
+                        style: const TextStyle(fontSize: 11, color: kText2),
                       ),
                     ],
                   ),
                 ),
-                Icon(Icons.chevron_right, size: 20, color: kText3),
+                const Icon(Icons.chevron_right, size: 20, color: kText3),
               ],
             ),
           ),
@@ -1451,7 +1447,7 @@ class _ToggleRow extends StatelessWidget {
 // Settings bottom sheet
 // ═══════════════════════════════════════════════════════════════════════════
 
-class _SettingsSheet extends StatelessWidget {
+class _SettingsSheet extends ConsumerWidget {
   final VoidCallback onLogout;
   final VoidCallback onDeleteAccount;
 
@@ -1460,8 +1456,73 @@ class _SettingsSheet extends StatelessWidget {
     required this.onDeleteAccount,
   });
 
+  void _showLanguagePicker(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: kSurface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              margin: const EdgeInsets.only(top: 10, bottom: 8),
+              width: 36,
+              height: 4,
+              decoration: BoxDecoration(
+                color: kText3.withValues(alpha: 0.55),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 4, 20, 8),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  l10n.languagePickerTitle,
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: kBark,
+                    letterSpacing: -0.2,
+                  ),
+                ),
+              ),
+            ),
+            _LanguageOption(
+              label: l10n.languageEnglish,
+              languageCode: 'en',
+              onSelect: (code) {
+                ref.read(localeProvider.notifier).setLocale(Locale(code));
+                Navigator.pop(ctx);
+              },
+            ),
+            _LanguageOption(
+              label: l10n.languageFrench,
+              languageCode: 'fr',
+              onSelect: (code) {
+                ref.read(localeProvider.notifier).setLocale(Locale(code));
+                Navigator.pop(ctx);
+              },
+            ),
+            const SizedBox(height: 16),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
+    final currentLocale = ref.watch(localeProvider);
+    final langDetail = currentLocale.languageCode == 'fr'
+        ? l10n.languageFrench
+        : l10n.languageEnglish;
+
     return Container(
       decoration: const BoxDecoration(
         color: kSurface,
@@ -1484,13 +1545,13 @@ class _SettingsSheet extends StatelessWidget {
           ),
 
           // Title
-          const Padding(
-            padding: EdgeInsets.fromLTRB(20, 4, 20, 8),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 4, 20, 8),
             child: Align(
               alignment: Alignment.centerLeft,
               child: Text(
-                'Settings',
-                style: TextStyle(
+                l10n.settingsTitle,
+                style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w700,
                   color: kBark,
@@ -1502,51 +1563,51 @@ class _SettingsSheet extends StatelessWidget {
 
           // Account section
           _SheetSection(
-            label: 'Account',
+            label: l10n.settingsAccount,
             children: [
               _SheetRow(
                 icon: Icons.notifications_outlined,
                 iconBg: const Color(0xFFD0EBDA),
                 iconColor: kForest,
-                label: 'Notifications',
-                detail: 'On',
+                label: l10n.settingsNotifications,
+                detail: l10n.settingsNotificationsOn,
                 onTap: () => _comingSoon(context),
               ),
               _SheetRow(
                 icon: Icons.language_rounded,
                 iconBg: const Color(0xFFD0EBDA),
                 iconColor: kForest,
-                label: 'Language',
-                detail: 'English',
+                label: l10n.settingsLanguage,
+                detail: langDetail,
                 isLast: true,
-                onTap: () => _comingSoon(context),
+                onTap: () => _showLanguagePicker(context, ref),
               ),
             ],
           ),
 
           // Support section
           _SheetSection(
-            label: 'Support',
+            label: l10n.settingsSupport,
             children: [
               _SheetRow(
                 icon: Icons.help_outline_rounded,
                 iconBg: const Color(0xFFD0EBDA),
                 iconColor: kForest,
-                label: 'Help center',
+                label: l10n.settingsHelpCenter,
                 onTap: () => _comingSoon(context),
               ),
               _SheetRow(
                 icon: Icons.info_outline_rounded,
                 iconBg: const Color(0xFFD0EBDA),
                 iconColor: kForest,
-                label: 'About Ntripi',
+                label: l10n.settingsAbout,
                 onTap: () => _comingSoon(context),
               ),
               _SheetRow(
                 icon: Icons.gavel_rounded,
                 iconBg: const Color(0xFFD0EBDA),
                 iconColor: kForest,
-                label: 'Terms & Privacy',
+                label: l10n.settingsTerms,
                 isLast: true,
                 onTap: () => _comingSoon(context),
               ),
@@ -1568,7 +1629,7 @@ class _SettingsSheet extends StatelessWidget {
                     icon: Icons.logout_rounded,
                     iconBg: const Color(0xFFD0EBDA),
                     iconColor: kForest,
-                    label: 'Log out',
+                    label: l10n.settingsLogout,
                     showChevron: false,
                     onTap: onLogout,
                   ),
@@ -1580,7 +1641,7 @@ class _SettingsSheet extends StatelessWidget {
                     icon: Icons.delete_outline_rounded,
                     iconBg: const Color(0xFFFFDAD6),
                     iconColor: const Color(0xFFBA1A1A),
-                    label: 'Delete account',
+                    label: l10n.settingsDeleteAccount,
                     labelColor: const Color(0xFFBA1A1A),
                     showChevron: false,
                     isLast: true,
@@ -1597,7 +1658,35 @@ class _SettingsSheet extends StatelessWidget {
 
   static void _comingSoon(BuildContext context) {
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Coming soon')),
+      SnackBar(content: Text(AppLocalizations.of(context)!.comingSoon)),
+    );
+  }
+}
+
+class _LanguageOption extends StatelessWidget {
+  final String label;
+  final String languageCode;
+  final void Function(String) onSelect;
+
+  const _LanguageOption({
+    required this.label,
+    required this.languageCode,
+    required this.onSelect,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      contentPadding: const EdgeInsets.symmetric(horizontal: 20),
+      title: Text(
+        label,
+        style: const TextStyle(
+          fontSize: 15,
+          fontWeight: FontWeight.w600,
+          color: kBark,
+        ),
+      ),
+      onTap: () => onSelect(languageCode),
     );
   }
 }

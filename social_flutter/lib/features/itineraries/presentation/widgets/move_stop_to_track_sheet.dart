@@ -32,6 +32,7 @@ import 'package:social_flutter/features/itineraries/domain/stop.dart';
 import 'package:social_flutter/features/itineraries/domain/track.dart';
 import 'package:social_flutter/features/itineraries/domain/transit_segment.dart';
 import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
+import 'package:social_flutter/l10n/app_localizations.dart';
 
 /// Launches the sheet. [onMoved] is invoked with the destination track ID
 /// after a successful move so the caller can scroll the destination into
@@ -105,6 +106,11 @@ class _MoveStopToTrackSheetState extends ConsumerState<_MoveStopToTrackSheet> {
       if (_isAtCapacity(target.track)) return;
     }
 
+    // Capture all l10n strings before any async gap.
+    final l10n = AppLocalizations.of(context)!;
+    final newTrackLabel = l10n.moveStopNewTrack;
+    final changedElsewhereMsg = l10n.itineraryChangedElsewhere;
+
     final sourceWillEmpty = _sourceTrack.stops.length == 1;
     final orphaned = computeOrphansForStopMove(
       movedStop: widget.stop,
@@ -115,27 +121,13 @@ class _MoveStopToTrackSheetState extends ConsumerState<_MoveStopToTrackSheet> {
 
     if (sourceWillEmpty || orphaned.isNotEmpty) {
       final lines = <String>[];
-      if (sourceWillEmpty) {
-        lines.add(
-          'This is the last stop in its track — the track will be removed '
-          'from the itinerary.',
-        );
-      }
-      if (orphaned.isNotEmpty) {
-        final n = orphaned.length;
-        lines.add(
-          n == 1
-              ? '1 transit segment will be deleted because its stops will no '
-                  'longer be in adjacent tracks.'
-              : '$n transit segments will be deleted because their stops will '
-                  'no longer be in adjacent tracks.',
-        );
-      }
+      if (sourceWillEmpty) lines.add(l10n.moveStopOrphan1);
+      if (orphaned.isNotEmpty) lines.add(l10n.moveStopOrphanSegments(orphaned.length));
       final confirmed = await confirmDestructiveAction(
         context: context,
-        title: 'Move stop?',
+        title: l10n.moveStopTitle,
         message: lines.join('\n\n'),
-        confirmLabel: 'Move',
+        confirmLabel: l10n.moveButton,
       );
       if (!confirmed || !mounted) return;
     }
@@ -166,18 +158,12 @@ class _MoveStopToTrackSheetState extends ConsumerState<_MoveStopToTrackSheet> {
       destinationTrackId = moved.trackId;
       destinationLabel = switch (target) {
         MoveToExistingTrack(:final track) => '"${_primaryName(track)}"',
-        MoveToNewTrack() => 'new track',
+        MoveToNewTrack() => newTrackLabel,
       };
     } on ItineraryStaleException {
       if (!mounted) return;
       setState(() => _busy = false);
-      messenger.showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Itinerary changed elsewhere — close and reopen to see the latest order.',
-          ),
-        ),
-      );
+      messenger.showSnackBar(SnackBar(content: Text(changedElsewhereMsg)));
       return;
     } on Exception catch (e) {
       if (!mounted) return;
@@ -192,7 +178,7 @@ class _MoveStopToTrackSheetState extends ConsumerState<_MoveStopToTrackSheet> {
     navigator.pop();
     widget.onMoved(destinationTrackId);
     messenger.showSnackBar(
-      SnackBar(content: Text('Moved to $destinationLabel')),
+      SnackBar(content: Text(l10n.moveStopMoved(destinationLabel))),
     );
   }
 
@@ -208,9 +194,9 @@ class _MoveStopToTrackSheetState extends ConsumerState<_MoveStopToTrackSheet> {
         backgroundColor: cs.tertiaryContainer,
         child: Icon(Icons.call_split, size: 14, color: cs.onTertiaryContainer),
       ),
-      title: const Text('Extract into its own new track'),
+      title: Text(AppLocalizations.of(context)!.extractIntoOwnTrack),
       subtitle: Text(
-        'Splits this stop out of "${_primaryName(_sourceTrack)}" — new track lands right after.',
+        AppLocalizations.of(context)!.extractSubtitle(_primaryName(_sourceTrack)),
         style: theme.textTheme.bodySmall,
       ),
       onTap: _busy
@@ -233,7 +219,7 @@ class _MoveStopToTrackSheetState extends ConsumerState<_MoveStopToTrackSheet> {
       {required Track? after, required Track? before}) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
-    final label = _gapLabel(after, before);
+    final label = _gapLabel(context, after, before);
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 4),
       leading: Container(
@@ -258,21 +244,22 @@ class _MoveStopToTrackSheetState extends ConsumerState<_MoveStopToTrackSheet> {
     );
   }
 
-  String _gapLabel(Track? after, Track? before) {
+  String _gapLabel(BuildContext context, Track? after, Track? before) {
+    final l10n = AppLocalizations.of(context)!;
     if (after == null && before != null) {
       final n = widget.tracks.indexWhere((t) => t.id == before.id) + 1;
-      return 'New track before Track $n';
+      return l10n.moveStopNewTrackBefore(n);
     }
     if (after != null && before == null) {
       final n = widget.tracks.indexWhere((t) => t.id == after.id) + 1;
-      return 'New track after Track $n';
+      return l10n.moveStopNewTrackAfter(n);
     }
     if (after != null && before != null) {
       final ai = widget.tracks.indexWhere((t) => t.id == after.id) + 1;
       final bi = widget.tracks.indexWhere((t) => t.id == before.id) + 1;
-      return 'New track between Track $ai and Track $bi';
+      return l10n.moveStopNewTrackBetween(ai, bi);
     }
-    return 'New track';
+    return l10n.moveStopNewTrack;
   }
 
   Widget _buildExistingTrackRow(
@@ -311,8 +298,8 @@ class _MoveStopToTrackSheetState extends ConsumerState<_MoveStopToTrackSheet> {
         style: disabled ? TextStyle(color: mutedColor) : null,
       ),
       subtitle: Text(
-        '${t.stops.length} stop${t.stops.length == 1 ? '' : 's'}'
-        '${isSource ? '  •  current' : ''}',
+        AppLocalizations.of(context)!.stopCount(t.stops.length) +
+        (isSource ? AppLocalizations.of(context)!.moveStopCurrentSuffix : ''),
         style: theme.textTheme.bodySmall
             ?.copyWith(color: disabled ? mutedColor : null),
       ),
@@ -325,7 +312,7 @@ class _MoveStopToTrackSheetState extends ConsumerState<_MoveStopToTrackSheet> {
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Text(
-                'Full ${Track.maxParallelStops}/${Track.maxParallelStops}',
+                AppLocalizations.of(context)!.moveStopFull(Track.maxParallelStops),
                 style: theme.textTheme.labelSmall?.copyWith(
                   color: Colors.grey.shade700,
                   fontWeight: FontWeight.w600,
@@ -373,15 +360,13 @@ class _MoveStopToTrackSheetState extends ConsumerState<_MoveStopToTrackSheet> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Move stop',
+              AppLocalizations.of(context)!.moveStopTitle,
               style: theme.textTheme.titleMedium
                   ?.copyWith(fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 4),
             Text(
-              'Choose an existing track, a gap to create a new track, or '
-              'extract into its own track. Tracks at the '
-              '${Track.maxParallelStops}-stop maximum are disabled.',
+              AppLocalizations.of(context)!.moveStopDescription(Track.maxParallelStops),
               style: theme.textTheme.bodySmall
                   ?.copyWith(color: Colors.grey.shade600),
             ),

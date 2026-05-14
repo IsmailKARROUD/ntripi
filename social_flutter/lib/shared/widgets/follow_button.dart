@@ -15,6 +15,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:social_flutter/core/api/api_client.dart';
 import 'package:social_flutter/core/ui/destructive_actions.dart';
 import 'package:social_flutter/features/follows/data/follow_repository.dart';
+import 'package:social_flutter/l10n/app_localizations.dart';
 
 /// Callback invoked after a follow state change.
 /// The calling screen uses this to refresh its data.
@@ -87,7 +88,7 @@ class _FollowButtonState extends ConsumerState<FollowButton> {
     if (!mounted) return;
     showUndoableActionSnackbar(
       context: context,
-      message: 'Unfollowed @${widget.targetUsername}',
+      message: AppLocalizations.of(context)!.unfollowedSnackbar(widget.targetUsername),
       onUndo: () async {
         final result = await _repo.followUser(widget.targetUserId);
         widget.onChanged(
@@ -101,12 +102,13 @@ class _FollowButtonState extends ConsumerState<FollowButton> {
   Future<void> _handleCancelRequest() async {
     // Tier 2: simple confirmation — cancelling a pending request is harder
     // to undo (requires re-tapping Follow), so we confirm first.
+    final l10n = AppLocalizations.of(context)!;
     final confirmed = await confirmDestructiveAction(
       context: context,
-      title: 'Cancel request?',
-      message: 'Cancel your follow request to @${widget.targetUsername}?',
-      confirmLabel: 'Cancel request',
-      cancelLabel: 'Keep',
+      title: l10n.cancelRequestTitle,
+      message: l10n.cancelRequestMessage(widget.targetUsername),
+      confirmLabel: l10n.cancelRequestConfirm,
+      cancelLabel: l10n.cancelRequestKeep,
     );
 
     if (!confirmed) return;
@@ -145,7 +147,7 @@ class _FollowButtonState extends ConsumerState<FollowButton> {
           backgroundColor: Colors.grey.shade200,
           foregroundColor: Colors.black87,
         ),
-        child: const Text('Following'),
+        child: Text(AppLocalizations.of(context)!.followingButton),
       );
     }
 
@@ -153,14 +155,14 @@ class _FollowButtonState extends ConsumerState<FollowButton> {
       // State 2: Pending follow request.
       return OutlinedButton(
         onPressed: _handleCancelRequest,
-        child: const Text('Requested'),
+        child: Text(AppLocalizations.of(context)!.requestedButton),
       );
     }
 
     // State 3: Not following.
     return FilledButton(
       onPressed: _handleFollow,
-      child: const Text('Follow'),
+      child: Text(AppLocalizations.of(context)!.followButton),
     );
   }
 }

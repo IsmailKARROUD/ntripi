@@ -1,0 +1,2143 @@
+import 'dart:async';
+
+import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:intl/intl.dart' as intl;
+
+import 'app_localizations_en.dart';
+import 'app_localizations_fr.dart';
+
+// ignore_for_file: type=lint
+
+/// Callers can lookup localized strings with an instance of AppLocalizations
+/// returned by `AppLocalizations.of(context)`.
+///
+/// Applications need to include `AppLocalizations.delegate()` in their app's
+/// `localizationDelegates` list, and the locales they support in the app's
+/// `supportedLocales` list. For example:
+///
+/// ```dart
+/// import 'l10n/app_localizations.dart';
+///
+/// return MaterialApp(
+///   localizationsDelegates: AppLocalizations.localizationsDelegates,
+///   supportedLocales: AppLocalizations.supportedLocales,
+///   home: MyApplicationHome(),
+/// );
+/// ```
+///
+/// ## Update pubspec.yaml
+///
+/// Please make sure to update your pubspec.yaml to include the following
+/// packages:
+///
+/// ```yaml
+/// dependencies:
+///   # Internationalization support.
+///   flutter_localizations:
+///     sdk: flutter
+///   intl: any # Use the pinned version from flutter_localizations
+///
+///   # Rest of dependencies
+/// ```
+///
+/// ## iOS Applications
+///
+/// iOS applications define key application metadata, including supported
+/// locales, in an Info.plist file that is built into the application bundle.
+/// To configure the locales supported by your app, you’ll need to edit this
+/// file.
+///
+/// First, open your project’s ios/Runner.xcworkspace Xcode workspace file.
+/// Then, in the Project Navigator, open the Info.plist file under the Runner
+/// project’s Runner folder.
+///
+/// Next, select the Information Property List item, select Add Item from the
+/// Editor menu, then select Localizations from the pop-up menu.
+///
+/// Select and expand the newly-created Localizations item then, for each
+/// locale your application supports, add a new item and select the locale
+/// you wish to add from the pop-up menu in the Value field. This list should
+/// be consistent with the languages listed in the AppLocalizations.supportedLocales
+/// property.
+abstract class AppLocalizations {
+  AppLocalizations(String locale)
+      : localeName = intl.Intl.canonicalizedLocale(locale.toString());
+
+  final String localeName;
+
+  static AppLocalizations? of(BuildContext context) {
+    return Localizations.of<AppLocalizations>(context, AppLocalizations);
+  }
+
+  static const LocalizationsDelegate<AppLocalizations> delegate =
+      _AppLocalizationsDelegate();
+
+  /// A list of this localizations delegate along with the default localizations
+  /// delegates.
+  ///
+  /// Returns a list of localizations delegates containing this delegate along with
+  /// GlobalMaterialLocalizations.delegate, GlobalCupertinoLocalizations.delegate,
+  /// and GlobalWidgetsLocalizations.delegate.
+  ///
+  /// Additional delegates can be added by appending to this list in
+  /// MaterialApp. This list does not have to be used at all if a custom list
+  /// of delegates is preferred or required.
+  static const List<LocalizationsDelegate<dynamic>> localizationsDelegates =
+      <LocalizationsDelegate<dynamic>>[
+    delegate,
+    GlobalMaterialLocalizations.delegate,
+    GlobalCupertinoLocalizations.delegate,
+    GlobalWidgetsLocalizations.delegate,
+  ];
+
+  /// A list of this localizations delegate's supported locales.
+  static const List<Locale> supportedLocales = <Locale>[
+    Locale('en'),
+    Locale('fr')
+  ];
+
+  /// No description provided for @save.
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get save;
+
+  /// No description provided for @cancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get cancel;
+
+  /// No description provided for @delete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get delete;
+
+  /// No description provided for @required.
+  ///
+  /// In en, this message translates to:
+  /// **'Required'**
+  String get required;
+
+  /// No description provided for @retry.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get retry;
+
+  /// No description provided for @dismiss.
+  ///
+  /// In en, this message translates to:
+  /// **'Dismiss'**
+  String get dismiss;
+
+  /// No description provided for @seeAll.
+  ///
+  /// In en, this message translates to:
+  /// **'See all'**
+  String get seeAll;
+
+  /// No description provided for @back.
+  ///
+  /// In en, this message translates to:
+  /// **'Back'**
+  String get back;
+
+  /// No description provided for @navSearch.
+  ///
+  /// In en, this message translates to:
+  /// **'Search'**
+  String get navSearch;
+
+  /// No description provided for @navProfile.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile'**
+  String get navProfile;
+
+  /// No description provided for @navItineraries.
+  ///
+  /// In en, this message translates to:
+  /// **'Itineraries'**
+  String get navItineraries;
+
+  /// No description provided for @navFeed.
+  ///
+  /// In en, this message translates to:
+  /// **'Feed'**
+  String get navFeed;
+
+  /// No description provided for @feedComingSoon.
+  ///
+  /// In en, this message translates to:
+  /// **'Feed coming soon!'**
+  String get feedComingSoon;
+
+  /// No description provided for @offlineBanner.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'re Offline! Some features may be unavailable.'**
+  String get offlineBanner;
+
+  /// No description provided for @downloadBanner.
+  ///
+  /// In en, this message translates to:
+  /// **'For a better experience, download the Ntripi app.'**
+  String get downloadBanner;
+
+  /// No description provided for @downloadBannerButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Download'**
+  String get downloadBannerButton;
+
+  /// No description provided for @loginTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Welcome back'**
+  String get loginTitle;
+
+  /// No description provided for @loginSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in to continue your journey'**
+  String get loginSubtitle;
+
+  /// No description provided for @loginEmailLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Email or username'**
+  String get loginEmailLabel;
+
+  /// No description provided for @loginEmailHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in with the email you registered with, or your @username handle.'**
+  String get loginEmailHelp;
+
+  /// No description provided for @loginEmailHint.
+  ///
+  /// In en, this message translates to:
+  /// **'you@example.com or @username'**
+  String get loginEmailHint;
+
+  /// No description provided for @loginPasswordLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Password'**
+  String get loginPasswordLabel;
+
+  /// No description provided for @loginPasswordHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Your account password. Tap the eye icon to show or hide it.'**
+  String get loginPasswordHelp;
+
+  /// No description provided for @loginForgotPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Forgot password?'**
+  String get loginForgotPassword;
+
+  /// No description provided for @loginSignIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign In'**
+  String get loginSignIn;
+
+  /// No description provided for @loginNoAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Don\'t have an account? '**
+  String get loginNoAccount;
+
+  /// No description provided for @loginSignUp.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign up'**
+  String get loginSignUp;
+
+  /// No description provided for @loginOrContinueWith.
+  ///
+  /// In en, this message translates to:
+  /// **'or continue with'**
+  String get loginOrContinueWith;
+
+  /// No description provided for @registerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Create account'**
+  String get registerTitle;
+
+  /// No description provided for @registerSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Join thousands of explorers sharing routes'**
+  String get registerSubtitle;
+
+  /// No description provided for @registerDisplayName.
+  ///
+  /// In en, this message translates to:
+  /// **'Display Name'**
+  String get registerDisplayName;
+
+  /// No description provided for @registerDisplayNameHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'How your name appears to others. Up to 50 characters, any language and emoji. Falls back to @username if blank.'**
+  String get registerDisplayNameHelp;
+
+  /// No description provided for @registerDisplayNameHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Your name'**
+  String get registerDisplayNameHint;
+
+  /// No description provided for @registerUsername.
+  ///
+  /// In en, this message translates to:
+  /// **'Username *'**
+  String get registerUsername;
+
+  /// No description provided for @registerUsernameHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Your unique @handle. Lowercase letters, digits, and underscores only. This cannot be changed later.'**
+  String get registerUsernameHelp;
+
+  /// No description provided for @registerUsernameHint.
+  ///
+  /// In en, this message translates to:
+  /// **'yourhandle'**
+  String get registerUsernameHint;
+
+  /// No description provided for @registerEmail.
+  ///
+  /// In en, this message translates to:
+  /// **'Email *'**
+  String get registerEmail;
+
+  /// No description provided for @registerEmailHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Used to sign in and recover your account. We never display it publicly.'**
+  String get registerEmailHelp;
+
+  /// No description provided for @registerEmailHint.
+  ///
+  /// In en, this message translates to:
+  /// **'you@example.com'**
+  String get registerEmailHint;
+
+  /// No description provided for @registerEmailRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Email is required.'**
+  String get registerEmailRequired;
+
+  /// No description provided for @registerEmailInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter a valid email.'**
+  String get registerEmailInvalid;
+
+  /// No description provided for @registerPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Password *'**
+  String get registerPassword;
+
+  /// No description provided for @registerPasswordHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'At least 8 characters with at least one digit.'**
+  String get registerPasswordHelp;
+
+  /// No description provided for @registerPasswordHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Min. 8 characters'**
+  String get registerPasswordHint;
+
+  /// No description provided for @registerPasswordRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Password is required.'**
+  String get registerPasswordRequired;
+
+  /// No description provided for @registerPasswordTooShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Must be at least 8 characters.'**
+  String get registerPasswordTooShort;
+
+  /// No description provided for @registerPasswordNoDigit.
+  ///
+  /// In en, this message translates to:
+  /// **'Must contain at least one digit.'**
+  String get registerPasswordNoDigit;
+
+  /// No description provided for @registerConfirmPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm Password *'**
+  String get registerConfirmPassword;
+
+  /// No description provided for @registerConfirmPasswordHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Type your password again to make sure it matches.'**
+  String get registerConfirmPasswordHelp;
+
+  /// No description provided for @registerConfirmRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Please confirm your password.'**
+  String get registerConfirmRequired;
+
+  /// No description provided for @registerConfirmMismatch.
+  ///
+  /// In en, this message translates to:
+  /// **'Passwords do not match.'**
+  String get registerConfirmMismatch;
+
+  /// No description provided for @registerTosAgree.
+  ///
+  /// In en, this message translates to:
+  /// **'I agree to the '**
+  String get registerTosAgree;
+
+  /// No description provided for @registerTos.
+  ///
+  /// In en, this message translates to:
+  /// **'Terms of Service'**
+  String get registerTos;
+
+  /// No description provided for @registerTosAnd.
+  ///
+  /// In en, this message translates to:
+  /// **' and '**
+  String get registerTosAnd;
+
+  /// No description provided for @registerPrivacyPolicy.
+  ///
+  /// In en, this message translates to:
+  /// **'Privacy Policy'**
+  String get registerPrivacyPolicy;
+
+  /// No description provided for @registerTosHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'You must agree to the Terms of Service and Privacy Policy to create an account. Tap the underlined links to read them.'**
+  String get registerTosHelp;
+
+  /// No description provided for @registerTosRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'You must accept the Terms of Service.'**
+  String get registerTosRequired;
+
+  /// No description provided for @registerTosTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Terms of Service'**
+  String get registerTosTitle;
+
+  /// No description provided for @registerTosLoading.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading…'**
+  String get registerTosLoading;
+
+  /// No description provided for @registerCreateAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Create Account'**
+  String get registerCreateAccount;
+
+  /// No description provided for @registerAlreadyHaveAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Already have an account? '**
+  String get registerAlreadyHaveAccount;
+
+  /// No description provided for @registerSignIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in'**
+  String get registerSignIn;
+
+  /// No description provided for @followers.
+  ///
+  /// In en, this message translates to:
+  /// **'Followers'**
+  String get followers;
+
+  /// No description provided for @following.
+  ///
+  /// In en, this message translates to:
+  /// **'Following'**
+  String get following;
+
+  /// No description provided for @latestTrip.
+  ///
+  /// In en, this message translates to:
+  /// **'LATEST TRIP'**
+  String get latestTrip;
+
+  /// No description provided for @whereIveBeen.
+  ///
+  /// In en, this message translates to:
+  /// **'WHERE I\'VE BEEN'**
+  String get whereIveBeen;
+
+  /// No description provided for @noStopsYet.
+  ///
+  /// In en, this message translates to:
+  /// **'No stops yet'**
+  String get noStopsYet;
+
+  /// No description provided for @stopCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{{count} stop} other{{count} stops}}'**
+  String stopCount(int count);
+
+  /// No description provided for @expand.
+  ///
+  /// In en, this message translates to:
+  /// **'Expand'**
+  String get expand;
+
+  /// No description provided for @followRequestsBannerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Follow Requests ({count})'**
+  String followRequestsBannerTitle(int count);
+
+  /// No description provided for @tapToReview.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap to review'**
+  String get tapToReview;
+
+  /// No description provided for @editProfileTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit profile'**
+  String get editProfileTooltip;
+
+  /// No description provided for @settingsTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Settings'**
+  String get settingsTooltip;
+
+  /// No description provided for @shareProfileTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Share profile'**
+  String get shareProfileTooltip;
+
+  /// No description provided for @couldNotLoadItineraries.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load itineraries.'**
+  String get couldNotLoadItineraries;
+
+  /// No description provided for @editProfileTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit profile'**
+  String get editProfileTitle;
+
+  /// No description provided for @uploadPhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Upload photo'**
+  String get uploadPhoto;
+
+  /// No description provided for @identitySection.
+  ///
+  /// In en, this message translates to:
+  /// **'Identity'**
+  String get identitySection;
+
+  /// No description provided for @displayNameLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Display name'**
+  String get displayNameLabel;
+
+  /// No description provided for @usernameLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Username'**
+  String get usernameLabel;
+
+  /// No description provided for @bioLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'BIO'**
+  String get bioLabel;
+
+  /// No description provided for @bioHelpMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'A short description. Supports **bold** markdown and emoji.'**
+  String get bioHelpMessage;
+
+  /// No description provided for @avatarUrlLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Avatar URL'**
+  String get avatarUrlLabel;
+
+  /// No description provided for @travelIdentitySection.
+  ///
+  /// In en, this message translates to:
+  /// **'Travel identity'**
+  String get travelIdentitySection;
+
+  /// No description provided for @passportLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Passport'**
+  String get passportLabel;
+
+  /// No description provided for @livesInLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Lives in'**
+  String get livesInLabel;
+
+  /// No description provided for @languagesLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Languages'**
+  String get languagesLabel;
+
+  /// No description provided for @privacySection.
+  ///
+  /// In en, this message translates to:
+  /// **'Privacy'**
+  String get privacySection;
+
+  /// No description provided for @privateAccountLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Private account'**
+  String get privateAccountLabel;
+
+  /// No description provided for @privateAccountSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'People must request to follow you to see your itineraries.'**
+  String get privateAccountSubtitle;
+
+  /// No description provided for @switchToPublicTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Switch to public?'**
+  String get switchToPublicTitle;
+
+  /// No description provided for @switchToPublicMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{You have 1 pending follow request. Switching to public will automatically accept it. Continue?} other{You have {count} pending follow requests. Switching to public will automatically accept all of them. Continue?}}'**
+  String switchToPublicMessage(int count);
+
+  /// No description provided for @switchToPublicButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Switch to public'**
+  String get switchToPublicButton;
+
+  /// No description provided for @planFirstJourney.
+  ///
+  /// In en, this message translates to:
+  /// **'Plan your first journey'**
+  String get planFirstJourney;
+
+  /// No description provided for @planFirstJourneyHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Add stops, transit segments and notes. Share it with friends or keep it private.'**
+  String get planFirstJourneyHint;
+
+  /// No description provided for @createItinerary.
+  ///
+  /// In en, this message translates to:
+  /// **'Create itinerary'**
+  String get createItinerary;
+
+  /// No description provided for @needInspiration.
+  ///
+  /// In en, this message translates to:
+  /// **'Need inspiration?'**
+  String get needInspiration;
+
+  /// No description provided for @browseForIdeas.
+  ///
+  /// In en, this message translates to:
+  /// **'Browse your itineraries for ideas.'**
+  String get browseForIdeas;
+
+  /// No description provided for @settingsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Settings'**
+  String get settingsTitle;
+
+  /// No description provided for @settingsAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Account'**
+  String get settingsAccount;
+
+  /// No description provided for @settingsNotifications.
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications'**
+  String get settingsNotifications;
+
+  /// No description provided for @settingsNotificationsOn.
+  ///
+  /// In en, this message translates to:
+  /// **'On'**
+  String get settingsNotificationsOn;
+
+  /// No description provided for @settingsLanguage.
+  ///
+  /// In en, this message translates to:
+  /// **'Language'**
+  String get settingsLanguage;
+
+  /// No description provided for @settingsSupport.
+  ///
+  /// In en, this message translates to:
+  /// **'Support'**
+  String get settingsSupport;
+
+  /// No description provided for @settingsHelpCenter.
+  ///
+  /// In en, this message translates to:
+  /// **'Help center'**
+  String get settingsHelpCenter;
+
+  /// No description provided for @settingsAbout.
+  ///
+  /// In en, this message translates to:
+  /// **'About Ntripi'**
+  String get settingsAbout;
+
+  /// No description provided for @settingsTerms.
+  ///
+  /// In en, this message translates to:
+  /// **'Terms & Privacy'**
+  String get settingsTerms;
+
+  /// No description provided for @settingsLogout.
+  ///
+  /// In en, this message translates to:
+  /// **'Log out'**
+  String get settingsLogout;
+
+  /// No description provided for @settingsDeleteAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete account'**
+  String get settingsDeleteAccount;
+
+  /// No description provided for @logoutConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Log out'**
+  String get logoutConfirmTitle;
+
+  /// No description provided for @logoutConfirmMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to log out?'**
+  String get logoutConfirmMessage;
+
+  /// No description provided for @logoutConfirmButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Log out'**
+  String get logoutConfirmButton;
+
+  /// No description provided for @languagePickerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Language'**
+  String get languagePickerTitle;
+
+  /// No description provided for @languageEnglish.
+  ///
+  /// In en, this message translates to:
+  /// **'English'**
+  String get languageEnglish;
+
+  /// No description provided for @languageFrench.
+  ///
+  /// In en, this message translates to:
+  /// **'Français'**
+  String get languageFrench;
+
+  /// No description provided for @followRequestsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Follow Requests'**
+  String get followRequestsTitle;
+
+  /// No description provided for @noRequests.
+  ///
+  /// In en, this message translates to:
+  /// **'No pending requests'**
+  String get noRequests;
+
+  /// No description provided for @requestsCountLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Requests · {count}'**
+  String requestsCountLabel(int count);
+
+  /// No description provided for @acceptButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Accept'**
+  String get acceptButton;
+
+  /// No description provided for @rejectButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Reject'**
+  String get rejectButton;
+
+  /// No description provided for @followersTabLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{Followers} other{{count} Followers}}'**
+  String followersTabLabel(int count);
+
+  /// No description provided for @followingTabLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{Following} other{{count} Following}}'**
+  String followingTabLabel(int count);
+
+  /// No description provided for @followRequestsSectionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Follow requests · {count}'**
+  String followRequestsSectionLabel(int count);
+
+  /// No description provided for @allFollowersSection.
+  ///
+  /// In en, this message translates to:
+  /// **'All followers'**
+  String get allFollowersSection;
+
+  /// No description provided for @noFollowersYet.
+  ///
+  /// In en, this message translates to:
+  /// **'No followers yet.'**
+  String get noFollowersYet;
+
+  /// No description provided for @notFollowingAnyone.
+  ///
+  /// In en, this message translates to:
+  /// **'Not following anyone yet.'**
+  String get notFollowingAnyone;
+
+  /// No description provided for @peopleYouFollow.
+  ///
+  /// In en, this message translates to:
+  /// **'People you follow'**
+  String get peopleYouFollow;
+
+  /// No description provided for @confirmButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm'**
+  String get confirmButton;
+
+  /// No description provided for @searchPeoplePlaceholder.
+  ///
+  /// In en, this message translates to:
+  /// **'Search people…'**
+  String get searchPeoplePlaceholder;
+
+  /// No description provided for @searchForPeople.
+  ///
+  /// In en, this message translates to:
+  /// **'Search for people to follow'**
+  String get searchForPeople;
+
+  /// No description provided for @noUsersFound.
+  ///
+  /// In en, this message translates to:
+  /// **'No users found.'**
+  String get noUsersFound;
+
+  /// No description provided for @searchResultsCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Results · {count}'**
+  String searchResultsCount(int count);
+
+  /// No description provided for @followerCountLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{{count} follower} other{{count} followers}}'**
+  String followerCountLabel(int count);
+
+  /// No description provided for @searchUsersHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Find people by their @username or by their display name. Tap a result to view their profile.'**
+  String get searchUsersHelp;
+
+  /// No description provided for @myItineraries.
+  ///
+  /// In en, this message translates to:
+  /// **'My Itineraries'**
+  String get myItineraries;
+
+  /// No description provided for @noItinerariesYet.
+  ///
+  /// In en, this message translates to:
+  /// **'No itineraries yet.'**
+  String get noItinerariesYet;
+
+  /// No description provided for @tapToCreateFirst.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap + to create your first trip.'**
+  String get tapToCreateFirst;
+
+  /// No description provided for @deleteItineraryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete this itinerary?'**
+  String get deleteItineraryTitle;
+
+  /// No description provided for @deleteItineraryMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'All stops, annotations, segments, ratings, and shared links will be permanently destroyed. This cannot be undone.'**
+  String get deleteItineraryMessage;
+
+  /// No description provided for @deleteItineraryButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete itinerary'**
+  String get deleteItineraryButton;
+
+  /// No description provided for @newItinerary.
+  ///
+  /// In en, this message translates to:
+  /// **'New Itinerary'**
+  String get newItinerary;
+
+  /// No description provided for @editItinerary.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Itinerary'**
+  String get editItinerary;
+
+  /// No description provided for @coverImageLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cover image'**
+  String get coverImageLabel;
+
+  /// No description provided for @coverImageHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'A 1200×630 image shown on the itinerary card and link previews. Drag inside the crop box to reposition.'**
+  String get coverImageHelp;
+
+  /// No description provided for @itineraryTitleLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Title *'**
+  String get itineraryTitleLabel;
+
+  /// No description provided for @itineraryTitleHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'A short, clear name for this trip. Shown on the itinerary card and share previews.'**
+  String get itineraryTitleHelp;
+
+  /// No description provided for @itineraryTitleRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Title is required'**
+  String get itineraryTitleRequired;
+
+  /// No description provided for @descriptionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Description'**
+  String get descriptionLabel;
+
+  /// No description provided for @descriptionHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Optional. A summary of the trip. Use the toolbar to make text bold or italic, add headings, and create bullet or numbered lists. Switch to the Preview tab to see how it will look to readers.'**
+  String get descriptionHelp;
+
+  /// No description provided for @currencyLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Currency'**
+  String get currencyLabel;
+
+  /// No description provided for @currencyHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Default currency for all stop costs and transport costs in this itinerary.'**
+  String get currencyHelp;
+
+  /// No description provided for @visibilityLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Visibility'**
+  String get visibilityLabel;
+
+  /// No description provided for @visibilityHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Public: anyone can view. Followers: only people who follow you. Restricted: only the users you allowlist below. Only me: private to you.'**
+  String get visibilityHelp;
+
+  /// No description provided for @visibilityPublic.
+  ///
+  /// In en, this message translates to:
+  /// **'Public'**
+  String get visibilityPublic;
+
+  /// No description provided for @visibilityFollowers.
+  ///
+  /// In en, this message translates to:
+  /// **'Followers'**
+  String get visibilityFollowers;
+
+  /// No description provided for @visibilityRestricted.
+  ///
+  /// In en, this message translates to:
+  /// **'Restricted'**
+  String get visibilityRestricted;
+
+  /// No description provided for @visibilityOnlyMe.
+  ///
+  /// In en, this message translates to:
+  /// **'Only me'**
+  String get visibilityOnlyMe;
+
+  /// No description provided for @imageSaveButUploadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Itinerary saved, but image upload failed. Try again from the edit screen.'**
+  String get imageSaveButUploadFailed;
+
+  /// No description provided for @deleteItineraryFormTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete itinerary'**
+  String get deleteItineraryFormTitle;
+
+  /// No description provided for @deleteItineraryFormMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'This will permanently delete \"{title}\" and all its stops. Type the title to confirm.'**
+  String deleteItineraryFormMessage(String title);
+
+  /// No description provided for @followButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Follow'**
+  String get followButton;
+
+  /// No description provided for @followingButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Following'**
+  String get followingButton;
+
+  /// No description provided for @requestedButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Requested'**
+  String get requestedButton;
+
+  /// No description provided for @unfollowedSnackbar.
+  ///
+  /// In en, this message translates to:
+  /// **'Unfollowed @{username}'**
+  String unfollowedSnackbar(String username);
+
+  /// No description provided for @cancelRequestTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel request?'**
+  String get cancelRequestTitle;
+
+  /// No description provided for @cancelRequestMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel your follow request to @{username}?'**
+  String cancelRequestMessage(String username);
+
+  /// No description provided for @cancelRequestConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel request'**
+  String get cancelRequestConfirm;
+
+  /// No description provided for @cancelRequestKeep.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep'**
+  String get cancelRequestKeep;
+
+  /// No description provided for @undoButton.
+  ///
+  /// In en, this message translates to:
+  /// **'UNDO'**
+  String get undoButton;
+
+  /// No description provided for @couldNotUndo.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not undo: {error}'**
+  String couldNotUndo(String error);
+
+  /// No description provided for @loadingLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading…'**
+  String get loadingLabel;
+
+  /// No description provided for @usernameRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Username is required'**
+  String get usernameRequired;
+
+  /// No description provided for @usernameTooShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Username must be at least 4 characters'**
+  String get usernameTooShort;
+
+  /// No description provided for @usernameTooLong.
+  ///
+  /// In en, this message translates to:
+  /// **'Username cannot exceed 30 characters'**
+  String get usernameTooLong;
+
+  /// No description provided for @usernameInvalidFormat.
+  ///
+  /// In en, this message translates to:
+  /// **'Letters, numbers, periods and underscores only. Must start with a letter, end with a letter or number.'**
+  String get usernameInvalidFormat;
+
+  /// No description provided for @usernameConsecutiveSpecial.
+  ///
+  /// In en, this message translates to:
+  /// **'Cannot have consecutive periods or underscores'**
+  String get usernameConsecutiveSpecial;
+
+  /// No description provided for @displayNameTooLong.
+  ///
+  /// In en, this message translates to:
+  /// **'Display name cannot exceed 50 characters'**
+  String get displayNameTooLong;
+
+  /// No description provided for @comingSoon.
+  ///
+  /// In en, this message translates to:
+  /// **'Coming soon'**
+  String get comingSoon;
+
+  /// No description provided for @speaksLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Speaks'**
+  String get speaksLabel;
+
+  /// No description provided for @removeButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove'**
+  String get removeButton;
+
+  /// No description provided for @doneTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get doneTooltip;
+
+  /// No description provided for @addButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Add'**
+  String get addButton;
+
+  /// No description provided for @deleteButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get deleteButton;
+
+  /// No description provided for @deleteAccountTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Account'**
+  String get deleteAccountTitle;
+
+  /// No description provided for @deleteAccountConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete your account?'**
+  String get deleteAccountConfirmTitle;
+
+  /// No description provided for @deleteAccountConfirmMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Your account, itineraries, follows, and ratings will be anonymized or deleted per our privacy policy. You will be signed out immediately. This cannot be undone.'**
+  String get deleteAccountConfirmMessage;
+
+  /// No description provided for @deleteAccountRequiredText.
+  ///
+  /// In en, this message translates to:
+  /// **'DELETE MY ACCOUNT'**
+  String get deleteAccountRequiredText;
+
+  /// No description provided for @deleteAccountConfirmLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete my account'**
+  String get deleteAccountConfirmLabel;
+
+  /// No description provided for @deleteAccountPasswordError.
+  ///
+  /// In en, this message translates to:
+  /// **'Incorrect password. Please try again.'**
+  String get deleteAccountPasswordError;
+
+  /// No description provided for @deleteAccountGenericError.
+  ///
+  /// In en, this message translates to:
+  /// **'Something went wrong. Please try again.'**
+  String get deleteAccountGenericError;
+
+  /// No description provided for @deleteAccountCannotUndo.
+  ///
+  /// In en, this message translates to:
+  /// **'This cannot be undone'**
+  String get deleteAccountCannotUndo;
+
+  /// No description provided for @deleteAccountWillRemove.
+  ///
+  /// In en, this message translates to:
+  /// **'Deleting your account will permanently remove:'**
+  String get deleteAccountWillRemove;
+
+  /// No description provided for @deleteAccountBullet1.
+  ///
+  /// In en, this message translates to:
+  /// **'Your profile and all personal data'**
+  String get deleteAccountBullet1;
+
+  /// No description provided for @deleteAccountBullet2.
+  ///
+  /// In en, this message translates to:
+  /// **'All your itineraries and stops'**
+  String get deleteAccountBullet2;
+
+  /// No description provided for @deleteAccountBullet3.
+  ///
+  /// In en, this message translates to:
+  /// **'Your follow relationships'**
+  String get deleteAccountBullet3;
+
+  /// No description provided for @deleteAccountNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Ratings you gave to other itineraries will be kept anonymously as community data.'**
+  String get deleteAccountNote;
+
+  /// No description provided for @deleteAccountEnterPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your password to confirm'**
+  String get deleteAccountEnterPassword;
+
+  /// No description provided for @deleteAccountPasswordLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Password'**
+  String get deleteAccountPasswordLabel;
+
+  /// No description provided for @deleteAccountPasswordHelpTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm password'**
+  String get deleteAccountPasswordHelpTitle;
+
+  /// No description provided for @deleteAccountPasswordHelpMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Re-enter your password to confirm deletion. Account deletion is permanent and cannot be undone.'**
+  String get deleteAccountPasswordHelpMessage;
+
+  /// No description provided for @deleteAccountButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete My Account'**
+  String get deleteAccountButton;
+
+  /// No description provided for @deleteAnnotationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete annotation?'**
+  String get deleteAnnotationTitle;
+
+  /// No description provided for @deleteAnnotationMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'This will permanently remove this annotation from the itinerary.'**
+  String get deleteAnnotationMessage;
+
+  /// No description provided for @deleteAnnotationStopMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'This annotation will be permanently removed.'**
+  String get deleteAnnotationStopMessage;
+
+  /// No description provided for @removeTransitTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove transit between stops?'**
+  String get removeTransitTitle;
+
+  /// No description provided for @removeTransitMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'The connection between these two stops will be cleared. You can add a new one later.'**
+  String get removeTransitMessage;
+
+  /// No description provided for @reorderTracksTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Reorder tracks'**
+  String get reorderTracksTitle;
+
+  /// No description provided for @shareTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Share'**
+  String get shareTooltip;
+
+  /// No description provided for @editDetailsTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit details & image'**
+  String get editDetailsTooltip;
+
+  /// No description provided for @descriptionSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Description'**
+  String get descriptionSection;
+
+  /// No description provided for @annotationsSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Annotations'**
+  String get annotationsSection;
+
+  /// No description provided for @addAnnotationButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Add annotation'**
+  String get addAnnotationButton;
+
+  /// No description provided for @noAnnotationsYet.
+  ///
+  /// In en, this message translates to:
+  /// **'No annotations yet.'**
+  String get noAnnotationsYet;
+
+  /// No description provided for @editStopsButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit stops'**
+  String get editStopsButton;
+
+  /// No description provided for @addStopTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Add stop'**
+  String get addStopTooltip;
+
+  /// No description provided for @reorderTracksTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Reorder tracks'**
+  String get reorderTracksTooltip;
+
+  /// No description provided for @mapSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Map'**
+  String get mapSection;
+
+  /// No description provided for @openStreetMapContributors.
+  ///
+  /// In en, this message translates to:
+  /// **'OpenStreetMap contributors'**
+  String get openStreetMapContributors;
+
+  /// No description provided for @poweredByOSM.
+  ///
+  /// In en, this message translates to:
+  /// **'Powered by OpenStreetMap'**
+  String get poweredByOSM;
+
+  /// No description provided for @noStopsYetTapPlus.
+  ///
+  /// In en, this message translates to:
+  /// **'No stops yet. Tap + to add one.'**
+  String get noStopsYetTapPlus;
+
+  /// No description provided for @communityRating.
+  ///
+  /// In en, this message translates to:
+  /// **'Community'**
+  String get communityRating;
+
+  /// No description provided for @ratingCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{1 rating} other{{count} ratings}}'**
+  String ratingCount(int count);
+
+  /// No description provided for @yourRating.
+  ///
+  /// In en, this message translates to:
+  /// **'Your rating'**
+  String get yourRating;
+
+  /// No description provided for @rateIt.
+  ///
+  /// In en, this message translates to:
+  /// **'Rate it'**
+  String get rateIt;
+
+  /// No description provided for @deleteOrphanSegmentsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{Delete transit segment?} other{Delete transit segments?}}'**
+  String deleteOrphanSegmentsTitle(int count);
+
+  /// No description provided for @deleteOrphanSegmentsMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{There is 1 transit segment connecting these two stops. Adding a stop between them will hide it because the stops will no longer be adjacent. Delete the segment and continue?} other{There are {count} transit segments connecting these two stops. Adding a stop between them will hide them because the stops will no longer be adjacent. Delete the segments and continue?}}'**
+  String deleteOrphanSegmentsMessage(int count);
+
+  /// No description provided for @deleteAndContinue.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete & continue'**
+  String get deleteAndContinue;
+
+  /// No description provided for @notSet.
+  ///
+  /// In en, this message translates to:
+  /// **'Not set'**
+  String get notSet;
+
+  /// No description provided for @stopDetailsView.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop Details'**
+  String get stopDetailsView;
+
+  /// No description provided for @editStopTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Stop'**
+  String get editStopTitle;
+
+  /// No description provided for @addStopTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Stop'**
+  String get addStopTitle;
+
+  /// No description provided for @editStopTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit stop'**
+  String get editStopTooltip;
+
+  /// No description provided for @duplicateStopTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Duplicate stop'**
+  String get duplicateStopTitle;
+
+  /// No description provided for @duplicateStopMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} is already in this itinerary. Add it again anyway?'**
+  String duplicateStopMessage(String name);
+
+  /// No description provided for @addAnyway.
+  ///
+  /// In en, this message translates to:
+  /// **'Add anyway'**
+  String get addAnyway;
+
+  /// No description provided for @itineraryUpdatedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Itinerary updated elsewhere'**
+  String get itineraryUpdatedTitle;
+
+  /// No description provided for @itineraryUpdatedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'This itinerary was edited from another device. Go back and reload to see the latest version.'**
+  String get itineraryUpdatedMessage;
+
+  /// No description provided for @goBack.
+  ///
+  /// In en, this message translates to:
+  /// **'Go back'**
+  String get goBack;
+
+  /// No description provided for @deleteStopTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete this stop?'**
+  String get deleteStopTitle;
+
+  /// No description provided for @deleteStopMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'This will remove the stop, its annotations, and any transit segments connected to it. This cannot be undone.'**
+  String get deleteStopMessage;
+
+  /// No description provided for @viewOnlyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'View only'**
+  String get viewOnlyTitle;
+
+  /// No description provided for @viewOnlyMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap the Edit button to make changes.'**
+  String get viewOnlyMessage;
+
+  /// No description provided for @searchForPlaceLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Search for a place'**
+  String get searchForPlaceLabel;
+
+  /// No description provided for @searchAPlaceHelpTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Search a place'**
+  String get searchAPlaceHelpTitle;
+
+  /// No description provided for @searchAPlaceHelpMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Type a place, restaurant, or landmark name. Pick a result to autofill the place name, address, and coordinates below.'**
+  String get searchAPlaceHelpMessage;
+
+  /// No description provided for @searchPlaceHintText.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. Eiffel Tower, Paris'**
+  String get searchPlaceHintText;
+
+  /// No description provided for @stopDetailsSectionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop details'**
+  String get stopDetailsSectionLabel;
+
+  /// No description provided for @placeNameLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Place name'**
+  String get placeNameLabel;
+
+  /// No description provided for @placeNameHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Name of the place, restaurant, landmark, or stop.'**
+  String get placeNameHelp;
+
+  /// No description provided for @placeNameRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Place name is required'**
+  String get placeNameRequired;
+
+  /// No description provided for @addressLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Address'**
+  String get addressLabel;
+
+  /// No description provided for @addressHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Street address or area description. Optional.'**
+  String get addressHelp;
+
+  /// No description provided for @coordinatesHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'The map location for this stop. Tap \"Pick on map\" to set or adjust it.'**
+  String get coordinatesHelp;
+
+  /// No description provided for @pickOnMap.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick on map'**
+  String get pickOnMap;
+
+  /// No description provided for @placeTypeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Place type'**
+  String get placeTypeLabel;
+
+  /// No description provided for @placeTypeHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'What kind of place this is (e.g. eat & drink, sleep, sight). Used for filtering and the map icon.'**
+  String get placeTypeHelp;
+
+  /// No description provided for @selectPlaceType.
+  ///
+  /// In en, this message translates to:
+  /// **'Select place type'**
+  String get selectPlaceType;
+
+  /// No description provided for @recommendedTimeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Recommended time to spend'**
+  String get recommendedTimeLabel;
+
+  /// No description provided for @timeToSpendHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Roughly how long you expect to stay here. Tap to set days, hours, and minutes.'**
+  String get timeToSpendHelp;
+
+  /// No description provided for @stopIsFree.
+  ///
+  /// In en, this message translates to:
+  /// **'This stop is free'**
+  String get stopIsFree;
+
+  /// No description provided for @freeHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Toggle on if visiting this place costs nothing.'**
+  String get freeHelp;
+
+  /// No description provided for @costLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cost'**
+  String get costLabel;
+
+  /// No description provided for @costHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Approximate cost per person, in the itinerary\'s currency.'**
+  String get costHelp;
+
+  /// No description provided for @enterValidNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a valid number'**
+  String get enterValidNumber;
+
+  /// No description provided for @thoughtsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Thoughts'**
+  String get thoughtsLabel;
+
+  /// No description provided for @thoughtsHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Your personal take on this stop — what to expect, what you loved, things to skip, opening tips. Use the toolbar to add bold, italic, headings, or bullet lists.'**
+  String get thoughtsHelp;
+
+  /// No description provided for @annotationsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Annotations'**
+  String get annotationsLabel;
+
+  /// No description provided for @annotationsHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Short tagged notes (advice, caution, avoid, info) attached to this stop. Useful for warnings or tips.'**
+  String get annotationsHelp;
+
+  /// No description provided for @saveChangesButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Save Changes'**
+  String get saveChangesButton;
+
+  /// No description provided for @addStopButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Stop'**
+  String get addStopButton;
+
+  /// No description provided for @deleteStopButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Stop'**
+  String get deleteStopButton;
+
+  /// No description provided for @timeToSpendModalTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Time to spend'**
+  String get timeToSpendModalTitle;
+
+  /// No description provided for @editTransitTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Transit'**
+  String get editTransitTitle;
+
+  /// No description provided for @addTransitTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Transit'**
+  String get addTransitTitle;
+
+  /// No description provided for @updateTransitButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Update Transit'**
+  String get updateTransitButton;
+
+  /// No description provided for @transportModeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Mode'**
+  String get transportModeLabel;
+
+  /// No description provided for @transportModeHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'How you travel on this leg (walk, bus, train, ferry, etc.). Some modes reveal extra fields for line and direction.'**
+  String get transportModeHelp;
+
+  /// No description provided for @transitLineLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Line (optional)'**
+  String get transitLineLabel;
+
+  /// No description provided for @transitLineHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Optional. The line number or name (e.g. \"Bus 42\", \"M1\").'**
+  String get transitLineHelp;
+
+  /// No description provided for @transitDirectionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Direction (optional)'**
+  String get transitDirectionLabel;
+
+  /// No description provided for @transitDirectionHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Optional. Where the line is headed (e.g. \"Northbound\", \"Châtelet\").'**
+  String get transitDirectionHelp;
+
+  /// No description provided for @durationLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Duration'**
+  String get durationLabel;
+
+  /// No description provided for @durationHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'How long this leg takes in hours and minutes.'**
+  String get durationHelp;
+
+  /// No description provided for @legCostHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Approximate cost in the itinerary\'s currency. Disabled when \"Free\" is on.'**
+  String get legCostHelp;
+
+  /// No description provided for @hoursLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'h'**
+  String get hoursLabel;
+
+  /// No description provided for @minutesLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'min'**
+  String get minutesLabel;
+
+  /// No description provided for @freeLegLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Free'**
+  String get freeLegLabel;
+
+  /// No description provided for @freeLegHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Toggle on if this leg costs nothing (walking, included transfer, etc.).'**
+  String get freeLegHelp;
+
+  /// No description provided for @legThoughtsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Thoughts (optional)'**
+  String get legThoughtsLabel;
+
+  /// No description provided for @legThoughtsHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Optional. Anything useful to know about this leg — booking tips, transfer instructions, where to sit, ticket cost surprises.'**
+  String get legThoughtsHelp;
+
+  /// No description provided for @annotationTypeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Type'**
+  String get annotationTypeLabel;
+
+  /// No description provided for @annotationTypeHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Advice: a helpful tip. Caution: be careful. Avoid: don\'t go. Info: a neutral note.'**
+  String get annotationTypeHelp;
+
+  /// No description provided for @annotationAdvice.
+  ///
+  /// In en, this message translates to:
+  /// **'Advice'**
+  String get annotationAdvice;
+
+  /// No description provided for @annotationCaution.
+  ///
+  /// In en, this message translates to:
+  /// **'Caution'**
+  String get annotationCaution;
+
+  /// No description provided for @annotationAvoid.
+  ///
+  /// In en, this message translates to:
+  /// **'Avoid'**
+  String get annotationAvoid;
+
+  /// No description provided for @annotationInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'Info'**
+  String get annotationInfo;
+
+  /// No description provided for @annotationContentLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Content *'**
+  String get annotationContentLabel;
+
+  /// No description provided for @annotationContentHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Describe your advice, caution, warning, or note in one or two sentences.'**
+  String get annotationContentHelp;
+
+  /// No description provided for @annotationContentRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Content is required'**
+  String get annotationContentRequired;
+
+  /// No description provided for @editAnnotationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit annotation'**
+  String get editAnnotationTitle;
+
+  /// No description provided for @addAnnotationDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Add annotation'**
+  String get addAnnotationDialogTitle;
+
+  /// No description provided for @saveButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get saveButton;
+
+  /// No description provided for @moveStopTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Move stop'**
+  String get moveStopTitle;
+
+  /// No description provided for @moveStopDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose an existing track, a gap to create a new track, or extract into its own track. Tracks at the {max}-stop maximum are disabled.'**
+  String moveStopDescription(int max);
+
+  /// No description provided for @extractIntoOwnTrack.
+  ///
+  /// In en, this message translates to:
+  /// **'Extract into its own new track'**
+  String get extractIntoOwnTrack;
+
+  /// No description provided for @moveButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Move'**
+  String get moveButton;
+
+  /// No description provided for @moveStopMoved.
+  ///
+  /// In en, this message translates to:
+  /// **'Moved to {destination}'**
+  String moveStopMoved(String destination);
+
+  /// No description provided for @itineraryChangedElsewhere.
+  ///
+  /// In en, this message translates to:
+  /// **'Itinerary changed elsewhere — close and reopen to see the latest order.'**
+  String get itineraryChangedElsewhere;
+
+  /// No description provided for @moveStopOrphan1.
+  ///
+  /// In en, this message translates to:
+  /// **'This is the last stop in its track — the track will be removed from the itinerary.'**
+  String get moveStopOrphan1;
+
+  /// No description provided for @moveStopOrphanSegments.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{1 transit segment will be deleted because its stops will no longer be in adjacent tracks.} other{{count} transit segments will be deleted because their stops will no longer be in adjacent tracks.}}'**
+  String moveStopOrphanSegments(int count);
+
+  /// No description provided for @moveStopNewTrack.
+  ///
+  /// In en, this message translates to:
+  /// **'New track'**
+  String get moveStopNewTrack;
+
+  /// No description provided for @moveStopNewTrackBefore.
+  ///
+  /// In en, this message translates to:
+  /// **'New track before Track {n}'**
+  String moveStopNewTrackBefore(int n);
+
+  /// No description provided for @moveStopNewTrackAfter.
+  ///
+  /// In en, this message translates to:
+  /// **'New track after Track {n}'**
+  String moveStopNewTrackAfter(int n);
+
+  /// No description provided for @moveStopNewTrackBetween.
+  ///
+  /// In en, this message translates to:
+  /// **'New track between Track {a} and Track {b}'**
+  String moveStopNewTrackBetween(int a, int b);
+
+  /// No description provided for @moveStopCurrentSuffix.
+  ///
+  /// In en, this message translates to:
+  /// **'  •  current'**
+  String get moveStopCurrentSuffix;
+
+  /// No description provided for @moveStopFull.
+  ///
+  /// In en, this message translates to:
+  /// **'Full {max}/{max}'**
+  String moveStopFull(int max);
+
+  /// No description provided for @extractSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Splits this stop out of \"{trackName}\" — new track lands right after.'**
+  String extractSubtitle(String trackName);
+
+  /// No description provided for @removeRatingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove your rating?'**
+  String get removeRatingTitle;
+
+  /// No description provided for @removeRatingMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Your rating will be deleted and the average will update for everyone viewing this itinerary.'**
+  String get removeRatingMessage;
+
+  /// No description provided for @rateItineraryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Rate this itinerary'**
+  String get rateItineraryTitle;
+
+  /// No description provided for @overallRatingLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Overall *'**
+  String get overallRatingLabel;
+
+  /// No description provided for @overallRatingHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Required. Your overall rating of this itinerary, from 1 to 5 stars.'**
+  String get overallRatingHelp;
+
+  /// No description provided for @ratingThanksMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Thanks! Your rating helps others.'**
+  String get ratingThanksMessage;
+
+  /// No description provided for @yourImpressionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Your impression (optional)'**
+  String get yourImpressionLabel;
+
+  /// No description provided for @yourImpressionHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Optional. Share what stood out — highlights, regrets, who you\'d recommend it to. Use the toolbar to add bold, italic, headings, or bullet lists.'**
+  String get yourImpressionHelp;
+
+  /// No description provided for @removeMyRatingTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove my rating'**
+  String get removeMyRatingTooltip;
+
+  /// No description provided for @wantToShareMore.
+  ///
+  /// In en, this message translates to:
+  /// **'Want to share more? (optional)'**
+  String get wantToShareMore;
+
+  /// No description provided for @safetyLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Safety'**
+  String get safetyLabel;
+
+  /// No description provided for @safetyHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Optional. How safe you felt during this trip.'**
+  String get safetyHelp;
+
+  /// No description provided for @experienceLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Experience'**
+  String get experienceLabel;
+
+  /// No description provided for @experienceHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Optional. How enjoyable and memorable the trip was.'**
+  String get experienceHelp;
+
+  /// No description provided for @accessibilityLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Accessibility'**
+  String get accessibilityLabel;
+
+  /// No description provided for @accessibilityHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Optional. How accessible the itinerary is (mobility, language, signage).'**
+  String get accessibilityHelp;
+
+  /// No description provided for @familyFriendlyLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Family-friendly'**
+  String get familyFriendlyLabel;
+
+  /// No description provided for @familyFriendlyHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Optional. How suitable the trip is for families with children.'**
+  String get familyFriendlyHelp;
+}
+
+class _AppLocalizationsDelegate
+    extends LocalizationsDelegate<AppLocalizations> {
+  const _AppLocalizationsDelegate();
+
+  @override
+  Future<AppLocalizations> load(Locale locale) {
+    return SynchronousFuture<AppLocalizations>(lookupAppLocalizations(locale));
+  }
+
+  @override
+  bool isSupported(Locale locale) =>
+      <String>['en', 'fr'].contains(locale.languageCode);
+
+  @override
+  bool shouldReload(_AppLocalizationsDelegate old) => false;
+}
+
+AppLocalizations lookupAppLocalizations(Locale locale) {
+  // Lookup logic when only language code is specified.
+  switch (locale.languageCode) {
+    case 'en':
+      return AppLocalizationsEn();
+    case 'fr':
+      return AppLocalizationsFr();
+  }
+
+  throw FlutterError(
+      'AppLocalizations.delegate failed to load unsupported locale "$locale". This is likely '
+      'an issue with the localizations generation tool. Please file an issue '
+      'on GitHub with a reproducible sample app and the gen-l10n configuration '
+      'that was used.');
+}

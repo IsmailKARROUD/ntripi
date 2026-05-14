@@ -10,6 +10,9 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  intl: ^0.20.2
   
   expandable_page_view: ^1.0.17
   # State management: Riverpod — compile-safe, testable, no BuildContext required
@@ -79,6 +82,7 @@ dev_dependencies:
   http_mock_adapter: ^0.6.1
 
 flutter:
+  generate: true
   uses-material-design: true
   assets:
    - assets/data/currencies.json

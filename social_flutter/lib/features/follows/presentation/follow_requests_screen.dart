@@ -10,6 +10,7 @@ import 'package:social_flutter/core/api/api_client.dart';
 import 'package:social_flutter/core/ui/app_theme.dart';
 import 'package:social_flutter/features/follows/providers/follow_provider.dart';
 import 'package:social_flutter/shared/models/follow.dart';
+import 'package:social_flutter/l10n/app_localizations.dart';
 import 'package:social_flutter/shared/widgets/editorial_widgets.dart';
 import 'package:social_flutter/core/utils/platform_utils.dart';
 
@@ -30,9 +31,9 @@ class FollowRequestsScreen extends ConsumerWidget {
           ),
           child: Column(
             children: [
-              const SafeArea(
+              SafeArea(
                 bottom: false,
-                child: EditorialTopBar(title: 'Follow Requests'),
+                child: EditorialTopBar(title: AppLocalizations.of(context)!.followRequestsTitle),
               ),
               Container(height: 1, color: kBorder),
               Expanded(
@@ -55,7 +56,7 @@ class FollowRequestsScreen extends ConsumerWidget {
                             onPressed: () => ref
                                 .read(followRequestsProvider.notifier)
                                 .refresh(),
-                            child: const Text('Retry'),
+                            child: Text(AppLocalizations.of(context)!.retry),
                           ),
                         ],
                       ),
@@ -63,16 +64,16 @@ class FollowRequestsScreen extends ConsumerWidget {
                   ),
                   data: (requests) {
                     if (requests.isEmpty) {
-                      return const Center(
+                      return Center(
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(Icons.check_circle_outline,
+                            const Icon(Icons.check_circle_outline,
                                 size: 56, color: kText3),
-                            SizedBox(height: 10),
+                            const SizedBox(height: 10),
                             Text(
-                              'No pending requests',
-                              style: TextStyle(color: kText2),
+                              AppLocalizations.of(context)!.noRequests,
+                              style: const TextStyle(color: kText2),
                             ),
                           ],
                         ),
@@ -87,7 +88,7 @@ class FollowRequestsScreen extends ConsumerWidget {
                         children: [
                           SectionLabel(
                             icon: Icons.person_add_outlined,
-                            label: 'Requests · ${requests.length}',
+                            label: AppLocalizations.of(context)!.requestsCountLabel(requests.length),
                           ),
                           SectionCard(
                             children: [
@@ -214,7 +215,7 @@ class _FollowRequestTileState extends ConsumerState<_FollowRequestTile> {
                     minimumSize: Size.zero,
                     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   ),
-                  child: const Text('Accept', style: TextStyle(fontSize: 13)),
+                  child: Text(AppLocalizations.of(context)!.acceptButton, style: const TextStyle(fontSize: 13)),
                 ),
                 const SizedBox(width: 8),
                 OutlinedButton(
@@ -227,7 +228,7 @@ class _FollowRequestTileState extends ConsumerState<_FollowRequestTile> {
                     minimumSize: Size.zero,
                     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   ),
-                  child: const Text('Reject', style: TextStyle(fontSize: 13)),
+                  child: Text(AppLocalizations.of(context)!.rejectButton, style: const TextStyle(fontSize: 13)),
                 ),
               ],
             ],

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:social_flutter/core/ui/app_theme.dart';
+import 'package:social_flutter/l10n/app_localizations.dart';
 import 'package:social_flutter/shared/data/countries.dart';
 import 'package:social_flutter/shared/data/languages.dart';
 import 'package:social_flutter/shared/models/user.dart';
@@ -34,10 +35,11 @@ class ProfileIdentityFacts extends StatelessWidget {
       passportRow = _PassportRow(codes: passports);
     }
 
+    final l10n = AppLocalizations.of(context)!;
     final residentChip = hasResident
         ? _IdentityFactChip(
             icon: Icons.location_on_rounded,
-            subLabel: 'Lives in',
+            subLabel: l10n.livesInLabel,
             value: countryByCode(resident)?.name ?? resident,
             prefix: countryByCode(resident)?.flag,
           )
@@ -46,7 +48,7 @@ class ProfileIdentityFacts extends StatelessWidget {
     final speaksChip = hasLanguages
         ? _IdentityFactChip(
             icon: Icons.translate_rounded,
-            subLabel: 'Speaks',
+            subLabel: l10n.speaksLabel,
             value: langs.map((c) => languageByCode(c)?.code ?? c).join(' · '),
           )
         : null;
@@ -87,9 +89,9 @@ class _PassportRow extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Text(
-                  'PASSPORT',
-                  style: TextStyle(
+                Text(
+                  AppLocalizations.of(context)!.passportLabel.toUpperCase(),
+                  style: const TextStyle(
                     fontSize: 9,
                     fontWeight: FontWeight.w700,
                     color: kText2,
