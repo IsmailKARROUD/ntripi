@@ -13,6 +13,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:social_flutter/core/ui/app_theme.dart';
 import 'package:social_flutter/core/api/api_client.dart';
 import 'package:social_flutter/core/services/segment_orphan_service.dart';
 import 'package:social_flutter/core/ui/destructive_actions.dart';
@@ -345,25 +346,39 @@ class _TrackRow extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Material(
-            elevation: 0,
-            color: cs.surfaceContainerLow,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10),
+          Container(
+            decoration: BoxDecoration(
+              color: kSurface,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: kBorder),
             ),
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
               child: Row(
                 children: [
-                  CircleAvatar(
-                    radius: 14,
-                    backgroundColor: cs.primary.withValues(alpha: 0.12),
+                  ReorderableDragStartListener(
+                    index: index,
+                    child: const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 4),
+                      child: Icon(Icons.drag_indicator_rounded,
+                          size: 20, color: kText3),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Container(
+                    width: 32,
+                    height: 32,
+                    decoration: const BoxDecoration(
+                      color: kMist,
+                      shape: BoxShape.circle,
+                    ),
+                    alignment: Alignment.center,
                     child: Text(
                       '$trackNumber',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: cs.primary,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w800,
+                        color: kForest,
                       ),
                     ),
                   ),
@@ -373,33 +388,32 @@ class _TrackRow extends StatelessWidget {
                       primaryName,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.bodyLarge,
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                        color: kBark,
+                      ),
                     ),
                   ),
-                  if (parallelCount > 1)
+                  if (parallelCount > 1) ...[
+                    const SizedBox(width: 8),
                     Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 6, vertical: 2),
+                          horizontal: 8, vertical: 3),
                       decoration: BoxDecoration(
-                        color: cs.secondaryContainer,
-                        borderRadius: BorderRadius.circular(8),
+                        color: kMist,
+                        borderRadius: BorderRadius.circular(999),
                       ),
                       child: Text(
                         '$parallelCount alts',
-                        style: theme.textTheme.labelSmall?.copyWith(
-                          color: cs.onSecondaryContainer,
+                        style: const TextStyle(
+                          fontSize: 11,
                           fontWeight: FontWeight.w600,
+                          color: kForest,
                         ),
                       ),
                     ),
-                  const SizedBox(width: 6),
-                  ReorderableDragStartListener(
-                    index: index,
-                    child: const Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 4),
-                      child: Icon(Icons.drag_handle),
-                    ),
-                  ),
+                  ],
                 ],
               ),
             ),

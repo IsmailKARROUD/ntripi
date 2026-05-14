@@ -584,9 +584,10 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
             : l10n.addStopTitle;
 
     return Scaffold(
-      backgroundColor: kSurface,
+      backgroundColor: kSand,
       resizeToAvoidBottomInset: false,
       appBar: AppBar(
+        backgroundColor: kSand,
         title: Text(appBarTitle),
         actions: [
           if (readOnly && isOwner)
@@ -624,17 +625,35 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                       controller: _searchController,
                       decoration: InputDecoration(
                         hintText: l10n.searchPlaceHintText,
-                        border: const OutlineInputBorder(),
-                        prefixIcon: const Icon(Icons.search),
+                        filled: true,
+                        fillColor: kSurface,
+                        prefixIcon:
+                            const Icon(Icons.search_rounded, color: kForest),
                         suffixIcon: _searchController.text.isNotEmpty
                             ? IconButton(
-                                icon: const Icon(Icons.clear),
+                                icon: const Icon(Icons.close_rounded,
+                                    size: 18),
                                 onPressed: () {
                                   _searchController.clear();
                                   ref.read(placeSearchProvider.notifier).clear();
                                 },
                               )
                             : null,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(14),
+                          borderSide:
+                              const BorderSide(color: kBorder),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(14),
+                          borderSide:
+                              const BorderSide(color: kBorder),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(14),
+                          borderSide: const BorderSide(
+                              color: kForest, width: 1.5),
+                        ),
                       ),
                       onChanged: _onSearchChanged,
                     ),
@@ -648,25 +667,52 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                       error: (_, __) => const SizedBox.shrink(),
                       data: (suggestions) {
                         if (suggestions.isEmpty) return const SizedBox.shrink();
-                        return Card(
+                        return Container(
                           margin: const EdgeInsets.only(top: 4),
+                          decoration: BoxDecoration(
+                            color: kSurface,
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(color: kBorder),
+                          ),
+                          clipBehavior: Clip.antiAlias,
                           child: Column(
-                            children: suggestions
-                                .map(
-                                  (s) => ListTile(
-                                    dense: true,
-                                    leading: const Icon(Icons.place_outlined),
-                                    title: Text(s.displayName, maxLines: 1),
-                                    subtitle: Text(
-                                      s.address,
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: const TextStyle(fontSize: 11),
+                            children: [
+                              for (var i = 0; i < suggestions.length; i++) ...[
+                                if (i > 0)
+                                  const Divider(height: 1, indent: 52),
+                                ListTile(
+                                  dense: true,
+                                  leading: Container(
+                                    width: 36,
+                                    height: 36,
+                                    decoration: BoxDecoration(
+                                      color: kSand,
+                                      borderRadius: BorderRadius.circular(10),
                                     ),
-                                    onTap: () => _applySuggestion(s),
+                                    alignment: Alignment.center,
+                                    child: const Icon(Icons.location_on_rounded,
+                                        size: 18, color: kForest),
                                   ),
-                                )
-                                .toList(),
+                                  title: Text(suggestions[i].displayName,
+                                      maxLines: 1,
+                                      style: const TextStyle(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w700,
+                                          color: kBark)),
+                                  subtitle: Text(
+                                    suggestions[i].address,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(
+                                        fontSize: 11, color: kText2),
+                                  ),
+                                  trailing: const Icon(Icons.add_rounded,
+                                      size: 20, color: kForest),
+                                  onTap: () =>
+                                      _applySuggestion(suggestions[i]),
+                                ),
+                              ],
+                            ],
                           ),
                         );
                       },

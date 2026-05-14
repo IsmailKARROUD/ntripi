@@ -1,17 +1,24 @@
-// widgets/stop_card.dart — Card representing one stop in the detail list.
+// widgets/stop_card.dart — Single stop row in the itinerary detail list.
+//
+// Renders as a plain padded row (no Card border) because it always lives
+// inside a parent SectionCard. The visual split between read and edit mode:
+//   read  — number circle · name/address · inline notes · anno mini-dots
+//   edit  — same but with an edit IconButton on the right and full annotation
+//            chips (with add-note affordance) instead of dots
 
 import 'package:flutter/material.dart';
+import 'package:social_flutter/core/ui/app_theme.dart';
 import 'package:social_flutter/features/itineraries/domain/annotation.dart';
 import 'package:social_flutter/features/itineraries/domain/stop.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/annotation_chip.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/markdown_notes_editor.dart';
 
-class StopCard extends StatefulWidget {
+class StopCard extends StatelessWidget {
   final Stop stop;
   final String currency;
 
-  /// 1-based display index (track number). If null, the type icon is shown instead.
-  final int? trackIndex;
+  /// 1-based track index shown on the number badge. Required.
+  final int trackIndex;
 
   final VoidCallback? onTap;
   final VoidCallback? onEdit;
@@ -23,7 +30,7 @@ class StopCard extends StatefulWidget {
     super.key,
     required this.stop,
     required this.currency,
-    this.trackIndex,
+    required this.trackIndex,
     this.onTap,
     this.onEdit,
     this.onAddAnnotation,
@@ -31,236 +38,141 @@ class StopCard extends StatefulWidget {
     this.onDeleteAnnotation,
   });
 
-  @override
-  State<StopCard> createState() => _StopCardState();
-}
-
-class _StopCardState extends State<StopCard> {
-  bool _notesExpanded = false;
-
-  static const _typeIcons = {
-    StopType.origin: Icons.trip_origin,
-    StopType.waypoint: Icons.place_outlined,
-    StopType.arrival: Icons.flag,
-  };
-
-  static const _typeColors = {
-    StopType.origin: Colors.green,
-    StopType.waypoint: Colors.blue,
-    StopType.arrival: Colors.red,
-  };
-
-  String _formatCost(double cost, bool isFree, String currency) {
-    if (isFree) return 'Free';
-    if (cost <= 0.0) return '';
-    return '${cost.toStringAsFixed(2)} $currency';
-  }
+  bool get _editMode => onEdit != null;
 
   @override
   Widget build(BuildContext context) {
-    final stop = widget.stop;
-    final currency = widget.currency;
-    final trackIndex = widget.trackIndex;
-    final onTap = widget.onTap;
-    final onEdit = widget.onEdit;
-    final onAddAnnotation = widget.onAddAnnotation;
-    final onEditAnnotation = widget.onEditAnnotation;
-    final onDeleteAnnotation = widget.onDeleteAnnotation;
-
-    final typeColor = _typeColors[stop.type] ?? Colors.blue;
-    final typeIcon = _typeIcons[stop.type] ?? Icons.place;
-    final costLabel = _formatCost(stop.cost, stop.isFree, currency);
     final hasNotes = stop.notes != null && stop.notes!.trim().isNotEmpty;
+    final hasAnnotations = stop.annotations.isNotEmpty;
 
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      clipBehavior: Clip.hardEdge,
-      child: InkWell(
-        onTap: onTap,
-        child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+        child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
           children: [
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Position + type icon column
-                Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    CircleAvatar(
-                      radius: 14,
-                      backgroundColor: typeColor.withValues(alpha: 0.15),
-                      child: trackIndex != null
-                          ? Text(
-                              '$trackIndex',
-                              style: TextStyle(
-                                color: typeColor,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 12,
-                              ),
-                            )
-                          : Icon(
-                              _typeIcons[stop.type] ?? Icons.place_outlined,
-                              color: typeColor,
-                              size: 14,
-                            ),
+            // ── Number badge ─────────────────────────────────────────────────
+            Container(
+              width: 32,
+              height: 32,
+              decoration: const BoxDecoration(
+                color: kMist,
+                shape: BoxShape.circle,
+              ),
+              alignment: Alignment.center,
+              child: Text(
+                '$trackIndex',
+                style: const TextStyle(
+                  color: kForest,
+                  fontWeight: FontWeight.w800,
+                  fontSize: 14,
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+
+            // ── Main content ─────────────────────────────────────────────────
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Place name
+                  Text(
+                    stop.placeName ?? 'Stop $trackIndex',
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      color: kBark,
+                      letterSpacing: -0.1,
                     ),
-                    const SizedBox(height: 4),
-                    Icon(typeIcon, size: 16, color: typeColor),
-                  ],
-                ),
-                const SizedBox(width: 12),
+                  ),
 
-                // Main content
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        stop.placeName ??
-                            stop.type.name[0].toUpperCase() +
-                                stop.type.name.substring(1),
-                        style: Theme.of(context)
-                            .textTheme
-                            .titleSmall
-                            ?.copyWith(fontWeight: FontWeight.w600),
+                  // Address
+                  if (stop.placeAddress != null && stop.placeAddress!.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 2),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          const Icon(Icons.location_on_rounded,
+                              size: 12, color: kText3),
+                          const SizedBox(width: 2),
+                          Expanded(
+                            child: Text(
+                              stop.placeAddress!,
+                              style: const TextStyle(
+                                fontSize: 12,
+                                color: kText2,
+                                fontWeight: FontWeight.w500,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
                       ),
-                      if (stop.placeAddress != null &&
-                          stop.placeAddress!.isNotEmpty)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 2),
-                          child: Text(
-                            stop.placeAddress!,
-                            style: Theme.of(context)
-                                .textTheme
-                                .bodySmall
-                                ?.copyWith(color: Colors.grey.shade600),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      
-                      if (stop.durationMin != null || costLabel.isNotEmpty || stop.placeType != null)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 6),
-                          child: Wrap(
-                            spacing: 6,
-                            runSpacing: 4,
-                            children: [
-                              if (stop.durationMin != null)
-                                _InfoChip(
-                                  icon: Icons.timer_outlined,
-                                  label: stop.formattedDuration,
-                                ),
-                              if (costLabel.isNotEmpty)
-                                _InfoChip(
-                                  icon: Icons.euro_symbol,
-                                  label: costLabel,
-                                ),
-                              if (stop.placeType != null)
-                                _PlaceTypeChip(placeType: stop.placeType!),
-                            ],
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
+                    ),
 
-                if (onEdit != null)
-                  IconButton(
-                    icon: const Icon(Icons.edit_outlined, size: 18),
-                    onPressed: onEdit,
-                    visualDensity: VisualDensity.compact,
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(),
-                  ),
-              ],
+                  // Notes — always visible in read mode; collapsible in edit
+                  if (hasNotes)
+                    _editMode
+                        ? _EditNotesSection(notes: stop.notes!)
+                        : Padding(
+                            padding: const EdgeInsets.only(top: 6),
+                            child: _ReadNotesSection(notes: stop.notes!),
+                          ),
+
+                  // Annotations
+                  if (hasAnnotations || (_editMode && onAddAnnotation != null))
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8),
+                      child: _editMode
+                          ? _AnnotationChipsRow(
+                              annotations: stop.annotations,
+                              onAdd: onAddAnnotation,
+                              onEdit: onEditAnnotation,
+                              onDelete: onDeleteAnnotation,
+                            )
+                          : _AnnoMiniRow(annotations: stop.annotations),
+                    ),
+                ],
+              ),
             ),
 
-            if (stop.annotations.isNotEmpty || onAddAnnotation != null)
-              Padding(
-                padding: const EdgeInsets.only(top: 8, left: 40),
-                child: Wrap(
-                  spacing: 6,
-                  runSpacing: 4,
-                  children: [
-                    ...stop.annotations.map(
-                      (a) => AnnotationChip(
-                        annotation: a,
-                        onEdit: onEditAnnotation != null
-                            ? () => onEditAnnotation!(a)
-                            : null,
-                        onDelete: onDeleteAnnotation != null
-                            ? () => onDeleteAnnotation!(a)
-                            : null,
-                      ),
-                    ),
-                    if (onAddAnnotation != null)
-                      GestureDetector(
-                        onTap: onAddAnnotation,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: Colors.grey.shade100,
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(
-                                color: Colors.grey.shade300,
-                                style: BorderStyle.solid),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(Icons.add, size: 13,
-                                  color: Colors.grey.shade500),
-                              const SizedBox(width: 3),
-                              Text(
-                                'Add note',
-                                style: TextStyle(
-                                    fontSize: 12, color: Colors.grey.shade500),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                  ],
+            // ── Edit button (edit mode only) ──────────────────────────────────
+            if (_editMode && onEdit != null) ...[
+              const SizedBox(width: 4),
+              SizedBox(
+                width: 32,
+                height: 32,
+                child: IconButton(
+                  icon: const Icon(Icons.edit_rounded, size: 16),
+                  onPressed: onEdit,
+                  padding: EdgeInsets.zero,
+                  color: kText2,
                 ),
               ),
-
-            if (hasNotes)
-              Padding(
-                padding: const EdgeInsets.only(top: 8, left: 6),
-                child: _NotesSection(
-                  notes: stop.notes!,
-                  expanded: _notesExpanded,
-                  onToggle: () => setState(() {
-                    _notesExpanded = !_notesExpanded;
-                  }),
-                ),
-              ),
+            ],
           ],
         ),
-      ),
       ),
     );
   }
 }
 
-class _NotesSection extends StatelessWidget {
+// Collapsible notes section used only in edit mode.
+class _EditNotesSection extends StatefulWidget {
   final String notes;
-  final bool expanded;
-  final VoidCallback onToggle;
+  const _EditNotesSection({required this.notes});
 
-  const _NotesSection({
-    required this.notes,
-    required this.expanded,
-    required this.onToggle,
-  });
+  @override
+  State<_EditNotesSection> createState() => _EditNotesSectionState();
+}
+
+class _EditNotesSectionState extends State<_EditNotesSection> {
+  bool _expanded = false;
 
   @override
   Widget build(BuildContext context) {
@@ -269,26 +181,27 @@ class _NotesSection extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         InkWell(
-          onTap: onToggle,
+          onTap: () => setState(() => _expanded = !_expanded),
           borderRadius: BorderRadius.circular(4),
           child: Padding(
             padding: const EdgeInsets.symmetric(vertical: 4),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.notes, size: 14, color: Colors.grey.shade600),
+                Icon(Icons.notes_rounded, size: 14, color: kText3),
                 const SizedBox(width: 4),
                 Text(
                   'Notes',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Colors.grey.shade700,
-                        fontWeight: FontWeight.w500,
-                      ),
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: kText2,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
                 Icon(
-                  expanded ? Icons.expand_less : Icons.expand_more,
-                  size: 18,
-                  color: Colors.grey.shade600,
+                  _expanded ? Icons.expand_less : Icons.expand_more,
+                  size: 16,
+                  color: kText3,
                 ),
               ],
             ),
@@ -298,10 +211,10 @@ class _NotesSection extends StatelessWidget {
           duration: const Duration(milliseconds: 180),
           curve: Curves.easeInOut,
           alignment: Alignment.topLeft,
-          child: expanded
+          child: _expanded
               ? Padding(
-                  padding: const EdgeInsets.only(top: 4, right: 4),
-                  child: InertMarkdownBody(data: notes),
+                  padding: const EdgeInsets.only(top: 4),
+                  child: InertMarkdownBody(data: widget.notes),
                 )
               : const SizedBox(width: double.infinity),
         ),
@@ -310,68 +223,162 @@ class _NotesSection extends StatelessWidget {
   }
 }
 
-class _InfoChip extends StatelessWidget {
-  final IconData icon;
-  final String label;
+// 2-line preview with "view more" toggle (read mode).
+class _ReadNotesSection extends StatefulWidget {
+  final String notes;
+  const _ReadNotesSection({required this.notes});
 
-  const _InfoChip({required this.icon, required this.label});
+  @override
+  State<_ReadNotesSection> createState() => _ReadNotesSectionState();
+}
+
+class _ReadNotesSectionState extends State<_ReadNotesSection> {
+  bool _expanded = false;
+
+  static const _style = TextStyle(fontSize: 13, height: 1.4, color: kText2);
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-      decoration: BoxDecoration(
-        color: Colors.grey.shade100,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade300),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 12, color: Colors.grey.shade600),
-          const SizedBox(width: 4),
-          Text(
-            label,
-            style: Theme.of(context)
-                .textTheme
-                .bodySmall
-                ?.copyWith(color: Colors.grey.shade700, fontSize: 11),
-          ),
-        ],
-      ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final tp = TextPainter(
+          text: TextSpan(text: widget.notes, style: _style),
+          maxLines: 2,
+          textDirection: TextDirection.ltr,
+        )..layout(maxWidth: constraints.maxWidth);
+
+        final overflows = tp.didExceedMaxLines;
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (_expanded)
+              InertMarkdownBody(data: widget.notes)
+            else
+              Text(
+                widget.notes,
+                style: _style,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            if (overflows || _expanded)
+              GestureDetector(
+                onTap: () => setState(() => _expanded = !_expanded),
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 2),
+                  child: Text(
+                    _expanded ? 'view less' : '... view more',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: kForest,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        );
+      },
     );
   }
 }
 
-class _PlaceTypeChip extends StatelessWidget {
-  final PlaceType placeType;
+// Full annotation chips with add/edit/delete (edit mode).
+class _AnnotationChipsRow extends StatelessWidget {
+  final List<Annotation> annotations;
+  final VoidCallback? onAdd;
+  final void Function(Annotation)? onEdit;
+  final void Function(Annotation)? onDelete;
 
-  const _PlaceTypeChip({required this.placeType});
+  const _AnnotationChipsRow({
+    required this.annotations,
+    this.onAdd,
+    this.onEdit,
+    this.onDelete,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final color = placeType.color;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withValues(alpha: 0.35)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(placeType.icon, size: 12, color: color),
-          const SizedBox(width: 4),
-          Text(
-            placeType.label,
-            style: Theme.of(context)
-                .textTheme
-                .bodySmall
-                ?.copyWith(color: color, fontSize: 11),
+    return Wrap(
+      spacing: 6,
+      runSpacing: 4,
+      children: [
+        ...annotations.map(
+          (a) => AnnotationChip(
+            annotation: a,
+            onEdit: onEdit != null ? () => onEdit!(a) : null,
+            onDelete: onDelete != null ? () => onDelete!(a) : null,
           ),
-        ],
-      ),
+        ),
+        if (onAdd != null)
+          GestureDetector(
+            onTap: onAdd,
+            child: Container(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: kMist.withValues(alpha: 0.5),
+                borderRadius: BorderRadius.circular(999),
+                border: Border.all(color: kBorder),
+              ),
+              child: const Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.add_rounded, size: 13, color: kText2),
+                  SizedBox(width: 3),
+                  Text(
+                    'Add note',
+                    style: TextStyle(fontSize: 12, color: kText2),
+                  ),
+                ],
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+// Tiny colored dot per annotation type (read mode).
+class _AnnoMiniRow extends StatelessWidget {
+  final List<Annotation> annotations;
+  const _AnnoMiniRow({required this.annotations});
+
+  static const _colors = {
+    AnnotationType.advice: (bg: Color(0xFFE0EBE4), fg: kForest),
+    AnnotationType.caution: (bg: Color(0xFFFFE3CC), fg: Color(0xFFA05D1F)),
+    AnnotationType.avoid: (bg: Color(0xFFFFD6D2), fg: Color(0xFFA02828)),
+    AnnotationType.info: (bg: Color(0xFFDCEAF6), fg: Color(0xFF3B6EA5)),
+  };
+
+  static const _icons = {
+    AnnotationType.advice: Icons.lightbulb_rounded,
+    AnnotationType.caution: Icons.warning_rounded,
+    AnnotationType.avoid: Icons.block_rounded,
+    AnnotationType.info: Icons.info_rounded,
+  };
+
+  @override
+  Widget build(BuildContext context) {
+    return Wrap(
+      spacing: 4,
+      runSpacing: 4,
+      children: annotations.map((a) {
+        final c = _colors[a.type];
+        final icon = _icons[a.type] ?? Icons.info_rounded;
+        if (c == null) return const SizedBox.shrink();
+        return Container(
+          width: 18,
+          height: 18,
+          decoration: BoxDecoration(
+            color: c.bg,
+            shape: BoxShape.circle,
+          ),
+          alignment: Alignment.center,
+          child: Icon(icon, size: 11, color: c.fg),
+        );
+      }).toList(),
     );
   }
 }

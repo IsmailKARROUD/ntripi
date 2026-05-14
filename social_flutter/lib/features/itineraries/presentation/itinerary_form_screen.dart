@@ -279,8 +279,10 @@ Future<void> loadCurrencies() async {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: kSand,
       resizeToAvoidBottomInset: false,
       appBar: AppBar(
+        backgroundColor: kSand,
         title: Text(widget.mode == ItineraryFormMode.create
             ? AppLocalizations.of(context)!.newItinerary
             : AppLocalizations.of(context)!.editItinerary),

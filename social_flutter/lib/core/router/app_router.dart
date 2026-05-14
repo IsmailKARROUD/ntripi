@@ -16,10 +16,10 @@ import 'package:social_flutter/features/auth/presentation/splash_screen.dart';
 import 'package:social_flutter/features/follows/presentation/follow_list_screen.dart';
 import 'package:social_flutter/features/follows/presentation/follow_requests_screen.dart';
 import 'package:social_flutter/features/itineraries/presentation/itinerary_detail_screen.dart';
+import 'package:social_flutter/features/itineraries/presentation/stop_detail_screen.dart';
 import 'package:social_flutter/features/itineraries/presentation/itinerary_form_screen.dart';
 import 'package:social_flutter/features/itineraries/presentation/itinerary_list_screen.dart';
 import 'package:social_flutter/features/itineraries/presentation/map_picker_screen.dart';
-import 'package:social_flutter/features/itineraries/presentation/segment_form_screen.dart';
 import 'package:social_flutter/features/itineraries/presentation/stop_form_screen.dart';
 import 'package:social_flutter/features/itineraries/domain/dimension_key.dart';
 import 'package:social_flutter/features/itineraries/presentation/dimension_ratings_screen.dart';
@@ -155,10 +155,9 @@ final appRouter = GoRouter(
         ),
         GoRoute(
           path: '/itineraries/:id/stops/:stopId',
-          builder: (context, state) => StopFormScreen(
+          builder: (context, state) => StopDetailScreen(
             itineraryId: state.pathParameters['id']!,
             stopId: state.pathParameters['stopId']!,
-            viewOnly: true,
           ),
         ),
         GoRoute(

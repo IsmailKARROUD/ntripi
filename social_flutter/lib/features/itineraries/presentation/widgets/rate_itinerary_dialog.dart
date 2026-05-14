@@ -15,7 +15,6 @@ import 'package:social_flutter/features/itineraries/domain/my_rating.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/markdown_notes_editor.dart';
 import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
 import 'package:social_flutter/l10n/app_localizations.dart';
-import 'package:social_flutter/shared/widgets/field_help.dart';
 
 /// Opens the rating bottom sheet and returns when the user saves or dismisses.
 Future<void> showRateItineraryDialog(
@@ -28,8 +27,12 @@ Future<void> showRateItineraryDialog(
     context: context,
     isScrollControlled: true,
     useSafeArea: true,
+    // Cap at 70 % of screen height so it never takes over the screen.
+    constraints: BoxConstraints(
+      maxHeight: MediaQuery.of(context).size.height * 0.7,
+    ),
     shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
     ),
     builder: (_) => _RateItinerarySheet(
       itineraryId: itineraryId,
@@ -134,297 +137,249 @@ class _RateItinerarySheetState extends State<_RateItinerarySheet> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context)!;
     final canSave = _overall != null && !_saving;
 
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: SingleChildScrollView(
-        child: Column(
+    return SingleChildScrollView(
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+      ),
+      child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Title
-          Text(AppLocalizations.of(context)!.rateItineraryTitle, style: theme.textTheme.titleMedium),
+          // Sheet drag handle
+          Center(
+            child: Container(
+              margin: const EdgeInsets.only(top: 10, bottom: 8),
+              width: 36,
+              height: 4,
+              decoration: BoxDecoration(
+                color: kText3.withValues(alpha: 0.5),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+
+          // Hint text
+          Padding(
+            padding: const EdgeInsets.fromLTRB(22, 4, 22, 12),
+            child: Text(
+              'Overall is required. Skip any dimension you don\'t want to rate.',
+              style: const TextStyle(fontSize: 12, color: kText2),
+            ),
+          ),
+
+          // ── All dimension rows in one SectionCard ────────────────────────
+          Container(
+            margin: const EdgeInsets.fromLTRB(16, 0, 16, 0),
+            decoration: BoxDecoration(
+              color: kSurface,
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: kBorder),
+            ),
+            clipBehavior: Clip.antiAlias,
+            child: Column(
+              children: [
+                _RatingSliderRow(
+                  icon: Icons.star_rounded,
+                  label: l10n.overallRatingLabel,
+                  isRequired: true,
+                  value: _overall,
+                  onChanged: (v) => setState(() => _overall = v),
+                ),
+                const Divider(height: 1, indent: 16, endIndent: 16),
+                _RatingSliderRow(
+                  icon: Icons.shield_outlined,
+                  label: l10n.safetyLabel,
+                  value: _safety,
+                  onChanged: (v) => setState(() => _safety = v),
+                ),
+                const Divider(height: 1, indent: 16, endIndent: 16),
+                _RatingSliderRow(
+                  icon: Icons.emoji_emotions_outlined,
+                  label: l10n.experienceLabel,
+                  value: _experience,
+                  onChanged: (v) => setState(() => _experience = v),
+                ),
+                const Divider(height: 1, indent: 16, endIndent: 16),
+                _RatingSliderRow(
+                  icon: Icons.accessible_outlined,
+                  label: l10n.accessibilityLabel,
+                  value: _accessibility,
+                  onChanged: (v) => setState(() => _accessibility = v),
+                ),
+                const Divider(height: 1, indent: 16, endIndent: 16),
+                _RatingSliderRow(
+                  icon: Icons.family_restroom_outlined,
+                  label: l10n.familyFriendlyLabel,
+                  value: _familyFriendly,
+                  onChanged: (v) => setState(() => _familyFriendly = v),
+                ),
+              ],
+            ),
+          ),
+
+          // ── Your review (optional) ────────────────────────────────────────
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 14, 16, 6),
+            child: const Text(
+              'YOUR REVIEW (OPTIONAL)',
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                color: kText2,
+                letterSpacing: 0.6,
+              ),
+            ),
+          ),
+          Container(
+            margin: const EdgeInsets.fromLTRB(16, 0, 16, 0),
+            decoration: BoxDecoration(
+              color: kSurface,
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: kBorder),
+            ),
+            clipBehavior: Clip.antiAlias,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
+              child: MarkdownNotesEditor(
+                controller: _noteController,
+                readOnly: false,
+                label: l10n.yourImpressionLabel,
+                helpTitle: l10n.yourImpressionLabel,
+                helpMessage: l10n.yourImpressionHelp,
+              ),
+            ),
+          ),
+
           const SizedBox(height: 20),
 
-          // Overall — required
-          LabelWithHelp(
-            label: AppLocalizations.of(context)!.overallRatingLabel,
-            helpTitle: AppLocalizations.of(context)!.overallRatingLabel,
-            helpMessage: AppLocalizations.of(context)!.overallRatingHelp,
-            labelStyle: theme.textTheme.bodyMedium
-                ?.copyWith(fontWeight: FontWeight.w600),
+          // ── Action buttons ─────────────────────────────────────────────────
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
+            child: Row(
+              children: [
+                if (widget.current != null) ...[
+                  IconButton(
+                    icon: Icon(Icons.delete_outline,
+                        color: Theme.of(context).colorScheme.error),
+                    tooltip: l10n.removeMyRatingTooltip,
+                    onPressed: _saving ? null : _deleteRating,
+                  ),
+                  const SizedBox(width: 4),
+                ],
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed:
+                        _saving ? null : () => Navigator.of(context).pop(),
+                    child: Text(l10n.cancel),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: FilledButton(
+                    onPressed: canSave ? _save : null,
+                    child: _saving
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : Text(l10n.saveButton),
+                  ),
+                ),
+              ],
+            ),
           ),
           const SizedBox(height: 8),
-          _StarRow(
-            value: _overall,
-            onChanged: (v) => setState(() => _overall = v),
-          ),
+        ],
+      ),
+    );
+  }
+}
 
-          // Thank-you confirmation — appears once overall is set
-          AnimatedSize(
-            duration: const Duration(milliseconds: 200),
-            curve: Curves.easeOut,
-            child: _overall != null
-                ? Padding(
-                    padding: const EdgeInsets.only(top: 10),
-                    child: Row(
-                      children: [
-                        const Icon(Icons.check_circle_outline_rounded,
-                            size: 16, color: Colors.green),
-                        const SizedBox(width: 6),
-                        Text(
-                          AppLocalizations.of(context)!.ratingThanksMessage,
-                          style: theme.textTheme.bodySmall
-                              ?.copyWith(color: Colors.green.shade700),
-                        ),
-                      ],
-                    ),
-                  )
-                : const SizedBox.shrink(),
-          ),
+// ---------------------------------------------------------------------------
+// Dimension row — icon + label on top, large stars + score below
+// ---------------------------------------------------------------------------
 
-          // Optional sub-ratings — only shown after overall is selected
-          AnimatedSize(
-            duration: const Duration(milliseconds: 250),
-            curve: Curves.easeOut,
-            child: _overall != null
-                ? Padding(
-                    padding: const EdgeInsets.only(top: 16),
-                    child: _OptionalSection(
-                      safety: _safety,
-                      experience: _experience,
-                      accessibility: _accessibility,
-                      familyFriendly: _familyFriendly,
-                      onSafetyChanged: (v) => setState(() => _safety = v),
-                      onExperienceChanged: (v) => setState(() => _experience = v),
-                      onAccessibilityChanged: (v) =>
-                          setState(() => _accessibility = v),
-                      onFamilyFriendlyChanged: (v) =>
-                          setState(() => _familyFriendly = v),
-                    ),
-                  )
-                : const SizedBox.shrink(),
-          ),
+class _RatingSliderRow extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final bool isRequired;
+  final int? value;
+  final ValueChanged<int?> onChanged;
 
-          // Optional Markdown note — only shown after overall is selected
-          AnimatedSize(
-            duration: const Duration(milliseconds: 250),
-            curve: Curves.easeOut,
-            child: _overall != null
-                ? Padding(
-                    padding: const EdgeInsets.only(top: 16),
-                    child: MarkdownNotesEditor(
-                      controller: _noteController,
-                      readOnly: false,
-                      label: AppLocalizations.of(context)!.yourImpressionLabel,
-                      helpTitle: AppLocalizations.of(context)!.yourImpressionLabel,
-                      helpMessage: AppLocalizations.of(context)!.yourImpressionHelp,
-                    ),
-                  )
-                : const SizedBox.shrink(),
-          ),
+  const _RatingSliderRow({
+    required this.icon,
+    required this.label,
+    required this.value,
+    required this.onChanged,
+    this.isRequired = false,
+  });
 
-          const SizedBox(height: 24),
-
-          // Action buttons
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
           Row(
             children: [
-              if (widget.current != null) ...[
-                IconButton(
-                  icon: Icon(Icons.delete_outline,
-                      color: Theme.of(context).colorScheme.error),
-                  tooltip: AppLocalizations.of(context)!.removeMyRatingTooltip,
-                  onPressed: _saving ? null : _deleteRating,
-                ),
-                const SizedBox(width: 4),
-              ],
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: _saving ? null : () => Navigator.of(context).pop(),
-                  child: Text(AppLocalizations.of(context)!.cancel),
+              Icon(icon, size: 16, color: kForest),
+              const SizedBox(width: 8),
+              Text(
+                isRequired ? '$label *' : label,
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: kBark,
                 ),
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: FilledButton(
-                  onPressed: canSave ? _save : null,
-                  child: _saving
-                      ? const SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
-                          ),
-                        )
-                      : Text(AppLocalizations.of(context)!.saveButton),
-                ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              ...List.generate(5, (i) {
+                final star = i + 1;
+                final filled = value != null && star <= value!;
+                return GestureDetector(
+                  onTap: () => onChanged(value == star ? null : star),
+                  child: Padding(
+                    padding: const EdgeInsets.only(right: 4),
+                    child: Icon(
+                      filled
+                          ? Icons.star_rounded
+                          : Icons.star_outline_rounded,
+                      size: 26,
+                      color: filled
+                          ? ratingColor(value!.toDouble())
+                          : const Color(0xFFE4E4E4),
+                    ),
+                  ),
+                );
+              }),
+              const Spacer(),
+              Text(
+                value != null ? '$value/5' : '—',
+                style: value != null
+                    ? TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w800,
+                        color: ratingColor(value!.toDouble()),
+                      )
+                    : const TextStyle(fontSize: 16, color: kText3),
               ),
             ],
           ),
         ],
       ),
-      ),
     );
   }
 }
 
-// ---------------------------------------------------------------------------
-// Optional "Want to share more?" section
-// ---------------------------------------------------------------------------
-
-class _OptionalSection extends StatelessWidget {
-  final int? safety;
-  final int? experience;
-  final int? accessibility;
-  final int? familyFriendly;
-  final ValueChanged<int?> onSafetyChanged;
-  final ValueChanged<int?> onExperienceChanged;
-  final ValueChanged<int?> onAccessibilityChanged;
-  final ValueChanged<int?> onFamilyFriendlyChanged;
-
-  const _OptionalSection({
-    required this.safety,
-    required this.experience,
-    required this.accessibility,
-    required this.familyFriendly,
-    required this.onSafetyChanged,
-    required this.onExperienceChanged,
-    required this.onAccessibilityChanged,
-    required this.onFamilyFriendlyChanged,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final borderColor = theme.colorScheme.outlineVariant;
-
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        border: Border.all(color: borderColor),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              AppLocalizations.of(context)!.wantToShareMore,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-            const SizedBox(height: 14),
-            _SubRatingRow(
-              label: AppLocalizations.of(context)!.safetyLabel,
-              helpTitle: AppLocalizations.of(context)!.safetyLabel,
-              helpMessage: AppLocalizations.of(context)!.safetyHelp,
-              value: safety,
-              onChanged: onSafetyChanged,
-            ),
-            const SizedBox(height: 12),
-            _SubRatingRow(
-              label: AppLocalizations.of(context)!.experienceLabel,
-              helpTitle: AppLocalizations.of(context)!.experienceLabel,
-              helpMessage: AppLocalizations.of(context)!.experienceHelp,
-              value: experience,
-              onChanged: onExperienceChanged,
-            ),
-            const SizedBox(height: 12),
-            _SubRatingRow(
-              label: AppLocalizations.of(context)!.accessibilityLabel,
-              helpTitle: AppLocalizations.of(context)!.accessibilityLabel,
-              helpMessage: AppLocalizations.of(context)!.accessibilityHelp,
-              value: accessibility,
-              onChanged: onAccessibilityChanged,
-            ),
-            const SizedBox(height: 12),
-            _SubRatingRow(
-              label: AppLocalizations.of(context)!.familyFriendlyLabel,
-              helpTitle: AppLocalizations.of(context)!.familyFriendlyLabel,
-              helpMessage: AppLocalizations.of(context)!.familyFriendlyHelp,
-              value: familyFriendly,
-              onChanged: onFamilyFriendlyChanged,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _SubRatingRow extends StatelessWidget {
-  final String label;
-  final String helpTitle;
-  final String helpMessage;
-  final int? value;
-  final ValueChanged<int?> onChanged;
-
-  const _SubRatingRow({
-    required this.label,
-    required this.helpTitle,
-    required this.helpMessage,
-    required this.value,
-    required this.onChanged,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        SizedBox(
-          width: 110,
-          child: LabelWithHelp(
-            label: label,
-            helpTitle: helpTitle,
-            helpMessage: helpMessage,
-            labelStyle: Theme.of(context).textTheme.bodyMedium,
-          ),
-        ),
-        _StarRow(value: value, onChanged: onChanged, starSize: 24),
-      ],
-    );
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Reusable star row — tapping the current star deselects it (toggles off)
-// ---------------------------------------------------------------------------
-
-class _StarRow extends StatelessWidget {
-  final int? value;
-  final ValueChanged<int?> onChanged;
-  final double starSize;
-
-  const _StarRow({
-    required this.value,
-    required this.onChanged,
-    this.starSize = 32,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: List.generate(5, (i) {
-        final star = i + 1;
-        final filled = value != null && star <= value!;
-        return GestureDetector(
-          onTap: () => onChanged(value == star ? null : star),
-          child: Padding(
-            padding: const EdgeInsets.only(right: 4),
-            child: Icon(
-              filled ? Icons.star_rounded : Icons.star_outline_rounded,
-              size: starSize,
-              color: filled ? ratingColor(value!.toDouble()) : Colors.grey.shade400,
-            ),
-          ),
-        );
-      }),
-    );
-  }
-}

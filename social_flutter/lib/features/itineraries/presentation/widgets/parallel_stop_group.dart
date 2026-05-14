@@ -9,6 +9,7 @@
 // adding another stop to the same track (parallel alternative).
 
 import 'package:flutter/material.dart';
+import 'package:social_flutter/core/ui/app_theme.dart';
 import 'package:social_flutter/features/itineraries/domain/annotation.dart';
 import 'package:social_flutter/features/itineraries/domain/stop.dart';
 import 'package:social_flutter/features/itineraries/domain/track.dart';
@@ -192,9 +193,7 @@ class _ParallelStopGroupState extends State<ParallelStopGroup> {
                   height: active ? 8 : 5,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: active
-                        ? Theme.of(context).colorScheme.primary
-                        : Colors.grey.shade400,
+                    color: active ? kForest : kText3,
                   ),
                 );
               }),
@@ -258,9 +257,10 @@ class _ParallelStopGroupState extends State<ParallelStopGroup> {
       onEditAnnotation: widget.editMode && widget.onEditAnnotation != null
           ? (a) => widget.onEditAnnotation!(stop, a)
           : null,
-      onDeleteAnnotation: widget.editMode && widget.onDeleteAnnotation != null
-          ? (a) => widget.onDeleteAnnotation!(stop, a)
-          : null,
+      onDeleteAnnotation:
+          widget.editMode && widget.onDeleteAnnotation != null
+              ? (a) => widget.onDeleteAnnotation!(stop, a)
+              : null,
     );
   }
 }
@@ -290,7 +290,7 @@ class _BottomActionRow extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 36, vertical: 2),
       child: Row(
         children: [
-          Expanded(child: Divider(color: Colors.grey.shade300, height: 1)),
+          const Expanded(child: Divider(color: kBorder, height: 1)),
           const SizedBox(width: 8),
           if (showAddStop)
             _ActionChip(
@@ -300,10 +300,9 @@ class _BottomActionRow extends StatelessWidget {
               onTap: addStopLoading ? null : onAddStop,
             ),
           if (showAddStop && showAddTransit)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 6),
-              child: Text('·',
-                  style: TextStyle(color: Colors.grey.shade400, fontSize: 12)),
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 6),
+              child: Text('·', style: TextStyle(color: kText3, fontSize: 12)),
             ),
           if (showAddTransit)
             _ActionChip(
@@ -313,7 +312,7 @@ class _BottomActionRow extends StatelessWidget {
               onTap: addTransitLoading ? null : onAddTransit,
             ),
           const SizedBox(width: 8),
-          Expanded(child: Divider(color: Colors.grey.shade300, height: 1)),
+          const Expanded(child: Divider(color: kBorder, height: 1)),
         ],
       ),
     );
@@ -341,23 +340,18 @@ class _ActionChip extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
         child: loading
-            ? SizedBox(
+            ? const SizedBox(
                 width: 13,
                 height: 13,
-                child: CircularProgressIndicator(
-                  strokeWidth: 1.5,
-                  color: Colors.grey.shade500,
-                ),
+                child: CircularProgressIndicator(strokeWidth: 1.5, color: kText2),
               )
             : Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(icon, size: 13, color: Colors.grey.shade500),
+                  Icon(icon, size: 13, color: kText2),
                   const SizedBox(width: 3),
-                  Text(
-                    label,
-                    style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
-                  ),
+                  Text(label,
+                      style: const TextStyle(fontSize: 12, color: kText2)),
                 ],
               ),
       ),
@@ -380,18 +374,18 @@ class _MoveToTrackButton extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
           decoration: BoxDecoration(
-            border: Border.all(color: Colors.grey.shade400),
+            border: Border.all(color: kBorder),
             borderRadius: BorderRadius.circular(8),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.swap_vert, size: 16, color: Colors.grey.shade700),
+              const Icon(Icons.swap_vert, size: 16, color: kText2),
               const SizedBox(height: 2),
               Text(
                 'move',
                 style: theme.textTheme.labelSmall?.copyWith(
-                  color: Colors.grey.shade700,
+                  color: kText2,
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -418,18 +412,18 @@ class _ReorderParallelsButton extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
           decoration: BoxDecoration(
-            border: Border.all(color: Colors.grey.shade400),
+            border: Border.all(color: kBorder),
             borderRadius: BorderRadius.circular(8),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.swap_horiz, size: 16, color: Colors.grey.shade700),
+              const Icon(Icons.swap_horiz, size: 16, color: kText2),
               const SizedBox(height: 2),
               Text(
                 'reorder',
                 style: theme.textTheme.labelSmall?.copyWith(
-                  color: Colors.grey.shade700,
+                  color: kText2,
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -456,25 +450,19 @@ class _AddParallelButton extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
           decoration: BoxDecoration(
-            border: Border.all(
-              color: theme.colorScheme.primary.withValues(alpha: 0.5),
-            ),
+            border: Border.all(color: kForest.withValues(alpha: 0.5)),
             borderRadius: BorderRadius.circular(8),
-            color: theme.colorScheme.primary.withValues(alpha: 0.06),
+            color: kForest.withValues(alpha: 0.06),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(
-                Icons.call_split,
-                size: 16,
-                color: theme.colorScheme.primary,
-              ),
+              const Icon(Icons.call_split, size: 16, color: kForest),
               const SizedBox(height: 2),
               Text(
                 '// stop',
                 style: theme.textTheme.labelSmall?.copyWith(
-                  color: theme.colorScheme.primary,
+                  color: kForest,
                   fontWeight: FontWeight.w600,
                 ),
               ),

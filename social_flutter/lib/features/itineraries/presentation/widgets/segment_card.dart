@@ -141,6 +141,10 @@ class _SegmentCardState extends ConsumerState<SegmentCard> {
   @override
   Widget build(BuildContext context) {
     final segment = widget.segment;
+
+    // Read mode: compact amber transit row matching the design.
+    if (!_isEditable) return _TransitRow(segment: segment, currency: widget.currency);
+
     final routeColor = kCanopy.withValues(alpha: 0.5);
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
@@ -418,4 +422,78 @@ class _DashedLinePainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_DashedLinePainter old) => old.color != color;
+}
+
+// Compact amber row shown in read mode between two stops.
+// margin/padding/colors match the design's TransitRow spec.
+class _TransitRow extends StatelessWidget {
+  final TransitSegment segment;
+  final String currency;
+
+  const _TransitRow({required this.segment, required this.currency});
+
+  static const _bgColor = Color(0xFFFFF8EC);
+  static const _borderColor = Color(0xFFF0E2C2);
+  static const _iconColor = Color(0xFFA06D1F);
+  static const _textColor = Color(0xFF8A5A18);
+
+  String _cost() {
+    if (segment.totalCost <= 0) return 'Free';
+    return '${segment.totalCost.toStringAsFixed(0)} $currency';
+  }
+
+  String _duration() {
+    if (segment.totalDurationMin <= 0) return '';
+    final h = segment.totalDurationMin ~/ 60;
+    final m = segment.totalDurationMin % 60;
+    if (h == 0) return '${m}min';
+    if (m == 0) return '${h}h';
+    return '${h}h ${m}min';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // Use the first leg's mode for the icon; fall back to walk if no legs.
+    final mode = segment.legs.isNotEmpty ? segment.legs.first.mode : null;
+    final icon = mode?.icon ?? Icons.directions_walk_rounded;
+    final label = mode?.label ?? 'Transit';
+
+    final duration = _duration();
+    final cost = _cost();
+
+    return Container(
+      margin: const EdgeInsets.fromLTRB(28, 6, 28, 6),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: _bgColor,
+        border: Border.all(color: _borderColor),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, size: 16, color: _iconColor),
+          const SizedBox(width: 8),
+          Text(label,
+              style: const TextStyle(
+                  fontSize: 12, fontWeight: FontWeight.w700, color: _textColor)),
+          if (duration.isNotEmpty) ...[
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 6),
+              child: Text('·',
+                  style: TextStyle(fontSize: 12, color: _textColor)),
+            ),
+            Text(duration,
+                style: const TextStyle(fontSize: 12, color: _textColor)),
+          ],
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 6),
+            child: Text('·',
+                style: TextStyle(fontSize: 12, color: _textColor)),
+          ),
+          Text(cost,
+              style: const TextStyle(fontSize: 12, color: _textColor)),
+        ],
+      ),
+    );
+  }
 }

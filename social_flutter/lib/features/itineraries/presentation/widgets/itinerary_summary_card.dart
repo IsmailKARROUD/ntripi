@@ -1,7 +1,5 @@
-// widgets/itinerary_summary_card.dart — Shared card used on list and profile screens.
-//
-// Displays title, visibility badge, and summary stats (duration, cost, stops,
-// safety rating). Tapping navigates to the itinerary detail screen.
+// widgets/itinerary_summary_card.dart — Editorial-style card used on list and
+// profile screens.
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
@@ -10,7 +8,6 @@ import 'package:go_router/go_router.dart';
 import 'package:social_flutter/core/api/api_endpoints.dart';
 import 'package:social_flutter/core/ui/app_theme.dart';
 import 'package:social_flutter/features/itineraries/domain/itinerary.dart';
-import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
 import 'package:social_flutter/l10n/app_localizations.dart';
 
 class ItinerarySummaryCard extends ConsumerWidget {
@@ -27,90 +24,92 @@ class ItinerarySummaryCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      clipBehavior: Clip.antiAlias, // This forces the child to follow the shape
-      child: InkWell(
-        onTap: () => context.push('/itineraries/${itinerary.id}'),
-        onLongPress: onLongPress,
-        borderRadius: BorderRadius.circular(12),
-        child: Stack(
-          alignment: AlignmentDirectional.bottomStart,
+    final l10n = AppLocalizations.of(context)!;
+    final coverUrl = itinerary.coverImageUrl != null
+        ? (itinerary.coverImageUrl!.startsWith('/')
+            ? '$kApiBaseUrl${itinerary.coverImageUrl}'
+            : itinerary.coverImageUrl!)
+        : null;
+
+    return GestureDetector(
+      onTap: () => context.push('/itineraries/${itinerary.id}'),
+      onLongPress: onLongPress,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        decoration: BoxDecoration(
+          color: kSurface,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: kBorder),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Cover image thumbnail — shown only when the itinerary has one
-            if (itinerary.coverImageUrl != null)
-              _CardCoverImage(
-                url: itinerary.coverImageUrl!.startsWith('/')
-                    ? '$kApiBaseUrl${itinerary.coverImageUrl}'
-                    : itinerary.coverImageUrl!,
+            // Cover image — 120px tall
+            SizedBox(
+              height: 120,
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  _CoverSlot(url: coverUrl),
+                  Positioned(
+                    top: 10,
+                    left: 10,
+                    child: _VisibilityBadge(
+                      visibility: itinerary.visibility,
+                      l10n: l10n,
+                    ),
+                  ),
+                ],
               ),
-            Container(
-              padding: const EdgeInsets.all(16),
-              color: Colors.white.withValues(alpha: 0.95),
+            ),
+            // Content area
+            Padding(
+              padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Title + visibility badge + optional share icon
                   Row(
                     children: [
                       Expanded(
                         child: Text(
                           itinerary.title,
-                          style:
-                              Theme.of(context).textTheme.titleMedium?.copyWith(
-                                    fontWeight: FontWeight.w600,
-                                  ),
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                            color: kBark,
+                            letterSpacing: -0.2,
+                          ),
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                      _VisibilityBadge(itinerary: itinerary),
-                      if (itinerary.visibility !=
-                          ItineraryVisibility.onlyMe) ...[
-                        const SizedBox(width: 4),
-                        InkWell(
-                          onTap: () => ref
-                              .read(shareServiceProvider)
-                              .shareItinerary(itinerary),
-                          borderRadius: BorderRadius.circular(16),
-                          child: Padding(
-                            padding: const EdgeInsets.all(4),
-                            child: Icon(
-                              Icons.share_outlined,
-                              size: 16,
-                              color: Colors.grey.shade500,
-                            ),
-                          ),
+                      if (itinerary.ratingAvg != null) ...[
+                        const SizedBox(width: 8),
+                        _StarRating(
+                          score: itinerary.ratingAvg!,
+                          count: itinerary.ratingCount,
                         ),
                       ],
                     ],
                   ),
-                  const SizedBox(height: 10),
-
-                  // Stats row
+                  const SizedBox(height: 8),
                   Wrap(
-                    spacing: 12,
-                    runSpacing: 6,
+                    spacing: 6,
+                    runSpacing: 4,
                     children: [
-                      _Stat(
-                        icon: Icons.timer_outlined,
+                      _MetaChip(
+                        icon: Icons.schedule_rounded,
                         label: itinerary.formattedDuration,
                       ),
-                      _Stat(
-                        icon: Icons.payments_outlined,
+                      _MetaChip(
+                        icon: Icons.payments_rounded,
                         label: itinerary.formattedCost,
                       ),
-                      _Stat(
-                        icon: Icons.place_outlined,
+                      _MetaChip(
+                        icon: Icons.location_on_rounded,
                         label:
                             '${itinerary.stopsCount} stop${itinerary.stopsCount == 1 ? '' : 's'}',
                       ),
-                      if (itinerary.ratingAvg != null)
-                        _Stat(
-                          icon: Icons.star_rounded,
-                          label:
-                              '${itinerary.ratingAvg!.toStringAsFixed(1)} (${itinerary.ratingCount})',
-                          iconColor: ratingColor(itinerary.ratingAvg!),
-                        ),
                     ],
                   ),
                 ],
@@ -123,67 +122,97 @@ class ItinerarySummaryCard extends ConsumerWidget {
   }
 }
 
-class _CardCoverImage extends StatefulWidget {
-  final String url;
-  const _CardCoverImage({required this.url});
+// Cover image: shows CachedNetworkImage when URL is available, else a gradient
+// placeholder using the brand palette.
+class _CoverSlot extends StatefulWidget {
+  final String? url;
+  const _CoverSlot({this.url});
 
   @override
-  State<_CardCoverImage> createState() => _CardCoverImageState();
+  State<_CoverSlot> createState() => _CoverSlotState();
 }
 
-class _CardCoverImageState extends State<_CardCoverImage> {
+class _CoverSlotState extends State<_CoverSlot> {
   bool _error = false;
 
   @override
   Widget build(BuildContext context) {
-    if (_error) return const SizedBox.shrink();
-    return ClipRRect(
-      borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-      child: AspectRatio(
-        aspectRatio: 1200 / 630,
-        child: CachedNetworkImage(
-          imageUrl: widget.url,
-          fit: BoxFit.cover,
-          errorWidget: (_, __, ___) {
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              if (mounted) setState(() => _error = true);
-            });
-            return const SizedBox.shrink();
-          },
+    if (widget.url != null && !_error) {
+      return CachedNetworkImage(
+        imageUrl: widget.url!,
+        fit: BoxFit.cover,
+        errorWidget: (_, __, ___) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) setState(() => _error = true);
+          });
+          return const _CoverPlaceholder();
+        },
+      );
+    }
+    return const _CoverPlaceholder();
+  }
+}
+
+class _CoverPlaceholder extends StatelessWidget {
+  const _CoverPlaceholder();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [kMist, Color(0xFFB8D9C4)],
         ),
+      ),
+      child: const Center(
+        child: Icon(Icons.map_rounded, size: 36, color: kCanopy),
       ),
     );
   }
 }
 
+// Visibility badge — brand-colored pill matching the design's VisibilityBadge.
 class _VisibilityBadge extends StatelessWidget {
-  final Itinerary itinerary;
+  final ItineraryVisibility visibility;
+  final AppLocalizations l10n;
 
-  const _VisibilityBadge({required this.itinerary});
+  const _VisibilityBadge({required this.visibility, required this.l10n});
 
   @override
   Widget build(BuildContext context) {
+    final (icon, color) = switch (visibility) {
+      ItineraryVisibility.public => (Icons.public_rounded, kCanopy),
+      ItineraryVisibility.followers =>
+        (Icons.group_rounded, kText2),
+      ItineraryVisibility.restricted =>
+        (Icons.key_rounded, kRatingOrange),
+      ItineraryVisibility.onlyMe => (Icons.lock_rounded, kText3),
+    };
+    final label = switch (visibility) {
+      ItineraryVisibility.public => l10n.visibilityPublic,
+      ItineraryVisibility.followers => l10n.visibilityFollowers,
+      ItineraryVisibility.restricted => l10n.visibilityRestricted,
+      ItineraryVisibility.onlyMe => l10n.visibilityOnlyMe,
+    };
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: Colors.grey.shade100,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: Colors.grey.shade300),
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(999),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            itinerary.visibilityIcon,
-            size: 12,
-            color: Colors.grey.shade600,
-          ),
-          const SizedBox(width: 4),
+          Icon(icon, size: 13, color: color),
+          const SizedBox(width: 6),
           Text(
-            _localizedVisibilityLabel(AppLocalizations.of(context)!, itinerary.visibility),
+            label,
             style: TextStyle(
               fontSize: 11,
-              color: Colors.grey.shade600,
+              fontWeight: FontWeight.w600,
+              color: color,
             ),
           ),
         ],
@@ -192,35 +221,73 @@ class _VisibilityBadge extends StatelessWidget {
   }
 }
 
-class _Stat extends StatelessWidget {
+// Small meta chip — icon + label on a subtle background.
+class _MetaChip extends StatelessWidget {
   final IconData icon;
   final String label;
-  final Color? iconColor;
 
-  const _Stat({required this.icon, required this.label, this.iconColor});
+  const _MetaChip({required this.icon, required this.label});
 
   @override
   Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: const Color(0x0A000000), // rgba(0,0,0,0.04)
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: kBark),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              color: kBark,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// Inline star rating — score + (count) in the rating semantic color.
+class _StarRating extends StatelessWidget {
+  final double score;
+  final int count;
+
+  const _StarRating({required this.score, required this.count});
+
+  @override
+  Widget build(BuildContext context) {
+    final color = ratingColor(score);
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, size: 14, color: iconColor ?? Colors.grey.shade600),
+        Icon(Icons.star_rounded, size: 13, color: color),
         const SizedBox(width: 4),
         Text(
-          label,
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Colors.grey.shade700,
-              ),
+          score.toStringAsFixed(1),
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w700,
+            color: color,
+          ),
+        ),
+        Text(
+          ' ($count)',
+          style: const TextStyle(
+            fontSize: 11,
+            color: kText3,
+            fontWeight: FontWeight.w500,
+          ),
         ),
       ],
     );
   }
 }
 
-String _localizedVisibilityLabel(AppLocalizations l10n, ItineraryVisibility v) =>
-    switch (v) {
-      ItineraryVisibility.public => l10n.visibilityPublic,
-      ItineraryVisibility.followers => l10n.visibilityFollowers,
-      ItineraryVisibility.restricted => l10n.visibilityRestricted,
-      ItineraryVisibility.onlyMe => l10n.visibilityOnlyMe,
-    };
