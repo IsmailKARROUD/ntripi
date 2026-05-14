@@ -475,7 +475,7 @@ class _MyProfileScreenState extends ConsumerState<MyProfileScreen> {
                           fontWeight: FontWeight.w500),
                       decoration: const InputDecoration(
                         border: InputBorder.none,
-                        contentPadding: EdgeInsets.zero,
+                        contentPadding: EdgeInsets.only(left: 8, top: 8, bottom: 8),
                         isDense: true,
                       ),
                     ),
@@ -495,12 +495,11 @@ class _MyProfileScreenState extends ConsumerState<MyProfileScreen> {
                   const _FieldDivider(),
                   _EditFieldRow(
                     icon: Icons.notes_rounded,
-                    label: 'Bio',
                     child: MarkdownNotesEditor(
                       controller: _bioController,
                       readOnly: false,
-                      label: '',
-                      helpTitle: 'Bio',
+                      label: 'BIO',
+                      helpTitle: 'BIO',
                       helpMessage:
                           'A short description. Supports **bold** markdown and emoji.',
                     ),
@@ -519,7 +518,7 @@ class _MyProfileScreenState extends ConsumerState<MyProfileScreen> {
                         hintText: 'https://…',
                         hintStyle: TextStyle(color: kText3, fontSize: 14),
                         border: InputBorder.none,
-                        contentPadding: EdgeInsets.zero,
+                        contentPadding: EdgeInsets.only(left: 8, top: 8, bottom: 8),
                         isDense: true,
                       ),
                     ),
@@ -1231,12 +1230,12 @@ class _FieldDivider extends StatelessWidget {
 
 class _EditFieldRow extends StatelessWidget {
   final IconData icon;
-  final String label;
+  final String? label;
   final Widget child;
 
   const _EditFieldRow({
     required this.icon,
-    required this.label,
+    this.label,
     required this.child,
   });
 
@@ -1258,11 +1257,11 @@ class _EditFieldRow extends StatelessWidget {
           ),
           const SizedBox(width: 12),
           Expanded(
-            child: Column(
+            child: label != null ? Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  label.toUpperCase(),
+                  label!.toUpperCase(),
                   style: const TextStyle(
                     fontSize: 10,
                     fontWeight: FontWeight.w700,
@@ -1273,7 +1272,7 @@ class _EditFieldRow extends StatelessWidget {
                 const SizedBox(height: 4),
                 child,
               ],
-            ),
+            ) : child,
           ),
         ],
       ),
@@ -1408,14 +1407,6 @@ class _SettingsSheet extends StatelessWidget {
                 iconColor: kForest,
                 label: 'Notifications',
                 detail: 'On',
-                onTap: () => _comingSoon(context),
-              ),
-              _SheetRow(
-                icon: Icons.lock_outline_rounded,
-                iconBg: const Color(0xFFD0EBDA),
-                iconColor: kForest,
-                label: 'Privacy & security',
-                detail: 'Private',
                 onTap: () => _comingSoon(context),
               ),
               _SheetRow(
