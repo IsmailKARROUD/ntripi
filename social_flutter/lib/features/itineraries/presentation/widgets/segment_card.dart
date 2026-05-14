@@ -321,23 +321,29 @@ class _LegDetailSheet extends StatelessWidget {
 
     return SafeArea(
       child: Padding(
-        padding: const EdgeInsets.all(4),
+        padding: const EdgeInsets.only(left: 16, right: 8,top: 14, bottom: 8),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                Icon(leg.mode.icon, size: 20, color: kCanopy),
-                const SizedBox(width: 8),
-                Text(
-                  leg.summary.isNotEmpty ? leg.summary : leg.mode.label,
-                  style: theme.textTheme.titleMedium
-                      ?.copyWith(fontWeight: FontWeight.w600),
-                ),
-              ],
+            Padding(
+              padding: const EdgeInsets.only(left: 8.0),
+              child: Row(
+                
+                children: [
+                  Icon(leg.mode.icon, size: 20, color: kCanopy),
+                  const SizedBox(width: 8),
+                  Text(
+                    leg.summary.isNotEmpty ? leg.summary : leg.mode.label,
+                    style: theme.textTheme.titleMedium
+                        ?.copyWith(fontWeight: FontWeight.w600),
+                  ),
+                ],
+              ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 10),
+            const Divider(height: 1),
+            const SizedBox(height: 5),
             ...rows.map(
               (r) => Padding(
                 padding: const EdgeInsets.symmetric(vertical: 5),

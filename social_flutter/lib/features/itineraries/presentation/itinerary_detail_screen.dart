@@ -657,8 +657,21 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                               child: Padding(
                                 padding:
                                     const EdgeInsets.symmetric(horizontal: 16),
-                                child: InertMarkdownBody(
-                                  data: itinerary.description!,
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Description',
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .titleSmall
+                                          ?.copyWith(
+                                              fontWeight: FontWeight.w600),
+                                    ),
+                                    InertMarkdownBody(
+                                      data: itinerary.description!,
+                                    ),
+                                  ],
                                 ),
                               ),
                             ),
@@ -771,7 +784,7 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                                             ? Icons.expand_less
                                             : Icons.expand_more,
                                         size: 20),
-                                        const Spacer(),
+                                    const Spacer(),
                                     if (isOwner &&
                                         !_editMode &&
                                         !_reorderMode) ...[
@@ -841,8 +854,8 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                                               polylines: [
                                                 Polyline(
                                                   points: polylinePoints,
-                                                  color: kCanopy
-                                                      .withValues(alpha: 0.6),
+                                                  color: kCanopy.withValues(
+                                                      alpha: 0.6),
                                                   strokeWidth: 3,
                                                 ),
                                               ],
@@ -870,7 +883,8 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                                                             color: Colors.white,
                                                             width: 2),
                                                       ),
-                                                      child: const Icon(Icons.place,
+                                                      child: const Icon(
+                                                          Icons.place,
                                                           color: Colors.white,
                                                           size: 10),
                                                     ),
@@ -894,16 +908,15 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                                           padding: const EdgeInsets.symmetric(
                                               horizontal: 6, vertical: 2),
                                           decoration: BoxDecoration(
-                                            color: kSurface
-                                                .withValues(alpha: 0.8),
+                                            color:
+                                                kSurface.withValues(alpha: 0.8),
                                             borderRadius:
                                                 BorderRadius.circular(4),
                                           ),
                                           child: const Text(
                                               'Powered by OpenStreetMap',
                                               style: TextStyle(
-                                                  fontSize: 9,
-                                                  color: kText2)),
+                                                  fontSize: 9, color: kText2)),
                                         ),
                                       ),
                                     ],
@@ -924,11 +937,10 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                                         ),
                                         child: const Column(
                                           children: [
-                                             Icon(Icons.place_outlined,
-                                                size: 48,
-                                                color: kText3),
-                                             SizedBox(height: 12),
-                                             Text(
+                                            Icon(Icons.place_outlined,
+                                                size: 48, color: kText3),
+                                            SizedBox(height: 12),
+                                            Text(
                                                 'No stops yet. Tap + to add one.'),
                                           ],
                                         ),
@@ -1208,11 +1220,9 @@ class _CoverImageState extends State<_CoverImage> {
                 backgroundColor: kBark,
                 iconTheme: const IconThemeData(color: kSurface),
               ),
-              body: Center(
-                child: PhotoView(
-                  enableRotation: true,
-                  imageProvider: CachedNetworkImageProvider(widget.url),
-                ),
+              body: PhotoView(
+                enableRotation: true,
+                imageProvider: CachedNetworkImageProvider(widget.url),
               ),
             ),
           ),
@@ -1220,20 +1230,39 @@ class _CoverImageState extends State<_CoverImage> {
       },
       child: AspectRatio(
         aspectRatio: 1200 / 630,
-        child: CachedNetworkImage(
-          imageUrl: widget.url,
-          fit: BoxFit.cover,
-          errorWidget: (_, __, ___) {
-            if (!_error) {
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                if (mounted) {
-                  setState(() => _error = true);
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            CachedNetworkImage(
+              imageUrl: widget.url,
+              fit: BoxFit.cover,
+              errorWidget: (_, __, ___) {
+                if (!_error) {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (mounted) {
+                      setState(() => _error = true);
+                    }
+                  });
                 }
-              });
-            }
-
-            return const SizedBox.shrink();
-          },
+                return const SizedBox.shrink();
+              },
+            ),
+            Container(
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  stops: [0.0, 0.35, 0.55, 1.0],
+                  colors: [
+                    Color(0x801A2A1E),
+                    Color(0x001A2A1E),
+                    Color(0x001A2A1E),
+                    Color(0xC71A2A1E),
+                  ],
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
