@@ -143,6 +143,24 @@ class TransportLeg {
     );
   }
 
+  String get formattedDuration {
+    final d = durationMin;
+    if (d == null || d <= 0) return '';
+    final years = d ~/ (60 * 24 * 365);
+    var remaining = d % (60 * 24 * 365);
+    final days = remaining ~/ (60 * 24);
+    remaining = remaining % (60 * 24);
+    final hours = remaining ~/ 60;
+    final minutes = remaining % 60;
+    final parts = <String>[
+      if (years > 0) '${years}y',
+      if (days > 0) '${days}d',
+      if (hours > 0) '${hours}h',
+      if (minutes > 0) '${minutes}min',
+    ];
+    return parts.join(' ');
+  }
+
   /// Compact one-line summary: "Metro · Line 9 → direction Nation"
   String get summary {
     final parts = <String>[

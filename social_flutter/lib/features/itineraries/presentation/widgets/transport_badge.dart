@@ -1,8 +1,6 @@
 // widgets/transport_badge.dart — Compact chip for one transport leg inside a SegmentCard.
 //
-// Displays: mode icon · leg summary · per-leg cost · segment total duration.
-// formattedDuration is the segment-level total, not per-leg — it's shown once
-// per badge because the badge is the only visible unit in the card's Wrap.
+// Displays: mode icon · leg summary · per-leg cost · per-leg duration.
 
 import 'package:flutter/material.dart';
 import 'package:social_flutter/core/ui/app_theme.dart';
@@ -11,14 +9,9 @@ import 'package:social_flutter/features/itineraries/domain/transport_leg.dart';
 class TransportBadge extends StatelessWidget {
   final TransportLeg leg;
   final String currency;
-  // Segment-level total duration passed in from SegmentCard — not a per-leg value.
-  final String formattedDuration;
 
   const TransportBadge(
-      {super.key,
-      required this.leg,
-      required this.currency,
-      required this.formattedDuration});
+      {super.key, required this.leg, required this.currency});
 
   // Returns null when the leg has no cost info at all (cost == 0 and not free),
   // so the badge doesn't show a misleading "0.00" or empty label.
@@ -35,8 +28,9 @@ class TransportBadge extends StatelessWidget {
     if (costLabel != null) {
       _legString += ' · $costLabel';
     }
-    if (formattedDuration.isNotEmpty && formattedDuration != '—') {
-      _legString += ' · $formattedDuration';
+    final dur = leg.formattedDuration;
+    if (dur.isNotEmpty) {
+      _legString += ' · $dur';
     }
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),

@@ -103,7 +103,6 @@ class _SegmentCardState extends ConsumerState<SegmentCard> {
       builder: (ctx) => _LegDetailSheet(
         leg: leg,
         currency: widget.currency,
-        formattedDuration: widget.segment.formattedDuration,
       ),
     );
   }
@@ -205,8 +204,6 @@ class _SegmentCardState extends ConsumerState<SegmentCard> {
                                       child: TransportBadge(
                                         leg: segment.legs[i],
                                         currency: widget.currency,
-                                        formattedDuration:
-                                            segment.formattedDuration,
                                       ),
                                     )
                                   : GestureDetector(
@@ -215,8 +212,6 @@ class _SegmentCardState extends ConsumerState<SegmentCard> {
                                       child: TransportBadge(
                                         leg: segment.legs[i],
                                         currency: widget.currency,
-                                        formattedDuration:
-                                            segment.formattedDuration,
                                       ),
                                     ),
                             if (_isEditable)
@@ -277,12 +272,10 @@ class _SegmentCardState extends ConsumerState<SegmentCard> {
 class _LegDetailSheet extends StatelessWidget {
   final TransportLeg leg;
   final String currency;
-  final String formattedDuration;
 
   const _LegDetailSheet({
     required this.leg,
     required this.currency,
-    required this.formattedDuration,
   });
 
   static IconData _noteTypeIcon(AnnotationType? t) => switch (t) {
@@ -314,8 +307,8 @@ class _LegDetailSheet extends StatelessWidget {
         _DetailRow(Icons.confirmation_number_outlined, 'Line', leg.line!),
       if (leg.direction != null && leg.direction!.isNotEmpty)
         _DetailRow(Icons.arrow_forward, 'Direction', leg.direction!),
-      if (formattedDuration.isNotEmpty && formattedDuration != '—')
-        _DetailRow(Icons.timer_outlined, 'Duration', formattedDuration),
+      if (leg.formattedDuration.isNotEmpty)
+        _DetailRow(Icons.timer_outlined, 'Duration', leg.formattedDuration),
       _DetailRow(Icons.payments_outlined, 'Cost', _costLabel),
     ];
 
