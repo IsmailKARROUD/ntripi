@@ -49,13 +49,15 @@ class TransportBadge extends StatelessWidget {
         children: [
           Icon(leg.mode.icon, size: 13, color: kCanopy),
           const SizedBox(width: 4),
-          Text(
-            _legString,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: kCanopy,
-                ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
+          Flexible(
+            child: Text(
+              _legString,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: kCanopy,
+                  ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
           ),
         ],
       ),

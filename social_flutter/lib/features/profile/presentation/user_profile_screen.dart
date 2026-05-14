@@ -28,9 +28,6 @@ import 'package:social_flutter/shared/widgets/follow_button.dart';
 import 'package:social_flutter/shared/widgets/user_avatar.dart';
 import 'package:social_flutter/core/utils/platform_utils.dart';
 
-const _text2 = Color(0xFF5A7562);
-const _border = Color(0xFFE4EDE6);
-const _surface = Colors.white;
 
 class UserProfileScreen extends ConsumerWidget {
   final String userId;
@@ -41,7 +38,7 @@ class UserProfileScreen extends ConsumerWidget {
     final profileAsync = ref.watch(userProfileProvider(userId));
 
     return Scaffold(
-      backgroundColor: _surface,
+      backgroundColor: kSurface,
       resizeToAvoidBottomInset: false,
       body: Center(
         child: ConstrainedBox(
@@ -173,7 +170,7 @@ class _ProfileBody extends ConsumerWidget {
                       style: TextStyle(
                         fontSize: 10,
                         fontWeight: FontWeight.w700,
-                        color: _text2,
+                        color: kText2,
                         letterSpacing: 0.8,
                       ),
                     ),
@@ -213,7 +210,7 @@ class _ProfileBody extends ConsumerWidget {
                         style: Theme.of(context)
                             .textTheme
                             .bodyMedium
-                            ?.copyWith(color: _text2),
+                            ?.copyWith(color: kText2),
                       ),
                     ),
                   );
@@ -310,7 +307,7 @@ class _OtherHeroAndIdentity extends StatelessWidget {
                         style: const TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w500,
-                          color: _text2,
+                          color: kText2,
                         ),
                       ),
                     ],
@@ -529,7 +526,7 @@ class _FollowButtonRow extends StatelessWidget {
           width: 46,
           height: 46,
           decoration: BoxDecoration(
-            border: Border.all(color: _border, width: 1.5),
+            border: Border.all(color: kBorder, width: 1.5),
             borderRadius: BorderRadius.circular(14),
           ),
           child: const Icon(Icons.mail_outline_rounded,
@@ -595,7 +592,7 @@ class _LockedContent extends StatelessWidget {
             textAlign: TextAlign.center,
             style: const TextStyle(
               fontSize: 13,
-              color: _text2,
+              color: kText2,
               height: 1.5,
             ),
           ),
@@ -639,7 +636,7 @@ class _Tally extends StatelessWidget {
             style: const TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w600,
-              color: _text2,
+              color: kText2,
             ),
           ),
         ],

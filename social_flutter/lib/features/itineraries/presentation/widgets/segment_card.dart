@@ -13,6 +13,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:social_flutter/core/api/api_client.dart';
+import 'package:social_flutter/core/ui/app_theme.dart';
+import 'package:social_flutter/features/itineraries/domain/annotation.dart';
 import 'package:social_flutter/features/itineraries/domain/transit_segment.dart';
 import 'package:social_flutter/features/itineraries/domain/transport_leg.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/leg_form_dialog.dart';
@@ -92,6 +94,20 @@ class _SegmentCardState extends ConsumerState<SegmentCard> {
     await _saveLegs([...widget.segment.legs.map(_legToMap), result]);
   }
 
+  void _showLegDetails(TransportLeg leg) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (ctx) => _LegDetailSheet(
+        leg: leg,
+        currency: widget.currency,
+        formattedDuration: widget.segment.formattedDuration,
+      ),
+    );
+  }
+
   Future<void> _editLeg(int index) async {
     final leg = widget.segment.legs[index];
     final result = await LegFormDialog.show(context, existing: leg);
@@ -126,94 +142,281 @@ class _SegmentCardState extends ConsumerState<SegmentCard> {
   @override
   Widget build(BuildContext context) {
     final segment = widget.segment;
+    final routeColor = kCanopy.withValues(alpha: 0.5);
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 36, vertical: 2),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.orange.shade50,
+          color: kMist.withValues(alpha: 0.05),
           borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: Colors.orange.shade200),
         ),
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Icon(
-                    Icons.directions_transit_outlined,
-                    size: 14,
-                    color: Colors.orange.shade700,
+          child: IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Route line: dot → dashed line → dot, parallel to content
+                SizedBox(
+                  width: 14,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Container(
+                        width: 6,
+                        height: 6,
+                        decoration: BoxDecoration(
+                          color: routeColor,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      Expanded(
+                        child: CustomPaint(
+                          painter: _DashedLinePainter(color: routeColor),
+                        ),
+                      ),
+                      Container(
+                        width: 6,
+                        height: 6,
+                        decoration: BoxDecoration(
+                          color: routeColor,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                    ],
                   ),
-                  const Spacer(),
-                  if (_saving)
-                    SizedBox(
+                ),
+                const SizedBox(width: 10),
+                // Segment content
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (segment.legs.isNotEmpty) ...[
+                        const SizedBox(height: 4),
+                        Wrap(
+                          spacing: 4,
+                          runSpacing: 4,
+                          children: [
+                            for (var i = 0; i < segment.legs.length; i++)
+                              _isEditable
+                                  ? GestureDetector(
+                                      onTap: _saving ? null : () => _editLeg(i),
+                                      child: TransportBadge(
+                                        leg: segment.legs[i],
+                                        currency: widget.currency,
+                                        formattedDuration:
+                                            segment.formattedDuration,
+                                      ),
+                                    )
+                                  : GestureDetector(
+                                      onTap: () =>
+                                          _showLegDetails(segment.legs[i]),
+                                      child: TransportBadge(
+                                        leg: segment.legs[i],
+                                        currency: widget.currency,
+                                        formattedDuration:
+                                            segment.formattedDuration,
+                                      ),
+                                    ),
+                            if (_isEditable)
+                              GestureDetector(
+                                onTap: _saving ? null : _addLeg,
+                                child: const AddTransportBadge(),
+                              ),
+                          ],
+                        ),
+                      ] else ...[
+                        const SizedBox(height: 4),
+                        GestureDetector(
+                          onTap: _saving ? null : _addLeg,
+                          child: Text(
+                            'No transport legs added yet. Tap to add.',
+                            style:
+                                Theme.of(context).textTheme.bodySmall?.copyWith(
+                                      color: Colors.grey.shade600,
+                                      fontStyle: FontStyle.italic,
+                                    ),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                if (_saving)
+                  Center(
+                    child: SizedBox(
                       width: 14,
                       height: 14,
                       child: CircularProgressIndicator(
                         strokeWidth: 1.5,
-                        color: Colors.orange.shade700,
+                        color: kCanopy.withValues(alpha: 0.8),
                       ),
                     ),
-                  if (widget.onDelete != null && !_saving) ...[
-                    const SizedBox(width: 8),
-                    IconButton(
+                  )
+                else if (widget.onDelete != null)
+                  Center(
+                    child: IconButton(
                       icon: const Icon(Icons.delete_outline, size: 16),
                       onPressed: widget.onDelete,
                       visualDensity: VisualDensity.compact,
                       padding: EdgeInsets.zero,
                       constraints: const BoxConstraints(),
-                      color: Colors.red.shade400,
+                      color: kRatingRed,
                     ),
-                  ],
-                ],
-              ),
-              if (segment.legs.isNotEmpty) ...[
-                const SizedBox(height: 6),
-                Wrap(
-                  spacing: 4,
-                  runSpacing: 4,
-                  children: [
-                    for (var i = 0; i < segment.legs.length; i++)
-                      _isEditable
-                          ? GestureDetector(
-                              onTap: _saving ? null : () => _editLeg(i),
-                              child: TransportBadge(
-                                leg: segment.legs[i],
-                                currency: widget.currency,
-                                formattedDuration: segment.formattedDuration,
-                              ),
-                            )
-                          : TransportBadge(
-                              leg: segment.legs[i],
-                              currency: widget.currency,
-                              formattedDuration: segment.formattedDuration,
-                            ),
-                    if (_isEditable)
-                      GestureDetector(
-                        onTap: _saving ? null : _addLeg,
-                        child: const AddTransportBadge(),
-                      ),
-                  ],
-                ),
-              ] else ...[
-                const SizedBox(height: 6),
-                GestureDetector(
-                  onTap: _saving ? null : _addLeg,
-                  child: Text(
-                    'No transport legs added yet. Tap to add.',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Colors.grey.shade600,
-                          fontStyle: FontStyle.italic,
-                        ),
                   ),
-                ),
               ],
-            ],
+            ),
           ),
         ),
       ),
     );
   }
+}
+
+class _LegDetailSheet extends StatelessWidget {
+  final TransportLeg leg;
+  final String currency;
+  final String formattedDuration;
+
+  const _LegDetailSheet({
+    required this.leg,
+    required this.currency,
+    required this.formattedDuration,
+  });
+
+  static IconData _noteTypeIcon(AnnotationType? t) => switch (t) {
+        AnnotationType.caution => Icons.warning_amber_outlined,
+        AnnotationType.avoid => Icons.block_outlined,
+        AnnotationType.advice => Icons.lightbulb_outline,
+        _ => Icons.info_outline,
+      };
+
+  static Color _noteTypeColor(AnnotationType? t) => switch (t) {
+        AnnotationType.caution => kRatingOrange,
+        AnnotationType.avoid => kRatingRed,
+        AnnotationType.advice => kAmber,
+        _ => kText2,
+      };
+
+  String get _costLabel {
+    if (leg.isFree) return 'Free';
+    if (leg.cost > 0) return '${leg.cost.toStringAsFixed(2)} $currency';
+    return 'No cost info';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final rows = <_DetailRow>[
+      _DetailRow(Icons.directions, 'Mode', leg.mode.label),
+      if (leg.line != null && leg.line!.isNotEmpty)
+        _DetailRow(Icons.confirmation_number_outlined, 'Line', leg.line!),
+      if (leg.direction != null && leg.direction!.isNotEmpty)
+        _DetailRow(Icons.arrow_forward, 'Direction', leg.direction!),
+      if (formattedDuration.isNotEmpty && formattedDuration != '—')
+        _DetailRow(Icons.timer_outlined, 'Duration', formattedDuration),
+      _DetailRow(Icons.payments_outlined, 'Cost', _costLabel),
+    ];
+
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.all(4),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(leg.mode.icon, size: 20, color: kCanopy),
+                const SizedBox(width: 8),
+                Text(
+                  leg.summary.isNotEmpty ? leg.summary : leg.mode.label,
+                  style: theme.textTheme.titleMedium
+                      ?.copyWith(fontWeight: FontWeight.w600),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            ...rows.map(
+              (r) => Padding(
+                padding: const EdgeInsets.symmetric(vertical: 5),
+                child: Row(
+                  children: [
+                    Icon(r.icon, size: 16, color: kText2),
+                    const SizedBox(width: 10),
+                    Text(r.label,
+                        style: theme.textTheme.bodySmall
+                            ?.copyWith(color: kText2, fontWeight: FontWeight.w500)),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(r.value,
+                          style: theme.textTheme.bodyMedium,
+                          overflow: TextOverflow.ellipsis),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            if (leg.notes != null && leg.notes!.isNotEmpty) ...[
+              const SizedBox(height: 10),
+              const Divider(height: 1),
+              const SizedBox(height: 10),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(
+                    _noteTypeIcon(leg.noteType),
+                    size: 16,
+                    color: _noteTypeColor(leg.noteType),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(leg.notes!,
+                        style: theme.textTheme.bodySmall
+                            ?.copyWith(color: kBark)),
+                  ),
+                ],
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _DetailRow {
+  final IconData icon;
+  final String label;
+  final String value;
+  const _DetailRow(this.icon, this.label, this.value);
+}
+
+class _DashedLinePainter extends CustomPainter {
+  final Color color;
+  const _DashedLinePainter({required this.color});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..strokeWidth = 1.5
+      ..style = PaintingStyle.stroke;
+    const dashHeight = 3.0;
+    const gapHeight = 3.0;
+    double y = 0;
+    final cx = size.width / 2;
+    while (y < size.height) {
+      canvas.drawLine(
+        Offset(cx, y),
+        Offset(cx, (y + dashHeight).clamp(0, size.height)),
+        paint,
+      );
+      y += dashHeight + gapHeight;
+    }
+  }
+
+  @override
+  bool shouldRepaint(_DashedLinePainter old) => old.color != color;
 }

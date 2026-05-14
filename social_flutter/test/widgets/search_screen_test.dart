@@ -148,7 +148,7 @@ void main() {
         await tester.pumpWidget(_buildScreen());
         await tester.pump();
 
-        expect(find.byIcon(Icons.close_outlined), findsNothing);
+        expect(find.byIcon(Icons.playlist_remove_outlined), findsNothing);
       });
     });
 
@@ -323,11 +323,11 @@ void main() {
         await tester.pumpWidget(_buildScreen());
         await tester.pump();
 
-        expect(find.byIcon(Icons.close_outlined), findsNothing);
+        expect(find.byIcon(Icons.playlist_remove_outlined), findsNothing);
 
         await _typeQuery(tester, 'abc');
 
-        expect(find.byIcon(Icons.close_outlined), findsOneWidget);
+        expect(find.byIcon(Icons.playlist_remove_outlined), findsOneWidget);
       });
 
       testWidgets(
@@ -343,12 +343,12 @@ void main() {
 
         await _typeQuery(tester, 'abc');
 
-        expect(find.byIcon(Icons.close_outlined), findsOneWidget);
+        expect(find.byIcon(Icons.playlist_remove_outlined), findsOneWidget);
 
-        await tester.tap(find.byIcon(Icons.close_outlined));
+        await tester.tap(find.byIcon(Icons.playlist_remove_outlined));
         await tester.pump();
 
-        expect(find.byIcon(Icons.close_outlined), findsNothing);
+        expect(find.byIcon(Icons.playlist_remove_outlined), findsNothing);
         expect(find.text('Search for people to follow'), findsOneWidget);
       });
     });

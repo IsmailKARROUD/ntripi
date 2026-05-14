@@ -9,6 +9,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:social_flutter/core/ui/app_theme.dart';
+import 'package:social_flutter/shared/widgets/editorial_widgets.dart';
 import 'package:social_flutter/features/itineraries/domain/dimension_key.dart';
 import 'package:social_flutter/features/itineraries/domain/ratings_page.dart';
 import 'package:social_flutter/features/itineraries/presentation/ratings_page_screen.dart';
@@ -55,9 +56,17 @@ class DimensionRatingsScreen extends ConsumerWidget {
     final dist = _distribution(filtered);
 
     return Scaffold(
+      backgroundColor: kSurface,
       resizeToAvoidBottomInset: false,
-      appBar: AppBar(title: Text('${dimension.label} Rating')),
-      body: Center(
+      body: Column(
+        children: [
+          SafeArea(
+            bottom: false,
+            child: EditorialTopBar(title: '${dimension.label} Rating'),
+          ),
+          Container(height: 1, color: kBorder),
+          Expanded(
+            child: Center(
         child: ConstrainedBox(
           constraints: BoxConstraints(maxWidth: isDesktopWeb() ? kDesktopMaxWidth : double.infinity),
           child: RefreshIndicator(
@@ -77,7 +86,7 @@ class DimensionRatingsScreen extends ConsumerWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       const Icon(Icons.error_outline,
-                          size: 48, color: Colors.red),
+                          size: 48, color:  Color(0xFFBA1A1A)),
                       const SizedBox(height: 12),
                       const Text('Could not load ratings'),
                       const SizedBox(height: 8),
@@ -97,7 +106,7 @@ class DimensionRatingsScreen extends ConsumerWidget {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(dimension.icon, size: 56, color: Colors.grey.shade400),
+                      Icon(dimension.icon, size: 56, color: kText3),
                       const SizedBox(height: 12),
                       Text(
                         'No ratings yet for ${dimension.label.toLowerCase()}',
@@ -142,7 +151,7 @@ class DimensionRatingsScreen extends ConsumerWidget {
                       Text(
                         'Based on ${filtered.length} '
                         'rating${filtered.length == 1 ? '' : 's'}',
-                        style: TextStyle(color: Colors.grey.shade600),
+                        style: const TextStyle(color: kText2),
                       ),
                     ],
                   ),
@@ -169,7 +178,7 @@ class DimensionRatingsScreen extends ConsumerWidget {
                   child: Text(
                     'Raters',
                     style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                          color: Colors.grey.shade600,
+                          color: kText2,
                           letterSpacing: 0.5,
                         ),
                   ),
@@ -195,6 +204,11 @@ class DimensionRatingsScreen extends ConsumerWidget {
           ],
         ),
       ),
-    ),),);
+          ),
+        ),
+          ),
+        ],
+      ),
+    );
   }
 }

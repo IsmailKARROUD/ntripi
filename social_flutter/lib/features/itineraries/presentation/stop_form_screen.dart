@@ -25,6 +25,7 @@ import 'package:social_flutter/features/itineraries/presentation/widgets/markdow
 import 'package:social_flutter/features/itineraries/data/itinerary_repository.dart';
 import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
 import 'package:social_flutter/features/profile/providers/profile_provider.dart';
+import 'package:social_flutter/core/ui/app_theme.dart';
 import 'package:social_flutter/core/utils/platform_utils.dart';
 import 'package:social_flutter/shared/widgets/field_help.dart';
 
@@ -583,6 +584,7 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
     }
 
     return Scaffold(
+      backgroundColor: kSurface,
       resizeToAvoidBottomInset: false,
       appBar: AppBar(
         title: Text(appBarTitle),

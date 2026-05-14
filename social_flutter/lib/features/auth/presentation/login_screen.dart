@@ -61,7 +61,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: kSand,
+      backgroundColor: kSurface,
       body: Center(
         child: ConstrainedBox(
           constraints: BoxConstraints(maxWidth: isDesktopWeb() ? kDesktopMaxWidth : double.infinity),
@@ -94,7 +94,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 const SizedBox(height: 6),
                 const Text(
                   'Sign in to continue your journey',
-                  style: TextStyle(fontSize: 14, color: Color(0xFF5A7562)),
+                  style: TextStyle(fontSize: 14, color: kText2),
                 ),
                 const SizedBox(height: 28),
 
@@ -140,7 +140,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         _obscurePassword
                             ? Icons.visibility_outlined
                             : Icons.visibility_off_outlined,
-                        color: const Color(0xFF93A898),
+                        color: kText3,
                         size: 20,
                       ),
                       onPressed: () =>
@@ -178,7 +178,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             height: 22,
                             child: CircularProgressIndicator(
                               strokeWidth: 2.5,
-                              color: Colors.white,
+                              color: kSurface,
                             ),
                           )
                         : const Text('Sign In'),
@@ -225,7 +225,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       "Don't have an account? ",
                       style: TextStyle(
                         fontSize: 14,
-                        color: Color(0xFF5A7562),
+                        color: kText2,
                       ),
                     ),
                     GestureDetector(
@@ -263,7 +263,7 @@ class _FieldLabel extends StatelessWidget {
     const labelStyle = TextStyle(
       fontSize: 12,
       fontWeight: FontWeight.w600,
-      color: Color(0xFF5A7562),
+      color: kText2,
     );
     if (helpTitle == null || helpMessage == null) {
       return Text(text, style: labelStyle);
@@ -278,7 +278,7 @@ class _FieldLabel extends StatelessWidget {
           helpTitle: helpTitle!,
           helpMessage: helpMessage!,
           size: 16,
-          color: const Color(0xFF5A7562),
+          color: kText2,
         ),
       ],
     );
@@ -322,7 +322,7 @@ class _OrDivider extends StatelessWidget {
           padding: EdgeInsets.symmetric(horizontal: 12),
           child: Text(
             'or continue with',
-            style: TextStyle(fontSize: 12, color: Color(0xFF93A898)),
+            style: TextStyle(fontSize: 12, color: kText3),
           ),
         ),
         Expanded(child: Divider()),
@@ -342,8 +342,8 @@ class _SocialButton extends StatelessWidget {
       onPressed: () {},
       style: OutlinedButton.styleFrom(
         padding: const EdgeInsets.symmetric(vertical: 14),
-        backgroundColor: Colors.white,
-        side: const BorderSide(color: Color(0xFFE4EDE6)),
+        backgroundColor: kSurface,
+        side: const BorderSide(color: kBorder),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
       ),
       child: Row(

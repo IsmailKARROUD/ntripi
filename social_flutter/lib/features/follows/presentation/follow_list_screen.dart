@@ -96,7 +96,7 @@ class _FollowListScreenState extends ConsumerState<FollowListScreen>
             '';
 
     return Scaffold(
-      backgroundColor: kSand,
+      backgroundColor: kSurface,
       resizeToAvoidBottomInset: false,
       body: Center(
         child: ConstrainedBox(

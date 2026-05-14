@@ -167,7 +167,7 @@ final appRouter = GoRouter(
             stopId: state.pathParameters['stopId']!,
           ),
         ),
-        GoRoute(
+       /* GoRoute(
           path: '/itineraries/:id/segments/new',
           builder: (context, state) {
             final extra = state.extra as Map<String, dynamic>?;
@@ -184,7 +184,7 @@ final appRouter = GoRouter(
             itineraryId: state.pathParameters['id']!,
             segmentId: state.pathParameters['segmentId']!,
           ),
-        ),
+        ),*/
         GoRoute(
           path: '/map-picker',
           builder: (context, state) {

@@ -65,6 +65,49 @@ class AvatarInitials extends StatelessWidget {
   }
 }
 
+// ── EditorialTopBar ───────────────────────────────────────────────────────────
+// Standard top bar for secondary screens: back arrow + title + optional actions.
+// Replaces the Material AppBar throughout the app.
+
+class EditorialTopBar extends StatelessWidget {
+  final String title;
+  final List<Widget> actions;
+
+  const EditorialTopBar({
+    super.key,
+    required this.title,
+    this.actions = const [],
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+      child: Row(
+        children: [
+          IconButton(
+            icon: const Icon(Icons.arrow_back),
+            color: kBark,
+            onPressed: () => Navigator.of(context).maybePop(),
+          ),
+          Expanded(
+            child: Text(
+              title,
+              style: const TextStyle(
+                fontSize: 17,
+                fontWeight: FontWeight.w700,
+                color: kBark,
+                letterSpacing: -0.2,
+              ),
+            ),
+          ),
+          ...actions,
+        ],
+      ),
+    );
+  }
+}
+
 // ── SectionLabel ──────────────────────────────────────────────────────────────
 // Uppercase label row with a small leading icon.  Used as a section header
 // above a SectionCard.

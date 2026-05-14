@@ -35,11 +35,6 @@ import 'package:social_flutter/shared/models/user.dart';
 import 'package:social_flutter/shared/widgets/user_avatar.dart';
 import 'package:social_flutter/core/utils/platform_utils.dart';
 
-// ── Extra palette tokens used only in this screen ──────────────────────────
-const _text2 = Color(0xFF5A7562);
-const _text3 = Color(0xFF93A898);
-const _border = Color(0xFFE4EDE6);
-const _surface = Colors.white;
 
 class MyProfileScreen extends ConsumerStatefulWidget {
   const MyProfileScreen({super.key});
@@ -165,7 +160,7 @@ class _MyProfileScreenState extends ConsumerState<MyProfileScreen> {
     final followRequestsAsync = ref.watch(followRequestsProvider);
 
     return Scaffold(
-      backgroundColor: _surface,
+      backgroundColor: kSurface,
       resizeToAvoidBottomInset: false,
       body: Center(
         child: ConstrainedBox(
@@ -284,7 +279,7 @@ class _MyProfileScreenState extends ConsumerState<MyProfileScreen> {
                             style: TextStyle(
                               fontSize: 10,
                               fontWeight: FontWeight.w700,
-                              color: _text2,
+                              color: kText2,
                               letterSpacing: 0.8,
                             ),
                           ),
@@ -372,7 +367,7 @@ class _MyProfileScreenState extends ConsumerState<MyProfileScreen> {
               children: [
                 TextButton(
                   onPressed: () => setState(() => _isEditing = false),
-                  style: TextButton.styleFrom(foregroundColor: _text2),
+                  style: TextButton.styleFrom(foregroundColor: kText2),
                   child: const Text('Cancel',
                       style:
                           TextStyle(fontWeight: FontWeight.w500, fontSize: 15)),
@@ -399,7 +394,6 @@ class _MyProfileScreenState extends ConsumerState<MyProfileScreen> {
             ),
           ),
         ),
-
         // Scrollable form
         Expanded(
           child: SingleChildScrollView(
@@ -494,7 +488,7 @@ class _MyProfileScreenState extends ConsumerState<MyProfileScreen> {
                       user.handle,
                       style: const TextStyle(
                           fontSize: 15,
-                          color: _text2,
+                          color: kText2,
                           fontWeight: FontWeight.w500),
                     ),
                   ),
@@ -523,7 +517,7 @@ class _MyProfileScreenState extends ConsumerState<MyProfileScreen> {
                           fontWeight: FontWeight.w500),
                       decoration: const InputDecoration(
                         hintText: 'https://…',
-                        hintStyle: TextStyle(color: _text3, fontSize: 14),
+                        hintStyle: TextStyle(color: kText3, fontSize: 14),
                         border: InputBorder.none,
                         contentPadding: EdgeInsets.zero,
                         isDense: true,
@@ -640,7 +634,7 @@ class _HeroAndIdentity extends StatelessWidget {
                         style: const TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w500,
-                          color: _text2,
+                          color: kText2,
                         ),
                       ),
                     ],
@@ -964,7 +958,7 @@ class _Tally extends StatelessWidget {
             style: const TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w600,
-              color: _text2,
+              color: kText2,
             ),
           ),
         ],
@@ -1040,7 +1034,7 @@ class _EmptyItinerariesCard extends StatelessWidget {
           decoration: BoxDecoration(
             color: const Color(0xFFD0EBDA),
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: _border),
+            border: Border.all(color: kBorder),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -1075,7 +1069,7 @@ class _EmptyItinerariesCard extends StatelessWidget {
               const SizedBox(height: 4),
               const Text(
                 'Add stops, transit segments and notes. Share it with friends or keep it private.',
-                style: TextStyle(fontSize: 13, color: _text2, height: 1.5),
+                style: TextStyle(fontSize: 13, color: kText2, height: 1.5),
               ),
               const SizedBox(height: 14),
               GestureDetector(
@@ -1121,9 +1115,9 @@ class _EmptyItinerariesCard extends StatelessWidget {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
             decoration: BoxDecoration(
-              color: _surface,
+              color: kSurface,
               borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: _border),
+              border: Border.all(color: kBorder),
             ),
             child: const Row(
               children: [
@@ -1142,12 +1136,12 @@ class _EmptyItinerariesCard extends StatelessWidget {
                       ),
                       Text(
                         'Browse your itineraries for ideas.',
-                        style: TextStyle(fontSize: 11, color: _text2),
+                        style: TextStyle(fontSize: 11, color: kText2),
                       ),
                     ],
                   ),
                 ),
-                Icon(Icons.chevron_right, size: 20, color: _text3),
+                Icon(Icons.chevron_right, size: 20, color: kText3),
               ],
             ),
           ),
@@ -1190,14 +1184,14 @@ class _SectionLabel extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(22, 14, 22, 8),
       child: Row(
         children: [
-          Icon(icon, size: 14, color: _text2),
+          Icon(icon, size: 14, color: kText2),
           const SizedBox(width: 6),
           Text(
             label.toUpperCase(),
             style: const TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w700,
-              color: _text2,
+              color: kText2,
               letterSpacing: 0.6,
             ),
           ),
@@ -1216,9 +1210,9 @@ class _SectionCard extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
-        color: _surface,
+        color: kSurface,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: _border),
+        border: Border.all(color: kBorder),
       ),
       child: Column(children: children),
     );
@@ -1231,7 +1225,7 @@ class _FieldDivider extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-        height: 1, margin: const EdgeInsets.only(left: 16), color: _border);
+        height: 1, margin: const EdgeInsets.only(left: 16), color: kBorder);
   }
 }
 
@@ -1272,7 +1266,7 @@ class _EditFieldRow extends StatelessWidget {
                   style: const TextStyle(
                     fontSize: 10,
                     fontWeight: FontWeight.w700,
-                    color: _text2,
+                    color: kText2,
                     letterSpacing: 0.5,
                   ),
                 ),
@@ -1319,7 +1313,7 @@ class _ToggleRow extends StatelessWidget {
             child: Icon(
               icon,
               size: 16,
-              color: value ? kForest : _text2,
+              color: value ? kForest : kText2,
             ),
           ),
           const SizedBox(width: 12),
@@ -1335,7 +1329,7 @@ class _ToggleRow extends StatelessWidget {
                 if (subtitle != null)
                   Text(subtitle!,
                       style: const TextStyle(
-                          fontSize: 12, color: _text2, height: 1.4)),
+                          fontSize: 12, color: kText2, height: 1.4)),
               ],
             ),
           ),
@@ -1368,7 +1362,7 @@ class _SettingsSheet extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: const BoxDecoration(
-        color: _surface,
+        color: kSurface,
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
       padding:
@@ -1382,7 +1376,7 @@ class _SettingsSheet extends StatelessWidget {
             width: 36,
             height: 4,
             decoration: BoxDecoration(
-              color: _text3.withValues(alpha: 0.55),
+              color: kText3.withValues(alpha: 0.55),
               borderRadius: BorderRadius.circular(2),
             ),
           ),
@@ -1470,9 +1464,9 @@ class _SettingsSheet extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
             child: Container(
               decoration: BoxDecoration(
-                color: _surface,
+                color: kSurface,
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: _border),
+                border: Border.all(color: kBorder),
               ),
               child: Column(
                 children: [
@@ -1487,7 +1481,7 @@ class _SettingsSheet extends StatelessWidget {
                   Container(
                       height: 1,
                       margin: const EdgeInsets.only(left: 56),
-                      color: _border),
+                      color: kBorder),
                   _SheetRow(
                     icon: Icons.delete_outline_rounded,
                     iconBg: const Color(0xFFFFDAD6),
@@ -1531,7 +1525,7 @@ class _SheetSection extends StatelessWidget {
             style: const TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w700,
-              color: _text2,
+              color: kText2,
               letterSpacing: 0.6,
             ),
           ),
@@ -1539,9 +1533,9 @@ class _SheetSection extends StatelessWidget {
         Container(
           margin: const EdgeInsets.symmetric(horizontal: 16),
           decoration: BoxDecoration(
-            color: _surface,
+            color: kSurface,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: _border),
+            border: Border.all(color: kBorder),
           ),
           child: Column(children: children),
         ),
@@ -1608,11 +1602,11 @@ class _SheetRow extends StatelessWidget {
                 ),
                 if (detail != null) ...[
                   Text(detail!,
-                      style: const TextStyle(fontSize: 13, color: _text2)),
+                      style: const TextStyle(fontSize: 13, color: kText2)),
                   const SizedBox(width: 4),
                 ],
                 if (showChevron)
-                  const Icon(Icons.chevron_right, size: 20, color: _text3),
+                  const Icon(Icons.chevron_right, size: 20, color: kText3),
               ],
             ),
           ),
@@ -1621,7 +1615,7 @@ class _SheetRow extends StatelessWidget {
           Container(
               height: 1,
               margin: const EdgeInsets.only(left: 56),
-              color: _border),
+              color: kBorder),
       ],
     );
   }

@@ -51,7 +51,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.white,
+      backgroundColor: kSurface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -67,7 +67,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
               width: 36,
               height: 4,
               decoration: BoxDecoration(
-                color: const Color(0xFFE4EDE6),
+                color: kBorder,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -88,7 +88,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
                 child: Text(
                   _tosSummary ?? 'Loading…',
-                  style: const TextStyle(fontSize: 14, color: Color(0xFF5A7562), height: 1.6),
+                  style: const TextStyle(fontSize: 14, color: kText2, height: 1.6),
                 ),
               ),
             ),
@@ -143,7 +143,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: kSand,
+      backgroundColor: kSurface,
       body: Center(
         child: ConstrainedBox(
           constraints: BoxConstraints(maxWidth: isDesktopWeb() ? kDesktopMaxWidth : double.infinity),
@@ -183,7 +183,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 const SizedBox(height: 6),
                 const Text(
                   'Join thousands of explorers sharing routes',
-                  style: TextStyle(fontSize: 14, color: Color(0xFF5A7562)),
+                  style: TextStyle(fontSize: 14, color: kText2),
                 ),
                 const SizedBox(height: 24),
 
@@ -221,7 +221,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     prefixText: '@',
                     prefixStyle: TextStyle(
                       fontSize: 15,
-                      color: Color(0xFF93A898),
+                      color: kText3,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -271,7 +271,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                         _obscurePassword
                             ? Icons.visibility_outlined
                             : Icons.visibility_off_outlined,
-                        color: const Color(0xFF93A898),
+                        color: kText3,
                         size: 20,
                       ),
                       onPressed: () =>
@@ -309,7 +309,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                         _obscureConfirm
                             ? Icons.visibility_outlined
                             : Icons.visibility_off_outlined,
-                        color: const Color(0xFF93A898),
+                        color: kText3,
                         size: 20,
                       ),
                       onPressed: () =>
@@ -345,7 +345,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                               'I agree to the ',
                               style: TextStyle(
                                 fontSize: 13,
-                                color: Color(0xFF5A7562),
+                                color: kText2,
                               ),
                             ),
                             GestureDetector(
@@ -363,7 +363,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                               ' and ',
                               style: TextStyle(
                                 fontSize: 13,
-                                color: Color(0xFF5A7562),
+                                color: kText2,
                               ),
                             ),
                             const Text(
@@ -381,7 +381,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                         helpTitle: 'Terms of Service',
                         helpMessage:
                             'You must agree to the Terms of Service and Privacy Policy to create an account. Tap the underlined links to read them.',
-                        color: Color(0xFF5A7562),
+                        color: kText2,
                       ),
                     ],
                   ),
@@ -405,7 +405,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                             height: 22,
                             child: CircularProgressIndicator(
                               strokeWidth: 2.5,
-                              color: Colors.white,
+                              color: kSurface,
                             ),
                           )
                         : const Text('Create Account'),
@@ -419,7 +419,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   children: [
                     const Text(
                       'Already have an account? ',
-                      style: TextStyle(fontSize: 14, color: Color(0xFF5A7562)),
+                      style: TextStyle(fontSize: 14, color: kText2),
                     ),
                     GestureDetector(
                       onTap: () => context.go('/login'),
@@ -456,7 +456,7 @@ class _FieldLabel extends StatelessWidget {
     const labelStyle = TextStyle(
       fontSize: 12,
       fontWeight: FontWeight.w600,
-      color: Color(0xFF5A7562),
+      color: kText2,
     );
     if (helpTitle == null || helpMessage == null) {
       return Text(text, style: labelStyle);
@@ -471,7 +471,7 @@ class _FieldLabel extends StatelessWidget {
           helpTitle: helpTitle!,
           helpMessage: helpMessage!,
           size: 16,
-          color: const Color(0xFF5A7562),
+          color: kText2,
         ),
       ],
     );
@@ -513,9 +513,9 @@ class _CircleIconButton extends StatelessWidget {
         width: 36,
         height: 36,
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: kSurface,
           shape: BoxShape.circle,
-          border: Border.all(color: const Color(0xFFE4EDE6)),
+          border: Border.all(color: kBorder),
           boxShadow: const [
             BoxShadow(
               color: Color(0x0D001408),

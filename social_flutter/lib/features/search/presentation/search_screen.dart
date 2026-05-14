@@ -56,7 +56,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     final resultsAsync = ref.watch(searchResultsProvider);
 
     return Scaffold(
-      backgroundColor: kSand,
+      backgroundColor: kSurface,
       resizeToAvoidBottomInset: false,
       body: Center(
         child: ConstrainedBox(

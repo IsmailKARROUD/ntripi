@@ -83,9 +83,9 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
   bool _mapVisible = false;
 
   static const _markerColors = {
-    StopType.origin: Colors.green,
-    StopType.waypoint: Colors.blue,
-    StopType.arrival: Colors.red,
+    StopType.origin: kForest,
+    StopType.waypoint: kCanopy,
+    StopType.arrival: kRatingRed,
   };
 
   void _enterEditMode() {
@@ -540,7 +540,7 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                                               onPressed: () =>
                                                   Navigator.of(ctx).pop(true),
                                               style: FilledButton.styleFrom(
-                                                backgroundColor: Colors.red,
+                                                backgroundColor: kRatingRed,
                                               ),
                                               child: const Text(
                                                   'Delete & continue'),
@@ -704,8 +704,7 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                                           style: Theme.of(context)
                                               .textTheme
                                               .bodySmall
-                                              ?.copyWith(
-                                                  color: Colors.grey.shade500),
+                                              ?.copyWith(color: kText3),
                                         ),
                                       )
                                     else
@@ -842,7 +841,7 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                                               polylines: [
                                                 Polyline(
                                                   points: polylinePoints,
-                                                  color: Colors.blue
+                                                  color: kCanopy
                                                       .withValues(alpha: 0.6),
                                                   strokeWidth: 3,
                                                 ),
@@ -852,7 +851,7 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                                             markers: mappableStops.map((stop) {
                                               final color =
                                                   _markerColors[stop.type] ??
-                                                      Colors.grey;
+                                                      kText2;
                                               return Marker(
                                                 point: LatLng(
                                                     stop.lat!, stop.lng!),
@@ -871,7 +870,7 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                                                             color: Colors.white,
                                                             width: 2),
                                                       ),
-                                                      child: Icon(Icons.place,
+                                                      child: const Icon(Icons.place,
                                                           color: Colors.white,
                                                           size: 10),
                                                     ),
@@ -880,7 +879,7 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                                               );
                                             }).toList(),
                                           ),
-                                          RichAttributionWidget(
+                                          const RichAttributionWidget(
                                             attributions: [
                                               TextSourceAttribution(
                                                   'OpenStreetMap contributors'),
@@ -895,7 +894,7 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                                           padding: const EdgeInsets.symmetric(
                                               horizontal: 6, vertical: 2),
                                           decoration: BoxDecoration(
-                                            color: Colors.white
+                                            color: kSurface
                                                 .withValues(alpha: 0.8),
                                             borderRadius:
                                                 BorderRadius.circular(4),
@@ -904,7 +903,7 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                                               'Powered by OpenStreetMap',
                                               style: TextStyle(
                                                   fontSize: 9,
-                                                  color: Colors.black54)),
+                                                  color: kText2)),
                                         ),
                                       ),
                                     ],
@@ -923,13 +922,13 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                                         onTap: () => context.push(
                                           '/itineraries/${widget.itineraryId}/stops/new',
                                         ),
-                                        child: Column(
+                                        child: const Column(
                                           children: [
-                                            Icon(Icons.place_outlined,
+                                             Icon(Icons.place_outlined,
                                                 size: 48,
-                                                color: Colors.grey.shade400),
-                                            const SizedBox(height: 12),
-                                            const Text(
+                                                color: kText3),
+                                             SizedBox(height: 12),
+                                             Text(
                                                 'No stops yet. Tap + to add one.'),
                                           ],
                                         ),
@@ -1157,23 +1156,21 @@ class _SummaryChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
-        color: Colors.grey.shade100.withValues(alpha: 0.6),
+        color: kSand.withValues(alpha: 0.85),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: Colors.grey.shade300.withValues(alpha: 0.8),
-        ),
+        border: Border.all(color: kBorder),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 14, color: Colors.black),
+          Icon(icon, size: 14, color: kBark),
           const SizedBox(width: 5),
           Text(
             label,
             style: Theme.of(context)
                 .textTheme
                 .bodySmall
-                ?.copyWith(fontWeight: FontWeight.w500, color: Colors.black),
+                ?.copyWith(fontWeight: FontWeight.w500, color: kBark),
           ),
         ],
       ),
@@ -1205,11 +1202,11 @@ class _CoverImageState extends State<_CoverImage> {
           MaterialPageRoute(
             builder: (_) => Scaffold(
               resizeToAvoidBottomInset: false,
-              backgroundColor: Colors.black,
+              backgroundColor: kBark,
               appBar: AppBar(
                 automaticallyImplyLeading: false,
-                backgroundColor: Colors.black,
-                iconTheme: const IconThemeData(color: Colors.white),
+                backgroundColor: kBark,
+                iconTheme: const IconThemeData(color: kSurface),
               ),
               body: Center(
                 child: PhotoView(

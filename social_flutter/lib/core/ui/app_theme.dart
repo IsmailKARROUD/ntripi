@@ -66,12 +66,12 @@ ThemeData buildNtripiTheme() {
   final dmSans = GoogleFonts.dmSansTextTheme(base.textTheme);
 
   return base.copyWith(
-    scaffoldBackgroundColor: kSand,
+    scaffoldBackgroundColor: kSurface,
     textTheme: dmSans,
     primaryTextTheme: GoogleFonts.dmSansTextTheme(base.primaryTextTheme),
 
     appBarTheme: AppBarTheme(
-      backgroundColor: kSand,
+      backgroundColor: kSurface,
       foregroundColor: kBark,
       elevation: 0,
       shadowColor: Colors.transparent,

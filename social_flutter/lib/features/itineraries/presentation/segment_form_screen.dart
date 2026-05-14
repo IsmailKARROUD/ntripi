@@ -7,6 +7,9 @@
 // locally. On Save the full payload is sent as one request (full replace on
 // edit, create on new).
 
+
+//--TODO: In the future we could consider deleting this from because no need of it.
+/*
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -18,6 +21,7 @@ import 'package:social_flutter/features/itineraries/domain/transport_leg.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/leg_form_dialog.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/leg_tile.dart';
 import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
+import 'package:social_flutter/core/ui/app_theme.dart';
 import 'package:social_flutter/shared/widgets/field_help.dart';
 
 class SegmentFormScreen extends ConsumerStatefulWidget {
@@ -183,9 +187,9 @@ class _SegmentFormScreenState extends ConsumerState<SegmentFormScreen> {
           ),
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(_DuplicateAction.discard),
-            child: Text(
+            child: const Text(
               'Discard new',
-              style: TextStyle(color: Colors.red.shade400),
+              style: const TextStyle(color: kRatingRed),
             ),
           ),
           OutlinedButton(
@@ -304,22 +308,18 @@ class _SegmentFormScreenState extends ConsumerState<SegmentFormScreen> {
                     padding:
                         const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                     decoration: BoxDecoration(
-                      color: Colors.orange.shade50,
+                      color: kAmber.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.orange.shade300),
+                      border: Border.all(color: kAmber.withValues(alpha: 0.5)),
                     ),
-                    child: Row(
+                    child: const Row(
                       children: [
-                        Icon(Icons.merge_outlined,
-                            size: 18, color: Colors.orange.shade700),
-                        const SizedBox(width: 8),
+                        Icon(Icons.merge_outlined, size: 18, color: kAmber),
+                        SizedBox(width: 8),
                         Expanded(
                           child: Text(
                             'Merged result — review and save when ready.',
-                            style: TextStyle(
-                              color: Colors.orange.shade800,
-                              fontSize: 13,
-                            ),
+                            style: TextStyle(color: kAmber, fontSize: 13),
                           ),
                         ),
                       ],
@@ -406,13 +406,12 @@ class _SegmentFormScreenState extends ConsumerState<SegmentFormScreen> {
                 ),
             
                 if (_legs.isEmpty)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 24),
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 24),
                     child: Center(
                       child: Text(
                         'No legs yet. Add at least one.',
-                        style:
-                            TextStyle(color: Colors.grey.shade500, fontSize: 13),
+                        style: TextStyle(color: kText3, fontSize: 13),
                       ),
                     ),
                   )
@@ -435,3 +434,4 @@ class _SegmentFormScreenState extends ConsumerState<SegmentFormScreen> {
     );
   }
 }
+*/
