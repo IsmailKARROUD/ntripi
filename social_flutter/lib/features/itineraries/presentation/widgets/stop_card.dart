@@ -93,7 +93,7 @@ class _StopCardState extends State<StopCard> {
                   children: [
                     CircleAvatar(
                       radius: 14,
-                      backgroundColor: typeColor.withOpacity(0.15),
+                      backgroundColor: typeColor.withValues(alpha: 0.15),
                       child: trackIndex != null
                           ? Text(
                               '$trackIndex',
@@ -231,7 +231,7 @@ class _StopCardState extends State<StopCard> {
 
             if (hasNotes)
               Padding(
-                padding: const EdgeInsets.only(top: 8, left: 40),
+                padding: const EdgeInsets.only(top: 8, left: 6),
                 child: _NotesSection(
                   notes: stop.notes!,
                   expanded: _notesExpanded,
