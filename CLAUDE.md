@@ -140,6 +140,15 @@ Persistent volume must be mounted at `/app/uploads` or images vanish on redeploy
 
 ---
 
+## Alembic Migration Rules (CRITICAL)
+
+- **Never hand-write a revision ID** — always generate one with `venv/bin/alembic revision -m "description"` (or `--autogenerate` if a DB is reachable). Hand-written placeholder IDs (e.g. `a1b2c3d4e5f6`) silently collide with existing migrations, fork the chain, and crash Railway on `alembic upgrade head`.
+- **Always verify a single head before committing** — run `venv/bin/alembic heads` from `social_api/`. If it lists more than one `(head)`, stop and fix the branch (create a merge migration or remove a duplicate stub) before adding a new migration.
+- **Never keep two files with the same revision ID** — if a stub (`*_stub_*.py`) and the original file both exist for the same revision, delete the stub; the original is authoritative.
+- **`down_revision` must point to the current single head** — read `venv/bin/alembic heads` to get the exact revision string; do not guess from file names or dates.
+
+---
+
 ## What NOT To Do
 
 - Do NOT add `type`, `position`, or `parallel_position` columns to `stops`
