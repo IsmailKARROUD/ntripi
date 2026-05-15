@@ -550,34 +550,32 @@ class _ImagePlaceholder extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
+        height: 130,
         decoration: BoxDecoration(
-          color: Colors.grey.shade100,
-          border: Border.all(
-            color: Colors.grey.shade300,
-            style: BorderStyle.solid,
-          ),
-          borderRadius: BorderRadius.circular(12),
+          color: Colors.white.withValues(alpha: 0.5),
+          border: Border.all(color: kText3, style: BorderStyle.solid),
+          borderRadius: BorderRadius.circular(16),
         ),
         child: picking
-            ? const Center(child: CircularProgressIndicator())
+            ? const Center(child: CircularProgressIndicator(color: kForest))
             : Column(
                 mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.add_photo_alternate_outlined,
-                      size: 36, color: Colors.grey.shade400),
-                  const SizedBox(height: 8),
+                children: const [
+                  Icon(Icons.add_photo_alternate_rounded,
+                      size: 28, color: kForest),
+                  SizedBox(height: 6),
                   Text(
                     'Add a cover image',
                     style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.grey.shade600,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: kBark,
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  SizedBox(height: 2),
                   Text(
-                    'Recommended: 1200 × 630',
-                    style: TextStyle(fontSize: 12, color: Colors.grey.shade400),
+                    'Optional — the map will be used otherwise.',
+                    style: TextStyle(fontSize: 11, color: kText2),
                   ),
                 ],
               ),

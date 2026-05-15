@@ -30,10 +30,9 @@ import 'package:social_flutter/core/api/api_endpoints.dart';
 import 'package:social_flutter/features/itineraries/data/itinerary_repository.dart';
 import 'package:social_flutter/features/itineraries/domain/itinerary.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/cover_image_field.dart';
+import 'package:social_flutter/features/itineraries/presentation/visibility_screen.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/markdown_notes_editor.dart';
 import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
-import 'package:social_flutter/shared/models/user.dart';
-import 'package:social_flutter/shared/widgets/field_help.dart';
 import 'package:social_flutter/core/utils/platform_utils.dart';
 import 'package:social_flutter/l10n/app_localizations.dart';
 import 'package:flutter/services.dart';
@@ -276,36 +275,91 @@ Future<void> loadCurrencies() async {
     }
   }
 
+  // ── Picker helpers ──────────────────────────────────────────────────────────
+
+  Future<void> _showCurrencyPicker() async {
+    final picked = await showModalBottomSheet<String>(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => _CurrencyPickerSheet(
+        currencies: _currencies,
+        selected: _currency,
+      ),
+    );
+    if (picked != null && mounted) setState(() => _currency = picked);
+  }
+
+  Future<void> _showVisibilityPicker() async {
+    final picked = await Navigator.push<ItineraryVisibility>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => VisibilityScreen(
+          initial: _visibility,
+          itineraryId: widget.itineraryId, // null in create mode
+        ),
+      ),
+    );
+    if (picked != null && mounted) setState(() => _visibility = picked);
+  }
+
+  // ── Build ────────────────────────────────────────────────────────────────────
+
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final visLabel = _visibilityLabel(_visibility, l10n);
+    final visIcon = _visibilityIcon(_visibility);
+    final visColor = _visibilityColor(_visibility);
+
     return Scaffold(
       backgroundColor: kSand,
-      resizeToAvoidBottomInset: false,
+      resizeToAvoidBottomInset: true,
       appBar: AppBar(
         backgroundColor: kSand,
         title: Text(widget.mode == ItineraryFormMode.create
-            ? AppLocalizations.of(context)!.newItinerary
-            : AppLocalizations.of(context)!.editItinerary),
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: ConstrainedBox(
-          constraints: BoxConstraints(
-              maxWidth: isDesktopWeb() ? kDesktopMaxWidth : double.infinity),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // Cover image — deferred upload on create, immediate on edit
-                LabelWithHelp(
-                  label: AppLocalizations.of(context)!.coverImageLabel,
-                  helpTitle: AppLocalizations.of(context)!.coverImageLabel,
-                  helpMessage: AppLocalizations.of(context)!.coverImageHelp,
-                  labelStyle: Theme.of(context).textTheme.labelLarge,
+            ? l10n.newItinerary
+            : l10n.editItinerary),
+        actions: [
+          if (_saving)
+            const Padding(
+              padding: EdgeInsets.all(16),
+              child: SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+            )
+          else
+            TextButton(
+              onPressed: _save,
+              child: Text(
+                widget.mode == ItineraryFormMode.create
+                    ? l10n.createItinerary
+                    : l10n.save,
+                style: const TextStyle(
+                  color: kForest,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 15,
                 ),
-                const SizedBox(height: 8),
-                CoverImageField(
+              ),
+            ),
+        ],
+      ),
+      body: ConstrainedBox(
+        constraints: BoxConstraints(
+            maxWidth: isDesktopWeb() ? kDesktopMaxWidth : double.infinity),
+        child: Form(
+          key: _formKey,
+          child: ListView(
+            padding: const EdgeInsets.only(bottom: 40),
+            children: [
+              // ── Cover image slot ──────────────────────────────────────────
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                child: CoverImageField(
                   initialUrl: widget.mode == ItineraryFormMode.edit
                       ? ref
                           .read(itineraryDetailProvider(widget.itineraryId!))
@@ -323,158 +377,125 @@ Future<void> loadCurrencies() async {
                     _removeExistingImage = true;
                   }),
                 ),
-                const SizedBox(height: 16),
+              ),
 
-                // Title
-                TextFormField(
-                  controller: _titleController,
-                  decoration: InputDecoration(
-                    labelText: AppLocalizations.of(context)!.itineraryTitleLabel,
-                    suffixIcon: FieldHelpIcon(
-                      helpTitle: AppLocalizations.of(context)!.itineraryTitleLabel,
-                      helpMessage: AppLocalizations.of(context)!.itineraryTitleHelp,
-                    ),
-                    border: const OutlineInputBorder(),
-                  ),
-                  validator: (v) => (v == null || v.trim().isEmpty)
-                      ? AppLocalizations.of(context)!.itineraryTitleRequired
-                      : null,
-                  textInputAction: TextInputAction.next,
-                ),
-                const SizedBox(height: 16),
-
-                // Description — Markdown source with toolbar.
-                MarkdownNotesEditor(
-                  controller: _descriptionController,
-                  readOnly: false,
-                  label: AppLocalizations.of(context)!.descriptionLabel,
-                  helpTitle: AppLocalizations.of(context)!.descriptionLabel,
-                  helpMessage: AppLocalizations.of(context)!.descriptionHelp,
-                ),
-                const SizedBox(height: 16),
-
-                // Currency
-                DropdownButtonFormField<String>(
-                  value: _currency,
-                  isExpanded: true,
-                  decoration: InputDecoration(
-                    labelText: AppLocalizations.of(context)!.currencyLabel,
-                    suffixIcon: FieldHelpIcon(
-                      helpTitle: AppLocalizations.of(context)!.currencyLabel,
-                      helpMessage: AppLocalizations.of(context)!.currencyHelp,
-                    ),
-                    border: const OutlineInputBorder(),
-                  ),
-                  items: _currencies.map((currency) {
-                    return DropdownMenuItem<String>(
-                      value: currency.code,
-                      child: Text(
-                        '${currency.code} - ${currency.name}',
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    );
-                  }).toList(),
-                  onChanged: (v) {
-                    setState(() {
-                      _currency = v;
-                    });
-                  },
-                ),
-                const SizedBox(height: 16),
-
-                // Visibility picker
-                LabelWithHelp(
-                  label: AppLocalizations.of(context)!.visibilityLabel,
-                  helpTitle: AppLocalizations.of(context)!.visibilityLabel,
-                  helpMessage: AppLocalizations.of(context)!.visibilityHelp,
-                  labelStyle: Theme.of(context).textTheme.labelLarge,
-                ),
-                const SizedBox(height: 8),
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: SegmentedButton<ItineraryVisibility>(
-                    segments: [
-                      ButtonSegment(
-                        value: ItineraryVisibility.public,
-                        label: Text(AppLocalizations.of(context)!.visibilityPublic),
-                        icon: const Icon(Icons.public),
-                      ),
-                      ButtonSegment(
-                        value: ItineraryVisibility.followers,
-                        label: Text(AppLocalizations.of(context)!.visibilityFollowers),
-                        icon: const Icon(Icons.people),
-                      ),
-                      ButtonSegment(
-                        value: ItineraryVisibility.restricted,
-                        label: Text(AppLocalizations.of(context)!.visibilityRestricted),
-                        icon: const Icon(Icons.lock_outline),
-                      ),
-                      ButtonSegment(
-                        value: ItineraryVisibility.onlyMe,
-                        label: Text(AppLocalizations.of(context)!.visibilityOnlyMe),
-                        icon: const Icon(Icons.lock),
-                      ),
-                    ],
-                    selected: {_visibility},
-                    onSelectionChanged: (selection) =>
-                        setState(() => _visibility = selection.first),
-                  ),
-                ),
-
-                // Restricted allowlist section — edit mode only.
-                if (widget.mode == ItineraryFormMode.edit &&
-                    _visibility == ItineraryVisibility.restricted) ...[
-                  const SizedBox(height: 16),
-                  _AllowlistSection(itineraryId: widget.itineraryId!),
-                ],
-
-                const SizedBox(height: 24),
-
-                // Save button
-                FilledButton(
-                  onPressed: _saving ? null : _save,
-                  child: _saving
-                      ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
+              // ── Title + Description ───────────────────────────────────────
+              const SizedBox(height: 12),
+              _SectionCard(
+                children: [
+                  // Title field
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 13, 16, 12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'TITLE',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: kText2,
+                            letterSpacing: 0.4,
                           ),
-                        )
-                      : Text(widget.mode == ItineraryFormMode.create
-                          ? AppLocalizations.of(context)!.createItinerary
-                          : AppLocalizations.of(context)!.save),
-                ),
-
-                if (widget.mode == ItineraryFormMode.edit) ...[
-                  const SizedBox(height: 32),
-                  const Divider(),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Danger zone',
-                    style: Theme.of(context).textTheme.labelLarge!.copyWith(color:kRatingRed,fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(height: 4),
+                        TextFormField(
+                          controller: _titleController,
+                          decoration: InputDecoration(
+                            border: InputBorder.none,
+                            enabledBorder: InputBorder.none,
+                            focusedBorder: InputBorder.none,
+                            errorBorder: InputBorder.none,
+                            focusedErrorBorder: InputBorder.none,
+                            isDense: true,
+                            contentPadding: EdgeInsets.zero,
+                            hintText: l10n.itineraryTitleLabel,
+                            hintStyle: const TextStyle(
+                                color: kText3, fontWeight: FontWeight.w500),
+                          ),
+                          style: const TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                            color: kBark,
+                          ),
+                          validator: (v) => (v == null || v.trim().isEmpty)
+                              ? l10n.itineraryTitleRequired
+                              : null,
+                          textInputAction: TextInputAction.next,
+                        ),
+                      ],
+                    ),
                   ),
-                  const SizedBox(height: 4),
-                  const Text(
-                    'Permanently delete this itinerary and all its stops. '
-                    'This cannot be undone.',
-                    style: TextStyle(color: Colors.black54),
-                  ),
-                  const SizedBox(height: 12),
-                  OutlinedButton.icon(
-                    onPressed: _saving ? null : _deleteItinerary,
-                    icon: const Icon(Icons.delete_outline),
-                    label: Text(AppLocalizations.of(context)!.deleteItineraryButton),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: kRatingRed,
-                      side: const BorderSide(color: kRatingRed),
+                  const _FieldDivider(),
+                  // Description field
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 13, 16, 12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'DESCRIPTION',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: kText2,
+                            letterSpacing: 0.4,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        MarkdownNotesEditor(
+                          controller: _descriptionController,
+                          readOnly: false,
+                          label: l10n.descriptionLabel,
+                          helpTitle: l10n.descriptionLabel,
+                          helpMessage: l10n.descriptionHelp,
+                        ),
+                      ],
                     ),
                   ),
                 ],
+              ),
+
+              // ── Basics ────────────────────────────────────────────────────
+              const _SectionLabel(text: 'BASICS'),
+              _SectionCard(
+                children: [
+                  _PickerRow(
+                    icon: Icons.payments_rounded,
+                    label: 'CURRENCY',
+                    value: _currency ?? 'EUR',
+                    onTap: _showCurrencyPicker,
+                  ),
+                  const _FieldDivider(),
+                  _PickerRow(
+                    icon: visIcon,
+                    label: 'WHO CAN SEE THIS?',
+                    value: visLabel,
+                    iconColor: visColor,
+                    onTap: _showVisibilityPicker,
+                  ),
+                ],
+              ),
+
+
+              // ── Danger zone (edit mode) ───────────────────────────────────
+              if (widget.mode == ItineraryFormMode.edit) ...[
+                const _SectionLabel(text: 'DANGER ZONE', tone: kRatingRed),
+                _SectionCard(
+                  children: [
+                    _PickerRow(
+                      icon: Icons.delete_outline_rounded,
+                      label: 'DELETE ITINERARY',
+                      value: 'Type the title to confirm',
+                      iconColor: kRatingRed,
+                      onTap: _saving ? null : _deleteItinerary,
+                    ),
+                  ],
+                ),
               ],
-            ),
+
+              const SizedBox(height: 16),
+            ],
           ),
         ),
       ),
@@ -482,124 +503,221 @@ Future<void> loadCurrencies() async {
   }
 }
 
-// ---------------------------------------------------------------------------
-// _AllowlistSection — shown in edit mode when visibility == restricted
-// ---------------------------------------------------------------------------
+// ─── Form-level private widgets ───────────────────────────────────────────────
 
-class _AllowlistSection extends ConsumerWidget {
-  final String itineraryId;
+class _SectionLabel extends StatelessWidget {
+  final String text;
+  final Color tone;
 
-  const _AllowlistSection({required this.itineraryId});
-
-  Future<void> _showAddPersonDialog(BuildContext context) async {
-    await showDialog<void>(
-      context: context,
-      builder: (_) => _AddPersonDialog(itineraryId: itineraryId),
-    );
-  }
+  const _SectionLabel({required this.text, this.tone = kText2});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final allowedAsync = ref.watch(allowedUsersProvider(itineraryId));
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(22, 14, 22, 6),
+      child: Text(
+        text,
+        style: TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w700,
+          color: tone,
+          letterSpacing: 0.6,
+        ),
+      ),
+    );
+  }
+}
 
-    return ConstrainedBox(
-      constraints: BoxConstraints(
-          maxWidth: isDesktopWeb() ? kDesktopMaxWidth : double.infinity),
+class _SectionCard extends StatelessWidget {
+  final List<Widget> children;
+  const _SectionCard({required this.children});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 0, 16, 0),
+      decoration: BoxDecoration(
+        color: kSurface,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: kBorder),
+      ),
+      clipBehavior: Clip.antiAlias,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              LabelWithHelp(
-                label: 'People with access',
-                helpTitle: 'Allowlist',
-                helpMessage:
-                    'Users who can view this restricted itinerary. Search by @username to add or remove people.',
-                labelStyle: Theme.of(context).textTheme.titleSmall,
+        children: children,
+      ),
+    );
+  }
+}
+
+class _FieldDivider extends StatelessWidget {
+  const _FieldDivider();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(height: 1, color: kBorder, margin: const EdgeInsets.only(left: 16));
+  }
+}
+
+class _PickerRow extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String value;
+  final Color? iconColor;
+  final VoidCallback? onTap;
+
+  const _PickerRow({
+    required this.icon,
+    required this.label,
+    required this.value,
+    this.iconColor,
+    this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final tint = iconColor ?? kForest;
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+        child: Row(
+          children: [
+            Container(
+              width: 32,
+              height: 32,
+              decoration: BoxDecoration(
+                color: kMist,
+                borderRadius: BorderRadius.circular(10),
               ),
-              TextButton.icon(
-                icon: const Icon(Icons.person_add_outlined, size: 18),
-                label: const Text('Add person'),
-                onPressed: () => _showAddPersonDialog(context),
-              ),
-            ],
-          ),
-          allowedAsync.when(
-            loading: () => const Padding(
-              padding: EdgeInsets.symmetric(vertical: 8),
-              child: Center(child: CircularProgressIndicator()),
+              alignment: Alignment.center,
+              child: Icon(icon, size: 16, color: tint),
             ),
-            error: (e, _) => Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              child: Text(extractErrorMessage(e)),
-            ),
-            data: (users) {
-              if (users.isEmpty) {
-                return const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 8),
-                  child: Text(
-                    'No one has access yet. Tap "Add person" to grant access.',
-                    style: TextStyle(color: Colors.grey),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    label,
+                    style: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: kText2,
+                      letterSpacing: 0.4,
+                    ),
                   ),
+                  const SizedBox(height: 2),
+                  Text(
+                    value,
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: kBark,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(Icons.chevron_right_rounded, size: 20, color: kText3),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Currency picker bottom sheet ────────────────────────────────────────────
+class _CurrencyPickerSheet extends StatefulWidget {
+  final List<Currency> currencies;
+  final String? selected;
+
+  const _CurrencyPickerSheet(
+      {required this.currencies, required this.selected});
+
+  @override
+  State<_CurrencyPickerSheet> createState() => _CurrencyPickerSheetState();
+}
+
+class _CurrencyPickerSheetState extends State<_CurrencyPickerSheet> {
+  String _query = '';
+
+  @override
+  Widget build(BuildContext context) {
+    final filtered = widget.currencies
+        .where((c) =>
+            c.code.toLowerCase().contains(_query.toLowerCase()) ||
+            c.name.toLowerCase().contains(_query.toLowerCase()))
+        .toList();
+
+    return DraggableScrollableSheet(
+      initialChildSize: 0.65,
+      minChildSize: 0.4,
+      maxChildSize: 0.9,
+      expand: false,
+      builder: (_, controller) => Column(
+        children: [
+          // Drag handle
+          Center(
+            child: Container(
+              margin: const EdgeInsets.only(top: 10, bottom: 8),
+              width: 36,
+              height: 4,
+              decoration: BoxDecoration(
+                color: kText3.withValues(alpha: 0.5),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+            child: TextField(
+              autofocus: true,
+              decoration: InputDecoration(
+                hintText: 'Search currency…',
+                prefixIcon: const Icon(Icons.search_rounded, color: kForest),
+                filled: true,
+                fillColor: kSand,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: const BorderSide(color: kBorder),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: const BorderSide(color: kBorder),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: const BorderSide(color: kForest, width: 1.5),
+                ),
+              ),
+              onChanged: (v) => setState(() => _query = v),
+            ),
+          ),
+          Expanded(
+            child: ListView.builder(
+              controller: controller,
+              itemCount: filtered.length,
+              itemBuilder: (_, i) {
+                final c = filtered[i];
+                final selected = c.code == widget.selected;
+                return ListTile(
+                  title: Text(
+                    c.code,
+                    style: TextStyle(
+                      fontWeight: FontWeight.w700,
+                      color: selected ? kForest : kBark,
+                    ),
+                  ),
+                  subtitle: Text(c.name,
+                      style: const TextStyle(color: kText2, fontSize: 12)),
+                  trailing: selected
+                      ? const Icon(Icons.check_rounded, color: kForest, size: 18)
+                      : null,
+                  onTap: () => Navigator.pop(context, c.code),
                 );
-              }
-              return Column(
-                children: users
-                    .map(
-                      (user) => ListTile(
-                        contentPadding: EdgeInsets.zero,
-                        leading: CircleAvatar(
-                          child: Text(
-                            (user.displayName ?? user.username)
-                                .substring(0, 1)
-                                .toUpperCase(),
-                          ),
-                        ),
-                        title: Text(user.displayName ?? user.username),
-                        subtitle: Text('@${user.username}'),
-                        trailing: IconButton(
-                          icon: const Icon(Icons.close, size: 18),
-                          tooltip: 'Remove access',
-                          onPressed: () async {
-                            try {
-                              await ref
-                                  .read(allowedUsersProvider(itineraryId)
-                                      .notifier)
-                                  .removeUser(user.userId);
-                            } on Exception catch (e) {
-                              if (context.mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text(
-                                      extractErrorMessage(e as dynamic),
-                                    ),
-                                  ),
-                                );
-                              }
-                              return;
-                            }
-                            if (!context.mounted) return;
-                            final displayLabel =
-                                user.displayName ?? user.username;
-                            showUndoableActionSnackbar(
-                              context: context,
-                              duration: const Duration(seconds: 5),
-                              message: 'Removed $displayLabel from allowlist',
-                              onUndo: () async {
-                                await ref
-                                    .read(allowedUsersProvider(itineraryId)
-                                        .notifier)
-                                    .addUser(user.userId);
-                              },
-                            );
-                          },
-                        ),
-                      ),
-                    )
-                    .toList(),
-              );
-            },
+              },
+            ),
           ),
         ],
       ),
@@ -607,137 +725,27 @@ class _AllowlistSection extends ConsumerWidget {
   }
 }
 
-// ---------------------------------------------------------------------------
-// _AddPersonDialog — search for a user and add them to the allowlist
-// ---------------------------------------------------------------------------
+// ─── Visibility helpers ───────────────────────────────────────────────────────
 
-class _AddPersonDialog extends ConsumerStatefulWidget {
-  final String itineraryId;
+String _visibilityLabel(ItineraryVisibility v, AppLocalizations l10n) =>
+    switch (v) {
+      ItineraryVisibility.public => l10n.visibilityPublic,
+      ItineraryVisibility.followers => l10n.visibilityFollowers,
+      ItineraryVisibility.restricted => l10n.visibilityRestricted,
+      ItineraryVisibility.onlyMe => l10n.visibilityOnlyMe,
+    };
 
-  const _AddPersonDialog({required this.itineraryId});
+IconData _visibilityIcon(ItineraryVisibility v) => switch (v) {
+      ItineraryVisibility.public => Icons.public_rounded,
+      ItineraryVisibility.followers => Icons.group_rounded,
+      ItineraryVisibility.restricted => Icons.key_rounded,
+      ItineraryVisibility.onlyMe => Icons.lock_rounded,
+    };
 
-  @override
-  ConsumerState<_AddPersonDialog> createState() => _AddPersonDialogState();
-}
+Color _visibilityColor(ItineraryVisibility v) => switch (v) {
+      ItineraryVisibility.public => kCanopy,
+      ItineraryVisibility.followers => kText2,
+      ItineraryVisibility.restricted => kRatingOrange,
+      ItineraryVisibility.onlyMe => kText3,
+    };
 
-class _AddPersonDialogState extends ConsumerState<_AddPersonDialog> {
-  final _searchController = TextEditingController();
-  final List<User> _results = [];
-  Timer? _debounce;
-  bool _searching = false;
-
-  @override
-  void dispose() {
-    _searchController.dispose();
-    _debounce?.cancel();
-    super.dispose();
-  }
-
-  void _onSearchChanged(String value) {
-    _debounce?.cancel();
-    if (value.trim().isEmpty) {
-      setState(() => _results.clear());
-      return;
-    }
-    _debounce = Timer(const Duration(milliseconds: 400), () async {
-      if (!mounted) return;
-      setState(() => _searching = true);
-      try {
-        final response = await dio.get<List<dynamic>>(
-          kSearchUsersEndpoint,
-          queryParameters: {'q': value.trim()},
-        );
-        final users = (response.data ?? [])
-            .cast<Map<String, dynamic>>()
-            .map(User.fromJson)
-            .toList();
-        if (mounted) {
-          setState(() {
-            _results
-              ..clear()
-              ..addAll(users);
-            _searching = false;
-          });
-        }
-      } catch (_) {
-        if (mounted) setState(() => _searching = false);
-      }
-    });
-  }
-
-  Future<void> _addUser(User user) async {
-    try {
-      await ref
-          .read(allowedUsersProvider(widget.itineraryId).notifier)
-          .addUser(user.id);
-      if (mounted) Navigator.pop(context);
-    } on Exception catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(extractErrorMessage(e as dynamic))),
-        );
-      }
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      title: const Text('Add person'),
-      content: SizedBox(
-        width: double.maxFinite,
-        height: 360,
-        child: Column(
-          children: [
-            TextField(
-              controller: _searchController,
-              autofocus: true,
-              decoration: const InputDecoration(
-                hintText: 'Search by username...',
-                prefixIcon: Icon(Icons.search),
-                border: OutlineInputBorder(),
-              ),
-              onChanged: _onSearchChanged,
-            ),
-            const SizedBox(height: 8),
-            if (_searching)
-              const Expanded(
-                child: Center(child: CircularProgressIndicator()),
-              )
-            else if (_results.isEmpty && _searchController.text.isNotEmpty)
-              const Expanded(
-                child: Center(child: Text('No users found.')),
-              )
-            else
-              Expanded(
-                child: ListView.builder(
-                  itemCount: _results.length,
-                  itemBuilder: (context, index) {
-                    final user = _results[index];
-                    return ListTile(
-                      leading: CircleAvatar(
-                        child: Text(
-                          (user.displayName ?? user.username)
-                              .substring(0, 1)
-                              .toUpperCase(),
-                        ),
-                      ),
-                      title: Text(user.displayName ?? user.username),
-                      subtitle: Text('@${user.username}'),
-                      onTap: () => _addUser(user),
-                    );
-                  },
-                ),
-              ),
-          ],
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('Cancel'),
-        ),
-      ],
-    );
-  }
-}
