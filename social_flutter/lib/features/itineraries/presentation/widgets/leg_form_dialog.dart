@@ -13,11 +13,12 @@
 //
 // isScrollControlled: true keeps the cost/notes fields above the keyboard.
 
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:social_flutter/core/ui/app_theme.dart';
 import 'package:social_flutter/features/itineraries/domain/transport_leg.dart';
 import 'package:social_flutter/l10n/app_localizations.dart';
-import 'package:social_flutter/shared/widgets/field_help.dart';
 
 // Modes that use numbered/named transit lines and directions.
 const _transitLineModes = {
@@ -39,22 +40,17 @@ class RegexInputFormatter extends TextInputFormatter {
     TextEditingValue oldValue,
     TextEditingValue newValue,
   ) {
-    // Allow empty
     if (newValue.text.isEmpty) return newValue;
-
-    // Accept if matches the regex
     if (regex.hasMatch(newValue.text)) return newValue;
-
-    // Reject the change — keep old value
     return oldValue;
   }
 }
+
 class LegFormDialog extends StatefulWidget {
   final TransportLeg? existing;
 
   const LegFormDialog({super.key, this.existing});
 
-  /// Open the bottom sheet and return the leg data map, or null if cancelled.
   static Future<Map<String, dynamic>?> show(
     BuildContext context, {
     TransportLeg? existing,
@@ -62,10 +58,8 @@ class LegFormDialog extends StatefulWidget {
     return showModalBottomSheet<Map<String, dynamic>>(
       context: context,
       isScrollControlled: true,
-      useSafeArea: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
+      showDragHandle: true,
+      backgroundColor: kSand,
       builder: (_) => LegFormDialog(existing: existing),
     );
   }
@@ -79,9 +73,9 @@ class _LegFormDialogState extends State<LegFormDialog> {
   late TextEditingController _lineCtrl;
   late TextEditingController _directionCtrl;
   late TextEditingController _notesCtrl;
-  // Duration stored as two separate fields; combined to duration_min on submit.
-  late TextEditingController _durationHCtrl;
-  late TextEditingController _durationMinCtrl;
+  int _durationDays = 0;
+  int _durationHours = 0;
+  int _durationMinutes = 0;
   late TextEditingController _costCtrl;
   late bool _isFree;
 
@@ -97,14 +91,11 @@ class _LegFormDialogState extends State<LegFormDialog> {
     _directionCtrl = TextEditingController(text: e?.direction ?? '');
     _notesCtrl = TextEditingController(text: e?.notes ?? '');
 
-    // Split existing duration_min into hours + minutes for display.
-    final dMin = e?.durationMin;
-    _durationHCtrl = TextEditingController(
-      text: dMin != null && dMin >= 60 ? '${dMin ~/ 60}' : '',
-    );
-    _durationMinCtrl = TextEditingController(
-      text: dMin != null && dMin % 60 > 0 ? '${dMin % 60}' : '',
-    );
+    // Split existing duration_min into days + hours + minutes for the picker.
+    final dMin = e?.durationMin ?? 0;
+    _durationDays = dMin ~/ (24 * 60);
+    _durationHours = (dMin % (24 * 60)) ~/ 60;
+    _durationMinutes = dMin % 60;
 
     _costCtrl = TextEditingController(
       text: (e != null && !e.isFree && e.cost > 0)
@@ -119,16 +110,122 @@ class _LegFormDialogState extends State<LegFormDialog> {
     _lineCtrl.dispose();
     _directionCtrl.dispose();
     _notesCtrl.dispose();
-    _durationHCtrl.dispose();
-    _durationMinCtrl.dispose();
     _costCtrl.dispose();
     super.dispose();
   }
 
+  String get _durationLabel {
+    final parts = <String>[
+      if (_durationDays > 0) '${_durationDays}d',
+      if (_durationHours > 0) '${_durationHours}h',
+      if (_durationMinutes > 0)
+        '${_durationMinutes.toString().padLeft(2, '0')}min',
+    ];
+    return parts.isEmpty ? AppLocalizations.of(context)!.notSet : parts.join(' ');
+  }
+
+  Future<void> _showDurationPicker() async {
+    if (!mounted) return;
+    int tempDays = _durationDays;
+    int tempHours = _durationHours;
+    int tempMinutes = _durationMinutes;
+
+    final daysCtrl = FixedExtentScrollController(initialItem: tempDays);
+    final hoursCtrl = FixedExtentScrollController(initialItem: tempHours);
+    final minsCtrl = FixedExtentScrollController(initialItem: tempMinutes);
+
+    final l10n = AppLocalizations.of(context)!;
+
+    await showModalBottomSheet<void>(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: SizedBox(
+          height: 300,
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    TextButton(
+                      onPressed: () => Navigator.of(ctx).pop(),
+                      child: Text(l10n.cancel),
+                    ),
+                    Text(
+                      l10n.durationLabel,
+                      style: Theme.of(ctx).textTheme.titleSmall,
+                    ),
+                    TextButton(
+                      onPressed: () {
+                        setState(() {
+                          _durationDays = tempDays;
+                          _durationHours = tempHours;
+                          _durationMinutes = tempMinutes;
+                        });
+                        Navigator.of(ctx).pop();
+                      },
+                      child: Text(l10n.doneTooltip),
+                    ),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: CupertinoPicker(
+                        scrollController: daysCtrl,
+                        itemExtent: 44,
+                        onSelectedItemChanged: (i) => tempDays = i,
+                        children: List.generate(
+                          366,
+                          (i) => Center(child: Text('$i d')),
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      child: CupertinoPicker(
+                        scrollController: hoursCtrl,
+                        itemExtent: 44,
+                        onSelectedItemChanged: (i) => tempHours = i,
+                        children: List.generate(
+                          24,
+                          (i) => Center(child: Text('$i h')),
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      child: CupertinoPicker(
+                        scrollController: minsCtrl,
+                        itemExtent: 44,
+                        onSelectedItemChanged: (i) => tempMinutes = i,
+                        children: List.generate(
+                          60,
+                          (i) => Center(
+                            child: Text(
+                                '${i.toString().padLeft(2, '0')} min'),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    daysCtrl.dispose();
+    hoursCtrl.dispose();
+    minsCtrl.dispose();
+  }
+
   void _submit() {
-    final h = int.tryParse(_durationHCtrl.text.trim()) ?? 0;
-    final m = int.tryParse(_durationMinCtrl.text.trim()) ?? 0;
-    final totalMin = h * 60 + m;
+    final totalMin =
+        _durationDays * 24 * 60 + _durationHours * 60 + _durationMinutes;
 
     final data = <String, dynamic>{
       'mode': _mode.name,
@@ -150,233 +247,465 @@ class _LegFormDialogState extends State<LegFormDialog> {
   void _deleteLeg() =>
       Navigator.of(context).pop(const {'__action': 'delete'});
 
+  Future<void> _showModePicker() async {
+    if (!mounted) return;
+    final currentMode = _mode;
+    final picked = await showModalBottomSheet<TransportMode>(
+      context: context,
+      showDragHandle: true,
+      backgroundColor: kSand,
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.only(bottom: 16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const _LFSectionLabel(text: 'TRANSPORT MODE'),
+              // Flexible lets the card fill remaining sheet space and scroll.
+              Flexible(
+                child: Container(
+                  margin: const EdgeInsets.fromLTRB(16, 0, 16, 0),
+                  decoration: BoxDecoration(
+                    color: kSurface,
+                    borderRadius: BorderRadius.circular(18),
+                    border: Border.all(color: kBorder),
+                  ),
+                  clipBehavior: Clip.antiAlias,
+                  child: ListView.separated(
+                    shrinkWrap: true,
+                    padding: EdgeInsets.zero,
+                    itemCount: TransportMode.values.length,
+                    separatorBuilder: (_, __) => Container(
+                      height: 1,
+                      color: kBorder,
+                      margin: const EdgeInsets.only(left: 16),
+                    ),
+                    itemBuilder: (_, i) {
+                      final mode = TransportMode.values[i];
+                      return InkWell(
+                        onTap: () => Navigator.of(ctx).pop(mode),
+                        child: Padding(
+                          padding: const EdgeInsets.fromLTRB(14, 10, 14, 10),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 32,
+                                height: 32,
+                                decoration: BoxDecoration(
+                                  color: kMist,
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                alignment: Alignment.center,
+                                child: Icon(mode.icon, size: 16, color: kForest),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Text(
+                                  mode.label,
+                                  style: const TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w600,
+                                    color: kBark,
+                                  ),
+                                ),
+                              ),
+                              if (currentMode == mode)
+                                const Icon(Icons.check_rounded,
+                                    size: 18, color: kForest),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    if (picked != null && mounted) setState(() => _mode = picked);
+  }
+
   @override
   Widget build(BuildContext context) {
     final isEdit = widget.existing != null;
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+    final l10n = AppLocalizations.of(context)!;
+
+    return ConstrainedBox(
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.of(context).size.height * 0.70,
+      ),
+      child: SafeArea(
       child: SingleChildScrollView(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+        ),
         child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // Handle bar
-          Center(
-            child: Container(
-              width: 40,
-              height: 4,
-              margin: const EdgeInsets.only(bottom: 16),
-              decoration: BoxDecoration(
-                color: Colors.grey.shade300,
-                borderRadius: BorderRadius.circular(2),
-              ),
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // ── TRANSPORT MODE ─────────────────────────────────────────────
+            const _LFSectionLabel(text: 'TRANSPORT MODE'),
+            _LFSectionCard(
+              children: [
+                _LFPickerRow(
+                  icon: _mode.icon,
+                  label: l10n.transportModeLabel.toUpperCase(),
+                  value: _mode.label,
+                  onTap: _showModePicker,
+                ),
+              ],
             ),
-          ),
 
-          Text(
-            isEdit ? AppLocalizations.of(context)!.editTransitTitle : AppLocalizations.of(context)!.addTransitTitle,
-            style: Theme.of(context)
-                .textTheme
-                .titleMedium
-                ?.copyWith(fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 16),
-
-          // Mode dropdown
-          DropdownButtonFormField<TransportMode>(
-            value: _mode,
-            decoration: InputDecoration(
-              labelText: AppLocalizations.of(context)!.transportModeLabel,
-              suffixIcon: FieldHelpIcon(
-                helpTitle: AppLocalizations.of(context)!.transportModeLabel,
-                helpMessage: AppLocalizations.of(context)!.transportModeHelp,
+            // ── LINE & DIRECTION (transit modes only) ──────────────────────
+            if (_showTransitLine) ...[
+              const _LFSectionLabel(text: 'LINE & DIRECTION'),
+              _LFSectionCard(
+                children: [
+                  _LFBorderlessField(
+                    label: l10n.transitLineLabel.toUpperCase(),
+                    child: TextField(
+                      controller: _lineCtrl,
+                      decoration: const InputDecoration(
+                        border: InputBorder.none,
+                        enabledBorder: InputBorder.none,
+                        focusedBorder: InputBorder.none,
+                        isDense: true,
+                        contentPadding: EdgeInsets.zero,
+                        hintText: '—',
+                      ),
+                      style: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          color: kBark),
+                    ),
+                  ),
+                  const _LFDivider(),
+                  _LFBorderlessField(
+                    label: l10n.transitDirectionLabel.toUpperCase(),
+                    child: TextField(
+                      controller: _directionCtrl,
+                      decoration: const InputDecoration(
+                        border: InputBorder.none,
+                        enabledBorder: InputBorder.none,
+                        focusedBorder: InputBorder.none,
+                        isDense: true,
+                        contentPadding: EdgeInsets.zero,
+                        hintText: '—',
+                      ),
+                      style: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          color: kBark),
+                    ),
+                  ),
+                ],
               ),
-              border: const OutlineInputBorder(),
-            ),
-            items: TransportMode.values
-                .map(
-                  (m) => DropdownMenuItem(
-                    value: m,
-                    child: Row(
-                      children: [
-                        Icon(m.icon, size: 18),
-                        const SizedBox(width: 8),
-                        Text(m.label),
+            ],
+
+            // ── DURATION & COST ────────────────────────────────────────────
+            const _LFSectionLabel(text: 'DURATION & COST'),
+            _LFSectionCard(
+              children: [
+                _LFPickerRow(
+                  icon: Icons.schedule_rounded,
+                  label: l10n.durationLabel.toUpperCase(),
+                  value: _durationLabel,
+                  onTap: _showDurationPicker,
+                ),
+                const _LFDivider(),
+
+                // Free toggle row
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 32,
+                        height: 32,
+                        decoration: BoxDecoration(
+                          color: kMist,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        alignment: Alignment.center,
+                        child: const Icon(Icons.payments_rounded,
+                            size: 16, color: kForest),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'COST',
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                                color: kText2,
+                                letterSpacing: 0.4,
+                              ),
+                            ),
+                            Text(
+                              l10n.freeLegLabel,
+                              style: const TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w500,
+                                color: kBark,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Switch(
+                        value: _isFree,
+                        onChanged: (v) => setState(() {
+                          _isFree = v;
+                          if (v) _costCtrl.clear();
+                        }),
+                        activeThumbColor: kForest,
+                        activeTrackColor: kMist,
+                      ),
+                    ],
+                  ),
+                ),
+
+                // Cost amount field — hidden when free
+                if (!_isFree) ...[
+                  const _LFDivider(),
+                  _LFBorderlessField(
+                    label: l10n.costLabel.toUpperCase(),
+                    child: TextField(
+                      controller: _costCtrl,
+                      inputFormatters: [
+                        RegexInputFormatter(
+                            RegExp(r'^\d{0,8}(\.\d{0,2})?$')),
                       ],
+                      keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true),
+                      decoration: const InputDecoration(
+                        border: InputBorder.none,
+                        enabledBorder: InputBorder.none,
+                        focusedBorder: InputBorder.none,
+                        isDense: true,
+                        contentPadding: EdgeInsets.zero,
+                        hintText: 'e.g. 12.50',
+                      ),
+                      style: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          color: kBark),
                     ),
                   ),
-                )
-                .toList(),
-            onChanged: (v) => setState(() => _mode = v!),
-          ),
-          const SizedBox(height: 12),
+                ],
+              ],
+            ),
 
-          // Line + Direction — only for modes that use transit lines.
-          if (_showTransitLine) ...[
-            Row(
+            // ── THOUGHTS ──────────────────────────────────────────────────
+            const _LFSectionLabel(text: 'THOUGHTS'),
+            _LFSectionCard(
               children: [
-                Expanded(
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 13, 16, 12),
                   child: TextField(
-                    controller: _lineCtrl,
+                    controller: _notesCtrl,
+                    maxLines: 3,
                     decoration: InputDecoration(
-                      labelText: AppLocalizations.of(context)!.transitLineLabel,
-                      suffixIcon: FieldHelpIcon(
-                        helpTitle: AppLocalizations.of(context)!.transitLineLabel,
-                        helpMessage: AppLocalizations.of(context)!.transitLineHelp,
-                      ),
-                      border: const OutlineInputBorder(),
+                      border: InputBorder.none,
+                      enabledBorder: InputBorder.none,
+                      focusedBorder: InputBorder.none,
+                      isDense: true,
+                      contentPadding: EdgeInsets.zero,
+                      hintText: l10n.legThoughtsLabel,
+                      hintStyle: const TextStyle(color: kText3),
                     ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: TextField(
-                    controller: _directionCtrl,
-                    decoration: InputDecoration(
-                      labelText: AppLocalizations.of(context)!.transitDirectionLabel,
-                      suffixIcon: FieldHelpIcon(
-                        helpTitle: AppLocalizations.of(context)!.transitDirectionLabel,
-                        helpMessage: AppLocalizations.of(context)!.transitDirectionHelp,
-                      ),
-                      border: const OutlineInputBorder(),
-                    ),
+                    style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        color: kBark),
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 12),
+
+            const SizedBox(height: 16),
+
+            // ── Buttons ───────────────────────────────────────────────────
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
+              child: Row(
+                children: [
+                  if (isEdit)
+                    TextButton(
+                      onPressed: _deleteLeg,
+                      style: TextButton.styleFrom(
+                          foregroundColor: Colors.red.shade400),
+                      child: Text(l10n.deleteButton),
+                    ),
+                  const Spacer(),
+                  TextButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    style: TextButton.styleFrom(foregroundColor: kForest),
+                    child: Text(l10n.cancel),
+                  ),
+                  const SizedBox(width: 8),
+                  FilledButton(
+                    onPressed: _submit,
+                    child: Padding(
+                      padding: const EdgeInsets.only(left: 8, right: 8),
+                      child: Text(isEdit
+                          ? l10n.updateTransitButton
+                          : l10n.addTransitTitle),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ],
-
-          // Duration (h + min) + Cost — help icons sit on the section header
-          // above; the narrow h/min fields keep their short labels for space.
-          Row(
-            children: [
-              LabelWithHelp(
-                label: AppLocalizations.of(context)!.durationLabel,
-                helpTitle: AppLocalizations.of(context)!.durationLabel,
-                helpMessage: AppLocalizations.of(context)!.durationHelp,
-              ),
-              const Spacer(),
-              LabelWithHelp(
-                label: AppLocalizations.of(context)!.costLabel,
-                helpTitle: AppLocalizations.of(context)!.costLabel,
-                helpMessage: AppLocalizations.of(context)!.legCostHelp,
-              ),
-              const SizedBox(width: 12),
-            ],
-          ),
-          const SizedBox(height: 6),
-          Row(
-            children: [
-              // Hours field
-              SizedBox(
-                width: 72,
-                child: TextField(
-                  controller: _durationHCtrl,
-                  inputFormatters: [
-                    FilteringTextInputFormatter.digitsOnly,
-                  ],
-                  keyboardType: TextInputType.number,
-                  decoration: InputDecoration(
-                    labelText: AppLocalizations.of(context)!.hoursLabel,
-                    border: const OutlineInputBorder(),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              // Minutes field
-              SizedBox(
-                width: 72,
-                child: TextField(
-                  controller: _durationMinCtrl,
-                  inputFormatters: [
-                    FilteringTextInputFormatter.digitsOnly,
-                  ],
-                  keyboardType: TextInputType.number,
-                  decoration: InputDecoration(
-                    labelText: AppLocalizations.of(context)!.minutesLabel,
-                    border: const OutlineInputBorder(),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              // Cost field
-              Expanded(
-                child: TextField(
-                  controller: _costCtrl,
-                  enabled: !_isFree,
-                  inputFormatters: [
-                    RegexInputFormatter(RegExp(r'^\d{0,8}(\.\d{0,2})?$')),
-                  ],
-                  keyboardType:
-                      const TextInputType.numberWithOptions(decimal: true),
-                  decoration: const InputDecoration(
-                    border: OutlineInputBorder(),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 4),
-
-          SwitchListTile.adaptive(
-            value: _isFree,
-            onChanged: (v) => setState(() => _isFree = v),
-            title: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(AppLocalizations.of(context)!.freeLegLabel),
-                const SizedBox(width: 2),
-                FieldHelpIcon(
-                  helpTitle: AppLocalizations.of(context)!.freeLegLabel,
-                  helpMessage: AppLocalizations.of(context)!.freeLegHelp,
-                ),
-              ],
-            ),
-            contentPadding: EdgeInsets.zero,
-          ),
-
-          // Thoughts (renamed from Notes)
-          TextField(
-            controller: _notesCtrl,
-            maxLines: 2,
-            decoration: InputDecoration(
-              labelText: AppLocalizations.of(context)!.legThoughtsLabel,
-              suffixIcon: FieldHelpIcon(
-                helpTitle: AppLocalizations.of(context)!.thoughtsLabel,
-                helpMessage: AppLocalizations.of(context)!.legThoughtsHelp,
-              ),
-              border: const OutlineInputBorder(),
-            ),
-          ),
-          const SizedBox(height: 16),
-
-          Row(
-            children: [
-              if (isEdit)
-                TextButton(
-                  onPressed: _deleteLeg,
-                  style: TextButton.styleFrom(
-                      foregroundColor: Colors.red.shade400),
-                  child: Text(AppLocalizations.of(context)!.deleteButton),
-                ),
-              const Spacer(),
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: Text(AppLocalizations.of(context)!.cancel),
-              ),
-              const SizedBox(width: 8),
-              FilledButton(
-                onPressed: _submit,
-                child: Text(isEdit
-                    ? AppLocalizations.of(context)!.updateTransitButton
-                    : AppLocalizations.of(context)!.addTransitTitle),
-              ),
-            ],
-          ),
-        ],
+        ),
       ),
       ),
     );
   }
+}
+
+// ── Local editorial helpers ───────────────────────────────────────────────────
+
+class _LFSectionLabel extends StatelessWidget {
+  final String text;
+  const _LFSectionLabel({required this.text});
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.fromLTRB(22, 14, 22, 6),
+        child: Text(
+          text,
+          style: const TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w700,
+            color: kText2,
+            letterSpacing: 0.6,
+          ),
+        ),
+      );
+}
+
+class _LFSectionCard extends StatelessWidget {
+  final List<Widget> children;
+  const _LFSectionCard({required this.children});
+
+  @override
+  Widget build(BuildContext context) => Container(
+        margin: const EdgeInsets.fromLTRB(16, 0, 16, 0),
+        decoration: BoxDecoration(
+          color: kSurface,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: kBorder),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: children,
+        ),
+      );
+}
+
+class _LFDivider extends StatelessWidget {
+  const _LFDivider();
+
+  @override
+  Widget build(BuildContext context) =>
+      Container(height: 1, color: kBorder, margin: const EdgeInsets.only(left: 16));
+}
+
+class _LFBorderlessField extends StatelessWidget {
+  final String label;
+  final Widget child;
+  const _LFBorderlessField({required this.label, required this.child});
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.fromLTRB(16, 13, 16, 12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              label,
+              style: const TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                color: kText2,
+                letterSpacing: 0.4,
+              ),
+            ),
+            const SizedBox(height: 4),
+            child,
+          ],
+        ),
+      );
+}
+
+class _LFPickerRow extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String value;
+  final VoidCallback? onTap;
+
+  const _LFPickerRow({
+    required this.icon,
+    required this.label,
+    required this.value,
+    this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) => InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+          child: Row(
+            children: [
+              Container(
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(
+                  color: kMist,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                alignment: Alignment.center,
+                child: Icon(icon, size: 16, color: kForest),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      label,
+                      style: const TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: kText2,
+                        letterSpacing: 0.4,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      value,
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        color: kBark,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (onTap != null)
+                const Icon(Icons.chevron_right_rounded, size: 20, color: kText3),
+            ],
+          ),
+        ),
+      );
 }

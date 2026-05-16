@@ -1458,58 +1458,109 @@ class _SettingsSheet extends ConsumerWidget {
 
   void _showLanguagePicker(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
+    final currentCode = ref.read(localeProvider).languageCode;
+
+    final languages = [
+      (code: 'en', label: l10n.languageEnglish),
+      (code: 'fr', label: l10n.languageFrench),
+    ];
+
     showModalBottomSheet<void>(
       context: context,
-      backgroundColor: kSurface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
+      showDragHandle: true,
+      backgroundColor: kSand,
       builder: (ctx) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              margin: const EdgeInsets.only(top: 10, bottom: 8),
-              width: 36,
-              height: 4,
-              decoration: BoxDecoration(
-                color: kText3.withValues(alpha: 0.55),
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 4, 20, 8),
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  l10n.languagePickerTitle,
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                    color: kBark,
-                    letterSpacing: -0.2,
+        child: Padding(
+          padding: const EdgeInsets.only(bottom: 16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(22, 14, 22, 6),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    l10n.languagePickerTitle.toUpperCase(),
+                    style: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: kText2,
+                      letterSpacing: 0.6,
+                    ),
                   ),
                 ),
               ),
-            ),
-            _LanguageOption(
-              label: l10n.languageEnglish,
-              languageCode: 'en',
-              onSelect: (code) {
-                ref.read(localeProvider.notifier).setLocale(Locale(code));
-                Navigator.pop(ctx);
-              },
-            ),
-            _LanguageOption(
-              label: l10n.languageFrench,
-              languageCode: 'fr',
-              onSelect: (code) {
-                ref.read(localeProvider.notifier).setLocale(Locale(code));
-                Navigator.pop(ctx);
-              },
-            ),
-            const SizedBox(height: 16),
-          ],
+              Container(
+                margin: const EdgeInsets.symmetric(horizontal: 16),
+                decoration: BoxDecoration(
+                  color: kSurface,
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(color: kBorder),
+                ),
+                clipBehavior: Clip.antiAlias,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    for (var i = 0; i < languages.length; i++) ...[
+                      if (i > 0)
+                        Container(
+                          height: 1,
+                          color: kBorder,
+                          margin: const EdgeInsets.only(left: 16),
+                        ),
+                      InkWell(
+                        onTap: () {
+                          ref
+                              .read(localeProvider.notifier)
+                              .setLocale(Locale(languages[i].code));
+                          Navigator.pop(ctx);
+                        },
+                        child: Padding(
+                          padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 32,
+                                height: 32,
+                                decoration: BoxDecoration(
+                                  color: kMist,
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                alignment: Alignment.center,
+                                child: Text(
+                                  languages[i].code.toUpperCase(),
+                                  style: const TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w800,
+                                    color: kForest,
+                                    letterSpacing: 0.5,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Text(
+                                  languages[i].label,
+                                  style: const TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w600,
+                                    color: kBark,
+                                  ),
+                                ),
+                              ),
+                              if (currentCode == languages[i].code)
+                                const Icon(Icons.check_rounded,
+                                    size: 18, color: kForest),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -1570,7 +1621,7 @@ class _SettingsSheet extends ConsumerWidget {
                 iconBg: const Color(0xFFD0EBDA),
                 iconColor: kForest,
                 label: l10n.settingsNotifications,
-                detail: l10n.settingsNotificationsOn,
+                detail: l10n.settingsNotificationsOff,
                 onTap: () => _comingSoon(context),
               ),
               _SheetRow(
@@ -1663,33 +1714,6 @@ class _SettingsSheet extends ConsumerWidget {
   }
 }
 
-class _LanguageOption extends StatelessWidget {
-  final String label;
-  final String languageCode;
-  final void Function(String) onSelect;
-
-  const _LanguageOption({
-    required this.label,
-    required this.languageCode,
-    required this.onSelect,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 20),
-      title: Text(
-        label,
-        style: const TextStyle(
-          fontSize: 15,
-          fontWeight: FontWeight.w600,
-          color: kBark,
-        ),
-      ),
-      onTap: () => onSelect(languageCode),
-    );
-  }
-}
 
 class _SheetSection extends StatelessWidget {
   final String label;

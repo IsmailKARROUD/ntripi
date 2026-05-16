@@ -348,6 +348,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsNotificationsOn => 'On';
 
   @override
+  String get settingsNotificationsOff => 'Off';
+
+  @override
   String get settingsLanguage => 'Language';
 
   @override

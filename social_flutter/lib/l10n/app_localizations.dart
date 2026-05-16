@@ -710,6 +710,12 @@ abstract class AppLocalizations {
   /// **'On'**
   String get settingsNotificationsOn;
 
+  /// No description provided for @settingsNotificationsOff.
+  ///
+  /// In en, this message translates to:
+  /// **'Off'**
+  String get settingsNotificationsOff;
+
   /// No description provided for @settingsLanguage.
   ///
   /// In en, this message translates to:
