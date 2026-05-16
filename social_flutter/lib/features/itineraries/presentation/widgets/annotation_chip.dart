@@ -53,14 +53,12 @@ class AnnotationChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final config = _configs[annotation.type]!;
 
-    var flexible = Flexible(
-            child: Text(
-              annotation.content,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(color: config.fg, fontSize: 14),
-            ),
-          );
+    final textWidget = Text(
+      annotation.content,
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      style: TextStyle(color: config.fg, fontSize: 14),
+    );
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
@@ -72,12 +70,19 @@ class AnnotationChip extends StatelessWidget {
         children: [
           Icon(config.icon, size: 16, color: config.fg),
           const SizedBox(width: 4),
-          if (onEdit != null)  GestureDetector(
-              onTap: onEdit,
-              child: flexible,
-            ) else Padding(
-              padding: const EdgeInsets.all(2),
-              child: flexible,
+          if (onEdit != null)
+            Flexible(
+              child: GestureDetector(
+                onTap: onEdit,
+                child: textWidget,
+              ),
+            )
+          else
+            Flexible(
+              child: Padding(
+                padding: const EdgeInsets.all(2),
+                child: textWidget,
+              ),
             ),
           if (onEdit != null) ...[
             const SizedBox(width: 2),
@@ -86,12 +91,11 @@ class AnnotationChip extends StatelessWidget {
               child: Icon(Icons.edit_outlined, size: 16, color: config.fg),
             ),
           ],
-          if (onDelete != null) ...[
+          if (onDelete != null)
             GestureDetector(
               onTap: onDelete,
               child: Icon(Icons.close, size: 18, color: config.fg),
             ),
-          ],
         ],
       ),
     );
