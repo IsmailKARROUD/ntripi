@@ -72,10 +72,6 @@ class ItineraryDetailScreen extends ConsumerStatefulWidget {
 
 class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
   bool _editMode = false;
-  // Phase 2b: when true, the body renders TrackReorderView instead of the
-  // normal CustomScrollView. The view manages its own dirty/Save/Cancel state
-  // and calls back via onExit to flip this off.
-  bool _reorderMode = false;
   // Active parallel-stop index per track (trackId → page index).
   final Map<String, int> _activeParallelByTrack = {};
   // GlobalKey per track widget so we can call Scrollable.ensureVisible after a
@@ -339,14 +335,6 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                   ),
                 ),
                 data: (itinerary) {
-                  if (_reorderMode) {
-                    return TrackReorderView(
-                      itineraryId: widget.itineraryId,
-                      tracks: itinerary.tracks,
-                      segments: itinerary.segments,
-                      onExit: () => setState(() => _reorderMode = false),
-                    );
-                  }
                   final allStops = itinerary.stops;
                   final tracks = itinerary.tracks;
                   final canEdit = isOwner && _editMode;
@@ -391,12 +379,10 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                       // Edit mode keeps the transit below the origin stop (handled
                       // by getSegment inside ParallelStopGroup below).
                       if (!canEdit && i > 0) {
-                        final activeIdx =
-                            _activeParallelByTrack[track.id] ?? 0;
-                        final activeStop =
-                            trackStops.length > activeIdx
-                                ? trackStops[activeIdx]
-                                : trackStops.first;
+                        final activeIdx = _activeParallelByTrack[track.id] ?? 0;
+                        final activeStop = trackStops.length > activeIdx
+                            ? trackStops[activeIdx]
+                            : trackStops.first;
                         final inbound = segmentByToStop[activeStop.id];
                         if (inbound != null) {
                           items.add(SegmentCard(
@@ -757,14 +743,18 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                                 ),
                                 const Spacer(),
                                 // Edit mode controls
-                                if (canEdit) ...[
+                                if (canEdit &&
+                                    itineraryAsync.valueOrNull != null &&
+                                    itineraryAsync.valueOrNull!.tracks.length >=
+                                        2) ...[
                                   IconButton(
-                                    icon: const Icon(
-                                        Icons.add_location_alt_outlined,
-                                        size: 20),
-                                    tooltip: l10n.addStopTooltip,
-                                    onPressed: () => context.push(
-                                      '/itineraries/${widget.itineraryId}/stops/new',
+                                    icon: const Icon(Icons.reorder, size: 20),
+                                    tooltip: l10n.reorderTracksTooltip,
+                                    onPressed: () => showTrackReorderSheet(
+                                      context: context,
+                                      itineraryId: widget.itineraryId,
+                                      tracks: itineraryAsync.valueOrNull!.tracks,
+                                      segments: itineraryAsync.valueOrNull!.segments,
                                     ),
                                     visualDensity: VisualDensity.compact,
                                     padding: EdgeInsets.zero,
@@ -772,22 +762,6 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                                     color: kForest,
                                   ),
                                   const SizedBox(width: 8),
-                                  if (itineraryAsync.valueOrNull != null &&
-                                      itineraryAsync
-                                              .valueOrNull!.tracks.length >=
-                                          2) ...[
-                                    IconButton(
-                                      icon: const Icon(Icons.reorder, size: 20),
-                                      tooltip: l10n.reorderTracksTooltip,
-                                      onPressed: () =>
-                                          setState(() => _reorderMode = true),
-                                      visualDensity: VisualDensity.compact,
-                                      padding: EdgeInsets.zero,
-                                      constraints: const BoxConstraints(),
-                                      color: kForest,
-                                    ),
-                                    const SizedBox(width: 8),
-                                  ],
                                 ],
                                 // List/Map pill toggle
                                 _SegmentToggle(

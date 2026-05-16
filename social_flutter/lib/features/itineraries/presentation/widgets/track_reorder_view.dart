@@ -1,15 +1,12 @@
-// widgets/track_reorder_view.dart — Full-screen "Reorder tracks" mode.
+// widgets/track_reorder_view.dart — Bottom sheet for reordering tracks.
 //
-// Replaces the detail screen body when _reorderMode is true. Renders a list
-// of collapsed track rows that the user can drag to reorder the entire trip
-// sequence. As the order changes, transit segments whose from-track no longer
-// immediately precedes their to-track become orphaned — they're surfaced
-// both via a top summary banner and an inline red strip below each affected
-// track row.
+// Renders a list of collapsed track rows that the user can drag to reorder
+// the entire trip sequence. As the order changes, transit segments whose
+// from-track no longer immediately precedes their to-track become orphaned —
+// surfaced via a top summary banner and an inline red strip below each row.
 //
 // On Save: confirm dialog (only if there are orphans), then a single POST
-// /reorder with track_order + segments_to_delete. On success the host screen
-// flips _reorderMode off via the onExit callback.
+// /reorder with track_order + segments_to_delete. On success the sheet pops.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -22,28 +19,40 @@ import 'package:social_flutter/features/itineraries/domain/track.dart';
 import 'package:social_flutter/features/itineraries/domain/transit_segment.dart';
 import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
 
-class TrackReorderView extends ConsumerStatefulWidget {
+Future<void> showTrackReorderSheet({
+  required BuildContext context,
+  required String itineraryId,
+  required List<Track> tracks,
+  required List<TransitSegment> segments,
+}) {
+  return showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    showDragHandle: true,
+    builder: (_) => _TrackReorderSheet(
+      itineraryId: itineraryId,
+      tracks: tracks,
+      segments: segments,
+    ),
+  );
+}
+
+class _TrackReorderSheet extends ConsumerStatefulWidget {
   final String itineraryId;
   final List<Track> tracks;
   final List<TransitSegment> segments;
 
-  /// Called when the view should exit reorder mode — after a successful Save,
-  /// after a confirmed Cancel/discard, or on intercepted back navigation.
-  final VoidCallback onExit;
-
-  const TrackReorderView({
-    super.key,
+  const _TrackReorderSheet({
     required this.itineraryId,
     required this.tracks,
     required this.segments,
-    required this.onExit,
   });
 
   @override
-  ConsumerState<TrackReorderView> createState() => _TrackReorderViewState();
+  ConsumerState<_TrackReorderSheet> createState() => _TrackReorderSheetState();
 }
 
-class _TrackReorderViewState extends ConsumerState<TrackReorderView> {
+class _TrackReorderSheetState extends ConsumerState<_TrackReorderSheet> {
   late List<Track> _local;
   late List<String> _initialOrder;
   bool _busy = false;
@@ -118,17 +127,19 @@ class _TrackReorderViewState extends ConsumerState<TrackReorderView> {
   Future<void> _onCancel() async {
     final ok = await _confirmDiscardIfDirty();
     if (!ok || !mounted) return;
-    widget.onExit();
+    Navigator.of(context).pop();
   }
 
   Future<void> _onSave() async {
     if (_busy || !_dirty) return;
 
-    final orphaned = computeOrphansForTrackReorder(newTrackOrder: _local, segments: widget.segments);
+    final orphaned = computeOrphansForTrackReorder(
+        newTrackOrder: _local, segments: widget.segments);
     final messenger = ScaffoldMessenger.of(context);
 
     if (orphaned.isNotEmpty) {
-      final lines = orphaned.map((seg) =>
+      final lines = orphaned
+          .map((seg) =>
               '• ${_stopName(seg.fromStopId)} → ${_stopName(seg.toStopId)}')
           .join('\n');
       final confirmed = await confirmDestructiveAction(
@@ -171,123 +182,124 @@ class _TrackReorderViewState extends ConsumerState<TrackReorderView> {
       return;
     }
     if (!mounted) return;
-    widget.onExit();
+    Navigator.of(context).pop();
     messenger.showSnackBar(const SnackBar(content: Text('Order saved')));
   }
 
   @override
   Widget build(BuildContext context) {
-    final orphans = computeOrphansForTrackReorder(newTrackOrder: _local, segments: widget.segments);
+    final orphans = computeOrphansForTrackReorder(
+        newTrackOrder: _local, segments: widget.segments);
     final orphansByTrack = _orphansByFromTrack(orphans);
 
     return PopScope(
-      canPop: false,
+      canPop: !_dirty && !_busy,
       onPopInvokedWithResult: (didPop, _) async {
-        if (didPop || _busy) return;
+        if (didPop) return;
         final ok = await _confirmDiscardIfDirty();
-        if (ok && mounted) widget.onExit();
+        if (ok && context.mounted) Navigator.of(context).pop();
       },
-      child: ColoredBox(
+      child: Container(
         color: kSand,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // ── Orphan warning banner ──────────────────────────────────
-            if (orphans.isNotEmpty)
-              _OrphanSummaryBanner(
-                count: orphans.length,
-                entries: orphans
-                    .take(3)
-                    .map((seg) =>
-                        '${_stopName(seg.fromStopId)} → ${_stopName(seg.toStopId)}')
-                    .toList(),
-                moreCount: orphans.length > 3 ? orphans.length - 3 : 0,
-              ),
-
-            // ── Subtitle ───────────────────────────────────────────────
-            const Padding(
-              padding: EdgeInsets.fromLTRB(22, 10, 22, 6),
-              child: Text(
-                'DRAG TO CHANGE THE TRACK ORDER',
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                  color: kText2,
-                  letterSpacing: 0.6,
-                ),
-              ),
-            ),
-
-            // ── All track rows inside one SectionCard ──────────────────
-            ConstrainedBox(
-              constraints: BoxConstraints(
-                maxHeight: MediaQuery.of(context).size.height * 0.65,
-              ),
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: kSurface,
-                    borderRadius: BorderRadius.circular(18),
-                    border: Border.all(color: kBorder),
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // ── Orphan warning banner ────────────────────────────────
+                if (orphans.isNotEmpty)
+                  _OrphanSummaryBanner(
+                    count: orphans.length,
+                    entries: orphans
+                        .take(3)
+                        .map((seg) =>
+                            '${_stopName(seg.fromStopId)} → ${_stopName(seg.toStopId)}')
+                        .toList(),
+                    moreCount: orphans.length > 3 ? orphans.length - 3 : 0,
                   ),
-                  clipBehavior: Clip.antiAlias,
-                  child: ReorderableListView.builder(
-                    padding: EdgeInsets.zero,
-                    buildDefaultDragHandles: false,
-                    itemCount: _local.length,
-                    onReorder: _onReorder,
-                    proxyDecorator: (child, _, animation) =>
-                        AnimatedBuilder(
-                          animation: animation,
-                          builder: (_, child) => Material(
-                            elevation: 4 * animation.value,
-                            shadowColor: Colors.black26,
-                            color: kSand,
-                            borderRadius: BorderRadius.circular(12),
-                            child: child,
-                          ),
+
+                // ── Section label ────────────────────────────────────────
+                const Padding(
+                  padding: EdgeInsets.fromLTRB(6, 6, 6, 4),
+                  child: Text(
+                    'DRAG TO CHANGE THE TRACK ORDER',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: kText2,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                ),
+
+                // ── Track rows inside one SectionCard ───────────────────
+                ConstrainedBox(
+                  constraints: BoxConstraints(
+                    maxHeight: MediaQuery.of(context).size.height * 0.60,
+                  ),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: kSurface,
+                      borderRadius: BorderRadius.circular(18),
+                      border: Border.all(color: kBorder),
+                    ),
+                    clipBehavior: Clip.antiAlias,
+                    child: ReorderableListView.builder(
+                      shrinkWrap: true,
+                      padding: EdgeInsets.zero,
+                      buildDefaultDragHandles: false,
+                      itemCount: _local.length,
+                      onReorder: _onReorder,
+                      proxyDecorator: (child, _, animation) => AnimatedBuilder(
+                        animation: animation,
+                        builder: (_, child) => Material(
+                          elevation: 4 * animation.value,
+                          shadowColor: Colors.black26,
+                          color: kSand,
+                          borderRadius: BorderRadius.circular(12),
                           child: child,
                         ),
-                    itemBuilder: (_, i) {
-                      final t = _local[i];
-                      final affected = orphansByTrack[t.id] ?? const [];
-                      final isLast = i == _local.length - 1;
-                      return _TrackRow(
-                        key: ValueKey(t.id),
-                        trackNumber: i + 1,
-                        primaryName: _primaryName(t),
-                        parallelCount: t.stops.length,
-                        affected: affected
-                            .map((seg) => _stopName(seg.toStopId))
-                            .toList(),
-                        index: i,
-                        showDivider: !isLast,
-                      );
-                    },
+                        child: child,
+                      ),
+                      itemBuilder: (_, i) {
+                        final t = _local[i];
+                        final affected = orphansByTrack[t.id] ?? const [];
+                        final isLast = i == _local.length - 1;
+                        return _TrackRow(
+                          key: ValueKey(t.id),
+                          trackNumber: i + 1,
+                          primaryName: _primaryName(t),
+                          parallelCount: t.stops.length,
+                          affected: affected
+                              .map((seg) => _stopName(seg.toStopId))
+                              .toList(),
+                          index: i,
+                          showDivider: !isLast,
+                        );
+                      },
+                    ),
                   ),
                 ),
-              ),
-            ),
 
-            // ── Progress + buttons ─────────────────────────────────────
-            if (_busy)
-              const LinearProgressIndicator(
-                minHeight: 2,
-                color: kForest,
-                backgroundColor: kMist,
-              ),
-            SafeArea(
-              top: false,
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-                child: Row(
+                // ── Progress + buttons ───────────────────────────────────
+                if (_busy)
+                  const Padding(
+                    padding: EdgeInsets.only(top: 10),
+                    child: LinearProgressIndicator(
+                      minHeight: 2,
+                      color: kForest,
+                      backgroundColor: kMist,
+                    ),
+                  ),
+                const SizedBox(height: 12),
+                Row(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
                     TextButton(
                       onPressed: _busy ? null : _onCancel,
-                      style:
-                          TextButton.styleFrom(foregroundColor: kForest),
+                      style: TextButton.styleFrom(foregroundColor: kForest),
                       child: const Text('Cancel'),
                     ),
                     const SizedBox(width: 8),
@@ -297,9 +309,9 @@ class _TrackReorderViewState extends ConsumerState<TrackReorderView> {
                     ),
                   ],
                 ),
-              ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );
@@ -320,7 +332,7 @@ class _OrphanSummaryBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+      margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
       decoration: BoxDecoration(
         color: kTransitBg,
@@ -402,7 +414,7 @@ class _TrackRow extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
       children: [
-        // ── Main row ────────────────────────────────────────────────────
+        // ── Main row ──────────────────────────────────────────────────────
         Padding(
           padding: const EdgeInsets.fromLTRB(8, 10, 14, 10),
           child: Row(
@@ -449,8 +461,8 @@ class _TrackRow extends StatelessWidget {
               if (parallelCount > 1) ...[
                 const SizedBox(width: 8),
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 8, vertical: 3),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
                     color: kMist,
                     borderRadius: BorderRadius.circular(999),
@@ -469,27 +481,25 @@ class _TrackRow extends StatelessWidget {
           ),
         ),
 
-        // ── Affected-segment strip ────────────────────────────────────
+        // ── Affected-segment strip ─────────────────────────────────────
         for (final destName in affected)
           Padding(
             padding: const EdgeInsets.fromLTRB(56, 0, 14, 4),
             child: Row(
               children: [
-                const Icon(Icons.cancel_outlined,
-                    size: 13, color: kRatingRed),
+                const Icon(Icons.cancel_outlined, size: 13, color: kRatingRed),
                 const SizedBox(width: 4),
                 Expanded(
                   child: Text(
                     '→ $destName  —  segment will be deleted',
-                    style: const TextStyle(
-                        fontSize: 11, color: kRatingRed),
+                    style: const TextStyle(fontSize: 11, color: kRatingRed),
                   ),
                 ),
               ],
             ),
           ),
 
-        // ── Row divider ───────────────────────────────────────────────
+        // ── Row divider ────────────────────────────────────────────────
         if (showDivider) Container(height: 1, color: kBorder),
       ],
     );

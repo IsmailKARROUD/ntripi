@@ -96,12 +96,12 @@ class RatingsHubScreen extends ConsumerWidget {
                   ),
 
                   // ── 4. All raters header ─────────────────────────────────
-                  SliverToBoxAdapter(
+                  const SliverToBoxAdapter(
                     child: Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
+                      padding:  EdgeInsets.fromLTRB(16, 16, 16, 4),
                       child: Text(
                         'ALL RATERS',
-                        style: const TextStyle(
+                        style:  TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w700,
                           color: kText2,
@@ -429,10 +429,10 @@ class _YourRatingSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 14, 16, 6),
+        const Padding(
+          padding:  EdgeInsets.fromLTRB(16, 14, 16, 6),
           child: Row(
-            children: const [
+            children:  [
               Icon(Icons.person_rounded, size: 13, color: kForest),
               SizedBox(width: 6),
               Text(
