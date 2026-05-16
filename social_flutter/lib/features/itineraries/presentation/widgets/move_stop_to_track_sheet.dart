@@ -24,6 +24,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:social_flutter/core/ui/app_theme.dart';
 import 'package:social_flutter/core/api/api_client.dart';
 import 'package:social_flutter/core/services/segment_orphan_service.dart';
 import 'package:social_flutter/core/ui/destructive_actions.dart';
@@ -84,6 +85,7 @@ class _MoveStopToTrackSheet extends ConsumerStatefulWidget {
 }
 
 class _MoveStopToTrackSheetState extends ConsumerState<_MoveStopToTrackSheet> {
+  // true while a move API call is in flight — disables all row taps and shows the progress bar
   bool _busy = false;
 
   Track get _sourceTrack => widget.tracks.firstWhere(
@@ -185,26 +187,54 @@ class _MoveStopToTrackSheetState extends ConsumerState<_MoveStopToTrackSheet> {
   // ───── Row builders ────────────────────────────────────────────────────
 
   Widget _buildExtractRow(BuildContext context) {
-    final theme = Theme.of(context);
-    final cs = theme.colorScheme;
-    return ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 4),
-      leading: CircleAvatar(
-        radius: 14,
-        backgroundColor: cs.tertiaryContainer,
-        child: Icon(Icons.call_split, size: 14, color: cs.onTertiaryContainer),
-      ),
-      title: Text(AppLocalizations.of(context)!.extractIntoOwnTrack),
-      subtitle: Text(
-        AppLocalizations.of(context)!.extractSubtitle(_primaryName(_sourceTrack)),
-        style: theme.textTheme.bodySmall,
-      ),
+    return InkWell(
       onTap: _busy
           ? null
           : () => _onSelectTarget(MoveToNewTrack(
                 afterTrack: _sourceTrack,
                 beforeTrack: _trackAfter(_sourceTrack),
               )),
+      borderRadius: BorderRadius.circular(12),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(0, 10, 0, 10),
+        child: Row(
+          children: [
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: kMist,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              alignment: Alignment.center,
+              child: const Icon(Icons.call_split_rounded,
+                  size: 18, color: kForest),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    AppLocalizations.of(context)!.extractIntoOwnTrack,
+                    style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: kBark),
+                  ),
+                  Text(
+                    AppLocalizations.of(context)!
+                        .extractSubtitle(_primaryName(_sourceTrack)),
+                    style: const TextStyle(fontSize: 11, color: kText2),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(Icons.chevron_right_rounded,
+                size: 18, color: kText3),
+          ],
+        ),
+      ),
     );
   }
 
@@ -217,30 +247,38 @@ class _MoveStopToTrackSheetState extends ConsumerState<_MoveStopToTrackSheet> {
 
   Widget _buildGapRow(BuildContext context,
       {required Track? after, required Track? before}) {
-    final theme = Theme.of(context);
-    final cs = theme.colorScheme;
     final label = _gapLabel(context, after, before);
-    return ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 4),
-      leading: Container(
-        width: 28,
-        height: 28,
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          border: Border.all(
-            color: cs.outlineVariant,
-            style: BorderStyle.solid,
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 3),
+      child: InkWell(
+        onTap: _busy
+            ? null
+            : () => _onSelectTarget(
+                  MoveToNewTrack(afterTrack: after, beforeTrack: before),
+                ),
+        borderRadius: BorderRadius.circular(10),
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: kText3, style: BorderStyle.solid),
           ),
-          borderRadius: BorderRadius.circular(14),
-        ),
-        child: Icon(Icons.add, size: 14, color: cs.onSurfaceVariant),
-      ),
-      title: Text(label, style: theme.textTheme.bodyMedium),
-      onTap: _busy
-          ? null
-          : () => _onSelectTarget(
-                MoveToNewTrack(afterTrack: after, beforeTrack: before),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.add_rounded, size: 14, color: kForest),
+              const SizedBox(width: 6),
+              Text(
+                label,
+                style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: kBark),
               ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
@@ -267,62 +305,84 @@ class _MoveStopToTrackSheetState extends ConsumerState<_MoveStopToTrackSheet> {
     required Track t,
     required int displayedNumber,
   }) {
-    final theme = Theme.of(context);
-    final cs = theme.colorScheme;
+    final l10n = AppLocalizations.of(context)!;
     final isSource = t.id == widget.stop.trackId;
     final full = _isAtCapacity(t);
     final disabled = isSource || full;
-    final mutedColor = Colors.grey.shade400;
 
-    return ListTile(
-      enabled: !disabled,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 4),
-      leading: CircleAvatar(
-        radius: 14,
-        backgroundColor: disabled
-            ? Colors.grey.shade200
-            : cs.primary.withValues(alpha: 0.12),
-        child: Text(
-          '$displayedNumber',
-          style: TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w600,
-            color: disabled ? mutedColor : cs.primary,
+    return Opacity(
+      opacity: disabled ? 0.5 : 1.0,
+      child: InkWell(
+        onTap: (_busy || disabled)
+            ? null
+            : () => _onSelectTarget(MoveToExistingTrack(t)),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(0, 10, 0, 10),
+          child: Row(
+            children: [
+              // Number circle
+              Container(
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(
+                  color: disabled ? kBorder : kMist,
+                  shape: BoxShape.circle,
+                ),
+                alignment: Alignment.center,
+                child: Text(
+                  '$displayedNumber',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w800,
+                    color: disabled ? kText3 : kForest,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      _primaryName(t),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                        color: disabled ? kText3 : kBark,
+                      ),
+                    ),
+                    Text(
+                      l10n.stopCount(t.stops.length) +
+                          (isSource ? l10n.moveStopCurrentSuffix : ''),
+                      style: const TextStyle(
+                          fontSize: 11, color: kText2),
+                    ),
+                  ],
+                ),
+              ),
+              if (full && !isSource)
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: kBorder,
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: Text(
+                    l10n.moveStopFull(Track.maxParallelStops),
+                    style: const TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700,
+                      color: kText3,
+                    ),
+                  ),
+                ),
+            ],
           ),
         ),
       ),
-      title: Text(
-        _primaryName(t),
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-        style: disabled ? TextStyle(color: mutedColor) : null,
-      ),
-      subtitle: Text(
-        AppLocalizations.of(context)!.stopCount(t.stops.length) +
-        (isSource ? AppLocalizations.of(context)!.moveStopCurrentSuffix : ''),
-        style: theme.textTheme.bodySmall
-            ?.copyWith(color: disabled ? mutedColor : null),
-      ),
-      trailing: full && !isSource
-          ? Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-              decoration: BoxDecoration(
-                color: Colors.grey.shade200,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Text(
-                AppLocalizations.of(context)!.moveStopFull(Track.maxParallelStops),
-                style: theme.textTheme.labelSmall?.copyWith(
-                  color: Colors.grey.shade700,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            )
-          : null,
-      onTap: (_busy || disabled)
-          ? null
-          : () => _onSelectTarget(MoveToExistingTrack(t)),
     );
   }
 
@@ -330,8 +390,6 @@ class _MoveStopToTrackSheetState extends ConsumerState<_MoveStopToTrackSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     final rows = <Widget>[];
 
     // 1. Extract row — only when source has parallels.
@@ -352,37 +410,65 @@ class _MoveStopToTrackSheetState extends ConsumerState<_MoveStopToTrackSheet> {
       rows.add(_buildGapRow(context, after: widget.tracks.last, before: null));
     }
 
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              AppLocalizations.of(context)!.moveStopTitle,
-              style: theme.textTheme.titleMedium
-                  ?.copyWith(fontWeight: FontWeight.w600),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              AppLocalizations.of(context)!.moveStopDescription(Track.maxParallelStops),
-              style: theme.textTheme.bodySmall
-                  ?.copyWith(color: Colors.grey.shade600),
-            ),
-            const SizedBox(height: 12),
-            Flexible(
-              child: ListView(
-                shrinkWrap: true,
-                children: rows,
-              ),
-            ),
-            if (_busy)
+    return Container(
+      color: kSand,
+      child: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Section label
               const Padding(
-                padding: EdgeInsets.only(top: 8),
-                child: LinearProgressIndicator(minHeight: 2),
+                padding: EdgeInsets.fromLTRB(6, 6, 6, 6),
+                child: Text(
+                  'MOVE STOP TO',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: kText2,
+                    letterSpacing: 0.6,
+                  ),
+                ),
               ),
-          ],
+              // Rows in a white card — capped at 65 % screen height so the
+              // sheet never overflows when the itinerary has many tracks.
+              ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxHeight: MediaQuery.of(context).size.height * 0.65,
+                ),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: kSurface,
+                    borderRadius: BorderRadius.circular(18),
+                    border: Border.all(color: kBorder),
+                  ),
+                  clipBehavior: Clip.antiAlias,
+                  child: ListView(
+                    padding: const EdgeInsets.fromLTRB(14, 0, 14, 0),
+                    shrinkWrap: true,
+                    children: [
+                      for (var i = 0; i < rows.length; i++) ...[
+                        rows[i],
+                        if (i < rows.length - 1)
+                          Container(height: 1, color: kBorder),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+              if (_busy)
+                const Padding(
+                  padding: EdgeInsets.only(top: 10),
+                  child: LinearProgressIndicator(
+                    minHeight: 2,
+                    color: kForest,
+                    backgroundColor: kMist,
+                  ),
+                ),
+            ],
+          ),
         ),
       ),
     );

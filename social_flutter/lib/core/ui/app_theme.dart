@@ -29,6 +29,12 @@ const kSurface = Colors.white;
 const kBorder = Color(0xFFE4EDE6);
 const kText2 = Color(0xFF5A7562);
 const kText3 = Color(0xFF93A898);
+
+// Transit / amber palette — warm amber used in transit segment rows
+const kTransitBg     = Color(0xFFFFF8EC);
+const kTransitBorder = Color(0xFFF0E2C2);
+const kTransitIcon   = Color(0xFFA06D1F);
+const kTransitText   = Color(0xFF8A5A18);
 ThemeData buildNtripiTheme() {
   const scheme = ColorScheme(
     brightness: Brightness.light,

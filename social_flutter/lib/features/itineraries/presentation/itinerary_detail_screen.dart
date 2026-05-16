@@ -1466,7 +1466,7 @@ class _RateCta extends ConsumerWidget {
           current: myRating,
         ),
         icon: const Icon(Icons.star_rounded, size: 18),
-        label: Text(myRating != null ? 'Update rating' : 'Rate this trip'),
+        label: Text(myRating != null ? 'Update your rating' : 'Rate this trip'),
         style: FilledButton.styleFrom(
           backgroundColor: kForest,
           shape:

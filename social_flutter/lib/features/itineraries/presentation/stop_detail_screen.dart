@@ -522,9 +522,6 @@ class _TransitFullRow extends StatelessWidget {
     required this.allStops,
   });
 
-  static const _amberBg = Color(0xFFFFF8EC);
-  static const _amberIcon = Color(0xFFA06D1F);
-  static const _amberBorder = Color(0xFFF0E2C2);
 
   String _stopName(String id) =>
       allStops.firstWhere((s) => s.id == id,
@@ -584,16 +581,16 @@ class _TransitFullRow extends StatelessWidget {
           // ── One row per leg ────────────────────────────────────────────
           Container(
             decoration: BoxDecoration(
-              color: _amberBg,
+              color: kTransitBg,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: _amberBorder),
+              border: Border.all(color: kTransitBorder),
             ),
             child: Column(
               children: [
                 for (var i = 0; i < legs.length; i++) ...[
                   if (i > 0)
                     const Divider(
-                        height: 1, color: _amberBorder, indent: 12),
+                        height: 1, color: kTransitBorder, indent: 12),
                   Padding(
                     padding: const EdgeInsets.symmetric(
                         horizontal: 12, vertical: 10),
@@ -604,12 +601,12 @@ class _TransitFullRow extends StatelessWidget {
                           width: 32,
                           height: 32,
                           decoration: BoxDecoration(
-                            color: _amberIcon.withValues(alpha: 0.12),
+                            color: kTransitIcon.withValues(alpha: 0.12),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           alignment: Alignment.center,
                           child: Icon(legs[i].mode.icon,
-                              size: 16, color: _amberIcon),
+                              size: 16, color: kTransitIcon),
                         ),
                         const SizedBox(width: 10),
                         // Mode label + optional line
@@ -663,20 +660,20 @@ class _TransitFullRow extends StatelessWidget {
 
                 // ── Total row (multi-leg only) ──────────────────────────
                 if (multiLeg) ...[
-                  const Divider(height: 1, color: _amberBorder),
+                  const Divider(height: 1, color: kTransitBorder),
                   Padding(
                     padding: const EdgeInsets.fromLTRB(12, 7, 12, 7),
                     child: Row(
                       children: [
                         const Icon(Icons.summarize_rounded,
-                            size: 13, color: _amberIcon),
+                            size: 13, color: kTransitIcon),
                         const SizedBox(width: 6),
                         const Text(
                           'Total',
                           style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w700,
-                            color: _amberIcon,
+                            color: kTransitIcon,
                           ),
                         ),
                         const Spacer(),
@@ -684,20 +681,20 @@ class _TransitFullRow extends StatelessWidget {
                           Text(
                             _fmtDuration(segment.totalDurationMin),
                             style: const TextStyle(
-                                fontSize: 11, color: _amberIcon),
+                                fontSize: 11, color: kTransitIcon),
                           ),
                           const Padding(
                             padding:
                                 EdgeInsets.symmetric(horizontal: 5),
                             child: Text('·',
                                 style: TextStyle(
-                                    fontSize: 11, color: _amberIcon)),
+                                    fontSize: 11, color: kTransitIcon)),
                           ),
                         ],
                         Text(
                           _totalCost(),
                           style: const TextStyle(
-                              fontSize: 11, color: _amberIcon),
+                              fontSize: 11, color: kTransitIcon),
                         ),
                       ],
                     ),

@@ -23,6 +23,15 @@ class AnnotationScreen extends StatefulWidget {
   final String? stopName;
   final String? stopSubtitle;
 
+  /// When provided, the screen performs the save itself (shows a spinner,
+  /// calls this callback, then pops). Use this when the caller needs to make
+  /// an API call as part of saving — avoids showing a loading state on the
+  /// previous screen after the annotation screen has already popped.
+  ///
+  /// When null the screen pops with the raw [AnnotationFormResult] and the
+  /// caller handles persistence (existing behaviour for the detail screen).
+  final Future<void> Function(AnnotationFormResult result)? onSaveAsync;
+
   const AnnotationScreen({
     super.key,
     required this.isEdit,
@@ -30,6 +39,7 @@ class AnnotationScreen extends StatefulWidget {
     this.initialType,
     this.stopName,
     this.stopSubtitle,
+    this.onSaveAsync,
   });
 
   @override
@@ -39,6 +49,7 @@ class AnnotationScreen extends StatefulWidget {
 class _AnnotationScreenState extends State<AnnotationScreen> {
   late AnnotationType _type;
   late final TextEditingController _contentController;
+  bool _saving = false;
 
   static const _palette = {
     AnnotationType.advice: (
@@ -85,29 +96,53 @@ class _AnnotationScreenState extends State<AnnotationScreen> {
     super.dispose();
   }
 
-  void _save() {
+  Future<void> _save() async {
     final content = _contentController.text.trim();
     if (content.isEmpty) return;
-    Navigator.pop<AnnotationFormResult>(
-      context,
-      (content: content, type: _type),
-    );
+    final result = (content: content, type: _type);
+
+    if (widget.onSaveAsync != null) {
+      setState(() => _saving = true);
+      try {
+        await widget.onSaveAsync!(result);
+        if (mounted) Navigator.pop(context);
+      } on Exception catch (e) {
+        if (!mounted) return;
+        setState(() => _saving = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.toString())),
+        );
+      }
+    } else {
+      Navigator.pop<AnnotationFormResult>(context, result);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final title = widget.isEdit ? l10n.editAnnotationTitle : l10n.addAnnotationDialogTitle;
-    final canSave = _contentController.text.trim().isNotEmpty;
+    final canSave = !_saving && _contentController.text.trim().isNotEmpty;
 
     return Scaffold(
-      resizeToAvoidBottomInset: false,   // avoid resize when keyboard shows, since we use a ListView
+      resizeToAvoidBottomInset: false,
       backgroundColor: kSand,
       appBar: AppBar(
         backgroundColor: kSand,
         title: Text(title),
         actions: [
-          TextButton(
+          if (_saving)
+            const Padding(
+              padding: EdgeInsets.all(16),
+              child: SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                    strokeWidth: 2, color: kForest),
+              ),
+            )
+          else
+            TextButton(
             onPressed: canSave ? _save : null,
             child: Text(
               widget.isEdit ? l10n.saveButton : l10n.addButton,
@@ -319,6 +354,7 @@ Future<AnnotationFormResult?> showAnnotationScreen(
   AnnotationType? initialType,
   String? stopName,
   String? stopSubtitle,
+  Future<void> Function(AnnotationFormResult result)? onSaveAsync,
 }) {
   return Navigator.push<AnnotationFormResult>(
     context,
@@ -329,6 +365,7 @@ Future<AnnotationFormResult?> showAnnotationScreen(
         initialType: initialType,
         stopName: stopName,
         stopSubtitle: stopSubtitle,
+        onSaveAsync: onSaveAsync,
       ),
     ),
   );

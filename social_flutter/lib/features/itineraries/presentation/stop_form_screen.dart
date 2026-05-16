@@ -20,7 +20,7 @@ import 'package:social_flutter/features/itineraries/domain/annotation.dart';
 import 'package:social_flutter/features/itineraries/domain/stop.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/annotation_chip.dart';
 import 'package:social_flutter/core/ui/destructive_actions.dart';
-import 'package:social_flutter/features/itineraries/presentation/widgets/annotation_form_dialog.dart';
+import 'package:social_flutter/features/itineraries/presentation/annotation_screen.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/markdown_notes_editor.dart';
 import 'package:social_flutter/features/itineraries/data/itinerary_repository.dart';
 import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
@@ -146,7 +146,7 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
             children: [
               Padding(
                 padding:
-                    const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -436,57 +436,57 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
 
   Future<void> _showAnnotationDialog({Annotation? existing}) async {
     if (!mounted) return;
-    final result = await showAnnotationFormDialog(
-      context,
-      initialContent: existing?.content,
-      initialType: existing?.type,
-      isEdit: existing != null,
-    );
-    if (result == null || !mounted) return;
-
     final notifier =
         ref.read(itineraryDetailProvider(widget.itineraryId).notifier);
 
-    if (existing != null) {
-      // Edit — only send changed fields; skip API call if nothing changed.
-      final contentChanged = result.content != existing.content;
-      final typeChanged = result.type != existing.type;
-      if (!contentChanged && !typeChanged) return;
-      try {
-        await notifier.updateAnnotation(
-          widget.stopId!,
-          existing.id,
-          content: contentChanged ? result.content : null,
-          type: typeChanged ? result.type : null,
-        );
-      } on Exception catch (e) {
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(extractErrorMessage(e as dynamic))),
-        );
-      }
-    } else if (widget.isEditMode) {
-      // Create — stop already exists, send to API immediately.
-      try {
-        await notifier.addAnnotation(widget.stopId!, {
-          'type': result.type.name,
-          'content': result.content,
-        });
-        _initFromExistingStop();
-      } on Exception catch (e) {
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(extractErrorMessage(e as dynamic))),
-        );
-      }
-    } else {
-      // Create — stop doesn't exist yet, queue locally until save.
-      setState(() {
-        _pendingAnnotations.add(
-          _PendingAnnotation(result.type, result.content),
-        );
-      });
+    // API path (edit mode or stop already exists):
+    // Pass onSaveAsync so the annotation screen shows a spinner and pops itself
+    // only after the API call completes — user sees feedback before returning.
+    if (existing != null || widget.isEditMode) {
+      await showAnnotationScreen(
+        context,
+        isEdit: existing != null,
+        initialContent: existing?.content,
+        initialType: existing?.type,
+        stopName: _placeNameController.text.trim().isNotEmpty
+            ? _placeNameController.text.trim()
+            : null,
+        onSaveAsync: (result) async {
+          if (existing != null) {
+            final contentChanged = result.content != existing.content;
+            final typeChanged = result.type != existing.type;
+            if (!contentChanged && !typeChanged) return;
+            await notifier.updateAnnotation(
+              widget.stopId!,
+              existing.id,
+              content: contentChanged ? result.content : null,
+              type: typeChanged ? result.type : null,
+            );
+          } else {
+            // Add new annotation to an already-saved stop.
+            await notifier.addAnnotation(widget.stopId!, {
+              'type': result.type.name,
+              'content': result.content,
+            });
+            if (mounted) _initFromExistingStop();
+          }
+        },
+      );
+      return;
     }
+
+    // Create mode — stop not saved yet; queue annotation locally.
+    // No API call → no spinner needed; screen pops with result normally.
+    final result = await showAnnotationScreen(
+      context,
+      isEdit: false,
+      stopName: _placeNameController.text.trim().isNotEmpty
+          ? _placeNameController.text.trim()
+          : null,
+    );
+    if (result == null || !mounted) return;
+    setState(() =>
+        _pendingAnnotations.add(_PendingAnnotation(result.type, result.content)));
   }
 
   Future<void> _confirmDelete() async {
@@ -597,6 +597,30 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
               tooltip: l10n.editStopTooltip,
               onPressed: () => setState(() => _isEditing = true),
             ),
+          if (!readOnly)
+            _saving
+                ? const Padding(
+                    padding: EdgeInsets.all(16),
+                    child: SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                          strokeWidth: 2, color: kForest),
+                    ),
+                  )
+                : TextButton(
+                    onPressed: _save,
+                    child: Text(
+                      widget.isEditMode
+                          ? l10n.saveChangesButton
+                          : l10n.addStopButton,
+                      style: const TextStyle(
+                        color: kForest,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 15,
+                      ),
+                    ),
+                  ),
         ],
       ),
       body: Center(
@@ -604,7 +628,7 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
           constraints: BoxConstraints(
               maxWidth: isDesktopWeb() ? kDesktopMaxWidth : double.infinity),
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.only(top: 8, bottom: 40),
             child: Form(
               key: _formKey,
               child: Column(
@@ -614,14 +638,19 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                   // Section 1: Place search (hidden in view mode)
                   // ----------------------------------------------------------------
                   if (!readOnly) ...[
-                    LabelWithHelp(
-                      label: l10n.searchForPlaceLabel,
-                      helpTitle: l10n.searchAPlaceHelpTitle,
-                      helpMessage: l10n.searchAPlaceHelpMessage,
-                      labelStyle: Theme.of(context).textTheme.titleSmall,
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
+                      child: LabelWithHelp(
+                        label: l10n.searchForPlaceLabel,
+                        helpTitle: l10n.searchAPlaceHelpTitle,
+                        helpMessage: l10n.searchAPlaceHelpMessage,
+                        labelStyle: Theme.of(context).textTheme.titleSmall,
+                      ),
                     ),
                     const SizedBox(height: 8),
-                    TextField(
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: TextField(
                       controller: _searchController,
                       decoration: InputDecoration(
                         hintText: l10n.searchPlaceHintText,
@@ -657,9 +686,12 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                       ),
                       onChanged: _onSearchChanged,
                     ),
+                    ),
 
                     // Suggestions list
-                    suggestionsAsync.when(
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: suggestionsAsync.when(
                       loading: () => const Padding(
                         padding: EdgeInsets.symmetric(vertical: 8),
                         child: LinearProgressIndicator(),
@@ -717,439 +749,289 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                         );
                       },
                     ),
+                    ),
                     const SizedBox(height: 20),
                   ],
 
-                  // ----------------------------------------------------------------
-                  // Section 2: Stop details
-                  // ----------------------------------------------------------------
-                  Text(
-                    l10n.stopDetailsSectionLabel,
-                    style: Theme.of(context).textTheme.titleSmall,
-                  ),
-                  const SizedBox(height: 12),
-
-                  // Place name
-                  TextFormField(
-                    controller: _placeNameController,
-                    readOnly: readOnly,
-                    onTap: showEditHint ? _showEditModeHint : null,
-                    decoration: InputDecoration(
-                      labelText: l10n.placeNameLabel,
-                      suffixIcon: FieldHelpIcon(
-                        helpTitle: l10n.placeNameLabel,
-                        helpMessage: l10n.placeNameHelp,
-                      ),
-                      border: const OutlineInputBorder(),
-                    ),
-                    validator: (v) => (v == null || v.trim().isEmpty)
-                        ? l10n.placeNameRequired
-                        : null,
-                  ),
-                  const SizedBox(height: 12),
-
-                  // Place address
-                  TextFormField(
-                    controller: _placeAddressController,
-                    readOnly: readOnly,
-                    onTap: showEditHint ? _showEditModeHint : null,
-                    decoration: InputDecoration(
-                      labelText: l10n.addressLabel,
-                      suffixIcon: FieldHelpIcon(
-                        helpTitle: l10n.addressLabel,
-                        helpMessage: l10n.addressHelp,
-                      ),
-                      border: const OutlineInputBorder(),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-
-                  // Coordinates display + map picker
-                  Row(
+                  // ── Place name + address ───────────────────────────────
+                  _SFSectionCard(
                     children: [
-                      Expanded(
-                        child: Text(
-                          _lat != null && _lng != null
-                              ? 'Lat: ${_lat!.toStringAsFixed(5)}, Lng: ${_lng!.toStringAsFixed(5)}'
-                              : 'No location selected',
-                          style: Theme.of(context)
-                              .textTheme
-                              .bodySmall
-                              ?.copyWith(color: Colors.grey.shade600),
+                      _SFBorderlessField(
+                        label: l10n.placeNameLabel.toUpperCase(),
+                        child: TextFormField(
+                          controller: _placeNameController,
+                          readOnly: readOnly,
+                          onTap: showEditHint ? _showEditModeHint : null,
+                          decoration: const InputDecoration(
+                            border: InputBorder.none,
+                            enabledBorder: InputBorder.none,
+                            focusedBorder: InputBorder.none,
+                            isDense: true,
+                            contentPadding: EdgeInsets.zero,
+                            hintText: '—',
+                          ),
+                          style: const TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600,
+                              color: kBark),
+                          validator: (v) => (v == null || v.trim().isEmpty)
+                              ? l10n.placeNameRequired
+                              : null,
                         ),
                       ),
-                      FieldHelpIcon(
-                        helpTitle: l10n.placeNameLabel,
-                        helpMessage: l10n.coordinatesHelp,
-                      ),
-                      if (!readOnly)
-                        OutlinedButton.icon(
-                          onPressed: _pickOnMap,
-                          icon: const Icon(Icons.map_outlined, size: 16),
-                          label: Text(l10n.pickOnMap),
+                      const _SFDivider(),
+                      _SFBorderlessField(
+                        label: l10n.addressLabel.toUpperCase(),
+                        child: TextFormField(
+                          controller: _placeAddressController,
+                          readOnly: readOnly,
+                          onTap: showEditHint ? _showEditModeHint : null,
+                          decoration: const InputDecoration(
+                            border: InputBorder.none,
+                            enabledBorder: InputBorder.none,
+                            focusedBorder: InputBorder.none,
+                            isDense: true,
+                            contentPadding: EdgeInsets.zero,
+                            hintText: '—',
+                          ),
+                          style: const TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600,
+                              color: kBark),
                         ),
+                      ),
                     ],
                   ),
-                  const SizedBox(height: 16),
 
-                  // Duplicate warning — shown live in create mode
-                  if (!widget.isEditMode && duplicate != null) ...[
-                    const SizedBox(height: 8),
+                  // ── Location picker ────────────────────────────────────
+                  const SizedBox(height: 8),
+                  _SFSectionCard(
+                    children: [
+                      _SFPickerRow(
+                        icon: Icons.map_rounded,
+                        label: 'LOCATION',
+                        value: _lat != null && _lng != null
+                            ? 'Lat: ${_lat!.toStringAsFixed(5)}, Lng: ${_lng!.toStringAsFixed(5)}'
+                            : 'No location set',
+                        onTap: readOnly ? null : _pickOnMap,
+                      ),
+                    ],
+                  ),
+
+                  // ── Duplicate warning ──────────────────────────────────
+                  if (!widget.isEditMode && duplicate != null)
                     Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 8),
+                      margin: const EdgeInsets.only(top: 8),
+                      padding: const EdgeInsets.fromLTRB(14, 10, 14, 10),
                       decoration: BoxDecoration(
-                        color: Colors.amber.shade50,
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: Colors.amber.shade300),
+                        color: kTransitBg,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: kTransitBorder),
                       ),
                       child: Row(
                         children: [
-                          Icon(Icons.warning_amber_outlined,
-                              size: 16, color: Colors.amber.shade800),
+                          const Icon(Icons.warning_amber_rounded,
+                              size: 16, color: kTransitIcon),
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
                               '${duplicate.placeName ?? 'A stop'} is already in this itinerary.',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.amber.shade900,
-                              ),
+                              style: const TextStyle(
+                                  fontSize: 12, color: kTransitText),
                             ),
                           ),
                         ],
                       ),
                     ),
-                    const SizedBox(height: 8),
-                  ],
 
-                  // Place type
-                  if (readOnly)
-                    GestureDetector(
-                      behavior: HitTestBehavior.opaque,
-                      onTap: showEditHint ? _showEditModeHint : null,
-                      child: InputDecorator(
-                        decoration: InputDecoration(
-                          labelText: l10n.placeTypeLabel,
-                          suffixIcon: FieldHelpIcon(
-                            helpTitle: l10n.placeTypeLabel,
-                            helpMessage: l10n.placeTypeHelp,
-                          ),
-                          border: const OutlineInputBorder(),
-                        ),
-                        child: _placeType != null
-                            ? Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(_placeType!.icon, size: 16, color: _placeType!.color),
-                                  const SizedBox(width: 6),
-                                  Text(
-                                    _placeType!.label,
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .bodyMedium
-                                        ?.copyWith(color: _placeType!.color),
-                                  ),
-                                ],
-                              )
-                            : Text('—', style: Theme.of(context).textTheme.bodyMedium),
-                      ),
-                    )
-                  else
-                    DropdownButtonFormField<PlaceType>(
-                      value: _placeType,
-                      decoration: InputDecoration(
-                        labelText: l10n.placeTypeLabel,
-                        suffixIcon: FieldHelpIcon(
-                          helpTitle: l10n.placeTypeLabel,
-                          helpMessage: l10n.placeTypeHelp,
-                        ),
-                        border: const OutlineInputBorder(),
-                      ),
-                      hint: Text(l10n.selectPlaceType),
-                      isExpanded: true,
-                      selectedItemBuilder: (context) => PlaceType.values
-                          .map((t) => Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(t.icon, size: 16, color: t.color),
-                                  const SizedBox(width: 6),
-                                  Text(
-                                    t.label,
-                                    style: TextStyle(color: t.color),
-                                  ),
-                                ],
-                              ))
-                          .toList(),
-                      items: PlaceType.values
-                          .map(
-                            (t) => DropdownMenuItem(
-                              value: t,
-                              child: Row(
-                                children: [
-                                  Icon(t.icon, size: 18, color: t.color),
-                                  const SizedBox(width: 10),
-                                  Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Text(
-                                        t.label,
-                                        style: TextStyle(
-                                          color: t.color,
-                                          fontWeight: FontWeight.w500,
-                                        ),
-                                      ),
-                                      Text(
-                                        t.hint,
-                                        style: TextStyle(
-                                          fontSize: 11,
-                                          color: Colors.grey.shade600,
-                                          fontStyle: FontStyle.italic,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                            ),
-                          )
-                          .toList(),
-                      onChanged: (v) => setState(() => _placeType = v),
-                    ),
-                  const SizedBox(height: 16),
-
-                  // Duration — recommended time to spend
-                  InkWell(
-                    onTap: readOnly
-                        ? (showEditHint ? _showEditModeHint : null)
-                        : _showDurationPicker,
-                    borderRadius: BorderRadius.circular(4),
-                    child: InputDecorator(
-                      decoration: InputDecoration(
-                        labelText: l10n.recommendedTimeLabel,
-                        border: const OutlineInputBorder(),
-                        prefixIcon: const Icon(Icons.schedule_outlined),
-                        suffix: FieldHelpIcon(
-                          helpTitle: l10n.recommendedTimeLabel,
-                          helpMessage: l10n.timeToSpendHelp,
-                        ),
-                        suffixIcon: readOnly
-                            ? null
-                            :  const Icon(Icons.chevron_right),
-                      ),
-                      child: Text(
-                        _durationLabel,
-                        style: TextStyle(
-                          color: _totalDurationMin == null
-                              ? Theme.of(context).hintColor
-                              : null,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-
-                  // Is free toggle
-                  if (readOnly)
-                    ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      onTap: showEditHint ? _showEditModeHint : null,
-                      leading: Icon(
-                        _isFree ? Icons.check_circle_outline : Icons.money_off_outlined,
-                        color: _isFree ? Colors.green : null,
-                      ),
-                      title: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(_isFree ? l10n.stopIsFree : l10n.stopIsFree),
-                          const SizedBox(width: 2),
-                          FieldHelpIcon(
-                            helpTitle: l10n.freeLegLabel,
-                            helpMessage: l10n.freeHelp,
-                          ),
-                        ],
-                      ),
-                    )
-                  else
-                    SwitchListTile(
-                      title: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(l10n.stopIsFree),
-                          const SizedBox(width: 2),
-                          FieldHelpIcon(
-                            helpTitle: l10n.freeLegLabel,
-                            helpMessage: l10n.freeHelp,
-                          ),
-                        ],
-                      ),
-                      value: _isFree,
-                      onChanged: (v) => setState(() => _isFree = v),
-                      contentPadding: EdgeInsets.zero,
-                    ),
-
-                  // Cost field — hidden when is_free = true
-                  if (!_isFree) ...[
-                    TextFormField(
-                      controller: _costController,
-                      readOnly: readOnly,
-                      onTap: showEditHint ? _showEditModeHint : null,
-                      decoration: InputDecoration(
-                        labelText: l10n.costLabel,
-                        suffixIcon: FieldHelpIcon(
-                          helpTitle: l10n.costLabel,
-                          helpMessage: l10n.costHelp,
-                        ),
-                        border: const OutlineInputBorder(),
-                        prefixText: '€ ',
-                      ),
-                      keyboardType:
-                          const TextInputType.numberWithOptions(decimal: true),
-                      validator: (v) {
-                        if (v == null || v.isEmpty) return null;
-                        if (double.tryParse(v) == null) {
-                          return l10n.enterValidNumber;
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 12),
-                  ],
-
-                  // Thoughts — Markdown source with toolbar (edit) or rendered (readOnly).
-                  MarkdownNotesEditor(
-                    controller: _notesController,
-                    readOnly: readOnly,
-                    label: l10n.thoughtsLabel,
-                    helpTitle: l10n.thoughtsLabel,
-                    helpMessage: l10n.thoughtsHelp,
-                  ),
-                  const SizedBox(height: 20),
-
-                  // ----------------------------------------------------------------
-                  // Section 3: Annotations
-                  // ----------------------------------------------------------------
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  // ── DETAILS ────────────────────────────────────────────
+                  const _SFSectionLabel(text: 'DETAILS'),
+                  _SFSectionCard(
                     children: [
-                      LabelWithHelp(
-                        label: l10n.annotationsLabel,
-                        helpTitle: l10n.annotationsLabel,
-                        helpMessage: l10n.annotationsHelp,
-                        labelStyle: Theme.of(context).textTheme.titleSmall,
+                      // Place type
+                      _SFPickerRow(
+                        icon: _placeType?.icon ?? Icons.category_rounded,
+                        iconColor: _placeType?.color ?? kForest,
+                        label: 'PLACE TYPE',
+                        value: _placeType?.label ?? '—',
+                        onTap: readOnly ? null : _showPlaceTypePicker,
                       ),
-                      if (!readOnly)
-                        TextButton.icon(
-                          onPressed: () => _showAnnotationDialog(),
-                          icon: const Icon(Icons.add, size: 16),
-                          label: Text(l10n.addButton),
+                      const _SFDivider(),
+                      // Duration
+                      _SFPickerRow(
+                        icon: Icons.schedule_rounded,
+                        label: 'TIME SPENT',
+                        value: _durationLabel,
+                        onTap: readOnly ? null : _showDurationPicker,
+                      ),
+                      const _SFDivider(),
+                      // Free toggle
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 32,
+                              height: 32,
+                              decoration: BoxDecoration(
+                                color: kMist,
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              alignment: Alignment.center,
+                              child: const Icon(Icons.payments_rounded,
+                                  size: 16, color: kForest),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text(
+                                    'COST',
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w700,
+                                      color: kText2,
+                                      letterSpacing: 0.4,
+                                    ),
+                                  ),
+                                  Text(
+                                    l10n.stopIsFree,
+                                    style: const TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w500,
+                                      color: kBark,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Switch(
+                              value: _isFree,
+                              onChanged: readOnly
+                                  ? null
+                                  : (v) => setState(() => _isFree = v),
+                              activeThumbColor: kForest,
+                              activeTrackColor: kMist,
+                            ),
+                          ],
                         ),
+                      ),
+                      if (!_isFree) ...[
+                        const _SFDivider(),
+                        _SFBorderlessField(
+                          label: 'COST',
+                          child: TextFormField(
+                            controller: _costController,
+                            readOnly: readOnly,
+                            onTap: showEditHint ? _showEditModeHint : null,
+                            decoration: const InputDecoration(
+                              border: InputBorder.none,
+                              enabledBorder: InputBorder.none,
+                              focusedBorder: InputBorder.none,
+                              isDense: true,
+                              contentPadding: EdgeInsets.zero,
+                              hintText: 'e.g. 20',
+                              prefixText: '€ ',
+                            ),
+                            keyboardType: const TextInputType.numberWithOptions(
+                                decimal: true),
+                            style: const TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w600,
+                                color: kBark),
+                            validator: (v) {
+                              if (v == null || v.isEmpty) return null;
+                              if (double.tryParse(v) == null) {
+                                return l10n.enterValidNumber;
+                              }
+                              return null;
+                            },
+                          ),
+                        ),
+                      ],
                     ],
                   ),
-                  const SizedBox(height: 8),
-                  if (widget.isEditMode) ...[
-                    // Edit mode: show saved annotations from the existing stop.
-                    if (_existingStop == null ||
-                        _existingStop!.annotations.isEmpty)
-                      Text(
-                        l10n.noAnnotationsYet,
-                        style: TextStyle(color: Colors.grey.shade600),
-                      )
-                    else
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 6,
-                        children: _existingStop!.annotations
-                            .map(
-                              (a) => AnnotationChip(
-                                annotation: a,
-                                onEdit: readOnly
-                                    ? null
-                                    : () => _showAnnotationDialog(existing: a),
-                                onDelete: readOnly
-                                    ? null
-                                    : () => _deleteAnnotation(a.id),
-                              ),
-                            )
-                            .toList(),
+
+                  // ── NOTES ─────────────────────────────────────────────
+                  const _SFSectionLabel(text: 'NOTES'),
+                  _SFSectionCard(
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+                        child: MarkdownNotesEditor(
+                          controller: _notesController,
+                          readOnly: readOnly,
+                          label: l10n.thoughtsLabel,
+                          helpTitle: l10n.thoughtsLabel,
+                          helpMessage: l10n.thoughtsHelp,
+                        ),
                       ),
-                  ] else ...[
-                    // Create mode: show locally queued annotations.
-                    if (_pendingAnnotations.isEmpty)
-                      Text(
-                        l10n.noAnnotationsYet,
-                        style: TextStyle(color: Colors.grey.shade600),
-                      )
-                    else
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 6,
-                        children: _pendingAnnotations
-                            .map(
-                              (p) => Chip(
-                                avatar: Icon(
-                                  _annotationIcons[p.type],
-                                  size: 16,
-                                  color: _annotationColors[p.type],
-                                ),
-                                label: Text(
-                                  p.content,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
+                    ],
+                  ),
+
+                  // ── ANNOTATIONS ────────────────────────────────────────
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(22, 14, 16, 6),
+                    child: Row(
+                      children: [
+                        const Text(
+                          'ANNOTATIONS',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: kText2,
+                            letterSpacing: 0.6,
+                          ),
+                        ),
+                        const Spacer(),
+                        if (!readOnly)
+                          GestureDetector(
+                            onTap: () => _showAnnotationDialog(),
+                            child: const Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.add_rounded,
+                                    size: 14, color: kForest),
+                                SizedBox(width: 4),
+                                Text(
+                                  'Add',
                                   style: TextStyle(
                                     fontSize: 12,
-                                    color: _annotationColors[p.type],
+                                    fontWeight: FontWeight.w700,
+                                    color: kForest,
                                   ),
                                 ),
-                                backgroundColor:
-                                    _annotationColors[p.type]!.withOpacity(0.1),
-                                side: BorderSide.none,
-                                deleteIcon: Icon(
-                                  Icons.close,
-                                  size: 14,
-                                  color: _annotationColors[p.type],
-                                ),
-                                onDeleted: () => setState(
-                                    () => _pendingAnnotations.remove(p)),
-                              ),
-                            )
-                            .toList(),
-                      ),
-                  ],
-                  const SizedBox(height: 20),
-
-                  // Save button — hidden in read-only view
-                  if (!readOnly) ...[
-                    FilledButton(
-                      onPressed: _saving ? null : _save,
-                      child: _saving
-                          ? const SizedBox(
-                              height: 20,
-                              width: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Colors.white,
-                              ),
-                            )
-                          : Text(widget.isEditMode ? l10n.saveChangesButton : l10n.addStopButton),
+                              ],
+                            ),
+                          ),
+                      ],
                     ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
+                    child: _buildAnnotationsContent(
+                        context, readOnly, l10n),
+                  ),
 
-                    // Delete stop — edit mode only
-                    if (widget.isEditMode) ...[
-                      const SizedBox(height: 12),
-                      OutlinedButton.icon(
+                  // ── Delete (edit mode, non-readonly) ───────────────────
+                  if (!readOnly && widget.isEditMode) ...[
+                    const SizedBox(height: 16),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
+                      child: OutlinedButton.icon(
                         onPressed: _saving ? null : _confirmDelete,
-                        icon: const Icon(Icons.delete_outline, color: Colors.red),
+                        icon: const Icon(Icons.delete_outline,
+                            color: kRatingRed),
                         label: Text(
                           l10n.deleteStopButton,
-                          style: const TextStyle(color: Colors.red),
+                          style: const TextStyle(color: kRatingRed),
                         ),
                         style: OutlinedButton.styleFrom(
-                          side: const BorderSide(color: Colors.red),
+                          side: const BorderSide(color: kRatingRed),
                         ),
                       ),
-                    ],
+                    ),
                   ],
                 ],
               ),
@@ -1160,19 +1042,298 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
     );
   }
 
-  static const _annotationColors = {
-    AnnotationType.advice: Color(0xFF2E7D32),
-    AnnotationType.caution: Color(0xFFE65100),
-    AnnotationType.avoid: Color(0xFFC62828),
-    AnnotationType.info: Color(0xFF1565C0),
-  };
+  // ── Place type picker bottom sheet ──────────────────────────────────────
+  Future<void> _showPlaceTypePicker() async {
+    final picked = await showModalBottomSheet<PlaceType>(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                margin: const EdgeInsets.only(bottom: 12),
+                alignment: Alignment.center,
+                child: Container(
+                  width: 36,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: kText3.withValues(alpha: 0.5),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const Padding(
+                padding: EdgeInsets.only(bottom: 8),
+                child: Text(
+                  'PLACE TYPE',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: kText2,
+                    letterSpacing: 0.6,
+                  ),
+                ),
+              ),
+              Flexible(
+                child: ListView(
+                  shrinkWrap: true,
+                  children: PlaceType.values.map((t) {
+                    final selected = _placeType == t;
+                    return ListTile(
+                      leading: Container(
+                        width: 36,
+                        height: 36,
+                        decoration: BoxDecoration(
+                          color: t.color.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        alignment: Alignment.center,
+                        child: Icon(t.icon, size: 18, color: t.color),
+                      ),
+                      title: Text(t.label,
+                          style: const TextStyle(
+                              fontWeight: FontWeight.w700, color: kBark)),
+                      subtitle: Text(t.hint,
+                          style: const TextStyle(
+                              fontSize: 11, color: kText2)),
+                      trailing: selected
+                          ? const Icon(Icons.check_rounded,
+                              color: kForest, size: 18)
+                          : null,
+                      onTap: () => Navigator.pop(ctx, t),
+                    );
+                  }).toList(),
+                ),
+              ),
+              if (_placeType != null)
+                ListTile(
+                  leading: Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: kBorder,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    alignment: Alignment.center,
+                    child: const Icon(Icons.clear_rounded,
+                        size: 18, color: kText3),
+                  ),
+                  title: const Text('None',
+                      style: TextStyle(color: kText2)),
+                  onTap: () => Navigator.pop(ctx, null),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+    // null means "clear" — but showModalBottomSheet returns null for dismiss too,
+    // so only update when the sheet returned a value (including the "None" tap
+    // which pops with null — we handle via a distinct sentinel return).
+    if (mounted && picked != null) setState(() => _placeType = picked);
+  }
 
-  static const _annotationIcons = {
-    AnnotationType.advice: Icons.lightbulb_outline,
-    AnnotationType.caution: Icons.warning_amber_outlined,
-    AnnotationType.avoid: Icons.block,
-    AnnotationType.info: Icons.info_outline,
-  };
+  // ── Annotations section content ──────────────────────────────────────────
+  Widget _buildAnnotationsContent(
+      BuildContext context, bool readOnly, AppLocalizations l10n) {
+    if (widget.isEditMode) {
+      final annos = _existingStop?.annotations ?? [];
+      if (annos.isEmpty) {
+        return Text(l10n.noAnnotationsYet,
+            style: const TextStyle(color: kText3, fontSize: 13));
+      }
+      return Wrap(
+        spacing: 8,
+        runSpacing: 6,
+        children: annos
+            .map((a) => AnnotationChip(
+                  annotation: a,
+                  onEdit: readOnly
+                      ? null
+                      : () => _showAnnotationDialog(existing: a),
+                  onDelete: readOnly
+                      ? null
+                      : () => _deleteAnnotation(a.id),
+                ))
+            .toList(),
+      );
+    } else {
+      if (_pendingAnnotations.isEmpty) {
+        return Text(l10n.noAnnotationsYet,
+            style: const TextStyle(color: kText3, fontSize: 13));
+      }
+      return Wrap(
+        spacing: 8,
+        runSpacing: 6,
+        children: _pendingAnnotations
+            .map((p) => AnnotationChip(
+                  annotation: Annotation(
+                    id: 'pending-${p.content.hashCode}',
+                    stopId: '',
+                    type: p.type,
+                    content: p.content,
+                    createdAt: DateTime.now(),
+                    updatedAt: DateTime.now(),
+                  ),
+                  onDelete: () =>
+                      setState(() => _pendingAnnotations.remove(p)),
+                ))
+            .toList(),
+      );
+    }
+  }
+}
+
+// ─── Stop-form editorial helpers ─────────────────────────────────────────────
+
+class _SFSectionLabel extends StatelessWidget {
+  final String text;
+  const _SFSectionLabel({required this.text});
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.fromLTRB(22, 14, 22, 6),
+        child: Text(
+          text,
+          style: const TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w700,
+            color: kText2,
+            letterSpacing: 0.6,
+          ),
+        ),
+      );
+}
+
+class _SFSectionCard extends StatelessWidget {
+  final List<Widget> children;
+  const _SFSectionCard({required this.children});
+
+  @override
+  Widget build(BuildContext context) => Container(
+        margin: const EdgeInsets.fromLTRB(16, 0, 16, 0),
+        decoration: BoxDecoration(
+          color: kSurface,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: kBorder),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: children,
+        ),
+      );
+}
+
+class _SFDivider extends StatelessWidget {
+  const _SFDivider();
+
+  @override
+  Widget build(BuildContext context) =>
+      Container(height: 1, color: kBorder, margin: const EdgeInsets.only(left: 16));
+}
+
+class _SFBorderlessField extends StatelessWidget {
+  final String label;
+  final Widget child;
+  const _SFBorderlessField({required this.label, required this.child});
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.fromLTRB(16, 13, 16, 12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              label,
+              style: const TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                color: kText2,
+                letterSpacing: 0.4,
+              ),
+            ),
+            const SizedBox(height: 4),
+            child,
+          ],
+        ),
+      );
+}
+
+class _SFPickerRow extends StatelessWidget {
+  final IconData icon;
+  final Color? iconColor;
+  final String label;
+  final String value;
+  final VoidCallback? onTap;
+
+  const _SFPickerRow({
+    required this.icon,
+    required this.label,
+    required this.value,
+    this.iconColor,
+    this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final tint = iconColor ?? kForest;
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+        child: Row(
+          children: [
+            Container(
+              width: 32,
+              height: 32,
+              decoration: BoxDecoration(
+                color: kMist,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              alignment: Alignment.center,
+              child: Icon(icon, size: 16, color: tint),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    label,
+                    style: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: kText2,
+                      letterSpacing: 0.4,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    value,
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: kBark,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (onTap != null)
+              const Icon(Icons.chevron_right_rounded,
+                  size: 20, color: kText3),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 /// Annotation queued locally in create mode before the stop is saved.

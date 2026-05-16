@@ -131,10 +131,6 @@ class _SegmentCardState extends ConsumerState<SegmentCard> {
     if (!_isEditable) return _TransitRow(segment: segment, currency: widget.currency);
 
     // Edit mode: amber editorial container with tappable leg rows.
-    const bgColor = Color(0xFFFFF8EC);
-    const borderColor = Color(0xFFF0E2C2);
-    const iconColor = Color(0xFFA06D1F);
-    const textColor = Color(0xFF8A5A18);
 
     String fmtCost(double cost, bool isFree) {
       if (isFree || cost <= 0) return 'Free';
@@ -162,8 +158,8 @@ class _SegmentCardState extends ConsumerState<SegmentCard> {
     return Container(
       margin: const EdgeInsets.fromLTRB(28, 6, 28, 6),
       decoration: BoxDecoration(
-        color: bgColor,
-        border: Border.all(color: borderColor),
+        color: kTransitBg,
+        border: Border.all(color: kTransitBorder),
         borderRadius: BorderRadius.circular(12),
       ),
       clipBehavior: Clip.antiAlias,
@@ -180,7 +176,7 @@ class _SegmentCardState extends ConsumerState<SegmentCard> {
                   style: TextStyle(
                     fontSize: 10,
                     fontWeight: FontWeight.w700,
-                    color: iconColor,
+                    color: kTransitIcon,
                     letterSpacing: 0.5,
                   ),
                 ),
@@ -191,7 +187,7 @@ class _SegmentCardState extends ConsumerState<SegmentCard> {
                     height: 14,
                     child: CircularProgressIndicator(
                       strokeWidth: 1.5,
-                      color: iconColor,
+                      color: kTransitIcon,
                     ),
                   )
                 else if (widget.onDelete != null)
@@ -203,7 +199,7 @@ class _SegmentCardState extends ConsumerState<SegmentCard> {
               ],
             ),
           ),
-          const Divider(height: 1, color: borderColor),
+          const Divider(height: 1, color: kTransitBorder),
 
           // ── Leg rows (tappable to edit) ────────────────────────────────────
           if (legs.isEmpty)
@@ -215,21 +211,21 @@ class _SegmentCardState extends ConsumerState<SegmentCard> {
                   'No legs yet. Tap ＋ to add.',
                   style: TextStyle(
                       fontSize: 12,
-                      color: textColor,
+                      color: kTransitText,
                       fontStyle: FontStyle.italic),
                 ),
               ),
             )
           else
             for (var i = 0; i < legs.length; i++) ...[
-              if (i > 0) const Divider(height: 1, color: borderColor),
+              if (i > 0) const Divider(height: 1, color: kTransitBorder),
               InkWell(
                 onTap: _saving ? null : () => _editLeg(i),
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(12, 9, 12, 9),
                   child: Row(
                     children: [
-                      Icon(legs[i].mode.icon, size: 16, color: iconColor),
+                      Icon(legs[i].mode.icon, size: 16, color: kTransitIcon),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Column(
@@ -239,32 +235,32 @@ class _SegmentCardState extends ConsumerState<SegmentCard> {
                                 style: const TextStyle(
                                     fontSize: 12,
                                     fontWeight: FontWeight.w700,
-                                    color: textColor)),
+                                    color: kTransitText)),
                             if (legs[i].line != null &&
                                 legs[i].line!.isNotEmpty)
                               Text(legs[i].line!,
                                   style: const TextStyle(
-                                      fontSize: 11, color: iconColor)),
+                                      fontSize: 11, color: kTransitIcon)),
                           ],
                         ),
                       ),
                       if (fmtMin(legs[i].durationMin).isNotEmpty) ...[
                         Text(fmtMin(legs[i].durationMin),
                             style: const TextStyle(
-                                fontSize: 12, color: textColor)),
+                                fontSize: 12, color: kTransitText)),
                         const Padding(
                           padding: EdgeInsets.symmetric(horizontal: 4),
                           child: Text('·',
                               style: TextStyle(
-                                  fontSize: 12, color: textColor)),
+                                  fontSize: 12, color: kTransitText)),
                         ),
                       ],
                       Text(fmtCost(legs[i].cost, legs[i].isFree),
                           style: const TextStyle(
-                              fontSize: 12, color: textColor)),
+                              fontSize: 12, color: kTransitText)),
                       const SizedBox(width: 6),
                       const Icon(Icons.chevron_right_rounded,
-                          size: 14, color: iconColor),
+                          size: 14, color: kTransitIcon),
                     ],
                   ),
                 ),
@@ -272,20 +268,20 @@ class _SegmentCardState extends ConsumerState<SegmentCard> {
             ],
 
           // ── Add leg ────────────────────────────────────────────────────────
-          const Divider(height: 1, color: borderColor),
+          const Divider(height: 1, color: kTransitBorder),
           InkWell(
             onTap: _saving ? null : _addLeg,
             child: const Padding(
               padding: EdgeInsets.fromLTRB(12, 8, 12, 8),
               child: Row(
                 children: [
-                  Icon(Icons.add_rounded, size: 14, color: iconColor),
+                  Icon(Icons.add_rounded, size: 14, color: kTransitIcon),
                   SizedBox(width: 6),
                   Text('Add leg',
                       style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
-                          color: textColor)),
+                          color: kTransitText)),
                 ],
               ),
             ),
@@ -293,33 +289,33 @@ class _SegmentCardState extends ConsumerState<SegmentCard> {
 
           // ── Total row (multi-leg) ──────────────────────────────────────────
           if (multiLeg) ...[
-            const Divider(height: 1, color: borderColor),
+            const Divider(height: 1, color: kTransitBorder),
             Padding(
               padding: const EdgeInsets.fromLTRB(12, 6, 12, 6),
               child: Row(
                 children: [
                   const Icon(Icons.summarize_rounded,
-                      size: 12, color: iconColor),
+                      size: 12, color: kTransitIcon),
                   const SizedBox(width: 5),
                   const Text('Total',
                       style: TextStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.w700,
-                          color: iconColor)),
+                          color: kTransitIcon)),
                   const Spacer(),
                   if (totalDur.isNotEmpty) ...[
                     Text(totalDur,
                         style: const TextStyle(
-                            fontSize: 10, color: iconColor)),
+                            fontSize: 10, color: kTransitIcon)),
                     const Padding(
                       padding: EdgeInsets.symmetric(horizontal: 4),
                       child: Text('·',
-                          style: TextStyle(fontSize: 10, color: iconColor)),
+                          style: TextStyle(fontSize: 10, color: kTransitIcon)),
                     ),
                   ],
                   Text(totalCost,
                       style:
-                          const TextStyle(fontSize: 10, color: iconColor)),
+                          const TextStyle(fontSize: 10, color: kTransitIcon)),
                 ],
               ),
             ),
@@ -338,10 +334,10 @@ class _TransitRow extends StatelessWidget {
 
   const _TransitRow({required this.segment, required this.currency});
 
-  static const _bgColor = Color(0xFFFFF8EC);
-  static const _borderColor = Color(0xFFF0E2C2);
-  static const _iconColor = Color(0xFFA06D1F);
-  static const _textColor = Color(0xFF8A5A18);
+  static const _kTransitBg = Color(0xFFFFF8EC);
+  static const _kTransitBorder = Color(0xFFF0E2C2);
+  static const _kTransitIcon = Color(0xFFA06D1F);
+  static const _kTransitText = Color(0xFF8A5A18);
 
   String _fmtCost(double cost, bool isFree) {
     if (isFree || cost <= 0) return 'Free';
@@ -372,8 +368,8 @@ class _TransitRow extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.fromLTRB(28, 6, 28, 6),
       decoration: BoxDecoration(
-        color: _bgColor,
-        border: Border.all(color: _borderColor),
+        color: _kTransitBg,
+        border: Border.all(color: _kTransitBorder),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
@@ -382,19 +378,19 @@ class _TransitRow extends StatelessWidget {
           // ── One row per leg ──────────────────────────────────────────────
           for (var i = 0; i < legs.length; i++) ...[
             if (i > 0)
-              const Divider(height: 1, color: _borderColor, indent: 12),
+              const Divider(height: 1, color: _kTransitBorder, indent: 12),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               child: Row(
                 children: [
-                  Icon(legs[i].mode.icon, size: 16, color: _iconColor),
+                  Icon(legs[i].mode.icon, size: 16, color: _kTransitIcon),
                   const SizedBox(width: 8),
                   Text(
                     legs[i].mode.label,
                     style: const TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w700,
-                      color: _textColor,
+                      color: _kTransitText,
                     ),
                   ),
                   // line / direction if present
@@ -402,7 +398,7 @@ class _TransitRow extends StatelessWidget {
                     const SizedBox(width: 4),
                     Text(
                       legs[i].line!,
-                      style: const TextStyle(fontSize: 12, color: _textColor),
+                      style: const TextStyle(fontSize: 12, color: _kTransitText),
                     ),
                   ],
                   const Spacer(),
@@ -410,18 +406,18 @@ class _TransitRow extends StatelessWidget {
                   if (_fmtMin(legs[i].durationMin).isNotEmpty) ...[
                     Text(
                       _fmtMin(legs[i].durationMin),
-                      style: const TextStyle(fontSize: 12, color: _textColor),
+                      style: const TextStyle(fontSize: 12, color: _kTransitText),
                     ),
                     const Padding(
                       padding: EdgeInsets.symmetric(horizontal: 5),
                       child: Text('·',
-                          style: TextStyle(fontSize: 12, color: _textColor)),
+                          style: TextStyle(fontSize: 12, color: _kTransitText)),
                     ),
                   ],
                   // per-leg cost
                   Text(
                     _fmtCost(legs[i].cost, legs[i].isFree),
-                    style: const TextStyle(fontSize: 12, color: _textColor),
+                    style: const TextStyle(fontSize: 12, color: _kTransitText),
                   ),
                 ],
               ),
@@ -430,21 +426,21 @@ class _TransitRow extends StatelessWidget {
 
           // ── Total row (multi-leg only) ────────────────────────────────────
           if (multiLeg) ...[
-            const Divider(height: 1, color: _borderColor),
+            const Divider(height: 1, color: _kTransitBorder),
             Padding(
               padding:
                   const EdgeInsets.fromLTRB(12, 6, 12, 8),
               child: Row(
                 children: [
                   const Icon(Icons.summarize_rounded,
-                      size: 13, color: _iconColor),
+                      size: 13, color: _kTransitIcon),
                   const SizedBox(width: 6),
                   const Text(
                     'Total',
                     style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w700,
-                      color: _iconColor,
+                      color: _kTransitIcon,
                     ),
                   ),
                   const Spacer(),
@@ -452,19 +448,19 @@ class _TransitRow extends StatelessWidget {
                     Text(
                       _totalDuration(),
                       style: const TextStyle(
-                          fontSize: 11, color: _iconColor),
+                          fontSize: 11, color: _kTransitIcon),
                     ),
                     const Padding(
                       padding: EdgeInsets.symmetric(horizontal: 5),
                       child: Text('·',
                           style: TextStyle(
-                              fontSize: 11, color: _iconColor)),
+                              fontSize: 11, color: _kTransitIcon)),
                     ),
                   ],
                   Text(
                     _totalCost(),
                     style: const TextStyle(
-                        fontSize: 11, color: _iconColor),
+                        fontSize: 11, color: _kTransitIcon),
                   ),
                 ],
               ),
