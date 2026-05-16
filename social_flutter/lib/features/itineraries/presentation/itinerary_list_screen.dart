@@ -117,17 +117,6 @@ class ItineraryListScreen extends ConsumerWidget {
                               ),
                             ),
                           ),
-                          IconButton(
-                            icon: const Icon(Icons.search_rounded),
-                            color: kBark,
-                            onPressed: () {},
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.filter_list_rounded),
-                            color: kBark,
-                            onPressed: () =>
-                                ref.read(myItinerariesProvider.notifier).refresh(),
-                          ),
                         ],
                       ),
                     ),

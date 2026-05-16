@@ -12,10 +12,11 @@ from app.models.itinerary_rating import ItineraryRating
 from app.models.itinerary_annotation import ItineraryAnnotation
 from app.models.transit_segment import TransitSegment
 from app.models.transport_leg import TransportLeg
+from app.models.waitlist import WaitlistEntry
 
 __all__ = [
     "User", "Follow", "FollowStatus",
     "Itinerary", "ItineraryAllowedUser", "Track",
     "Stop", "Annotation", "ItineraryRating", "ItineraryAnnotation",
-    "TransitSegment", "TransportLeg",
+    "TransitSegment", "TransportLeg", "WaitlistEntry",
 ]

@@ -193,26 +193,26 @@
   <div class="hero-content">
     <div class="hero-badge">
       <div class="hero-badge-dot"></div>
-      Now available on iOS &amp; Android
+      Coming soon on iOS &amp; Android
     </div>
     <h1>Plan. Share.<br><em>Discover.</em></h1>
     <p class="hero-sub">Build travel itineraries with real stops, costs, and routes. Share what works. Discover trips that locals love.</p>
     <div class="hero-ctas">
       <div class="hero-downloads">
-        <a class="btn-store" href="{{ android_download_url or '#' }}">
+        <button class="btn-store" data-platform="android" onclick="openWaitlist(this)">
           <svg width="22" height="22" viewBox="0 0 22 22" fill="white"><path d="M3 1.5l15 9.5-15 9.5V1.5z"/></svg>
           <div>
             <div class="btn-store-sub">Get it on</div>
             <div class="btn-store-title">Google Play</div>
           </div>
-        </a>
-        <a class="btn-store" href="#">
+        </button>
+        <button class="btn-store" data-platform="ios" onclick="openWaitlist(this)">
           <svg width="22" height="22" viewBox="0 0 22 22" fill="white"><path d="M16.2 11.7c0-2.7 2.2-4 2.3-4.1C17 5.8 15 5.5 14.3 5.5c-1.7-.2-3.4 1-4.3 1s-2.3-1-3.7-1c-1.9 0-3.7 1.1-4.7 2.8C-.5 11.5.8 17 3 20.1c1 1.5 2.3 3.1 3.9 3.1 1.5-.1 2.1-1 3.9-1s2.4 1 3.9 1c1.7 0 2.8-1.5 3.8-3 1.2-1.7 1.7-3.4 1.8-3.5-.1-.1-3.1-1.3-3.1-5zm-2.9-9.5c.9-1 1.5-2.5 1.3-3.9-1.3 0-2.8.8-3.7 1.8-.8.9-1.5 2.4-1.3 3.8 1.4.1 2.8-.7 3.7-1.7z"/></svg>
           <div>
             <div class="btn-store-sub">Download on the</div>
             <div class="btn-store-title">App Store</div>
           </div>
-        </a>
+        </button>
       </div>
       <a class="btn-web" href="/app/">
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="8" cy="8" r="6.5"/><path d="M8 1.5c2 2.5 2 8.5 0 11M1.5 8h13M2 5h12M2 11h12" stroke-width="1.2"/></svg>
@@ -366,7 +366,7 @@
     <p>Download the app or jump straight into the web experience.</p>
   </div>
   <div class="cta-band-actions">
-    <a class="btn-cta-white" href="{{ android_download_url or '#' }}">Download the App</a>
+    <button class="btn-cta-white" data-platform="both" onclick="openWaitlist(this)">Download the App</button>
     <a class="btn-cta-outline" href="/app/">Continue on web</a>
   </div>
 </div>
@@ -387,6 +387,123 @@
     <a href="/terms">Terms</a>
   </nav>
 </footer>
+
+<!-- WAITLIST MODAL -->
+<div id="waitlist-overlay" style="display:none;position:fixed;inset:0;z-index:1000;background:rgba(0,20,10,.55);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);align-items:center;justify-content:center;padding:20px;" onclick="if(event.target===this)closeWaitlist()">
+  <div style="background:var(--surface);border-radius:24px;padding:40px 36px;max-width:440px;width:100%;box-shadow:var(--shadow-md);position:relative;">
+    <button onclick="closeWaitlist()" style="position:absolute;top:16px;right:16px;background:none;border:none;cursor:pointer;color:var(--text3);line-height:1;font-size:20px;" aria-label="Close">✕</button>
+
+    <!-- form view -->
+    <div id="wl-form-view">
+      <div style="width:44px;height:44px;border-radius:12px;background:var(--mist);display:flex;align-items:center;justify-content:center;margin-bottom:20px;">
+        <svg width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="oklch(34% 0.11 150)" stroke-width="2"><path d="M11 2C8 2 6 4 6 7c0 4.5 5 11 5 11s5-6.5 5-11c0-3-2-5-5-5z" stroke-linecap="round"/><circle cx="11" cy="7" r="2"/></svg>
+      </div>
+      <h2 style="font-size:22px;font-weight:800;letter-spacing:-.5px;color:var(--bark);margin-bottom:8px;">Be first to know</h2>
+      <p style="font-size:14px;color:var(--text2);line-height:1.6;margin-bottom:28px;">Leave your email or WhatsApp and we'll notify you the moment the app lands on your platform.</p>
+
+      <div id="wl-error" style="display:none;background:#fff0f0;border:1px solid #fca5a5;border-radius:10px;padding:10px 14px;font-size:13px;color:#b91c1c;margin-bottom:16px;"></div>
+
+      <form id="wl-form" onsubmit="submitWaitlist(event)" novalidate>
+        <input type="hidden" id="wl-platform" name="platform" value="both">
+
+        <label style="display:block;font-size:13px;font-weight:600;color:var(--bark);margin-bottom:6px;" for="wl-email">Email address</label>
+        <input type="email" id="wl-email" name="email" placeholder="you@example.com" autocomplete="email"
+          style="width:100%;padding:12px 14px;border-radius:12px;border:1.5px solid var(--border);font-size:15px;font-family:inherit;background:var(--sand);color:var(--bark);outline:none;margin-bottom:16px;transition:border-color .15s;"
+          onfocus="this.style.borderColor='oklch(34% 0.11 150)'" onblur="this.style.borderColor='var(--border)'">
+
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+          <div style="flex:1;height:1px;background:var(--border);"></div>
+          <span style="font-size:12px;color:var(--text3);white-space:nowrap;">or</span>
+          <div style="flex:1;height:1px;background:var(--border);"></div>
+        </div>
+
+        <label style="display:block;font-size:13px;font-weight:600;color:var(--bark);margin-bottom:6px;" for="wl-whatsapp">WhatsApp number</label>
+        <input type="tel" id="wl-whatsapp" name="whatsapp" placeholder="+1 555 000 0000" autocomplete="tel"
+          style="width:100%;padding:12px 14px;border-radius:12px;border:1.5px solid var(--border);font-size:15px;font-family:inherit;background:var(--sand);color:var(--bark);outline:none;margin-bottom:28px;transition:border-color .15s;"
+          onfocus="this.style.borderColor='oklch(34% 0.11 150)'" onblur="this.style.borderColor='var(--border)'">
+
+        <button type="submit" id="wl-submit" class="btn-primary" style="width:100%;padding:14px;font-size:16px;border-radius:14px;">
+          Notify me
+        </button>
+        <p style="text-align:center;font-size:12px;color:var(--text3);margin-top:12px;">No spam. One email when the app is ready.</p>
+      </form>
+    </div>
+
+    <!-- success view -->
+    <div id="wl-success-view" style="display:none;text-align:center;padding:12px 0;">
+      <div style="width:56px;height:56px;border-radius:50%;background:var(--mist);display:flex;align-items:center;justify-content:center;margin:0 auto 20px;">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="oklch(34% 0.11 150)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+      </div>
+      <h2 style="font-size:22px;font-weight:800;letter-spacing:-.5px;color:var(--bark);margin-bottom:10px;">You're on the list!</h2>
+      <p style="font-size:14px;color:var(--text2);line-height:1.6;margin-bottom:28px;">We'll reach out as soon as NTripi lands on your platform. Stay tuned!</p>
+      <button onclick="closeWaitlist()" class="btn-primary" style="padding:13px 32px;border-radius:50px;font-size:15px;">Done</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  function openWaitlist(btn) {
+    document.getElementById('wl-platform').value = btn.dataset.platform || 'both';
+    document.getElementById('wl-form-view').style.display = '';
+    document.getElementById('wl-success-view').style.display = 'none';
+    document.getElementById('wl-error').style.display = 'none';
+    document.getElementById('wl-email').value = '';
+    document.getElementById('wl-whatsapp').value = '';
+    var overlay = document.getElementById('waitlist-overlay');
+    overlay.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+    setTimeout(function() { document.getElementById('wl-email').focus(); }, 50);
+  }
+
+  function closeWaitlist() {
+    document.getElementById('waitlist-overlay').style.display = 'none';
+    document.body.style.overflow = '';
+  }
+
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') closeWaitlist();
+  });
+
+  async function submitWaitlist(e) {
+    e.preventDefault();
+    var email = document.getElementById('wl-email').value.trim();
+    var whatsapp = document.getElementById('wl-whatsapp').value.trim();
+    var platform = document.getElementById('wl-platform').value;
+    var errEl = document.getElementById('wl-error');
+    var submitBtn = document.getElementById('wl-submit');
+
+    if (!email && !whatsapp) {
+      errEl.textContent = 'Please enter your email or WhatsApp number.';
+      errEl.style.display = '';
+      return;
+    }
+    errEl.style.display = 'none';
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Sending…';
+
+    try {
+      var res = await fetch('/waitlist/join', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email || null, whatsapp: whatsapp || null, platform: platform }),
+      });
+      if (res.ok || res.status === 201 || res.status === 200) {
+        document.getElementById('wl-form-view').style.display = 'none';
+        document.getElementById('wl-success-view').style.display = '';
+      } else {
+        var data = await res.json().catch(function() { return {}; });
+        errEl.textContent = (data.detail) || 'Something went wrong. Please try again.';
+        errEl.style.display = '';
+      }
+    } catch (_) {
+      errEl.textContent = 'Network error. Please check your connection and try again.';
+      errEl.style.display = '';
+    } finally {
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Notify me';
+    }
+  }
+</script>
 
 </body>
 </html>

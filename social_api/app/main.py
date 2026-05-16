@@ -22,7 +22,7 @@ from starlette.exceptions import HTTPException
 
 from app.config import get_settings
 from app.middleware.etag import ETagMiddleware
-from app.routers import auth, users, follows, itineraries, share, web
+from app.routers import auth, users, follows, itineraries, share, web, waitlist
 from app.storage.factory import storage
 
 
@@ -98,8 +98,9 @@ app.include_router(users.router)   # /users/me, /users/search, /users/{id}
 app.include_router(follows.router) # /users/{id}/follow, /users/me/follow-requests, etc.
 app.include_router(itineraries.router, prefix="/itineraries")  # /itineraries/...
 app.include_router(itineraries.user_itineraries_router, prefix="/users", tags=["Itineraries"])  # /users/{id}/itineraries
-app.include_router(share.router)   # /share/i/{id} — public HTML landing pages
-app.include_router(web.router)     # /, /login, /register, /privacy, /terms
+app.include_router(share.router)    # /share/i/{id} — public HTML landing pages
+app.include_router(waitlist.router) # /waitlist/join — pre-launch waitlist
+app.include_router(web.router)      # /, /login, /register, /privacy, /terms
 
 # ---------------------------------------------------------------------------
 # Static files
