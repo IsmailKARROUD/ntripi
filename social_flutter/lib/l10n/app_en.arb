@@ -298,6 +298,7 @@
   "annotationsSection": "Annotations",
   "addAnnotationButton": "Add annotation",
   "noAnnotationsYet": "No annotations yet.",
+  "stopsList": "Stop list",
   "editStopsButton": "Edit stops",
   "addStopTooltip": "Add stop",
   "reorderTracksTooltip": "Reorder tracks",

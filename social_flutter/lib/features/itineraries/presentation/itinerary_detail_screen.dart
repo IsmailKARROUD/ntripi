@@ -44,7 +44,7 @@ import 'package:social_flutter/features/itineraries/domain/annotation.dart';
 import 'package:social_flutter/features/itineraries/domain/itinerary.dart';
 import 'package:social_flutter/features/itineraries/domain/itinerary_annotation.dart';
 import 'package:social_flutter/features/itineraries/domain/transit_segment.dart';
-import 'package:social_flutter/features/itineraries/presentation/widgets/annotation_form_dialog.dart';
+import 'package:social_flutter/features/itineraries/presentation/annotation_screen.dart';
 import 'package:social_flutter/features/profile/providers/profile_provider.dart';
 import 'package:social_flutter/shared/models/user.dart';
 import 'package:social_flutter/features/itineraries/domain/stop.dart';
@@ -115,7 +115,7 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
   }
 
   Future<void> _addItineraryAnnotation() async {
-    final result = await showAnnotationFormDialog(context, isEdit: false);
+    final result = await showAnnotationScreen(context);
     if (result == null || !mounted) return;
     try {
       await ref
@@ -133,7 +133,7 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
   }
 
   Future<void> _editItineraryAnnotation(ItineraryAnnotation annotation) async {
-    final result = await showAnnotationFormDialog(
+    final result = await showAnnotationScreen(
       context,
       isEdit: true,
       initialContent: annotation.content,
@@ -175,13 +175,18 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
     }
   }
 
-  Future<void> _addAnnotation(String stopId) async {
-    final result = await showAnnotationFormDialog(context, isEdit: false);
+  // stop is passed so the screen can show the stop context card.
+  Future<void> _addAnnotation(Stop stop) async {
+    final result = await showAnnotationScreen(
+      context,
+      stopName: stop.placeName ?? 'Stop',
+      stopSubtitle: stop.placeAddress,
+    );
     if (result == null || !mounted) return;
     try {
       await ref
           .read(itineraryDetailProvider(widget.itineraryId).notifier)
-          .addAnnotation(stopId, {
+          .addAnnotation(stop.id, {
         'content': result.content,
         'type': result.type.name,
       });
@@ -193,18 +198,20 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
     }
   }
 
-  Future<void> _editAnnotation(String stopId, Annotation annotation) async {
-    final result = await showAnnotationFormDialog(
+  Future<void> _editAnnotation(Stop stop, Annotation annotation) async {
+    final result = await showAnnotationScreen(
       context,
       isEdit: true,
       initialContent: annotation.content,
       initialType: annotation.type,
+      stopName: stop.placeName ?? 'Stop',
+      stopSubtitle: stop.placeAddress,
     );
     if (result == null || !mounted) return;
     try {
       await ref
           .read(itineraryDetailProvider(widget.itineraryId).notifier)
-          .updateAnnotation(stopId, annotation.id,
+          .updateAnnotation(stop.id, annotation.id,
               content: result.content, type: result.type);
     } on Exception catch (e) {
       if (!mounted) return;
@@ -420,9 +427,9 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                                 )
                             : null,
                         onAddAnnotation:
-                            canEdit ? (stop) => _addAnnotation(stop.id) : null,
+                            canEdit ? (stop) => _addAnnotation(stop) : null,
                         onEditAnnotation: canEdit
-                            ? (stop, a) => _editAnnotation(stop.id, a)
+                            ? (stop, a) => _editAnnotation(stop, a)
                             : null,
                         onDeleteAnnotation: canEdit
                             ? (stop, a) => _deleteAnnotation(stop.id, a)
@@ -630,7 +637,7 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                                       Text(
                                         l10n.annotationsSection,
                                         style: const TextStyle(
-                                          fontSize: 11,
+                                          fontSize: 14,
                                           fontWeight: FontWeight.w700,
                                           color: kText2,
                                           letterSpacing: 0.6,
@@ -706,9 +713,11 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                                 Text(
                                   _mapVisible
                                       ? l10n.mapSection
-                                      : l10n.editStopsButton,
+                                      : canEdit
+                                          ? l10n.editStopsButton
+                                          : l10n.stopsList,
                                   style: const TextStyle(
-                                    fontSize: 11,
+                                    fontSize: 14,
                                     fontWeight: FontWeight.w700,
                                     color: kText2,
                                     letterSpacing: 0.6,

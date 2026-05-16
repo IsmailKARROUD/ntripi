@@ -233,6 +233,7 @@
   "annotationsSection": "Annotations",
   "addAnnotationButton": "Ajouter une annotation",
   "noAnnotationsYet": "Aucune annotation pour l'instant.",
+  "stopsList": "Liste des étapes",
   "editStopsButton": "Modifier les étapes",
   "addStopTooltip": "Ajouter une étape",
   "reorderTracksTooltip": "Réorganiser les pistes",

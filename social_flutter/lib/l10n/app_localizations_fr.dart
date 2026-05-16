@@ -751,6 +751,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get noAnnotationsYet => 'Aucune annotation pour l\'instant.';
 
   @override
+  String get stopsList => 'Liste des étapes';
+
+  @override
   String get editStopsButton => 'Modifier les étapes';
 
   @override

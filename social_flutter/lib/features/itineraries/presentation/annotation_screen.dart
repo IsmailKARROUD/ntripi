@@ -1,0 +1,335 @@
+// presentation/annotation_screen.dart — Full-screen annotation editor.
+//
+// Matches Screen 11 "Add annotation" from the design.
+// Pushed via Navigator.push<AnnotationFormResult>. Returns the result on Save,
+// null if the user backs out.
+//
+// Optional stopName / stopSubtitle show a context card at the top so the user
+// knows which stop they are annotating.
+
+import 'package:flutter/material.dart';
+import 'package:social_flutter/core/ui/app_theme.dart';
+import 'package:social_flutter/features/itineraries/domain/annotation.dart';
+import 'package:social_flutter/features/itineraries/presentation/widgets/annotation_form_dialog.dart'
+    show AnnotationFormResult;
+import 'package:social_flutter/l10n/app_localizations.dart';
+
+class AnnotationScreen extends StatefulWidget {
+  final bool isEdit;
+  final String? initialContent;
+  final AnnotationType? initialType;
+
+  /// When set, a stop-context card is shown at the top (stop-level annotations).
+  final String? stopName;
+  final String? stopSubtitle;
+
+  const AnnotationScreen({
+    super.key,
+    required this.isEdit,
+    this.initialContent,
+    this.initialType,
+    this.stopName,
+    this.stopSubtitle,
+  });
+
+  @override
+  State<AnnotationScreen> createState() => _AnnotationScreenState();
+}
+
+class _AnnotationScreenState extends State<AnnotationScreen> {
+  late AnnotationType _type;
+  late final TextEditingController _contentController;
+
+  static const _palette = {
+    AnnotationType.advice: (
+      bg: Color(0xFFE0EBE4),
+      fg: kForest,
+      icon: Icons.lightbulb_rounded,
+      label: 'Tip',
+      desc: 'Something useful or pro-tip.',
+    ),
+    AnnotationType.caution: (
+      bg: Color(0xFFFFE3CC),
+      fg: Color(0xFFA05D1F),
+      icon: Icons.warning_rounded,
+      label: 'Caution',
+      desc: 'Pay attention — surprises possible.',
+    ),
+    AnnotationType.avoid: (
+      bg: Color(0xFFFFD6D2),
+      fg: Color(0xFFA02828),
+      icon: Icons.block_rounded,
+      label: 'Avoid',
+      desc: 'Don\'t do this. Save your time.',
+    ),
+    AnnotationType.info: (
+      bg: Color(0xFFDCEAF6),
+      fg: Color(0xFF3B6EA5),
+      icon: Icons.info_rounded,
+      label: 'Info',
+      desc: 'A neutral fact worth knowing.',
+    ),
+  };
+
+  @override
+  void initState() {
+    super.initState();
+    _type = widget.initialType ?? AnnotationType.advice;
+    _contentController =
+        TextEditingController(text: widget.initialContent ?? '');
+  }
+
+  @override
+  void dispose() {
+    _contentController.dispose();
+    super.dispose();
+  }
+
+  void _save() {
+    final content = _contentController.text.trim();
+    if (content.isEmpty) return;
+    Navigator.pop<AnnotationFormResult>(
+      context,
+      (content: content, type: _type),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final title = widget.isEdit ? l10n.editAnnotationTitle : l10n.addAnnotationDialogTitle;
+    final canSave = _contentController.text.trim().isNotEmpty;
+
+    return Scaffold(
+      resizeToAvoidBottomInset: false,   // avoid resize when keyboard shows, since we use a ListView
+      backgroundColor: kSand,
+      appBar: AppBar(
+        backgroundColor: kSand,
+        title: Text(title),
+        actions: [
+          TextButton(
+            onPressed: canSave ? _save : null,
+            child: Text(
+              widget.isEdit ? l10n.saveButton : l10n.addButton,
+              style: TextStyle(
+                color: canSave ? kForest : kText3,
+                fontWeight: FontWeight.w700,
+                fontSize: 15,
+              ),
+            ),
+          ),
+        ],
+      ),
+      body: ListView(
+        padding: const EdgeInsets.only(bottom: 40),
+        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag, // allow dismissing the keyboard by dragging the list down
+        children: [
+          // ── Stop context card (optional) ──────────────────────────────────
+          if (widget.stopName != null)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+              child: Container(
+                padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+                decoration: BoxDecoration(
+                  color: kSurface,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: kBorder),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 32,
+                      height: 32,
+                      decoration: const BoxDecoration(
+                        color: kMist,
+                        shape: BoxShape.circle,
+                      ),
+                      alignment: Alignment.center,
+                      child: const Icon(Icons.location_on_rounded,
+                          size: 16, color: kForest),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            widget.stopName!,
+                            style: const TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                              color: kBark,
+                            ),
+                          ),
+                          if (widget.stopSubtitle != null)
+                            Text(
+                              widget.stopSubtitle!,
+                              style: const TextStyle(
+                                  fontSize: 11, color: kText2),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+          // ── Type selector ─────────────────────────────────────────────────
+          const Padding(
+            padding: EdgeInsets.fromLTRB(22, 14, 22, 6),
+            child: Text(
+              'TYPE',
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                color: kText2,
+                letterSpacing: 0.6,
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
+            child: GridView.count(
+              crossAxisCount: 2,
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              mainAxisSpacing: 8,
+              crossAxisSpacing: 8,
+              childAspectRatio: 1.55,
+              children: AnnotationType.values.map((t) {
+                final p = _palette[t]!;
+                final active = _type == t;
+                return GestureDetector(
+                  onTap: () => setState(() => _type = t),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 150),
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: active ? p.bg : kSurface,
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                        color: active ? p.fg : kBorder,
+                        width: active ? 2 : 1,
+                      ),
+                    ),
+                    child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                        Container(
+                          width: 30,
+                          height: 30,
+                          decoration: BoxDecoration(
+                            color: active
+                                ? p.fg.withValues(alpha: 0.2)
+                                : p.bg,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          alignment: Alignment.center,
+                          child: Icon(p.icon, size: 16, color: p.fg),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          p.label,
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                            color: p.fg,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          p.desc,
+                          style: const TextStyle(
+                            fontSize: 11,
+                            color: kText2,
+                            height: 1.35,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+
+          // ── Message field ─────────────────────────────────────────────────
+          const Padding(
+            padding: EdgeInsets.fromLTRB(22, 14, 22, 6),
+            child: Text(
+              'MESSAGE',
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                color: kText2,
+                letterSpacing: 0.6,
+              ),
+            ),
+          ),
+          Container(
+            margin: const EdgeInsets.fromLTRB(16, 0, 16, 0),
+            decoration: BoxDecoration(
+              color: kSurface,
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: kBorder),
+            ),
+            child: TextField(
+              controller: _contentController,
+              autofocus: true,
+              maxLines: 5,
+              minLines: 3,
+              onChanged: (_) => setState(() {}), // rebuild for Save enable
+              decoration: const InputDecoration(
+                hintText: 'What should travelers know?',
+                hintStyle:  TextStyle(color: kText3),
+                border: InputBorder.none,
+                enabledBorder: InputBorder.none,
+                focusedBorder: InputBorder.none,
+                contentPadding:  EdgeInsets.fromLTRB(16, 14, 16, 14),
+              ),
+              style: const TextStyle(
+                fontSize: 14,
+                color: kBark,
+                height: 1.5,
+              ),
+            ),
+          ),
+
+          // Hint
+          const Padding(
+            padding: EdgeInsets.fromLTRB(22, 6, 22, 0),
+            child: Text(
+              'Keep it short — under 200 characters reads best on small screens.',
+              style: TextStyle(fontSize: 11, color: kText2),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Convenience function — matches the existing call-site API.
+/// Pushes [AnnotationScreen] and returns the result.
+Future<AnnotationFormResult?> showAnnotationScreen(
+  BuildContext context, {
+  bool isEdit = false,
+  String? initialContent,
+  AnnotationType? initialType,
+  String? stopName,
+  String? stopSubtitle,
+}) {
+  return Navigator.push<AnnotationFormResult>(
+    context,
+    MaterialPageRoute(
+      builder: (_) => AnnotationScreen(
+        isEdit: isEdit,
+        initialContent: initialContent,
+        initialType: initialType,
+        stopName: stopName,
+        stopSubtitle: stopSubtitle,
+      ),
+    ),
+  );
+}

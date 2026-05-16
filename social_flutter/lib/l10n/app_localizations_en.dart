@@ -738,6 +738,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get noAnnotationsYet => 'No annotations yet.';
 
   @override
+  String get stopsList => 'Stop list';
+
+  @override
   String get editStopsButton => 'Edit stops';
 
   @override

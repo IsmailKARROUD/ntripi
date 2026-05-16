@@ -1376,6 +1376,12 @@ abstract class AppLocalizations {
   /// **'No annotations yet.'**
   String get noAnnotationsYet;
 
+  /// No description provided for @stopsList.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop list'**
+  String get stopsList;
+
   /// No description provided for @editStopsButton.
   ///
   /// In en, this message translates to:
