@@ -14,11 +14,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:social_flutter/core/api/api_client.dart';
 import 'package:social_flutter/core/ui/app_theme.dart';
-import 'package:social_flutter/features/itineraries/domain/annotation.dart';
 import 'package:social_flutter/features/itineraries/domain/transit_segment.dart';
 import 'package:social_flutter/features/itineraries/domain/transport_leg.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/leg_form_dialog.dart';
-import 'package:social_flutter/features/itineraries/presentation/widgets/transport_badge.dart';
 import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
 
 class SegmentCard extends ConsumerStatefulWidget {
@@ -94,19 +92,6 @@ class _SegmentCardState extends ConsumerState<SegmentCard> {
     await _saveLegs([...widget.segment.legs.map(_legToMap), result]);
   }
 
-  void _showLegDetails(TransportLeg leg) {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      builder: (ctx) => _LegDetailSheet(
-        leg: leg,
-        currency: widget.currency,
-      ),
-    );
-  }
-
   Future<void> _editLeg(int index) async {
     final leg = widget.segment.legs[index];
     final result = await LegFormDialog.show(context, existing: leg);
@@ -145,283 +130,204 @@ class _SegmentCardState extends ConsumerState<SegmentCard> {
     // Read mode: compact amber transit row matching the design.
     if (!_isEditable) return _TransitRow(segment: segment, currency: widget.currency);
 
-    final routeColor = kCanopy.withValues(alpha: 0.5);
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
-      child: Container(
-        decoration: BoxDecoration(
-          color: kMist.withValues(alpha: 0.05),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          child: IntrinsicHeight(
+    // Edit mode: amber editorial container with tappable leg rows.
+    const bgColor = Color(0xFFFFF8EC);
+    const borderColor = Color(0xFFF0E2C2);
+    const iconColor = Color(0xFFA06D1F);
+    const textColor = Color(0xFF8A5A18);
+
+    String fmtCost(double cost, bool isFree) {
+      if (isFree || cost <= 0) return 'Free';
+      return '${cost.toStringAsFixed(0)} ${widget.currency}';
+    }
+
+    String fmtMin(int? m) {
+      if (m == null || m <= 0) return '';
+      final h = m ~/ 60;
+      final min = m % 60;
+      if (h == 0) return '${min}min';
+      if (min == 0) return '${h}h';
+      return '${h}h ${min}min';
+    }
+
+    final legs = segment.legs;
+    final multiLeg = legs.length > 1;
+
+    final totalDur =
+        segment.totalDurationMin > 0 ? fmtMin(segment.totalDurationMin) : '';
+    final totalCost = segment.totalCost <= 0
+        ? 'Free'
+        : '${segment.totalCost.toStringAsFixed(0)} ${widget.currency}';
+
+    return Container(
+      margin: const EdgeInsets.fromLTRB(28, 6, 28, 6),
+      decoration: BoxDecoration(
+        color: bgColor,
+        border: Border.all(color: borderColor),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // ── Header: label + spinner / delete ──────────────────────────────
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 6, 8, 6),
             child: Row(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // Route line: dot → dashed line → dot, parallel to content
-                SizedBox(
-                  width: 14,
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Container(
-                        width: 6,
-                        height: 6,
-                        decoration: BoxDecoration(
-                          color: routeColor,
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                      Expanded(
-                        child: CustomPaint(
-                          painter: _DashedLinePainter(color: routeColor),
-                        ),
-                      ),
-                      Container(
-                        width: 6,
-                        height: 6,
-                        decoration: BoxDecoration(
-                          color: routeColor,
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                    ],
+                const Text(
+                  'TRANSIT',
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    color: iconColor,
+                    letterSpacing: 0.5,
                   ),
                 ),
-                const SizedBox(width: 10),
-                // Segment content
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      if (segment.legs.isNotEmpty) ...[
-                        const SizedBox(height: 4),
-                        Wrap(
-                          spacing: 4,
-                          runSpacing: 4,
-                          children: [
-                            for (var i = 0; i < segment.legs.length; i++)
-                              _isEditable
-                                  ? GestureDetector(
-                                      onTap: _saving ? null : () => _editLeg(i),
-                                      child: TransportBadge(
-                                        leg: segment.legs[i],
-                                        currency: widget.currency,
-                                      ),
-                                    )
-                                  : GestureDetector(
-                                      onTap: () =>
-                                          _showLegDetails(segment.legs[i]),
-                                      child: TransportBadge(
-                                        leg: segment.legs[i],
-                                        currency: widget.currency,
-                                      ),
-                                    ),
-                            if (_isEditable)
-                              GestureDetector(
-                                onTap: _saving ? null : _addLeg,
-                                child: const AddTransportBadge(),
-                              ),
-                          ],
-                        ),
-                      ] else ...[
-                        const SizedBox(height: 4),
-                        GestureDetector(
-                          onTap: _saving ? null : _addLeg,
-                          child: Text(
-                            'No transport legs added yet. Tap to add.',
-                            style:
-                                Theme.of(context).textTheme.bodySmall?.copyWith(
-                                      color: Colors.grey.shade600,
-                                      fontStyle: FontStyle.italic,
-                                    ),
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
+                const Spacer(),
                 if (_saving)
-                  Center(
-                    child: SizedBox(
-                      width: 14,
-                      height: 14,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 1.5,
-                        color: kCanopy.withValues(alpha: 0.8),
-                      ),
+                  const SizedBox(
+                    width: 14,
+                    height: 14,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 1.5,
+                      color: iconColor,
                     ),
                   )
                 else if (widget.onDelete != null)
-                  Center(
-                    child: IconButton(
-                      icon: const Icon(Icons.delete_outline, size: 16),
-                      onPressed: widget.onDelete,
-                      visualDensity: VisualDensity.compact,
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
-                      color: kRatingRed,
-                    ),
+                  GestureDetector(
+                    onTap: widget.onDelete,
+                    child: const Icon(Icons.delete_outline_rounded,
+                        size: 16, color: kRatingRed),
                   ),
               ],
             ),
           ),
-        ),
-      ),
-    );
-  }
-}
+          const Divider(height: 1, color: borderColor),
 
-class _LegDetailSheet extends StatelessWidget {
-  final TransportLeg leg;
-  final String currency;
-
-  const _LegDetailSheet({
-    required this.leg,
-    required this.currency,
-  });
-
-  static IconData _noteTypeIcon(AnnotationType? t) => switch (t) {
-        AnnotationType.caution => Icons.warning_amber_outlined,
-        AnnotationType.avoid => Icons.block_outlined,
-        AnnotationType.advice => Icons.lightbulb_outline,
-        _ => Icons.info_outline,
-      };
-
-  static Color _noteTypeColor(AnnotationType? t) => switch (t) {
-        AnnotationType.caution => kRatingOrange,
-        AnnotationType.avoid => kRatingRed,
-        AnnotationType.advice => kAmber,
-        _ => kText2,
-      };
-
-  String get _costLabel {
-    if (leg.isFree) return 'Free';
-    if (leg.cost > 0) return '${leg.cost.toStringAsFixed(2)} $currency';
-    return 'No cost info';
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final rows = <_DetailRow>[
-      _DetailRow(Icons.directions, 'Mode', leg.mode.label),
-      if (leg.line != null && leg.line!.isNotEmpty)
-        _DetailRow(Icons.confirmation_number_outlined, 'Line', leg.line!),
-      if (leg.direction != null && leg.direction!.isNotEmpty)
-        _DetailRow(Icons.arrow_forward, 'Direction', leg.direction!),
-      if (leg.formattedDuration.isNotEmpty)
-        _DetailRow(Icons.timer_outlined, 'Duration', leg.formattedDuration),
-      _DetailRow(Icons.payments_outlined, 'Cost', _costLabel),
-    ];
-
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.only(left: 16, right: 8,top: 14, bottom: 8),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Padding(
-              padding: const EdgeInsets.only(left: 8.0),
-              child: Row(
-                
-                children: [
-                  Icon(leg.mode.icon, size: 20, color: kCanopy),
-                  const SizedBox(width: 8),
-                  Text(
-                    leg.summary.isNotEmpty ? leg.summary : leg.mode.label,
-                    style: theme.textTheme.titleMedium
-                        ?.copyWith(fontWeight: FontWeight.w600),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 10),
-            const Divider(height: 1),
-            const SizedBox(height: 5),
-            ...rows.map(
-              (r) => Padding(
-                padding: const EdgeInsets.symmetric(vertical: 5),
-                child: Row(
-                  children: [
-                    Icon(r.icon, size: 16, color: kText2),
-                    const SizedBox(width: 10),
-                    Text(r.label,
-                        style: theme.textTheme.bodySmall
-                            ?.copyWith(color: kText2, fontWeight: FontWeight.w500)),
-                    const SizedBox(width: 6),
-                    Expanded(
-                      child: Text(r.value,
-                          style: theme.textTheme.bodyMedium,
-                          overflow: TextOverflow.ellipsis),
-                    ),
-                  ],
+          // ── Leg rows (tappable to edit) ────────────────────────────────────
+          if (legs.isEmpty)
+            InkWell(
+              onTap: _saving ? null : _addLeg,
+              child: const Padding(
+                padding: EdgeInsets.fromLTRB(12, 10, 12, 10),
+                child: Text(
+                  'No legs yet. Tap ＋ to add.',
+                  style: TextStyle(
+                      fontSize: 12,
+                      color: textColor,
+                      fontStyle: FontStyle.italic),
                 ),
               ),
-            ),
-            if (leg.notes != null && leg.notes!.isNotEmpty) ...[
-              const SizedBox(height: 10),
-              const Divider(height: 1),
-              const SizedBox(height: 10),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Icon(
-                    _noteTypeIcon(leg.noteType),
-                    size: 16,
-                    color: _noteTypeColor(leg.noteType),
+            )
+          else
+            for (var i = 0; i < legs.length; i++) ...[
+              if (i > 0) const Divider(height: 1, color: borderColor),
+              InkWell(
+                onTap: _saving ? null : () => _editLeg(i),
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 9, 12, 9),
+                  child: Row(
+                    children: [
+                      Icon(legs[i].mode.icon, size: 16, color: iconColor),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(legs[i].mode.label,
+                                style: const TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w700,
+                                    color: textColor)),
+                            if (legs[i].line != null &&
+                                legs[i].line!.isNotEmpty)
+                              Text(legs[i].line!,
+                                  style: const TextStyle(
+                                      fontSize: 11, color: iconColor)),
+                          ],
+                        ),
+                      ),
+                      if (fmtMin(legs[i].durationMin).isNotEmpty) ...[
+                        Text(fmtMin(legs[i].durationMin),
+                            style: const TextStyle(
+                                fontSize: 12, color: textColor)),
+                        const Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 4),
+                          child: Text('·',
+                              style: TextStyle(
+                                  fontSize: 12, color: textColor)),
+                        ),
+                      ],
+                      Text(fmtCost(legs[i].cost, legs[i].isFree),
+                          style: const TextStyle(
+                              fontSize: 12, color: textColor)),
+                      const SizedBox(width: 6),
+                      const Icon(Icons.chevron_right_rounded,
+                          size: 14, color: iconColor),
+                    ],
                   ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(leg.notes!,
-                        style: theme.textTheme.bodySmall
-                            ?.copyWith(color: kBark)),
-                  ),
-                ],
+                ),
               ),
             ],
+
+          // ── Add leg ────────────────────────────────────────────────────────
+          const Divider(height: 1, color: borderColor),
+          InkWell(
+            onTap: _saving ? null : _addLeg,
+            child: const Padding(
+              padding: EdgeInsets.fromLTRB(12, 8, 12, 8),
+              child: Row(
+                children: [
+                  Icon(Icons.add_rounded, size: 14, color: iconColor),
+                  SizedBox(width: 6),
+                  Text('Add leg',
+                      style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: textColor)),
+                ],
+              ),
+            ),
+          ),
+
+          // ── Total row (multi-leg) ──────────────────────────────────────────
+          if (multiLeg) ...[
+            const Divider(height: 1, color: borderColor),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 6, 12, 6),
+              child: Row(
+                children: [
+                  const Icon(Icons.summarize_rounded,
+                      size: 12, color: iconColor),
+                  const SizedBox(width: 5),
+                  const Text('Total',
+                      style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                          color: iconColor)),
+                  const Spacer(),
+                  if (totalDur.isNotEmpty) ...[
+                    Text(totalDur,
+                        style: const TextStyle(
+                            fontSize: 10, color: iconColor)),
+                    const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 4),
+                      child: Text('·',
+                          style: TextStyle(fontSize: 10, color: iconColor)),
+                    ),
+                  ],
+                  Text(totalCost,
+                      style:
+                          const TextStyle(fontSize: 10, color: iconColor)),
+                ],
+              ),
+            ),
           ],
-        ),
+        ],
       ),
     );
   }
-}
-
-class _DetailRow {
-  final IconData icon;
-  final String label;
-  final String value;
-  const _DetailRow(this.icon, this.label, this.value);
-}
-
-class _DashedLinePainter extends CustomPainter {
-  final Color color;
-  const _DashedLinePainter({required this.color});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = color
-      ..strokeWidth = 1.5
-      ..style = PaintingStyle.stroke;
-    const dashHeight = 3.0;
-    const gapHeight = 3.0;
-    double y = 0;
-    final cx = size.width / 2;
-    while (y < size.height) {
-      canvas.drawLine(
-        Offset(cx, y),
-        Offset(cx, (y + dashHeight).clamp(0, size.height)),
-        paint,
-      );
-      y += dashHeight + gapHeight;
-    }
-  }
-
-  @override
-  bool shouldRepaint(_DashedLinePainter old) => old.color != color;
 }
 
 // Compact amber container shown in read mode between two stops.

@@ -155,20 +155,6 @@ class _StopDetailView extends ConsumerWidget {
             ),
           ),
 
-          // ── Notes ──────────────────────────────────────────────────────────
-          if (hasNotes) ...[
-            SliverToBoxAdapter(
-              child: _SectionLabel(icon: Icons.description_rounded, label: 'Notes'),
-            ),
-            SliverToBoxAdapter(
-              child: _SectionCard(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
-                  child: InertMarkdownBody(data: stop.notes!),
-                ),
-              ),
-            ),
-          ],
 
           // ── Annotations ────────────────────────────────────────────────────
           if (hasAnnotations) ...[
@@ -220,6 +206,21 @@ class _StopDetailView extends ConsumerWidget {
                         allStops: allStops,
                       ),
                   ],
+                ),
+              ),
+            ),
+          ],
+          
+          // ── Notes ──────────────────────────────────────────────────────────
+          if (hasNotes) ...[
+            SliverToBoxAdapter(
+              child: _SectionLabel(icon: Icons.description_rounded, label: 'Notes'),
+            ),
+            SliverToBoxAdapter(
+              child: _SectionCard(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+                  child: InertMarkdownBody(data: stop.notes!),
                 ),
               ),
             ),
