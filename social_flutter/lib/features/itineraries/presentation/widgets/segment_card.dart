@@ -424,8 +424,8 @@ class _DashedLinePainter extends CustomPainter {
   bool shouldRepaint(_DashedLinePainter old) => old.color != color;
 }
 
-// Compact amber row shown in read mode between two stops.
-// margin/padding/colors match the design's TransitRow spec.
+// Compact amber container shown in read mode between two stops.
+// Shows every leg as its own row; total row appears when legs ≥ 2.
 class _TransitRow extends StatelessWidget {
   final TransitSegment segment;
   final String currency;
@@ -437,61 +437,133 @@ class _TransitRow extends StatelessWidget {
   static const _iconColor = Color(0xFFA06D1F);
   static const _textColor = Color(0xFF8A5A18);
 
-  String _cost() {
-    if (segment.totalCost <= 0) return 'Free';
-    return '${segment.totalCost.toStringAsFixed(0)} $currency';
+  String _fmtCost(double cost, bool isFree) {
+    if (isFree || cost <= 0) return 'Free';
+    return '${cost.toStringAsFixed(0)} $currency';
   }
 
-  String _duration() {
-    if (segment.totalDurationMin <= 0) return '';
-    final h = segment.totalDurationMin ~/ 60;
-    final m = segment.totalDurationMin % 60;
+  String _fmtMin(int? minutes) {
+    if (minutes == null || minutes <= 0) return '';
+    final h = minutes ~/ 60;
+    final m = minutes % 60;
     if (h == 0) return '${m}min';
     if (m == 0) return '${h}h';
     return '${h}h ${m}min';
   }
 
+  String _totalCost() {
+    if (segment.totalCost <= 0) return 'Free';
+    return '${segment.totalCost.toStringAsFixed(0)} $currency';
+  }
+
+  String _totalDuration() => _fmtMin(segment.totalDurationMin);
+
   @override
   Widget build(BuildContext context) {
-    // Use the first leg's mode for the icon; fall back to walk if no legs.
-    final mode = segment.legs.isNotEmpty ? segment.legs.first.mode : null;
-    final icon = mode?.icon ?? Icons.directions_walk_rounded;
-    final label = mode?.label ?? 'Transit';
-
-    final duration = _duration();
-    final cost = _cost();
+    final legs = segment.legs;
+    final multiLeg = legs.length > 1;
 
     return Container(
       margin: const EdgeInsets.fromLTRB(28, 6, 28, 6),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
         color: _bgColor,
         border: Border.all(color: _borderColor),
         borderRadius: BorderRadius.circular(12),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, size: 16, color: _iconColor),
-          const SizedBox(width: 8),
-          Text(label,
-              style: const TextStyle(
-                  fontSize: 12, fontWeight: FontWeight.w700, color: _textColor)),
-          if (duration.isNotEmpty) ...[
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 6),
-              child: Text('·',
-                  style: TextStyle(fontSize: 12, color: _textColor)),
+          // ── One row per leg ──────────────────────────────────────────────
+          for (var i = 0; i < legs.length; i++) ...[
+            if (i > 0)
+              const Divider(height: 1, color: _borderColor, indent: 12),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              child: Row(
+                children: [
+                  Icon(legs[i].mode.icon, size: 16, color: _iconColor),
+                  const SizedBox(width: 8),
+                  Text(
+                    legs[i].mode.label,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: _textColor,
+                    ),
+                  ),
+                  // line / direction if present
+                  if (legs[i].line != null && legs[i].line!.isNotEmpty) ...[
+                    const SizedBox(width: 4),
+                    Text(
+                      legs[i].line!,
+                      style: const TextStyle(fontSize: 12, color: _textColor),
+                    ),
+                  ],
+                  const Spacer(),
+                  // per-leg duration
+                  if (_fmtMin(legs[i].durationMin).isNotEmpty) ...[
+                    Text(
+                      _fmtMin(legs[i].durationMin),
+                      style: const TextStyle(fontSize: 12, color: _textColor),
+                    ),
+                    const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 5),
+                      child: Text('·',
+                          style: TextStyle(fontSize: 12, color: _textColor)),
+                    ),
+                  ],
+                  // per-leg cost
+                  Text(
+                    _fmtCost(legs[i].cost, legs[i].isFree),
+                    style: const TextStyle(fontSize: 12, color: _textColor),
+                  ),
+                ],
+              ),
             ),
-            Text(duration,
-                style: const TextStyle(fontSize: 12, color: _textColor)),
           ],
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 6),
-            child: Text('·',
-                style: TextStyle(fontSize: 12, color: _textColor)),
-          ),
-          Text(cost,
-              style: const TextStyle(fontSize: 12, color: _textColor)),
+
+          // ── Total row (multi-leg only) ────────────────────────────────────
+          if (multiLeg) ...[
+            const Divider(height: 1, color: _borderColor),
+            Padding(
+              padding:
+                  const EdgeInsets.fromLTRB(12, 6, 12, 8),
+              child: Row(
+                children: [
+                  const Icon(Icons.summarize_rounded,
+                      size: 13, color: _iconColor),
+                  const SizedBox(width: 6),
+                  const Text(
+                    'Total',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: _iconColor,
+                    ),
+                  ),
+                  const Spacer(),
+                  if (_totalDuration().isNotEmpty) ...[
+                    Text(
+                      _totalDuration(),
+                      style: const TextStyle(
+                          fontSize: 11, color: _iconColor),
+                    ),
+                    const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 5),
+                      child: Text('·',
+                          style: TextStyle(
+                              fontSize: 11, color: _iconColor)),
+                    ),
+                  ],
+                  Text(
+                    _totalCost(),
+                    style: const TextStyle(
+                        fontSize: 11, color: _iconColor),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ],
       ),
     );

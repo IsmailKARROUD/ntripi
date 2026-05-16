@@ -53,6 +53,7 @@ import 'package:social_flutter/features/itineraries/presentation/widgets/markdow
 import 'package:social_flutter/features/itineraries/presentation/widgets/move_stop_to_track_sheet.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/rate_itinerary_dialog.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/parallel_stop_group.dart';
+import 'package:social_flutter/features/itineraries/presentation/widgets/segment_card.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/track_reorder_view.dart';
 import 'package:social_flutter/core/utils/platform_utils.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/leg_form_dialog.dart';
@@ -353,6 +354,11 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                   final segmentByFromStop = {
                     for (final seg in itinerary.segments) seg.fromStopId: seg,
                   };
+                  // Keyed by toStopId so read mode can look up the inbound
+                  // segment and show it before the destination stop.
+                  final segmentByToStop = {
+                    for (final seg in itinerary.segments) seg.toStopId: seg,
+                  };
                   final mappableStops = allStops
                       .where((s) => s.lat != null && s.lng != null)
                       .toList();
@@ -374,10 +380,33 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                       final nextTrack = hasNextTrack ? tracks[i + 1] : null;
                       final trackIndex = i + 1;
 
-                      // Add divider between stop groups (not before the first).
+                      // Divider between stop groups (not before the first).
                       if (items.isNotEmpty) {
                         items.add(const Divider(
                             height: 1, indent: 14, endIndent: 14));
+                      }
+
+                      // READ MODE: show the inbound transit BEFORE this stop
+                      // (i.e. the segment that arrives at the active parallel).
+                      // Edit mode keeps the transit below the origin stop (handled
+                      // by getSegment inside ParallelStopGroup below).
+                      if (!canEdit && i > 0) {
+                        final activeIdx =
+                            _activeParallelByTrack[track.id] ?? 0;
+                        final activeStop =
+                            trackStops.length > activeIdx
+                                ? trackStops[activeIdx]
+                                : trackStops.first;
+                        final inbound = segmentByToStop[activeStop.id];
+                        if (inbound != null) {
+                          items.add(SegmentCard(
+                            key: ValueKey('seg-in-${inbound.id}'),
+                            segment: inbound,
+                            currency: itinerary.currency,
+                            itineraryId: widget.itineraryId,
+                            // no onEdit/onDelete → renders as compact _TransitRow
+                          ));
+                        }
                       }
 
                       items.add(ParallelStopGroup(
@@ -400,6 +429,9 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                                 )
                             : null,
                         getSegment: (fromStopId) {
+                          // Read mode: transit is rendered before the destination
+                          // stop in buildInterleavedList, not inside the group.
+                          if (!canEdit) return null;
                           final seg = segmentByFromStop[fromStopId];
                           if (seg == null) return null;
                           if (nextTrack != null) {

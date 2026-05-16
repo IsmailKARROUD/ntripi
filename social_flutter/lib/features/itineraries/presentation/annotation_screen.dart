@@ -196,7 +196,7 @@ class _AnnotationScreenState extends State<AnnotationScreen> {
               physics: const NeverScrollableScrollPhysics(),
               mainAxisSpacing: 8,
               crossAxisSpacing: 8,
-              childAspectRatio: 1.55,
+              childAspectRatio: 1.2,
               children: AnnotationType.values.map((t) {
                 final p = _palette[t]!;
                 final active = _type == t;

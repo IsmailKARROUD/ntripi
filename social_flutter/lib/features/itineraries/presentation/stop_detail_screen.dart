@@ -521,76 +521,187 @@ class _TransitFullRow extends StatelessWidget {
     required this.allStops,
   });
 
+  static const _amberBg = Color(0xFFFFF8EC);
+  static const _amberIcon = Color(0xFFA06D1F);
+  static const _amberBorder = Color(0xFFF0E2C2);
+
   String _stopName(String id) =>
       allStops.firstWhere((s) => s.id == id,
           orElse: () => allStops.first).placeName ??
       '—';
 
-  String _cost() {
+  String _fmtLegCost(double cost, bool isFree) {
+    if (isFree || cost <= 0) return 'Free';
+    return '${cost.toStringAsFixed(0)} $currency';
+  }
+
+  String _totalCost() {
     if (segment.totalCost <= 0) return 'Free';
     return '${segment.totalCost.toStringAsFixed(0)} $currency';
   }
 
   @override
   Widget build(BuildContext context) {
-    final leg = segment.legs.firstOrNull;
-    final icon = leg?.mode.icon ?? Icons.directions_walk_rounded;
-    final label = leg?.mode.label ?? 'Transit';
-    final dur = segment.totalDurationMin > 0
-        ? _fmtDuration(segment.totalDurationMin)
-        : '';
     final isInbound = direction == _TransitDirection.inbound;
     final otherName = isInbound
         ? _stopName(segment.fromStopId)
         : _stopName(segment.toStopId);
+    final legs = segment.legs;
+    final multiLeg = legs.length > 1;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
-              color: const Color(0xFFFFF8EC),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            alignment: Alignment.center,
-            child: Icon(icon, size: 18, color: const Color(0xFFA06D1F)),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  [label, if (dur.isNotEmpty) dur, _cost()].join(' · '),
+          // ── Direction header ────────────────────────────────────────────
+          Row(
+            children: [
+              Icon(
+                isInbound
+                    ? Icons.south_east_rounded
+                    : Icons.north_east_rounded,
+                size: 12,
+                color: kText3,
+              ),
+              const SizedBox(width: 4),
+              Expanded(
+                child: Text(
+                  isInbound ? 'From $otherName' : 'To $otherName',
                   style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700,
-                    color: kBark,
+                    fontSize: 11,
+                    color: kText2,
+                    fontWeight: FontWeight.w500,
                   ),
+                  overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(height: 2),
-                Row(
-                  children: [
-                    Icon(
-                      isInbound
-                          ? Icons.south_east_rounded
-                          : Icons.north_east_rounded,
-                      size: 11,
-                      color: kText3,
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+
+          // ── One row per leg ────────────────────────────────────────────
+          Container(
+            decoration: BoxDecoration(
+              color: _amberBg,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: _amberBorder),
+            ),
+            child: Column(
+              children: [
+                for (var i = 0; i < legs.length; i++) ...[
+                  if (i > 0)
+                    const Divider(
+                        height: 1, color: _amberBorder, indent: 12),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 12, vertical: 10),
+                    child: Row(
+                      children: [
+                        // Mode icon badge
+                        Container(
+                          width: 32,
+                          height: 32,
+                          decoration: BoxDecoration(
+                            color: _amberIcon.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          alignment: Alignment.center,
+                          child: Icon(legs[i].mode.icon,
+                              size: 16, color: _amberIcon),
+                        ),
+                        const SizedBox(width: 10),
+                        // Mode label + optional line
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                legs[i].mode.label,
+                                style: const TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w700,
+                                  color: kBark,
+                                ),
+                              ),
+                              if (legs[i].line != null &&
+                                  legs[i].line!.isNotEmpty)
+                                Text(
+                                  legs[i].line!,
+                                  style: const TextStyle(
+                                      fontSize: 11, color: kText2),
+                                ),
+                            ],
+                          ),
+                        ),
+                        // Per-leg duration + cost
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            if (legs[i].durationMin != null &&
+                                legs[i].durationMin! > 0)
+                              Text(
+                                _fmtDuration(legs[i].durationMin!),
+                                style: const TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                    color: kBark),
+                              ),
+                            Text(
+                              _fmtLegCost(
+                                  legs[i].cost, legs[i].isFree),
+                              style: const TextStyle(
+                                  fontSize: 11, color: kText2),
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
-                    const SizedBox(width: 4),
-                    Text(
-                      isInbound
-                          ? 'From $otherName'
-                          : 'To $otherName',
-                      style: const TextStyle(
-                          fontSize: 11, color: kText2),
+                  ),
+                ],
+
+                // ── Total row (multi-leg only) ──────────────────────────
+                if (multiLeg) ...[
+                  const Divider(height: 1, color: _amberBorder),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(12, 7, 12, 7),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.summarize_rounded,
+                            size: 13, color: _amberIcon),
+                        const SizedBox(width: 6),
+                        const Text(
+                          'Total',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: _amberIcon,
+                          ),
+                        ),
+                        const Spacer(),
+                        if (segment.totalDurationMin > 0) ...[
+                          Text(
+                            _fmtDuration(segment.totalDurationMin),
+                            style: const TextStyle(
+                                fontSize: 11, color: _amberIcon),
+                          ),
+                          const Padding(
+                            padding:
+                                EdgeInsets.symmetric(horizontal: 5),
+                            child: Text('·',
+                                style: TextStyle(
+                                    fontSize: 11, color: _amberIcon)),
+                          ),
+                        ],
+                        Text(
+                          _totalCost(),
+                          style: const TextStyle(
+                              fontSize: 11, color: _amberIcon),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ],
             ),
           ),
