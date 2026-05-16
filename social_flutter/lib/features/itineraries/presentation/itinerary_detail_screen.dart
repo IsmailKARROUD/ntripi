@@ -472,6 +472,14 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                         onPageChanged: (idx) => setState(() {
                           _activeParallelByTrack[track.id] = idx;
                         }),
+                        onAddStopBefore: canEdit && i == 0
+                            ? () async {
+                                context.push(
+                                  '/itineraries/${widget.itineraryId}/stops/new',
+                                  extra: {'beforeTrackId': track.id},
+                                );
+                              }
+                            : null,
                         onAddStopAfter: canEdit
                             ? () async {
                                 final router = GoRouter.of(context);

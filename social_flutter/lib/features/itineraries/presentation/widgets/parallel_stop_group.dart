@@ -18,6 +18,7 @@ import 'package:social_flutter/features/itineraries/presentation/widgets/reorder
 import 'package:social_flutter/features/itineraries/presentation/widgets/segment_card.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/stop_card.dart';
 import 'package:expandable_page_view/expandable_page_view.dart';
+import 'package:social_flutter/l10n/app_localizations.dart';
 
 class ParallelStopGroup extends StatefulWidget {
   /// All stops in this track, sorted by rank ascending.
@@ -47,6 +48,9 @@ class ParallelStopGroup extends StatefulWidget {
   /// Segment callbacks forwarded to SegmentCard.
   final void Function(TransitSegment seg)? onEditSegment;
   final void Function(TransitSegment seg)? onDeleteSegment;
+
+  /// Called when "Add stop" is tapped above this group (first track only).
+  final Future<void> Function()? onAddStopBefore;
 
   /// Called when "Add stop" is tapped below this group.
   final Future<void> Function()? onAddStopAfter;
@@ -82,6 +86,7 @@ class ParallelStopGroup extends StatefulWidget {
     this.onDeleteAnnotation,
     this.onEditSegment,
     this.onDeleteSegment,
+    this.onAddStopBefore,
     this.onAddStopAfter,
     this.onAddTransit,
     this.onPageChanged,
@@ -100,6 +105,7 @@ class ParallelStopGroup extends StatefulWidget {
 class _ParallelStopGroupState extends State<ParallelStopGroup> {
   late final PageController _pageController;
   int _currentPage = 0;
+  bool _addStopBeforeLoading = false;
   bool _addStopLoading = false;
   bool _addTransitLoading = false;
 
@@ -127,6 +133,22 @@ class _ParallelStopGroupState extends State<ParallelStopGroup> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
       children: [
+        // ── "Add stop" before first track (edit mode only) ────────────────
+        if (widget.editMode && widget.onAddStopBefore != null)
+          _BottomActionRow(
+            showAddStop: true,
+            addStopLoading: _addStopBeforeLoading,
+            onAddStop: _addStopBeforeLoading
+                ? null
+                : () async {
+                    setState(() => _addStopBeforeLoading = true);
+                    await widget.onAddStopBefore!();
+                    if (mounted) setState(() => _addStopBeforeLoading = false);
+                  },
+            showAddTransit: false,
+            addTransitLoading: false,
+          ),
+
         // ── Stop card row (swipeable) + side controls ─────────────────────
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -286,6 +308,7 @@ class _BottomActionRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (!showAddStop && !showAddTransit) return const SizedBox.shrink();
+    final l10n = AppLocalizations.of(context)!;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 36, vertical: 2),
       child: Row(
@@ -295,7 +318,7 @@ class _BottomActionRow extends StatelessWidget {
           if (showAddStop)
             _ActionChip(
               icon: Icons.add_location_alt_outlined,
-              label: 'Add stop',
+              label: l10n.addStopTooltip,
               loading: addStopLoading,
               onTap: addStopLoading ? null : onAddStop,
             ),
@@ -307,7 +330,7 @@ class _BottomActionRow extends StatelessWidget {
           if (showAddTransit)
             _ActionChip(
               icon: Icons.directions_transit_outlined,
-              label: 'Add transit',
+              label: l10n.addTransitTitle,
               loading: addTransitLoading,
               onTap: addTransitLoading ? null : onAddTransit,
             ),
