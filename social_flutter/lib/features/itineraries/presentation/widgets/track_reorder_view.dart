@@ -181,71 +181,126 @@ class _TrackReorderViewState extends ConsumerState<TrackReorderView> {
     final orphansByTrack = _orphansByFromTrack(orphans);
 
     return PopScope(
-      // Always intercept: back never navigates away while reorder mode is
-      // on. It exits reorder mode (with a discard-confirm when dirty).
       canPop: false,
       onPopInvokedWithResult: (didPop, _) async {
         if (didPop || _busy) return;
         final ok = await _confirmDiscardIfDirty();
         if (ok && mounted) widget.onExit();
       },
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          if (orphans.isNotEmpty)
-            _OrphanSummaryBanner(
-              count: orphans.length,
-              entries: orphans
-                  .take(3)
-                  .map((seg) =>
-                      '${_stopName(seg.fromStopId)} → ${_stopName(seg.toStopId)}')
-                  .toList(),
-              moreCount: orphans.length > 3 ? orphans.length - 3 : 0,
-            ),
-          Expanded(
-            child: ReorderableListView.builder(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              buildDefaultDragHandles: false,
-              itemCount: _local.length,
-              onReorder: _onReorder,
-              itemBuilder: (_, i) {
-                final t = _local[i];
-                final affected = orphansByTrack[t.id] ?? const [];
-                return _TrackRow(
-                  key: ValueKey(t.id),
-                  trackNumber: i + 1,
-                  primaryName: _primaryName(t),
-                  parallelCount: t.stops.length,
-                  affected: affected
-                      .map((seg) => _stopName(seg.toStopId))
-                      .toList(),
-                  index: i,
-                );
-              },
-            ),
-          ),
-          if (_busy) const LinearProgressIndicator(minHeight: 2),
-          SafeArea(
-            top: false,
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  TextButton(
-                    onPressed: _busy ? null : _onCancel,
-                    child: const Text('Cancel'),
-                  ),
-                  const SizedBox(width: 8),
-                  FilledButton(
-                    onPressed: (_busy || !_dirty) ? null : _onSave,
-                    child: const Text('Save'),
-                  ),
-                ],
+      child: ColoredBox(
+        color: kSand,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // ── Orphan warning banner ──────────────────────────────────
+            if (orphans.isNotEmpty)
+              _OrphanSummaryBanner(
+                count: orphans.length,
+                entries: orphans
+                    .take(3)
+                    .map((seg) =>
+                        '${_stopName(seg.fromStopId)} → ${_stopName(seg.toStopId)}')
+                    .toList(),
+                moreCount: orphans.length > 3 ? orphans.length - 3 : 0,
+              ),
+
+            // ── Subtitle ───────────────────────────────────────────────
+            const Padding(
+              padding: EdgeInsets.fromLTRB(22, 10, 22, 6),
+              child: Text(
+                'DRAG TO CHANGE THE TRACK ORDER',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  color: kText2,
+                  letterSpacing: 0.6,
+                ),
               ),
             ),
-          ),
-        ],
+
+            // ── All track rows inside one SectionCard ──────────────────
+            ConstrainedBox(
+              constraints: BoxConstraints(
+                maxHeight: MediaQuery.of(context).size.height * 0.65,
+              ),
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: kSurface,
+                    borderRadius: BorderRadius.circular(18),
+                    border: Border.all(color: kBorder),
+                  ),
+                  clipBehavior: Clip.antiAlias,
+                  child: ReorderableListView.builder(
+                    padding: EdgeInsets.zero,
+                    buildDefaultDragHandles: false,
+                    itemCount: _local.length,
+                    onReorder: _onReorder,
+                    proxyDecorator: (child, _, animation) =>
+                        AnimatedBuilder(
+                          animation: animation,
+                          builder: (_, child) => Material(
+                            elevation: 4 * animation.value,
+                            shadowColor: Colors.black26,
+                            color: kSand,
+                            borderRadius: BorderRadius.circular(12),
+                            child: child,
+                          ),
+                          child: child,
+                        ),
+                    itemBuilder: (_, i) {
+                      final t = _local[i];
+                      final affected = orphansByTrack[t.id] ?? const [];
+                      final isLast = i == _local.length - 1;
+                      return _TrackRow(
+                        key: ValueKey(t.id),
+                        trackNumber: i + 1,
+                        primaryName: _primaryName(t),
+                        parallelCount: t.stops.length,
+                        affected: affected
+                            .map((seg) => _stopName(seg.toStopId))
+                            .toList(),
+                        index: i,
+                        showDivider: !isLast,
+                      );
+                    },
+                  ),
+                ),
+              ),
+            ),
+
+            // ── Progress + buttons ─────────────────────────────────────
+            if (_busy)
+              const LinearProgressIndicator(
+                minHeight: 2,
+                color: kForest,
+                backgroundColor: kMist,
+              ),
+            SafeArea(
+              top: false,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    TextButton(
+                      onPressed: _busy ? null : _onCancel,
+                      style:
+                          TextButton.styleFrom(foregroundColor: kForest),
+                      child: const Text('Cancel'),
+                    ),
+                    const SizedBox(width: 8),
+                    FilledButton(
+                      onPressed: (_busy || !_dirty) ? null : _onSave,
+                      child: const Text('Save'),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -264,53 +319,53 @@ class _OrphanSummaryBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final cs = theme.colorScheme;
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
       decoration: BoxDecoration(
-        color: cs.errorContainer.withValues(alpha: 0.4),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: cs.error.withValues(alpha: 0.4)),
+        color: kTransitBg,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: kTransitBorder),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(Icons.warning_amber_rounded,
-                  size: 18, color: cs.error),
-              const SizedBox(width: 6),
-              Text(
-                count == 1
-                    ? '1 transit segment will be deleted'
-                    : '$count transit segments will be deleted',
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                  color: cs.onErrorContainer,
+              const Icon(Icons.warning_amber_rounded,
+                  size: 16, color: kTransitIcon),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  count == 1
+                      ? '1 transit segment will be deleted'
+                      : '$count transit segments will be deleted',
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: kTransitText,
+                  ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 4),
           ...entries.map(
             (e) => Padding(
-              padding: const EdgeInsets.only(left: 24, top: 2),
+              padding: const EdgeInsets.only(left: 24, top: 3),
               child: Text(
-                e,
-                style: theme.textTheme.bodySmall
-                    ?.copyWith(color: cs.onErrorContainer),
+                '• $e',
+                style: const TextStyle(fontSize: 12, color: kTransitText),
               ),
             ),
           ),
           if (moreCount > 0)
             Padding(
-              padding: const EdgeInsets.only(left: 24, top: 2),
+              padding: const EdgeInsets.only(left: 24, top: 3),
               child: Text(
                 '… and $moreCount more',
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: cs.onErrorContainer,
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: kTransitText,
                   fontStyle: FontStyle.italic,
                 ),
               ),
@@ -327,6 +382,9 @@ class _TrackRow extends StatelessWidget {
   final int parallelCount;
   final List<String> affected;
   final int index;
+  // When true a kBorder divider is drawn at the bottom of the row so adjacent
+  // rows inside the shared SectionCard are visually separated.
+  final bool showDivider;
 
   const _TrackRow({
     super.key,
@@ -335,109 +393,105 @@ class _TrackRow extends StatelessWidget {
     required this.parallelCount,
     required this.affected,
     required this.index,
+    this.showDivider = true,
   });
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final cs = theme.colorScheme;
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Container(
-            decoration: BoxDecoration(
-              color: kSurface,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: kBorder),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
-              child: Row(
-                children: [
-                  ReorderableDragStartListener(
-                    index: index,
-                    child: const Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 4),
-                      child: Icon(Icons.drag_indicator_rounded,
-                          size: 20, color: kText3),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Container(
-                    width: 32,
-                    height: 32,
-                    decoration: const BoxDecoration(
-                      color: kMist,
-                      shape: BoxShape.circle,
-                    ),
-                    alignment: Alignment.center,
-                    child: Text(
-                      '$trackNumber',
-                      style: const TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w800,
-                        color: kForest,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      primaryName,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w700,
-                        color: kBark,
-                      ),
-                    ),
-                  ),
-                  if (parallelCount > 1) ...[
-                    const SizedBox(width: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 3),
-                      decoration: BoxDecoration(
-                        color: kMist,
-                        borderRadius: BorderRadius.circular(999),
-                      ),
-                      child: Text(
-                        '$parallelCount alts',
-                        style: const TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                          color: kForest,
-                        ),
-                      ),
-                    ),
-                  ],
-                ],
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // ── Main row ────────────────────────────────────────────────────
+        Padding(
+          padding: const EdgeInsets.fromLTRB(8, 10, 14, 10),
+          child: Row(
+            children: [
+              ReorderableDragStartListener(
+                index: index,
+                child: const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 4),
+                  child: Icon(Icons.drag_indicator_rounded,
+                      size: 20, color: kText3),
+                ),
               ),
+              const SizedBox(width: 8),
+              Container(
+                width: 32,
+                height: 32,
+                decoration: const BoxDecoration(
+                  color: kMist,
+                  shape: BoxShape.circle,
+                ),
+                alignment: Alignment.center,
+                child: Text(
+                  '$trackNumber',
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w800,
+                    color: kForest,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  primaryName,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    color: kBark,
+                  ),
+                ),
+              ),
+              if (parallelCount > 1) ...[
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: kMist,
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: Text(
+                    '$parallelCount alts',
+                    style: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: kForest,
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+
+        // ── Affected-segment strip ────────────────────────────────────
+        for (final destName in affected)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(56, 0, 14, 4),
+            child: Row(
+              children: [
+                const Icon(Icons.cancel_outlined,
+                    size: 13, color: kRatingRed),
+                const SizedBox(width: 4),
+                Expanded(
+                  child: Text(
+                    '→ $destName  —  segment will be deleted',
+                    style: const TextStyle(
+                        fontSize: 11, color: kRatingRed),
+                  ),
+                ),
+              ],
             ),
           ),
-          for (final destName in affected)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 2, 12, 2),
-              child: Row(
-                children: [
-                  Icon(Icons.cancel_outlined, size: 14, color: cs.error),
-                  const SizedBox(width: 4),
-                  Expanded(
-                    child: Text(
-                      '→ $destName  —  segment will be deleted',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: cs.error,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-        ],
-      ),
+
+        // ── Row divider ───────────────────────────────────────────────
+        if (showDivider) Container(height: 1, color: kBorder),
+      ],
     );
   }
 }

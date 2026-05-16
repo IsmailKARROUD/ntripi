@@ -22,6 +22,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:social_flutter/core/api/api_client.dart';
+import 'package:social_flutter/core/ui/app_theme.dart';
 import 'package:social_flutter/core/ui/destructive_actions.dart';
 import 'package:social_flutter/features/itineraries/data/itinerary_repository.dart';
 import 'package:social_flutter/features/itineraries/domain/stop.dart';
@@ -149,106 +150,169 @@ class _ReorderParallelsSheetState
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return PopScope(
-      // Block the system back-gesture / scrim-tap while dirty so we can
-      // intercept and run the Discard-changes confirm.
       canPop: !_dirty && !_busy,
       onPopInvokedWithResult: (didPop, _) async {
         if (didPop) return;
         final ok = await _confirmDiscardIfDirty();
         if (ok && context.mounted) Navigator.of(context).pop();
       },
-      child: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Reorder alternatives',
-                style: theme.textTheme.titleMedium
-                    ?.copyWith(fontWeight: FontWeight.w600),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                'Drag to change which option appears first when the track is '
-                'viewed. Tap Save to apply your changes.',
-                style: theme.textTheme.bodySmall
-                    ?.copyWith(color: Colors.grey.shade600),
-              ),
-              const SizedBox(height: 12),
-              Flexible(
-                child: ReorderableListView.builder(
-                  shrinkWrap: true,
-                  buildDefaultDragHandles: false,
-                  itemCount: _local.length,
-                  onReorder: _onReorder,
-                  itemBuilder: (_, i) {
-                    final stop = _local[i];
-                    return ListTile(
-                      key: ValueKey(stop.id),
-                      contentPadding:
-                          const EdgeInsets.symmetric(horizontal: 4),
-                      leading: CircleAvatar(
-                        radius: 14,
-                        backgroundColor:
-                            theme.colorScheme.primary.withValues(alpha: 0.12),
-                        child: Text(
-                          '${i + 1}',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color: theme.colorScheme.primary,
-                          ),
-                        ),
-                      ),
-                      title: Text(
-                        stop.placeName ?? '(unnamed)',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      subtitle: stop.placeAddress != null
-                          ? Text(
-                              stop.placeAddress!,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: theme.textTheme.bodySmall,
-                            )
-                          : null,
-                      trailing: ReorderableDragStartListener(
-                        index: i,
-                        child: const Padding(
-                          padding: EdgeInsets.symmetric(horizontal: 4),
-                          child: Icon(Icons.drag_handle),
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ),
-              if (_busy)
+      child: Container(
+        color: kSand,
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // ── Header ──────────────────────────────────────────────────
                 const Padding(
-                  padding: EdgeInsets.only(top: 8),
-                  child: LinearProgressIndicator(minHeight: 2),
+                  padding: EdgeInsets.fromLTRB(6, 6, 6, 4),
+                  child: Text(
+                    'REORDER ALTERNATIVES',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: kText2,
+                      letterSpacing: 0.6,
+                    ),
+                  ),
                 ),
-              const SizedBox(height: 8),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  TextButton(
-                    onPressed: _busy ? null : _onCancel,
-                    child: const Text('Cancel'),
+                const Padding(
+                  padding: EdgeInsets.fromLTRB(6, 0, 6, 10),
+                  child: Text(
+                    'Drag to change which option appears first. Tap Save to apply.',
+                    style: TextStyle(fontSize: 12, color: kText2),
                   ),
-                  const SizedBox(width: 8),
-                  FilledButton(
-                    onPressed: (_busy || !_dirty) ? null : _onSave,
-                    child: const Text('Save'),
+                ),
+
+                // ── Draggable list inside a SectionCard ──────────────────────
+                ConstrainedBox(
+                  constraints: BoxConstraints(
+                    maxHeight: MediaQuery.of(context).size.height * 0.5,
                   ),
-                ],
-              ),
-            ],
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: kSurface,
+                      borderRadius: BorderRadius.circular(18),
+                      border: Border.all(color: kBorder),
+                    ),
+                    clipBehavior: Clip.antiAlias,
+                    child: ReorderableListView.builder(
+                      shrinkWrap: true,
+                      buildDefaultDragHandles: false,
+                      padding: EdgeInsets.zero,
+                      itemCount: _local.length,
+                      onReorder: _onReorder,
+                      itemBuilder: (_, i) {
+                        final stop = _local[i];
+                        return Column(
+                          key: ValueKey(stop.id),
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            if (i > 0)
+                              Container(height: 1, color: kBorder),
+                            Padding(
+                              padding:
+                                  const EdgeInsets.fromLTRB(14, 10, 14, 10),
+                              child: Row(
+                                children: [
+                                  ReorderableDragStartListener(
+                                    index: i,
+                                    child: const Padding(
+                                      padding: EdgeInsets.symmetric(
+                                          horizontal: 4),
+                                      child: Icon(
+                                          Icons.drag_indicator_rounded,
+                                          size: 20,
+                                          color: kText3),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Container(
+                                    width: 32,
+                                    height: 32,
+                                    decoration: const BoxDecoration(
+                                      color: kMist,
+                                      shape: BoxShape.circle,
+                                    ),
+                                    alignment: Alignment.center,
+                                    child: Text(
+                                      '${i + 1}',
+                                      style: const TextStyle(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w800,
+                                        color: kForest,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          stop.placeName ?? '(unnamed)',
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: const TextStyle(
+                                            fontSize: 15,
+                                            fontWeight: FontWeight.w700,
+                                            color: kBark,
+                                          ),
+                                        ),
+                                        if (stop.placeAddress != null &&
+                                            stop.placeAddress!.isNotEmpty)
+                                          Text(
+                                            stop.placeAddress!,
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: const TextStyle(
+                                                fontSize: 11, color: kText2),
+                                          ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        );
+                      },
+                    ),
+                  ),
+                ),
+
+                // ── Progress + buttons ────────────────────────────────────
+                if (_busy)
+                  const Padding(
+                    padding: EdgeInsets.only(top: 10),
+                    child: LinearProgressIndicator(
+                      minHeight: 2,
+                      color: kForest,
+                      backgroundColor: kMist,
+                    ),
+                  ),
+                const SizedBox(height: 12),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    TextButton(
+                      onPressed: _busy ? null : _onCancel,
+                      style: TextButton.styleFrom(foregroundColor: kForest),
+                      child: const Text('Cancel'),
+                    ),
+                    const SizedBox(width: 8),
+                    FilledButton(
+                      onPressed: (_busy || !_dirty) ? null : _onSave,
+                      child: const Text('Save'),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
       ),
