@@ -12,6 +12,7 @@ import 'package:social_flutter/features/profile/providers/profile_provider.dart'
 import 'package:social_flutter/core/utils/platform_utils.dart';
 import 'package:social_flutter/l10n/app_localizations.dart';
 import 'package:social_flutter/shared/widgets/field_help.dart';
+import 'package:social_flutter/shared/widgets/locale_picker_button.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -75,6 +76,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                // Language picker — top-right, before logo
+                const Align(
+                  alignment: Alignment.centerRight,
+                  child: Padding(
+                    padding: EdgeInsets.only(top: 12),
+                    child: LocalePickerButton(),
+                  ),
+                ),
+
                 // Logo
                 const Padding(
                   padding: EdgeInsets.symmetric(vertical: 36),

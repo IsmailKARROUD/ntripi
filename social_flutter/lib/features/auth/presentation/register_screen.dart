@@ -14,6 +14,7 @@ import 'package:social_flutter/features/profile/providers/profile_provider.dart'
 import 'package:social_flutter/core/utils/platform_utils.dart';
 import 'package:social_flutter/l10n/app_localizations.dart';
 import 'package:social_flutter/shared/widgets/field_help.dart';
+import 'package:social_flutter/shared/widgets/locale_picker_button.dart';
 
 class RegisterScreen extends ConsumerStatefulWidget {
   const RegisterScreen({super.key});
@@ -170,6 +171,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       ),
                       const SizedBox(width: 12),
                       const NtripiLogo(size: 28, showWordmark: true),
+                      const Spacer(),
+                      const LocalePickerButton(),
                     ],
                   ),
                 ),
