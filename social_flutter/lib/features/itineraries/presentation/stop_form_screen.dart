@@ -911,8 +911,27 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                               onChanged: readOnly
                                   ? null
                                   : (v) => setState(() => _isFree = v),
-                              activeThumbColor: kForest,
-                              activeTrackColor: kMist,
+                              thumbColor: WidgetStateProperty.resolveWith((states) {
+                                if (states.contains(WidgetState.disabled)) {
+                                  // disabled-on: muted forest; disabled-off: grey
+                                  return states.contains(WidgetState.selected)
+                                      ? kForest.withAlpha(160)
+                                      : const Color(0xFFABBAAF);
+                                }
+                                return states.contains(WidgetState.selected)
+                                    ? kForest
+                                    : Colors.white;
+                              }),
+                              trackColor: WidgetStateProperty.resolveWith((states) {
+                                if (states.contains(WidgetState.disabled)) {
+                                  return states.contains(WidgetState.selected)
+                                      ? kMist.withAlpha(200)
+                                      : const Color(0xFFD4DAD6);
+                                }
+                                return states.contains(WidgetState.selected)
+                                    ? kMist
+                                    : const Color(0xFFD4DAD6);
+                              }),
                             ),
                           ],
                         ),
