@@ -72,7 +72,7 @@ class _ItineraryFormScreenState extends ConsumerState<ItineraryFormScreen> {
 
   String? _currency = 'EUR';
 
-  ItineraryVisibility _visibility = ItineraryVisibility.onlyMe;
+  ItineraryVisibility _visibility = ItineraryVisibility.public;
   bool _saving = false;
   // Guards _initFromProvider so rebuilds don't overwrite the user's edits.
   bool _initialized = false;
@@ -102,15 +102,13 @@ Future<void> loadCurrencies() async {
     // 5. Update State
     setState(() {
       _currencies = currencies;
-      if (_currencies.isNotEmpty) {
-        _currency = _currencies.first.code;
-      }
     });
 
   } catch (e) {
-    // Handle the error gracefully
-    print('Failed to load currencies: $e');
-    // Optional: setState to show an error message in the UI
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Failed to load currencies: $e')),
+    );
   }
 }
 
