@@ -79,7 +79,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
               Expanded(
                 child: resultsAsync.when(
                   loading: () =>
-                      const Center(child: NTripiCompassLoader()),
+                      const Center(child: NTripiItineraryLoader()),
                   error: (error, _) => Center(
                     child: Padding(
                       padding: const EdgeInsets.all(24),
