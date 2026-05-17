@@ -70,30 +70,17 @@ class _SplashScreenState extends State<SplashScreen> {
                     ],
                   ),
                 ),
-                Padding(
-                  padding: EdgeInsets.only(bottom: 48),
-                  child: Column(
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          _Dot(opacity: 1.0),
-                          SizedBox(width: 6),
-                          _Dot(opacity: 0.4),
-                          SizedBox(width: 6),
-                          _Dot(opacity: 0.4),
-                        ],
+                Center(
+                  child: Padding(
+                    padding: EdgeInsets.only(bottom: 48),
+                    child: Text(
+                      'Explore the world, one route at a time',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Color(0x66FFFFFF),
+                        letterSpacing: 0.2,
                       ),
-                      SizedBox(height: 20),
-                      Text(
-                        'Explore the world, one route at a time',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Color(0x66FFFFFF),
-                          letterSpacing: 0.2,
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
                 ),
               ],
