@@ -13,6 +13,7 @@ import 'package:social_flutter/features/itineraries/presentation/widgets/itinera
 import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
 import 'package:social_flutter/core/utils/platform_utils.dart';
 import 'package:social_flutter/l10n/app_localizations.dart';
+import 'package:social_flutter/shared/widgets/loaders.dart';
 
 class ItineraryListScreen extends ConsumerWidget {
   const ItineraryListScreen({super.key});
@@ -62,7 +63,7 @@ class ItineraryListScreen extends ConsumerWidget {
             ),
             child: itinerariesAsync.when(
               loading: () =>
-                  const Center(child: CircularProgressIndicator()),
+                  const Center(child: NTripiItineraryLoader()),
               error: (error, _) => Center(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,

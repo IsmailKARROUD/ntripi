@@ -18,6 +18,7 @@ import 'package:social_flutter/features/itineraries/domain/transit_segment.dart'
 import 'package:social_flutter/features/itineraries/domain/transport_leg.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/leg_form_dialog.dart';
 import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
+import 'package:social_flutter/shared/widgets/loaders.dart';
 
 class SegmentCard extends ConsumerStatefulWidget {
   final TransitSegment segment;
@@ -182,14 +183,7 @@ class _SegmentCardState extends ConsumerState<SegmentCard> {
                 ),
                 const Spacer(),
                 if (_saving)
-                  const SizedBox(
-                    width: 14,
-                    height: 14,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 1.5,
-                      color: kTransitIcon,
-                    ),
-                  )
+                  const NTripiRingLoader(size: 14)
                 else if (widget.onDelete != null)
                   GestureDetector(
                     onTap: widget.onDelete,

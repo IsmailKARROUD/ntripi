@@ -12,6 +12,7 @@ import 'package:social_flutter/features/follows/providers/follow_provider.dart';
 import 'package:social_flutter/shared/models/follow.dart';
 import 'package:social_flutter/l10n/app_localizations.dart';
 import 'package:social_flutter/shared/widgets/editorial_widgets.dart';
+import 'package:social_flutter/shared/widgets/loaders.dart';
 import 'package:social_flutter/core/utils/platform_utils.dart';
 
 class FollowRequestsScreen extends ConsumerWidget {
@@ -39,7 +40,7 @@ class FollowRequestsScreen extends ConsumerWidget {
               Expanded(
                 child: requestsAsync.when(
                   loading: () =>
-                      const Center(child: CircularProgressIndicator()),
+                      const Center(child: NTripiSkeleton()),
                   error: (error, _) => Center(
                     child: Padding(
                       padding: const EdgeInsets.all(24),
@@ -200,11 +201,7 @@ class _FollowRequestTileState extends ConsumerState<_FollowRequestTile> {
                 ),
               ),
               if (_isLoading)
-                const SizedBox(
-                  width: 24,
-                  height: 24,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
+                const NTripiRingLoader(size: 24)
               else ...[
                 FilledButton(
                   onPressed: _accept,

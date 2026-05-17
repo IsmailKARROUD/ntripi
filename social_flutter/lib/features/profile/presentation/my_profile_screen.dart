@@ -38,6 +38,7 @@ import 'package:social_flutter/shared/data/countries.dart';
 import 'package:social_flutter/shared/models/user.dart';
 import 'package:social_flutter/core/providers/locale_provider.dart';
 import 'package:social_flutter/l10n/app_localizations.dart';
+import 'package:social_flutter/shared/widgets/loaders.dart';
 import 'package:social_flutter/shared/widgets/user_avatar.dart';
 import 'package:social_flutter/core/utils/platform_utils.dart';
 
@@ -190,7 +191,7 @@ class _MyProfileScreenState extends ConsumerState<MyProfileScreen> {
             maxWidth: isDesktopWeb() ? kDesktopMaxWidth : double.infinity,
           ),
           child: profileAsync.when(
-            loading: () => const Center(child: CircularProgressIndicator()),
+            loading: () => const Center(child: NTripiCompassLoader()),
             error: (error, _) => Center(
               child: Padding(
                 padding: const EdgeInsets.all(24),
@@ -342,7 +343,7 @@ class _MyProfileScreenState extends ConsumerState<MyProfileScreen> {
             loading: () => const SliverToBoxAdapter(
               child: Padding(
                 padding: EdgeInsets.all(24),
-                child: Center(child: CircularProgressIndicator()),
+                child: Center(child: NTripiSkeleton()),
               ),
             ),
             error: (_, __) => SliverToBoxAdapter(

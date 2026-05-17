@@ -12,6 +12,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:social_flutter/core/services/geocoding_service.dart';
+import 'package:social_flutter/shared/widgets/loaders.dart';
 
 class MapPickerScreen extends ConsumerStatefulWidget {
   /// Optional initial coordinates to center the map on.
@@ -79,11 +80,7 @@ class _MapPickerScreenState extends ConsumerState<MapPickerScreen> {
             TextButton(
               onPressed: _isGeocoding ? null : _confirmLocation,
               child: _isGeocoding
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
+                  ? const NTripiRingLoader(size: 20)
                   : const Text('Confirm'),
             ),
         ],
@@ -158,14 +155,7 @@ class _MapPickerScreenState extends ConsumerState<MapPickerScreen> {
               child: FilledButton.icon(
                 onPressed: _isGeocoding ? null : _confirmLocation,
                 icon: _isGeocoding
-                    ? const SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white,
-                        ),
-                      )
+                    ? const NTripiRingLoader(size: 18)
                     : const Icon(Icons.check),
                 label: const Text('Confirm Location'),
               ),

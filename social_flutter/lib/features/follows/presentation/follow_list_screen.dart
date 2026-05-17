@@ -25,6 +25,7 @@ import 'package:social_flutter/features/profile/providers/profile_provider.dart'
 import 'package:social_flutter/shared/models/follow.dart';
 import 'package:social_flutter/l10n/app_localizations.dart';
 import 'package:social_flutter/shared/widgets/editorial_widgets.dart';
+import 'package:social_flutter/shared/widgets/loaders.dart';
 import 'package:social_flutter/core/utils/platform_utils.dart';
 
 enum FollowListType { followers, following }
@@ -245,7 +246,7 @@ class _FollowersTab extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return followersAsync.when(
       loading: () =>
-          const Center(child: CircularProgressIndicator()),
+          const Center(child: NTripiSkeleton()),
       error: (error, _) => _PrivateListPlaceholder(
           message: extractErrorMessage(error)),
       data: (followers) => ListView(
@@ -314,7 +315,7 @@ class _FollowingTab extends StatelessWidget {
   Widget build(BuildContext context) {
     return followingAsync.when(
       loading: () =>
-          const Center(child: CircularProgressIndicator()),
+          const Center(child: NTripiSkeleton()),
       error: (error, _) => _PrivateListPlaceholder(
           message: extractErrorMessage(error)),
       data: (following) {
@@ -523,12 +524,7 @@ class _PendingRequestRowState
               ),
               const SizedBox(width: 8),
               if (_loading)
-                const SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(
-                      strokeWidth: 2),
-                )
+                const NTripiRingLoader(size: 20)
               else
                 Row(
                   mainAxisSize: MainAxisSize.min,

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:social_flutter/core/storage/secure_storage.dart';
 import 'package:social_flutter/core/ui/app_theme.dart';
-import 'package:social_flutter/core/ui/ntripi_logo.dart';
+import 'package:social_flutter/shared/widgets/loaders.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -45,7 +45,7 @@ class _SplashScreenState extends State<SplashScreen> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      NtripiLogo(size: 96, onDark: true),
+                      NTripiPeakLoader(size: 120),
                       SizedBox(height: 24),
                       Text(
                         'NTripi',

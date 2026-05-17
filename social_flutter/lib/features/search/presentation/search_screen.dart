@@ -18,6 +18,7 @@ import 'package:social_flutter/features/search/providers/search_provider.dart';
 import 'package:social_flutter/shared/models/user.dart';
 import 'package:social_flutter/l10n/app_localizations.dart';
 import 'package:social_flutter/shared/widgets/editorial_widgets.dart';
+import 'package:social_flutter/shared/widgets/loaders.dart';
 import 'package:social_flutter/shared/widgets/field_help.dart';
 
 class SearchScreen extends ConsumerStatefulWidget {
@@ -78,7 +79,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
               Expanded(
                 child: resultsAsync.when(
                   loading: () =>
-                      const Center(child: CircularProgressIndicator()),
+                      const Center(child: NTripiCompassLoader()),
                   error: (error, _) => Center(
                     child: Padding(
                       padding: const EdgeInsets.all(24),

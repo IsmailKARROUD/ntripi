@@ -14,6 +14,7 @@ import 'package:social_flutter/features/itineraries/domain/stop.dart';
 import 'package:social_flutter/features/itineraries/domain/transit_segment.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/markdown_notes_editor.dart';
 import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
+import 'package:social_flutter/shared/widgets/loaders.dart';
 
 class StopDetailScreen extends ConsumerWidget {
   final String itineraryId;
@@ -32,7 +33,7 @@ class StopDetailScreen extends ConsumerWidget {
 
     return itineraryAsync.when(
       loading: () => const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
+        body: Center(child: NTripiRouteLoader()),
       ),
       error: (e, _) => Scaffold(
         appBar: AppBar(),

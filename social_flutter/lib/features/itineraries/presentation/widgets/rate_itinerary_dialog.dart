@@ -15,6 +15,7 @@ import 'package:social_flutter/features/itineraries/domain/my_rating.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/markdown_notes_editor.dart';
 import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
 import 'package:social_flutter/l10n/app_localizations.dart';
+import 'package:social_flutter/shared/widgets/loaders.dart';
 
 /// Opens the rating bottom sheet and returns when the user saves or dismisses.
 Future<void> showRateItineraryDialog(
@@ -281,14 +282,7 @@ class _RateItinerarySheetState extends State<_RateItinerarySheet> {
                   child: FilledButton(
                     onPressed: canSave ? _save : null,
                     child: _saving
-                        ? const SizedBox(
-                            width: 18,
-                            height: 18,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.white,
-                            ),
-                          )
+                        ? const NTripiRingLoader(size: 18)
                         : Text(l10n.saveButton),
                   ),
                 ),

@@ -10,6 +10,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:social_flutter/core/ui/app_theme.dart';
 import 'package:social_flutter/shared/widgets/editorial_widgets.dart';
+import 'package:social_flutter/shared/widgets/loaders.dart';
 import 'package:social_flutter/features/itineraries/domain/dimension_key.dart';
 import 'package:social_flutter/features/itineraries/domain/ratings_page.dart';
 import 'package:social_flutter/features/itineraries/presentation/ratings_page_screen.dart';
@@ -77,7 +78,7 @@ class DimensionRatingsScreen extends ConsumerWidget {
           slivers: [
             if (ratingsAsync.isLoading && page == null)
               const SliverFillRemaining(
-                child: Center(child: CircularProgressIndicator()),
+                child: Center(child: NTripiRouteLoader()),
               )
             else if (ratingsAsync.hasError && page == null)
               SliverFillRemaining(

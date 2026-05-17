@@ -12,6 +12,7 @@ import 'package:social_flutter/features/profile/providers/profile_provider.dart'
 import 'package:social_flutter/core/utils/platform_utils.dart';
 import 'package:social_flutter/l10n/app_localizations.dart';
 import 'package:social_flutter/shared/widgets/field_help.dart';
+import 'package:social_flutter/shared/widgets/loaders.dart';
 import 'package:social_flutter/shared/widgets/locale_picker_button.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
@@ -182,14 +183,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   child: ElevatedButton(
                     onPressed: _isLoading ? null : _login,
                     child: _isLoading
-                        ? const SizedBox(
-                            width: 22,
-                            height: 22,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2.5,
-                              color: kSurface,
-                            ),
-                          )
+                        ? const NTripiRingLoader(size: 22)
                         : Text(l10n.loginSignIn),
                   ),
                 ),

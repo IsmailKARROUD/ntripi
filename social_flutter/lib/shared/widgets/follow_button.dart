@@ -16,6 +16,7 @@ import 'package:social_flutter/core/api/api_client.dart';
 import 'package:social_flutter/core/ui/destructive_actions.dart';
 import 'package:social_flutter/features/follows/data/follow_repository.dart';
 import 'package:social_flutter/l10n/app_localizations.dart';
+import 'package:social_flutter/shared/widgets/loaders.dart';
 
 /// Callback invoked after a follow state change.
 /// The calling screen uses this to refresh its data.
@@ -135,7 +136,7 @@ class _FollowButtonState extends ConsumerState<FollowButton> {
       return const SizedBox(
         width: 100,
         height: 36,
-        child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+        child: Center(child: NTripiRingLoader(size: 32)),
       );
     }
 

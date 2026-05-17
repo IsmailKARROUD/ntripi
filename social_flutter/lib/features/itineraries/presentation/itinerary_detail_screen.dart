@@ -55,6 +55,7 @@ import 'package:social_flutter/features/itineraries/presentation/widgets/rate_it
 import 'package:social_flutter/features/itineraries/presentation/widgets/parallel_stop_group.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/segment_card.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/track_reorder_view.dart';
+import 'package:social_flutter/shared/widgets/loaders.dart';
 import 'package:social_flutter/core/utils/platform_utils.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/leg_form_dialog.dart';
 import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
@@ -314,7 +315,7 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                   maxWidth:
                       isDesktopWeb() ? kDesktopMaxWidth : double.infinity),
               child: itineraryAsync.when(
-                loading: () => const Center(child: CircularProgressIndicator()),
+                loading: () => const Center(child: NTripiRouteLoader()),
                 error: (error, _) => Center(
                   child: Column(
                     mainAxisSize: MainAxisSize.min,

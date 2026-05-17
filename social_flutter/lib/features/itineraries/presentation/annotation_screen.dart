@@ -13,6 +13,7 @@ import 'package:social_flutter/features/itineraries/domain/annotation.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/annotation_form_dialog.dart'
     show AnnotationFormResult;
 import 'package:social_flutter/l10n/app_localizations.dart';
+import 'package:social_flutter/shared/widgets/loaders.dart';
 
 class AnnotationScreen extends StatefulWidget {
   final bool isEdit;
@@ -134,12 +135,7 @@ class _AnnotationScreenState extends State<AnnotationScreen> {
           if (_saving)
             const Padding(
               padding: EdgeInsets.all(16),
-              child: SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(
-                    strokeWidth: 2, color: kForest),
-              ),
+              child: NTripiRingLoader(size: 20),
             )
           else
             TextButton(

@@ -35,6 +35,7 @@ import 'package:social_flutter/features/itineraries/presentation/widgets/markdow
 import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
 import 'package:social_flutter/core/utils/platform_utils.dart';
 import 'package:social_flutter/l10n/app_localizations.dart';
+import 'package:social_flutter/shared/widgets/loaders.dart';
 import 'package:flutter/services.dart';
 import 'dart:convert';
 
@@ -326,11 +327,7 @@ Future<void> loadCurrencies() async {
           if (_saving)
             const Padding(
               padding: EdgeInsets.all(16),
-              child: SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              ),
+              child: NTripiRingLoader(size: 20),
             )
           else
             TextButton(

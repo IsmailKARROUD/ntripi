@@ -29,6 +29,7 @@ import 'package:social_flutter/core/ui/app_theme.dart';
 import 'package:social_flutter/core/utils/platform_utils.dart';
 import 'package:social_flutter/l10n/app_localizations.dart';
 import 'package:social_flutter/shared/widgets/field_help.dart';
+import 'package:social_flutter/shared/widgets/loaders.dart';
 
 class StopFormScreen extends ConsumerStatefulWidget {
   final String itineraryId;
@@ -601,12 +602,7 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
             _saving
                 ? const Padding(
                     padding: EdgeInsets.all(16),
-                    child: SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                          strokeWidth: 2, color: kForest),
-                    ),
+                    child: NTripiRingLoader(size: 20),
                   )
                 : TextButton(
                     onPressed: _save,

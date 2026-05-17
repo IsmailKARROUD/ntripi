@@ -16,6 +16,7 @@ import 'package:social_flutter/core/utils/platform_utils.dart';
 import 'package:social_flutter/l10n/app_localizations.dart';
 import 'package:social_flutter/shared/widgets/editorial_widgets.dart';
 import 'package:social_flutter/shared/widgets/field_help.dart';
+import 'package:social_flutter/shared/widgets/loaders.dart';
 
 const _kError = Color(0xFFBA1A1A);
 const _kErrorContainer = Color(0xFFFFDAD6);
@@ -211,12 +212,7 @@ class _DeleteAccountScreenState extends ConsumerState<DeleteAccountScreen> {
                           padding: const EdgeInsets.symmetric(vertical: 16),
                         ),
                         child: _isLoading
-                            ? const SizedBox(
-                                height: 20,
-                                width: 20,
-                                child: CircularProgressIndicator(
-                                    strokeWidth: 2, color: kSurface),
-                              )
+                            ? const NTripiRingLoader(size: 20)
                             : Text(l10n.deleteAccountButton,
                                 style: const TextStyle(fontSize: 16)),
                       ),

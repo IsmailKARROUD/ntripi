@@ -26,6 +26,7 @@ import 'package:social_flutter/features/profile/presentation/profile_identity_fa
 import 'package:social_flutter/features/profile/providers/profile_provider.dart';
 import 'package:social_flutter/shared/models/user.dart';
 import 'package:social_flutter/shared/widgets/follow_button.dart';
+import 'package:social_flutter/shared/widgets/loaders.dart';
 import 'package:social_flutter/shared/widgets/user_avatar.dart';
 import 'package:social_flutter/core/utils/platform_utils.dart';
 
@@ -49,7 +50,7 @@ class UserProfileScreen extends ConsumerWidget {
           ),
           child: profileAsync.when(
             loading: () =>
-                const Center(child: CircularProgressIndicator()),
+                const Center(child: NTripiCompassLoader()),
             error: (error, _) => Center(
               child: Padding(
                 padding: const EdgeInsets.all(24),
@@ -195,8 +196,7 @@ class _ProfileBody extends ConsumerWidget {
               loading: () => const SliverToBoxAdapter(
                 child: Padding(
                   padding: EdgeInsets.all(24),
-                  child:
-                      Center(child: CircularProgressIndicator()),
+                  child: Center(child: NTripiSkeleton()),
                 ),
               ),
               error: (_, __) => const SliverToBoxAdapter(

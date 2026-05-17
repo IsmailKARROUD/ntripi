@@ -17,6 +17,7 @@ import 'package:social_flutter/features/itineraries/domain/ratings_page.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/markdown_notes_editor.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/rate_itinerary_dialog.dart';
 import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
+import 'package:social_flutter/shared/widgets/loaders.dart';
 import 'package:social_flutter/shared/widgets/user_avatar.dart';
 import 'package:social_flutter/core/utils/platform_utils.dart';
 
@@ -50,7 +51,7 @@ class RatingsHubScreen extends ConsumerWidget {
               slivers: [
                 if (ratingsAsync.isLoading && page == null)
                   const SliverFillRemaining(
-                    child: Center(child: CircularProgressIndicator()),
+                    child: Center(child: NTripiRouteLoader()),
                   )
                 else if (ratingsAsync.hasError && page == null)
                   SliverFillRemaining(

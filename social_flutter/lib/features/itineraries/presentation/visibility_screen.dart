@@ -19,6 +19,7 @@ import 'package:social_flutter/features/itineraries/domain/allowed_user.dart';
 import 'package:social_flutter/features/itineraries/domain/itinerary.dart';
 import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
 import 'package:social_flutter/shared/models/user.dart';
+import 'package:social_flutter/shared/widgets/loaders.dart';
 
 class VisibilityScreen extends ConsumerStatefulWidget {
   /// Current visibility — used to pre-select the active card.
@@ -393,14 +394,7 @@ class _AllowlistSection extends ConsumerWidget {
               border: Border.all(color: kText3, style: BorderStyle.solid),
             ),
             child: submitting
-                ? const Center(
-                    child: SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                          strokeWidth: 2, color: kForest),
-                    ),
-                  )
+                ? const Center(child: NTripiRingLoader(size: 20))
                 : const Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -613,8 +607,7 @@ class _AddPersonDialogState extends ConsumerState<_AddPersonDialog> {
             ),
             const SizedBox(height: 8),
             if (_searching)
-              const Expanded(
-                  child: Center(child: CircularProgressIndicator()))
+              const Expanded(child: Center(child: NTripiRingLoader()))
             else if (_results.isEmpty && _searchController.text.isNotEmpty)
               const Expanded(
                   child: Center(child: Text('No users found.')))

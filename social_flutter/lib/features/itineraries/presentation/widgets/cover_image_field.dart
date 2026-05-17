@@ -25,6 +25,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:social_flutter/core/api/api_endpoints.dart';
 import 'package:social_flutter/core/ui/app_theme.dart';
 import 'package:social_flutter/core/utils/platform_utils.dart';
+import 'package:social_flutter/shared/widgets/loaders.dart';
 
 const _maxFileSizeBytes = 10 * 1024 * 1024; // 10 MB
 
@@ -390,16 +391,7 @@ class _CropScreenState extends State<_CropScreen> {
           if (_processing)
             const Padding(
               padding: EdgeInsets.symmetric(horizontal: 16),
-              child: Center(
-                child: SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
+              child: Center(child: NTripiRingLoader(size: 20)),
             )
           else
             TextButton(
@@ -429,9 +421,7 @@ class _CropScreenState extends State<_CropScreen> {
             child: AspectRatio(
               aspectRatio: 1200 / 630,
               child: _imageSize == null
-                  ? const Center(
-                      child: CircularProgressIndicator(color: kSand),
-                    )
+                  ? const Center(child: NTripiRingLoader())
                   : LayoutBuilder(
                       builder: (context, constraints) {
                         final vp = Size(
@@ -557,7 +547,7 @@ class _ImagePlaceholder extends StatelessWidget {
           borderRadius: BorderRadius.circular(16),
         ),
         child: picking
-            ? const Center(child: CircularProgressIndicator(color: kForest))
+            ? const Center(child: NTripiRingLoader())
             : Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: const [

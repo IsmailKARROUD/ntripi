@@ -14,6 +14,7 @@ import 'package:social_flutter/features/profile/providers/profile_provider.dart'
 import 'package:social_flutter/core/utils/platform_utils.dart';
 import 'package:social_flutter/l10n/app_localizations.dart';
 import 'package:social_flutter/shared/widgets/field_help.dart';
+import 'package:social_flutter/shared/widgets/loaders.dart';
 import 'package:social_flutter/shared/widgets/locale_picker_button.dart';
 
 class RegisterScreen extends ConsumerStatefulWidget {
@@ -419,14 +420,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   child: ElevatedButton(
                     onPressed: (_isLoading || !_tosAccepted) ? null : () => _register(l10n),
                     child: _isLoading
-                        ? const SizedBox(
-                            width: 22,
-                            height: 22,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2.5,
-                              color: kSurface,
-                            ),
-                          )
+                        ? const NTripiRingLoader(size: 22)
                         : Text(l10n.registerCreateAccount),
                   ),
                 ),

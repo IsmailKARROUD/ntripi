@@ -19,6 +19,7 @@ import 'package:social_flutter/features/itineraries/presentation/widgets/segment
 import 'package:social_flutter/features/itineraries/presentation/widgets/stop_card.dart';
 import 'package:expandable_page_view/expandable_page_view.dart';
 import 'package:social_flutter/l10n/app_localizations.dart';
+import 'package:social_flutter/shared/widgets/loaders.dart';
 
 class ParallelStopGroup extends StatefulWidget {
   /// All stops in this track, sorted by rank ascending.
@@ -363,11 +364,7 @@ class _ActionChip extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
         child: loading
-            ? const SizedBox(
-                width: 13,
-                height: 13,
-                child: CircularProgressIndicator(strokeWidth: 1.5, color: kText2),
-              )
+            ? const NTripiRingLoader(size: 13)
             : Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
