@@ -314,8 +314,8 @@ Future<void> loadCurrencies() async {
     final visColor = _visibilityColor(_visibility);
 
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       backgroundColor: kSand,
-      resizeToAvoidBottomInset: true,
       appBar: AppBar(
         backgroundColor: kSand,
         title: Text(widget.mode == ItineraryFormMode.create
@@ -349,6 +349,7 @@ Future<void> loadCurrencies() async {
         child: Form(
           key: _formKey,
           child: ListView(
+            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
             padding: const EdgeInsets.only(bottom: 40),
             children: [
               // ── Cover image slot ──────────────────────────────────────────
@@ -489,7 +490,7 @@ Future<void> loadCurrencies() async {
                 ),
               ],
 
-              const SizedBox(height: 16),
+           //   const SizedBox(height: 16),
             ],
           ),
         ),

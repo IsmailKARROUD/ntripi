@@ -55,7 +55,7 @@ class _CountryPickerScreenState extends State<CountryPickerScreen> {
   Widget build(BuildContext context) {
     final filtered = _filtered;
     return Scaffold(
-      resizeToAvoidBottomInset: false, // Avoids weird resizing when keyboard appears
+      resizeToAvoidBottomInset: false,
       backgroundColor: kSand,
       appBar: AppBar(
         backgroundColor: kSand,

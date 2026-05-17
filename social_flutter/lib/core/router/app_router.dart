@@ -259,6 +259,9 @@ class _AppShellState extends State<_AppShell> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      // resizeToAvoidBottomInset: true (default) — the outer scaffold shrinks its
+      // body to exactly the space above the keyboard. Inner screens use false so
+      // they simply fill this pre-shrunk space without double-counting.
       body: Column(
         children: [
           if (_showDownloadBanner)
