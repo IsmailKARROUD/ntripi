@@ -41,7 +41,7 @@ class VisibilityBadge extends StatelessWidget {
 
     if (onDark) {
       foreground = Colors.white;
-      background = const Color(0x88000000); // frosted black overlay
+      background = kButtonTransparent; // frosted black overlay
     } else {
       foreground = switch (visibility) {
         ItineraryVisibility.public => kCanopy,

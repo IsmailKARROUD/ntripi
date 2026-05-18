@@ -897,7 +897,7 @@ class _MapHero extends StatelessWidget {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.18),
+                    color: kButtonTransparent,
                     borderRadius: BorderRadius.circular(999),
                     border:
                         Border.all(color: Colors.white.withValues(alpha: 0.25)),
@@ -1010,7 +1010,7 @@ class _GlassIconButton extends StatelessWidget {
               width: 40,
               height: 40,
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.20),
+                color: kButtonTransparent,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: Colors.white.withValues(alpha: 0.22)),
               ),

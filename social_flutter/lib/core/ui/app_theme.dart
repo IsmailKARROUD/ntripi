@@ -9,7 +9,7 @@ const kMist = Color(0xFFD0EBDA);   // oklch(90% 0.06 150) — light green tint
 const kAmber = Color(0xFFC89030);  // oklch(66% 0.17 75)  — accent gold
 const kSand = Color(0xFFF5F2EC);   // oklch(97% 0.008 80) — warm cream bg
 const kBark = Color(0xFF1A2A1E);   // oklch(18% 0.03 150) — near-black text
-
+const kButtonTransparent = Color(0x55000000); // black with 33% opacity, used for frosted overlays
 // Rating score colors: 1=red · 2=orange · 3=amber · 4=lime · 5=green
 const kRatingRed = Color(0xFFF01A1A);
 const kRatingOrange = Color(0xFFD4611A);

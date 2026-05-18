@@ -1110,7 +1110,8 @@ class _GlassButton extends StatelessWidget {
         width: 40,
         height: 40,
         decoration: BoxDecoration(
-          color: const Color(0x2EFFFFFF),
+          // dark tint ensures visibility against any cover image, incl. white
+          color: kButtonTransparent,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(color: const Color(0x33FFFFFF)),
         ),

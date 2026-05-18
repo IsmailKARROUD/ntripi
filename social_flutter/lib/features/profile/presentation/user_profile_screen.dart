@@ -731,7 +731,7 @@ class _GlassIconButton extends StatelessWidget {
               width: 40,
               height: 40,
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.20),
+                color: kButtonTransparent,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
                     color: Colors.white.withValues(alpha: 0.22)),
