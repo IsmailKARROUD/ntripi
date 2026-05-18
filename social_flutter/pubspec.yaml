@@ -2,7 +2,7 @@ name: social_flutter
 description: Ntripi — social media app frontend (Flutter)
 publish_to: 'none'
 
-version: 0.2.1
+version: 0.3.0
 
 environment:
   sdk: '>=3.3.0 <4.0.0'
