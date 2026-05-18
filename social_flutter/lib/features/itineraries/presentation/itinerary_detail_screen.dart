@@ -56,6 +56,7 @@ import 'package:social_flutter/features/itineraries/presentation/widgets/paralle
 import 'package:social_flutter/features/itineraries/presentation/widgets/segment_card.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/track_reorder_view.dart';
 import 'package:social_flutter/shared/widgets/loaders.dart';
+import 'package:social_flutter/shared/widgets/shadow_divider.dart';
 import 'package:social_flutter/core/utils/platform_utils.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/leg_form_dialog.dart';
 import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
@@ -367,8 +368,7 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
 
                       // Divider between stop groups (not before the first).
                       if (items.isNotEmpty) {
-                        items.add(const Divider(
-                            height: 1, indent: 14, endIndent: 14));
+                        items.add(const ShadowDivider(height: 1, indent: 14, endIndent: 14));
                       }
 
                       // READ MODE: show the inbound transit BEFORE this stop
