@@ -292,11 +292,7 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
     final isOwner = currentUserId != null &&
         itineraryAsync.valueOrNull?.userId == currentUserId;
 
-    // Load owner profile for the owner row below the hero.
     final ownerUserId = itineraryAsync.valueOrNull?.userId ?? '';
-    final ownerProfile = ownerUserId.isNotEmpty
-        ? ref.watch(userProfileProvider(ownerUserId)).valueOrNull
-        : null;
 
     return PopScope(
       canPop: !_editMode,
@@ -606,13 +602,19 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                         ),
 
                         // ── Owner row ──────────────────────────────────────
-                        if (ownerProfile != null)
+                        if (ownerUserId.isNotEmpty)
                           SliverToBoxAdapter(
-                            child: _OwnerRow(
-                              owner: ownerProfile,
-                              itinerary: itinerary,
-                              itineraryId: widget.itineraryId,
-                            ),
+                            child: ref
+                                .watch(userProfileProvider(ownerUserId))
+                                .when(
+                                  loading: () => const OwnerRowSkeleton(),
+                                  error: (_, __) => const SizedBox.shrink(),
+                                  data: (owner) => _OwnerRow(
+                                    owner: owner,
+                                    itinerary: itinerary,
+                                    itineraryId: widget.itineraryId,
+                                  ),
+                                ),
                           ),
 
                         // ── Meta chips ─────────────────────────────────────

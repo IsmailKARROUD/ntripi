@@ -971,3 +971,73 @@ class _NTripiSkeletonState extends State<NTripiSkeleton>
     );
   }
 }
+
+// ── 10. OwnerRowSkeleton — shimmer placeholder matching _OwnerRow height ────
+
+class OwnerRowSkeleton extends StatefulWidget {
+  const OwnerRowSkeleton({super.key});
+
+  @override
+  State<OwnerRowSkeleton> createState() => _OwnerRowSkeletonState();
+}
+
+class _OwnerRowSkeletonState extends State<OwnerRowSkeleton>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _ctrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 1400))
+      ..repeat();
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _ctrl,
+      builder: (_, __) {
+        final shimX = -1.5 + 2.0 * _ctrl.value;
+
+        Widget bar(double w, double h, {bool circle = false}) => Container(
+              width: w,
+              height: h,
+              decoration: BoxDecoration(
+                shape: circle ? BoxShape.circle : BoxShape.rectangle,
+                borderRadius: circle ? null : BorderRadius.circular(5),
+                gradient: LinearGradient(
+                  begin: Alignment(shimX, 0),
+                  end: Alignment(shimX + 1, 0),
+                  colors: const [kMist, Colors.white, kMist],
+                ),
+              ),
+            );
+
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
+          child: Row(
+            children: [
+              bar(36, 36, circle: true),
+              const SizedBox(width: 10),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  bar(110, 9),
+                  const SizedBox(height: 5),
+                  bar(70, 7),
+                ],
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
