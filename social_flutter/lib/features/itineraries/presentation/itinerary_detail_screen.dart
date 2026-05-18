@@ -61,6 +61,7 @@ import 'package:social_flutter/core/utils/platform_utils.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/leg_form_dialog.dart';
 import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
 import 'package:social_flutter/l10n/app_localizations.dart';
+import 'package:social_flutter/shared/widgets/visibility_badge.dart';
 
 class ItineraryDetailScreen extends ConsumerStatefulWidget {
   final String itineraryId;
@@ -1056,7 +1057,7 @@ class _CoverHeroState extends State<_CoverHero> {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                _VisibilityBadgeDetail(visibility: itinerary.visibility),
+                VisibilityBadge(visibility: itinerary.visibility, onDark: true),
                 const SizedBox(height: 8),
                 Text(
                   itinerary.title,
@@ -1121,43 +1122,6 @@ class _GlassButton extends StatelessWidget {
 }
 
 // Visibility badge styled for the dark hero overlay.
-class _VisibilityBadgeDetail extends StatelessWidget {
-  final ItineraryVisibility visibility;
-  const _VisibilityBadgeDetail({required this.visibility});
-
-  @override
-  Widget build(BuildContext context) {
-    final (icon, label) = switch (visibility) {
-      ItineraryVisibility.public => (Icons.public_rounded, 'Public'),
-      ItineraryVisibility.followers => (Icons.group_rounded, 'Followers'),
-      ItineraryVisibility.restricted => (Icons.key_rounded, 'Restricted'),
-      ItineraryVisibility.onlyMe => (Icons.lock_rounded, 'Only me'),
-    };
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: const Color(0x2EFFFFFF),
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 13, color: Colors.white),
-          const SizedBox(width: 6),
-          Text(
-            label,
-            style: const TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-              color: Colors.white,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 // ─── Owner row ────────────────────────────────────────────────────────────────
 // Owner avatar + name + personal rating (viewer) + community rating.
 // Community rating (right) taps → ratings screen.

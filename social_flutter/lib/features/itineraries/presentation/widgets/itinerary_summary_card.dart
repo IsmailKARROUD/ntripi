@@ -8,7 +8,7 @@ import 'package:go_router/go_router.dart';
 import 'package:social_flutter/core/api/api_endpoints.dart';
 import 'package:social_flutter/core/ui/app_theme.dart';
 import 'package:social_flutter/features/itineraries/domain/itinerary.dart';
-import 'package:social_flutter/l10n/app_localizations.dart';
+import 'package:social_flutter/shared/widgets/visibility_badge.dart';
 
 class ItinerarySummaryCard extends ConsumerWidget {
   final Itinerary itinerary;
@@ -24,7 +24,6 @@ class ItinerarySummaryCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final l10n = AppLocalizations.of(context)!;
     final coverUrl = itinerary.coverImageUrl != null
         ? (itinerary.coverImageUrl!.startsWith('/')
             ? '$kApiBaseUrl${itinerary.coverImageUrl}'
@@ -55,10 +54,7 @@ class ItinerarySummaryCard extends ConsumerWidget {
                   Positioned(
                     top: 10,
                     left: 10,
-                    child: _VisibilityBadge(
-                      visibility: itinerary.visibility,
-                      l10n: l10n,
-                    ),
+                    child: VisibilityBadge(visibility: itinerary.visibility, onDark: true),
                   ),
                 ],
               ),
@@ -168,54 +164,6 @@ class _CoverPlaceholder extends StatelessWidget {
       ),
       child: const Center(
         child: Icon(Icons.map_rounded, size: 36, color: kCanopy),
-      ),
-    );
-  }
-}
-
-// Visibility badge — brand-colored pill matching the design's VisibilityBadge.
-class _VisibilityBadge extends StatelessWidget {
-  final ItineraryVisibility visibility;
-  final AppLocalizations l10n;
-
-  const _VisibilityBadge({required this.visibility, required this.l10n});
-
-  @override
-  Widget build(BuildContext context) {
-    final (icon, color) = switch (visibility) {
-      ItineraryVisibility.public => (Icons.public_rounded, kCanopy),
-      ItineraryVisibility.followers =>
-        (Icons.group_rounded, kText2),
-      ItineraryVisibility.restricted =>
-        (Icons.key_rounded, kRatingOrange),
-      ItineraryVisibility.onlyMe => (Icons.lock_rounded, kText3),
-    };
-    final label = switch (visibility) {
-      ItineraryVisibility.public => l10n.visibilityPublic,
-      ItineraryVisibility.followers => l10n.visibilityFollowers,
-      ItineraryVisibility.restricted => l10n.visibilityRestricted,
-      ItineraryVisibility.onlyMe => l10n.visibilityOnlyMe,
-    };
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 13, color: color),
-          const SizedBox(width: 6),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-              color: color,
-            ),
-          ),
-        ],
       ),
     );
   }
