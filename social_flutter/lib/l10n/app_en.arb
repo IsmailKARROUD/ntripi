@@ -206,6 +206,7 @@
   "coverImageLabel": "Cover image",
   "coverImageHelp": "A 1200×630 image shown on the itinerary card and link previews. Drag inside the crop box to reposition.",
   "itineraryTitleLabel": "Title *",
+  "itineraryTitleHint": "e.g. 10 days in Kyoto & Osaka",
   "itineraryTitleHelp": "A short, clear name for this trip. Shown on the itinerary card and share previews.",
   "itineraryTitleRequired": "Title is required",
   "descriptionLabel": "Description",
@@ -219,6 +220,21 @@
   "visibilityRestricted": "Restricted",
   "visibilityOnlyMe": "Only me",
   "imageSaveButUploadFailed": "Itinerary saved, but image upload failed. Try again from the edit screen.",
+  "formSectionBasics": "BASICS",
+  "formLabelCurrency": "CURRENCY",
+  "formLabelWhoCanSee": "WHO CAN SEE THIS?",
+  "formSectionDangerZone": "DANGER ZONE",
+  "formLabelDeleteItinerary": "DELETE ITINERARY",
+  "formDeleteItineraryHint": "Type the title to confirm",
+  "currencySearchHint": "Search currency…",
+  "currenciesLoadFailed": "Failed to load currencies: {error}",
+  "@currenciesLoadFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "deleteItineraryFormTitle": "Delete itinerary",
   "deleteItineraryFormMessage": "This will permanently delete \"{title}\" and all its stops. Type the title to confirm.",
   "@deleteItineraryFormMessage": {

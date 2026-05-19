@@ -513,6 +513,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get itineraryTitleLabel => 'Title *';
 
   @override
+  String get itineraryTitleHint => 'e.g. 10 days in Kyoto & Osaka';
+
+  @override
   String get itineraryTitleHelp =>
       'A short, clear name for this trip. Shown on the itinerary card and share previews.';
 
@@ -555,6 +558,32 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get imageSaveButUploadFailed =>
       'Itinerary saved, but image upload failed. Try again from the edit screen.';
+
+  @override
+  String get formSectionBasics => 'BASICS';
+
+  @override
+  String get formLabelCurrency => 'CURRENCY';
+
+  @override
+  String get formLabelWhoCanSee => 'WHO CAN SEE THIS?';
+
+  @override
+  String get formSectionDangerZone => 'DANGER ZONE';
+
+  @override
+  String get formLabelDeleteItinerary => 'DELETE ITINERARY';
+
+  @override
+  String get formDeleteItineraryHint => 'Type the title to confirm';
+
+  @override
+  String get currencySearchHint => 'Search currency…';
+
+  @override
+  String currenciesLoadFailed(String error) {
+    return 'Failed to load currencies: $error';
+  }
 
   @override
   String get deleteItineraryFormTitle => 'Delete itinerary';

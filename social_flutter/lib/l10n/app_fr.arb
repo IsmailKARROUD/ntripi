@@ -161,6 +161,7 @@
   "coverImageLabel": "Image de couverture",
   "coverImageHelp": "Une image 1200×630 affichée sur la carte de l'itinéraire et les aperçus de liens.",
   "itineraryTitleLabel": "Titre *",
+  "itineraryTitleHint": "ex. 10 jours à Kyoto & Osaka",
   "itineraryTitleHelp": "Un nom court et clair pour ce voyage. Affiché sur la carte et les aperçus de partage.",
   "itineraryTitleRequired": "Le titre est requis",
   "descriptionLabel": "Description",
@@ -174,6 +175,21 @@
   "visibilityRestricted": "Restreint",
   "visibilityOnlyMe": "Moi uniquement",
   "imageSaveButUploadFailed": "Itinéraire enregistré, mais l'envoi de l'image a échoué. Réessayez depuis l'écran de modification.",
+  "formSectionBasics": "GÉNÉRAL",
+  "formLabelCurrency": "DEVISE",
+  "formLabelWhoCanSee": "QUI PEUT VOIR ÇA ?",
+  "formSectionDangerZone": "ZONE DANGEREUSE",
+  "formLabelDeleteItinerary": "SUPPRIMER L'ITINÉRAIRE",
+  "formDeleteItineraryHint": "Tapez le titre pour confirmer",
+  "currencySearchHint": "Rechercher une devise…",
+  "currenciesLoadFailed": "Échec du chargement des devises : {error}",
+  "@currenciesLoadFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "deleteItineraryFormTitle": "Supprimer l'itinéraire",
   "deleteItineraryFormMessage": "Cela supprimera définitivement \"{title}\" et toutes ses étapes. Saisissez le titre pour confirmer.",
 

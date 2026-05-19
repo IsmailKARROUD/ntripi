@@ -82,35 +82,37 @@ class _ItineraryFormScreenState extends ConsumerState<ItineraryFormScreen> {
   String? _pendingImageFilename;
   bool _removeExistingImage = false;
 
-Future<void> loadCurrencies() async {
-  try {
-    // 1. Load the string
-    final String response = await rootBundle.loadString('assets/data/currencies.json');
+  Future<void> loadCurrencies() async {
+    try {
+      // 1. Load the string
+      final String response =
+          await rootBundle.loadString('assets/data/currencies.json');
 
-    // 2. Decode and cast
-    final List<dynamic> data = json.decode(response);
+      // 2. Decode and cast
+      final List<dynamic> data = json.decode(response);
 
-    // 3. Filter the raw maps FIRST, then convert to Dart objects
-    final currencies = data
-        .where((item) => item['type'] == 'currency') // <-- Optimization here
-        .map((item) => Currency.fromJson(item))
-        .toList();
+      // 3. Filter the raw maps FIRST, then convert to Dart objects
+      final currencies = data
+          .where((item) => item['type'] == 'currency') // <-- Optimization here
+          .map((item) => Currency.fromJson(item))
+          .toList();
 
-    // 4. Sort
-    currencies.sort((a, b) => a.code.compareTo(b.code));
+      // 4. Sort
+      currencies.sort((a, b) => a.code.compareTo(b.code));
 
-    // 5. Update State
-    setState(() {
-      _currencies = currencies;
-    });
-
-  } catch (e) {
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Failed to load currencies: $e')),
-    );
+      // 5. Update State
+      setState(() {
+        _currencies = currencies;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+            content: Text(
+                AppLocalizations.of(context)!.currenciesLoadFailed(e.toString()))),
+      );
+    }
   }
-}
 
   // static const _currencies = ['EUR', 'USD', 'GBP', 'MAD', 'Other'];
 
@@ -196,7 +198,8 @@ Future<void> loadCurrencies() async {
             if (mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text(AppLocalizations.of(context)!.imageSaveButUploadFailed),
+                  content: Text(
+                      AppLocalizations.of(context)!.imageSaveButUploadFailed),
                 ),
               );
             }
@@ -350,6 +353,56 @@ Future<void> loadCurrencies() async {
             keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
             padding: const EdgeInsets.only(bottom: 40),
             children: [
+              // ── Title  ───────────────────────────────────────────
+              const SizedBox(height: 12),
+              _SectionCard(
+                children: [
+                  // Title field
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 13, 16, 12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          l10n.itineraryTitleLabel,
+                          style: const TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: kText2,
+                            letterSpacing: 0.4,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        TextFormField(
+                          controller: _titleController,
+                          decoration: InputDecoration(
+                            border: InputBorder.none,
+                            enabledBorder: InputBorder.none,
+                            focusedBorder: InputBorder.none,
+                            errorBorder: InputBorder.none,
+                            focusedErrorBorder: InputBorder.none,
+                            isDense: true,
+                            contentPadding: EdgeInsets.zero,
+                            hintText: l10n.itineraryTitleHint,
+                            hintStyle: const TextStyle(
+                                color: kText3, fontWeight: FontWeight.w500),
+                          ),
+                          style: const TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                            color: kBark,
+                          ),
+                          validator: (v) => (v == null || v.trim().isEmpty)
+                              ? l10n.itineraryTitleRequired
+                              : null,
+                          textInputAction: TextInputAction.next,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
               // ── Cover image slot ──────────────────────────────────────────
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
@@ -373,87 +426,36 @@ Future<void> loadCurrencies() async {
                 ),
               ),
 
-              // ── Title + Description ───────────────────────────────────────
-              const SizedBox(height: 12),
-              _SectionCard(
-                children: [
-                  // Title field
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 13, 16, 12),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'TITLE *',
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w700,
-                            color: kText2,
-                            letterSpacing: 0.4,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        TextFormField(
-                          controller: _titleController,
-                          decoration: InputDecoration(
-                            border: InputBorder.none,
-                            enabledBorder: InputBorder.none,
-                            focusedBorder: InputBorder.none,
-                            errorBorder: InputBorder.none,
-                            focusedErrorBorder: InputBorder.none,
-                            isDense: true,
-                            contentPadding: EdgeInsets.zero,
-                            hintText: l10n.itineraryTitleLabel,
-                            hintStyle: const TextStyle(
-                                color: kText3, fontWeight: FontWeight.w500),
-                          ),
-                          style: const TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w600,
-                            color: kBark,
-                          ),
-                          validator: (v) => (v == null || v.trim().isEmpty)
-                              ? l10n.itineraryTitleRequired
-                              : null,
-                          textInputAction: TextInputAction.next,
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-
               // ── Basics ────────────────────────────────────────────────────
-              const _SectionLabel(text: 'BASICS'),
+              _SectionLabel(text: l10n.formSectionBasics),
               _SectionCard(
                 children: [
                   _PickerRow(
                     icon: Icons.payments_rounded,
-                    label: 'CURRENCY',
+                    label: l10n.formLabelCurrency,
                     value: _currency ?? 'EUR',
                     onTap: _showCurrencyPicker,
                   ),
                   const _FieldDivider(),
                   _PickerRow(
                     icon: visIcon,
-                    label: 'WHO CAN SEE THIS?',
+                    label: l10n.formLabelWhoCanSee,
                     value: visLabel,
                     iconColor: visColor,
                     onTap: _showVisibilityPicker,
                   ),
                 ],
               ),
-
-
+              const SizedBox(height: 48),
               // ── Danger zone (edit mode) ───────────────────────────────────
               if (widget.mode == ItineraryFormMode.edit) ...[
-                const _SectionLabel(text: 'DANGER ZONE', tone: kRatingRed),
+                _SectionLabel(text: l10n.formSectionDangerZone, tone: kRatingRed),
                 _SectionCard(
                   children: [
                     _PickerRow(
                       icon: Icons.delete_outline_rounded,
-                      label: 'DELETE ITINERARY',
-                      value: 'Type the title to confirm',
+                      label: l10n.formLabelDeleteItinerary,
+                      value: l10n.formDeleteItineraryHint,
                       iconColor: kRatingRed,
                       onTap: _saving ? null : _deleteItinerary,
                     ),
@@ -461,7 +463,7 @@ Future<void> loadCurrencies() async {
                 ),
               ],
 
-           //   const SizedBox(height: 16),
+              //   const SizedBox(height: 16),
             ],
           ),
         ),
@@ -522,7 +524,8 @@ class _FieldDivider extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(height: 1, color: kBorder, margin: const EdgeInsets.only(left: 16));
+    return Container(
+        height: 1, color: kBorder, margin: const EdgeInsets.only(left: 16));
   }
 }
 
@@ -641,7 +644,7 @@ class _CurrencyPickerSheetState extends State<_CurrencyPickerSheet> {
             child: TextField(
               autofocus: true,
               decoration: InputDecoration(
-                hintText: 'Search currency…',
+                hintText: AppLocalizations.of(context)!.currencySearchHint,
                 prefixIcon: const Icon(Icons.search_rounded, color: kForest),
                 filled: true,
                 fillColor: kSand,
@@ -679,7 +682,8 @@ class _CurrencyPickerSheetState extends State<_CurrencyPickerSheet> {
                   subtitle: Text(c.name,
                       style: const TextStyle(color: kText2, fontSize: 12)),
                   trailing: selected
-                      ? const Icon(Icons.check_rounded, color: kForest, size: 18)
+                      ? const Icon(Icons.check_rounded,
+                          color: kForest, size: 18)
                       : null,
                   onTap: () => Navigator.pop(context, c.code),
                 );
@@ -715,4 +719,3 @@ Color _visibilityColor(ItineraryVisibility v) => switch (v) {
       ItineraryVisibility.restricted => kRatingOrange,
       ItineraryVisibility.onlyMe => kText3,
     };
-

@@ -974,6 +974,12 @@ abstract class AppLocalizations {
   /// **'Title *'**
   String get itineraryTitleLabel;
 
+  /// No description provided for @itineraryTitleHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. 10 days in Kyoto & Osaka'**
+  String get itineraryTitleHint;
+
   /// No description provided for @itineraryTitleHelp.
   ///
   /// In en, this message translates to:
@@ -1051,6 +1057,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Itinerary saved, but image upload failed. Try again from the edit screen.'**
   String get imageSaveButUploadFailed;
+
+  /// No description provided for @formSectionBasics.
+  ///
+  /// In en, this message translates to:
+  /// **'BASICS'**
+  String get formSectionBasics;
+
+  /// No description provided for @formLabelCurrency.
+  ///
+  /// In en, this message translates to:
+  /// **'CURRENCY'**
+  String get formLabelCurrency;
+
+  /// No description provided for @formLabelWhoCanSee.
+  ///
+  /// In en, this message translates to:
+  /// **'WHO CAN SEE THIS?'**
+  String get formLabelWhoCanSee;
+
+  /// No description provided for @formSectionDangerZone.
+  ///
+  /// In en, this message translates to:
+  /// **'DANGER ZONE'**
+  String get formSectionDangerZone;
+
+  /// No description provided for @formLabelDeleteItinerary.
+  ///
+  /// In en, this message translates to:
+  /// **'DELETE ITINERARY'**
+  String get formLabelDeleteItinerary;
+
+  /// No description provided for @formDeleteItineraryHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Type the title to confirm'**
+  String get formDeleteItineraryHint;
+
+  /// No description provided for @currencySearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search currency…'**
+  String get currencySearchHint;
+
+  /// No description provided for @currenciesLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load currencies: {error}'**
+  String currenciesLoadFailed(String error);
 
   /// No description provided for @deleteItineraryFormTitle.
   ///

@@ -521,6 +521,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get itineraryTitleLabel => 'Titre *';
 
   @override
+  String get itineraryTitleHint => 'ex. 10 jours à Kyoto & Osaka';
+
+  @override
   String get itineraryTitleHelp =>
       'Un nom court et clair pour ce voyage. Affiché sur la carte et les aperçus de partage.';
 
@@ -563,6 +566,32 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get imageSaveButUploadFailed =>
       'Itinéraire enregistré, mais l\'envoi de l\'image a échoué. Réessayez depuis l\'écran de modification.';
+
+  @override
+  String get formSectionBasics => 'GÉNÉRAL';
+
+  @override
+  String get formLabelCurrency => 'DEVISE';
+
+  @override
+  String get formLabelWhoCanSee => 'QUI PEUT VOIR ÇA ?';
+
+  @override
+  String get formSectionDangerZone => 'ZONE DANGEREUSE';
+
+  @override
+  String get formLabelDeleteItinerary => 'SUPPRIMER L\'ITINÉRAIRE';
+
+  @override
+  String get formDeleteItineraryHint => 'Tapez le titre pour confirmer';
+
+  @override
+  String get currencySearchHint => 'Rechercher une devise…';
+
+  @override
+  String currenciesLoadFailed(String error) {
+    return 'Échec du chargement des devises : $error';
+  }
 
   @override
   String get deleteItineraryFormTitle => 'Supprimer l\'itinéraire';
