@@ -86,6 +86,7 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
   // Snapshot of the description as last saved; null outside of edit sessions.
   String? _savedDescription;
   bool _descriptionDirty = false;
+  bool _descriptionSaving = false;
 
   static const _markerColors = {
     StopType.origin: kForest,
@@ -129,6 +130,7 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
 
   Future<void> _saveDescription() async {
     final newDesc = _descriptionController.text.trim();
+    setState(() => _descriptionSaving = true);
     try {
       await ref
           .read(itineraryDetailProvider(widget.itineraryId).notifier)
@@ -137,11 +139,15 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
       setState(() {
         _savedDescription = newDesc;
         _descriptionDirty = false;
+        _descriptionSaving = false;
       });
     } on Exception catch (e) {
       if (!mounted) return;
+      setState(() => _descriptionSaving = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(extractErrorMessage(e as dynamic, AppLocalizations.of(context)!))),
+        SnackBar(
+            content: Text(extractErrorMessage(
+                e as dynamic, AppLocalizations.of(context)!))),
       );
     }
   }
@@ -152,7 +158,8 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
         context: context,
         builder: (ctx) => AlertDialog(
           title: Text(AppLocalizations.of(context)!.unsavedDescriptionTitle),
-          content: Text(AppLocalizations.of(context)!.unsavedDescriptionMessage),
+          content:
+              Text(AppLocalizations.of(context)!.unsavedDescriptionMessage),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(ctx).pop(false),
@@ -210,7 +217,9 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
     } on Exception catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(extractErrorMessage(e as dynamic, AppLocalizations.of(context)!))),
+        SnackBar(
+            content: Text(extractErrorMessage(
+                e as dynamic, AppLocalizations.of(context)!))),
       );
     }
   }
@@ -231,7 +240,9 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
     } on Exception catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(extractErrorMessage(e as dynamic, AppLocalizations.of(context)!))),
+        SnackBar(
+            content: Text(extractErrorMessage(
+                e as dynamic, AppLocalizations.of(context)!))),
       );
     }
   }
@@ -253,7 +264,9 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
     } on Exception catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(extractErrorMessage(e as dynamic, AppLocalizations.of(context)!))),
+        SnackBar(
+            content: Text(extractErrorMessage(
+                e as dynamic, AppLocalizations.of(context)!))),
       );
     }
   }
@@ -276,7 +289,9 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
     } on Exception catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(extractErrorMessage(e as dynamic, AppLocalizations.of(context)!))),
+        SnackBar(
+            content: Text(extractErrorMessage(
+                e as dynamic, AppLocalizations.of(context)!))),
       );
     }
   }
@@ -299,7 +314,9 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
     } on Exception catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(extractErrorMessage(e as dynamic, AppLocalizations.of(context)!))),
+        SnackBar(
+            content: Text(extractErrorMessage(
+                e as dynamic, AppLocalizations.of(context)!))),
       );
     }
   }
@@ -320,7 +337,9 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
     } on Exception catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(extractErrorMessage(e as dynamic, AppLocalizations.of(context)!))),
+        SnackBar(
+            content: Text(extractErrorMessage(
+                e as dynamic, AppLocalizations.of(context)!))),
       );
     }
   }
@@ -341,7 +360,9 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
     } on Exception catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(extractErrorMessage(e as dynamic, AppLocalizations.of(context)!))),
+        SnackBar(
+            content: Text(extractErrorMessage(
+                e as dynamic, AppLocalizations.of(context)!))),
       );
     }
   }
@@ -363,7 +384,9 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
     } on Exception catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(extractErrorMessage(e as dynamic, AppLocalizations.of(context)!))),
+        SnackBar(
+            content: Text(extractErrorMessage(
+                e as dynamic, AppLocalizations.of(context)!))),
       );
     }
   }
@@ -402,7 +425,8 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        extractErrorMessage(error as dynamic, AppLocalizations.of(context)!),
+                        extractErrorMessage(
+                            error as dynamic, AppLocalizations.of(context)!),
                         textAlign: TextAlign.center,
                       ),
                       const SizedBox(height: 16),
@@ -745,38 +769,55 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                                   if (_descriptionDirty)
                                     Padding(
                                       padding: const EdgeInsets.only(top: 8),
-                                      child: Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.end,
-                                        children: [
-                                          
-                                          Padding(
-                                            padding: const EdgeInsets.only(left: 16),
-                                            child: TextButton.icon(
-                                              onPressed: _undoDescription,
-                                              icon: const Icon(Icons.undo_rounded,
-                                                  color: kRatingRed, size: 16),
-                                              label: const Text(
-                                                'Undo',
-                                                style:
-                                                    TextStyle(color: kRatingRed),
-                                              ),
-                                            ),
-                                          ),
-                                          const Spacer(),
-                                          Padding(
-                                            padding: const EdgeInsets.only(right: 16),
-                                            child: FilledButton(
-                                              onPressed: _saveDescription,
-                                              child:
-                                                  Padding(
-                                                    padding: const EdgeInsets.only(left: 16, right: 16),
-                                                    child: Text(AppLocalizations.of(context)!.saveDescriptionLabel),
+                                      child: _descriptionSaving
+                                          ? const Align(
+                                              alignment:
+                                                  AlignmentGeometry.center,
+                                              child: NTripiDotsLoader(dotSize: 10,))
+                                          : Row(
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment.end,
+                                              children: [
+                                                Padding(
+                                                  padding:
+                                                      const EdgeInsets.only(
+                                                          left: 16),
+                                                  child: TextButton.icon(
+                                                    onPressed: _undoDescription,
+                                                    icon: const Icon(
+                                                        Icons.undo_rounded,
+                                                        color: kRatingRed,
+                                                        size: 16),
+                                                    label: const Text(
+                                                      'Undo',
+                                                      style: TextStyle(
+                                                          color: kRatingRed),
+                                                    ),
                                                   ),
+                                                ),
+                                                const Spacer(),
+                                                Padding(
+                                                  padding:
+                                                      const EdgeInsets.only(
+                                                          right: 16),
+                                                  child: FilledButton(
+                                                    onPressed:
+                                                        _descriptionSaving
+                                                            ? null
+                                                            : _saveDescription,
+                                                    child: Padding(
+                                                      padding:
+                                                          const EdgeInsets.only(
+                                                              left: 16,
+                                                              right: 16),
+                                                      child: Text(AppLocalizations
+                                                              .of(context)!
+                                                          .saveDescriptionLabel),
+                                                    ),
+                                                  ),
+                                                ),
+                                              ],
                                             ),
-                                          ),
-                                        ],
-                                      ),
                                     ),
                                 ],
                               ),

@@ -809,7 +809,8 @@ class _RingPainter extends CustomPainter {
 // ── 8. NTripiDotsLoader — three dots bounce like mountain peaks ─────────────
 
 class NTripiDotsLoader extends StatefulWidget {
-  const NTripiDotsLoader({super.key});
+  final double dotSize;
+  const NTripiDotsLoader({super.key, this.dotSize = 14});
 
   @override
   State<NTripiDotsLoader> createState() => _NTripiDotsLoaderState();
@@ -837,20 +838,25 @@ class _NTripiDotsLoaderState extends State<NTripiDotsLoader>
   Widget build(BuildContext context) {
     return AnimatedBuilder(
       animation: _ctrl,
-      builder: (_, __) => SizedBox(
-        height: 60,
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            _PeakDot(color: kForest, t: _ctrl.value, delay: 0.0),
-            const SizedBox(width: 10),
-            _PeakDot(color: kCanopy, t: _ctrl.value, delay: 0.15 / 1.1),
-            const SizedBox(width: 10),
-            _PeakDot(color: kAmber, t: _ctrl.value, delay: 0.30 / 1.1),
-          ],
-        ),
-      ),
+      builder: (_, __) {
+        final s = widget.dotSize;
+        final spacing = s * 10 / 14;
+        final bounce = s * 26 / 14;
+        return SizedBox(
+          height: s + bounce + 4,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              _PeakDot(color: kForest, t: _ctrl.value, delay: 0.0, size: s, bounce: bounce),
+              SizedBox(width: spacing),
+              _PeakDot(color: kCanopy, t: _ctrl.value, delay: 0.15 / 1.1, size: s, bounce: bounce),
+              SizedBox(width: spacing),
+              _PeakDot(color: kAmber, t: _ctrl.value, delay: 0.30 / 1.1, size: s, bounce: bounce),
+            ],
+          ),
+        );
+      },
     );
   }
 }
@@ -859,7 +865,9 @@ class _PeakDot extends StatelessWidget {
   final Color color;
   final double t;
   final double delay;
-  const _PeakDot({required this.color, required this.t, required this.delay});
+  final double size;
+  final double bounce;
+  const _PeakDot({required this.color, required this.t, required this.delay, required this.size, required this.bounce});
 
   @override
   Widget build(BuildContext context) {
@@ -869,18 +877,18 @@ class _PeakDot extends StatelessWidget {
     // 0→40% rise, 40→60% hold at peak, 60→100% fall
     double yOffset;
     if (lT < 0.40) {
-      yOffset = -26.0 * Curves.easeInOut.transform(lT / 0.40);
+      yOffset = -bounce * Curves.easeInOut.transform(lT / 0.40);
     } else if (lT < 0.60) {
-      yOffset = -26.0;
+      yOffset = -bounce;
     } else {
-      yOffset = -26.0 * (1 - Curves.easeInOut.transform((lT - 0.60) / 0.40));
+      yOffset = -bounce * (1 - Curves.easeInOut.transform((lT - 0.60) / 0.40));
     }
 
     return Transform.translate(
       offset: Offset(0, yOffset),
       child: Container(
-        width: 14,
-        height: 14,
+        width: size,
+        height: size,
         decoration: BoxDecoration(color: color, shape: BoxShape.circle),
       ),
     );

@@ -183,7 +183,7 @@ class _StopDetailView extends ConsumerWidget {
 
           // ── Transit ────────────────────────────────────────────────────────
           if (hasTransit) ...[
-            SliverToBoxAdapter(
+            const SliverToBoxAdapter(
               child: _SectionLabel(
                   icon: Icons.alt_route_rounded, label: 'Transit'),
             ),
@@ -215,7 +215,7 @@ class _StopDetailView extends ConsumerWidget {
           
           // ── Notes ──────────────────────────────────────────────────────────
           if (hasNotes) ...[
-            SliverToBoxAdapter(
+            const SliverToBoxAdapter(
               child: _SectionLabel(icon: Icons.description_rounded, label: 'Notes'),
             ),
             SliverToBoxAdapter(
