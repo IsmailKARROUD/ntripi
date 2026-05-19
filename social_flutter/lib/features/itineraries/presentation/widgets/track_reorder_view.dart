@@ -18,6 +18,7 @@ import 'package:social_flutter/features/itineraries/data/itinerary_repository.da
 import 'package:social_flutter/features/itineraries/domain/track.dart';
 import 'package:social_flutter/features/itineraries/domain/transit_segment.dart';
 import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
+import 'package:social_flutter/l10n/app_localizations.dart';
 
 Future<void> showTrackReorderSheet({
   required BuildContext context,
@@ -142,13 +143,12 @@ class _TrackReorderSheetState extends ConsumerState<_TrackReorderSheet> {
           .map((seg) =>
               '• ${_stopName(seg.fromStopId)} → ${_stopName(seg.toStopId)}')
           .join('\n');
+      final l10n = AppLocalizations.of(context)!;
       final confirmed = await confirmDestructiveAction(
         context: context,
-        title: 'Save reorder?',
-        message:
-            '${orphaned.length} transit segment(s) will be deleted because '
-            'their stops will no longer be in adjacent tracks:\n\n$lines',
-        confirmLabel: 'Save',
+        title: l10n.reorderOrphanTitle,
+        message: l10n.reorderOrphanMessage(orphaned.length, lines),
+        confirmLabel: l10n.save,
       );
       if (!confirmed || !mounted) return;
     }
@@ -177,13 +177,13 @@ class _TrackReorderSheetState extends ConsumerState<_TrackReorderSheet> {
       if (!mounted) return;
       setState(() => _busy = false);
       messenger.showSnackBar(
-        SnackBar(content: Text(extractErrorMessage(e as dynamic))),
+        SnackBar(content: Text(extractErrorMessage(e as dynamic, AppLocalizations.of(context)!))),
       );
       return;
     }
     if (!mounted) return;
     Navigator.of(context).pop();
-    messenger.showSnackBar(const SnackBar(content: Text('Order saved')));
+    messenger.showSnackBar(SnackBar(content: Text(AppLocalizations.of(context)!.orderSavedMessage)));
   }
 
   @override
@@ -300,12 +300,12 @@ class _TrackReorderSheetState extends ConsumerState<_TrackReorderSheet> {
                     TextButton(
                       onPressed: _busy ? null : _onCancel,
                       style: TextButton.styleFrom(foregroundColor: kForest),
-                      child: const Text('Cancel'),
+                      child: Text(AppLocalizations.of(context)!.cancel),
                     ),
                     const SizedBox(width: 8),
                     FilledButton(
                       onPressed: (_busy || !_dirty) ? null : _onSave,
-                      child: const Text('Save'),
+                      child: Text(AppLocalizations.of(context)!.save),
                     ),
                   ],
                 ),

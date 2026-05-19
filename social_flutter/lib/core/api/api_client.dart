@@ -20,6 +20,7 @@ import 'package:flutter/widgets.dart';
 import 'package:go_router/go_router.dart';
 import 'package:social_flutter/core/api/api_endpoints.dart';
 import 'package:social_flutter/core/storage/secure_storage.dart';
+import 'package:social_flutter/l10n/app_localizations.dart';
 
 /// Singleton Dio instance used throughout the app.
 /// Lazily initialised via [createDioClient].
@@ -179,24 +180,26 @@ class AuthInterceptor extends Interceptor {
 /// Helper: extract a human-readable message from any exception.
 /// For DioException, reads the API's {"detail": "..."} response body.
 /// For ItineraryStaleException and other typed exceptions, uses toString().
-String extractErrorMessage(dynamic e) {
+String extractErrorMessage(dynamic e, [AppLocalizations? l10n]) {
   if (e is DioException) {
     switch (e.type) {
       case DioExceptionType.connectionError:
       case DioExceptionType.connectionTimeout:
       case DioExceptionType.receiveTimeout:
       case DioExceptionType.sendTimeout:
-        return 'No internet connection. Please check your network and try again.';
+        return l10n?.errorNoInternet ??
+            'No internet connection. Please check your network and try again.';
       default:
         break;
     }
     try {
       final data = e.response?.data;
       if (data is Map<String, dynamic>) {
-        return data['detail']?.toString() ?? 'An error occurred.';
+        // Server-supplied detail messages are already in the user's language.
+        return data['detail']?.toString() ?? (l10n?.errorGeneric ?? 'An error occurred.');
       }
     } catch (_) {}
-    return 'An error occurred. Please try again.';
+    return l10n?.errorGenericRetry ?? 'An error occurred. Please try again.';
   }
-  return e?.toString() ?? 'An error occurred.';
+  return e?.toString() ?? (l10n?.errorGeneric ?? 'An error occurred.');
 }

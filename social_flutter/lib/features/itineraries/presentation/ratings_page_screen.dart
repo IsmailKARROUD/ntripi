@@ -20,6 +20,7 @@ import 'package:social_flutter/features/itineraries/providers/itinerary_provider
 import 'package:social_flutter/shared/widgets/loaders.dart';
 import 'package:social_flutter/shared/widgets/user_avatar.dart';
 import 'package:social_flutter/core/utils/platform_utils.dart';
+import 'package:social_flutter/l10n/app_localizations.dart';
 
 // Keep the old name exported so the router import doesn't break.
 typedef RatingsPageScreen = RatingsHubScreen;
@@ -38,7 +39,7 @@ class RatingsHubScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: kSand,
       resizeToAvoidBottomInset: false,
-      appBar: AppBar(backgroundColor: kSand, title: const Text('Ratings')),
+      appBar: AppBar(backgroundColor: kSand, title: Text(AppLocalizations.of(context)!.ratingsTitle)),
       body: Center(
         child: ConstrainedBox(
           constraints: BoxConstraints(
@@ -62,14 +63,14 @@ class RatingsHubScreen extends ConsumerWidget {
                           const Icon(Icons.error_outline,
                               size: 48, color: Color(0xFFBA1A1A)),
                           const SizedBox(height: 12),
-                          const Text('Could not load ratings'),
+                          Text(AppLocalizations.of(context)!.couldNotLoadRatings),
                           const SizedBox(height: 8),
                           TextButton(
                             onPressed: () => ref
                                 .read(
                                     ratingsPageProvider(itineraryId).notifier)
                                 .refresh(),
-                            child: const Text('Retry'),
+                            child: Text(AppLocalizations.of(context)!.retry),
                           ),
                         ],
                       ),
@@ -114,16 +115,16 @@ class RatingsHubScreen extends ConsumerWidget {
 
                   // ── 4. Rater tiles ───────────────────────────────────────
                   if (page.ratingCount == 0)
-                    const SliverToBoxAdapter(
+                    SliverToBoxAdapter(
                       child: Padding(
-                        padding: EdgeInsets.symmetric(vertical: 40),
+                        padding: const EdgeInsets.symmetric(vertical: 40),
                         child: Center(
                           child: Column(
                             children: [
-                              Icon(Icons.star_border, size: 56, color: kText3),
-                              SizedBox(height: 12),
-                              Text('No ratings yet',
-                                  style: TextStyle(
+                              const Icon(Icons.star_border, size: 56, color: kText3),
+                              const SizedBox(height: 12),
+                              Text(AppLocalizations.of(context)!.noRatingsYet,
+                                  style: const TextStyle(
                                       fontSize: 16,
                                       fontWeight: FontWeight.w600,
                                       color: kBark)),
@@ -171,20 +172,20 @@ class _OverallHero extends StatelessWidget {
           borderRadius: BorderRadius.circular(18),
           border: Border.all(color: kBorder),
         ),
-        child: const Center(
+        child: Center(
           child: Column(
             children: [
-              Text('OVERALL',
-                  style: TextStyle(
+              Text(AppLocalizations.of(context)!.ratingsOverallLabel,
+                  style: const TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w700,
                       color: kText2,
                       letterSpacing: 0.6)),
-              SizedBox(height: 12),
-              Icon(Icons.star_border_rounded, size: 44, color: kText3),
-              SizedBox(height: 8),
-              Text('No ratings yet',
-                  style: TextStyle(fontSize: 13, color: kText2)),
+              const SizedBox(height: 12),
+              const Icon(Icons.star_border_rounded, size: 44, color: kText3),
+              const SizedBox(height: 8),
+              Text(AppLocalizations.of(context)!.noRatingsYet,
+                  style: const TextStyle(fontSize: 13, color: kText2)),
             ],
           ),
         ),
@@ -202,9 +203,9 @@ class _OverallHero extends StatelessWidget {
       ),
       child: Column(
         children: [
-          const Text(
-            'OVERALL',
-            style: TextStyle(
+          Text(
+            AppLocalizations.of(context)!.ratingsOverallLabel,
+            style: const TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w700,
               color: kText2,
@@ -529,7 +530,7 @@ class _YourRatingSection extends StatelessWidget {
                         current: null,
                       ),
                       icon: const Icon(Icons.star_rounded, size: 16),
-                      label: const Text('Rate this trip'),
+                      label: Text(AppLocalizations.of(context)!.rateThisTrip),
                     ),
                   ),
           ),
@@ -660,8 +661,8 @@ class _RatingListTileState extends State<_RatingListTile> {
             )
           : UserAvatar(avatarUrl: user.avatarUrl, radius: 20),
       title: user.isDeleted
-          ? const Text('Deleted User',
-              style: TextStyle(fontStyle: FontStyle.italic, color: kText3))
+          ? Text(AppLocalizations.of(context)!.deletedUser,
+              style: const TextStyle(fontStyle: FontStyle.italic, color: kText3))
           : Text(user.displayNameOrFallback,
               style: const TextStyle(fontWeight: FontWeight.w600)),
       subtitle: Text(rating.timeAgo),

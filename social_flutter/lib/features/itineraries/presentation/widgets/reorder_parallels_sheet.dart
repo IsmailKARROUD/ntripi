@@ -27,6 +27,7 @@ import 'package:social_flutter/core/ui/destructive_actions.dart';
 import 'package:social_flutter/features/itineraries/data/itinerary_repository.dart';
 import 'package:social_flutter/features/itineraries/domain/stop.dart';
 import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
+import 'package:social_flutter/l10n/app_localizations.dart';
 
 Future<void> showReorderParallelsSheet({
   required BuildContext context,
@@ -139,13 +140,13 @@ class _ReorderParallelsSheetState
       if (!mounted) return;
       setState(() => _busy = false);
       messenger.showSnackBar(
-        SnackBar(content: Text(extractErrorMessage(e as dynamic))),
+        SnackBar(content: Text(extractErrorMessage(e as dynamic, AppLocalizations.of(context)!))),
       );
       return;
     }
     if (!mounted) return;
     navigator.pop();
-    messenger.showSnackBar(const SnackBar(content: Text('Order saved')));
+    messenger.showSnackBar(SnackBar(content: Text(AppLocalizations.of(context)!.orderSavedMessage)));
   }
 
   @override
@@ -302,12 +303,12 @@ class _ReorderParallelsSheetState
                     TextButton(
                       onPressed: _busy ? null : _onCancel,
                       style: TextButton.styleFrom(foregroundColor: kForest),
-                      child: const Text('Cancel'),
+                      child: Text(AppLocalizations.of(context)!.cancel),
                     ),
                     const SizedBox(width: 8),
                     FilledButton(
                       onPressed: (_busy || !_dirty) ? null : _onSave,
-                      child: const Text('Save'),
+                      child: Text(AppLocalizations.of(context)!.save),
                     ),
                   ],
                 ),

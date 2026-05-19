@@ -141,7 +141,7 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
     } on Exception catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(extractErrorMessage(e as dynamic))),
+        SnackBar(content: Text(extractErrorMessage(e as dynamic, AppLocalizations.of(context)!))),
       );
     }
   }
@@ -151,16 +151,16 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
       final save = await showDialog<bool>(
         context: context,
         builder: (ctx) => AlertDialog(
-          title: const Text('Unsaved description'),
-          content: const Text('Save your description changes before leaving?'),
+          title: Text(AppLocalizations.of(context)!.unsavedDescriptionTitle),
+          content: Text(AppLocalizations.of(context)!.unsavedDescriptionMessage),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(ctx).pop(false),
-              child: const Text('Discard'),
+              child: Text(AppLocalizations.of(context)!.discardButton),
             ),
             FilledButton(
               onPressed: () => Navigator.of(ctx).pop(true),
-              child: const Text('Save'),
+              child: Text(AppLocalizations.of(context)!.save),
             ),
           ],
         ),
@@ -210,7 +210,7 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
     } on Exception catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(extractErrorMessage(e as dynamic))),
+        SnackBar(content: Text(extractErrorMessage(e as dynamic, AppLocalizations.of(context)!))),
       );
     }
   }
@@ -231,7 +231,7 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
     } on Exception catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(extractErrorMessage(e as dynamic))),
+        SnackBar(content: Text(extractErrorMessage(e as dynamic, AppLocalizations.of(context)!))),
       );
     }
   }
@@ -253,7 +253,7 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
     } on Exception catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(extractErrorMessage(e as dynamic))),
+        SnackBar(content: Text(extractErrorMessage(e as dynamic, AppLocalizations.of(context)!))),
       );
     }
   }
@@ -276,7 +276,7 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
     } on Exception catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(extractErrorMessage(e as dynamic))),
+        SnackBar(content: Text(extractErrorMessage(e as dynamic, AppLocalizations.of(context)!))),
       );
     }
   }
@@ -299,7 +299,7 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
     } on Exception catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(extractErrorMessage(e as dynamic))),
+        SnackBar(content: Text(extractErrorMessage(e as dynamic, AppLocalizations.of(context)!))),
       );
     }
   }
@@ -320,7 +320,7 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
     } on Exception catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(extractErrorMessage(e as dynamic))),
+        SnackBar(content: Text(extractErrorMessage(e as dynamic, AppLocalizations.of(context)!))),
       );
     }
   }
@@ -341,7 +341,7 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
     } on Exception catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(extractErrorMessage(e as dynamic))),
+        SnackBar(content: Text(extractErrorMessage(e as dynamic, AppLocalizations.of(context)!))),
       );
     }
   }
@@ -363,7 +363,7 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
     } on Exception catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(extractErrorMessage(e as dynamic))),
+        SnackBar(content: Text(extractErrorMessage(e as dynamic, AppLocalizations.of(context)!))),
       );
     }
   }
@@ -402,7 +402,7 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        extractErrorMessage(error as dynamic),
+                        extractErrorMessage(error as dynamic, AppLocalizations.of(context)!),
                         textAlign: TextAlign.center,
                       ),
                       const SizedBox(height: 16),
@@ -769,9 +769,9 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                                             child: FilledButton(
                                               onPressed: _saveDescription,
                                               child:
-                                                  const Padding(
-                                                    padding:  EdgeInsets.only(left: 16,right: 16),
-                                                    child:  Text('Save description'),
+                                                  Padding(
+                                                    padding: const EdgeInsets.only(left: 16, right: 16),
+                                                    child: Text(AppLocalizations.of(context)!.saveDescriptionLabel),
                                                   ),
                                             ),
                                           ),

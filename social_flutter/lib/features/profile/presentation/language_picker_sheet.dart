@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:social_flutter/core/ui/app_theme.dart';
+import 'package:social_flutter/l10n/app_localizations.dart';
 import 'package:social_flutter/shared/data/languages.dart';
 
 /// Shows a bottom sheet language picker and returns the selected language code,
@@ -93,7 +94,7 @@ class _LanguagePickerSheetState extends State<_LanguagePickerSheet> {
               autofocus: true,
               onChanged: (v) => setState(() => _query = v),
               decoration: InputDecoration(
-                hintText: 'Search languages…',
+                hintText: AppLocalizations.of(context)!.languageSearchHint,
                 hintStyle: const TextStyle(color: kText3, fontSize: 15),
                 prefixIcon: const Icon(Icons.search_rounded, color: kText2, size: 20),
                 suffixIcon: _query.isNotEmpty

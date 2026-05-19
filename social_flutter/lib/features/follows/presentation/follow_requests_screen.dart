@@ -48,7 +48,7 @@ class FollowRequestsScreen extends ConsumerWidget {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Text(
-                            extractErrorMessage(error),
+                            extractErrorMessage(error, AppLocalizations.of(context)!),
                             textAlign: TextAlign.center,
                             style: const TextStyle(color: kText2),
                           ),
@@ -136,7 +136,7 @@ class _FollowRequestTileState extends ConsumerState<_FollowRequestTile> {
     } on DioException catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(extractErrorMessage(e))),
+          SnackBar(content: Text(extractErrorMessage(e, AppLocalizations.of(context)!))),
         );
       }
     } finally {
@@ -153,7 +153,7 @@ class _FollowRequestTileState extends ConsumerState<_FollowRequestTile> {
     } on DioException catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(extractErrorMessage(e))),
+          SnackBar(content: Text(extractErrorMessage(e, AppLocalizations.of(context)!))),
         );
       }
     } finally {

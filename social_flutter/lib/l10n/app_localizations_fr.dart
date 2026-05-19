@@ -638,6 +638,190 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
+  String get errorNoInternet =>
+      'Pas de connexion internet. Vérifiez votre réseau et réessayez.';
+
+  @override
+  String get errorGenericRetry =>
+      'Une erreur est survenue. Veuillez réessayer.';
+
+  @override
+  String get errorGeneric => 'Une erreur est survenue.';
+
+  @override
+  String get fieldHelpTooltip => 'Qu\'est-ce que c\'est ?';
+
+  @override
+  String typeToConfirmInstruction(String text) {
+    return 'Tapez « $text » pour confirmer :';
+  }
+
+  @override
+  String get daysLabel => 'j';
+
+  @override
+  String get noneOption => 'Aucun';
+
+  @override
+  String get discardButton => 'Ignorer';
+
+  @override
+  String get orderSavedMessage => 'Ordre enregistré';
+
+  @override
+  String get segmentSelectBothStops =>
+      'Sélectionnez un arrêt de départ et un arrêt d\'arrivée.';
+
+  @override
+  String get segmentStopsMustDiffer =>
+      'Les arrêts de départ et d\'arrivée doivent être différents.';
+
+  @override
+  String get segmentAddLegFirst =>
+      'Ajoutez au moins un tronçon avant d\'enregistrer.';
+
+  @override
+  String get segmentAlreadyExistsTitle => 'Segment déjà existant';
+
+  @override
+  String get segmentAlreadyExistsMessage =>
+      'Un segment relie déjà ces deux arrêts. Que souhaitez-vous faire ?';
+
+  @override
+  String get segmentJoin => 'Rejoindre';
+
+  @override
+  String get segmentReplace => 'Remplacer';
+
+  @override
+  String get segmentFromStopLabel => 'Arrêt de départ';
+
+  @override
+  String get segmentToStopLabel => 'Arrêt d\'arrivée';
+
+  @override
+  String get visibilityScreenTitle => 'Qui peut voir ça ?';
+
+  @override
+  String get visibilityAddPerson => 'Ajouter une personne';
+
+  @override
+  String get visibilitySearchByUsername => 'Rechercher par identifiant…';
+
+  @override
+  String get couldNotLoadRatings => 'Impossible de charger les évaluations';
+
+  @override
+  String get stopNotFound => 'Étape introuvable.';
+
+  @override
+  String get mapPickLocationTitle => 'Choisir un emplacement';
+
+  @override
+  String get mapConfirmLocation => 'Confirmer l\'emplacement';
+
+  @override
+  String get stopCostHint => 'ex. 20';
+
+  @override
+  String get unsavedDescriptionTitle => 'Description non enregistrée';
+
+  @override
+  String get unsavedDescriptionMessage =>
+      'Enregistrer vos modifications avant de quitter ?';
+
+  @override
+  String get saveDescriptionLabel => 'Enregistrer la description';
+
+  @override
+  String get ratingsTitle => 'Évaluations';
+
+  @override
+  String get noRatingsYet => 'Aucune évaluation pour l\'instant';
+
+  @override
+  String get ratingsOverallLabel => 'GÉNÉRAL';
+
+  @override
+  String get rateThisTrip => 'Évaluer ce voyage';
+
+  @override
+  String get deletedUser => 'Utilisateur supprimé';
+
+  @override
+  String get annotationContentHint => 'Que doivent savoir les voyageurs ?';
+
+  @override
+  String get countryPickerTitle => 'Sélectionner un pays';
+
+  @override
+  String get countrySearchHint => 'Rechercher un pays…';
+
+  @override
+  String get countryNoneClear => 'Aucun / Effacer';
+
+  @override
+  String get languageSearchHint => 'Rechercher une langue…';
+
+  @override
+  String get coverChangeButton => 'Modifier';
+
+  @override
+  String get coverEditCropButton => 'Ajuster le recadrage';
+
+  @override
+  String get coverAdjustTitle => 'Ajuster la photo de couverture';
+
+  @override
+  String get mdBoldTooltip => 'Gras';
+
+  @override
+  String get mdItalicTooltip => 'Italique';
+
+  @override
+  String get mdHeading1Tooltip => 'Titre 1';
+
+  @override
+  String get mdHeading2Tooltip => 'Titre 2';
+
+  @override
+  String get mdBulletListTooltip => 'Liste à puces';
+
+  @override
+  String get mdNumberedListTooltip => 'Liste numérotée';
+
+  @override
+  String get mdEditTab => 'Modifier';
+
+  @override
+  String get mdPreviewTab => 'Aperçu';
+
+  @override
+  String get legCostHint => 'ex. 12,50';
+
+  @override
+  String get addLegButton => 'Ajouter un tronçon';
+
+  @override
+  String get totalLabel => 'Total';
+
+  @override
+  String get reorderOrphanTitle => 'Enregistrer la réorganisation ?';
+
+  @override
+  String reorderOrphanMessage(int count, String segments) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count tronçons de transport seront supprimés car leurs arrêts ne seront plus dans des pistes adjacentes :\n\n$segments',
+      one:
+          '$count tronçon de transport sera supprimé car ses arrêts ne seront plus dans des pistes adjacentes :\n\n$segments',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get loadingLabel => 'Chargement…';
 
   @override

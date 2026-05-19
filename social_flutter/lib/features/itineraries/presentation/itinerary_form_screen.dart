@@ -241,7 +241,7 @@ class _ItineraryFormScreenState extends ConsumerState<ItineraryFormScreen> {
     } on Exception catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(extractErrorMessage(e as dynamic))),
+        SnackBar(content: Text(extractErrorMessage(e as dynamic, AppLocalizations.of(context)!))),
       );
     } finally {
       if (mounted) setState(() => _saving = false);
@@ -272,7 +272,7 @@ class _ItineraryFormScreenState extends ConsumerState<ItineraryFormScreen> {
       router.go('/itineraries');
     } on Exception catch (e) {
       messenger.showSnackBar(
-        SnackBar(content: Text(extractErrorMessage(e as dynamic))),
+        SnackBar(content: Text(extractErrorMessage(e as dynamic, AppLocalizations.of(context)!))),
       );
     }
   }

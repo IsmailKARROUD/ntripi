@@ -18,6 +18,7 @@ import 'package:social_flutter/features/itineraries/domain/transit_segment.dart'
 import 'package:social_flutter/features/itineraries/domain/transport_leg.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/leg_form_dialog.dart';
 import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
+import 'package:social_flutter/l10n/app_localizations.dart';
 import 'package:social_flutter/shared/widgets/loaders.dart';
 
 class SegmentCard extends ConsumerStatefulWidget {
@@ -80,7 +81,7 @@ class _SegmentCardState extends ConsumerState<SegmentCard> {
     } on Exception catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(extractErrorMessage(e as dynamic))),
+        SnackBar(content: Text(extractErrorMessage(e as dynamic, AppLocalizations.of(context)!))),
       );
     } finally {
       if (mounted) setState(() => _saving = false);
@@ -265,14 +266,14 @@ class _SegmentCardState extends ConsumerState<SegmentCard> {
           const Divider(height: 1, color: kTransitBorder),
           InkWell(
             onTap: _saving ? null : _addLeg,
-            child: const Padding(
-              padding: EdgeInsets.fromLTRB(12, 8, 12, 8),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
               child: Row(
                 children: [
-                  Icon(Icons.add_rounded, size: 14, color: kTransitIcon),
-                  SizedBox(width: 6),
-                  Text('Add leg',
-                      style: TextStyle(
+                  const Icon(Icons.add_rounded, size: 14, color: kTransitIcon),
+                  const SizedBox(width: 6),
+                  Text(AppLocalizations.of(context)!.addLegButton,
+                      style: const TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
                           color: kTransitText)),
@@ -291,8 +292,8 @@ class _SegmentCardState extends ConsumerState<SegmentCard> {
                   const Icon(Icons.summarize_rounded,
                       size: 12, color: kTransitIcon),
                   const SizedBox(width: 5),
-                  const Text('Total',
-                      style: TextStyle(
+                  Text(AppLocalizations.of(context)!.totalLabel,
+                      style: const TextStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.w700,
                           color: kTransitIcon)),
@@ -429,9 +430,9 @@ class _TransitRow extends StatelessWidget {
                   const Icon(Icons.summarize_rounded,
                       size: 13, color: _kTransitIcon),
                   const SizedBox(width: 6),
-                  const Text(
-                    'Total',
-                    style: TextStyle(
+                  Text(
+                    AppLocalizations.of(context)!.totalLabel,
+                    style: const TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w700,
                       color: _kTransitIcon,

@@ -61,7 +61,7 @@ class _FollowButtonState extends ConsumerState<FollowButton> {
     } on DioException catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(extractErrorMessage(e))),
+          SnackBar(content: Text(extractErrorMessage(e, AppLocalizations.of(context)!))),
         );
       }
     } finally {
@@ -78,7 +78,7 @@ class _FollowButtonState extends ConsumerState<FollowButton> {
     } on DioException catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(extractErrorMessage(e))),
+          SnackBar(content: Text(extractErrorMessage(e, AppLocalizations.of(context)!))),
         );
       }
       return;
@@ -122,7 +122,7 @@ class _FollowButtonState extends ConsumerState<FollowButton> {
     } on DioException catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(extractErrorMessage(e))),
+          SnackBar(content: Text(extractErrorMessage(e, AppLocalizations.of(context)!))),
         );
       }
     } finally {

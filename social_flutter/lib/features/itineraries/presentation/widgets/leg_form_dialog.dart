@@ -180,7 +180,7 @@ class _LegFormDialogState extends State<LegFormDialog> {
                         onSelectedItemChanged: (i) => tempDays = i,
                         children: List.generate(
                           366,
-                          (i) => Center(child: Text('$i d')),
+                          (i) => Center(child: Text('$i ${AppLocalizations.of(context)!.daysLabel}')),
                         ),
                       ),
                     ),
@@ -191,7 +191,7 @@ class _LegFormDialogState extends State<LegFormDialog> {
                         onSelectedItemChanged: (i) => tempHours = i,
                         children: List.generate(
                           24,
-                          (i) => Center(child: Text('$i h')),
+                          (i) => Center(child: Text('$i ${AppLocalizations.of(context)!.hoursLabel}')),
                         ),
                       ),
                     ),
@@ -484,13 +484,13 @@ class _LegFormDialogState extends State<LegFormDialog> {
                       ],
                       keyboardType: const TextInputType.numberWithOptions(
                           decimal: true),
-                      decoration: const InputDecoration(
+                      decoration: InputDecoration(
                         border: InputBorder.none,
                         enabledBorder: InputBorder.none,
                         focusedBorder: InputBorder.none,
                         isDense: true,
                         contentPadding: EdgeInsets.zero,
-                        hintText: 'e.g. 12.50',
+                        hintText: AppLocalizations.of(context)!.legCostHint,
                       ),
                       style: const TextStyle(
                           fontSize: 15,

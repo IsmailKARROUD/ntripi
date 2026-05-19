@@ -14,6 +14,7 @@ import 'package:social_flutter/features/itineraries/domain/stop.dart';
 import 'package:social_flutter/features/itineraries/domain/transit_segment.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/markdown_notes_editor.dart';
 import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
+import 'package:social_flutter/l10n/app_localizations.dart';
 import 'package:social_flutter/shared/widgets/loaders.dart';
 
 class StopDetailScreen extends ConsumerWidget {
@@ -38,7 +39,7 @@ class StopDetailScreen extends ConsumerWidget {
       error: (e, _) => Scaffold(
         appBar: AppBar(),
         body: Center(
-            child: Text(extractErrorMessage(e as dynamic))),
+            child: Text(extractErrorMessage(e as dynamic, AppLocalizations.of(context)!))),
       ),
       data: (itinerary) {
         // Locate this stop across all tracks.
@@ -57,7 +58,7 @@ class StopDetailScreen extends ConsumerWidget {
         if (stop == null) {
           return Scaffold(
             appBar: AppBar(),
-            body: const Center(child: Text('Stop not found.')),
+            body: Center(child: Text(AppLocalizations.of(context)!.stopNotFound)),
           );
         }
 

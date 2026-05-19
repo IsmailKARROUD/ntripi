@@ -12,6 +12,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:social_flutter/core/services/geocoding_service.dart';
+import 'package:social_flutter/l10n/app_localizations.dart';
 import 'package:social_flutter/shared/widgets/loaders.dart';
 
 class MapPickerScreen extends ConsumerStatefulWidget {
@@ -74,14 +75,14 @@ class _MapPickerScreenState extends ConsumerState<MapPickerScreen> {
     return Scaffold(
       resizeToAvoidBottomInset: false,
       appBar: AppBar(
-        title: const Text('Pick Location'),
+        title: Text(AppLocalizations.of(context)!.mapPickLocationTitle),
         actions: [
           if (_selectedLocation != null)
             TextButton(
               onPressed: _isGeocoding ? null : _confirmLocation,
               child: _isGeocoding
                   ? const NTripiRingLoader(size: 20)
-                  : const Text('Confirm'),
+                  : Text(AppLocalizations.of(context)!.confirmButton),
             ),
         ],
       ),
@@ -157,7 +158,7 @@ class _MapPickerScreenState extends ConsumerState<MapPickerScreen> {
                 icon: _isGeocoding
                     ? const NTripiRingLoader(size: 18)
                     : const Icon(Icons.check),
-                label: const Text('Confirm Location'),
+                label: Text(AppLocalizations.of(context)!.mapConfirmLocation),
               ),
             ),
         ],

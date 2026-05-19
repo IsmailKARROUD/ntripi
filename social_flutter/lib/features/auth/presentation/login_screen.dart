@@ -55,7 +55,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       ref.invalidate(myItinerariesProvider);
       if (mounted) context.go('/profile/me');
     } on DioException catch (e) {
-      setState(() => _errorMessage = extractErrorMessage(e));
+      setState(() => _errorMessage = extractErrorMessage(e, AppLocalizations.of(context)!));
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }

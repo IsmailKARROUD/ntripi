@@ -29,6 +29,7 @@ import 'package:social_flutter/shared/widgets/follow_button.dart';
 import 'package:social_flutter/shared/widgets/loaders.dart';
 import 'package:social_flutter/shared/widgets/user_avatar.dart';
 import 'package:social_flutter/core/utils/platform_utils.dart';
+import 'package:social_flutter/l10n/app_localizations.dart';
 
 
 class UserProfileScreen extends ConsumerWidget {
@@ -64,13 +65,13 @@ class UserProfileScreen extends ConsumerWidget {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(extractErrorMessage(error),
+                    Text(extractErrorMessage(error, AppLocalizations.of(context)!),
                         textAlign: TextAlign.center),
                     const SizedBox(height: 16),
                     FilledButton(
                       onPressed: () =>
                           ref.invalidate(userProfileProvider(userId)),
-                      child: const Text('Retry'),
+                      child: Text(AppLocalizations.of(context)!.retry),
                     ),
                   ],
                 ),
@@ -207,12 +208,12 @@ class _ProfileBody extends ConsumerWidget {
                   child: Center(child: NTripiSkeleton()),
                 ),
               ),
-              error: (_, __) => const SliverToBoxAdapter(
+              error: (_, __) => SliverToBoxAdapter(
                 child: Padding(
-                  padding: EdgeInsets.all(24),
+                  padding: const EdgeInsets.all(24),
                   child: Center(
                       child:
-                          Text('Could not load itineraries.')),
+                          Text(AppLocalizations.of(context)!.couldNotLoadItineraries)),
                 ),
               ),
               data: (itineraries) {
@@ -435,13 +436,13 @@ class _OtherMapHero extends StatelessWidget {
                   children: [
                     _GlassIconButton(
                       icon: Icons.arrow_back,
-                      tooltip: 'Back',
+                      tooltip: AppLocalizations.of(context)!.back,
                       onTap: () =>
                           Navigator.of(context).maybePop(),
                     ),
-                    const _GlassIconButton(
+                    _GlassIconButton(
                       icon: Icons.share_outlined,
-                      tooltip: 'Share profile',
+                      tooltip: AppLocalizations.of(context)!.shareProfileTooltip,
                     ),
                   ],
                 ),

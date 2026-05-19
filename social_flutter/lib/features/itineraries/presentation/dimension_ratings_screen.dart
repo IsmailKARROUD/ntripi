@@ -16,6 +16,7 @@ import 'package:social_flutter/features/itineraries/domain/ratings_page.dart';
 import 'package:social_flutter/features/itineraries/presentation/ratings_page_screen.dart';
 import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
 import 'package:social_flutter/core/utils/platform_utils.dart';
+import 'package:social_flutter/l10n/app_localizations.dart';
 
 class DimensionRatingsScreen extends ConsumerWidget {
   final String itineraryId;
@@ -89,13 +90,13 @@ class DimensionRatingsScreen extends ConsumerWidget {
                       const Icon(Icons.error_outline,
                           size: 48, color:  Color(0xFFBA1A1A)),
                       const SizedBox(height: 12),
-                      const Text('Could not load ratings'),
+                      Text(AppLocalizations.of(context)!.couldNotLoadRatings),
                       const SizedBox(height: 8),
                       TextButton(
                         onPressed: () => ref
                             .read(ratingsPageProvider(itineraryId).notifier)
                             .refresh(),
-                        child: const Text('Retry'),
+                        child: Text(AppLocalizations.of(context)!.retry),
                       ),
                     ],
                   ),

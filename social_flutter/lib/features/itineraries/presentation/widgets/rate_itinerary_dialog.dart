@@ -106,7 +106,7 @@ class _RateItinerarySheetState extends State<_RateItinerarySheet> {
       if (!mounted) return;
       setState(() => _saving = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(extractErrorMessage(e))),
+        SnackBar(content: Text(extractErrorMessage(e, AppLocalizations.of(context)!))),
       );
     }
   }
@@ -131,7 +131,7 @@ class _RateItinerarySheetState extends State<_RateItinerarySheet> {
       if (!mounted) return;
       setState(() => _saving = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(extractErrorMessage(e))),
+        SnackBar(content: Text(extractErrorMessage(e, AppLocalizations.of(context)!))),
       );
     }
   }

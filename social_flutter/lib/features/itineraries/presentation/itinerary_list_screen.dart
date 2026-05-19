@@ -42,7 +42,7 @@ class ItineraryListScreen extends ConsumerWidget {
     } on Exception catch (e) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(extractErrorMessage(e as dynamic))),
+        SnackBar(content: Text(extractErrorMessage(e as dynamic, AppLocalizations.of(context)!))),
       );
     }
   }
@@ -69,7 +69,7 @@ class ItineraryListScreen extends ConsumerWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      extractErrorMessage(error as dynamic),
+                      extractErrorMessage(error as dynamic, AppLocalizations.of(context)!),
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 16),

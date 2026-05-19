@@ -1178,6 +1178,336 @@ abstract class AppLocalizations {
   /// **'Could not undo: {error}'**
   String couldNotUndo(String error);
 
+  /// No description provided for @errorNoInternet.
+  ///
+  /// In en, this message translates to:
+  /// **'No internet connection. Please check your network and try again.'**
+  String get errorNoInternet;
+
+  /// No description provided for @errorGenericRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'An error occurred. Please try again.'**
+  String get errorGenericRetry;
+
+  /// No description provided for @errorGeneric.
+  ///
+  /// In en, this message translates to:
+  /// **'An error occurred.'**
+  String get errorGeneric;
+
+  /// No description provided for @fieldHelpTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'What is this?'**
+  String get fieldHelpTooltip;
+
+  /// No description provided for @typeToConfirmInstruction.
+  ///
+  /// In en, this message translates to:
+  /// **'Type \"{text}\" to confirm:'**
+  String typeToConfirmInstruction(String text);
+
+  /// No description provided for @daysLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'d'**
+  String get daysLabel;
+
+  /// No description provided for @noneOption.
+  ///
+  /// In en, this message translates to:
+  /// **'None'**
+  String get noneOption;
+
+  /// No description provided for @discardButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Discard'**
+  String get discardButton;
+
+  /// No description provided for @orderSavedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Order saved'**
+  String get orderSavedMessage;
+
+  /// No description provided for @segmentSelectBothStops.
+  ///
+  /// In en, this message translates to:
+  /// **'Select both a From and a To stop.'**
+  String get segmentSelectBothStops;
+
+  /// No description provided for @segmentStopsMustDiffer.
+  ///
+  /// In en, this message translates to:
+  /// **'From and To stops must differ.'**
+  String get segmentStopsMustDiffer;
+
+  /// No description provided for @segmentAddLegFirst.
+  ///
+  /// In en, this message translates to:
+  /// **'Add at least one leg before saving.'**
+  String get segmentAddLegFirst;
+
+  /// No description provided for @segmentAlreadyExistsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Segment already exists'**
+  String get segmentAlreadyExistsTitle;
+
+  /// No description provided for @segmentAlreadyExistsMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'A segment already connects these two stops. What do you want to do?'**
+  String get segmentAlreadyExistsMessage;
+
+  /// No description provided for @segmentJoin.
+  ///
+  /// In en, this message translates to:
+  /// **'Join'**
+  String get segmentJoin;
+
+  /// No description provided for @segmentReplace.
+  ///
+  /// In en, this message translates to:
+  /// **'Replace'**
+  String get segmentReplace;
+
+  /// No description provided for @segmentFromStopLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'From Stop'**
+  String get segmentFromStopLabel;
+
+  /// No description provided for @segmentToStopLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'To Stop'**
+  String get segmentToStopLabel;
+
+  /// No description provided for @visibilityScreenTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Who can see this?'**
+  String get visibilityScreenTitle;
+
+  /// No description provided for @visibilityAddPerson.
+  ///
+  /// In en, this message translates to:
+  /// **'Add person'**
+  String get visibilityAddPerson;
+
+  /// No description provided for @visibilitySearchByUsername.
+  ///
+  /// In en, this message translates to:
+  /// **'Search by username…'**
+  String get visibilitySearchByUsername;
+
+  /// No description provided for @couldNotLoadRatings.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load ratings'**
+  String get couldNotLoadRatings;
+
+  /// No description provided for @stopNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop not found.'**
+  String get stopNotFound;
+
+  /// No description provided for @mapPickLocationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick Location'**
+  String get mapPickLocationTitle;
+
+  /// No description provided for @mapConfirmLocation.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm Location'**
+  String get mapConfirmLocation;
+
+  /// No description provided for @stopCostHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. 20'**
+  String get stopCostHint;
+
+  /// No description provided for @unsavedDescriptionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Unsaved description'**
+  String get unsavedDescriptionTitle;
+
+  /// No description provided for @unsavedDescriptionMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Save your description changes before leaving?'**
+  String get unsavedDescriptionMessage;
+
+  /// No description provided for @saveDescriptionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Save description'**
+  String get saveDescriptionLabel;
+
+  /// No description provided for @ratingsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Ratings'**
+  String get ratingsTitle;
+
+  /// No description provided for @noRatingsYet.
+  ///
+  /// In en, this message translates to:
+  /// **'No ratings yet'**
+  String get noRatingsYet;
+
+  /// No description provided for @ratingsOverallLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'OVERALL'**
+  String get ratingsOverallLabel;
+
+  /// No description provided for @rateThisTrip.
+  ///
+  /// In en, this message translates to:
+  /// **'Rate this trip'**
+  String get rateThisTrip;
+
+  /// No description provided for @deletedUser.
+  ///
+  /// In en, this message translates to:
+  /// **'Deleted User'**
+  String get deletedUser;
+
+  /// No description provided for @annotationContentHint.
+  ///
+  /// In en, this message translates to:
+  /// **'What should travelers know?'**
+  String get annotationContentHint;
+
+  /// No description provided for @countryPickerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Select country'**
+  String get countryPickerTitle;
+
+  /// No description provided for @countrySearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search countries…'**
+  String get countrySearchHint;
+
+  /// No description provided for @countryNoneClear.
+  ///
+  /// In en, this message translates to:
+  /// **'None / Clear'**
+  String get countryNoneClear;
+
+  /// No description provided for @languageSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search languages…'**
+  String get languageSearchHint;
+
+  /// No description provided for @coverChangeButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Change'**
+  String get coverChangeButton;
+
+  /// No description provided for @coverEditCropButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit crop'**
+  String get coverEditCropButton;
+
+  /// No description provided for @coverAdjustTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Adjust cover photo'**
+  String get coverAdjustTitle;
+
+  /// No description provided for @mdBoldTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Bold'**
+  String get mdBoldTooltip;
+
+  /// No description provided for @mdItalicTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Italic'**
+  String get mdItalicTooltip;
+
+  /// No description provided for @mdHeading1Tooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Heading 1'**
+  String get mdHeading1Tooltip;
+
+  /// No description provided for @mdHeading2Tooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Heading 2'**
+  String get mdHeading2Tooltip;
+
+  /// No description provided for @mdBulletListTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Bullet list'**
+  String get mdBulletListTooltip;
+
+  /// No description provided for @mdNumberedListTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Numbered list'**
+  String get mdNumberedListTooltip;
+
+  /// No description provided for @mdEditTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit'**
+  String get mdEditTab;
+
+  /// No description provided for @mdPreviewTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Preview'**
+  String get mdPreviewTab;
+
+  /// No description provided for @legCostHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. 12.50'**
+  String get legCostHint;
+
+  /// No description provided for @addLegButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Add leg'**
+  String get addLegButton;
+
+  /// No description provided for @totalLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Total'**
+  String get totalLabel;
+
+  /// No description provided for @reorderOrphanTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Save reorder?'**
+  String get reorderOrphanTitle;
+
+  /// No description provided for @reorderOrphanMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{{count} transit segment will be deleted because its stops will no longer be in adjacent tracks:\n\n{segments}} other{{count} transit segments will be deleted because their stops will no longer be in adjacent tracks:\n\n{segments}}}'**
+  String reorderOrphanMessage(int count, String segments);
+
   /// No description provided for @loadingLabel.
   ///
   /// In en, this message translates to:

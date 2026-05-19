@@ -250,7 +250,7 @@ class _FollowersTab extends ConsumerWidget {
       loading: () =>
           const Center(child: NTripiSkeleton()),
       error: (error, _) => _PrivateListPlaceholder(
-          message: extractErrorMessage(error)),
+          message: extractErrorMessage(error, AppLocalizations.of(context)!)),
       data: (followers) => ListView(
         padding:
             const EdgeInsets.only(bottom: 80),
@@ -319,7 +319,7 @@ class _FollowingTab extends StatelessWidget {
       loading: () =>
           const Center(child: NTripiSkeleton()),
       error: (error, _) => _PrivateListPlaceholder(
-          message: extractErrorMessage(error)),
+          message: extractErrorMessage(error, AppLocalizations.of(context)!)),
       data: (following) {
         if (following.isEmpty) {
           return _EmptyListPlaceholder(
@@ -459,7 +459,7 @@ class _PendingRequestRowState
     } on DioException catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(extractErrorMessage(e))),
+          SnackBar(content: Text(extractErrorMessage(e, AppLocalizations.of(context)!))),
         );
       }
     } finally {
@@ -476,7 +476,7 @@ class _PendingRequestRowState
     } on DioException catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(extractErrorMessage(e))),
+          SnackBar(content: Text(extractErrorMessage(e, AppLocalizations.of(context)!))),
         );
       }
     } finally {

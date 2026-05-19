@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:social_flutter/core/providers/locale_provider.dart';
 import 'package:social_flutter/core/ui/app_theme.dart';
+import 'package:social_flutter/l10n/app_localizations.dart';
 
 const _kSupportedLocales = [
   (code: 'en', flag: '🇬🇧', label: 'English'),
@@ -13,6 +14,8 @@ class LocalePickerButton extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
+    final labels = {'en': l10n.languageEnglish, 'fr': l10n.languageFrench};
     final currentCode = ref.watch(localeProvider).languageCode;
     final current = _kSupportedLocales.firstWhere(
       (l) => l.code == currentCode,
@@ -33,7 +36,7 @@ class LocalePickerButton extends ConsumerWidget {
                   Text(l.flag, style: const TextStyle(fontSize: 16)),
                   const SizedBox(width: 10),
                   Text(
-                    l.label,
+                    labels[l.code] ?? l.label,
                     style: TextStyle(
                       fontSize: 14,
                       color: kBark,

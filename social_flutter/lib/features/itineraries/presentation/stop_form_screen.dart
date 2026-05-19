@@ -120,13 +120,14 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
   }
 
   String get _durationLabel {
+    final l10n = AppLocalizations.of(context)!;
     final parts = <String>[
-      if (_durationDays > 0) '${_durationDays}d',
-      if (_durationHours > 0) '${_durationHours}h',
+      if (_durationDays > 0) '${_durationDays}${l10n.daysLabel}',
+      if (_durationHours > 0) '${_durationHours}${l10n.hoursLabel}',
       if (_durationMinutes > 0)
-        '${_durationMinutes.toString().padLeft(2, '0')}min',
+        '${_durationMinutes.toString().padLeft(2, '0')}${l10n.minutesLabel}',
     ];
-    return parts.isEmpty ? AppLocalizations.of(context)!.notSet : parts.join(' ');
+    return parts.isEmpty ? l10n.notSet : parts.join(' ');
   }
 
   Future<void> _showDurationPicker() async {
@@ -183,7 +184,7 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                         onSelectedItemChanged: (i) => tempDays = i,
                         children: List.generate(
                           366,
-                          (i) => Center(child: Text('$i d')),
+                          (i) => Center(child: Text('$i ${AppLocalizations.of(context)!.daysLabel}')),
                         ),
                       ),
                     ),
@@ -194,7 +195,7 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                         onSelectedItemChanged: (i) => tempHours = i,
                         children: List.generate(
                           24,
-                          (i) => Center(child: Text('$i h')),
+                          (i) => Center(child: Text('$i ${AppLocalizations.of(context)!.hoursLabel}')),
                         ),
                       ),
                     ),
@@ -206,7 +207,7 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                         children: List.generate(
                           60,
                           (i) => Center(
-                            child: Text('${i.toString().padLeft(2, '0')} min'),
+                            child: Text('${i.toString().padLeft(2, '0')} ${AppLocalizations.of(context)!.minutesLabel}'),
                           ),
                         ),
                       ),
@@ -424,7 +425,7 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
     } on Exception catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(extractErrorMessage(e))),
+        SnackBar(content: Text(extractErrorMessage(e, AppLocalizations.of(context)!))),
       );
     } finally {
       if (mounted) setState(() => _saving = false);
@@ -511,7 +512,7 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
       if (!mounted) return;
       setState(() => _saving = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(extractErrorMessage(e as dynamic))),
+        SnackBar(content: Text(extractErrorMessage(e as dynamic, AppLocalizations.of(context)!))),
       );
     }
   }
@@ -543,7 +544,7 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
     } on Exception catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(extractErrorMessage(e as dynamic))),
+        SnackBar(content: Text(extractErrorMessage(e as dynamic, AppLocalizations.of(context)!))),
       );
     }
   }
@@ -848,7 +849,7 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                       _SFPickerRow(
                         icon: _placeType?.icon ?? Icons.category_rounded,
                         iconColor: _placeType?.color ?? kForest,
-                        label: 'PLACE TYPE',
+                        label: l10n.placeTypeLabel.toUpperCase(),
                         value: _placeType?.label ?? '—',
                         onTap: readOnly ? null : _showPlaceTypePicker,
                       ),
@@ -882,9 +883,9 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  const Text(
-                                    'COST',
-                                    style: TextStyle(
+                                  Text(
+                                    l10n.costLabel.toUpperCase(),
+                                    style: const TextStyle(
                                       fontSize: 11,
                                       fontWeight: FontWeight.w700,
                                       color: kText2,
@@ -935,18 +936,18 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                       if (!_isFree) ...[
                         const _SFDivider(),
                         _SFBorderlessField(
-                          label: 'COST',
+                          label: l10n.costLabel.toUpperCase(),
                           child: TextFormField(
                             controller: _costController,
                             readOnly: readOnly,
                             onTap: showEditHint ? _showEditModeHint : null,
-                            decoration: const InputDecoration(
+                            decoration: InputDecoration(
                               border: InputBorder.none,
                               enabledBorder: InputBorder.none,
                               focusedBorder: InputBorder.none,
                               isDense: true,
                               contentPadding: EdgeInsets.zero,
-                              hintText: 'e.g. 20',
+                              hintText: l10n.stopCostHint,
                               prefixText: '€ ',
                             ),
                             keyboardType: const TextInputType.numberWithOptions(
@@ -990,9 +991,9 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                     padding: const EdgeInsets.fromLTRB(22, 14, 16, 6),
                     child: Row(
                       children: [
-                        const Text(
-                          'ANNOTATIONS',
-                          style: TextStyle(
+                        Text(
+                          l10n.annotationsSection.toUpperCase(),
+                          style: const TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w700,
                             color: kText2,
@@ -1003,15 +1004,15 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                         if (!readOnly)
                           GestureDetector(
                             onTap: () => _showAnnotationDialog(),
-                            child: const Row(
+                            child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Icon(Icons.add_rounded,
+                                const Icon(Icons.add_rounded,
                                     size: 14, color: kForest),
-                                SizedBox(width: 4),
+                                const SizedBox(width: 4),
                                 Text(
-                                  'Add',
-                                  style: TextStyle(
+                                  l10n.addButton,
+                                  style: const TextStyle(
                                     fontSize: 12,
                                     fontWeight: FontWeight.w700,
                                     color: kForest,
@@ -1083,11 +1084,11 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                   ),
                 ),
               ),
-              const Padding(
-                padding: EdgeInsets.only(bottom: 8),
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
                 child: Text(
-                  'PLACE TYPE',
-                  style: TextStyle(
+                  AppLocalizations.of(context)!.placeTypeLabel.toUpperCase(),
+                  style: const TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
                     color: kText2,
@@ -1139,8 +1140,8 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                     child: const Icon(Icons.clear_rounded,
                         size: 18, color: kText3),
                   ),
-                  title: const Text('None',
-                      style: TextStyle(color: kText2)),
+                  title: Text(AppLocalizations.of(context)!.noneOption,
+                      style: const TextStyle(color: kText2)),
                   onTap: () => Navigator.pop(ctx, null),
                 ),
             ],

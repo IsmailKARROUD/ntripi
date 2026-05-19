@@ -171,7 +171,7 @@ class _MoveStopToTrackSheetState extends ConsumerState<_MoveStopToTrackSheet> {
       if (!mounted) return;
       setState(() => _busy = false);
       messenger.showSnackBar(
-        SnackBar(content: Text(extractErrorMessage(e as dynamic))),
+        SnackBar(content: Text(extractErrorMessage(e as dynamic, AppLocalizations.of(context)!))),
       );
       return;
     }

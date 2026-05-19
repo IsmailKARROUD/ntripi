@@ -9,6 +9,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 import 'package:markdown/markdown.dart' as md;
+import 'package:social_flutter/l10n/app_localizations.dart';
 import 'package:social_flutter/shared/widgets/field_help.dart';
 
 class MarkdownNotesEditor extends StatefulWidget {
@@ -318,32 +319,32 @@ class _Toolbar extends StatelessWidget {
                 children: [
                   btn(
                     icon: Icons.format_bold,
-                    tooltip: 'Bold',
+                    tooltip: AppLocalizations.of(context)!.mdBoldTooltip,
                     action: () => _wrap('**', placeholder: 'bold'),
                   ),
                   btn(
                     icon: Icons.format_italic,
-                    tooltip: 'Italic',
+                    tooltip: AppLocalizations.of(context)!.mdItalicTooltip,
                     action: () => _wrap('*', placeholder: 'italic'),
                   ),
                   btn(
                     icon: Icons.title,
-                    tooltip: 'Heading 1',
+                    tooltip: AppLocalizations.of(context)!.mdHeading1Tooltip,
                     action: () => _prefixLines('# '),
                   ),
                   btn(
                     icon: Icons.text_fields,
-                    tooltip: 'Heading 2',
+                    tooltip: AppLocalizations.of(context)!.mdHeading2Tooltip,
                     action: () => _prefixLines('## '),
                   ),
                   btn(
                     icon: Icons.format_list_bulleted,
-                    tooltip: 'Bullet list',
+                    tooltip: AppLocalizations.of(context)!.mdBulletListTooltip,
                     action: () => _prefixLines('- '),
                   ),
                   btn(
                     icon: Icons.format_list_numbered,
-                    tooltip: 'Numbered list',
+                    tooltip: AppLocalizations.of(context)!.mdNumberedListTooltip,
                     action: _prefixOrdered,
                   ),
                 ],
@@ -359,9 +360,9 @@ class _Toolbar extends StatelessWidget {
                 TextStyle(fontSize: 11),
               ),
             ),
-            segments: const [
-              ButtonSegment(value: false, label: Text('Edit')),
-              ButtonSegment(value: true, label: Text('Preview')),
+            segments: [
+              ButtonSegment(value: false, label: Text(AppLocalizations.of(context)!.mdEditTab)),
+              ButtonSegment(value: true, label: Text(AppLocalizations.of(context)!.mdPreviewTab)),
             ],
             selected: {previewMode},
             onSelectionChanged: (s) => onTogglePreview(s.first),

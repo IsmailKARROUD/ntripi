@@ -630,6 +630,186 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get errorNoInternet =>
+      'No internet connection. Please check your network and try again.';
+
+  @override
+  String get errorGenericRetry => 'An error occurred. Please try again.';
+
+  @override
+  String get errorGeneric => 'An error occurred.';
+
+  @override
+  String get fieldHelpTooltip => 'What is this?';
+
+  @override
+  String typeToConfirmInstruction(String text) {
+    return 'Type \"$text\" to confirm:';
+  }
+
+  @override
+  String get daysLabel => 'd';
+
+  @override
+  String get noneOption => 'None';
+
+  @override
+  String get discardButton => 'Discard';
+
+  @override
+  String get orderSavedMessage => 'Order saved';
+
+  @override
+  String get segmentSelectBothStops => 'Select both a From and a To stop.';
+
+  @override
+  String get segmentStopsMustDiffer => 'From and To stops must differ.';
+
+  @override
+  String get segmentAddLegFirst => 'Add at least one leg before saving.';
+
+  @override
+  String get segmentAlreadyExistsTitle => 'Segment already exists';
+
+  @override
+  String get segmentAlreadyExistsMessage =>
+      'A segment already connects these two stops. What do you want to do?';
+
+  @override
+  String get segmentJoin => 'Join';
+
+  @override
+  String get segmentReplace => 'Replace';
+
+  @override
+  String get segmentFromStopLabel => 'From Stop';
+
+  @override
+  String get segmentToStopLabel => 'To Stop';
+
+  @override
+  String get visibilityScreenTitle => 'Who can see this?';
+
+  @override
+  String get visibilityAddPerson => 'Add person';
+
+  @override
+  String get visibilitySearchByUsername => 'Search by username…';
+
+  @override
+  String get couldNotLoadRatings => 'Could not load ratings';
+
+  @override
+  String get stopNotFound => 'Stop not found.';
+
+  @override
+  String get mapPickLocationTitle => 'Pick Location';
+
+  @override
+  String get mapConfirmLocation => 'Confirm Location';
+
+  @override
+  String get stopCostHint => 'e.g. 20';
+
+  @override
+  String get unsavedDescriptionTitle => 'Unsaved description';
+
+  @override
+  String get unsavedDescriptionMessage =>
+      'Save your description changes before leaving?';
+
+  @override
+  String get saveDescriptionLabel => 'Save description';
+
+  @override
+  String get ratingsTitle => 'Ratings';
+
+  @override
+  String get noRatingsYet => 'No ratings yet';
+
+  @override
+  String get ratingsOverallLabel => 'OVERALL';
+
+  @override
+  String get rateThisTrip => 'Rate this trip';
+
+  @override
+  String get deletedUser => 'Deleted User';
+
+  @override
+  String get annotationContentHint => 'What should travelers know?';
+
+  @override
+  String get countryPickerTitle => 'Select country';
+
+  @override
+  String get countrySearchHint => 'Search countries…';
+
+  @override
+  String get countryNoneClear => 'None / Clear';
+
+  @override
+  String get languageSearchHint => 'Search languages…';
+
+  @override
+  String get coverChangeButton => 'Change';
+
+  @override
+  String get coverEditCropButton => 'Edit crop';
+
+  @override
+  String get coverAdjustTitle => 'Adjust cover photo';
+
+  @override
+  String get mdBoldTooltip => 'Bold';
+
+  @override
+  String get mdItalicTooltip => 'Italic';
+
+  @override
+  String get mdHeading1Tooltip => 'Heading 1';
+
+  @override
+  String get mdHeading2Tooltip => 'Heading 2';
+
+  @override
+  String get mdBulletListTooltip => 'Bullet list';
+
+  @override
+  String get mdNumberedListTooltip => 'Numbered list';
+
+  @override
+  String get mdEditTab => 'Edit';
+
+  @override
+  String get mdPreviewTab => 'Preview';
+
+  @override
+  String get legCostHint => 'e.g. 12.50';
+
+  @override
+  String get addLegButton => 'Add leg';
+
+  @override
+  String get totalLabel => 'Total';
+
+  @override
+  String get reorderOrphanTitle => 'Save reorder?';
+
+  @override
+  String reorderOrphanMessage(int count, String segments) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count transit segments will be deleted because their stops will no longer be in adjacent tracks:\n\n$segments',
+      one:
+          '$count transit segment will be deleted because its stops will no longer be in adjacent tracks:\n\n$segments',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get loadingLabel => 'Loading…';
 
   @override

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:social_flutter/core/ui/app_theme.dart';
+import 'package:social_flutter/l10n/app_localizations.dart';
 import 'package:social_flutter/shared/data/countries.dart';
 
 /// Full-screen country picker.
@@ -64,9 +65,9 @@ class _CountryPickerScreenState extends State<CountryPickerScreen> {
           icon: const Icon(Icons.arrow_back_rounded, color: kBark),
           onPressed: () => Navigator.of(context).pop(),
         ),
-        title: const Text(
-          'Select country',
-          style: TextStyle(
+        title: Text(
+          AppLocalizations.of(context)!.countryPickerTitle,
+          style: const TextStyle(
             color: kBark,
             fontWeight: FontWeight.w700,
             fontSize: 17,
@@ -82,7 +83,7 @@ class _CountryPickerScreenState extends State<CountryPickerScreen> {
               autofocus: true,
               onChanged: (v) => setState(() => _query = v),
               decoration: InputDecoration(
-                hintText: 'Search countries…',
+                hintText: AppLocalizations.of(context)!.countrySearchHint,
                 hintStyle: const TextStyle(color: kText3, fontSize: 15),
                 prefixIcon: const Icon(Icons.search_rounded, color: kText2, size: 20),
                 suffixIcon: _query.isNotEmpty
@@ -119,9 +120,9 @@ class _CountryPickerScreenState extends State<CountryPickerScreen> {
                 if (widget.allowClear && index == 0) {
                   return ListTile(
                     leading: const Icon(Icons.block_rounded, color: kText2, size: 20),
-                    title: const Text(
-                      'None / Clear',
-                      style: TextStyle(color: kText2, fontWeight: FontWeight.w500),
+                    title: Text(
+                      AppLocalizations.of(context)!.countryNoneClear,
+                      style: const TextStyle(color: kText2, fontWeight: FontWeight.w500),
                     ),
                     onTap: () => Navigator.of(context).pop(''),
                   );

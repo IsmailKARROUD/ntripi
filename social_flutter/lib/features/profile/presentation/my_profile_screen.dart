@@ -199,7 +199,7 @@ class _MyProfileScreenState extends ConsumerState<MyProfileScreen> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      extractErrorMessage(error),
+                      extractErrorMessage(error, AppLocalizations.of(context)!),
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 16),

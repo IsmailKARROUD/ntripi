@@ -5,6 +5,7 @@
 // Tier 3 — confirmTypedDestructiveAction (type-to-confirm dialog)
 
 import 'package:flutter/material.dart';
+import 'package:social_flutter/l10n/app_localizations.dart';
 
 // ---------------------------------------------------------------------------
 // Tier 2 — Simple confirmation dialog
@@ -126,7 +127,7 @@ class _TypedConfirmDialogState extends State<_TypedConfirmDialog> {
           Text(widget.message),
           const SizedBox(height: 16),
           Text(
-            'Type "${widget.requiredText}" to confirm:',
+            AppLocalizations.of(context)!.typeToConfirmInstruction(widget.requiredText),
             style: Theme.of(context).textTheme.bodySmall,
           ),
           const SizedBox(height: 8),
@@ -179,7 +180,7 @@ void showUndoableActionSnackbar({
       duration: duration,
       persist: false,
       action: SnackBarAction(
-        label: 'UNDO',
+        label: AppLocalizations.of(context)!.undoButton,
         onPressed: () async {
           try {
             await onUndo();
@@ -187,7 +188,7 @@ void showUndoableActionSnackbar({
             if (context.mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text('Could not undo: $e'),
+                  content: Text(AppLocalizations.of(context)!.couldNotUndo(e.toString())),
                   backgroundColor: Theme.of(context).colorScheme.error,
                 ),
               );

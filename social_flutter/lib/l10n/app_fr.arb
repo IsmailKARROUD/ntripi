@@ -205,6 +205,84 @@
   "undoButton": "ANNULER",
   "couldNotUndo": "Impossible d'annuler : {error}",
 
+  "errorNoInternet": "Pas de connexion internet. Vérifiez votre réseau et réessayez.",
+  "errorGenericRetry": "Une erreur est survenue. Veuillez réessayer.",
+  "errorGeneric": "Une erreur est survenue.",
+  "fieldHelpTooltip": "Qu'est-ce que c'est ?",
+  "typeToConfirmInstruction": "Tapez « {text} » pour confirmer :",
+  "@typeToConfirmInstruction": {
+    "placeholders": {
+      "text": { "type": "String" }
+    }
+  },
+
+  "daysLabel": "j",
+  "noneOption": "Aucun",
+  "discardButton": "Ignorer",
+  "orderSavedMessage": "Ordre enregistré",
+
+  "segmentSelectBothStops": "Sélectionnez un arrêt de départ et un arrêt d'arrivée.",
+  "segmentStopsMustDiffer": "Les arrêts de départ et d'arrivée doivent être différents.",
+  "segmentAddLegFirst": "Ajoutez au moins un tronçon avant d'enregistrer.",
+  "segmentAlreadyExistsTitle": "Segment déjà existant",
+  "segmentAlreadyExistsMessage": "Un segment relie déjà ces deux arrêts. Que souhaitez-vous faire ?",
+  "segmentJoin": "Rejoindre",
+  "segmentReplace": "Remplacer",
+  "segmentFromStopLabel": "Arrêt de départ",
+  "segmentToStopLabel": "Arrêt d'arrivée",
+
+  "visibilityScreenTitle": "Qui peut voir ça ?",
+  "visibilityAddPerson": "Ajouter une personne",
+  "visibilitySearchByUsername": "Rechercher par identifiant…",
+
+  "couldNotLoadRatings": "Impossible de charger les évaluations",
+  "stopNotFound": "Étape introuvable.",
+  "mapPickLocationTitle": "Choisir un emplacement",
+  "mapConfirmLocation": "Confirmer l'emplacement",
+  "stopCostHint": "ex. 20",
+
+  "unsavedDescriptionTitle": "Description non enregistrée",
+  "unsavedDescriptionMessage": "Enregistrer vos modifications avant de quitter ?",
+  "saveDescriptionLabel": "Enregistrer la description",
+
+  "ratingsTitle": "Évaluations",
+  "noRatingsYet": "Aucune évaluation pour l'instant",
+  "ratingsOverallLabel": "GÉNÉRAL",
+  "rateThisTrip": "Évaluer ce voyage",
+  "deletedUser": "Utilisateur supprimé",
+
+  "annotationContentHint": "Que doivent savoir les voyageurs ?",
+
+  "countryPickerTitle": "Sélectionner un pays",
+  "countrySearchHint": "Rechercher un pays…",
+  "countryNoneClear": "Aucun / Effacer",
+  "languageSearchHint": "Rechercher une langue…",
+
+  "coverChangeButton": "Modifier",
+  "coverEditCropButton": "Ajuster le recadrage",
+  "coverAdjustTitle": "Ajuster la photo de couverture",
+
+  "mdBoldTooltip": "Gras",
+  "mdItalicTooltip": "Italique",
+  "mdHeading1Tooltip": "Titre 1",
+  "mdHeading2Tooltip": "Titre 2",
+  "mdBulletListTooltip": "Liste à puces",
+  "mdNumberedListTooltip": "Liste numérotée",
+  "mdEditTab": "Modifier",
+  "mdPreviewTab": "Aperçu",
+
+  "legCostHint": "ex. 12,50",
+  "addLegButton": "Ajouter un tronçon",
+  "totalLabel": "Total",
+  "reorderOrphanTitle": "Enregistrer la réorganisation ?",
+  "reorderOrphanMessage": "{count, plural, one{{count} tronçon de transport sera supprimé car ses arrêts ne seront plus dans des pistes adjacentes :\n\n{segments}} other{{count} tronçons de transport seront supprimés car leurs arrêts ne seront plus dans des pistes adjacentes :\n\n{segments}}}",
+  "@reorderOrphanMessage": {
+    "placeholders": {
+      "count": { "type": "int" },
+      "segments": { "type": "String" }
+    }
+  },
+
   "loadingLabel": "Chargement…",
   "usernameRequired": "L'identifiant est requis",
   "usernameTooShort": "L'identifiant doit contenir au moins 4 caractères",

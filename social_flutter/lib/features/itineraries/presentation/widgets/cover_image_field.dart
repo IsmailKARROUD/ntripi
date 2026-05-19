@@ -25,6 +25,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:social_flutter/core/api/api_endpoints.dart';
 import 'package:social_flutter/core/ui/app_theme.dart';
 import 'package:social_flutter/core/utils/platform_utils.dart';
+import 'package:social_flutter/l10n/app_localizations.dart';
 import 'package:social_flutter/shared/widgets/loaders.dart';
 
 const _maxFileSizeBytes = 10 * 1024 * 1024; // 10 MB
@@ -194,21 +195,21 @@ class _CoverImageFieldState extends State<CoverImageField> {
               children: [
                 TextButton.icon(
                   icon: const Icon(Icons.photo_outlined, size: 16),
-                  label: const Text('Change'),
+                  label: Text(AppLocalizations.of(context)!.coverChangeButton),
                   onPressed: _picking ? null : _pick,
                 ),
                 if (_originalBytes != null) ...[
                   const SizedBox(width: 4),
                   TextButton.icon(
                     icon: const Icon(Icons.crop_outlined, size: 16),
-                    label: const Text('Edit crop'),
+                    label: Text(AppLocalizations.of(context)!.coverEditCropButton),
                     onPressed: _picking ? null : _editCrop,
                   ),
                 ],
                 const SizedBox(width: 4),
                 TextButton.icon(
                   icon: Icon(Icons.delete_outline, size: 16, color: cs.error),
-                  label: Text('Remove', style: TextStyle(color: cs.error)),
+                  label: Text(AppLocalizations.of(context)!.removeButton, style: TextStyle(color: cs.error)),
                   onPressed: _remove,
                 ),
               ],
@@ -383,9 +384,9 @@ class _CropScreenState extends State<_CropScreen> {
           icon: const Icon(Icons.close),
           onPressed: widget.onCancel,
         ),
-        title: const Text(
-          'Adjust cover photo',
-          style: TextStyle(color: kBark),
+        title: Text(
+          AppLocalizations.of(context)!.coverAdjustTitle,
+          style: const TextStyle(color: kBark),
         ),
         actions: [
           if (_processing)
@@ -396,9 +397,9 @@ class _CropScreenState extends State<_CropScreen> {
           else
             TextButton(
               onPressed: _imageSize == null ? null : _done,
-              child: const Text(
-                'Done',
-                style: TextStyle(
+              child: Text(
+                AppLocalizations.of(context)!.doneTooltip,
+                style: const TextStyle(
                   color: kForest,
                   fontWeight: FontWeight.w600,
                   fontSize: 16,

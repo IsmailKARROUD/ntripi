@@ -270,6 +270,84 @@
     }
   },
 
+  "errorNoInternet": "No internet connection. Please check your network and try again.",
+  "errorGenericRetry": "An error occurred. Please try again.",
+  "errorGeneric": "An error occurred.",
+  "fieldHelpTooltip": "What is this?",
+  "typeToConfirmInstruction": "Type \"{text}\" to confirm:",
+  "@typeToConfirmInstruction": {
+    "placeholders": {
+      "text": { "type": "String" }
+    }
+  },
+
+  "daysLabel": "d",
+  "noneOption": "None",
+  "discardButton": "Discard",
+  "orderSavedMessage": "Order saved",
+
+  "segmentSelectBothStops": "Select both a From and a To stop.",
+  "segmentStopsMustDiffer": "From and To stops must differ.",
+  "segmentAddLegFirst": "Add at least one leg before saving.",
+  "segmentAlreadyExistsTitle": "Segment already exists",
+  "segmentAlreadyExistsMessage": "A segment already connects these two stops. What do you want to do?",
+  "segmentJoin": "Join",
+  "segmentReplace": "Replace",
+  "segmentFromStopLabel": "From Stop",
+  "segmentToStopLabel": "To Stop",
+
+  "visibilityScreenTitle": "Who can see this?",
+  "visibilityAddPerson": "Add person",
+  "visibilitySearchByUsername": "Search by username…",
+
+  "couldNotLoadRatings": "Could not load ratings",
+  "stopNotFound": "Stop not found.",
+  "mapPickLocationTitle": "Pick Location",
+  "mapConfirmLocation": "Confirm Location",
+  "stopCostHint": "e.g. 20",
+
+  "unsavedDescriptionTitle": "Unsaved description",
+  "unsavedDescriptionMessage": "Save your description changes before leaving?",
+  "saveDescriptionLabel": "Save description",
+
+  "ratingsTitle": "Ratings",
+  "noRatingsYet": "No ratings yet",
+  "ratingsOverallLabel": "OVERALL",
+  "rateThisTrip": "Rate this trip",
+  "deletedUser": "Deleted User",
+
+  "annotationContentHint": "What should travelers know?",
+
+  "countryPickerTitle": "Select country",
+  "countrySearchHint": "Search countries…",
+  "countryNoneClear": "None / Clear",
+  "languageSearchHint": "Search languages…",
+
+  "coverChangeButton": "Change",
+  "coverEditCropButton": "Edit crop",
+  "coverAdjustTitle": "Adjust cover photo",
+
+  "mdBoldTooltip": "Bold",
+  "mdItalicTooltip": "Italic",
+  "mdHeading1Tooltip": "Heading 1",
+  "mdHeading2Tooltip": "Heading 2",
+  "mdBulletListTooltip": "Bullet list",
+  "mdNumberedListTooltip": "Numbered list",
+  "mdEditTab": "Edit",
+  "mdPreviewTab": "Preview",
+
+  "legCostHint": "e.g. 12.50",
+  "addLegButton": "Add leg",
+  "totalLabel": "Total",
+  "reorderOrphanTitle": "Save reorder?",
+  "reorderOrphanMessage": "{count, plural, one{{count} transit segment will be deleted because its stops will no longer be in adjacent tracks:\n\n{segments}} other{{count} transit segments will be deleted because their stops will no longer be in adjacent tracks:\n\n{segments}}}",
+  "@reorderOrphanMessage": {
+    "placeholders": {
+      "count": { "type": "int" },
+      "segments": { "type": "String" }
+    }
+  },
+
   "loadingLabel": "Loading…",
   "usernameRequired": "Username is required",
   "usernameTooShort": "Username must be at least 4 characters",

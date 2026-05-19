@@ -311,8 +311,8 @@ class _AnnotationScreenState extends State<AnnotationScreen> {
               maxLines: 5,
               minLines: 3,
               onChanged: (_) => setState(() {}), // rebuild for Save enable
-              decoration: const InputDecoration(
-                hintText: 'What should travelers know?',
+              decoration: InputDecoration(
+                hintText: AppLocalizations.of(context)!.annotationContentHint,
                 hintStyle:  TextStyle(color: kText3),
                 border: InputBorder.none,
                 enabledBorder: InputBorder.none,

@@ -84,7 +84,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                     child: Padding(
                       padding: const EdgeInsets.all(24),
                       child: Text(
-                        extractErrorMessage(error),
+                        extractErrorMessage(error, AppLocalizations.of(context)!),
                         textAlign: TextAlign.center,
                         style: const TextStyle(color: kText2),
                       ),

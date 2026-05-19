@@ -6,6 +6,7 @@
 // in the app so users learn the affordance once.
 
 import 'package:flutter/material.dart';
+import 'package:social_flutter/l10n/app_localizations.dart';
 
 /// Small circular "?" icon button. Tapping it opens a popover positioned
 /// next to the icon with the given [helpTitle] and [helpMessage]. Wrapped
@@ -41,7 +42,7 @@ class FieldHelpIcon extends StatelessWidget {
             padding: EdgeInsets.zero,
             iconSize: size,
             splashRadius: size,
-            tooltip: 'What is this?',
+            tooltip: AppLocalizations.of(innerCtx)!.fieldHelpTooltip,
             icon: Icon(Icons.help_outline, color: effectiveColor),
             onPressed: () => showFieldHelp(
               innerCtx,

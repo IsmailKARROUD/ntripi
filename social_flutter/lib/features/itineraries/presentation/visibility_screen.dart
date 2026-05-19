@@ -18,6 +18,7 @@ import 'package:social_flutter/core/ui/destructive_actions.dart';
 import 'package:social_flutter/features/itineraries/domain/allowed_user.dart';
 import 'package:social_flutter/features/itineraries/domain/itinerary.dart';
 import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
+import 'package:social_flutter/l10n/app_localizations.dart';
 import 'package:social_flutter/shared/models/user.dart';
 import 'package:social_flutter/shared/widgets/loaders.dart';
 
@@ -68,7 +69,7 @@ class _VisibilityScreenState extends ConsumerState<VisibilityScreen> {
       } on Exception catch (e) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(extractErrorMessage(e as dynamic))),
+            SnackBar(content: Text(extractErrorMessage(e as dynamic, AppLocalizations.of(context)!))),
           );
         }
         if (mounted) setState(() => _submitting = false);
@@ -93,12 +94,12 @@ class _VisibilityScreenState extends ConsumerState<VisibilityScreen> {
       backgroundColor: kSand,
       appBar: AppBar(
         backgroundColor: kSand,
-        title: const Text('Who can see this?'),
+        title: Text(AppLocalizations.of(context)!.visibilityScreenTitle),
         actions: [
           TextButton(
             onPressed: _done,
-            child: const Text(
-              'Done',
+            child: Text(
+              AppLocalizations.of(context)!.doneTooltip,
               style: TextStyle(
                 color: kForest,
                 fontWeight: FontWeight.w700,
@@ -354,7 +355,7 @@ class _AllowlistSection extends ConsumerWidget {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
                                 content:
-                                    Text(extractErrorMessage(e as dynamic))),
+                                    Text(extractErrorMessage(e as dynamic, AppLocalizations.of(context)!))),
                           );
                         }
                         return;
@@ -562,7 +563,7 @@ class _AddPersonDialogState extends ConsumerState<_AddPersonDialog> {
     } on Exception catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(extractErrorMessage(e as dynamic))),
+          SnackBar(content: Text(extractErrorMessage(e as dynamic, AppLocalizations.of(context)!))),
         );
       }
     }
@@ -573,8 +574,8 @@ class _AddPersonDialogState extends ConsumerState<_AddPersonDialog> {
     return AlertDialog(
       backgroundColor: kSand,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      title: const Text('Add person',
-          style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700)),
+      title: Text(AppLocalizations.of(context)!.visibilityAddPerson,
+          style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700)),
       content: SizedBox(
         width: double.maxFinite,
         height: 360,
@@ -584,7 +585,7 @@ class _AddPersonDialogState extends ConsumerState<_AddPersonDialog> {
               controller: _searchController,
               autofocus: true,
               decoration: InputDecoration(
-                hintText: 'Search by username…',
+                hintText: AppLocalizations.of(context)!.visibilitySearchByUsername,
                 prefixIcon:
                     const Icon(Icons.search_rounded, color: kForest),
                 filled: true,
@@ -609,8 +610,8 @@ class _AddPersonDialogState extends ConsumerState<_AddPersonDialog> {
             if (_searching)
               const Expanded(child: Center(child: NTripiRingLoader()))
             else if (_results.isEmpty && _searchController.text.isNotEmpty)
-              const Expanded(
-                  child: Center(child: Text('No users found.')))
+              Expanded(
+                  child: Center(child: Text(AppLocalizations.of(context)!.noUsersFound)))
             else
               Expanded(
                 child: ListView.builder(
@@ -646,7 +647,7 @@ class _AddPersonDialogState extends ConsumerState<_AddPersonDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('Cancel'),
+          child: Text(AppLocalizations.of(context)!.cancel),
         ),
       ],
     );
