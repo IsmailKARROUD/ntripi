@@ -331,9 +331,7 @@ Future<void> loadCurrencies() async {
             TextButton(
               onPressed: _save,
               child: Text(
-                widget.mode == ItineraryFormMode.create
-                    ? l10n.createItinerary
-                    : l10n.save,
+                l10n.save,
                 style: const TextStyle(
                   color: kForest,
                   fontWeight: FontWeight.w700,
