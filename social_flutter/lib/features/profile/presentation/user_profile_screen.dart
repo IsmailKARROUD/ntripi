@@ -33,7 +33,14 @@ import 'package:social_flutter/core/utils/platform_utils.dart';
 
 class UserProfileScreen extends ConsumerWidget {
   final String userId;
-  const UserProfileScreen({super.key, required this.userId});
+  // Callers inside a shell branch pass their scoped base (e.g. '/search/profile')
+  // so followers/following push within the same branch navigator.
+  final String profileBaseRoute;
+  const UserProfileScreen({
+    super.key,
+    required this.userId,
+    this.profileBaseRoute = '/profile',
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -70,7 +77,7 @@ class UserProfileScreen extends ConsumerWidget {
               ),
             ),
             data: (user) =>
-                _ProfileBody(userId: userId, user: user),
+                _ProfileBody(userId: userId, user: user, profileBaseRoute: profileBaseRoute),
           ),
         ),
       ),
@@ -81,8 +88,9 @@ class UserProfileScreen extends ConsumerWidget {
 class _ProfileBody extends ConsumerWidget {
   final String userId;
   final User user;
+  final String profileBaseRoute;
   const _ProfileBody(
-      {required this.userId, required this.user});
+      {required this.userId, required this.user, required this.profileBaseRoute});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -134,14 +142,14 @@ class _ProfileBody extends ConsumerWidget {
                         n: user.followersCount,
                         label: 'Followers',
                         onTap: () => context.push(
-                            '/profile/${user.id}/followers'),
+                            '$profileBaseRoute/${user.id}/followers'),
                       ),
                       const SizedBox(width: 20),
                       _Tally(
                         n: user.followingCount,
                         label: 'Following',
                         onTap: () => context.push(
-                            '/profile/${user.id}/following'),
+                            '$profileBaseRoute/${user.id}/following'),
                       ),
                     ],
                   ),

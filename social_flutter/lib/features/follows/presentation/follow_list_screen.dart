@@ -33,11 +33,13 @@ enum FollowListType { followers, following }
 class FollowListScreen extends ConsumerStatefulWidget {
   final String userId;
   final FollowListType type;
+  final String profileBaseRoute;
 
   const FollowListScreen({
     super.key,
     required this.userId,
     required this.type,
+    this.profileBaseRoute = '/profile',
   });
 
   @override
@@ -158,7 +160,7 @@ class _FollowListScreenState extends ConsumerState<FollowListScreen>
                         pendingRequests: pendingRequests,
                         isOwnProfile: isOwnProfile,
                         onUserTap: (id) =>
-                            context.push('/profile/$id'),
+                            context.push('${widget.profileBaseRoute}/$id'),
                       ),
                     ),
                     // Following
@@ -170,7 +172,7 @@ class _FollowListScreenState extends ConsumerState<FollowListScreen>
                       child: _FollowingTab(
                         followingAsync: followingAsync,
                         onUserTap: (id) =>
-                            context.push('/profile/$id'),
+                            context.push('${widget.profileBaseRoute}/$id'),
                       ),
                     ),
                   ],

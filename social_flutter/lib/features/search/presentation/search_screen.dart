@@ -118,7 +118,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                                 user: users[i],
                                 isLast: i == users.length - 1,
                                 onTap: () =>
-                                    context.push('/profile/${users[i].id}'),
+                                    context.push('/search/profile/${users[i].id}'),
                               ),
                           ],
                         ),

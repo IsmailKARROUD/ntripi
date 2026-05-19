@@ -81,6 +81,35 @@ final appRouter = GoRouter(
             GoRoute(
               path: '/search',
               builder: (_, __) => const SearchScreen(),
+              routes: [
+                // Nested so profile/follow-list push within the search branch
+                // navigator, keeping the bottom bar visible.
+                GoRoute(
+                  path: 'profile/:userId',
+                  builder: (_, s) => UserProfileScreen(
+                    userId: s.pathParameters['userId']!,
+                    profileBaseRoute: '/search/profile',
+                  ),
+                  routes: [
+                    GoRoute(
+                      path: 'followers',
+                      builder: (_, s) => FollowListScreen(
+                        userId: s.pathParameters['userId']!,
+                        type: FollowListType.followers,
+                        profileBaseRoute: '/search/profile',
+                      ),
+                    ),
+                    GoRoute(
+                      path: 'following',
+                      builder: (_, s) => FollowListScreen(
+                        userId: s.pathParameters['userId']!,
+                        type: FollowListType.following,
+                        profileBaseRoute: '/search/profile',
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
           ],
         ),
