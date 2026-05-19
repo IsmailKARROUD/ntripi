@@ -67,143 +67,182 @@ final appRouter = GoRouter(
       builder: (context, state) => const RegisterScreen(),
     ),
 
-    // Protected routes with persistent bottom nav (ShellRoute)
-    ShellRoute(
-      builder: (context, state, child) => _AppShell(child: child),
-      routes: [
-        GoRoute(
-          path: '/profile/me',
-          builder: (context, state) => const MyProfileScreen(),
+    // Protected routes with persistent bottom nav.
+    // StatefulShellRoute keeps each branch's widget tree alive in a separate
+    // Navigator — switching tabs shows/hides rather than destroy/rebuild,
+    // preserving search text, scroll positions, and loaded results.
+    StatefulShellRoute.indexedStack(
+      builder: (context, state, navigationShell) =>
+          _AppShell(navigationShell: navigationShell),
+      branches: [
+        // Branch 0 — Search
+        StatefulShellBranch(
+          routes: [
+            GoRoute(
+              path: '/search',
+              builder: (_, __) => const SearchScreen(),
+            ),
+          ],
         ),
-        GoRoute(
-          path: '/settings/delete-account',
-          builder: (context, state) => const DeleteAccountScreen(),
+
+        // Branch 1 — Own profile
+        StatefulShellBranch(
+          routes: [
+            GoRoute(
+              path: '/profile/me',
+              builder: (_, __) => const MyProfileScreen(),
+            ),
+            GoRoute(
+              path: '/settings/delete-account',
+              builder: (_, __) => const DeleteAccountScreen(),
+            ),
+            GoRoute(
+              path: '/follow-requests',
+              builder: (_, __) => const FollowRequestsScreen(),
+            ),
+          ],
         ),
-        GoRoute(
-          path: '/profile/:userId',
-          builder: (context, state) =>
-              UserProfileScreen(userId: state.pathParameters['userId']!),
+
+        // Branch 2 — Itineraries
+        StatefulShellBranch(
+          routes: [
+            GoRoute(
+              path: '/itineraries',
+              builder: (_, __) => const ItineraryListScreen(),
+            ),
+            GoRoute(
+              path: '/itineraries/new',
+              builder: (_, __) => const ItineraryFormScreen(),
+            ),
+            GoRoute(
+              path: '/itineraries/:id',
+              builder: (_, s) => ItineraryDetailScreen(
+                itineraryId: s.pathParameters['id']!,
+              ),
+            ),
+            GoRoute(
+              path: '/itineraries/:id/edit',
+              builder: (_, s) => ItineraryFormScreen(
+                itineraryId: s.pathParameters['id']!,
+              ),
+            ),
+            GoRoute(
+              path: '/itineraries/:id/ratings',
+              builder: (_, s) => RatingsHubScreen(
+                itineraryId: s.pathParameters['id']!,
+              ),
+            ),
+            GoRoute(
+              path: '/itineraries/:id/ratings/:dimension',
+              builder: (_, s) => DimensionRatingsScreen(
+                itineraryId: s.pathParameters['id']!,
+                dimension:
+                    DimensionKey.fromPath(s.pathParameters['dimension']!),
+              ),
+            ),
+            GoRoute(
+              path: '/itineraries/:id/stops/new',
+              builder: (_, s) {
+                final extra = s.extra as Map<String, dynamic>?;
+                return StopFormScreen(
+                  itineraryId: s.pathParameters['id']!,
+                  trackId: extra?['trackId'] as String?,
+                  afterStopId: extra?['afterStopId'] as String?,
+                  afterTrackId: extra?['afterTrackId'] as String?,
+                  beforeTrackId: extra?['beforeTrackId'] as String?,
+                );
+              },
+            ),
+            GoRoute(
+              path: '/itineraries/:id/stops/:stopId',
+              builder: (_, s) => StopDetailScreen(
+                itineraryId: s.pathParameters['id']!,
+                stopId: s.pathParameters['stopId']!,
+              ),
+            ),
+            GoRoute(
+              path: '/itineraries/:id/stops/:stopId/edit',
+              builder: (_, s) => StopFormScreen(
+                itineraryId: s.pathParameters['id']!,
+                stopId: s.pathParameters['stopId']!,
+              ),
+            ),
+            /* GoRoute(
+              path: '/itineraries/:id/segments/new',
+              builder: (_, s) {
+                final extra = s.extra as Map<String, dynamic>?;
+                return SegmentFormScreen(
+                  itineraryId: s.pathParameters['id']!,
+                  initialFromStopId: extra?['fromStopId'] as String?,
+                  initialToStopId: extra?['toStopId'] as String?,
+                );
+              },
+            ),
+            GoRoute(
+              path: '/itineraries/:id/segments/:segmentId/edit',
+              builder: (_, s) => SegmentFormScreen(
+                itineraryId: s.pathParameters['id']!,
+                segmentId: s.pathParameters['segmentId']!,
+              ),
+            ), */
+            GoRoute(
+              path: '/map-picker',
+              builder: (_, s) {
+                final extra = s.extra as Map<String, dynamic>?;
+                return MapPickerScreen(
+                  initialLat: extra?['lat'] as double?,
+                  initialLng: extra?['lng'] as double?,
+                );
+              },
+            ),
+          ],
         ),
-        GoRoute(
-          path: '/search',
-          builder: (context, state) => const SearchScreen(),
-        ),
-        GoRoute(
-          path: '/follow-requests',
-          builder: (context, state) => const FollowRequestsScreen(),
-        ),
-        GoRoute(
-          path: '/profile/:userId/followers',
-          builder: (context, state) => FollowListScreen(
-            userId: state.pathParameters['userId']!,
-            type: FollowListType.followers,
-          ),
-        ),
-        GoRoute(
-          path: '/profile/:userId/following',
-          builder: (context, state) => FollowListScreen(
-            userId: state.pathParameters['userId']!,
-            type: FollowListType.following,
-          ),
-        ),
-        GoRoute(
-          path: '/itineraries',
-          builder: (context, state) => const ItineraryListScreen(),
-        ),
-        GoRoute(
-          path: '/itineraries/new',
-          builder: (context, state) => const ItineraryFormScreen(),
-        ),
-        GoRoute(
-          path: '/itineraries/:id',
-          builder: (context, state) => ItineraryDetailScreen(
-            itineraryId: state.pathParameters['id']!,
-          ),
-        ),
-        GoRoute(
-          path: '/itineraries/:id/edit',
-          builder: (context, state) => ItineraryFormScreen(
-            itineraryId: state.pathParameters['id']!,
-          ),
-        ),
-        GoRoute(
-          path: '/itineraries/:id/ratings',
-          builder: (context, state) => RatingsHubScreen(
-            itineraryId: state.pathParameters['id']!,
-          ),
-        ),
-        GoRoute(
-          path: '/itineraries/:id/ratings/:dimension',
-          builder: (context, state) => DimensionRatingsScreen(
-            itineraryId: state.pathParameters['id']!,
-            dimension:
-                DimensionKey.fromPath(state.pathParameters['dimension']!),
-          ),
-        ),
-        GoRoute(
-          path: '/itineraries/:id/stops/new',
-          builder: (context, state) {
-            final extra = state.extra as Map<String, dynamic>?;
-            return StopFormScreen(
-              itineraryId: state.pathParameters['id']!,
-              trackId: extra?['trackId'] as String?,
-              afterStopId: extra?['afterStopId'] as String?,
-              afterTrackId: extra?['afterTrackId'] as String?,
-              beforeTrackId: extra?['beforeTrackId'] as String?,
-            );
-          },
-        ),
-        GoRoute(
-          path: '/itineraries/:id/stops/:stopId',
-          builder: (context, state) => StopDetailScreen(
-            itineraryId: state.pathParameters['id']!,
-            stopId: state.pathParameters['stopId']!,
-          ),
-        ),
-        GoRoute(
-          path: '/itineraries/:id/stops/:stopId/edit',
-          builder: (context, state) => StopFormScreen(
-            itineraryId: state.pathParameters['id']!,
-            stopId: state.pathParameters['stopId']!,
-          ),
-        ),
-       /* GoRoute(
-          path: '/itineraries/:id/segments/new',
-          builder: (context, state) {
-            final extra = state.extra as Map<String, dynamic>?;
-            return SegmentFormScreen(
-              itineraryId: state.pathParameters['id']!,
-              initialFromStopId: extra?['fromStopId'] as String?,
-              initialToStopId: extra?['toStopId'] as String?,
-            );
-          },
-        ),
-        GoRoute(
-          path: '/itineraries/:id/segments/:segmentId/edit',
-          builder: (context, state) => SegmentFormScreen(
-            itineraryId: state.pathParameters['id']!,
-            segmentId: state.pathParameters['segmentId']!,
-          ),
-        ),*/
-        GoRoute(
-          path: '/map-picker',
-          builder: (context, state) {
-            final extra = state.extra as Map<String, dynamic>?;
-            return MapPickerScreen(
-              initialLat: extra?['lat'] as double?,
-              initialLng: extra?['lng'] as double?,
-            );
-          },
+
+        // Branch 3 — Feed (coming soon; tap intercepted in _AppShell)
+        StatefulShellBranch(
+          routes: [
+            GoRoute(
+              path: '/feed',
+              builder: (_, __) => const SizedBox.shrink(),
+            ),
+          ],
         ),
       ],
+    ),
+
+    // Other-user profile routes at the root level with parentNavigatorKey so
+    // they push on the root navigator (full-screen) rather than inside a branch.
+    // Listed AFTER StatefulShellRoute so /profile/me in Branch 1 is matched
+    // first — this avoids the /profile/:userId wildcard catching "me".
+    GoRoute(
+      path: '/profile/:userId',
+      parentNavigatorKey: navigatorKey,
+      builder: (_, s) =>
+          UserProfileScreen(userId: s.pathParameters['userId']!),
+    ),
+    GoRoute(
+      path: '/profile/:userId/followers',
+      parentNavigatorKey: navigatorKey,
+      builder: (_, s) => FollowListScreen(
+        userId: s.pathParameters['userId']!,
+        type: FollowListType.followers,
+      ),
+    ),
+    GoRoute(
+      path: '/profile/:userId/following',
+      parentNavigatorKey: navigatorKey,
+      builder: (_, s) => FollowListScreen(
+        userId: s.pathParameters['userId']!,
+        type: FollowListType.following,
+      ),
     ),
   ],
 );
 
 /// Shell with persistent bottom navigation bar.
 class _AppShell extends StatefulWidget {
-  final Widget child;
-  const _AppShell({required this.child});
+  final StatefulNavigationShell navigationShell;
+  const _AppShell({required this.navigationShell});
 
   @override
   State<_AppShell> createState() => _AppShellState();
@@ -216,14 +255,6 @@ class _AppShellState extends State<_AppShell> {
   // reappears on the next visit as a soft reminder.
   bool _showDownloadBanner = kIsWeb;
   bool _isOffline = false;
-
-  int _selectedIndex(BuildContext context) {
-    final loc = GoRouterState.of(context).matchedLocation;
-    if (loc.startsWith('/search')) return 0;
-    if (loc.startsWith('/profile/me')) return 1;
-    if (loc.startsWith('/itineraries')) return 2;
-    return 1;
-  }
 
   StreamSubscription<List<ConnectivityResult>>? _connectivitySub;
 
@@ -276,7 +307,7 @@ class _AppShellState extends State<_AppShell> {
             child: MediaQuery.removePadding(
               context: context,
               removeTop: _showDownloadBanner || _isOffline,
-              child: widget.child,
+              child: widget.navigationShell,
             ),
           ),
         ],
@@ -287,25 +318,26 @@ class _AppShellState extends State<_AppShell> {
           border: Border(top: BorderSide(color: Color(0xFFE4EDE6))),
         ),
         child: BottomNavigationBar(
-          currentIndex: _selectedIndex(context),
+          currentIndex: widget.navigationShell.currentIndex,
           elevation: 0,
           backgroundColor: Colors.white,
           selectedItemColor: kForest,
           unselectedItemColor: const Color(0xFF93A898),
           onTap: (i) {
-            final l10n = AppLocalizations.of(context)!;
-            switch (i) {
-              case 0:
-                context.go('/search');
-              case 1:
-                context.go('/profile/me');
-              case 2:
-                context.go('/itineraries');
-              case 3:
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text(l10n.feedComingSoon)),
-                );
+            if (i == 3) {
+              // Feed is not yet available — intercept the tap.
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                    content:
+                        Text(AppLocalizations.of(context)!.feedComingSoon)),
+              );
+              return;
             }
+            widget.navigationShell.goBranch(
+              i,
+              // Tapping the active tab resets its navigation stack.
+              initialLocation: i == widget.navigationShell.currentIndex,
+            );
           },
           items: [
             BottomNavigationBarItem(
