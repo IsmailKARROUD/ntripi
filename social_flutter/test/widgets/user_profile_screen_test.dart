@@ -9,11 +9,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:social_flutter/features/itineraries/domain/itinerary.dart';
 import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
 import 'package:social_flutter/features/profile/presentation/user_profile_screen.dart';
 import 'package:social_flutter/features/profile/providers/profile_provider.dart';
+import 'package:social_flutter/l10n/app_localizations.dart';
 import 'package:social_flutter/shared/models/user.dart';
+import 'package:social_flutter/shared/widgets/loaders.dart';
 
 // ignore_for_file: invalid_use_of_internal_member
 
@@ -82,22 +85,49 @@ class _FakeUserItineraries extends UserItinerariesNotifier {
 
 // ── Widget builder ────────────────────────────────────────────────────────
 
+List<Override> _overrides({
+  User? user,
+  List<Itinerary>? itineraries,
+  UserProfileNotifier Function()? profileNotifier,
+}) {
+  final u = user ?? _makeUser();
+  return [
+    userProfileProvider.overrideWith(
+        profileNotifier ?? () => _FakeUserProfile(u)),
+    userItinerariesProvider
+        .overrideWith(() => _FakeUserItineraries(itineraries ?? [_testItinerary])),
+  ];
+}
+
 Widget _buildScreen({
   User? user,
   List<Itinerary>? itineraries,
   UserProfileNotifier Function()? profileNotifier,
 }) {
   FlutterSecureStorage.setMockInitialValues({});
-  final u = user ?? _makeUser();
   return ProviderScope(
-    overrides: [
-      userProfileProvider.overrideWith(
-          profileNotifier ?? () => _FakeUserProfile(u)),
-      userItinerariesProvider.overrideWith(
-          () => _FakeUserItineraries(itineraries ?? [_testItinerary])),
-    ],
-    child: const MaterialApp(
-      home: UserProfileScreen(userId: _userId),
+    overrides: _overrides(
+        user: user, itineraries: itineraries, profileNotifier: profileNotifier),
+    child: MaterialApp(
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      home: const UserProfileScreen(userId: _userId),
+    ),
+  );
+}
+
+Widget _buildRouterScreen({
+  required GoRouter router,
+  User? user,
+  List<Itinerary>? itineraries,
+}) {
+  FlutterSecureStorage.setMockInitialValues({});
+  return ProviderScope(
+    overrides: _overrides(user: user, itineraries: itineraries),
+    child: MaterialApp.router(
+      routerConfig: router,
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
     ),
   );
 }
@@ -244,12 +274,134 @@ void main() {
       });
     });
 
+    // ── Navigation — profileBaseRoute ─────────────────────────────────────
+
+    group('navigation — profileBaseRoute', () {
+      // Shared router factory used by both navigation tests below.
+      GoRouter makeRouter({required String base}) => GoRouter(
+            initialLocation: '$base/$_userId',
+            routes: [
+              GoRoute(
+                path: '/search',
+                builder: (_, __) => const SizedBox.shrink(),
+                routes: [
+                  GoRoute(
+                    path: 'profile/:userId',
+                    builder: (_, s) => UserProfileScreen(
+                      userId: s.pathParameters['userId']!,
+                      profileBaseRoute: '/search/profile',
+                    ),
+                    routes: [
+                      GoRoute(
+                        path: 'followers',
+                        builder: (_, s) => Scaffold(
+                          body: Text(
+                              'followers:${s.pathParameters['userId']}'),
+                        ),
+                      ),
+                      GoRoute(
+                        path: 'following',
+                        builder: (_, s) => Scaffold(
+                          body: Text(
+                              'following:${s.pathParameters['userId']}'),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              GoRoute(
+                path: '/profile/:userId',
+                builder: (_, s) => UserProfileScreen(
+                  userId: s.pathParameters['userId']!,
+                ),
+                routes: [
+                  GoRoute(
+                    path: 'followers',
+                    builder: (_, s) => Scaffold(
+                      body:
+                          Text('followers:${s.pathParameters['userId']}'),
+                    ),
+                  ),
+                  GoRoute(
+                    path: 'following',
+                    builder: (_, s) => Scaffold(
+                      body:
+                          Text('following:${s.pathParameters['userId']}'),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          );
+
+      testWidgets(
+          'Given profileBaseRoute=/search/profile, '
+          'When Followers tapped, '
+          'Then navigates to /search/profile/{userId}/followers',
+          (tester) async {
+        tester.view.physicalSize = const Size(1080, 1920);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        await tester.pumpWidget(_buildRouterScreen(
+            router: makeRouter(base: '/search/profile')));
+        await tester.pump();
+
+        await tester.tap(find.text('Followers'));
+        await tester.pumpAndSettle();
+
+        expect(find.text('followers:$_userId'), findsOneWidget);
+      });
+
+      testWidgets(
+          'Given profileBaseRoute=/search/profile, '
+          'When Following tapped, '
+          'Then navigates to /search/profile/{userId}/following',
+          (tester) async {
+        tester.view.physicalSize = const Size(1080, 1920);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        await tester.pumpWidget(_buildRouterScreen(
+            router: makeRouter(base: '/search/profile')));
+        await tester.pump();
+
+        await tester.tap(find.text('Following'));
+        await tester.pumpAndSettle();
+
+        expect(find.text('following:$_userId'), findsOneWidget);
+      });
+
+      testWidgets(
+          'Given default profileBaseRoute, '
+          'When Followers tapped, '
+          'Then navigates to /profile/{userId}/followers',
+          (tester) async {
+        tester.view.physicalSize = const Size(1080, 1920);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        await tester.pumpWidget(
+            _buildRouterScreen(router: makeRouter(base: '/profile')));
+        await tester.pump();
+
+        await tester.tap(find.text('Followers'));
+        await tester.pumpAndSettle();
+
+        expect(find.text('followers:$_userId'), findsOneWidget);
+      });
+    });
+
     // ── Loading / error ───────────────────────────────────────────────────
 
     group('loading and error states', () {
       testWidgets(
           'Given profile is loading, When screen builds, '
-          'Then shows CircularProgressIndicator', (tester) async {
+          'Then shows NTripiCompassLoader', (tester) async {
         tester.view.physicalSize = const Size(1080, 1920);
         tester.view.devicePixelRatio = 1.0;
         addTearDown(tester.view.resetPhysicalSize);
@@ -259,8 +411,7 @@ void main() {
             _buildScreen(profileNotifier: _FakeUserProfileLoading.new));
         await tester.pump();
 
-        expect(
-            find.byType(CircularProgressIndicator), findsOneWidget);
+        expect(find.byType(NTripiCompassLoader), findsOneWidget);
       });
 
       testWidgets(

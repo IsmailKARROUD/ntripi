@@ -14,9 +14,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:social_flutter/features/follows/presentation/follow_list_screen.dart';
 import 'package:social_flutter/features/follows/providers/follow_provider.dart';
 import 'package:social_flutter/features/profile/providers/profile_provider.dart';
+import 'package:social_flutter/l10n/app_localizations.dart';
 import 'package:social_flutter/shared/models/follow.dart';
 import 'package:social_flutter/shared/models/user.dart';
 
@@ -136,10 +138,29 @@ Widget _buildScreen({
           () => _FakeFollowRequests(requests ?? [])),
     ],
     child: MaterialApp(
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
       home: FollowListScreen(userId: userId, type: type),
     ),
   );
 }
+
+List<Override> _providerOverrides({
+  User? myProfile,
+  List<FollowerListItem>? followers,
+  List<FollowerListItem>? following,
+  List<FollowRequestItem>? requests,
+  bool followersError = false,
+}) =>
+    [
+      myProfileProvider.overrideWith(() => _FakeMyProfile(myProfile ?? _ownUser)),
+      followersProvider.overrideWith(followersError
+          ? () => _FakeFollowersError()
+          : () => _FakeFollowers(followers ?? [])),
+      followingProvider.overrideWith(() => _FakeFollowing(following ?? [])),
+      followRequestsProvider
+          .overrideWith(() => _FakeFollowRequests(requests ?? [])),
+    ];
 
 // ═══════════════════════════════════════════════════════════════════════════
 
@@ -445,6 +466,108 @@ void main() {
 
         expect(
             find.text('Not following anyone yet.'), findsOneWidget);
+      });
+    });
+
+    // ── Navigation — profileBaseRoute ─────────────────────────────────────
+
+    group('navigation — profileBaseRoute', () {
+      Widget buildRouterScreen({
+        required GoRouter router,
+        List<FollowerListItem>? followers,
+        List<FollowerListItem>? following,
+      }) {
+        FlutterSecureStorage.setMockInitialValues({});
+        return ProviderScope(
+          overrides: _providerOverrides(
+              followers: followers, following: following),
+          child: MaterialApp.router(
+            routerConfig: router,
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+          ),
+        );
+      }
+
+      testWidgets(
+          'Given profileBaseRoute=/search/profile, '
+          'When follower row tapped, '
+          'Then navigates to /search/profile/{userId}', (tester) async {
+        tester.view.physicalSize = const Size(1080, 1920);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        final router = GoRouter(
+          initialLocation: '/list',
+          routes: [
+            GoRoute(
+              path: '/list',
+              builder: (_, __) => FollowListScreen(
+                userId: _otherUserId,
+                type: FollowListType.followers,
+                profileBaseRoute: '/search/profile',
+              ),
+            ),
+            GoRoute(
+              path: '/search/profile/:userId',
+              builder: (_, s) => Scaffold(
+                body: Text('profile:${s.pathParameters['userId']}'),
+              ),
+            ),
+          ],
+        );
+
+        await tester.pumpWidget(buildRouterScreen(
+          router: router,
+          followers: [_follower1],
+        ));
+        await tester.pump();
+
+        await tester.tap(find.text('Yacine Coulibaly'));
+        await tester.pumpAndSettle();
+
+        expect(find.text('profile:f-1'), findsOneWidget);
+      });
+
+      testWidgets(
+          'Given default profileBaseRoute, '
+          'When follower row tapped, '
+          'Then navigates to /profile/{userId}', (tester) async {
+        tester.view.physicalSize = const Size(1080, 1920);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        final router = GoRouter(
+          initialLocation: '/list',
+          routes: [
+            GoRoute(
+              path: '/list',
+              builder: (_, __) => FollowListScreen(
+                userId: _otherUserId,
+                type: FollowListType.followers,
+              ),
+            ),
+            GoRoute(
+              path: '/profile/:userId',
+              builder: (_, s) => Scaffold(
+                body: Text('profile:${s.pathParameters['userId']}'),
+              ),
+            ),
+          ],
+        );
+
+        await tester.pumpWidget(buildRouterScreen(
+          router: router,
+          followers: [_follower1],
+        ));
+        await tester.pump();
+
+        await tester.tap(find.text('Yacine Coulibaly'));
+        await tester.pumpAndSettle();
+
+        expect(find.text('profile:f-1'), findsOneWidget);
       });
     });
 

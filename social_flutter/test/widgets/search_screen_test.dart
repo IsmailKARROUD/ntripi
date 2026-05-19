@@ -16,8 +16,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:social_flutter/features/search/presentation/search_screen.dart';
 import 'package:social_flutter/features/search/providers/search_provider.dart';
+import 'package:social_flutter/l10n/app_localizations.dart';
 import 'package:social_flutter/shared/models/user.dart';
 
 // ── Fixtures ──────────────────────────────────────────────────────────────
@@ -72,7 +74,11 @@ Widget _buildScreen({
         notifier ?? () => _FakeSearchResults(results ?? []),
       ),
     ],
-    child: const MaterialApp(home: SearchScreen()),
+    child: MaterialApp(
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      home: const SearchScreen(),
+    ),
   );
 }
 
@@ -306,6 +312,63 @@ void main() {
         await _typeQuery(tester, 'amina');
 
         expect(find.byIcon(Icons.lock_rounded), findsNothing);
+      });
+    });
+
+    // ── Navigation ───────────────────────────────────────────────────────
+
+    group('navigation', () {
+      testWidgets(
+          'Given results loaded and text entered, '
+          'When user row tapped, '
+          'Then pushes /search/profile/{userId} (bottom bar stays in-branch)',
+          (tester) async {
+        tester.view.physicalSize = const Size(1080, 1920);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        FlutterSecureStorage.setMockInitialValues({});
+
+        final router = GoRouter(
+          initialLocation: '/search',
+          routes: [
+            GoRoute(
+              path: '/search',
+              builder: (_, __) => const SearchScreen(),
+              routes: [
+                GoRoute(
+                  path: 'profile/:userId',
+                  builder: (_, s) => Scaffold(
+                    body: Text('profile:${s.pathParameters['userId']}'),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        );
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              searchResultsProvider
+                  .overrideWith(() => _FakeSearchResults([_makeUser()])),
+            ],
+            child: MaterialApp.router(
+              routerConfig: router,
+              localizationsDelegates:
+                  AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+            ),
+          ),
+        );
+        await tester.pump();
+        await _typeQuery(tester, 'amina');
+
+        await tester.tap(find.text('Amina Diallo'));
+        await tester.pumpAndSettle();
+
+        expect(find.text('profile:u-1'), findsOneWidget);
       });
     });
 
