@@ -183,6 +183,7 @@ class ItineraryDetailNotifier
     state.whenData((current) {
       state = AsyncData(current.copyWith(
         title: updated.title,
+        description: updated.description,
         visibility: updated.visibility,
         currency: updated.currency,
         updatedAt: updated.updatedAt,

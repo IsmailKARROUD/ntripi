@@ -384,7 +384,7 @@ Future<void> loadCurrencies() async {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const Text(
-                          'TITLE',
+                          'TITLE *',
                           style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w700,
@@ -416,33 +416,6 @@ Future<void> loadCurrencies() async {
                               ? l10n.itineraryTitleRequired
                               : null,
                           textInputAction: TextInputAction.next,
-                        ),
-                      ],
-                    ),
-                  ),
-                  const _FieldDivider(),
-                  // Description field
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 13, 16, 12),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'DESCRIPTION',
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w700,
-                            color: kText2,
-                            letterSpacing: 0.4,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        MarkdownNotesEditor(
-                          controller: _descriptionController,
-                          readOnly: false,
-                          label: l10n.descriptionLabel,
-                          helpTitle: l10n.descriptionLabel,
-                          helpMessage: l10n.descriptionHelp,
                         ),
                       ],
                     ),

@@ -82,6 +82,10 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
   final Map<String, GlobalKey> _trackKeys = {};
   //start with map hidden on mobile to avoid unnecessary API calls and improve performance, since the map is less likely to be used on mobile and can be accessed via a button
   bool _mapVisible = false;
+  final TextEditingController _descriptionController = TextEditingController();
+  // Snapshot of the description as last saved; null outside of edit sessions.
+  String? _savedDescription;
+  bool _descriptionDirty = false;
 
   static const _markerColors = {
     StopType.origin: kForest,
@@ -89,12 +93,91 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
     StopType.arrival: kRatingRed,
   };
 
+  @override
+  void initState() {
+    super.initState();
+    // Rebuild only when dirty state flips, not on every keystroke.
+    _descriptionController.addListener(_onDescriptionChanged);
+  }
+
+  @override
+  void dispose() {
+    _descriptionController.removeListener(_onDescriptionChanged);
+    _descriptionController.dispose();
+    super.dispose();
+  }
+
+  void _onDescriptionChanged() {
+    final dirty =
+        _descriptionController.text.trim() != (_savedDescription ?? '');
+    if (dirty != _descriptionDirty) setState(() => _descriptionDirty = dirty);
+  }
+
   void _enterEditMode() {
+    final itinerary =
+        ref.read(itineraryDetailProvider(widget.itineraryId)).valueOrNull;
+    final desc = itinerary?.description ?? '';
+    _savedDescription =
+        desc; // must be set before controller.text to avoid a false dirty signal
+    _descriptionController.text = desc;
     setState(() => _editMode = true);
   }
 
-  void _exitEditMode() {
-    setState(() => _editMode = false);
+  void _undoDescription() {
+    _descriptionController.text = _savedDescription ?? '';
+  }
+
+  Future<void> _saveDescription() async {
+    final newDesc = _descriptionController.text.trim();
+    try {
+      await ref
+          .read(itineraryDetailProvider(widget.itineraryId).notifier)
+          .updateHeader({'description': newDesc.isEmpty ? null : newDesc});
+      if (!mounted) return;
+      setState(() {
+        _savedDescription = newDesc;
+        _descriptionDirty = false;
+      });
+    } on Exception catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(extractErrorMessage(e as dynamic))),
+      );
+    }
+  }
+
+  Future<void> _exitEditMode() async {
+    if (_descriptionDirty) {
+      final save = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Unsaved description'),
+          content: const Text('Save your description changes before leaving?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(false),
+              child: const Text('Discard'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(ctx).pop(true),
+              child: const Text('Save'),
+            ),
+          ],
+        ),
+      );
+      if (save == null || !mounted) return; // dismissed → stay in edit mode
+      if (save) {
+        await _saveDescription();
+        if (!mounted) return;
+      }
+    }
+    if (mounted) {
+      setState(() {
+        _editMode = false;
+        _descriptionDirty = false;
+        _savedDescription = null;
+      });
+    }
   }
 
   /// Scrolls the outer CustomScrollView so that the track with the given ID
@@ -300,7 +383,7 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
       canPop: !_editMode,
       onPopInvokedWithResult: (didPop, _) async {
         if (didPop) return;
-        setState(() => _editMode = false);
+        await _exitEditMode();
       },
       child: Scaffold(
         backgroundColor: kSurface,
@@ -369,7 +452,8 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
 
                       // Divider between stop groups (not before the first).
                       if (items.isNotEmpty) {
-                        items.add(const ShadowDivider(height: 1, indent: 14, endIndent: 14));
+                        items.add(const ShadowDivider(
+                            height: 1, indent: 14, endIndent: 14));
                       }
 
                       // READ MODE: show the inbound transit BEFORE this stop
@@ -644,7 +728,61 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                         ),
 
                         // ── Description ────────────────────────────────────
-                        if (itinerary.description != null &&
+                        if (canEdit)
+                          SliverToBoxAdapter(
+                            child: Padding(
+                              padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  MarkdownNotesEditor(
+                                    controller: _descriptionController,
+                                    readOnly: false,
+                                    label: l10n.descriptionLabel,
+                                    helpTitle: l10n.descriptionLabel,
+                                    helpMessage: l10n.descriptionHelp,
+                                  ),
+                                  if (_descriptionDirty)
+                                    Padding(
+                                      padding: const EdgeInsets.only(top: 8),
+                                      child: Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.end,
+                                        children: [
+                                          
+                                          Padding(
+                                            padding: const EdgeInsets.only(left: 16),
+                                            child: TextButton.icon(
+                                              onPressed: _undoDescription,
+                                              icon: const Icon(Icons.undo_rounded,
+                                                  color: kRatingRed, size: 16),
+                                              label: const Text(
+                                                'Undo',
+                                                style:
+                                                    TextStyle(color: kRatingRed),
+                                              ),
+                                            ),
+                                          ),
+                                          const Spacer(),
+                                          Padding(
+                                            padding: const EdgeInsets.only(right: 16),
+                                            child: FilledButton(
+                                              onPressed: _saveDescription,
+                                              child:
+                                                  const Padding(
+                                                    padding:  EdgeInsets.only(left: 16,right: 16),
+                                                    child:  Text('Save description'),
+                                                  ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                ],
+                              ),
+                            ),
+                          )
+                        else if (itinerary.description != null &&
                             itinerary.description!.isNotEmpty)
                           SliverToBoxAdapter(
                             child: Padding(
@@ -765,8 +903,10 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                                     onPressed: () => showTrackReorderSheet(
                                       context: context,
                                       itineraryId: widget.itineraryId,
-                                      tracks: itineraryAsync.valueOrNull!.tracks,
-                                      segments: itineraryAsync.valueOrNull!.segments,
+                                      tracks:
+                                          itineraryAsync.valueOrNull!.tracks,
+                                      segments:
+                                          itineraryAsync.valueOrNull!.segments,
                                     ),
                                     visualDensity: VisualDensity.compact,
                                     padding: EdgeInsets.zero,
