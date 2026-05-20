@@ -51,8 +51,6 @@ def prepare_share_context(
             "id": str(stop.id),
             "place_name": stop.place_name or "Unnamed stop",
             "place_address": stop.place_address,
-            "type": stop.type,
-            "type_emoji": _stop_emoji(stop.type, stop.place_type),
             "duration_min": stop.duration_min,
             "cost": float(stop.cost),
             "is_free": stop.is_free,
@@ -103,27 +101,6 @@ def _resolve_preview_image_url(itinerary: "Itinerary", settings: "Settings") -> 
     # Phase 2 map-image fallback goes here.
 
     return f"{settings.share_base_url}/static/ntripi-og-default.png"
-
-
-def _stop_emoji(stop_type: str, place_type: str | None) -> str:
-    if stop_type == "origin":
-        return "📍"
-    if stop_type == "arrival":
-        return "🏁"
-    # waypoint — differentiate by place type
-    return {
-        "eatDrink": "",
-        "sleep": "",
-        "pray": "",
-        "learnSee": "",
-        "buy": "",
-        "playWatch": "",
-        "nature": "",
-        "travel": "",
-        "healBathe": "",
-        "entertainment": "",
-        "sight": "",
-    }.get(place_type or "", "")
 
 
 def _mode_emoji(mode: str) -> str:
