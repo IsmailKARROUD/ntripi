@@ -7,10 +7,14 @@ FastAPI + PostgreSQL backend for the Ntripi social travel application.
 ```
 social_api/
 ├── app/
-│   ├── main.py              ← FastAPI app, CORS, router registration
+│   ├── main.py              ← FastAPI app, middleware stack, router registration
 │   ├── config.py            ← pydantic-settings config (reads .env)
-│   ├── database.py          ← SQLAlchemy engine + session factory
-│   ├── dependencies.py      ← get_current_user (JWT auth dependency)
+│   ├── database.py          ← SQLAlchemy engine + session factory (pool + timeout)
+│   ├── dependencies.py      ← get_current_user (JWT auth dependency), require_etag
+│   ├── limiter.py           ← slowapi Limiter singleton (import from here in routers)
+│   ├── middleware/
+│   │   ├── etag.py              ← ETag / 304 Not Modified middleware
+│   │   └── security_headers.py  ← X-Frame-Options, HSTS, CSP, X-Content-Type-Options
 │   ├── models/
 │   │   ├── user.py                    ← users table
 │   │   ├── follow.py                  ← follows table + FollowStatus enum
@@ -29,8 +33,8 @@ social_api/
 │   │   ├── follow.py        ← Follow response + request list schemas
 │   │   └── itinerary.py     ← All itinerary/stop/segment/leg/rating/annotation schemas
 │   ├── routers/
-│   │   ├── auth.py          ← POST /auth/register, POST /auth/login
-│   │   ├── users.py         ← GET/PATCH /users/me, search, public profile
+│   │   ├── auth.py          ← POST /auth/register (5/hr), POST /auth/login (10/min)
+│   │   ├── users.py         ← GET/PATCH /users/me, search (30/min), public profile
 │   │   ├── follows.py       ← All follow/unfollow endpoints
 │   │   ├── itineraries.py   ← All itinerary, stop, segment, leg, rating, image endpoints
 │   │   ├── share.py         ← GET /share/i/{id} public share landing page
@@ -465,30 +469,83 @@ Docs: http://localhost:8000/docs
 
 ## Deployment (Railway)
 
-1. Set environment variables:
-   - `DATABASE_URL` — private PostgreSQL URL (`${{Postgres.DATABASE_URL}}`)
-   - `SECRET_KEY` — generate with `openssl rand -hex 32`
-   - `DEBUG=False`
-   - `ALLOWED_ORIGINS=https://ntripi.app`
-   - `STORAGE_BACKEND=filesystem`
-   - `STORAGE_FILESYSTEM_PATH=/app/uploads`
-   - `STORAGE_PUBLIC_URL_PREFIX=/uploads`
+### Required environment variables
 
-2. Persistent volume must be mounted at `/app/uploads` — cover images will be lost on redeploy without it.
+| Variable | Example / Notes |
+|----------|----------------|
+| `DATABASE_URL` | `${{Postgres.DATABASE_URL}}` — Railway private URL |
+| `SECRET_KEY` | `openssl rand -hex 32` — **must be ≥ 32 characters** or startup will fail |
+| `ALGORITHM` | `HS256` |
+| `ACCESS_TOKEN_EXPIRE_MINUTES` | `1440` (24 h) |
+| `DEBUG` | `False` — enables `/docs`+`/redoc` when `True`; **never `True` on Railway** |
+| `ALLOWED_ORIGINS` | `https://ntripi.app` — comma-separated list of allowed browser origins |
+| `ALLOWED_HOSTS` | `ntripi.app,*.ntripi.app` — comma-separated; apex + wildcard must both be listed |
+| `SHARE_BASE_URL` | `https://ntripi.app` |
+| `STORAGE_BACKEND` | `filesystem` (default) or `r2` |
+| `STORAGE_FILESYSTEM_PATH` | `/app/uploads` (filesystem backend only) |
+| `STORAGE_PUBLIC_URL_PREFIX` | `/uploads` (filesystem backend only) |
 
-3. Build triggered automatically on push to `main` via the repo-root Dockerfile.
+**R2 storage** (optional — set when `STORAGE_BACKEND=r2`):
+
+| Variable | Notes |
+|----------|-------|
+| `R2_ACCESS_KEY_ID` | |
+| `R2_SECRET_ACCESS_KEY` | |
+| `R2_BUCKET` | |
+| `R2_ENDPOINT` | `https://<account-id>.r2.cloudflarestorage.com` |
+| `R2_PUBLIC_URL` | Public serving URL (r2.dev subdomain or custom domain) |
+
+### Persistent volume
+
+Mount a Railway persistent volume at `/app/uploads` when using the filesystem storage backend — cover images will be lost on redeploy without it.
+
+### Build & deploy
+
+Build is triggered automatically on push to `main` via the repo-root Dockerfile. The container runs as `appuser` (non-root) and exposes `$PORT` (default 8000). The HEALTHCHECK polls `/health` every 30 s using Python's stdlib urllib.
 
 ---
 
 ## Security Notes
 
+### Authentication & passwords
 - Passwords hashed with bcrypt — plain text never stored or logged.
-- Login uses constant-time comparison to prevent timing attacks.
-- JWT HS256, 24h expiry, stored in flutter_secure_storage on the client.
+- Login uses constant-time comparison (dummy hash on missing user) to prevent timing-based user enumeration.
+- JWT HS256, 24 h expiry, stored in `flutter_secure_storage` on the client (Keychain on iOS, EncryptedSharedPreferences on Android).
 - `is_active` is checked on every authenticated request.
-- CORS restricted to configured frontend origin in production.
-- Self-follow prevented at both application and database level.
-- Duplicate follows prevented at both application and database level.
+- Web sessions use `ntripi_session` HTTP-only cookie (`Secure` when `DEBUG=False`, `SameSite=Lax`).
+
+### Middleware stack (outermost → innermost)
+1. **ProxyHeadersMiddleware** — rewrites `X-Forwarded-For` into `request.client.host` so rate limiting and `TrustedHostMiddleware` see real client IPs behind Railway/Cloudflare.
+2. **TrustedHostMiddleware** — rejects requests with `Host` headers not in `ALLOWED_HOSTS`; prevents host-header injection attacks.
+3. **ContentSizeLimitMiddleware** — rejects requests with `Content-Length > 10 MB` with 413 before CORS or handlers run.
+4. **SecurityHeadersMiddleware** — adds `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, `Content-Security-Policy: frame-ancestors 'none'`, and `Strict-Transport-Security: max-age=31536000` (HTTPS only).
+5. **CORSMiddleware** — explicit origin, method, and header allowlists; never wildcard.
+6. **ETagMiddleware** — response body hashing for bandwidth-saving 304 replies.
+
+### Rate limiting (slowapi, in-memory)
+| Endpoint | Limit |
+|----------|-------|
+| `POST /auth/register` | 5 requests / hour per IP |
+| `POST /auth/login` | 10 requests / minute per IP |
+| `GET /users/search` | 30 requests / minute per IP |
+
+Rate limits are enforced per real client IP (after `ProxyHeadersMiddleware` rewrites the address). The in-memory store resets on deploy; a Redis-backed store is needed if the service is ever horizontally scaled.
+
+### Input validation
+- All request bodies validated by Pydantic v2 schemas (lengths, ranges, enums, regex).
+- `SECRET_KEY` validated at startup — must be ≥ 32 characters or the process refuses to start.
+- Image uploads: max 10 MB, JPEG/PNG/WebP only, EXIF stripped (including GPS coordinates).
+- Uploaded images are Pillow-processed before storage — dimensions capped, re-encoded as JPEG.
+
+### Access control
+- Single source of truth: `can_view_itinerary()` in `services/itinerary_access.py`.
 - All mutating itinerary endpoints verify ownership before proceeding.
-- EXIF metadata (including GPS coordinates) stripped from all uploaded images.
-- Web sessions use `ntripi_session` HTTP-only cookie (Secure when `DEBUG=False`, SameSite=Lax).
+- Self-follow and duplicate follows prevented at both application and database level.
+
+### Error handling
+- Unhandled exceptions are logged server-side (`logger.exception(...)`) but return a generic `{"detail": "Internal server error"}` to clients in production.
+- Stack traces visible only when `DEBUG=True` (local dev only).
+
+### Dependency supply-chain
+- All production dependencies pinned to exact versions in `requirements.txt`.
+- Run `pip-audit` or `safety check` periodically to catch known CVEs.

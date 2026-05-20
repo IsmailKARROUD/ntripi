@@ -44,6 +44,37 @@ Monorepo at `/Users/ismac/project/Ntripi/`:
 - Auth service: `auth_service.py` shared by web (`/web/login`) and API (`/auth/login`)
 - Image processing: `app/services/image_service.py` — Pillow resize + EXIF strip + 1200×630 cover-fit + JPEG
 
+### Security Middleware Stack
+
+`add_middleware` is **LIFO** — the last `add_middleware` call is the outermost layer (receives requests first, responses last). The correct code order to achieve the desired runtime order is:
+
+```
+Code order (first added → innermost):     Runtime request order (outermost first):
+  ETagMiddleware                    →        ProxyHeadersMiddleware
+  CORSMiddleware                    →        TrustedHostMiddleware
+  SecurityHeadersMiddleware         →        ContentSizeLimitMiddleware
+  ContentSizeLimitMiddleware        →        SecurityHeadersMiddleware
+  TrustedHostMiddleware             →        CORSMiddleware
+  ProxyHeadersMiddleware            →        ETagMiddleware
+```
+
+Key rules:
+- **`ProxyHeadersMiddleware`** (`uvicorn.middleware.proxy_headers`) must be outermost — it rewrites `X-Forwarded-For` into `request.client.host` so rate limiting (`slowapi`) and `TrustedHostMiddleware` see the real client IP, not Railway's internal proxy IP. `trusted_hosts="*"` is safe because Railway does not expose the container to the internet directly.
+- **`TrustedHostMiddleware`** reads `ALLOWED_HOSTS` from settings (comma-separated). The apex domain and wildcard must both be listed separately (`ntripi.app,*.ntripi.app`) — Starlette's wildcard does not match the bare apex.
+- **`SecurityHeadersMiddleware`** (`app/middleware/security_headers.py`) applies `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, `Content-Security-Policy: frame-ancestors 'none'`, and (HTTPS only) `Strict-Transport-Security: max-age=31536000`. CSP uses only `frame-ancestors` — `default-src 'self'` is meaningless for a JSON API.
+- **`CORSMiddleware`** must use explicit method and header lists — never `["*"]`. Current whitelist: methods `GET POST PATCH DELETE OPTIONS`; headers `Content-Type Authorization If-Match If-None-Match`.
+- **Rate limiting** (`slowapi`) — the limiter singleton lives in `app/limiter.py` to avoid circular imports (main.py imports routers; routers cannot import from main.py). Import `limiter` in router files; call `app.state.limiter = limiter` in `main.py`. Current limits: register 5/hour, login 10/minute, search 30/minute. In-memory store — sufficient for single-instance Railway; needs Redis if horizontally scaled.
+- **Generic exception handler** must re-raise `asyncio.CancelledError`, `KeyboardInterrupt`, and `SystemExit` — intercepting these breaks Starlette's lifespan and async request lifecycle.
+
+### Config Invariants
+- `SECRET_KEY` is validated at startup with `Field(min_length=32)` — anything shorter raises a `ValidationError` before the server accepts traffic. Generate with `openssl rand -hex 32`.
+- `ALLOWED_HOSTS` (comma-separated) drives `TrustedHostMiddleware`. Default: `ntripi.app,*.ntripi.app`.
+- `DEBUG=False` disables `/docs` and `/redoc` via `docs_url=None`. Never set `True` on Railway.
+
+### Database Invariants
+- Pool: `pool_size=10`, `max_overflow=20`, `pool_pre_ping=True`.
+- Statement timeout: 30 s via `connect_args={"options": "-c statement_timeout=30000"}`. Alembic uses its own `NullPool` engine and is not affected by this timeout.
+
 ### Stop / Track Ordering (fractional indexing)
 - **Tracks** are a first-class table (`tracks`). A track is a vertical column of parallel stop alternatives.
 - `tracks.rank` and `stops.rank` are lexicographic string keys — `TEXT COLLATE "C"` in PostgreSQL.
@@ -175,9 +206,18 @@ Persistent volume must be mounted at `/app/uploads` or images vanish on redeploy
 - Do NOT hardcode URLs, secrets, or environment values
 - Do NOT use `passlib` — bcrypt direct only
 - Do NOT use `allow_origin_regex=".*"` in CORS — explicit list only
+- Do NOT use `allow_methods=["*"]` or `allow_headers=["*"]` in CORS — explicit lists only
 - Do NOT query `User.username == something` — always `username_lower`
 - Do NOT use `--web-renderer` flag in Flutter (removed in 3.29)
 - Do NOT reference `DATABASE_PUBLIC_URL` from the backend — use `${{Postgres.DATABASE_URL}}`
 - Do NOT bypass the storage abstraction
 - Do NOT skip EXIF stripping on uploaded images
 - Do NOT write inline `showDialog` for destructive actions
+- Do NOT omit `ProxyHeadersMiddleware` when deploying behind Railway/Cloudflare — rate limiting will throttle all users from the same proxy IP without it
+- Do NOT remove `ALLOWED_HOSTS` or set it to `*` in production — always whitelist `ntripi.app,*.ntripi.app`
+- Do NOT set `SECRET_KEY` shorter than 32 characters — startup will refuse to start
+- Do NOT expose `/docs` or `/redoc` in production — `DEBUG=False` disables them; do not override `docs_url`/`redoc_url` unconditionally
+- Do NOT catch `asyncio.CancelledError` in exception handlers — re-raise it; intercepting it breaks Starlette's lifespan
+- Do NOT add new rate-limited endpoints without importing `limiter` from `app/limiter.py` (not from `app/main.py` — circular import)
+- Do NOT run the container as root — the Dockerfile creates `appuser` and must keep `USER appuser`
+- Do NOT store tokens or sensitive user data in Riverpod provider state — use `flutter_secure_storage` only; call `ref.invalidate()` on user-specific providers in `AuthNotifier.logout()`
