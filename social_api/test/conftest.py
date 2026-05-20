@@ -86,6 +86,20 @@ def override_get_db():
 # Fixtures
 # ---------------------------------------------------------------------------
 
+@pytest.fixture(autouse=True)
+def reset_rate_limiter():
+    """Reset slowapi's in-memory storage before each test.
+
+    Without this, rate limit counters accumulate across the test session.
+    All TestClient requests share the same IP (testserver), so the 5/hour
+    register limit is exhausted after just a few tests, causing unrelated
+    tests to receive 429 instead of 201/200.
+    """
+    from app.limiter import limiter
+    limiter._storage.reset()
+    yield
+
+
 @pytest.fixture()
 def client():
     """
@@ -106,8 +120,9 @@ def client():
     # Override the database dependency
     app.dependency_overrides[get_db] = override_get_db
 
-    # Yield the test client — this is what the test receives
-    with TestClient(app) as test_client:
+    # Use ntripi.app as the base URL so the Host header matches ALLOWED_HOSTS
+    # and TrustedHostMiddleware does not reject all test requests.
+    with TestClient(app, base_url="http://ntripi.app") as test_client:
         yield test_client
 
     # Teardown: drop all tables so the next test starts clean
