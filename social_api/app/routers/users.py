@@ -16,9 +16,11 @@ import uuid
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import select, or_, update
 from sqlalchemy.orm import Session
+from starlette.requests import Request
 
 from app.database import get_db
 from app.dependencies import get_current_user
+from app.limiter import limiter
 from app.models.follow import Follow, FollowStatus
 from app.models.itinerary_rating import ItineraryRating
 from app.models.user import User
@@ -244,7 +246,9 @@ def get_user_by_username(
     response_model=list[UserSearchResult],
     summary="Search users by username or display name",
 )
+@limiter.limit("30/minute")
 def search_users(
+    request: Request,
     q: str = Query(..., min_length=1, description="Search query"),
     limit: int = Query(20, ge=1, le=100),
     offset: int = Query(0, ge=0),

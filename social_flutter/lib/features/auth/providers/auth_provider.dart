@@ -12,6 +12,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:social_flutter/core/api/api_client.dart';
 import 'package:social_flutter/features/auth/data/auth_repository.dart';
+import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
+import 'package:social_flutter/features/profile/providers/profile_provider.dart';
+import 'package:social_flutter/features/search/providers/search_provider.dart';
 
 /// Provides the AuthRepository — the single instance for the app lifetime.
 final authRepositoryProvider = Provider<AuthRepository>((ref) {
@@ -36,6 +39,13 @@ class AuthNotifier extends Notifier<String?> {
   /// Called on logout or when a 401 is received.
   Future<void> logout() async {
     await ref.read(authRepositoryProvider).logout();
+    // Clear cached user data so a subsequent login as a different account
+    // doesn't briefly show the previous user's content.
+    // Use invalidate() not refresh() — the user is unauthenticated at this
+    // point, so a refetch would immediately 401.
+    ref.invalidate(myProfileProvider);
+    ref.invalidate(myItinerariesProvider);
+    ref.invalidate(searchQueryProvider);
     state = null;
   }
 }

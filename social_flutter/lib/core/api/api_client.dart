@@ -52,6 +52,9 @@ Dio createDioClient({CacheStore? cacheStore}) {
       baseUrl: kApiBaseUrl,
       connectTimeout: const Duration(seconds: 15),
       receiveTimeout: const Duration(seconds: 15),
+      // 30 s for uploads — cover images can be several MB; standard JSON
+      // requests are already bounded by connectTimeout / receiveTimeout.
+      sendTimeout: const Duration(seconds: 30),
       // Always send/expect JSON.
       headers: {'Content-Type': 'application/json'},
     ),

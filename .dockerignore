@@ -12,6 +12,12 @@
 **/.env.*
 !**/.env.example
 
+# Private keys and certificates
+**/*.key
+**/*.pem
+**/*.crt
+**/*.p12
+
 # Git
 .git/
 .gitignore

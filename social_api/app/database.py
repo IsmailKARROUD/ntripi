@@ -30,6 +30,12 @@ settings = get_settings()
 engine = create_engine(
     settings.DATABASE_URL,
     pool_pre_ping=True,
+    pool_size=10,
+    max_overflow=20,
+    # Abort queries running longer than 30 s — prevents runaway queries from
+    # holding connections. Alembic uses its own NullPool engine, so migrations
+    # are not affected by this timeout.
+    connect_args={"options": "-c statement_timeout=30000"},
 )
 
 # SessionLocal is a factory class. Calling SessionLocal() creates a new session.

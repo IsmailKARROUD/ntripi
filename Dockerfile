@@ -36,7 +36,16 @@ COPY social_api/ .
 
 COPY --from=flutter_builder /flutter_app/build/web /app/web_build
 
+# Non-root user — the API process has no reason to run as UID 0
+RUN adduser --disabled-password --gecos '' appuser \
+    && chown -R appuser:appuser /app
+USER appuser
+
 ENV PORT=8000
 EXPOSE 8000
+
+# Use Python's stdlib for the health probe — curl is not guaranteed in python:3.11-slim
+HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
+    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:${PORT:-8000}/health')"
 
 CMD ["sh", "-c", "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]

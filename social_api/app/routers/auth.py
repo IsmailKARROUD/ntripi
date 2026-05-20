@@ -19,9 +19,11 @@ Security notes:
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
+from starlette.requests import Request
 
 from app.constants.tos import TOS_DATE, TOS_SUMMARY, TOS_VERSION
 from app.database import get_db
+from app.limiter import limiter
 from app.schemas.auth import LoginRequest, RegisterRequest, TokenResponse
 from app.services import auth_service
 
@@ -34,7 +36,8 @@ router = APIRouter(prefix="/auth", tags=["Authentication"])
     status_code=status.HTTP_201_CREATED,
     summary="Create a new account",
 )
-def register(payload: RegisterRequest, db: Session = Depends(get_db)) -> TokenResponse:
+@limiter.limit("5/hour")
+def register(request: Request, payload: RegisterRequest, db: Session = Depends(get_db)) -> TokenResponse:
     """
     Create a new user account and return a JWT token.
     Input validation (format, length) is handled by RegisterRequest.
@@ -63,7 +66,8 @@ def register(payload: RegisterRequest, db: Session = Depends(get_db)) -> TokenRe
     response_model=TokenResponse,
     summary="Log in with email and password",
 )
-def login(payload: LoginRequest, db: Session = Depends(get_db)) -> TokenResponse:
+@limiter.limit("10/minute")
+def login(request: Request, payload: LoginRequest, db: Session = Depends(get_db)) -> TokenResponse:
     try:
         user, token = auth_service.authenticate_user(payload.identifier, payload.password, db)
     except auth_service.AuthError as e:

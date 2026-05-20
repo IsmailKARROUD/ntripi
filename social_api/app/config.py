@@ -15,6 +15,7 @@ Why @lru_cache on get_settings()?
 """
 
 from functools import lru_cache
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -31,7 +32,8 @@ class Settings(BaseSettings):
 
     # Secret key used to sign JWT tokens.
     # Generate a strong one with: openssl rand -hex 32
-    SECRET_KEY: str
+    # min_length=32 ensures startup fails fast if a weak or placeholder key is used.
+    SECRET_KEY: str = Field(min_length=32)
 
     # JWT signing algorithm. HS256 uses a symmetric shared secret,
     # which is appropriate when both signing and verifying happen in the same service.
@@ -48,6 +50,11 @@ class Settings(BaseSettings):
     # Allowed CORS origins in production mode.
     # In DEBUG mode this is overridden to allow all origins.
     ALLOWED_ORIGINS: str = "https://your-frontend-domain.com"
+
+    # Allowed Host headers for TrustedHostMiddleware (host-header injection prevention).
+    # List apex and wildcard separately — the wildcard alone does not match the apex
+    # in Starlette's TrustedHostMiddleware.
+    ALLOWED_HOSTS: str = "ntripi.app,*.ntripi.app"
 
     # Base URL used to construct share links sent via the share sheet.
     # In production: SHARE_BASE_URL=https://ntripi.app
