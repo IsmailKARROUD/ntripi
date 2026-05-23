@@ -2503,6 +2503,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Optional. How suitable the trip is for families with children.'**
   String get familyFriendlyHelp;
+
+  /// Toggle label to reveal hidden optional fields on the stop/itinerary creation form
+  ///
+  /// In en, this message translates to:
+  /// **'Show optional fields'**
+  String get showOptionalFields;
+
+  /// Toggle label to hide optional fields again on the stop/itinerary creation form
+  ///
+  /// In en, this message translates to:
+  /// **'Hide optional fields'**
+  String get hideOptionalFields;
 }
 
 class _AppLocalizationsDelegate

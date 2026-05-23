@@ -581,5 +581,10 @@
   "accessibilityLabel": "Accessibility",
   "accessibilityHelp": "Optional. How accessible the itinerary is (mobility, language, signage).",
   "familyFriendlyLabel": "Family-friendly",
-  "familyFriendlyHelp": "Optional. How suitable the trip is for families with children."
+  "familyFriendlyHelp": "Optional. How suitable the trip is for families with children.",
+
+  "showOptionalFields": "Show optional fields",
+  "@showOptionalFields": {"description": "Toggle label to reveal hidden optional fields on the stop/itinerary creation form"},
+  "hideOptionalFields": "Hide optional fields",
+  "@hideOptionalFields": {"description": "Toggle label to hide optional fields again on the stop/itinerary creation form"}
 }

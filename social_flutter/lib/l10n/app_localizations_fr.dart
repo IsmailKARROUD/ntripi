@@ -1416,4 +1416,10 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get familyFriendlyHelp =>
       'Optionnel. À quel point ce voyage convient aux familles avec enfants.';
+
+  @override
+  String get showOptionalFields => 'Afficher les champs optionnels';
+
+  @override
+  String get hideOptionalFields => 'Masquer les champs optionnels';
 }

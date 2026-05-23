@@ -455,5 +455,8 @@
   "accessibilityLabel": "Accessibilité",
   "accessibilityHelp": "Optionnel. À quel point l'itinéraire est accessible (mobilité, langue, signalisation).",
   "familyFriendlyLabel": "Familial",
-  "familyFriendlyHelp": "Optionnel. À quel point ce voyage convient aux familles avec enfants."
+  "familyFriendlyHelp": "Optionnel. À quel point ce voyage convient aux familles avec enfants.",
+
+  "showOptionalFields": "Afficher les champs optionnels",
+  "hideOptionalFields": "Masquer les champs optionnels"
 }

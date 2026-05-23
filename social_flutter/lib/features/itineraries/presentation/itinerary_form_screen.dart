@@ -76,6 +76,9 @@ class _ItineraryFormScreenState extends ConsumerState<ItineraryFormScreen> {
   bool _saving = false;
   // Guards _initFromProvider so rebuilds don't overwrite the user's edits.
   bool _initialized = false;
+  // Create-mode only: collapses cover image + BASICS so the user only sees
+  // the mandatory title until they expand. Defaults handle a no-touch save.
+  bool _showOptional = false;
 
   // Cover image state — deferred upload on create, immediate on edit.
   Uint8List? _pendingImageBytes;
@@ -315,6 +318,10 @@ class _ItineraryFormScreenState extends ConsumerState<ItineraryFormScreen> {
     final visLabel = _visibilityLabel(_visibility, l10n);
     final visIcon = _visibilityIcon(_visibility);
     final visColor = _visibilityColor(_visibility);
+    // Only the title is mandatory at creation — hide the rest behind a toggle
+    // so first-time users can save fast. Edit mode always shows everything.
+    final bool collapseOptional =
+        widget.mode == ItineraryFormMode.create && !_showOptional;
 
     return Scaffold(
       resizeToAvoidBottomInset: false,
@@ -403,49 +410,91 @@ class _ItineraryFormScreenState extends ConsumerState<ItineraryFormScreen> {
                 ],
               ),
               const SizedBox(height: 24),
-              // ── Cover image slot ──────────────────────────────────────────
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-                child: CoverImageField(
-                  initialUrl: widget.mode == ItineraryFormMode.edit
-                      ? ref
-                          .read(itineraryDetailProvider(widget.itineraryId!))
-                          .valueOrNull
-                          ?.coverImageUrl
-                      : null,
-                  onImageSelected: (bytes, filename) => setState(() {
-                    _pendingImageBytes = bytes;
-                    _pendingImageFilename = filename;
-                    _removeExistingImage = false;
-                  }),
-                  onImageRemoved: () => setState(() {
-                    _pendingImageBytes = null;
-                    _pendingImageFilename = null;
-                    _removeExistingImage = true;
-                  }),
+              // ── Optional fields toggle (create mode only) ─────────────────
+              if (widget.mode == ItineraryFormMode.create)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
+                  child: Align(
+                    alignment: Alignment.center,
+                    child: InkWell(
+                      onTap: () =>
+                          setState(() => _showOptional = !_showOptional),
+                      borderRadius: BorderRadius.circular(8),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 8),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              _showOptional
+                                  ? Icons.expand_less
+                                  : Icons.expand_more,
+                              size: 16,
+                              color: kForest,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              _showOptional
+                                  ? l10n.hideOptionalFields
+                                  : l10n.showOptionalFields,
+                              style: const TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                                color: kForest,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
                 ),
-              ),
+              if (!collapseOptional) ...[
+                // ── Cover image slot ────────────────────────────────────────
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                  child: CoverImageField(
+                    initialUrl: widget.mode == ItineraryFormMode.edit
+                        ? ref
+                            .read(itineraryDetailProvider(widget.itineraryId!))
+                            .valueOrNull
+                            ?.coverImageUrl
+                        : null,
+                    onImageSelected: (bytes, filename) => setState(() {
+                      _pendingImageBytes = bytes;
+                      _pendingImageFilename = filename;
+                      _removeExistingImage = false;
+                    }),
+                    onImageRemoved: () => setState(() {
+                      _pendingImageBytes = null;
+                      _pendingImageFilename = null;
+                      _removeExistingImage = true;
+                    }),
+                  ),
+                ),
 
-              // ── Basics ────────────────────────────────────────────────────
-              _SectionLabel(text: l10n.formSectionBasics),
-              _SectionCard(
-                children: [
-                  _PickerRow(
-                    icon: Icons.payments_rounded,
-                    label: l10n.formLabelCurrency,
-                    value: _currency ?? 'EUR',
-                    onTap: _showCurrencyPicker,
-                  ),
-                  const _FieldDivider(),
-                  _PickerRow(
-                    icon: visIcon,
-                    label: l10n.formLabelWhoCanSee,
-                    value: visLabel,
-                    iconColor: visColor,
-                    onTap: _showVisibilityPicker,
-                  ),
-                ],
-              ),
+                // ── Basics ──────────────────────────────────────────────────
+                _SectionLabel(text: l10n.formSectionBasics),
+                _SectionCard(
+                  children: [
+                    _PickerRow(
+                      icon: Icons.payments_rounded,
+                      label: l10n.formLabelCurrency,
+                      value: _currency ?? 'EUR',
+                      onTap: _showCurrencyPicker,
+                    ),
+                    const _FieldDivider(),
+                    _PickerRow(
+                      icon: visIcon,
+                      label: l10n.formLabelWhoCanSee,
+                      value: visLabel,
+                      iconColor: visColor,
+                      onTap: _showVisibilityPicker,
+                    ),
+                  ],
+                ),
+              ],
               const SizedBox(height: 48),
               // ── Danger zone (edit mode) ───────────────────────────────────
               if (widget.mode == ItineraryFormMode.edit) ...[

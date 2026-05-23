@@ -100,6 +100,10 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
   // false while showing read-only view; flips to true when owner taps edit
   bool _isEditing = false;
 
+  // Create-mode only: collapses DETAILS/NOTES/ANNOTATIONS so first-time users
+  // see only the mandatory place name + the auto-fillable location card.
+  bool _showOptional = false;
+
   // Anchors the "tap Edit to make changes" popover onto the AppBar edit button.
   final GlobalKey _editButtonKey = GlobalKey();
 
@@ -556,6 +560,10 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
   @override
   Widget build(BuildContext context) {
     final bool readOnly = widget.viewOnly && !_isEditing;
+    // Edit mode shows every field at once so users can jump straight to what
+    // they need to change. Only collapse for first-time creation.
+    final bool collapseOptional =
+        !widget.isEditMode && !readOnly && !_showOptional;
     final suggestionsAsync = ref.watch(placeSearchProvider);
     final duplicate = _findDuplicate();
 
@@ -608,9 +616,7 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                 : TextButton(
                     onPressed: _save,
                     child: Text(
-                      widget.isEditMode
-                          ? l10n.saveChangesButton
-                          : l10n.addStopButton,
+                     l10n.save,
                       style: const TextStyle(
                         color: kForest,
                         fontWeight: FontWeight.w700,
@@ -620,7 +626,8 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                   ),
         ],
       ),
-      body: Center(
+      body: Align(
+        alignment: Alignment.topCenter,
         child: ConstrainedBox(
           constraints: BoxConstraints(
               maxWidth: isDesktopWeb() ? kDesktopMaxWidth : double.infinity),
@@ -841,6 +848,48 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                       ),
                     ),
 
+                  // ── Optional fields toggle (create mode only) ──────────
+                  if (!widget.isEditMode && !readOnly)
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+                      child: Align(
+                        alignment: Alignment.center,
+                        child: InkWell(
+                          onTap: () =>
+                              setState(() => _showOptional = !_showOptional),
+                          borderRadius: BorderRadius.circular(8),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 8),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  _showOptional
+                                      ? Icons.expand_less
+                                      : Icons.expand_more,
+                                  size: 16,
+                                  color: kForest,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  _showOptional
+                                      ? l10n.hideOptionalFields
+                                      : l10n.showOptionalFields,
+                                  style: const TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w700,
+                                    color: kForest,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+
+                  if (!collapseOptional) ...[
                   // ── DETAILS ────────────────────────────────────────────
                   const _SFSectionLabel(text: 'DETAILS'),
                   _SFSectionCard(
@@ -1029,6 +1078,7 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                     child: _buildAnnotationsContent(
                         context, readOnly, l10n),
                   ),
+                  ],
 
                   // ── Delete (edit mode, non-readonly) ───────────────────
                   if (!readOnly && widget.isEditMode) ...[

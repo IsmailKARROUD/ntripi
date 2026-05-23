@@ -1395,4 +1395,10 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get familyFriendlyHelp =>
       'Optional. How suitable the trip is for families with children.';
+
+  @override
+  String get showOptionalFields => 'Show optional fields';
+
+  @override
+  String get hideOptionalFields => 'Hide optional fields';
 }
