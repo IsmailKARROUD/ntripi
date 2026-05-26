@@ -68,6 +68,7 @@ class _ItineraryFormScreenState extends ConsumerState<ItineraryFormScreen> {
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
+  final _titleFocusNode = FocusNode();
   List<Currency> _currencies = [];
 
   String? _currency = 'EUR';
@@ -148,6 +149,7 @@ class _ItineraryFormScreenState extends ConsumerState<ItineraryFormScreen> {
   void dispose() {
     _titleController.dispose();
     _descriptionController.dispose();
+    _titleFocusNode.dispose();
     super.dispose();
   }
 
@@ -364,47 +366,53 @@ class _ItineraryFormScreenState extends ConsumerState<ItineraryFormScreen> {
               const SizedBox(height: 12),
               _SectionCard(
                 children: [
-                  // Title field
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 13, 16, 12),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          l10n.itineraryTitleLabel,
-                          style: const TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w700,
-                            color: kText2,
-                            letterSpacing: 0.4,
+                  // Title field — opaque GestureDetector so taps on the label
+                  // and empty space in the padded column also focus the input.
+                  GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: _titleFocusNode.requestFocus,
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 13, 16, 12),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            l10n.itineraryTitleLabel,
+                            style: const TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              color: kText2,
+                              letterSpacing: 0.4,
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 4),
-                        TextFormField(
-                          controller: _titleController,
-                          decoration: InputDecoration(
-                            border: InputBorder.none,
-                            enabledBorder: InputBorder.none,
-                            focusedBorder: InputBorder.none,
-                            errorBorder: InputBorder.none,
-                            focusedErrorBorder: InputBorder.none,
-                            isDense: true,
-                            contentPadding: EdgeInsets.zero,
-                            hintText: l10n.itineraryTitleHint,
-                            hintStyle: const TextStyle(
-                                color: kText3, fontWeight: FontWeight.w500),
+                          const SizedBox(height: 4),
+                          TextFormField(
+                            controller: _titleController,
+                            focusNode: _titleFocusNode,
+                            decoration: InputDecoration(
+                              border: InputBorder.none,
+                              enabledBorder: InputBorder.none,
+                              focusedBorder: InputBorder.none,
+                              errorBorder: InputBorder.none,
+                              focusedErrorBorder: InputBorder.none,
+                              isDense: true,
+                              contentPadding: EdgeInsets.zero,
+                              hintText: l10n.itineraryTitleHint,
+                              hintStyle: const TextStyle(
+                                  color: kText3, fontWeight: FontWeight.w500),
+                            ),
+                            style: const TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600,
+                              color: kBark,
+                            ),
+                            validator: (v) => (v == null || v.trim().isEmpty)
+                                ? l10n.itineraryTitleRequired
+                                : null,
+                            textInputAction: TextInputAction.next,
                           ),
-                          style: const TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w600,
-                            color: kBark,
-                          ),
-                          validator: (v) => (v == null || v.trim().isEmpty)
-                              ? l10n.itineraryTitleRequired
-                              : null,
-                          textInputAction: TextInputAction.next,
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 ],

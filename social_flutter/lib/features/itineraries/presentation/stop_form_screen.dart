@@ -762,8 +762,9 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                     children: [
                       _SFBorderlessField(
                         label: l10n.placeNameLabel.toUpperCase(),
-                        child: TextFormField(
+                        childBuilder: (focusNode) => TextFormField(
                           controller: _placeNameController,
+                          focusNode: focusNode,
                           readOnly: readOnly,
                           onTap: showEditHint ? _showEditModeHint : null,
                           decoration: const InputDecoration(
@@ -786,8 +787,9 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                       const _SFDivider(),
                       _SFBorderlessField(
                         label: l10n.addressLabel.toUpperCase(),
-                        child: TextFormField(
+                        childBuilder: (focusNode) => TextFormField(
                           controller: _placeAddressController,
+                          focusNode: focusNode,
                           readOnly: readOnly,
                           onTap: showEditHint ? _showEditModeHint : null,
                           decoration: const InputDecoration(
@@ -986,8 +988,9 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                         const _SFDivider(),
                         _SFBorderlessField(
                           label: l10n.costLabel.toUpperCase(),
-                          child: TextFormField(
+                          childBuilder: (focusNode) => TextFormField(
                             controller: _costController,
+                            focusNode: focusNode,
                             readOnly: readOnly,
                             onTap: showEditHint ? _showEditModeHint : null,
                             decoration: InputDecoration(
@@ -1305,29 +1308,48 @@ class _SFDivider extends StatelessWidget {
       Container(height: 1, color: kBorder, margin: const EdgeInsets.only(left: 16));
 }
 
-class _SFBorderlessField extends StatelessWidget {
+class _SFBorderlessField extends StatefulWidget {
   final String label;
-  final Widget child;
-  const _SFBorderlessField({required this.label, required this.child});
+  final Widget Function(FocusNode focusNode) childBuilder;
+  const _SFBorderlessField({required this.label, required this.childBuilder});
 
   @override
-  Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.fromLTRB(16, 13, 16, 12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              label,
-              style: const TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w700,
-                color: kText2,
-                letterSpacing: 0.4,
+  State<_SFBorderlessField> createState() => _SFBorderlessFieldState();
+}
+
+class _SFBorderlessFieldState extends State<_SFBorderlessField> {
+  final FocusNode _focusNode = FocusNode();
+
+  @override
+  void dispose() {
+    _focusNode.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => GestureDetector(
+        // opaque so taps on the label and on empty space inside the column
+        // also focus the input — not just direct hits on the TextFormField
+        behavior: HitTestBehavior.opaque,
+        onTap: _focusNode.requestFocus,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 13, 16, 12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                widget.label,
+                style: const TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  color: kText2,
+                  letterSpacing: 0.4,
+                ),
               ),
-            ),
-            const SizedBox(height: 4),
-            child,
-          ],
+              const SizedBox(height: 4),
+              widget.childBuilder(_focusNode),
+            ],
+          ),
         ),
       );
 }
