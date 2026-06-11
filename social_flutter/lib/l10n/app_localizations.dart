@@ -548,6 +548,48 @@ abstract class AppLocalizations {
   /// **'Could not load itineraries.'**
   String get couldNotLoadItineraries;
 
+  /// No description provided for @whereTheyveBeen.
+  ///
+  /// In en, this message translates to:
+  /// **'WHERE THEY\'VE BEEN'**
+  String get whereTheyveBeen;
+
+  /// No description provided for @itinerariesSectionHeader.
+  ///
+  /// In en, this message translates to:
+  /// **'ITINERARIES'**
+  String get itinerariesSectionHeader;
+
+  /// No description provided for @noPublicItinerariesYet.
+  ///
+  /// In en, this message translates to:
+  /// **'No public itineraries yet.'**
+  String get noPublicItinerariesYet;
+
+  /// No description provided for @accountIsPrivateTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'This account is private'**
+  String get accountIsPrivateTitle;
+
+  /// No description provided for @followRequestSentTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Request sent'**
+  String get followRequestSentTitle;
+
+  /// No description provided for @followRequestPendingMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Once they accept your request, you\'ll see their itineraries, stops and travel map.'**
+  String get followRequestPendingMessage;
+
+  /// No description provided for @followToSeeMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Follow {handle} to see their itineraries, stops and travel map.'**
+  String followToSeeMessage(String handle);
+
   /// No description provided for @editProfileTitle.
   ///
   /// In en, this message translates to:

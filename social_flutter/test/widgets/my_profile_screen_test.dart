@@ -21,7 +21,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:social_flutter/features/follows/providers/follow_provider.dart';
 import 'package:social_flutter/features/itineraries/domain/itinerary.dart';
 import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
-import 'package:social_flutter/features/profile/presentation/my_profile_screen.dart';
+import 'package:social_flutter/features/profile/presentation/profile_screen.dart';
 import 'package:social_flutter/features/profile/providers/profile_provider.dart';
 import 'package:social_flutter/shared/models/follow.dart';
 import 'package:social_flutter/shared/models/user.dart';
@@ -144,7 +144,7 @@ Widget _buildScreen({
       myItinerariesProvider.overrideWith(
           () => _FakeMyItineraries(itineraries ?? [])),
     ],
-    child: const MaterialApp(home: MyProfileScreen()),
+    child: const MaterialApp(home: ProfileScreen()),
   );
 }
 

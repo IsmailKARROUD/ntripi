@@ -254,6 +254,30 @@ class AppLocalizationsEn extends AppLocalizations {
   String get couldNotLoadItineraries => 'Could not load itineraries.';
 
   @override
+  String get whereTheyveBeen => 'WHERE THEY\'VE BEEN';
+
+  @override
+  String get itinerariesSectionHeader => 'ITINERARIES';
+
+  @override
+  String get noPublicItinerariesYet => 'No public itineraries yet.';
+
+  @override
+  String get accountIsPrivateTitle => 'This account is private';
+
+  @override
+  String get followRequestSentTitle => 'Request sent';
+
+  @override
+  String get followRequestPendingMessage =>
+      'Once they accept your request, you\'ll see their itineraries, stops and travel map.';
+
+  @override
+  String followToSeeMessage(String handle) {
+    return 'Follow $handle to see their itineraries, stops and travel map.';
+  }
+
+  @override
   String get editProfileTitle => 'Edit profile';
 
   @override

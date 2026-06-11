@@ -81,6 +81,18 @@
   "settingsTooltip": "Paramètres",
   "shareProfileTooltip": "Partager le profil",
   "couldNotLoadItineraries": "Impossible de charger les itinéraires.",
+  "whereTheyveBeen": "OÙ IL/ELLE A ÉTÉ",
+  "itinerariesSectionHeader": "ITINÉRAIRES",
+  "noPublicItinerariesYet": "Aucun itinéraire public pour l'instant.",
+  "accountIsPrivateTitle": "Ce compte est privé",
+  "followRequestSentTitle": "Demande envoyée",
+  "followRequestPendingMessage": "Une fois votre demande acceptée, vous verrez ses itinéraires, ses étapes et sa carte de voyage.",
+  "followToSeeMessage": "Abonnez-vous à {handle} pour voir ses itinéraires, ses étapes et sa carte de voyage.",
+  "@followToSeeMessage": {
+    "placeholders": {
+      "handle": { "type": "String" }
+    }
+  },
 
   "editProfileTitle": "Modifier le profil",
   "uploadPhoto": "Télécharger une photo",

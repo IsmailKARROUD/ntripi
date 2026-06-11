@@ -25,8 +25,7 @@ import 'package:social_flutter/features/itineraries/domain/dimension_key.dart';
 import 'package:social_flutter/features/itineraries/presentation/dimension_ratings_screen.dart';
 import 'package:social_flutter/features/itineraries/presentation/ratings_page_screen.dart';
 import 'package:social_flutter/features/profile/presentation/delete_account_screen.dart';
-import 'package:social_flutter/features/profile/presentation/my_profile_screen.dart';
-import 'package:social_flutter/features/profile/presentation/user_profile_screen.dart';
+import 'package:social_flutter/features/profile/presentation/profile_screen.dart';
 import 'package:social_flutter/features/search/presentation/search_screen.dart';
 import 'package:social_flutter/l10n/app_localizations.dart';
 
@@ -86,7 +85,7 @@ final appRouter = GoRouter(
                 // navigator, keeping the bottom bar visible.
                 GoRoute(
                   path: 'profile/:userId',
-                  builder: (_, s) => UserProfileScreen(
+                  builder: (_, s) => ProfileScreen(
                     userId: s.pathParameters['userId']!,
                     profileBaseRoute: '/search/profile',
                   ),
@@ -119,7 +118,7 @@ final appRouter = GoRouter(
           routes: [
             GoRoute(
               path: '/profile/me',
-              builder: (_, __) => const MyProfileScreen(),
+              builder: (_, __) => const ProfileScreen(),
             ),
             GoRoute(
               path: '/settings/delete-account',
@@ -247,7 +246,7 @@ final appRouter = GoRouter(
       path: '/profile/:userId',
       parentNavigatorKey: navigatorKey,
       builder: (_, s) =>
-          UserProfileScreen(userId: s.pathParameters['userId']!),
+          ProfileScreen(userId: s.pathParameters['userId']!),
     ),
     GoRoute(
       path: '/profile/:userId/followers',

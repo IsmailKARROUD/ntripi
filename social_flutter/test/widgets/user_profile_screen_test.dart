@@ -12,7 +12,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:social_flutter/features/itineraries/domain/itinerary.dart';
 import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
-import 'package:social_flutter/features/profile/presentation/user_profile_screen.dart';
+import 'package:social_flutter/features/profile/presentation/profile_screen.dart';
 import 'package:social_flutter/features/profile/providers/profile_provider.dart';
 import 'package:social_flutter/l10n/app_localizations.dart';
 import 'package:social_flutter/shared/models/user.dart';
@@ -111,7 +111,7 @@ Widget _buildScreen({
     child: MaterialApp(
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
-      home: const UserProfileScreen(userId: _userId),
+      home: const ProfileScreen(userId: _userId),
     ),
   );
 }
@@ -287,7 +287,7 @@ void main() {
                 routes: [
                   GoRoute(
                     path: 'profile/:userId',
-                    builder: (_, s) => UserProfileScreen(
+                    builder: (_, s) => ProfileScreen(
                       userId: s.pathParameters['userId']!,
                       profileBaseRoute: '/search/profile',
                     ),
@@ -312,7 +312,7 @@ void main() {
               ),
               GoRoute(
                 path: '/profile/:userId',
-                builder: (_, s) => UserProfileScreen(
+                builder: (_, s) => ProfileScreen(
                   userId: s.pathParameters['userId']!,
                 ),
                 routes: [

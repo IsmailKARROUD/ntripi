@@ -91,6 +91,18 @@
   "settingsTooltip": "Settings",
   "shareProfileTooltip": "Share profile",
   "couldNotLoadItineraries": "Could not load itineraries.",
+  "whereTheyveBeen": "WHERE THEY'VE BEEN",
+  "itinerariesSectionHeader": "ITINERARIES",
+  "noPublicItinerariesYet": "No public itineraries yet.",
+  "accountIsPrivateTitle": "This account is private",
+  "followRequestSentTitle": "Request sent",
+  "followRequestPendingMessage": "Once they accept your request, you'll see their itineraries, stops and travel map.",
+  "followToSeeMessage": "Follow {handle} to see their itineraries, stops and travel map.",
+  "@followToSeeMessage": {
+    "placeholders": {
+      "handle": { "type": "String" }
+    }
+  },
 
   "editProfileTitle": "Edit profile",
   "uploadPhoto": "Upload photo",

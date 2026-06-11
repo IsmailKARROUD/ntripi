@@ -259,6 +259,31 @@ class AppLocalizationsFr extends AppLocalizations {
       'Impossible de charger les itinéraires.';
 
   @override
+  String get whereTheyveBeen => 'OÙ IL/ELLE A ÉTÉ';
+
+  @override
+  String get itinerariesSectionHeader => 'ITINÉRAIRES';
+
+  @override
+  String get noPublicItinerariesYet =>
+      'Aucun itinéraire public pour l\'instant.';
+
+  @override
+  String get accountIsPrivateTitle => 'Ce compte est privé';
+
+  @override
+  String get followRequestSentTitle => 'Demande envoyée';
+
+  @override
+  String get followRequestPendingMessage =>
+      'Une fois votre demande acceptée, vous verrez ses itinéraires, ses étapes et sa carte de voyage.';
+
+  @override
+  String followToSeeMessage(String handle) {
+    return 'Abonnez-vous à $handle pour voir ses itinéraires, ses étapes et sa carte de voyage.';
+  }
+
+  @override
   String get editProfileTitle => 'Modifier le profil';
 
   @override
