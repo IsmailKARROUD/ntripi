@@ -11,6 +11,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:social_flutter/features/itineraries/domain/itinerary.dart';
+import 'package:social_flutter/features/itineraries/presentation/widgets/itinerary_summary_card.dart';
 import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
 import 'package:social_flutter/features/profile/presentation/profile_screen.dart';
 import 'package:social_flutter/features/profile/providers/profile_provider.dart';
@@ -427,6 +428,116 @@ void main() {
         await tester.pump();
 
         expect(find.text('Retry'), findsOneWidget);
+      });
+    });
+
+    // ── Layout coverage introduced by the unified ProfileScreen ──────────
+
+    group('other-user layout (merged screen)', () {
+      testWidgets(
+          'Given other-user profile, When section header renders, '
+          'Then "LATEST TRIP" and "See all" are not shown', (tester) async {
+        tester.view.physicalSize = const Size(1080, 1920);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        await tester.pumpWidget(
+            _buildScreen(itineraries: [_testItinerary]));
+        await tester.pump();
+
+        // These are self-only conditionals in _SectionHeader.
+        expect(find.text('LATEST TRIP'), findsNothing);
+        expect(find.text('See all'), findsNothing);
+      });
+
+      testWidgets(
+          'Given multiple itineraries, When screen builds, '
+          'Then all cards are in the tree (not capped at 1 like self preview)',
+          (tester) async {
+        // Tall viewport so the sliver builds both cards.
+        tester.view.physicalSize = const Size(1080, 4000);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        final second = Itinerary(
+          id: 'it-2',
+          userId: _userId,
+          title: 'Mbour beach loop',
+          totalDurationMin: 120,
+          totalCost: 90,
+          currency: 'EUR',
+          visibility: ItineraryVisibility.public,
+          createdAt: DateTime(2025),
+          updatedAt: DateTime(2025),
+          stopsCount: 3,
+        );
+        await tester.pumpWidget(
+            _buildScreen(itineraries: [_testItinerary, second]));
+        await tester.pump();
+        await tester.pump(); // settle itineraries AsyncNotifier
+
+        // Both ItinerarySummaryCard widgets must exist in the tree —
+        // proves childCount = itineraries.length for other-user mode.
+        expect(find.byType(ItinerarySummaryCard), findsNWidgets(2));
+      });
+
+      testWidgets(
+          'Given other-user public profile, When screen builds, '
+          'Then follow action row is visible',
+          (tester) async {
+        tester.view.physicalSize = const Size(1080, 1920);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        await tester.pumpWidget(_buildScreen());
+        await tester.pump();
+
+        // The decorative message button icon proves FollowActionRow rendered.
+        expect(find.byIcon(Icons.mail_outline_rounded), findsOneWidget);
+      });
+
+      testWidgets(
+          'Given private account viewer does not follow, '
+          'When screen builds, Then follow action row is hidden',
+          (tester) async {
+        tester.view.physicalSize = const Size(1080, 1920);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        await tester.pumpWidget(
+            _buildScreen(user: _makeUser(isPrivate: true)));
+        await tester.pump();
+
+        expect(find.byIcon(Icons.mail_outline_rounded), findsNothing);
+      });
+
+      testWidgets(
+          'Given user has no bio, When screen builds, '
+          'Then bio is not rendered', (tester) async {
+        tester.view.physicalSize = const Size(1080, 1920);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        final noBio = User(
+          id: _userId,
+          username: 'aminad',
+          displayName: 'Amina Diallo',
+          bio: null,
+          avatarUrl: null,
+          isPrivate: false,
+          followersCount: 247,
+          followingCount: 38,
+          createdAt: DateTime(2024),
+        );
+        await tester.pumpWidget(_buildScreen(user: noBio));
+        await tester.pump();
+
+        expect(find.textContaining('Storyteller'), findsNothing);
       });
     });
   });

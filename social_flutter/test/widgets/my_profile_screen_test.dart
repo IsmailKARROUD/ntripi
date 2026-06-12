@@ -23,6 +23,8 @@ import 'package:social_flutter/features/itineraries/domain/itinerary.dart';
 import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
 import 'package:social_flutter/features/profile/presentation/profile_screen.dart';
 import 'package:social_flutter/features/profile/providers/profile_provider.dart';
+import 'package:social_flutter/l10n/app_localizations.dart';
+import 'package:social_flutter/shared/widgets/loaders.dart';
 import 'package:social_flutter/shared/models/follow.dart';
 import 'package:social_flutter/shared/models/user.dart';
 
@@ -144,7 +146,11 @@ Widget _buildScreen({
       myItinerariesProvider.overrideWith(
           () => _FakeMyItineraries(itineraries ?? [])),
     ],
-    child: const MaterialApp(home: ProfileScreen()),
+    child: MaterialApp(
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      home: const ProfileScreen(),
+    ),
   );
 }
 
@@ -302,7 +308,7 @@ void main() {
     group('loading and error states', () {
       testWidgets(
           'Given profile is loading, When screen builds, '
-          'Then shows CircularProgressIndicator', (tester) async {
+          'Then shows NTripiCompassLoader', (tester) async {
         tester.view.physicalSize = const Size(1080, 1920);
         tester.view.devicePixelRatio = 1.0;
         addTearDown(tester.view.resetPhysicalSize);
@@ -312,8 +318,7 @@ void main() {
             _buildScreen(profileNotifier: _FakeMyProfileLoading.new));
         await tester.pump();
 
-        expect(
-            find.byType(CircularProgressIndicator), findsOneWidget);
+        expect(find.byType(NTripiCompassLoader), findsOneWidget);
       });
 
       testWidgets(
@@ -471,6 +476,71 @@ void main() {
 
         // After save, edit mode exits (Cancel disappears)
         expect(find.text('Cancel'), findsNothing);
+      });
+    });
+
+    // ── Layout coverage introduced by the unified ProfileScreen ──────────
+
+    group('self-only layout (merged screen)', () {
+      testWidgets(
+          'Given itineraries loaded, When screen builds, '
+          'Then See all link is visible (self-only conditional)',
+          (tester) async {
+        tester.view.physicalSize = const Size(1080, 1920);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        await tester.pumpWidget(
+            _buildScreen(itineraries: [_testItinerary]));
+        await tester.pump();
+        await tester.pump();
+
+        expect(find.text('See all'), findsOneWidget);
+      });
+
+      testWidgets(
+          'Given user has no bio, When screen builds, '
+          'Then bio text is not rendered', (tester) async {
+        tester.view.physicalSize = const Size(1080, 1920);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        final noBioUser = User(
+          id: 'user-1',
+          username: 'ismauo',
+          displayName: 'Ismail duo',
+          bio: null,
+          avatarUrl: null,
+          isPrivate: false,
+          followersCount: 2,
+          followingCount: 1,
+          createdAt: DateTime(2024),
+        );
+        await tester.pumpWidget(_buildScreen(user: noBioUser));
+        await tester.pump();
+        await tester.pump();
+
+        expect(find.textContaining('Travel'), findsNothing);
+      });
+
+      testWidgets(
+          'Given self profile loaded, When hero chrome renders, '
+          'Then Edit and Settings tooltips are present (not Back/Share)',
+          (tester) async {
+        tester.view.physicalSize = const Size(1080, 1920);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        await tester.pumpWidget(_buildScreen());
+        await tester.pump();
+        await tester.pump();
+
+        expect(find.byTooltip('Edit profile'), findsOneWidget);
+        expect(find.byTooltip('Settings'), findsOneWidget);
+        expect(find.byTooltip('Back'), findsNothing);
       });
     });
   });
