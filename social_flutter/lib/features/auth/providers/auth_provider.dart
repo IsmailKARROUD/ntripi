@@ -17,8 +17,11 @@ import 'package:social_flutter/features/profile/providers/profile_provider.dart'
 import 'package:social_flutter/features/search/providers/search_provider.dart';
 
 /// Provides the AuthRepository — the single instance for the app lifetime.
+/// Receives both the main Dio (auth-aware) for login/register and the bare
+/// Dio (no AuthInterceptor) for logout, so /auth/logout doesn't recurse
+/// through the refresh-token flow with a possibly-expired access token.
 final authRepositoryProvider = Provider<AuthRepository>((ref) {
-  return AuthRepository(dio);
+  return AuthRepository(dio, bareDio);
 });
 
 /// AuthState represents the authentication status.

@@ -39,9 +39,20 @@ class Settings(BaseSettings):
     # which is appropriate when both signing and verifying happen in the same service.
     ALGORITHM: str = "HS256"
 
-    # Token lifespan in minutes. Default is 24 hours (1440 minutes).
-    # Lower values improve security but require more frequent re-login.
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 1440
+    # Mobile JWT access-token lifespan in minutes. Short by design:
+    # paired with a refresh token, the access token is what protects API
+    # calls, and short windows limit damage if it leaks. The Flutter
+    # client refreshes transparently before expiry.
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 15
+
+    # Refresh-token lifespan in days. After this much inactivity the user
+    # must log in again. Rotates on every refresh (RFC 6749 best practice).
+    REFRESH_TOKEN_EXPIRE_DAYS: int = 30
+
+    # Web cookie session lifespan in minutes. Kept long and independent
+    # of the mobile access token because the web flow has no refresh
+    # mechanism — shortening it to 15 min would force re-login every 15.
+    WEB_SESSION_EXPIRE_MINUTES: int = 1440
 
     # Debug mode: enables verbose errors and relaxed CORS in development.
     # ALWAYS set to False in production.

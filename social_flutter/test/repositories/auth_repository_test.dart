@@ -15,31 +15,29 @@ import 'package:social_flutter/core/api/api_endpoints.dart';
 import 'package:social_flutter/features/auth/data/auth_repository.dart';
 
 void main() {
-  // ---------------------------------------------------------------------------
-  // Test setup helpers
-  // ---------------------------------------------------------------------------
-
-  /// Creates a fresh Dio instance + DioAdapter pair for each test.
-  /// Using a fresh instance avoids state leaking between tests.
-  (Dio, DioAdapter) _makeDio() {
+  /// Creates a (main dio, bare dio, adapter-for-main, adapter-for-bare) tuple.
+  /// AuthRepository takes two Dio instances — main for login/register and
+  /// bare for /auth/logout (no AuthInterceptor recursion).
+  (Dio, Dio, DioAdapter, DioAdapter) _makeDios() {
     final dio = Dio(BaseOptions(baseUrl: kApiBaseUrl));
+    final bareDio = Dio(BaseOptions(baseUrl: kApiBaseUrl));
     final adapter = DioAdapter(dio: dio);
-    return (dio, adapter);
+    final bareAdapter = DioAdapter(dio: bareDio);
+    return (dio, bareDio, adapter, bareAdapter);
   }
 
-  /// A valid API response body from POST /auth/register or POST /auth/login.
-  const _authResponseBody = {
+  /// A valid TokenPair response body from /auth/register, /auth/login,
+  /// or /auth/refresh.
+  final _authResponseBody = {
     'access_token': 'test-jwt-token',
+    'refresh_token': 'test-refresh-token',
+    'refresh_expires_at': '2026-07-12T12:00:00.000Z',
+    'token_type': 'bearer',
     'user_id': 'user-uuid-123',
     'username': 'alice1',
   };
 
-  // ---------------------------------------------------------------------------
-  // Shared setUp: reset secure storage mock before every test so tokens from
-  // one test don't bleed into the next.
-  // ---------------------------------------------------------------------------
   setUp(() {
-    // Provide an empty in-memory store that replaces real Keychain/Keystore.
     FlutterSecureStorage.setMockInitialValues({});
   });
 
@@ -48,10 +46,9 @@ void main() {
   // ---------------------------------------------------------------------------
 
   group('AuthRepository.register', () {
-    test('sends correct POST body and returns AuthResult on 200', () async {
-      final (dio, adapter) = _makeDio();
+    test('sends correct POST body and returns AuthResult on 201', () async {
+      final (dio, bareDio, adapter, _) = _makeDios();
 
-      // Stub POST /auth/register → 201 Created with token payload.
       adapter.onPost(
         kRegisterEndpoint,
         (server) => server.reply(201, _authResponseBody),
@@ -64,7 +61,7 @@ void main() {
         },
       );
 
-      final repo = AuthRepository(dio);
+      final repo = AuthRepository(dio, bareDio);
       final result = await repo.register(
         username: 'alice1',
         email: 'alice@test.com',
@@ -73,18 +70,15 @@ void main() {
         tosAccepted: true,
       );
 
-      // Verify that the response fields are correctly parsed.
       expect(result.accessToken, 'test-jwt-token');
+      expect(result.refreshToken, 'test-refresh-token');
       expect(result.userId, 'user-uuid-123');
       expect(result.username, 'alice1');
     });
 
     test('omits display_name from request body when null or empty', () async {
-      final (dio, adapter) = _makeDio();
+      final (dio, bareDio, adapter, _) = _makeDios();
 
-      // The stub matches a body WITHOUT display_name — if the repo accidentally
-      // sends it, the adapter won't match and the call will throw DioException,
-      // causing the test to fail.
       adapter.onPost(
         kRegisterEndpoint,
         (server) => server.reply(201, _authResponseBody),
@@ -96,8 +90,7 @@ void main() {
         },
       );
 
-      final repo = AuthRepository(dio);
-      // displayName not provided → should be omitted from body.
+      final repo = AuthRepository(dio, bareDio);
       final result = await repo.register(
         username: 'bob1',
         email: 'bob@test.com',
@@ -105,12 +98,12 @@ void main() {
         tosAccepted: true,
       );
 
-      // If we get here, the body matched — display_name was correctly omitted.
       expect(result.userId, 'user-uuid-123');
     });
 
-    test('saves token to secure storage after successful register', () async {
-      final (dio, adapter) = _makeDio();
+    test('saves both tokens to secure storage after successful register',
+        () async {
+      final (dio, bareDio, adapter, _) = _makeDios();
       adapter.onPost(
         kRegisterEndpoint,
         (server) => server.reply(201, _authResponseBody),
@@ -122,7 +115,7 @@ void main() {
         },
       );
 
-      final repo = AuthRepository(dio);
+      final repo = AuthRepository(dio, bareDio);
       await repo.register(
         username: 'alice1',
         email: 'alice@test.com',
@@ -130,14 +123,20 @@ void main() {
         tosAccepted: true,
       );
 
-      // Read the stored token directly from the mock secure storage.
       const storage = FlutterSecureStorage();
-      final stored = await storage.read(key: 'ntripi_access_token');
-      expect(stored, 'test-jwt-token');
+      expect(await storage.read(key: 'ntripi_access_token'), 'test-jwt-token');
+      expect(
+        await storage.read(key: 'ntripi_refresh_token'),
+        'test-refresh-token',
+      );
+      expect(
+        await storage.read(key: 'ntripi_refresh_expires_at'),
+        isNotNull,
+      );
     });
 
     test('throws DioException on 400 (e.g. username already taken)', () async {
-      final (dio, adapter) = _makeDio();
+      final (dio, bareDio, adapter, _) = _makeDios();
       adapter.onPost(
         kRegisterEndpoint,
         (server) => server.reply(400, {'detail': 'Username already taken'}),
@@ -149,7 +148,7 @@ void main() {
         },
       );
 
-      final repo = AuthRepository(dio);
+      final repo = AuthRepository(dio, bareDio);
       expect(
         () => repo.register(
           username: 'alice1',
@@ -168,49 +167,54 @@ void main() {
 
   group('AuthRepository.login', () {
     test('sends correct POST body and returns AuthResult on 200', () async {
-      final (dio, adapter) = _makeDio();
+      final (dio, bareDio, adapter, _) = _makeDios();
       adapter.onPost(
         kLoginEndpoint,
         (server) => server.reply(200, _authResponseBody),
-        data: {'email': 'alice@test.com', 'password': 'secret123'},
+        data: {'identifier': 'alice@test.com', 'password': 'secret123'},
       );
 
-      final repo = AuthRepository(dio);
+      final repo = AuthRepository(dio, bareDio);
       final result = await repo.login(
         identifier: 'alice@test.com',
         password: 'secret123',
       );
 
       expect(result.accessToken, 'test-jwt-token');
+      expect(result.refreshToken, 'test-refresh-token');
       expect(result.userId, 'user-uuid-123');
       expect(result.username, 'alice1');
     });
 
-    test('saves token to secure storage after successful login', () async {
-      final (dio, adapter) = _makeDio();
+    test('saves both tokens to secure storage after successful login',
+        () async {
+      final (dio, bareDio, adapter, _) = _makeDios();
       adapter.onPost(
         kLoginEndpoint,
         (server) => server.reply(200, _authResponseBody),
-        data: {'email': 'alice@test.com', 'password': 'secret123'},
+        data: {'identifier': 'alice@test.com', 'password': 'secret123'},
       );
 
-      final repo = AuthRepository(dio);
+      final repo = AuthRepository(dio, bareDio);
       await repo.login(identifier: 'alice@test.com', password: 'secret123');
 
       const storage = FlutterSecureStorage();
-      final stored = await storage.read(key: 'ntripi_access_token');
-      expect(stored, 'test-jwt-token');
+      expect(await storage.read(key: 'ntripi_access_token'), 'test-jwt-token');
+      expect(
+        await storage.read(key: 'ntripi_refresh_token'),
+        'test-refresh-token',
+      );
     });
 
     test('throws DioException on 401 (wrong credentials)', () async {
-      final (dio, adapter) = _makeDio();
+      final (dio, bareDio, adapter, _) = _makeDios();
       adapter.onPost(
         kLoginEndpoint,
         (server) => server.reply(401, {'detail': 'Invalid credentials'}),
-        data: {'email': 'alice@test.com', 'password': 'wrong'},
+        data: {'identifier': 'alice@test.com', 'password': 'wrong'},
       );
 
-      final repo = AuthRepository(dio);
+      final repo = AuthRepository(dio, bareDio);
       expect(
         () => repo.login(identifier: 'alice@test.com', password: 'wrong'),
         throwsA(isA<DioException>()),
@@ -223,29 +227,56 @@ void main() {
   // ---------------------------------------------------------------------------
 
   group('AuthRepository.logout', () {
-    test('clears token from secure storage', () async {
-      // Pre-populate the mock storage with a token (simulates a logged-in user).
+    test('calls /auth/logout with refresh token, then clears storage',
+        () async {
       FlutterSecureStorage.setMockInitialValues({
         'ntripi_access_token': 'existing-jwt-token',
+        'ntripi_refresh_token': 'existing-refresh-token',
+        'ntripi_refresh_expires_at': '2026-07-12T12:00:00.000Z',
       });
 
-      final (dio, _) = _makeDio();
-      final repo = AuthRepository(dio);
+      final (dio, bareDio, _, bareAdapter) = _makeDios();
+      bareAdapter.onPost(
+        kLogoutEndpoint,
+        (server) => server.reply(204, null),
+        data: {'refresh_token': 'existing-refresh-token'},
+      );
+
+      final repo = AuthRepository(dio, bareDio);
       await repo.logout();
 
-      // Token must be gone after logout.
       const storage = FlutterSecureStorage();
-      final stored = await storage.read(key: 'ntripi_access_token');
-      expect(stored, isNull);
+      expect(await storage.read(key: 'ntripi_access_token'), isNull);
+      expect(await storage.read(key: 'ntripi_refresh_token'), isNull);
+      expect(await storage.read(key: 'ntripi_refresh_expires_at'), isNull);
+    });
+
+    test('still clears storage when server-side logout fails', () async {
+      FlutterSecureStorage.setMockInitialValues({
+        'ntripi_access_token': 'existing-jwt-token',
+        'ntripi_refresh_token': 'existing-refresh-token',
+      });
+
+      final (dio, bareDio, _, bareAdapter) = _makeDios();
+      // Server is down — logout must still wipe local tokens.
+      bareAdapter.onPost(
+        kLogoutEndpoint,
+        (server) => server.reply(500, {'detail': 'Server error'}),
+        data: {'refresh_token': 'existing-refresh-token'},
+      );
+
+      final repo = AuthRepository(dio, bareDio);
+      await repo.logout();
+
+      const storage = FlutterSecureStorage();
+      expect(await storage.read(key: 'ntripi_access_token'), isNull);
+      expect(await storage.read(key: 'ntripi_refresh_token'), isNull);
     });
 
     test('is idempotent — logout when already logged out does not throw',
         () async {
-      // Storage is already empty (set in setUp).
-      final (dio, _) = _makeDio();
-      final repo = AuthRepository(dio);
-
-      // Should complete without throwing.
+      final (dio, bareDio, _, _) = _makeDios();
+      final repo = AuthRepository(dio, bareDio);
       await expectLater(repo.logout(), completes);
     });
   });

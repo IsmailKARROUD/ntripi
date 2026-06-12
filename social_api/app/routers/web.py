@@ -20,7 +20,7 @@ Cookie strategy:
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 
 from fastapi import APIRouter, Cookie, Depends, Form, Request
@@ -33,7 +33,7 @@ from app.constants.privacy import PRIVACY_CONTENT, PRIVACY_DATE
 from app.constants.tos import TOS_DATE, TOS_SUMMARY, TOS_VERSION
 from app.database import get_db
 from app.services import auth_service
-from app.services.auth import decode_access_token
+from app.services.auth import create_access_token, decode_access_token
 
 router = APIRouter(tags=["web"])
 
@@ -52,6 +52,16 @@ def _is_logged_in(session_token: str | None) -> bool:
     return decode_access_token(session_token) is not None
 
 
+def _issue_web_token(user_id: str, settings: Settings) -> str:
+    """Web sessions have their own (longer) lifetime than the mobile access
+    token — see WEB_SESSION_EXPIRE_MINUTES. The web flow has no refresh
+    mechanism, so shortening this would force re-login every 15 min."""
+    return create_access_token(
+        subject=user_id,
+        expires_delta=timedelta(minutes=settings.WEB_SESSION_EXPIRE_MINUTES),
+    )
+
+
 def _set_session_cookie(
     response: RedirectResponse | HTMLResponse,
     token: str,
@@ -60,7 +70,7 @@ def _set_session_cookie(
     response.set_cookie(
         key="ntripi_session",
         value=token,
-        max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+        max_age=settings.WEB_SESSION_EXPIRE_MINUTES * 60,
         path="/",
         secure=not settings.DEBUG,
         httponly=True,
@@ -140,7 +150,7 @@ def web_login(
     settings: Settings = Depends(get_settings),
 ) -> HTMLResponse:
     try:
-        user, token = auth_service.authenticate_user(identifier, password, db)
+        user, _ = auth_service.authenticate_user(identifier, password, db)
     except auth_service.AuthError as e:
         return templates.TemplateResponse(
             request,
@@ -153,8 +163,11 @@ def web_login(
             status_code=200,
         )
 
+    # Mint a separate longer-lived JWT for the web cookie — don't reuse
+    # the 15-minute mobile access token returned by authenticate_user.
+    web_token = _issue_web_token(str(user.id), settings)
     response = RedirectResponse("/app/", status_code=302)
-    _set_session_cookie(response, token, settings)
+    _set_session_cookie(response, web_token, settings)
     return response
 
 
@@ -197,7 +210,7 @@ def web_register(
         return _error("Password must contain at least one digit.")
 
     try:
-        user, token = auth_service.create_user(
+        user, _ = auth_service.create_user(
             username=username,
             email=email,
             password=password,
@@ -208,6 +221,7 @@ def web_register(
     except auth_service.AuthError as e:
         return _error(e.message)
 
+    web_token = _issue_web_token(str(user.id), settings)
     response = RedirectResponse("/app/", status_code=302)
-    _set_session_cookie(response, token, settings)
+    _set_session_cookie(response, web_token, settings)
     return response

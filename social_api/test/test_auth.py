@@ -46,12 +46,15 @@ class TestRegister:
         data = response.json()
         # Verify all expected fields are present in the response
         assert "access_token" in data
+        assert "refresh_token" in data
+        assert "refresh_expires_at" in data
         assert "user_id" in data
         assert data["username"] == "alice1"
         assert data["token_type"] == "bearer"
 
-        # The token should be a non-empty string
+        # Tokens should be non-empty strings
         assert len(data["access_token"]) > 0
+        assert len(data["refresh_token"]) > 0
 
     def test_register_duplicate_username(self, client: TestClient):
         """
@@ -144,6 +147,7 @@ class TestLogin:
         assert response.status_code == 200
         data = response.json()
         assert "access_token" in data
+        assert "refresh_token" in data
         assert data["username"] == "alice1"
 
     def test_login_wrong_password(self, client: TestClient):

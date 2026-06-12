@@ -1,17 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:social_flutter/core/auth/token_manager.dart';
 import 'package:social_flutter/core/storage/secure_storage.dart';
 import 'package:social_flutter/core/ui/app_theme.dart';
 import 'package:social_flutter/shared/widgets/loaders.dart';
 
-class SplashScreen extends StatefulWidget {
+class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
 
   @override
-  State<SplashScreen> createState() => _SplashScreenState();
+  ConsumerState<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen> {
+class _SplashScreenState extends ConsumerState<SplashScreen> {
   @override
   void initState() {
     super.initState();
@@ -19,11 +21,35 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 
   Future<void> _navigate() async {
-    await Future.delayed(const Duration(milliseconds: 1800));
+    // Brand-flash budget — reuse it to warm the access token. If we have a
+    // refresh token, kick off the rotation while the logo is still showing,
+    // so the first home-screen API call doesn't pay the refresh latency.
+    final brandFlash = Future<void>.delayed(const Duration(milliseconds: 1800));
+
+    final refresh = await readRefreshToken();
+    final refreshExp = await readRefreshExpiresAt();
+
+    final hasLiveRefresh = refresh != null &&
+        refresh.isNotEmpty &&
+        (refreshExp == null || refreshExp.isAfter(DateTime.now()));
+
+    if (hasLiveRefresh) {
+      try {
+        // Time-boxed: if the refresh hangs we still navigate, and the next
+        // request will trigger another refresh attempt anyway.
+        await ref
+            .read(tokenManagerProvider)
+            .getValidAccessToken()
+            .timeout(const Duration(seconds: 2));
+      } catch (_) {
+        // Network or session error — let the router decide where to land.
+      }
+    }
+
+    await brandFlash;
     if (!mounted) return;
-    final token = await readToken();
-    if (!mounted) return;
-    if (token != null && token.isNotEmpty) {
+
+    if (hasLiveRefresh) {
       context.go('/profile/me');
     } else {
       context.go('/login');

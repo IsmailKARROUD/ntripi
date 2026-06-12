@@ -2,6 +2,7 @@
 # Alembic's env.py imports Base from database.py and needs all model classes
 # to be registered on Base.metadata before it can detect schema changes.
 from app.models.user import User
+from app.models.refresh_token import RefreshToken
 from app.models.follow import Follow, FollowStatus
 from app.models.itinerary import Itinerary
 from app.models.itinerary_allowed_user import ItineraryAllowedUser
@@ -15,7 +16,7 @@ from app.models.transport_leg import TransportLeg
 from app.models.waitlist import WaitlistEntry
 
 __all__ = [
-    "User", "Follow", "FollowStatus",
+    "User", "RefreshToken", "Follow", "FollowStatus",
     "Itinerary", "ItineraryAllowedUser", "Track",
     "Stop", "Annotation", "ItineraryRating", "ItineraryAnnotation",
     "TransitSegment", "TransportLeg", "WaitlistEntry",

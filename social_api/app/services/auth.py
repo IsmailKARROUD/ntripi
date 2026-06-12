@@ -62,15 +62,21 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
     return bcrypt.checkpw(password_bytes, hashed_bytes)
 
 
-def create_access_token(subject: str) -> str:
+def create_access_token(
+    subject: str, expires_delta: Optional[timedelta] = None
+) -> str:
     """
     Creates a signed JWT token identifying a user by their UUID.
     The 'sub' (subject) claim holds the user's UUID string.
-    The 'exp' (expiry) claim is set based on ACCESS_TOKEN_EXPIRE_MINUTES.
+    The 'exp' (expiry) claim defaults to ACCESS_TOKEN_EXPIRE_MINUTES.
+
+    `expires_delta` overrides the default — used by the web cookie flow,
+    which needs a longer lifetime than the mobile access token because
+    web sessions don't have refresh-token support.
     """
-    expire = datetime.utcnow() + timedelta(
-        minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES
-    )
+    if expires_delta is None:
+        expires_delta = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+    expire = datetime.utcnow() + expires_delta
     payload = {
         "sub": subject,
         "exp": expire,

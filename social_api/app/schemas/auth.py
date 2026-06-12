@@ -1,4 +1,3 @@
-import uuid
 from datetime import datetime
 
 from pydantic import BaseModel, EmailStr, Field, field_validator
@@ -37,7 +36,27 @@ class LoginRequest(BaseModel):
 
 
 class TokenResponse(BaseModel):
+    """Legacy access-token-only response. Kept for reference; not used by
+    the public auth endpoints anymore (they return TokenPair)."""
     access_token: str
     token_type: str = "bearer"
     user_id: str
     username: str
+
+
+class TokenPair(BaseModel):
+    """Response shape for /auth/login, /auth/register, /auth/refresh.
+
+    `refresh_expires_at` lets the client skip a doomed refresh attempt at
+    boot when the long-lived token is already past its expiry.
+    """
+    access_token: str
+    refresh_token: str
+    token_type: str = "bearer"
+    user_id: str
+    username: str
+    refresh_expires_at: datetime
+
+
+class RefreshRequest(BaseModel):
+    refresh_token: str

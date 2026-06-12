@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:social_flutter/core/api/api_client.dart';
+import 'package:social_flutter/core/auth/token_manager.dart';
 import 'package:social_flutter/core/providers/locale_provider.dart';
 import 'package:social_flutter/core/router/app_router.dart';
 import 'package:social_flutter/core/ui/app_theme.dart';
@@ -20,10 +21,25 @@ Future<void> main() async {
     cacheStore = HiveCacheStore(dir.path);
   }
 
-  dio = createDioClient(cacheStore: cacheStore);
+  // Auth wiring order matters:
+  //   1. bareDio  — plain Dio, no interceptors. Used by TokenManager for
+  //      /auth/refresh and by AuthRepository for /auth/logout. Cannot be
+  //      the same instance as `dio` or those calls would recurse through
+  //      AuthInterceptor.
+  //   2. TokenManager — depends on bareDio.
+  //   3. dio — main client, AuthInterceptor injected with the TokenManager.
+  bareDio = createBareDio();
+  final tokenManager = TokenManager(bareDio);
+  dio = createDioClient(tokenManager: tokenManager, cacheStore: cacheStore);
+
   runApp(
-    const ProviderScope(
-      child: NtripiApp(),
+    ProviderScope(
+      overrides: [
+        // Provide the singleton TokenManager so AuthInterceptor and any
+        // future consumers share the same in-flight refresh dedup state.
+        tokenManagerProvider.overrideWithValue(tokenManager),
+      ],
+      child: const NtripiApp(),
     ),
   );
 }

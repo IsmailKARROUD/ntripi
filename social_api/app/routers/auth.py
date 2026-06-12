@@ -1,50 +1,66 @@
 """
-routers/auth.py — Authentication endpoints (register and login).
+routers/auth.py — Authentication endpoints.
 
 Route prefix: /auth
-No authentication required — these endpoints are the entry point for new users.
 
 Endpoints:
-  POST /auth/register → create a new account, returns a JWT token.
-  POST /auth/login    → log in with email + password, returns a JWT token.
+  POST /auth/register → create account, returns TokenPair.
+  POST /auth/login    → log in with identifier + password, returns TokenPair.
+  POST /auth/refresh  → exchange a refresh token for a new TokenPair (rotates).
+  POST /auth/logout   → revoke a refresh token. Always returns 204.
+  GET  /auth/tos      → current Terms of Service.
 
-Security notes:
-  - Passwords are hashed with bcrypt before storage (see services/auth.py).
-  - Login uses a dummy hash to prevent timing-based user enumeration attacks.
-    If we only ran bcrypt.verify on existing users, an attacker could time
-    the response to determine whether an email exists in the database.
-  - The router returns a JWT token immediately after registration, so the
-    client doesn't need a separate login step.
+OAuth 2.0 refresh-token pattern: a short-lived JWT access token (15 min)
+is paired with a long-lived opaque refresh token (30 days, rotating).
+The refresh token is stored server-side (hashed) so it can be revoked.
+Login / register / refresh all flow through this router; the rotation
+chain and theft detection live in services/refresh_token_service.py.
 """
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy.orm import Session
 from starlette.requests import Request
 
 from app.constants.tos import TOS_DATE, TOS_SUMMARY, TOS_VERSION
 from app.database import get_db
 from app.limiter import limiter
-from app.schemas.auth import LoginRequest, RegisterRequest, TokenResponse
-from app.services import auth_service
+from app.schemas.auth import (
+    LoginRequest,
+    RefreshRequest,
+    RegisterRequest,
+    TokenPair,
+)
+from app.services import auth_service, refresh_token_service
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
 
+def _token_pair(
+    user, access_token: str, refresh_token: str, refresh_row
+) -> TokenPair:
+    return TokenPair(
+        access_token=access_token,
+        refresh_token=refresh_token,
+        user_id=str(user.id),
+        username=user.username,
+        refresh_expires_at=refresh_row.expires_at,
+    )
+
+
 @router.post(
     "/register",
-    response_model=TokenResponse,
+    response_model=TokenPair,
     status_code=status.HTTP_201_CREATED,
     summary="Create a new account",
 )
 @limiter.limit("5/hour")
-def register(request: Request, payload: RegisterRequest, db: Session = Depends(get_db)) -> TokenResponse:
-    """
-    Create a new user account and return a JWT token.
-    Input validation (format, length) is handled by RegisterRequest.
-    Business logic (uniqueness, hashing) is handled by auth_service.
-    """
+def register(
+    request: Request,
+    payload: RegisterRequest,
+    db: Session = Depends(get_db),
+) -> TokenPair:
     try:
-        user, token = auth_service.create_user(
+        user, access_token = auth_service.create_user(
             username=payload.username,
             email=payload.email,
             password=payload.password,
@@ -54,29 +70,101 @@ def register(request: Request, payload: RegisterRequest, db: Session = Depends(g
         )
     except auth_service.AuthError as e:
         raise HTTPException(status_code=e.http_status, detail=e.message)
-    return TokenResponse(
-        access_token=token,
-        user_id=str(user.id),
-        username=user.username,
+
+    refresh_raw, refresh_row = refresh_token_service.issue(
+        db,
+        user_id=user.id,
+        user_agent=request.headers.get("user-agent"),
     )
+    db.commit()
+    return _token_pair(user, access_token, refresh_raw, refresh_row)
 
 
 @router.post(
     "/login",
-    response_model=TokenResponse,
-    summary="Log in with email and password",
+    response_model=TokenPair,
+    summary="Log in with email or username and password",
 )
 @limiter.limit("10/minute")
-def login(request: Request, payload: LoginRequest, db: Session = Depends(get_db)) -> TokenResponse:
+def login(
+    request: Request,
+    payload: LoginRequest,
+    db: Session = Depends(get_db),
+) -> TokenPair:
     try:
-        user, token = auth_service.authenticate_user(payload.identifier, payload.password, db)
+        user, access_token = auth_service.authenticate_user(
+            payload.identifier, payload.password, db
+        )
     except auth_service.AuthError as e:
         raise HTTPException(status_code=e.http_status, detail=e.message)
-    return TokenResponse(
-        access_token=token,
-        user_id=str(user.id),
-        username=user.username,
+
+    refresh_raw, refresh_row = refresh_token_service.issue(
+        db,
+        user_id=user.id,
+        user_agent=request.headers.get("user-agent"),
     )
+    db.commit()
+    return _token_pair(user, access_token, refresh_raw, refresh_row)
+
+
+@router.post(
+    "/refresh",
+    response_model=TokenPair,
+    summary="Rotate refresh token, return new access + refresh tokens",
+)
+@limiter.limit("60/minute")
+def refresh(
+    request: Request,
+    payload: RefreshRequest,
+    db: Session = Depends(get_db),
+) -> TokenPair:
+    """
+    Consume the supplied refresh token and return a fresh TokenPair. The
+    old refresh token is marked revoked atomically with the issuance of
+    the successor — so a replay of the old token after a successful
+    refresh triggers family-wide revocation (theft detection).
+
+    Returns 401 `invalid_grant` for unknown / expired / revoked tokens
+    so the client can distinguish session-end from a transient network
+    error.
+    """
+    try:
+        new_access, new_refresh, new_row = refresh_token_service.rotate(
+            db,
+            raw_token=payload.refresh_token,
+            user_agent=request.headers.get("user-agent"),
+        )
+    except refresh_token_service.InvalidGrantError:
+        db.commit()  # persist any family revocation done during theft detection
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="invalid_grant"
+        )
+
+    # Reload user for the response payload — refresh_token_service has the
+    # user_id but not the full User row.
+    from app.models.user import User
+
+    user = db.get(User, new_row.user_id)
+    db.commit()
+    return _token_pair(user, new_access, new_refresh, new_row)
+
+
+@router.post(
+    "/logout",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Revoke a refresh token",
+)
+def logout(
+    payload: RefreshRequest,
+    db: Session = Depends(get_db),
+) -> Response:
+    """
+    Revoke the supplied refresh token. Always returns 204 — never leaks
+    whether the token was valid (prevents probing).
+    """
+    refresh_token_service.revoke(db, raw_token=payload.refresh_token)
+    db.commit()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @router.get(
@@ -84,12 +172,6 @@ def login(request: Request, payload: LoginRequest, db: Session = Depends(get_db)
     summary="Get the current Terms of Service",
 )
 def get_tos() -> dict:
-    """
-    Return the current ToS version, date, and summary text.
-    No authentication required — this is fetched during registration.
-    Serving it from the backend means updating the ToS requires only a
-    backend deploy, not an app store submission.
-    """
     return {
         "version": TOS_VERSION,
         "date": TOS_DATE,

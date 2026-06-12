@@ -1,12 +1,10 @@
-import 'dart:async';
-
-import 'package:connectivity_plus/connectivity_plus.dart'
-    show ConnectivityResult, Connectivity;
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:social_flutter/core/api/api_client.dart';
 import 'package:social_flutter/core/api/api_endpoints.dart';
+import 'package:social_flutter/core/connectivity/connectivity_service.dart';
 import 'package:social_flutter/core/storage/secure_storage.dart';
 import 'package:social_flutter/core/ui/app_theme.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -33,8 +31,16 @@ final appRouter = GoRouter(
   navigatorKey: navigatorKey,
   initialLocation: '/splash',
   redirect: (context, state) async {
-    final token = await readToken();
-    final hasAuth = token != null && token.isNotEmpty && !isJwtExpired(token);
+    // We check for a live refresh token, NOT an unexpired access token —
+    // the access token is short-lived (15 min) and may legitimately be
+    // expired between requests. As long as the refresh token is alive,
+    // the session is alive; TokenManager handles the rotation on the
+    // first API call.
+    final refresh = await readRefreshToken();
+    final refreshExp = await readRefreshExpiresAt();
+    final hasAuth = refresh != null &&
+        refresh.isNotEmpty &&
+        (refreshExp == null || refreshExp.isAfter(DateTime.now()));
 
     // Routes that require no authentication check
     const publicRoutes = ['/login', '/register', '/splash'];
@@ -268,55 +274,28 @@ final appRouter = GoRouter(
 );
 
 /// Shell with persistent bottom navigation bar.
-class _AppShell extends StatefulWidget {
+class _AppShell extends ConsumerStatefulWidget {
   final StatefulNavigationShell navigationShell;
   const _AppShell({required this.navigationShell});
 
   @override
-  State<_AppShell> createState() => _AppShellState();
+  ConsumerState<_AppShell> createState() => _AppShellState();
 }
 
-class _AppShellState extends State<_AppShell> {
+class _AppShellState extends ConsumerState<_AppShell> {
   // Shown only on the web build. Users reach the web app via "Continue on web"
   // on the marketing page, so we nudge them toward the native app once they're
   // inside. Dismissed for the session — intentionally not persisted so it
   // reappears on the next visit as a soft reminder.
   bool _showDownloadBanner = kIsWeb;
-  bool _isOffline = false;
-
-  StreamSubscription<List<ConnectivityResult>>? _connectivitySub;
-
-  @override
-  void initState() {
-    super.initState();
-
-    // Reflect connectivity on cold launch — the stream only fires on changes.
-    _checkInitialConnection();
-
-    _connectivitySub = Connectivity().onConnectivityChanged.listen((results) {
-      if (!mounted) return;
-      setState(() {
-        _isOffline = results.contains(ConnectivityResult.none);
-      });
-    });
-  }
-
-  @override
-  void dispose() {
-    _connectivitySub?.cancel();
-    super.dispose();
-  }
-
-  Future<void> _checkInitialConnection() async {
-    final results = await Connectivity().checkConnectivity();
-    if (!mounted) return;
-    setState(() {
-      _isOffline = results.contains(ConnectivityResult.none);
-    });
-  }
 
   @override
   Widget build(BuildContext context) {
+    // Single source of truth for connectivity — see ConnectivityService.
+    // Default to "online" while the stream is still seeding (optimistic).
+    final isOffline = !ref
+        .watch(isOnlineProvider)
+        .maybeWhen(data: (online) => online, orElse: () => true);
     return Scaffold(
       // resizeToAvoidBottomInset: true (default) — the outer scaffold shrinks its
       // body to exactly the space above the keyboard. Inner screens use false so
@@ -326,7 +305,7 @@ class _AppShellState extends State<_AppShell> {
           if (_showDownloadBanner)
             _DownloadBanner(
                 onDismiss: () => setState(() => _showDownloadBanner = false)),
-          if (_isOffline) const _OfflineBanner(),
+          if (isOffline) const _OfflineBanner(),
           // Banners above use SafeArea(bottom: false) and consume the top
           // status-bar inset. MediaQuery still reports that inset to the
           // child Scaffold's AppBar, which would re-add it and leave a gap
@@ -334,7 +313,7 @@ class _AppShellState extends State<_AppShell> {
           Expanded(
             child: MediaQuery.removePadding(
               context: context,
-              removeTop: _showDownloadBanner || _isOffline,
+              removeTop: _showDownloadBanner || isOffline,
               child: widget.navigationShell,
             ),
           ),
