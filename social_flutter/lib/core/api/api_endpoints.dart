@@ -30,6 +30,11 @@ const kTosEndpoint = '/auth/tos';
 // ---------------------------------------------------------------------------
 const kMyProfileEndpoint = '/users/me';
 const kSearchUsersEndpoint = '/users/search';
+const kMyAvatarEndpoint = '/users/me/avatar';
+const kMyCoverImageEndpoint = '/users/me/cover-image';
+
+/// Returns the aggregate visited-locations endpoint for a given user.
+String userLocationsEndpoint(String userId) => '/users/$userId/locations';
 
 /// Returns the profile endpoint for a given user ID.
 String userProfileEndpoint(String userId) => '/users/$userId';

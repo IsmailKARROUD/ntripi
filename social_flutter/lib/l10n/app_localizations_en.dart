@@ -234,6 +234,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get expand => 'Expand';
 
   @override
+  String get tapToSeeStops => 'Tap to see stops';
+
+  @override
+  String get coverImageSection => 'Cover image';
+
+  @override
+  String get coverImageUrlLabel => 'Cover image URL';
+
+  @override
+  String get uploadCoverImage => 'Upload cover image';
+
+  @override
   String followRequestsBannerTitle(int count) {
     return 'Follow Requests ($count)';
   }

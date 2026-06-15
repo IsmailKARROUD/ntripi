@@ -16,6 +16,8 @@ import 'package:social_flutter/features/follows/providers/follow_provider.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/itinerary_summary_card.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/markdown_notes_editor.dart';
 import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
+import 'package:social_flutter/features/profile/domain/visited_location.dart';
+import 'package:social_flutter/features/profile/presentation/fullscreen_locations_map_screen.dart';
 import 'package:social_flutter/features/profile/presentation/profile_identity_facts.dart';
 import 'package:social_flutter/features/profile/presentation/widgets/empty_itineraries_card.dart';
 import 'package:social_flutter/features/profile/presentation/widgets/follow_action_row.dart';
@@ -25,6 +27,7 @@ import 'package:social_flutter/features/profile/presentation/widgets/profile_chr
 import 'package:social_flutter/features/profile/presentation/widgets/profile_edit_form.dart';
 import 'package:social_flutter/features/profile/presentation/widgets/profile_settings_sheet.dart';
 import 'package:social_flutter/features/profile/providers/profile_provider.dart';
+import 'package:social_flutter/features/profile/providers/user_locations_provider.dart';
 import 'package:social_flutter/l10n/app_localizations.dart';
 import 'package:social_flutter/shared/models/user.dart';
 import 'package:social_flutter/shared/widgets/loaders.dart';
@@ -157,6 +160,15 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 ?.fold<int>(0, (s, it) => s + it.stopsCount) ??
             0);
 
+    // Lazy fetch: cover image wins on the hero, so users with a cover never
+    // trigger the locations call. Locked private profiles never fetch either.
+    final shouldFetchLocations =
+        user.coverImageUrl == null && !isContentHidden;
+    final List<VisitedLocation> heroLocations = shouldFetchLocations
+        ? (ref.watch(userLocationsProvider(user.id)).valueOrNull ??
+            const <VisitedLocation>[])
+        : const <VisitedLocation>[];
+
     return RefreshIndicator(
       onRefresh: () async {
         if (widget.isSelf) {
@@ -166,6 +178,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         } else {
           ref.read(userProfileProvider(widget.userId!).notifier).refresh();
           ref.read(userItinerariesProvider(widget.userId!).notifier).refresh();
+        }
+        if (user.coverImageUrl == null) {
+          ref.read(userLocationsProvider(user.id).notifier).refresh();
         }
       },
       child: CustomScrollView(
@@ -179,7 +194,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   totalStops: totalStops,
                   isSelf: widget.isSelf,
                   isContentHidden: isContentHidden,
-                  showExpandPill: widget.isSelf,
                   headerLabel:
                       widget.isSelf ? null : l10n.whereTheyveBeen,
                   onEdit: widget.isSelf
@@ -193,6 +207,18 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                 context.push('/settings/delete-account'),
                           )
                       : null,
+                  coverImageUrl: user.coverImageUrl,
+                  locations: heroLocations,
+                  onHeroTap: isContentHidden
+                      ? null
+                      : () => Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => FullscreenLocationsMapScreen(
+                                userId: user.id,
+                                userName: user.nameForDisplay,
+                              ),
+                            ),
+                          ),
                 ),
 
                 // Tally row — my-profile style for both.

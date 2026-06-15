@@ -13,25 +13,34 @@ Endpoints:
 
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
 from sqlalchemy import select, or_, update
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 from starlette.requests import Request
 
 from app.database import get_db
 from app.dependencies import get_current_user
 from app.limiter import limiter
 from app.models.follow import Follow, FollowStatus
+from app.models.itinerary import Itinerary
 from app.models.itinerary_rating import ItineraryRating
+from app.models.stop import Stop
+from app.models.track import Track
 from app.models.user import User
 from app.schemas.user import (
     DeleteAccountRequest,
+    UserImageResponse,
     UserPrivateProfile,
     UserPublicProfile,
     UserSearchResult,
     UserUpdateRequest,
+    VisitedLocationItem,
+    VisitedLocationsResponse,
 )
 from app.services.auth import verify_password
+from app.services.image_service import ImageProcessingError, process_cover_image
+from app.services.itinerary_access import can_view_itinerary
+from app.storage.factory import storage
 
 router = APIRouter(prefix="/users", tags=["Users"])
 
@@ -223,6 +232,7 @@ def get_user_by_username(
         display_name=target_user.display_name,
         bio=target_user.bio,
         avatar_url=target_user.avatar_url,
+        cover_image_url=target_user.cover_image_url,
         is_private=target_user.is_private,
         followers_count=target_user.followers_count,
         following_count=target_user.following_count,
@@ -292,6 +302,150 @@ def search_users(
     return results  # type: ignore[return-value]
 
 
+# ---------------------------------------------------------------------------
+# Avatar & cover image — multipart upload + delete
+#
+# Both endpoints reuse the existing 1200×630 process_cover_image pipeline.
+# The avatar gets center-cropped into a circle on the client (ClipOval +
+# BoxFit.cover), so a single image pipeline is enough.
+# ---------------------------------------------------------------------------
+
+@router.post(
+    "/me/avatar",
+    response_model=UserImageResponse,
+    summary="Upload or replace the current user's avatar",
+)
+@limiter.limit("10/minute")
+async def upload_my_avatar(
+    request: Request,
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> UserImageResponse:
+    raw_bytes = await file.read()
+    try:
+        processed = process_cover_image(raw_bytes)
+    except ImageProcessingError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
+
+    key = f"avatars/{current_user.id}.jpg"
+    public_url = await storage().save(key, processed, "image/jpeg")
+
+    current_user.avatar_url = public_url
+    db.commit()
+
+    return UserImageResponse(avatar_url=public_url)
+
+
+@router.delete(
+    "/me/avatar",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Remove the current user's avatar",
+)
+async def delete_my_avatar(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> None:
+    key = f"avatars/{current_user.id}.jpg"
+    await storage().delete(key)
+    current_user.avatar_url = None
+    db.commit()
+
+
+@router.post(
+    "/me/cover-image",
+    response_model=UserImageResponse,
+    summary="Upload or replace the current user's cover image",
+)
+@limiter.limit("10/minute")
+async def upload_my_cover_image(
+    request: Request,
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> UserImageResponse:
+    raw_bytes = await file.read()
+    try:
+        processed = process_cover_image(raw_bytes)
+    except ImageProcessingError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
+
+    key = f"covers/{current_user.id}.jpg"
+    public_url = await storage().save(key, processed, "image/jpeg")
+
+    current_user.cover_image_url = public_url
+    db.commit()
+
+    return UserImageResponse(cover_image_url=public_url)
+
+
+@router.delete(
+    "/me/cover-image",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Remove the current user's cover image",
+)
+async def delete_my_cover_image(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> None:
+    key = f"covers/{current_user.id}.jpg"
+    await storage().delete(key)
+    current_user.cover_image_url = None
+    db.commit()
+
+
+# ---------------------------------------------------------------------------
+# GET /users/{user_id}/locations — aggregate stop coords for the profile hero
+#
+# Declared BEFORE the catch-all /{identifier} so the typed UUID path parameter
+# takes precedence and bad-UUID requests return 422 instead of falling through
+# to the username lookup.
+# ---------------------------------------------------------------------------
+
+@router.get(
+    "/{user_id}/locations",
+    response_model=VisitedLocationsResponse,
+    summary="All stop coordinates visible to the viewer for this user",
+)
+def get_user_locations(
+    user_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> VisitedLocationsResponse:
+    target_user = db.get(User, user_id)
+    if not target_user or not target_user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="User not found."
+        )
+
+    itineraries = db.execute(
+        select(Itinerary)
+        .where(Itinerary.user_id == user_id)
+        .options(selectinload(Itinerary.tracks).selectinload(Track.stops))
+    ).scalars().all()
+
+    locations: list[VisitedLocationItem] = []
+    for itin in itineraries:
+        if not can_view_itinerary(itin, current_user.id, db):
+            continue
+        for track in itin.tracks:
+            for stop in track.stops:
+                if stop.lat is None or stop.lng is None:
+                    continue
+                locations.append(
+                    VisitedLocationItem(
+                        lat=float(stop.lat),
+                        lng=float(stop.lng),
+                        place_name=stop.place_name,
+                        place_type=stop.place_type,
+                        itinerary_id=itin.id,
+                        stop_id=stop.id,
+                    )
+                )
+
+    return VisitedLocationsResponse(locations=locations)
+
+
 @router.get(
     "/{identifier}",
     response_model=UserPublicProfile,
@@ -350,6 +504,7 @@ def get_user_profile(
         display_name=target_user.display_name,
         bio=target_user.bio,
         avatar_url=target_user.avatar_url,
+        cover_image_url=target_user.cover_image_url,
         is_private=target_user.is_private,
         followers_count=target_user.followers_count,
         following_count=target_user.following_count,

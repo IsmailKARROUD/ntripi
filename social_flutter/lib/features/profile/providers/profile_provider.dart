@@ -6,6 +6,8 @@
 // Both use AsyncNotifier which provides AsyncValue<T> — automatically
 // handling loading, data, and error states without manual bool flags.
 
+import 'dart:typed_data';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:social_flutter/core/api/api_client.dart';
 import 'package:social_flutter/features/profile/data/profile_repository.dart';
@@ -37,6 +39,8 @@ class MyProfileNotifier extends AsyncNotifier<User> {
     String? bio,
     String? avatarUrl,
     bool clearAvatarUrl = false,
+    String? coverImageUrl,
+    bool clearCoverImageUrl = false,
     bool? isPrivate,
     List<String>? passportCountries,
     bool passportCountriesChanged = false,
@@ -51,6 +55,8 @@ class MyProfileNotifier extends AsyncNotifier<User> {
             bio: bio,
             avatarUrl: avatarUrl,
             clearAvatarUrl: clearAvatarUrl,
+            coverImageUrl: coverImageUrl,
+            clearCoverImageUrl: clearCoverImageUrl,
             isPrivate: isPrivate,
             passportCountries: passportCountries,
             passportCountriesChanged: passportCountriesChanged,
@@ -60,6 +66,39 @@ class MyProfileNotifier extends AsyncNotifier<User> {
             languagesChanged: languagesChanged,
           ),
     );
+  }
+
+  /// Upload a new avatar image. State is updated with the returned URL
+  /// (optimistic — no full reload). Throws on network/validation errors.
+  Future<void> uploadAvatar(Uint8List bytes, String filename) async {
+    final url = await ref
+        .read(profileRepositoryProvider)
+        .uploadAvatarImage(bytes: bytes, filename: filename);
+    state.whenData((user) {
+      state = AsyncData(user.copyWith(avatarUrl: url));
+    });
+  }
+
+  /// Delete the avatar and refresh the profile from server (clean nullable state).
+  Future<void> deleteAvatar() async {
+    await ref.read(profileRepositoryProvider).deleteAvatarImage();
+    await refresh();
+  }
+
+  /// Upload a new cover image. State is updated with the returned URL.
+  Future<void> uploadCoverImage(Uint8List bytes, String filename) async {
+    final url = await ref
+        .read(profileRepositoryProvider)
+        .uploadCoverImage(bytes: bytes, filename: filename);
+    state.whenData((user) {
+      state = AsyncData(user.copyWith(coverImageUrl: url));
+    });
+  }
+
+  /// Delete the cover image and refresh from server.
+  Future<void> deleteCoverImage() async {
+    await ref.read(profileRepositoryProvider).deleteCoverImage();
+    await refresh();
   }
 }
 

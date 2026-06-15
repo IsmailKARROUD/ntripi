@@ -40,6 +40,7 @@ class User(Base):
 
     bio: Mapped[str | None] = mapped_column(Text, nullable=True)
     avatar_url: Mapped[str | None] = mapped_column(Text, nullable=True)
+    cover_image_url: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     passport_countries: Mapped[list | None] = mapped_column(JSON, nullable=True)
     resident_country: Mapped[str | None] = mapped_column(String(2), nullable=True)

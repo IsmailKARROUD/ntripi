@@ -78,6 +78,8 @@ class _FakeMyProfile extends MyProfileNotifier {
     String? bio,
     String? avatarUrl,
     bool clearAvatarUrl = false,
+    String? coverImageUrl,
+    bool clearCoverImageUrl = false,
     bool? isPrivate,
     List<String>? passportCountries,
     bool passportCountriesChanged = false,

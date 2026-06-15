@@ -21,6 +21,7 @@ class User {
   final String? displayName;
   final String? bio;
   final String? avatarUrl;
+  final String? coverImageUrl;
   final bool isPrivate;
   final int followersCount;
   final int followingCount;
@@ -55,6 +56,7 @@ class User {
     this.displayName,
     this.bio,
     this.avatarUrl,
+    this.coverImageUrl,
     required this.isPrivate,
     required this.followersCount,
     required this.followingCount,
@@ -74,6 +76,7 @@ class User {
       displayName: json['display_name'] as String?,
       bio: json['bio'] as String?,
       avatarUrl: json['avatar_url'] as String?,
+      coverImageUrl: json['cover_image_url'] as String?,
       isPrivate: json['is_private'] as bool? ?? true,
       followersCount: json['followers_count'] as int? ?? 0,
       followingCount: json['following_count'] as int? ?? 0,
@@ -100,6 +103,7 @@ class User {
       if (displayName != null) 'display_name': displayName,
       if (bio != null) 'bio': bio,
       if (avatarUrl != null) 'avatar_url': avatarUrl,
+      if (coverImageUrl != null) 'cover_image_url': coverImageUrl,
       'is_private': isPrivate,
       'followers_count': followersCount,
       'following_count': followingCount,
@@ -121,6 +125,7 @@ class User {
     String? displayName,
     String? bio,
     String? avatarUrl,
+    String? coverImageUrl,
     bool? isPrivate,
     int? followersCount,
     int? followingCount,
@@ -138,6 +143,7 @@ class User {
       displayName: displayName ?? this.displayName,
       bio: bio ?? this.bio,
       avatarUrl: avatarUrl ?? this.avatarUrl,
+      coverImageUrl: coverImageUrl ?? this.coverImageUrl,
       isPrivate: isPrivate ?? this.isPrivate,
       followersCount: followersCount ?? this.followersCount,
       followingCount: followingCount ?? this.followingCount,

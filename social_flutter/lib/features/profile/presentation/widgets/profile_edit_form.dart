@@ -1,8 +1,13 @@
+import 'dart:typed_data';
+
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:social_flutter/core/ui/app_theme.dart';
 import 'package:social_flutter/core/ui/destructive_actions.dart';
 import 'package:social_flutter/features/follows/providers/follow_provider.dart';
+import 'package:social_flutter/features/itineraries/presentation/widgets/cover_image_field.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/markdown_notes_editor.dart';
 import 'package:social_flutter/features/profile/presentation/country_picker_screen.dart';
 import 'package:social_flutter/features/profile/presentation/language_picker_sheet.dart';
@@ -32,6 +37,7 @@ class _ProfileEditFormState extends ConsumerState<ProfileEditForm> {
   late final TextEditingController _displayNameController;
   late final TextEditingController _bioController;
   late final TextEditingController _avatarUrlController;
+  late final TextEditingController _coverImageUrlController;
   late bool? _editIsPrivate;
   late List<String> _editPassportCountries;
   bool _passportCountriesChanged = false;
@@ -40,6 +46,13 @@ class _ProfileEditFormState extends ConsumerState<ProfileEditForm> {
   late List<String> _editLanguages;
   bool _languagesChanged = false;
 
+  // Picker state — bytes are uploaded inside _saveEdits before the JSON PATCH.
+  Uint8List? _pickedAvatarBytes;
+  String? _pickedAvatarFilename;
+  Uint8List? _pickedCoverBytes;
+  String? _pickedCoverFilename;
+  bool _coverRemoved = false;
+
   @override
   void initState() {
     super.initState();
@@ -47,6 +60,8 @@ class _ProfileEditFormState extends ConsumerState<ProfileEditForm> {
     _displayNameController = TextEditingController(text: u.displayName ?? '');
     _bioController = TextEditingController(text: u.bio ?? '');
     _avatarUrlController = TextEditingController(text: u.avatarUrl ?? '');
+    _coverImageUrlController =
+        TextEditingController(text: u.coverImageUrl ?? '');
     _editIsPrivate = u.isPrivate;
     _editPassportCountries = List.from(u.passportCountries ?? []);
     _editResidentCountry = u.residentCountry;
@@ -58,7 +73,37 @@ class _ProfileEditFormState extends ConsumerState<ProfileEditForm> {
     _displayNameController.dispose();
     _bioController.dispose();
     _avatarUrlController.dispose();
+    _coverImageUrlController.dispose();
     super.dispose();
+  }
+
+  /// Open gallery → store bytes for upload during _saveEdits.
+  /// No crop screen for avatar — server applies the 1200×630 pipeline; the
+  /// UserAvatar widget already clips to a circle with BoxFit.cover.
+  Future<void> _pickAvatar() async {
+    if (_avatarUrlController.text.trim().isNotEmpty) {
+      // URL field wins. Don't accumulate picked bytes that would be discarded.
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(AppLocalizations.of(context)!.avatarUrlLabel)),
+      );
+      return;
+    }
+    try {
+      final picked = await ImagePicker().pickImage(
+        source: ImageSource.gallery,
+        maxWidth: kIsWeb ? null : 2400,
+        imageQuality: kIsWeb ? null : 90,
+      );
+      if (picked == null || !mounted) return;
+      final bytes = await picked.readAsBytes();
+      if (!mounted) return;
+      setState(() {
+        _pickedAvatarBytes = bytes;
+        _pickedAvatarFilename = picked.name;
+      });
+    } catch (_) {
+      // Picker errors are silent — user can retry.
+    }
   }
 
   Future<void> _saveEdits() async {
@@ -78,25 +123,55 @@ class _ProfileEditFormState extends ConsumerState<ProfileEditForm> {
       if (!confirmed) return;
     }
 
+    final notifier = ref.read(myProfileProvider.notifier);
+
+    // Binary uploads first — server returns the new URL which the notifier
+    // merges into state. URL field takes precedence over picked bytes (R1).
     final avatarText = _avatarUrlController.text.trim();
-    await ref.read(myProfileProvider.notifier).updateProfile(
-          displayName: _displayNameController.text.trim().isEmpty
-              ? null
-              : _displayNameController.text.trim(),
-          bio: _bioController.text.trim().isEmpty
-              ? null
-              : _bioController.text.trim(),
-          avatarUrl: avatarText.isEmpty ? null : avatarText,
-          clearAvatarUrl: avatarText.isEmpty,
-          isPrivate: _editIsPrivate,
-          passportCountries: _editPassportCountries,
-          passportCountriesChanged: _passportCountriesChanged,
-          residentCountry: _editResidentCountry,
-          clearResidentCountry:
-              _residentChanged && _editResidentCountry == null,
-          languages: _editLanguages,
-          languagesChanged: _languagesChanged,
-        );
+    if (_pickedAvatarBytes != null && avatarText.isEmpty) {
+      await notifier.uploadAvatar(
+        _pickedAvatarBytes!,
+        _pickedAvatarFilename ?? 'avatar.jpg',
+      );
+    }
+    final coverText = _coverImageUrlController.text.trim();
+    if (_pickedCoverBytes != null && coverText.isEmpty) {
+      await notifier.uploadCoverImage(
+        _pickedCoverBytes!,
+        _pickedCoverFilename ?? 'cover.jpg',
+      );
+    } else if (_coverRemoved && coverText.isEmpty) {
+      await notifier.deleteCoverImage();
+    }
+
+    await notifier.updateProfile(
+      displayName: _displayNameController.text.trim().isEmpty
+          ? null
+          : _displayNameController.text.trim(),
+      bio: _bioController.text.trim().isEmpty
+          ? null
+          : _bioController.text.trim(),
+      // Only PATCH avatar_url when a typed URL is present AND no upload
+      // happened (URL field wins). If the field is empty and no bytes were
+      // picked, signal "clear" so the server nulls the column.
+      avatarUrl: avatarText.isEmpty ? null : avatarText,
+      clearAvatarUrl: avatarText.isEmpty && _pickedAvatarBytes == null,
+      // Same logic for cover_image_url. If a binary was just uploaded above,
+      // skip the URL patch (server already wrote the upload URL).
+      coverImageUrl: coverText.isEmpty ? null : coverText,
+      clearCoverImageUrl: coverText.isEmpty &&
+          _pickedCoverBytes == null &&
+          !_coverRemoved,
+      isPrivate: _editIsPrivate,
+      passportCountries: _editPassportCountries,
+      passportCountriesChanged: _passportCountriesChanged,
+      residentCountry: _editResidentCountry,
+      clearResidentCountry:
+          _residentChanged && _editResidentCountry == null,
+      languages: _editLanguages,
+      languagesChanged: _languagesChanged,
+    );
+
     if (mounted) widget.onSaved();
   }
 
@@ -155,61 +230,121 @@ class _ProfileEditFormState extends ConsumerState<ProfileEditForm> {
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 20),
                   child: Center(
-                    child: Column(
-                      children: [
-                        Stack(
-                          clipBehavior: Clip.none,
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(4),
-                              decoration: const BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: kSand,
-                              ),
-                              child: UserAvatar(
-                                  avatarUrl: user.avatarUrl, radius: 46),
-                            ),
-                            Positioned(
-                              bottom: 0,
-                              right: 0,
-                              child: Container(
-                                width: 32,
-                                height: 32,
-                                decoration: BoxDecoration(
-                                  color: kForest,
+                    child: GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTap: _pickAvatar,
+                      child: Column(
+                        children: [
+                          Stack(
+                            clipBehavior: Clip.none,
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(4),
+                                decoration: const BoxDecoration(
                                   shape: BoxShape.circle,
-                                  border:
-                                      Border.all(color: kSand, width: 3),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.black
-                                          .withValues(alpha: 0.15),
-                                      blurRadius: 8,
-                                    ),
-                                  ],
+                                  color: kSand,
                                 ),
-                                child: const Icon(
-                                  Icons.photo_camera,
-                                  color: Colors.white,
-                                  size: 15,
+                                child: _pickedAvatarBytes != null
+                                    ? ClipOval(
+                                        child: Image.memory(
+                                          _pickedAvatarBytes!,
+                                          width: 92,
+                                          height: 92,
+                                          fit: BoxFit.cover,
+                                        ),
+                                      )
+                                    : UserAvatar(
+                                        avatarUrl: user.avatarUrl,
+                                        radius: 46,
+                                      ),
+                              ),
+                              Positioned(
+                                bottom: 0,
+                                right: 0,
+                                child: Container(
+                                  width: 32,
+                                  height: 32,
+                                  decoration: BoxDecoration(
+                                    color: kForest,
+                                    shape: BoxShape.circle,
+                                    border:
+                                        Border.all(color: kSand, width: 3),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black
+                                            .withValues(alpha: 0.15),
+                                        blurRadius: 8,
+                                      ),
+                                    ],
+                                  ),
+                                  child: const Icon(
+                                    Icons.photo_camera,
+                                    color: Colors.white,
+                                    size: 15,
+                                  ),
                                 ),
                               ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          l10n.uploadPhoto,
-                          style: const TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                            color: kForest,
+                            ],
                           ),
-                        ),
-                      ],
+                          const SizedBox(height: 8),
+                          Text(
+                            l10n.uploadPhoto,
+                            style: const TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: kForest,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
+
+                // Cover image section — picker UI + URL fallback field.
+                _SectionLabel(
+                  icon: Icons.image_outlined,
+                  label: l10n.coverImageSection,
+                ),
+                _SectionCard(children: [
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 12, vertical: 8),
+                    child: CoverImageField(
+                      initialUrl: user.coverImageUrl,
+                      onImageSelected: (bytes, fn) => setState(() {
+                        _pickedCoverBytes = bytes;
+                        _pickedCoverFilename = fn;
+                        _coverRemoved = false;
+                      }),
+                      onImageRemoved: () => setState(() {
+                        _pickedCoverBytes = null;
+                        _pickedCoverFilename = null;
+                        _coverRemoved = true;
+                      }),
+                    ),
+                  ),
+                  const _FieldDivider(),
+                  _EditFieldRow(
+                    icon: Icons.link_rounded,
+                    label: l10n.coverImageUrlLabel,
+                    child: TextField(
+                      controller: _coverImageUrlController,
+                      style: const TextStyle(
+                          fontSize: 15,
+                          color: kBark,
+                          fontWeight: FontWeight.w500),
+                      decoration: const InputDecoration(
+                        hintText: 'https://…',
+                        hintStyle: TextStyle(color: kText3, fontSize: 14),
+                        border: InputBorder.none,
+                        contentPadding:
+                            EdgeInsets.only(left: 8, top: 8, bottom: 8),
+                        isDense: true,
+                      ),
+                    ),
+                  ),
+                ]),
                 _SectionLabel(
                   icon: Icons.person_outline_rounded,
                   label: l10n.identitySection,

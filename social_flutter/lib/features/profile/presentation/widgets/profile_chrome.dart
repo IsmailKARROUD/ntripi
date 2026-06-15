@@ -5,10 +5,13 @@
 // tally tiles and glass-blur top buttons so both screens stay in sync.
 
 import 'dart:ui';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:social_flutter/core/api/api_endpoints.dart';
 import 'package:social_flutter/core/ui/app_theme.dart';
+import 'package:social_flutter/features/profile/domain/visited_location.dart';
 import 'package:social_flutter/l10n/app_localizations.dart';
 import 'package:social_flutter/shared/models/user.dart';
 import 'package:social_flutter/shared/widgets/user_avatar.dart';
@@ -21,10 +24,12 @@ class ProfileHeroAndIdentity extends StatelessWidget {
   final int totalStops;
   final bool isSelf;
   final bool isContentHidden;
-  final bool showExpandPill;
   final String? headerLabel;
   final VoidCallback? onEdit;
   final VoidCallback? onSettings;
+  final String? coverImageUrl;
+  final List<VisitedLocation> locations;
+  final VoidCallback? onHeroTap;
 
   const ProfileHeroAndIdentity({
     super.key,
@@ -32,10 +37,12 @@ class ProfileHeroAndIdentity extends StatelessWidget {
     required this.totalStops,
     this.isSelf = true,
     this.isContentHidden = false,
-    this.showExpandPill = true,
     this.headerLabel,
     this.onEdit,
     this.onSettings,
+    this.coverImageUrl,
+    this.locations = const [],
+    this.onHeroTap,
   });
 
   @override
@@ -63,10 +70,12 @@ class ProfileHeroAndIdentity extends StatelessWidget {
               totalStops: totalStops,
               isPrivate: user.isPrivate,
               isContentHidden: isContentHidden,
-              showExpandPill: showExpandPill,
               headerLabel: headerLabel,
               onEdit: onEdit,
               onSettings: onSettings,
+              coverImageUrl: coverImageUrl,
+              locations: locations,
+              onHeroTap: onHeroTap,
             ),
           ),
           Positioned(
@@ -126,10 +135,12 @@ class ProfileMapHero extends StatelessWidget {
   final int totalStops;
   final bool isPrivate;
   final bool isContentHidden;
-  final bool showExpandPill;
   final String? headerLabel;
   final VoidCallback? onEdit;
   final VoidCallback? onSettings;
+  final String? coverImageUrl;
+  final List<VisitedLocation> locations;
+  final VoidCallback? onHeroTap;
 
   const ProfileMapHero({
     super.key,
@@ -137,43 +148,110 @@ class ProfileMapHero extends StatelessWidget {
     required this.totalStops,
     required this.isPrivate,
     this.isContentHidden = false,
-    this.showExpandPill = true,
     this.headerLabel,
     this.onEdit,
     this.onSettings,
+    this.coverImageUrl,
+    this.locations = const [],
+    this.onHeroTap,
   });
+
+  String? _resolveCoverUrl() {
+    final raw = coverImageUrl;
+    if (raw == null || raw.isEmpty) return null;
+    return raw.startsWith('/') ? '$kApiBaseUrl$raw' : raw;
+  }
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final label = headerLabel ?? l10n.whereIveBeen;
+    final resolvedCover = _resolveCoverUrl();
+    final hasCover = resolvedCover != null;
+    // Blurred-map fallback shows over the OSM hero; hidden for the cover image
+    // (cover should be clear) and hidden when isContentHidden (the lock veil
+    // is the stronger signal).
+    final showMapBlurAndCta = !hasCover && !isContentHidden;
 
     return ClipRect(
       child: Stack(
         fit: StackFit.expand,
         children: [
-          IgnorePointer(
-            child: FlutterMap(
-              options: const MapOptions(
-                initialCenter: LatLng(20.0, 10.0),
-                initialZoom: 2.5,
-                interactionOptions: InteractionOptions(
-                  flags: InteractiveFlag.none,
+          if (hasCover)
+            CachedNetworkImage(
+              imageUrl: resolvedCover,
+              fit: BoxFit.cover,
+              errorWidget: (_, __, ___) => Container(color: kSand),
+            )
+          else
+            IgnorePointer(
+              child: FlutterMap(
+                options: locations.isNotEmpty
+                    ? MapOptions(
+                        initialCameraFit: CameraFit.bounds(
+                          bounds: LatLngBounds.fromPoints(
+                            locations
+                                .map((l) => LatLng(l.lat, l.lng))
+                                .toList(),
+                          ),
+                          padding: const EdgeInsets.all(40),
+                        ),
+                        interactionOptions: const InteractionOptions(
+                          flags: InteractiveFlag.none,
+                        ),
+                      )
+                    : const MapOptions(
+                        initialCenter: LatLng(20.0, 10.0),
+                        initialZoom: 2.5,
+                        interactionOptions: InteractionOptions(
+                          flags: InteractiveFlag.none,
+                        ),
+                      ),
+                children: [
+                  TileLayer(
+                    urlTemplate:
+                        'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                    userAgentPackageName: 'app.ntripi',
+                    // Silently discard tile errors (offline / test mode).
+                    errorTileCallback: (_, __, ___) {},
+                  ),
+                  if (locations.isNotEmpty)
+                    MarkerLayer(
+                      markers: locations
+                          .map((loc) => Marker(
+                                point: LatLng(loc.lat, loc.lng),
+                                width: 14,
+                                height: 14,
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    color: kForest,
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                      color: Colors.white,
+                                      width: 1.5,
+                                    ),
+                                  ),
+                                ),
+                              ))
+                          .toList(),
+                    ),
+                ],
+              ),
+            ),
+
+          if (!hasCover) Container(color: const Color(0x30F5F2EC)),
+
+          // Privacy/aesthetic blur veil over the map fallback only.
+          // Cover image stays clear; isContentHidden has its own stronger veil.
+          if (showMapBlurAndCta)
+            Positioned.fill(
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+                child: Container(
+                  color: Colors.black.withValues(alpha: 0.08),
                 ),
               ),
-              children: [
-                TileLayer(
-                  urlTemplate:
-                      'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                  userAgentPackageName: 'app.ntripi',
-                  // Silently discard tile errors (offline / test mode).
-                  errorTileCallback: (_, __, ___) {},
-                ),
-              ],
             ),
-          ),
-
-          Container(color: const Color(0x30F5F2EC)),
 
           if (isContentHidden)
             BackdropFilter(
@@ -215,6 +293,17 @@ class ProfileMapHero extends StatelessWidget {
               ),
             ),
           ),
+
+          // Whole-hero tap target. Placed BEFORE the chrome buttons so the
+          // buttons (drawn after) intercept their own taps first; this layer
+          // catches everything else.
+          if (onHeroTap != null)
+            Positioned.fill(
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: onHeroTap,
+              ),
+            ),
 
           Positioned(
             top: 0,
@@ -292,36 +381,42 @@ class ProfileMapHero extends StatelessWidget {
                       ),
                     ],
                   ),
-                  if (isSelf && showExpandPill) ...[
-                    const Spacer(),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: kButtonTransparent,
-                        borderRadius: BorderRadius.circular(999),
-                        border: Border.all(
-                            color: Colors.white.withValues(alpha: 0.25)),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(Icons.open_in_full,
-                              size: 12, color: Colors.white, weight: 600),
-                          const SizedBox(width: 4),
-                          Text(
-                            l10n.expand,
-                            style: const TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
                 ],
+              ),
+            ),
+
+          // "Tap to see stops" CTA pill — centered on the map fallback.
+          // Hidden when a cover image is shown or when content is locked.
+          // IgnorePointer so taps fall through to the hero GestureDetector.
+          if (showMapBlurAndCta)
+            IgnorePointer(
+              child: Center(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 14, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: kButtonTransparent,
+                    borderRadius: BorderRadius.circular(999),
+                    border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.3)),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.map_outlined,
+                          size: 14, color: Colors.white),
+                      const SizedBox(width: 6),
+                      Text(
+                        l10n.tapToSeeStops,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ),
         ],

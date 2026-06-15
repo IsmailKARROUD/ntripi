@@ -80,6 +80,10 @@
     }
   },
   "expand": "Expand",
+  "tapToSeeStops": "Tap to see stops",
+  "coverImageSection": "Cover image",
+  "coverImageUrlLabel": "Cover image URL",
+  "uploadCoverImage": "Upload cover image",
   "followRequestsBannerTitle": "Follow Requests ({count})",
   "@followRequestsBannerTitle": {
     "placeholders": {

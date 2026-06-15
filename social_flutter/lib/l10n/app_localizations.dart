@@ -512,6 +512,30 @@ abstract class AppLocalizations {
   /// **'Expand'**
   String get expand;
 
+  /// No description provided for @tapToSeeStops.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap to see stops'**
+  String get tapToSeeStops;
+
+  /// No description provided for @coverImageSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Cover image'**
+  String get coverImageSection;
+
+  /// No description provided for @coverImageUrlLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cover image URL'**
+  String get coverImageUrlLabel;
+
+  /// No description provided for @uploadCoverImage.
+  ///
+  /// In en, this message translates to:
+  /// **'Upload cover image'**
+  String get uploadCoverImage;
+
   /// No description provided for @followRequestsBannerTitle.
   ///
   /// In en, this message translates to:

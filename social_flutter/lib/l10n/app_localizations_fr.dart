@@ -238,6 +238,18 @@ class AppLocalizationsFr extends AppLocalizations {
   String get expand => 'Agrandir';
 
   @override
+  String get tapToSeeStops => 'Toucher pour voir les arrêts';
+
+  @override
+  String get coverImageSection => 'Image de couverture';
+
+  @override
+  String get coverImageUrlLabel => 'URL de l\'image de couverture';
+
+  @override
+  String get uploadCoverImage => 'Téléverser une image de couverture';
+
+  @override
   String followRequestsBannerTitle(int count) {
     return 'Demandes d\'abonnement ($count)';
   }

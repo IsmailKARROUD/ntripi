@@ -22,6 +22,7 @@ class UserBase(BaseModel):
     display_name: str | None
     bio: str | None
     avatar_url: str | None
+    cover_image_url: str | None
     is_private: bool
     followers_count: int
     following_count: int
@@ -71,6 +72,7 @@ class UserUpdateRequest(BaseModel):
     display_name: str | None = Field(None, max_length=50)
     bio: str | None = Field(None, max_length=500)
     avatar_url: str | None = None
+    cover_image_url: str | None = None
     is_private: bool | None = None
     passport_countries: list[str] | None = None
     resident_country: str | None = None
@@ -142,3 +144,27 @@ class UserSearchResult(BaseModel):
     followers_count: int
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class UserImageResponse(BaseModel):
+    """Response for avatar/cover upload + delete endpoints.
+
+    Only the field that was mutated will be populated; the other stays None.
+    """
+    avatar_url: str | None = None
+    cover_image_url: str | None = None
+
+
+class VisitedLocationItem(BaseModel):
+    """A single stop coordinate from one of the user's itineraries."""
+    lat: float
+    lng: float
+    place_name: str | None
+    place_type: str | None
+    itinerary_id: uuid.UUID
+    stop_id: uuid.UUID
+
+
+class VisitedLocationsResponse(BaseModel):
+    """All coordinate stops the viewer is allowed to see for a user."""
+    locations: list[VisitedLocationItem]

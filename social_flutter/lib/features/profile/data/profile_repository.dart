@@ -1,8 +1,11 @@
 // features/profile/data/profile_repository.dart — Profile API calls.
 
+import 'dart:typed_data';
+
 import 'package:dio/dio.dart';
 import 'package:social_flutter/core/api/api_endpoints.dart';
 import 'package:social_flutter/core/storage/secure_storage.dart';
+import 'package:social_flutter/features/profile/domain/visited_location.dart';
 import 'package:social_flutter/shared/models/user.dart';
 
 /// Thrown when DELETE /users/me returns 401 (wrong password).
@@ -49,6 +52,8 @@ class ProfileRepository {
     String? bio,
     String? avatarUrl,
     bool clearAvatarUrl = false,
+    String? coverImageUrl,
+    bool clearCoverImageUrl = false,
     bool? isPrivate,
     List<String>? passportCountries,
     bool passportCountriesChanged = false,
@@ -65,6 +70,11 @@ class ProfileRepository {
     } else if (avatarUrl != null) {
       data['avatar_url'] = avatarUrl;
     }
+    if (clearCoverImageUrl) {
+      data['cover_image_url'] = null;
+    } else if (coverImageUrl != null) {
+      data['cover_image_url'] = coverImageUrl;
+    }
     if (isPrivate != null) data['is_private'] = isPrivate;
     if (passportCountriesChanged) data['passport_countries'] = passportCountries ?? [];
     if (clearResidentCountry) {
@@ -76,5 +86,60 @@ class ProfileRepository {
 
     final response = await _dio.patch(kMyProfileEndpoint, data: data);
     return User.fromJson(response.data as Map<String, dynamic>);
+  }
+
+  // -------------------------------------------------------------------------
+  // Image uploads — multipart binary endpoints. Server processes via the
+  // 1200×630 pipeline (cover_image) for both avatar and cover. Avatar gets
+  // center-cropped into a circle on the client by ClipOval+BoxFit.cover.
+  // -------------------------------------------------------------------------
+
+  /// POST /users/me/avatar — multipart upload. Returns the new avatar URL.
+  Future<String> uploadAvatarImage({
+    required Uint8List bytes,
+    required String filename,
+  }) async {
+    final form = FormData.fromMap({
+      'file': MultipartFile.fromBytes(bytes, filename: filename),
+    });
+    final response = await _dio.post<Map<String, dynamic>>(
+      kMyAvatarEndpoint,
+      data: form,
+    );
+    return response.data!['avatar_url'] as String;
+  }
+
+  /// DELETE /users/me/avatar — clear the avatar.
+  Future<void> deleteAvatarImage() async {
+    await _dio.delete(kMyAvatarEndpoint);
+  }
+
+  /// POST /users/me/cover-image — multipart upload. Returns the new cover URL.
+  Future<String> uploadCoverImage({
+    required Uint8List bytes,
+    required String filename,
+  }) async {
+    final form = FormData.fromMap({
+      'file': MultipartFile.fromBytes(bytes, filename: filename),
+    });
+    final response = await _dio.post<Map<String, dynamic>>(
+      kMyCoverImageEndpoint,
+      data: form,
+    );
+    return response.data!['cover_image_url'] as String;
+  }
+
+  /// DELETE /users/me/cover-image — clear the cover.
+  Future<void> deleteCoverImage() async {
+    await _dio.delete(kMyCoverImageEndpoint);
+  }
+
+  /// GET /users/{userId}/locations — aggregate stop coords visible to viewer.
+  Future<List<VisitedLocation>> getUserLocations(String userId) async {
+    final response = await _dio.get<Map<String, dynamic>>(
+      userLocationsEndpoint(userId),
+    );
+    final list = (response.data!['locations'] as List).cast<Map<String, dynamic>>();
+    return list.map(VisitedLocation.fromJson).toList();
   }
 }
