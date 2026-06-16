@@ -30,6 +30,54 @@ import 'package:social_flutter/shared/widgets/loaders.dart';
 
 const _maxFileSizeBytes = 10 * 1024 * 1024; // 10 MB
 
+/// Launches the full-screen crop overlay with the given source bytes and
+/// target dimensions. Returns the cropped PNG bytes, or null if cancelled.
+///
+/// Used by [CoverImageField] and by ad-hoc avatar pickers that don't want
+/// the full picker chrome — they only need the crop step after their own
+/// gallery pick.
+Future<Uint8List?> openImageCropOverlay(
+  BuildContext context, {
+  required Uint8List sourceBytes,
+  required int targetWidth,
+  required int targetHeight,
+}) async {
+  final completer = Completer<Uint8List?>();
+  bool closed = false;
+
+  late OverlayEntry overlayEntry;
+  final historyEntry = LocalHistoryEntry(
+    onRemove: () {
+      if (closed) return;
+      closed = true;
+      overlayEntry.remove();
+      if (!completer.isCompleted) completer.complete(null);
+    },
+  );
+
+  overlayEntry = OverlayEntry(
+    opaque: true,
+    builder: (_) => _CropScreen(
+      imageBytes: sourceBytes,
+      targetWidth: targetWidth,
+      targetHeight: targetHeight,
+      onDone: (bytes) {
+        if (closed) return;
+        closed = true;
+        historyEntry.remove();
+        overlayEntry.remove();
+        if (!completer.isCompleted) completer.complete(bytes);
+      },
+      onCancel: () => historyEntry.remove(),
+    ),
+  );
+
+  ModalRoute.of(context)?.addLocalHistoryEntry(historyEntry);
+  Overlay.of(context, rootOverlay: true).insert(overlayEntry);
+
+  return completer.future;
+}
+
 class CoverImageField extends StatefulWidget {
   /// URL of the existing cover image (from the server). Null if none.
   final String? initialUrl;
@@ -41,11 +89,18 @@ class CoverImageField extends StatefulWidget {
   /// Called when the user removes the current image.
   final VoidCallback onImageRemoved;
 
+  /// Target output dimensions for the crop. Default matches itinerary covers
+  /// (1200×630). Avatars override to 800×800.
+  final int targetWidth;
+  final int targetHeight;
+
   const CoverImageField({
     super.key,
     this.initialUrl,
     required this.onImageSelected,
     required this.onImageRemoved,
+    this.targetWidth = 1200,
+    this.targetHeight = 630,
   });
 
   @override
@@ -118,6 +173,8 @@ class _CoverImageFieldState extends State<CoverImageField> {
       opaque: true,
       builder: (_) => _CropScreen(
         imageBytes: source,
+        targetWidth: widget.targetWidth,
+        targetHeight: widget.targetHeight,
         onDone: (bytes) {
           if (closed) return;
           closed = true;
@@ -167,7 +224,7 @@ class _CoverImageFieldState extends State<CoverImageField> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           AspectRatio(
-            aspectRatio: 1200 / 630,
+            aspectRatio: widget.targetWidth / widget.targetHeight,
             child: ClipRRect(
               borderRadius: BorderRadius.circular(12),
               child: _hasImage
@@ -227,11 +284,15 @@ class _CoverImageFieldState extends State<CoverImageField> {
 
 class _CropScreen extends StatefulWidget {
   final Uint8List imageBytes;
+  final int targetWidth;
+  final int targetHeight;
   final void Function(Uint8List bytes) onDone;
   final VoidCallback onCancel;
 
   const _CropScreen({
     required this.imageBytes,
+    required this.targetWidth,
+    required this.targetHeight,
     required this.onDone,
     required this.onCancel,
   });
@@ -346,15 +407,17 @@ class _CropScreenState extends State<_CropScreen> {
       final frame = await codec.getNextFrame();
       final srcImage = frame.image;
 
+      final tw = widget.targetWidth;
+      final th = widget.targetHeight;
       final recorder = ui.PictureRecorder();
       Canvas(recorder).drawImageRect(
         srcImage,
         Rect.fromLTRB(srcLeft, srcTop, srcRight, srcBottom),
-        const Rect.fromLTWH(0, 0, 1200, 630),
+        Rect.fromLTWH(0, 0, tw.toDouble(), th.toDouble()),
         Paint()..filterQuality = FilterQuality.high,
       );
       final picture = recorder.endRecording();
-      final output = await picture.toImage(1200, 630);
+      final output = await picture.toImage(tw, th);
       final byteData = await output.toByteData(format: ui.ImageByteFormat.png);
 
       srcImage.dispose();

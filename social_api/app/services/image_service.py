@@ -6,6 +6,7 @@ from PIL.Image import Resampling
 ALLOWED_FORMATS = {"JPEG", "PNG", "WEBP"}
 TARGET_WIDTH = 1200
 TARGET_HEIGHT = 630
+AVATAR_SIZE = 800  # square; rendered inside a circle on the client
 MIN_DIMENSION = 600
 MAX_FILE_SIZE = 10 * 1024 * 1024  # 10 MB
 
@@ -60,6 +61,45 @@ def process_cover_image(raw_bytes: bytes) -> bytes:
     buf = BytesIO()
     # save() with format="JPEG" never copies source EXIF — EXIF stripping
     # is implicit because we're constructing a new Image object in memory.
+    img.save(buf, format="JPEG", quality=85, optimize=True)
+    return buf.getvalue()
+
+
+def process_avatar_image(raw_bytes: bytes) -> bytes:
+    """Validate, resize, strip EXIF, and re-encode an avatar image as JPEG.
+
+    Identical pipeline to process_cover_image but produces a square 800×800
+    image — avatars render inside a circular ClipOval on the client, so the
+    client's square crop must be preserved end-to-end.
+    """
+    if len(raw_bytes) > MAX_FILE_SIZE:
+        raise ImageProcessingError(
+            f"Image exceeds {MAX_FILE_SIZE // (1024 * 1024)} MB limit."
+        )
+
+    try:
+        img = Image.open(BytesIO(raw_bytes))
+    except Exception as exc:
+        raise ImageProcessingError(f"Could not read image: {exc}") from exc
+
+    if img.format not in ALLOWED_FORMATS:
+        raise ImageProcessingError(
+            f"Unsupported format '{img.format}'. Upload a JPEG, PNG, or WebP file."
+        )
+
+    if img.width < MIN_DIMENSION or img.height < MIN_DIMENSION:
+        raise ImageProcessingError(
+            f"Image too small ({img.width}×{img.height}). "
+            f"Minimum size is {MIN_DIMENSION}×{MIN_DIMENSION}."
+        )
+
+    if img.mode != "RGB":
+        img = img.convert("RGB")
+
+    img = _crop_to_aspect(img, AVATAR_SIZE, AVATAR_SIZE)
+    img = img.resize((AVATAR_SIZE, AVATAR_SIZE), Resampling.LANCZOS)
+
+    buf = BytesIO()
     img.save(buf, format="JPEG", quality=85, optimize=True)
     return buf.getvalue()
 

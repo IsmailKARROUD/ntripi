@@ -49,9 +49,12 @@ class _ProfileEditFormState extends ConsumerState<ProfileEditForm> {
   // Picker state — bytes are uploaded inside _saveEdits before the JSON PATCH.
   Uint8List? _pickedAvatarBytes;
   String? _pickedAvatarFilename;
+  bool _avatarRemoved = false;
   Uint8List? _pickedCoverBytes;
   String? _pickedCoverFilename;
   bool _coverRemoved = false;
+
+  bool _saving = false;
 
   @override
   void initState() {
@@ -77,17 +80,11 @@ class _ProfileEditFormState extends ConsumerState<ProfileEditForm> {
     super.dispose();
   }
 
-  /// Open gallery → store bytes for upload during _saveEdits.
-  /// No crop screen for avatar — server applies the 1200×630 pipeline; the
-  /// UserAvatar widget already clips to a circle with BoxFit.cover.
+  /// Open gallery → 1:1 crop overlay → store bytes for upload during _saveEdits.
+  /// Server runs the 800×800 square pipeline on the result; the UserAvatar
+  /// widget clips to a circle with BoxFit.cover at display time.
   Future<void> _pickAvatar() async {
-    if (_avatarUrlController.text.trim().isNotEmpty) {
-      // URL field wins. Don't accumulate picked bytes that would be discarded.
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(AppLocalizations.of(context)!.avatarUrlLabel)),
-      );
-      return;
-    }
+    if (_saving) return;
     try {
       final picked = await ImagePicker().pickImage(
         source: ImageSource.gallery,
@@ -95,19 +92,46 @@ class _ProfileEditFormState extends ConsumerState<ProfileEditForm> {
         imageQuality: kIsWeb ? null : 90,
       );
       if (picked == null || !mounted) return;
-      final bytes = await picked.readAsBytes();
+      final raw = await picked.readAsBytes();
       if (!mounted) return;
+      final cropped = await openImageCropOverlay(
+        context,
+        sourceBytes: raw,
+        targetWidth: 800,
+        targetHeight: 800,
+      );
+      if (cropped == null || !mounted) return;
       setState(() {
-        _pickedAvatarBytes = bytes;
+        _pickedAvatarBytes = cropped;
         _pickedAvatarFilename = picked.name;
+        _avatarRemoved = false;
+        // Picker wins — drop any external URL so save uploads the bytes
+        // instead of PATCHing the stale URL.
+        _avatarUrlController.clear();
       });
     } catch (_) {
       // Picker errors are silent — user can retry.
     }
   }
 
+  /// Clear the avatar — drop picked bytes, clear the URL field, and mark
+  /// _avatarRemoved so _saveEdits calls deleteAvatar() (storage + column).
+  void _removeAvatar() {
+    if (_saving) return;
+    setState(() {
+      _pickedAvatarBytes = null;
+      _pickedAvatarFilename = null;
+      _avatarRemoved = true;
+      _avatarUrlController.clear();
+    });
+  }
+
   Future<void> _saveEdits() async {
+    if (_saving) return;
     final l10n = AppLocalizations.of(context)!;
+    // Capture before any await — context may be unmounted by the time we
+    // need to show an error snackbar.
+    final messenger = ScaffoldMessenger.maybeOf(context);
     final pendingCount =
         ref.read(followRequestsProvider).valueOrNull?.length ?? 0;
     final switchingToPublic =
@@ -123,56 +147,77 @@ class _ProfileEditFormState extends ConsumerState<ProfileEditForm> {
       if (!confirmed) return;
     }
 
+    setState(() => _saving = true);
     final notifier = ref.read(myProfileProvider.notifier);
 
-    // Binary uploads first — server returns the new URL which the notifier
-    // merges into state. URL field takes precedence over picked bytes (R1).
-    final avatarText = _avatarUrlController.text.trim();
-    if (_pickedAvatarBytes != null && avatarText.isEmpty) {
-      await notifier.uploadAvatar(
-        _pickedAvatarBytes!,
-        _pickedAvatarFilename ?? 'avatar.jpg',
+    try {
+      // Binary phase first. An explicit Remove always wins — even if the URL
+      // field still holds the old value — so the file is deleted from storage.
+      // An upload (picker) replaces the previous file at the same storage key.
+      final avatarText = _avatarUrlController.text.trim();
+      if (_avatarRemoved) {
+        await notifier.deleteAvatar();
+      } else if (_pickedAvatarBytes != null && avatarText.isEmpty) {
+        await notifier.uploadAvatar(
+          _pickedAvatarBytes!,
+          _pickedAvatarFilename ?? 'avatar.jpg',
+        );
+      }
+      final coverText = _coverImageUrlController.text.trim();
+      if (_coverRemoved) {
+        await notifier.deleteCoverImage();
+      } else if (_pickedCoverBytes != null) {
+        await notifier.uploadCoverImage(
+          _pickedCoverBytes!,
+          _pickedCoverFilename ?? 'cover.jpg',
+        );
+      }
+
+      await notifier.updateProfile(
+        displayName: _displayNameController.text.trim().isEmpty
+            ? null
+            : _displayNameController.text.trim(),
+        bio: _bioController.text.trim().isEmpty
+            ? null
+            : _bioController.text.trim(),
+        // Only PATCH avatar_url when a typed URL is present AND no upload
+        // happened (URL field wins). If the field is empty and no bytes were
+        // picked, signal "clear" so the server nulls the column.
+        avatarUrl: (_avatarRemoved || _pickedAvatarBytes != null)
+            ? null
+            : (avatarText.isEmpty ? null : avatarText),
+        clearAvatarUrl: !_avatarRemoved &&
+            _pickedAvatarBytes == null &&
+            avatarText.isEmpty,
+        // Skip cover_image_url PATCH entirely if a binary action just ran —
+        // delete/upload already set the column. Otherwise the URL field is the
+        // source of truth: empty means clear, non-empty means set.
+        coverImageUrl: (_coverRemoved || _pickedCoverBytes != null)
+            ? null
+            : (coverText.isEmpty ? null : coverText),
+        clearCoverImageUrl: !_coverRemoved &&
+            _pickedCoverBytes == null &&
+            coverText.isEmpty,
+        isPrivate: _editIsPrivate,
+        passportCountries: _editPassportCountries,
+        passportCountriesChanged: _passportCountriesChanged,
+        residentCountry: _editResidentCountry,
+        clearResidentCountry:
+            _residentChanged && _editResidentCountry == null,
+        languages: _editLanguages,
+        languagesChanged: _languagesChanged,
+      );
+
+      if (!mounted) return;
+      widget.onSaved();
+    } catch (_) {
+      // Re-enable the form and surface a generic error. The user can retry.
+      if (!mounted) return;
+      setState(() => _saving = false);
+      messenger?.showSnackBar(
+        SnackBar(content: Text(l10n.couldNotLoadItineraries)),
       );
     }
-    final coverText = _coverImageUrlController.text.trim();
-    if (_pickedCoverBytes != null && coverText.isEmpty) {
-      await notifier.uploadCoverImage(
-        _pickedCoverBytes!,
-        _pickedCoverFilename ?? 'cover.jpg',
-      );
-    } else if (_coverRemoved && coverText.isEmpty) {
-      await notifier.deleteCoverImage();
-    }
-
-    await notifier.updateProfile(
-      displayName: _displayNameController.text.trim().isEmpty
-          ? null
-          : _displayNameController.text.trim(),
-      bio: _bioController.text.trim().isEmpty
-          ? null
-          : _bioController.text.trim(),
-      // Only PATCH avatar_url when a typed URL is present AND no upload
-      // happened (URL field wins). If the field is empty and no bytes were
-      // picked, signal "clear" so the server nulls the column.
-      avatarUrl: avatarText.isEmpty ? null : avatarText,
-      clearAvatarUrl: avatarText.isEmpty && _pickedAvatarBytes == null,
-      // Same logic for cover_image_url. If a binary was just uploaded above,
-      // skip the URL patch (server already wrote the upload URL).
-      coverImageUrl: coverText.isEmpty ? null : coverText,
-      clearCoverImageUrl: coverText.isEmpty &&
-          _pickedCoverBytes == null &&
-          !_coverRemoved,
-      isPrivate: _editIsPrivate,
-      passportCountries: _editPassportCountries,
-      passportCountriesChanged: _passportCountriesChanged,
-      residentCountry: _editResidentCountry,
-      clearResidentCountry:
-          _residentChanged && _editResidentCountry == null,
-      languages: _editLanguages,
-      languagesChanged: _languagesChanged,
-    );
-
-    if (mounted) widget.onSaved();
   }
 
   @override
@@ -189,7 +234,7 @@ class _ProfileEditFormState extends ConsumerState<ProfileEditForm> {
             child: Row(
               children: [
                 TextButton(
-                  onPressed: widget.onCancel,
+                  onPressed: _saving ? null : widget.onCancel,
                   style: TextButton.styleFrom(foregroundColor: kText2),
                   child: Text(
                     l10n.cancel,
@@ -210,12 +255,21 @@ class _ProfileEditFormState extends ConsumerState<ProfileEditForm> {
                   ),
                 ),
                 TextButton(
-                  onPressed: _saveEdits,
-                  child: Text(
-                    l10n.save,
-                    style: const TextStyle(
-                        fontWeight: FontWeight.w700, fontSize: 15),
-                  ),
+                  onPressed: _saving ? null : _saveEdits,
+                  child: _saving
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation(kForest),
+                          ),
+                        )
+                      : Text(
+                          l10n.save,
+                          style: const TextStyle(
+                              fontWeight: FontWeight.w700, fontSize: 15),
+                        ),
                 ),
               ],
             ),
@@ -253,11 +307,49 @@ class _ProfileEditFormState extends ConsumerState<ProfileEditForm> {
                                           fit: BoxFit.cover,
                                         ),
                                       )
-                                    : UserAvatar(
-                                        avatarUrl: user.avatarUrl,
-                                        radius: 46,
-                                      ),
+                                    : (_avatarRemoved
+                                        ? const UserAvatar(
+                                            avatarUrl: null, radius: 46)
+                                        : UserAvatar(
+                                            avatarUrl: user.avatarUrl,
+                                            radius: 46,
+                                          )),
                               ),
+                              // X badge — top-left. Removes the avatar (clears
+                              // picked bytes + URL, schedules deleteAvatar on
+                              // save). Only shown when something is removable.
+                              if (_pickedAvatarBytes != null ||
+                                  (!_avatarRemoved && user.avatarUrl != null))
+                                Positioned(
+                                  top: 0,
+                                  left: 0,
+                                  child: GestureDetector(
+                                    behavior: HitTestBehavior.opaque,
+                                    onTap: _removeAvatar,
+                                    child: Container(
+                                      width: 28,
+                                      height: 28,
+                                      decoration: BoxDecoration(
+                                        color: Colors.white,
+                                        shape: BoxShape.circle,
+                                        border: Border.all(
+                                            color: kSand, width: 2),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: Colors.black
+                                                .withValues(alpha: 0.15),
+                                            blurRadius: 6,
+                                          ),
+                                        ],
+                                      ),
+                                      child: const Icon(
+                                        Icons.close_rounded,
+                                        color: kBark,
+                                        size: 16,
+                                      ),
+                                    ),
+                                  ),
+                                ),
                               Positioned(
                                 bottom: 0,
                                 right: 0,
@@ -316,11 +408,16 @@ class _ProfileEditFormState extends ConsumerState<ProfileEditForm> {
                         _pickedCoverBytes = bytes;
                         _pickedCoverFilename = fn;
                         _coverRemoved = false;
+                        // Picker wins — drop any external URL so save uploads
+                        // the new bytes instead of patching the stale URL.
+                        _coverImageUrlController.clear();
                       }),
                       onImageRemoved: () => setState(() {
                         _pickedCoverBytes = null;
                         _pickedCoverFilename = null;
                         _coverRemoved = true;
+                        // Reflect the removal in the URL field too.
+                        _coverImageUrlController.clear();
                       }),
                     ),
                   ),

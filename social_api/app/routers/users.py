@@ -38,7 +38,11 @@ from app.schemas.user import (
     VisitedLocationsResponse,
 )
 from app.services.auth import verify_password
-from app.services.image_service import ImageProcessingError, process_cover_image
+from app.services.image_service import (
+    ImageProcessingError,
+    process_avatar_image,
+    process_cover_image,
+)
 from app.services.itinerary_access import can_view_itinerary
 from app.storage.factory import storage
 
@@ -324,7 +328,8 @@ async def upload_my_avatar(
 ) -> UserImageResponse:
     raw_bytes = await file.read()
     try:
-        processed = process_cover_image(raw_bytes)
+        # Square 800×800 pipeline so the client's 1:1 crop is preserved.
+        processed = process_avatar_image(raw_bytes)
     except ImageProcessingError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
 
