@@ -11,6 +11,7 @@ import 'package:social_flutter/core/ui/app_theme.dart';
 import 'package:social_flutter/features/itineraries/domain/annotation.dart';
 import 'package:social_flutter/features/itineraries/domain/stop.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/annotation_chip.dart';
+import 'package:social_flutter/features/itineraries/presentation/widgets/edit_pencil_button.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/markdown_notes_editor.dart';
 
 class StopCard extends StatelessWidget {
@@ -144,16 +145,7 @@ class StopCard extends StatelessWidget {
             // ── Edit button (edit mode only) ──────────────────────────────────
             if (_editMode && onEdit != null) ...[
               const SizedBox(width: 4),
-              SizedBox(
-                width: 32,
-                height: 32,
-                child: IconButton(
-                  icon: const Icon(Icons.edit_rounded, size: 16),
-                  onPressed: onEdit,
-                  padding: EdgeInsets.zero,
-                  color: kText2,
-                ),
-              ),
+              EditPencilButton(onTap: onEdit, iconSize: 16),
             ],
           ],
         ),
@@ -318,18 +310,18 @@ class _AnnotationChipsRow extends StatelessWidget {
               padding:
                   const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
-                color: kMist.withValues(alpha: 0.5),
+                color: kEditBlueTint,
                 borderRadius: BorderRadius.circular(999),
-                border: Border.all(color: kBorder),
+                border: Border.all(color: kEditBlue.withValues(alpha: 0.13)),
               ),
               child: const Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.add_rounded, size: 13, color: kText2),
+                  Icon(Icons.add_rounded, size: 13, color: kEditBlue),
                   SizedBox(width: 3),
                   Text(
                     'Add note',
-                    style: TextStyle(fontSize: 12, color: kText2),
+                    style: TextStyle(fontSize: 12, color: kEditBlue),
                   ),
                 ],
               ),

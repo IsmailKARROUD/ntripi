@@ -322,6 +322,7 @@ class _BottomActionRow extends StatelessWidget {
               label: l10n.addStopTooltip,
               loading: addStopLoading,
               onTap: addStopLoading ? null : onAddStop,
+              color: kEditBlue,
             ),
           if (showAddStop && showAddTransit)
             const Padding(
@@ -334,6 +335,7 @@ class _BottomActionRow extends StatelessWidget {
               label: l10n.addTransitTitle,
               loading: addTransitLoading,
               onTap: addTransitLoading ? null : onAddTransit,
+              color: kEditBlue,
             ),
           const SizedBox(width: 8),
           const Expanded(child: Divider(color: kBorder, height: 1)),
@@ -348,12 +350,14 @@ class _ActionChip extends StatelessWidget {
   final String label;
   final bool loading;
   final VoidCallback? onTap;
+  final Color color;
 
   const _ActionChip({
     required this.icon,
     required this.label,
     required this.loading,
     this.onTap,
+    this.color = kText2,
   });
 
   @override
@@ -368,10 +372,10 @@ class _ActionChip extends StatelessWidget {
             : Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(icon, size: 13, color: kText2),
+                  Icon(icon, size: 13, color: color),
                   const SizedBox(width: 3),
                   Text(label,
-                      style: const TextStyle(fontSize: 12, color: kText2)),
+                      style: TextStyle(fontSize: 12, color: color)),
                 ],
               ),
       ),
@@ -394,18 +398,19 @@ class _MoveToTrackButton extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
           decoration: BoxDecoration(
-            border: Border.all(color: kBorder),
+            color: kEditBlueTint,
+            border: Border.all(color: kEditBlue.withValues(alpha: 0.13)),
             borderRadius: BorderRadius.circular(8),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.swap_vert, size: 16, color: kText2),
+              const Icon(Icons.swap_vert, size: 16, color: kEditBlue),
               const SizedBox(height: 2),
               Text(
                 'move',
                 style: theme.textTheme.labelSmall?.copyWith(
-                  color: kText2,
+                  color: kEditBlue,
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -432,18 +437,19 @@ class _ReorderParallelsButton extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
           decoration: BoxDecoration(
-            border: Border.all(color: kBorder),
+            color: kEditBlueTint,
+            border: Border.all(color: kEditBlue.withValues(alpha: 0.13)),
             borderRadius: BorderRadius.circular(8),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.swap_horiz, size: 16, color: kText2),
+              const Icon(Icons.swap_horiz, size: 16, color: kEditBlue),
               const SizedBox(height: 2),
               Text(
                 'reorder',
                 style: theme.textTheme.labelSmall?.copyWith(
-                  color: kText2,
+                  color: kEditBlue,
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -470,19 +476,19 @@ class _AddParallelButton extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
           decoration: BoxDecoration(
-            border: Border.all(color: kForest.withValues(alpha: 0.5)),
+            color: kEditBlueTint,
+            border: Border.all(color: kEditBlue.withValues(alpha: 0.13)),
             borderRadius: BorderRadius.circular(8),
-            color: kForest.withValues(alpha: 0.06),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.call_split, size: 16, color: kForest),
+              const Icon(Icons.call_split, size: 16, color: kEditBlue),
               const SizedBox(height: 2),
               Text(
                 '// stop',
                 style: theme.textTheme.labelSmall?.copyWith(
-                  color: kForest,
+                  color: kEditBlue,
                   fontWeight: FontWeight.w600,
                 ),
               ),

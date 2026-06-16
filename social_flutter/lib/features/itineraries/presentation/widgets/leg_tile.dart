@@ -6,6 +6,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:social_flutter/features/itineraries/domain/transport_leg.dart';
+import 'package:social_flutter/features/itineraries/presentation/widgets/edit_pencil_button.dart';
 
 class LegTile extends StatelessWidget {
   final TransportLeg leg;
@@ -37,10 +38,10 @@ class LegTile extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           if (onEdit != null)
-            IconButton(
-              icon: const Icon(Icons.edit_outlined, size: 18),
-              onPressed: onEdit,
-              visualDensity: VisualDensity.compact,
+            EditPencilButton(
+              onTap: onEdit,
+              icon: Icons.edit_outlined,
+              iconSize: 18,
             ),
           if (onDelete != null)
             IconButton(

@@ -50,6 +50,7 @@ import 'package:social_flutter/features/profile/providers/profile_provider.dart'
 import 'package:social_flutter/shared/models/user.dart';
 import 'package:social_flutter/features/itineraries/domain/stop.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/annotation_chip.dart';
+import 'package:social_flutter/features/itineraries/presentation/widgets/edit_pencil_button.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/markdown_notes_editor.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/move_stop_to_track_sheet.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/rate_itinerary_dialog.dart';
@@ -858,13 +859,34 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                                       ),
                                       if (canEdit) ...[
                                         const Spacer(),
-                                        TextButton.icon(
-                                          onPressed: _addItineraryAnnotation,
-                                          icon: const Icon(Icons.add, size: 16),
-                                          label: Text(l10n.addAnnotationButton),
-                                          style: TextButton.styleFrom(
-                                            visualDensity:
-                                                VisualDensity.compact,
+                                        // Tinted pill matching the stop-card "Add note" affordance.
+                                        GestureDetector(
+                                          onTap: _addItineraryAnnotation,
+                                          child: Container(
+                                            padding: const EdgeInsets.symmetric(
+                                                horizontal: 8, vertical: 4),
+                                            decoration: BoxDecoration(
+                                              color: kEditBlueTint,
+                                              borderRadius:
+                                                  BorderRadius.circular(999),
+                                              border: Border.all(
+                                                  color: kEditBlue.withValues(
+                                                      alpha: 0.13)),
+                                            ),
+                                            child: Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                const Icon(Icons.add_rounded,
+                                                    size: 13, color: kEditBlue),
+                                                const SizedBox(width: 3),
+                                                Text(
+                                                  l10n.addAnnotationButton,
+                                                  style: const TextStyle(
+                                                      fontSize: 12,
+                                                      color: kEditBlue),
+                                                ),
+                                              ],
+                                            ),
                                           ),
                                         ),
                                       ],
@@ -942,10 +964,11 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                                     itineraryAsync.valueOrNull != null &&
                                     itineraryAsync.valueOrNull!.tracks.length >=
                                         2) ...[
-                                  IconButton(
-                                    icon: const Icon(Icons.reorder, size: 20),
+                                  EditPencilButton(
+                                    icon: Icons.reorder,
+                                    iconSize: 20,
                                     tooltip: l10n.reorderTracksTooltip,
-                                    onPressed: () => showTrackReorderSheet(
+                                    onTap: () => showTrackReorderSheet(
                                       context: context,
                                       itineraryId: widget.itineraryId,
                                       tracks:
@@ -953,10 +976,6 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                                       segments:
                                           itineraryAsync.valueOrNull!.segments,
                                     ),
-                                    visualDensity: VisualDensity.compact,
-                                    padding: EdgeInsets.zero,
-                                    constraints: const BoxConstraints(),
-                                    color: kForest,
                                   ),
                                   const SizedBox(width: 8),
                                 ],
@@ -1224,9 +1243,9 @@ class _CoverHeroState extends State<_CoverHero> {
                       onTap: widget.onEditDetails,
                     ),
                     const SizedBox(width: 6),
-                    _GlassButton(
-                      icon: Icons.edit_rounded,
+                    EditPencilButton(
                       onTap: widget.onEnterEdit,
+                      iconSize: 22,
                     ),
                   ],
                 ],

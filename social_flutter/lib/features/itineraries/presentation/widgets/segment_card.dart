@@ -270,13 +270,13 @@ class _SegmentCardState extends ConsumerState<SegmentCard> {
               padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
               child: Row(
                 children: [
-                  const Icon(Icons.add_rounded, size: 14, color: kTransitIcon),
+                  const Icon(Icons.add_rounded, size: 14, color: kEditBlue),
                   const SizedBox(width: 6),
                   Text(AppLocalizations.of(context)!.addLegButton,
                       style: const TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
-                          color: kTransitText)),
+                          color: kEditBlue)),
                 ],
               ),
             ),

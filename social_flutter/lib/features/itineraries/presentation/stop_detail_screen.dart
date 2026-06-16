@@ -12,6 +12,7 @@ import 'package:social_flutter/core/ui/app_theme.dart';
 import 'package:social_flutter/features/itineraries/domain/annotation.dart';
 import 'package:social_flutter/features/itineraries/domain/stop.dart';
 import 'package:social_flutter/features/itineraries/domain/transit_segment.dart';
+import 'package:social_flutter/features/itineraries/presentation/widgets/edit_pencil_button.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/markdown_notes_editor.dart';
 import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
 import 'package:social_flutter/l10n/app_localizations.dart';
@@ -270,13 +271,7 @@ class _StopHero extends StatelessWidget {
                 color: kBark,
               ),
               const Spacer(),
-              IconButton(
-                icon: const Icon(Icons.edit_rounded, size: 20),
-                onPressed: onEdit,
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(),
-                color: kBark,
-              ),
+              EditPencilButton(onTap: onEdit, iconSize: 20),
             ],
           ),
           const SizedBox(height: 8),

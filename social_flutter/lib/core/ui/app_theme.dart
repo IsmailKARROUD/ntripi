@@ -35,6 +35,12 @@ const kTransitBg     = Color(0xFFFFF8EC);
 const kTransitBorder = Color(0xFFF0E2C2);
 const kTransitIcon   = Color(0xFFA06D1F);
 const kTransitText   = Color(0xFF8A5A18);
+
+// Action blue — RESERVED for itinerary structure-editing affordances only
+// (Edit pencils + move / reorder / add-parallel + add stop / leg / note / annotation controls); do not reuse elsewhere.
+const kEditBlue = Color(0xFA2563C9);     // edit action blue
+const kEditBlueTint = Color(0xFFE8F0FC); // soft fill behind the affordance
+
 ThemeData buildNtripiTheme() {
   const scheme = ColorScheme(
     brightness: Brightness.light,

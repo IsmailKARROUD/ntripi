@@ -19,6 +19,7 @@ import 'package:social_flutter/core/services/geocoding_service.dart';
 import 'package:social_flutter/features/itineraries/domain/annotation.dart';
 import 'package:social_flutter/features/itineraries/domain/stop.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/annotation_chip.dart';
+import 'package:social_flutter/features/itineraries/presentation/widgets/edit_pencil_button.dart';
 import 'package:social_flutter/core/ui/destructive_actions.dart';
 import 'package:social_flutter/features/itineraries/presentation/annotation_screen.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/markdown_notes_editor.dart';
@@ -601,11 +602,17 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
         title: Text(appBarTitle),
         actions: [
           if (readOnly && isOwner)
-            IconButton(
-              key: _editButtonKey,
-              icon: const Icon(Icons.edit_outlined),
-              tooltip: l10n.editStopTooltip,
-              onPressed: () => setState(() => _isEditing = true),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              child: Center(
+                child: EditPencilButton(
+                  key: _editButtonKey,
+                  icon: Icons.edit_outlined,
+                  iconSize: 22,
+                  tooltip: l10n.editStopTooltip,
+                  onTap: () => setState(() => _isEditing = true),
+                ),
+              ),
             ),
           if (!readOnly)
             _saving
