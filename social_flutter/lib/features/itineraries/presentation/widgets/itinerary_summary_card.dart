@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:social_flutter/core/api/api_endpoints.dart';
+import 'package:social_flutter/core/cache/image_cache.dart';
 import 'package:social_flutter/core/ui/app_theme.dart';
 import 'package:social_flutter/features/itineraries/domain/itinerary.dart';
 import 'package:social_flutter/shared/widgets/visibility_badge.dart';
@@ -136,6 +137,7 @@ class _CoverSlotState extends State<_CoverSlot> {
     if (widget.url != null && !_error) {
       return CachedNetworkImage(
         imageUrl: widget.url!,
+        cacheManager: NtripiImageCacheManager(),
         fit: BoxFit.cover,
         errorWidget: (_, __, ___) {
           WidgetsBinding.instance.addPostFrameCallback((_) {

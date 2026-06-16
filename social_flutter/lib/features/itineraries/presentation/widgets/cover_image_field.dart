@@ -23,6 +23,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:social_flutter/core/api/api_endpoints.dart';
+import 'package:social_flutter/core/cache/image_cache.dart';
 import 'package:social_flutter/core/ui/app_theme.dart';
 import 'package:social_flutter/core/utils/platform_utils.dart';
 import 'package:social_flutter/l10n/app_localizations.dart';
@@ -483,7 +484,7 @@ class _CropScreenState extends State<_CropScreen> {
               borderRadius: BorderRadius.circular(12),
             ),
             child: AspectRatio(
-              aspectRatio: 1200 / 630,
+              aspectRatio: widget.targetWidth / widget.targetHeight,
               child: _imageSize == null
                   ? const Center(child: NTripiRingLoader())
                   : LayoutBuilder(
@@ -563,6 +564,7 @@ class _ImagePreview extends StatelessWidget {
           else if (networkUrl != null)
             CachedNetworkImage(
               imageUrl: _absoluteUrl(networkUrl!),
+              cacheManager: NtripiImageCacheManager(),
               fit: BoxFit.cover,
               errorWidget: (_, __, ___) => _broken(),
             ),

@@ -10,6 +10,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:social_flutter/core/api/api_endpoints.dart';
+import 'package:social_flutter/core/cache/image_cache.dart';
 import 'package:social_flutter/core/ui/app_theme.dart';
 import 'package:social_flutter/features/profile/domain/visited_location.dart';
 import 'package:social_flutter/l10n/app_localizations.dart';
@@ -180,6 +181,7 @@ class ProfileMapHero extends StatelessWidget {
           if (hasCover)
             CachedNetworkImage(
               imageUrl: resolvedCover,
+              cacheManager: NtripiImageCacheManager(),
               fit: BoxFit.cover,
               errorWidget: (_, __, ___) => Container(color: kSand),
             )

@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:social_flutter/core/api/api_client.dart';
 import 'package:social_flutter/core/api/api_endpoints.dart';
+import 'package:social_flutter/core/cache/image_cache.dart';
 import 'package:social_flutter/core/ui/app_theme.dart';
 import 'package:social_flutter/core/ui/destructive_actions.dart';
 import 'package:social_flutter/features/itineraries/domain/itinerary.dart';
@@ -92,6 +93,7 @@ class ItineraryListScreen extends ConsumerWidget {
                           it.coverImageUrl!.startsWith('/')
                               ? '$kApiBaseUrl${it.coverImageUrl}'
                               : it.coverImageUrl!,
+                          cacheManager: NtripiImageCacheManager(),
                         ),
                   ]);
                   await ref

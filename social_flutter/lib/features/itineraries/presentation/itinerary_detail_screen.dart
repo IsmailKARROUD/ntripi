@@ -38,6 +38,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:social_flutter/core/api/api_client.dart';
+import 'package:social_flutter/core/cache/image_cache.dart';
 import 'package:social_flutter/core/ui/app_theme.dart';
 import 'package:social_flutter/core/ui/destructive_actions.dart';
 import 'package:social_flutter/features/itineraries/domain/annotation.dart';
@@ -675,7 +676,10 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                       // pull-to-refresh actually shows the new image when
                       // the owner has replaced it from another device.
                       if (coverUrl != null) {
-                        await CachedNetworkImage.evictFromCache(coverUrl);
+                        await CachedNetworkImage.evictFromCache(
+                          coverUrl,
+                          cacheManager: NtripiImageCacheManager(),
+                        );
                       }
                       await ref
                           .read(itineraryDetailProvider(widget.itineraryId)
@@ -1160,6 +1164,7 @@ class _CoverHeroState extends State<_CoverHero> {
           if (widget.coverUrl != null && !_imgError)
             CachedNetworkImage(
               imageUrl: widget.coverUrl!,
+              cacheManager: NtripiImageCacheManager(),
               fit: BoxFit.cover,
               errorWidget: (_, __, ___) {
                 WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -1338,7 +1343,10 @@ class _OwnerRow extends ConsumerWidget {
             radius: 18,
             backgroundColor: kMist,
             backgroundImage: avatarUrl != null
-                ? CachedNetworkImageProvider(avatarUrl)
+                ? CachedNetworkImageProvider(
+                    avatarUrl,
+                    cacheManager: NtripiImageCacheManager(),
+                  )
                 : null,
             child: avatarUrl == null
                 ? Text(

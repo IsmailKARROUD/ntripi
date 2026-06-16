@@ -76,7 +76,10 @@ class TestAvatarUpload:
         assert resp.status_code == 200
         body = resp.json()
         assert body["avatar_url"].startswith("/uploads/avatars/")
-        assert body["avatar_url"].endswith(".jpg")
+        assert ".jpg?v=" in body["avatar_url"]
+        # Version param is a positive unix timestamp
+        version = int(body["avatar_url"].rsplit("?v=", 1)[1])
+        assert version > 0
 
         me = client.get("/users/me", headers=hdrs).json()
         assert me["avatar_url"] == body["avatar_url"]
@@ -100,8 +103,12 @@ class TestAvatarUpload:
         hdrs = auth_headers(alice["access_token"])
         first = _upload(client, hdrs, "/users/me/avatar", _make_jpeg()).json()
         second = _upload(client, hdrs, "/users/me/avatar", _make_jpeg()).json()
-        # Same UUID-based key → same returned URL
-        assert first["avatar_url"] == second["avatar_url"]
+        # Same UUID-based storage key, but each upload appends a fresh
+        # ?v=<ts> so caches treat the URL as new.
+        first_base = first["avatar_url"].rsplit("?v=", 1)[0]
+        second_base = second["avatar_url"].rsplit("?v=", 1)[0]
+        assert first_base == second_base
+        assert first["avatar_url"] != second["avatar_url"]
 
     def test_too_small_rejected(self, client: TestClient):
         alice = register_user(client, "alice_av_s", "as@test.com")
@@ -147,7 +154,9 @@ class TestCoverImageUpload:
         assert resp.status_code == 200
         body = resp.json()
         assert body["cover_image_url"].startswith("/uploads/covers/")
-        assert body["cover_image_url"].endswith(".jpg")
+        assert ".jpg?v=" in body["cover_image_url"]
+        version = int(body["cover_image_url"].rsplit("?v=", 1)[1])
+        assert version > 0
 
         me = client.get("/users/me", headers=hdrs).json()
         assert me["cover_image_url"] == body["cover_image_url"]

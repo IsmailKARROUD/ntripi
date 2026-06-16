@@ -11,6 +11,7 @@ Endpoints:
   GET  /users/{user_id}       → public profile of any user (with follow status)
 """
 
+import time
 import uuid
 
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
@@ -336,10 +337,14 @@ async def upload_my_avatar(
     key = f"avatars/{current_user.id}.jpg"
     public_url = await storage().save(key, processed, "image/jpeg")
 
-    current_user.avatar_url = public_url
+    # ?v=<unix_ts> busts every URL-keyed cache (CachedNetworkImage on every
+    # device, browser cache, CDN) — R2 keys are stable per user, so without
+    # this every cache would serve the previous bytes for its full TTL.
+    versioned_url = f"{public_url}?v={int(time.time() * 1000)}"
+    current_user.avatar_url = versioned_url
     db.commit()
 
-    return UserImageResponse(avatar_url=public_url)
+    return UserImageResponse(avatar_url=versioned_url)
 
 
 @router.delete(
@@ -378,10 +383,12 @@ async def upload_my_cover_image(
     key = f"covers/{current_user.id}.jpg"
     public_url = await storage().save(key, processed, "image/jpeg")
 
-    current_user.cover_image_url = public_url
+    # See note on upload_my_avatar — same cache-busting rationale.
+    versioned_url = f"{public_url}?v={int(time.time() * 1000)}"
+    current_user.cover_image_url = versioned_url
     db.commit()
 
-    return UserImageResponse(cover_image_url=public_url)
+    return UserImageResponse(cover_image_url=versioned_url)
 
 
 @router.delete(

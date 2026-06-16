@@ -6,6 +6,7 @@
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:social_flutter/core/cache/image_cache.dart';
 
 class UserAvatar extends StatelessWidget {
   final String? avatarUrl;
@@ -34,7 +35,10 @@ class UserAvatar extends StatelessWidget {
 
     return CircleAvatar(
       radius: radius,
-      backgroundImage: CachedNetworkImageProvider(avatarUrl!),
+      backgroundImage: CachedNetworkImageProvider(
+        avatarUrl!,
+        cacheManager: NtripiImageCacheManager(),
+      ),
       // Show placeholder on network image load error.
       onBackgroundImageError: (exception, stackTrace) {},
       backgroundColor: Theme.of(context).colorScheme.primaryContainer,

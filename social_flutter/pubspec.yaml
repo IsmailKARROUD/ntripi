@@ -35,6 +35,11 @@ dependencies:
   # cache layer.
   cached_network_image: ^3.4.1
 
+  # Underlying disk cache used by cached_network_image — imported directly so
+  # we can declare a project-wide CacheManager with our own TTL/key namespace
+  # in lib/core/cache/image_cache.dart.
+  flutter_cache_manager: ^3.4.1
+
   # Check network status (online/offline) and type (WiFi/mobile)
   connectivity_plus: ^7.1.1
 

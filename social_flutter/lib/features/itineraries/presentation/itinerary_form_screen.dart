@@ -23,6 +23,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:social_flutter/core/api/api_client.dart';
+import 'package:social_flutter/core/cache/image_cache.dart';
 import 'package:social_flutter/core/services/currency.dart';
 import 'package:social_flutter/core/ui/app_theme.dart';
 import 'package:social_flutter/core/ui/destructive_actions.dart';
@@ -164,7 +165,10 @@ class _ItineraryFormScreenState extends ConsumerState<ItineraryFormScreen> {
         ?.coverImageUrl;
     if (url == null) return;
     final absUrl = url.startsWith('/') ? '$kApiBaseUrl$url' : url;
-    await CachedNetworkImage.evictFromCache(absUrl);
+    await CachedNetworkImage.evictFromCache(
+      absUrl,
+      cacheManager: NtripiImageCacheManager(),
+    );
   }
 
   Future<void> _save() async {
