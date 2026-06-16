@@ -119,11 +119,18 @@ class MyProfileNotifier extends AsyncNotifier<User> {
     });
   }
 
-  /// Delete the avatar and refresh the profile from server (clean nullable state).
+  /// Delete the avatar. Updates state optimistically — do NOT call refresh()
+  /// here. refresh() sets state to AsyncLoading, which makes
+  /// profile_screen.dart's `profileAsync.when(loading: ..., data: ...)` rip
+  /// the ProfileEditForm out of the widget tree mid-_saveEdits. The form's
+  /// State gets disposed, `mounted` becomes false, and the onSaved callback
+  /// that closes the form never fires.
   Future<void> deleteAvatar() async {
     await _evictImageCache(state.valueOrNull?.avatarUrl);
     await ref.read(profileRepositoryProvider).deleteAvatarImage();
-    await refresh();
+    state.whenData((user) {
+      state = AsyncData(user.copyWith(clearAvatarUrl: true));
+    });
   }
 
   /// Upload a new cover image. State is updated with the returned URL.
@@ -137,11 +144,14 @@ class MyProfileNotifier extends AsyncNotifier<User> {
     });
   }
 
-  /// Delete the cover image and refresh from server.
+  /// Delete the cover image. Optimistic local update — see deleteAvatar for
+  /// the reason refresh() must NOT be used here.
   Future<void> deleteCoverImage() async {
     await _evictImageCache(state.valueOrNull?.coverImageUrl);
     await ref.read(profileRepositoryProvider).deleteCoverImage();
-    await refresh();
+    state.whenData((user) {
+      state = AsyncData(user.copyWith(clearCoverImageUrl: true));
+    });
   }
 }
 
