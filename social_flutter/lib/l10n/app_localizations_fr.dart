@@ -703,6 +703,16 @@ class AppLocalizationsFr extends AppLocalizations {
   String get discardButton => 'Ignorer';
 
   @override
+  String get discardChangesTitle => 'Abandonner les modifications ?';
+
+  @override
+  String get discardChangesMessage =>
+      'Vos modifications ne seront pas enregistrées.';
+
+  @override
+  String get keepEditingButton => 'Continuer l\'édition';
+
+  @override
   String get orderSavedMessage => 'Ordre enregistré';
 
   @override

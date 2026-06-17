@@ -126,7 +126,17 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
     setState(() => _editMode = true);
   }
 
-  void _undoDescription() {
+  Future<void> _undoDescription() async {
+    // Undo wipes the in-progress edits back to the saved value — confirm first.
+    final l10n = AppLocalizations.of(context)!;
+    final discard = await confirmDestructiveAction(
+      context: context,
+      title: l10n.discardChangesTitle,
+      message: l10n.discardChangesMessage,
+      confirmLabel: l10n.discardButton,
+      cancelLabel: l10n.keepEditingButton,
+    );
+    if (!discard || !mounted) return;
     _descriptionController.text = _savedDescription ?? '';
   }
 
@@ -1218,18 +1228,19 @@ class _CoverHeroState extends State<_CoverHero> {
             left: 12,
             right: 12,
             child: Row(
-              children: [
-                _GlassButton(
-                  icon: Icons.arrow_back_rounded,
-                  onTap: widget.onBack,
-                ),
-                const Spacer(),
+              children: [ 
                 if (widget.editMode) ...[
+                  const Spacer(),
                   _GlassButton(
                     icon: Icons.check_rounded,
                     onTap: widget.onExitEdit,
                   ),
                 ] else ...[
+                                  _GlassButton(
+                  icon: Icons.arrow_back_rounded,
+                  onTap: widget.onBack,
+                ),
+                  const Spacer(),
                   if (widget.onShare != null) ...[
                     _GlassButton(
                       icon: Icons.share_rounded,

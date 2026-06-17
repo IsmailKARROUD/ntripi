@@ -121,6 +121,10 @@ class _ItineraryFormScreenState extends ConsumerState<ItineraryFormScreen> {
 
   // static const _currencies = ['EUR', 'USD', 'GBP', 'MAD', 'Other'];
 
+  // Baseline of all user-editable fields, captured once the form is populated.
+  // Compared against the live values to detect unsaved edits before leaving.
+  List<Object?>? _initialSnapshot;
+
   @override
   void initState() {
     super.initState();
@@ -128,7 +132,42 @@ class _ItineraryFormScreenState extends ConsumerState<ItineraryFormScreen> {
     if (widget.mode == ItineraryFormMode.edit) {
       // postFrameCallback: setState can't be called during initState itself.
       WidgetsBinding.instance.addPostFrameCallback((_) => _initFromProvider());
+    } else {
+      _initialSnapshot = _snapshot();
     }
+  }
+
+  // _currencies is the dropdown source list, not user input — excluded here.
+  List<Object?> _snapshot() => [
+        _titleController.text,
+        _descriptionController.text,
+        _currency,
+        _visibility,
+        _pendingImageBytes != null,
+        _removeExistingImage,
+      ];
+
+  bool get _isDirty {
+    final base = _initialSnapshot;
+    if (base == null) return false;
+    final now = _snapshot();
+    if (now.length != base.length) return true;
+    for (var i = 0; i < now.length; i++) {
+      if (now[i] != base[i]) return true;
+    }
+    return false;
+  }
+
+  Future<bool> _confirmDiscard() async {
+    if (!_isDirty) return true;
+    final l10n = AppLocalizations.of(context)!;
+    return confirmDestructiveAction(
+      context: context,
+      title: l10n.discardChangesTitle,
+      message: l10n.discardChangesMessage,
+      confirmLabel: l10n.discardButton,
+      cancelLabel: l10n.keepEditingButton,
+    );
   }
 
   void _initFromProvider() {
@@ -144,6 +183,9 @@ class _ItineraryFormScreenState extends ConsumerState<ItineraryFormScreen> {
       _visibility = itinerary.visibility;
       _initialized = true;
     });
+    // Capture baseline after fields are populated, so opening to edit and
+    // leaving without changes does not trigger the discard dialog.
+    _initialSnapshot = _snapshot();
   }
 
   @override
@@ -329,7 +371,16 @@ class _ItineraryFormScreenState extends ConsumerState<ItineraryFormScreen> {
     final bool collapseOptional =
         widget.mode == ItineraryFormMode.create && !_showOptional;
 
-    return Scaffold(
+    return PopScope(
+      // Block the back gesture/button while there are unsaved edits; the
+      // callback then offers a discard confirmation. The save flow uses
+      // context.go/pop directly, so it is unaffected by this guard.
+      canPop: !_isDirty && !_saving,
+      onPopInvokedWithResult: (didPop, _) async {
+        if (didPop) return;
+        if (await _confirmDiscard() && context.mounted) context.pop();
+      },
+      child: Scaffold(
       resizeToAvoidBottomInset: false,
       backgroundColor: kSand,
       appBar: AppBar(
@@ -528,6 +579,7 @@ class _ItineraryFormScreenState extends ConsumerState<ItineraryFormScreen> {
             ],
           ),
         ),
+      ),
       ),
     );
   }

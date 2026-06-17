@@ -300,6 +300,9 @@
   "daysLabel": "d",
   "noneOption": "None",
   "discardButton": "Discard",
+  "discardChangesTitle": "Discard changes?",
+  "discardChangesMessage": "Your changes will not be saved.",
+  "keepEditingButton": "Keep editing",
   "orderSavedMessage": "Order saved",
 
   "segmentSelectBothStops": "Select both a From and a To stop.",

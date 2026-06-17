@@ -17,6 +17,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:social_flutter/core/ui/app_theme.dart';
+import 'package:social_flutter/core/ui/destructive_actions.dart';
 import 'package:social_flutter/features/itineraries/domain/transport_leg.dart';
 import 'package:social_flutter/l10n/app_localizations.dart';
 
@@ -103,6 +104,47 @@ class _LegFormDialogState extends State<LegFormDialog> {
           : '',
     );
     _isFree = e?.isFree ?? false;
+    // Baseline of all fields, captured after seeding from widget.existing, so
+    // dismissing without changes does not trigger the discard confirmation.
+    _initialSnapshot = _snapshot();
+  }
+
+  // Baseline of all user-editable fields for unsaved-change detection.
+  List<Object?>? _initialSnapshot;
+
+  List<Object?> _snapshot() => [
+        _mode,
+        _lineCtrl.text,
+        _directionCtrl.text,
+        _notesCtrl.text,
+        _durationDays,
+        _durationHours,
+        _durationMinutes,
+        _costCtrl.text,
+        _isFree,
+      ];
+
+  bool get _isDirty {
+    final base = _initialSnapshot;
+    if (base == null) return false;
+    final now = _snapshot();
+    if (now.length != base.length) return true;
+    for (var i = 0; i < now.length; i++) {
+      if (now[i] != base[i]) return true;
+    }
+    return false;
+  }
+
+  Future<bool> _confirmDiscard() async {
+    if (!_isDirty) return true;
+    final l10n = AppLocalizations.of(context)!;
+    return confirmDestructiveAction(
+      context: context,
+      title: l10n.discardChangesTitle,
+      message: l10n.discardChangesMessage,
+      confirmLabel: l10n.discardButton,
+      cancelLabel: l10n.keepEditingButton,
+    );
   }
 
   @override
@@ -333,7 +375,18 @@ class _LegFormDialogState extends State<LegFormDialog> {
     final isEdit = widget.existing != null;
     final l10n = AppLocalizations.of(context)!;
 
-    return ConstrainedBox(
+    return PopScope(
+      // Block drag-down dismiss while there are unsaved edits; the callback
+      // then offers a discard confirmation. Save/Delete pop directly and are
+      // unaffected.
+      canPop: !_isDirty,
+      onPopInvokedWithResult: (didPop, _) async {
+        if (didPop) return;
+        if (await _confirmDiscard() && context.mounted) {
+          Navigator.of(context).pop(); // null result == cancel, matches contract
+        }
+      },
+      child: ConstrainedBox(
       constraints: BoxConstraints(
         maxHeight: MediaQuery.of(context).size.height * 0.70,
       ),
@@ -545,7 +598,13 @@ class _LegFormDialogState extends State<LegFormDialog> {
                     ),
                   const Spacer(),
                   TextButton(
-                    onPressed: () => Navigator.of(context).pop(),
+                    // Route through the discard guard so Cancel and drag-down
+                    // dismiss behave identically.
+                    onPressed: () async {
+                      if (await _confirmDiscard() && context.mounted) {
+                        Navigator.of(context).pop();
+                      }
+                    },
                     style: TextButton.styleFrom(foregroundColor: kForest),
                     child: Text(l10n.cancel),
                   ),
@@ -564,6 +623,7 @@ class _LegFormDialogState extends State<LegFormDialog> {
             ),
           ],
         ),
+      ),
       ),
       ),
     );

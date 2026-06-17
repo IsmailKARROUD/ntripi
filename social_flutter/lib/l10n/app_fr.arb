@@ -235,6 +235,9 @@
   "daysLabel": "j",
   "noneOption": "Aucun",
   "discardButton": "Ignorer",
+  "discardChangesTitle": "Abandonner les modifications ?",
+  "discardChangesMessage": "Vos modifications ne seront pas enregistrées.",
+  "keepEditingButton": "Continuer l'édition",
   "orderSavedMessage": "Ordre enregistré",
 
   "segmentSelectBothStops": "Sélectionnez un arrêt de départ et un arrêt d'arrivée.",

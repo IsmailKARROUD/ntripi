@@ -693,6 +693,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get discardButton => 'Discard';
 
   @override
+  String get discardChangesTitle => 'Discard changes?';
+
+  @override
+  String get discardChangesMessage => 'Your changes will not be saved.';
+
+  @override
+  String get keepEditingButton => 'Keep editing';
+
+  @override
   String get orderSavedMessage => 'Order saved';
 
   @override

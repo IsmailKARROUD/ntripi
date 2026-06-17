@@ -108,6 +108,10 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
   // Anchors the "tap Edit to make changes" popover onto the AppBar edit button.
   final GlobalKey _editButtonKey = GlobalKey();
 
+  // Baseline of all user-editable fields, captured once the form is populated.
+  // Compared against the live values to detect unsaved edits before leaving.
+  List<Object?>? _initialSnapshot;
+
   @override
   void initState() {
     super.initState();
@@ -115,7 +119,49 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
     if (widget.isEditMode) {
       WidgetsBinding.instance
           .addPostFrameCallback((_) => _initFromExistingStop());
+    } else {
+      _initialSnapshot = _snapshot();
     }
+  }
+
+  // _searchController is intentionally excluded — the Nominatim search box is
+  // transient and not part of the saved stop.
+  List<Object?> _snapshot() => [
+        _placeNameController.text,
+        _placeAddressController.text,
+        _lat,
+        _lng,
+        _placeType,
+        _durationDays,
+        _durationHours,
+        _durationMinutes,
+        _costController.text,
+        _isFree,
+        _notesController.text,
+        _pendingAnnotations.length,
+      ];
+
+  bool get _isDirty {
+    final base = _initialSnapshot;
+    if (base == null) return false;
+    final now = _snapshot();
+    if (now.length != base.length) return true;
+    for (var i = 0; i < now.length; i++) {
+      if (now[i] != base[i]) return true;
+    }
+    return false;
+  }
+
+  Future<bool> _confirmDiscard() async {
+    if (!_isDirty) return true;
+    final l10n = AppLocalizations.of(context)!;
+    return confirmDestructiveAction(
+      context: context,
+      title: l10n.discardChangesTitle,
+      message: l10n.discardChangesMessage,
+      confirmLabel: l10n.discardButton,
+      cancelLabel: l10n.keepEditingButton,
+    );
   }
 
   int? get _totalDurationMin {
@@ -262,6 +308,9 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
       _notesController.text = found.notes ?? '';
       _initialized = true;
     });
+    // Capture baseline only after fields are populated, so opening an existing
+    // stop and leaving without changes does not trigger the discard dialog.
+    _initialSnapshot = _snapshot();
   }
 
   @override
@@ -594,7 +643,15 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
             ? l10n.editStopTitle
             : l10n.addStopTitle;
 
-    return Scaffold(
+    return PopScope(
+      // Block the back gesture/button while there are unsaved edits; the
+      // callback then offers a discard confirmation.
+      canPop: !_isDirty && !_saving,
+      onPopInvokedWithResult: (didPop, _) async {
+        if (didPop) return;
+        if (await _confirmDiscard() && context.mounted) context.pop();
+      },
+      child: Scaffold(
       backgroundColor: kSand,
       resizeToAvoidBottomInset: false,
       appBar: AppBar(
@@ -1114,6 +1171,7 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
             ),
           ),
         ),
+      ),
       ),
     );
   }

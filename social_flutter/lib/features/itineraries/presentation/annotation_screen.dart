@@ -9,6 +9,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:social_flutter/core/ui/app_theme.dart';
+import 'package:social_flutter/core/ui/destructive_actions.dart';
 import 'package:social_flutter/features/itineraries/domain/annotation.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/annotation_form_dialog.dart'
     show AnnotationFormResult;
@@ -83,12 +84,42 @@ class _AnnotationScreenState extends State<AnnotationScreen> {
     ),
   };
 
+  // Baseline of the editable fields, captured after seeding from widget, so
+  // backing out without changes does not trigger the discard confirmation.
+  List<Object?>? _initialSnapshot;
+
   @override
   void initState() {
     super.initState();
     _type = widget.initialType ?? AnnotationType.advice;
     _contentController =
         TextEditingController(text: widget.initialContent ?? '');
+    _initialSnapshot = _snapshot();
+  }
+
+  List<Object?> _snapshot() => [_type, _contentController.text];
+
+  bool get _isDirty {
+    final base = _initialSnapshot;
+    if (base == null) return false;
+    final now = _snapshot();
+    if (now.length != base.length) return true;
+    for (var i = 0; i < now.length; i++) {
+      if (now[i] != base[i]) return true;
+    }
+    return false;
+  }
+
+  Future<bool> _confirmDiscard() async {
+    if (!_isDirty) return true;
+    final l10n = AppLocalizations.of(context)!;
+    return confirmDestructiveAction(
+      context: context,
+      title: l10n.discardChangesTitle,
+      message: l10n.discardChangesMessage,
+      confirmLabel: l10n.discardButton,
+      cancelLabel: l10n.keepEditingButton,
+    );
   }
 
   @override
@@ -125,7 +156,15 @@ class _AnnotationScreenState extends State<AnnotationScreen> {
     final title = widget.isEdit ? l10n.editAnnotationTitle : l10n.addAnnotationDialogTitle;
     final canSave = !_saving && _contentController.text.trim().isNotEmpty;
 
-    return Scaffold(
+    return PopScope(
+      // Block the back gesture/button while there are unsaved edits; the
+      // callback then offers a discard confirmation.
+      canPop: !_isDirty && !_saving,
+      onPopInvokedWithResult: (didPop, _) async {
+        if (didPop) return;
+        if (await _confirmDiscard() && context.mounted) Navigator.pop(context);
+      },
+      child: Scaffold(
       resizeToAvoidBottomInset: false,
       backgroundColor: kSand,
       appBar: AppBar(
@@ -336,6 +375,7 @@ class _AnnotationScreenState extends State<AnnotationScreen> {
             ),
           ),
         ],
+      ),
       ),
     );
   }

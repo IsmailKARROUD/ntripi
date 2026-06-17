@@ -1292,6 +1292,24 @@ abstract class AppLocalizations {
   /// **'Discard'**
   String get discardButton;
 
+  /// No description provided for @discardChangesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Discard changes?'**
+  String get discardChangesTitle;
+
+  /// No description provided for @discardChangesMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Your changes will not be saved.'**
+  String get discardChangesMessage;
+
+  /// No description provided for @keepEditingButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep editing'**
+  String get keepEditingButton;
+
   /// No description provided for @orderSavedMessage.
   ///
   /// In en, this message translates to:
