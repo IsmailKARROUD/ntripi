@@ -1,6 +1,7 @@
 import 'package:dio_cache_interceptor_hive_store/dio_cache_interceptor_hive_store.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:social_flutter/core/api/api_client.dart';
@@ -12,6 +13,11 @@ import 'package:social_flutter/l10n/app_localizations.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Lock the app to portrait — landscape layouts are unsupported.
+  await SystemChrome.setPreferredOrientations(
+    [DeviceOrientation.portraitUp, DeviceOrientation.portraitDown],
+  );
 
   // Hive-backed cache store for Dio responses. Web has no application
   // support directory, so caching is mobile/desktop-only.
