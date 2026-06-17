@@ -205,6 +205,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 TextFormField(
                   controller: _displayNameController,
                   textInputAction: TextInputAction.next,
+                  autovalidateMode: AutovalidateMode.onUserInteraction,
                   decoration: InputDecoration(hintText: l10n.registerDisplayNameHint),
                   validator: (v) {
                     if (v == null || v.trim().isEmpty) return null;
@@ -258,6 +259,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   controller: _emailController,
                   keyboardType: TextInputType.emailAddress,
                   textInputAction: TextInputAction.next,
+                  autovalidateMode: AutovalidateMode.onUserInteraction,
                   decoration: InputDecoration(hintText: l10n.registerEmailHint),
                   validator: (v) {
                     if (v == null || v.trim().isEmpty) return l10n.registerEmailRequired;
@@ -280,6 +282,13 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   controller: _passwordController,
                   obscureText: _obscurePassword,
                   textInputAction: TextInputAction.next,
+                  autovalidateMode: AutovalidateMode.onUserInteraction,
+                  // re-validate confirm field so its mismatch error tracks edits to password
+                  onChanged: (_) {
+                    if (_confirmPasswordController.text.isNotEmpty) {
+                      _formKey.currentState?.validate();
+                    }
+                  },
                   decoration: InputDecoration(
                     hintText: l10n.registerPasswordHint,
                     suffixIcon: IconButton(
@@ -316,6 +325,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   controller: _confirmPasswordController,
                   obscureText: _obscureConfirm,
                   textInputAction: TextInputAction.done,
+                  autovalidateMode: AutovalidateMode.onUserInteraction,
                   onFieldSubmitted: (_) => _register(l10n),
                   decoration: InputDecoration(
                     hintText: '••••••••',
