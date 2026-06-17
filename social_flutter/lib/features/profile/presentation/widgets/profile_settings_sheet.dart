@@ -7,7 +7,6 @@ import 'package:social_flutter/l10n/app_localizations.dart';
 void showProfileSettingsSheet(
   BuildContext context, {
   required VoidCallback onLogout,
-  required VoidCallback onDeleteAccount,
 }) {
   showModalBottomSheet<void>(
     context: context,
@@ -18,21 +17,15 @@ void showProfileSettingsSheet(
         Navigator.pop(ctx);
         onLogout();
       },
-      onDeleteAccount: () {
-        Navigator.pop(ctx);
-        onDeleteAccount();
-      },
     ),
   );
 }
 
 class _SettingsSheet extends ConsumerWidget {
   final VoidCallback onLogout;
-  final VoidCallback onDeleteAccount;
 
   const _SettingsSheet({
     required this.onLogout,
-    required this.onDeleteAccount,
   });
 
   void _showLanguagePicker(BuildContext context, WidgetRef ref) {
@@ -245,32 +238,14 @@ class _SettingsSheet extends ConsumerWidget {
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(color: kBorder),
               ),
-              child: Column(
-                children: [
-                  _SheetRow(
-                    icon: Icons.logout_rounded,
-                    iconBg: const Color(0xFFD0EBDA),
-                    iconColor: kForest,
-                    label: l10n.settingsLogout,
-                    showChevron: false,
-                    onTap: onLogout,
-                  ),
-                  Container(
-                    height: 1,
-                    margin: const EdgeInsets.only(left: 56),
-                    color: kBorder,
-                  ),
-                  _SheetRow(
-                    icon: Icons.delete_outline_rounded,
-                    iconBg: const Color(0xFFFFDAD6),
-                    iconColor: const Color(0xFFBA1A1A),
-                    label: l10n.settingsDeleteAccount,
-                    labelColor: const Color(0xFFBA1A1A),
-                    showChevron: false,
-                    isLast: true,
-                    onTap: onDeleteAccount,
-                  ),
-                ],
+              child: _SheetRow(
+                icon: Icons.logout_rounded,
+                iconBg: const Color(0xFFD0EBDA),
+                iconColor: kForest,
+                label: l10n.settingsLogout,
+                showChevron: false,
+                isLast: true,
+                onTap: onLogout,
               ),
             ),
           ),
@@ -327,7 +302,6 @@ class _SheetRow extends StatelessWidget {
   final Color iconBg;
   final Color iconColor;
   final String label;
-  final Color labelColor;
   final String? detail;
   final bool showChevron;
   final bool isLast;
@@ -338,7 +312,6 @@ class _SheetRow extends StatelessWidget {
     required this.iconBg,
     required this.iconColor,
     required this.label,
-    this.labelColor = kBark,
     this.detail,
     this.showChevron = true,
     this.isLast = false,
@@ -372,10 +345,10 @@ class _SheetRow extends StatelessWidget {
                 Expanded(
                   child: Text(
                     label,
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w600,
-                      color: labelColor,
+                      color: kBark,
                     ),
                   ),
                 ),

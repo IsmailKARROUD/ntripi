@@ -692,6 +692,12 @@ abstract class AppLocalizations {
   /// **'Privacy'**
   String get privacySection;
 
+  /// No description provided for @dangerZoneSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Danger zone'**
+  String get dangerZoneSection;
+
   /// No description provided for @privateAccountLabel.
   ///
   /// In en, this message translates to:

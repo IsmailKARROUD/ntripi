@@ -336,6 +336,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get privacySection => 'Confidentialité';
 
   @override
+  String get dangerZoneSection => 'Zone de danger';
+
+  @override
   String get privateAccountLabel => 'Compte privé';
 
   @override

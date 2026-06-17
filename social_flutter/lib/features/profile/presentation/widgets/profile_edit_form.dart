@@ -21,12 +21,14 @@ class ProfileEditForm extends ConsumerStatefulWidget {
   final User user;
   final VoidCallback onCancel;
   final VoidCallback onSaved;
+  final VoidCallback onDeleteAccount;
 
   const ProfileEditForm({
     super.key,
     required this.user,
     required this.onCancel,
     required this.onSaved,
+    required this.onDeleteAccount,
   });
 
   @override
@@ -604,6 +606,49 @@ class _ProfileEditFormState extends ConsumerState<ProfileEditForm> {
                     onChanged: (v) => setState(() => _editIsPrivate = v),
                   ),
                 ]),
+                const SizedBox(height: 20),
+                _SectionLabel(
+                  icon: Icons.warning_amber_rounded,
+                  label: l10n.dangerZoneSection,
+                  color: kDanger,
+                ),
+                _SectionCard(children: [
+                  InkWell(
+                    onTap: _saving ? null : widget.onDeleteAccount,
+                    borderRadius: BorderRadius.circular(18),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 14, vertical: 13),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 32,
+                            height: 32,
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFFFDAD6),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: const Icon(Icons.delete_outline_rounded,
+                                size: 16, color: Color(0xFFBA1A1A)),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              l10n.settingsDeleteAccount,
+                              style: const TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w600,
+                                color: Color(0xFFBA1A1A),
+                              ),
+                            ),
+                          ),
+                          const Icon(Icons.chevron_right,
+                              size: 20, color: Color(0xFFBA1A1A)),
+                        ],
+                      ),
+                    ),
+                  ),
+                ]),
               ],
             ),
           ),
@@ -616,7 +661,8 @@ class _ProfileEditFormState extends ConsumerState<ProfileEditForm> {
 class _SectionLabel extends StatelessWidget {
   final IconData icon;
   final String label;
-  const _SectionLabel({required this.icon, required this.label});
+  final Color color;
+  const _SectionLabel({required this.icon, required this.label, this.color = kText2});
 
   @override
   Widget build(BuildContext context) {
@@ -624,14 +670,14 @@ class _SectionLabel extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(22, 14, 22, 8),
       child: Row(
         children: [
-          Icon(icon, size: 14, color: kText2),
+          Icon(icon, size: 14, color: color),
           const SizedBox(width: 6),
           Text(
             label.toUpperCase(),
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w700,
-              color: kText2,
+              color: color,
               letterSpacing: 0.6,
             ),
           ),

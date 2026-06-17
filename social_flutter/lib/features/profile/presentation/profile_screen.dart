@@ -136,6 +136,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     user: user,
                     onCancel: () => setState(() => _isEditing = false),
                     onSaved: () => setState(() => _isEditing = false),
+                    onDeleteAccount: () =>
+                        context.push('/settings/delete-account'),
                   )
                 : _buildProfileView(user),
           ),
@@ -203,8 +205,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       ? () => showProfileSettingsSheet(
                             context,
                             onLogout: _logout,
-                            onDeleteAccount: () =>
-                                context.push('/settings/delete-account'),
                           )
                       : null,
                   coverImageUrl: user.coverImageUrl,
