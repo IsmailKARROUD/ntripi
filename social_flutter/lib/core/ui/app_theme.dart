@@ -30,6 +30,10 @@ const kBorder = Color(0xFFE4EDE6);
 const kText2 = Color(0xFF5A7562);
 const kText3 = Color(0xFF93A898);
 
+// Danger palette — destructive-action affordances (delete, discard, etc.)
+const kDanger = Color(0xFFBA1A1A);     // destructive-action red
+const kDangerTint = Color(0xFFFCECEC); // soft fill behind danger affordances
+
 // Transit / amber palette — warm amber used in transit segment rows
 const kTransitBg     = Color(0xFFFFF8EC);
 const kTransitBorder = Color(0xFFF0E2C2);

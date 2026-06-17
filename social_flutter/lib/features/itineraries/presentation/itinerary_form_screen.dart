@@ -163,6 +163,7 @@ class _ItineraryFormScreenState extends ConsumerState<ItineraryFormScreen> {
     final l10n = AppLocalizations.of(context)!;
     return confirmDestructiveAction(
       context: context,
+      icon: Icons.logout,
       title: l10n.discardChangesTitle,
       message: l10n.discardChangesMessage,
       confirmLabel: l10n.discardButton,

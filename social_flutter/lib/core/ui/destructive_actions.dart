@@ -7,44 +7,32 @@
 import 'package:flutter/material.dart';
 import 'package:social_flutter/l10n/app_localizations.dart';
 
+import 'confirm_dialog.dart';
+
 // ---------------------------------------------------------------------------
 // Tier 2 — Simple confirmation dialog
 // ---------------------------------------------------------------------------
 
-/// Shows an AlertDialog asking the user to confirm a destructive action.
-/// Returns true if confirmed, false if cancelled or dismissed.
-/// Cancel button has default focus so accidental taps don't destroy data.
+/// Asks the user to confirm a destructive action via the themed [ConfirmDialog]
+/// (danger tone). Returns true if confirmed, false if cancelled or dismissed.
+/// Pass [icon] to override the default warning glyph (e.g. logout for discard).
 Future<bool> confirmDestructiveAction({
   required BuildContext context,
   required String title,
   required String message,
   String confirmLabel = 'Delete',
   String cancelLabel = 'Cancel',
-}) async {
-  final result = await showDialog<bool>(
-    context: context,
-    barrierDismissible: true,
-    builder: (ctx) => AlertDialog(
-      title: Text(title),
-      content: Text(message),
-      actions: [
-        TextButton(
-          autofocus: true,
-          onPressed: () => Navigator.pop(ctx, false),
-          child: Text(cancelLabel),
-        ),
-        FilledButton(
-          style: FilledButton.styleFrom(
-            backgroundColor: Theme.of(ctx).colorScheme.error,
-            foregroundColor: Theme.of(ctx).colorScheme.onError,
-          ),
-          onPressed: () => Navigator.pop(ctx, true),
-          child: Text(confirmLabel),
-        ),
-      ],
-    ),
+  IconData icon = Icons.warning_amber_rounded,
+}) {
+  return ConfirmDialog.show(
+    context,
+    tone: ConfirmTone.danger,
+    icon: icon,
+    title: title,
+    message: message,
+    confirmLabel: confirmLabel,
+    cancelLabel: cancelLabel,
   );
-  return result ?? false;
 }
 
 // ---------------------------------------------------------------------------
