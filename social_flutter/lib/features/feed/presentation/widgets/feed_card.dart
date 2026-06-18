@@ -2,17 +2,21 @@
 // an owner attribution row above the reused ItinerarySummaryCard.
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:social_flutter/core/ui/app_theme.dart';
 import 'package:social_flutter/features/feed/domain/feed_item.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/itinerary_summary_card.dart';
+import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
+import 'package:social_flutter/l10n/app_localizations.dart';
 import 'package:social_flutter/shared/widgets/editorial_widgets.dart';
 
-class FeedCard extends StatelessWidget {
+class FeedCard extends ConsumerWidget {
   final FeedItem item;
   const FeedCard({super.key, required this.item});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     final owner = item.owner;
     final hasDisplay =
         owner.displayName != null && owner.displayName!.isNotEmpty;
@@ -57,6 +61,15 @@ class FeedCard extends StatelessWidget {
                       ),
                   ],
                 ),
+              ),
+              // Share the itinerary via the OS share sheet (reuses ShareService).
+              IconButton(
+                icon: const Icon(Icons.share_rounded, size: 20, color: kText2),
+                visualDensity: VisualDensity.compact,
+                tooltip: l10n.shareTooltip,
+                onPressed: () => ref
+                    .read(shareServiceProvider)
+                    .shareItinerary(item.itinerary),
               ),
             ],
           ),

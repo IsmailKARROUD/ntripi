@@ -135,19 +135,22 @@ class _FeedScreenState extends ConsumerState<FeedScreen> {
       BuildContext context, AppLocalizations l10n, FeedSort sort) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
         children: [
-          Text(
-            l10n.feedTitle,
-            style: const TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.w700,
-              color: kBark,
-              letterSpacing: -0.3,
+          Expanded(
+            child: Text(
+              l10n.feedTitle,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.w700,
+                color: kBark,
+                letterSpacing: -0.3,
+              ),
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(width: 12),
           SegmentedButton<FeedSort>(
             style: const ButtonStyle(
               visualDensity: VisualDensity.compact,

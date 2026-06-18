@@ -13,7 +13,11 @@ class ShareService {
   }
 
   String _buildCaption(Itinerary itinerary) {
-    final stopCount = itinerary.stops.length;
+    // Summary itineraries (e.g. from the feed) carry no loaded tracks/stops, so
+    // fall back to the denormalized stopsCount when the stop list is empty.
+    final stopCount = itinerary.stops.isNotEmpty
+        ? itinerary.stops.length
+        : itinerary.stopsCount;
     final stopLabel = stopCount == 1 ? '1 stop' : '$stopCount stops';
     return 'Check out "${itinerary.title}" on Ntripi — $stopLabel, ${itinerary.formattedDuration}';
   }
