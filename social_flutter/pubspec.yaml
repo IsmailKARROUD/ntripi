@@ -44,7 +44,7 @@ dependencies:
   connectivity_plus: ^7.1.1
 
   # Secure token storage — uses iOS Keychain / Android Keystore under the hood
-  flutter_secure_storage: ^9.0.0
+  flutter_secure_storage: ^10.3.1
 
   # Declarative navigation with type-safe routes
   go_router: ^13.2.0
@@ -55,7 +55,7 @@ dependencies:
   latlong2: ^0.9.0
 
   # Native OS share sheet — share a URL + caption to any installed app.
-  share_plus: ^10.0.0
+  share_plus: ^10.1.4
 
   # DM Sans font (used by NTripi design system)
   google_fonts: ^6.2.1
