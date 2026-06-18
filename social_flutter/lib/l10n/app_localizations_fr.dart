@@ -45,7 +45,20 @@ class AppLocalizationsFr extends AppLocalizations {
   String get navFeed => 'Fil';
 
   @override
-  String get feedComingSoon => 'Le fil arrive bientôt !';
+  String get feedTitle => 'Découvrir';
+
+  @override
+  String get feedTabTop => 'Top';
+
+  @override
+  String get feedTabRecent => 'Récents';
+
+  @override
+  String get feedEmpty =>
+      'Aucun itinéraire public pour l\'instant. Revenez bientôt !';
+
+  @override
+  String get feedTopEmpty => 'Pas assez de voyages notés — voir Récents.';
 
   @override
   String get offlineBanner =>
@@ -379,7 +392,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get browseForIdeas =>
-      'Parcourez vos itinéraires pour trouver des idées.';
+      'Explorez le fil de la communauté pour trouver des idées.';
 
   @override
   String get settingsTitle => 'Paramètres';

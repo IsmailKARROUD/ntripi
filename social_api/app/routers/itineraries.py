@@ -28,15 +28,18 @@ Track lifecycle:
 import uuid
 from decimal import Decimal
 from datetime import datetime, timezone
+from typing import Literal
 
-from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile, status
+from fastapi import APIRouter, Depends, File, HTTPException, Query, Request, UploadFile, status
 from fastapi.responses import Response
 from sqlalchemy import select, func as sqlfunc
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, selectinload
 
+from app.config import Settings, get_settings
 from app.database import get_db
 from app.dependencies import get_current_user, require_etag
+from app.limiter import limiter
 from app.models.annotation import Annotation
 from app.models.itinerary import Itinerary
 from app.models.itinerary_annotation import ItineraryAnnotation
@@ -58,6 +61,7 @@ from app.schemas.itinerary import (
     ItineraryAnnotationUpdate,
     ItineraryCreate,
     ItineraryDetail,
+    ItineraryFeedItem,
     ItineraryImageResponse,
     ItinerarySummary,
     ItineraryUpdate,
@@ -479,6 +483,69 @@ def list_my_itineraries(
         .order_by(Itinerary.created_at.desc())
     ).scalars().all()
     return itineraries  # type: ignore[return-value]
+
+
+# ---------------------------------------------------------------------------
+# GET /itineraries/feed — Public discovery feed (Top / Recent)
+# Declared before /{itinerary_id} so FastAPI matches the literal "feed" path
+# instead of treating it as a {itinerary_id} UUID.
+# ---------------------------------------------------------------------------
+
+def _to_feed_item(itinerary: Itinerary, owner: User) -> ItineraryFeedItem:
+    # Reuse ItinerarySummary's field mapping for the base, then graft on the
+    # owner (same RaterInfo shape the ratings endpoint builds).
+    return ItineraryFeedItem(
+        **ItinerarySummary.model_validate(itinerary).model_dump(),
+        owner=RaterInfo(
+            user_id=owner.id,
+            username=owner.username,
+            display_name=owner.display_name,
+            avatar_url=owner.avatar_url,
+        ),
+    )
+
+
+@router.get("/feed", response_model=list[ItineraryFeedItem],
+            summary="Public discovery feed of itineraries")
+@limiter.limit("30/minute")
+def list_feed(
+    request: Request,  # required first positional for slowapi rate limiting
+    sort: Literal["top", "recent"] = Query("recent"),
+    limit: int = Query(20, ge=1, le=50),
+    offset: int = Query(0, ge=0),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+    settings: Settings = Depends(get_settings),
+) -> list[ItineraryFeedItem]:
+    # Only 'public' is visible to an arbitrary viewer — this SQL filter is the
+    # cheap equivalent of can_view_itinerary() (which short-circuits True for
+    # public) without an O(n) per-row Python evaluation.
+    query = (
+        select(Itinerary, User)
+        .join(User, Itinerary.user_id == User.id)
+        # Eager-load tracks→stops so the stops_count property is cheap (no N+1);
+        # same selectinload pattern as _load_itinerary_detail.
+        .options(selectinload(Itinerary.tracks).selectinload(Track.stops))
+        .where(Itinerary.visibility == "public")
+    )
+
+    if sort == "top":
+        # Min rating count keeps a single 5-star trip from dominating; threshold
+        # is env-configurable so it can flex as the catalogue grows.
+        query = query.where(Itinerary.rating_count >= settings.FEED_TOP_MIN_RATINGS).order_by(
+            Itinerary.rating_avg.desc(),
+            Itinerary.rating_count.desc(),
+            Itinerary.created_at.desc(),
+            Itinerary.id.desc(),  # final tie-breaker for stable pagination
+        )
+    else:
+        query = query.order_by(
+            Itinerary.created_at.desc(),
+            Itinerary.id.desc(),  # final tie-breaker for stable pagination
+        )
+
+    rows = db.execute(query.limit(limit).offset(offset)).all()
+    return [_to_feed_item(itinerary, owner) for itinerary, owner in rows]
 
 
 # ---------------------------------------------------------------------------

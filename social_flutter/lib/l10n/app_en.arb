@@ -14,7 +14,11 @@
   "navProfile": "Profile",
   "navItineraries": "Itineraries",
   "navFeed": "Feed",
-  "feedComingSoon": "Feed coming soon!",
+  "feedTitle": "Discover",
+  "feedTabTop": "Top",
+  "feedTabRecent": "Recent",
+  "feedEmpty": "No public itineraries yet. Check back soon!",
+  "feedTopEmpty": "Not enough rated trips yet — check Recent.",
 
   "offlineBanner": "You're Offline! Some features may be unavailable.",
   "downloadBanner": "For a better experience, download the Ntripi app.",
@@ -137,7 +141,7 @@
   "planFirstJourneyHint": "Add stops, transit segments and notes. Share it with friends or keep it private.",
   "createItinerary": "Create itinerary",
   "needInspiration": "Need inspiration?",
-  "browseForIdeas": "Browse your itineraries for ideas.",
+  "browseForIdeas": "Explore the community feed for ideas.",
 
   "settingsTitle": "Settings",
   "settingsAccount": "Account",

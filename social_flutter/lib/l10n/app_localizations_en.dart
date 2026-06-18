@@ -45,7 +45,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get navFeed => 'Feed';
 
   @override
-  String get feedComingSoon => 'Feed coming soon!';
+  String get feedTitle => 'Discover';
+
+  @override
+  String get feedTabTop => 'Top';
+
+  @override
+  String get feedTabRecent => 'Recent';
+
+  @override
+  String get feedEmpty => 'No public itineraries yet. Check back soon!';
+
+  @override
+  String get feedTopEmpty => 'Not enough rated trips yet — check Recent.';
 
   @override
   String get offlineBanner =>
@@ -372,7 +384,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get needInspiration => 'Need inspiration?';
 
   @override
-  String get browseForIdeas => 'Browse your itineraries for ideas.';
+  String get browseForIdeas => 'Explore the community feed for ideas.';
 
   @override
   String get settingsTitle => 'Settings';

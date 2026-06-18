@@ -170,11 +170,35 @@ abstract class AppLocalizations {
   /// **'Feed'**
   String get navFeed;
 
-  /// No description provided for @feedComingSoon.
+  /// No description provided for @feedTitle.
   ///
   /// In en, this message translates to:
-  /// **'Feed coming soon!'**
-  String get feedComingSoon;
+  /// **'Discover'**
+  String get feedTitle;
+
+  /// No description provided for @feedTabTop.
+  ///
+  /// In en, this message translates to:
+  /// **'Top'**
+  String get feedTabTop;
+
+  /// No description provided for @feedTabRecent.
+  ///
+  /// In en, this message translates to:
+  /// **'Recent'**
+  String get feedTabRecent;
+
+  /// No description provided for @feedEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No public itineraries yet. Check back soon!'**
+  String get feedEmpty;
+
+  /// No description provided for @feedTopEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Not enough rated trips yet — check Recent.'**
+  String get feedTopEmpty;
 
   /// No description provided for @offlineBanner.
   ///
@@ -755,7 +779,7 @@ abstract class AppLocalizations {
   /// No description provided for @browseForIdeas.
   ///
   /// In en, this message translates to:
-  /// **'Browse your itineraries for ideas.'**
+  /// **'Explore the community feed for ideas.'**
   String get browseForIdeas;
 
   /// No description provided for @settingsTitle.

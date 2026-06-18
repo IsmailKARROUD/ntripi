@@ -75,6 +75,12 @@ class Settings(BaseSettings):
     # Set to /downloads/ntripi-latest.apk once Ticket 9 ships the binary.
     ANDROID_DOWNLOAD_URL: str | None = None
 
+    # Minimum number of ratings an itinerary needs before it can surface in the
+    # "Top" discovery feed — stops a single 5-star trip from dominating. Kept as
+    # an env var so the bar can be lowered while the catalogue is young and raised
+    # as ratings accumulate.
+    FEED_TOP_MIN_RATINGS: int = 3
+
     # Storage configuration — where user-uploaded files (cover images, etc.) are kept.
     # Set STORAGE_BACKEND="r2" and supply the R2_* vars below to activate Cloudflare R2.
     # "filesystem" is the local/fallback default and requires a Railway persistent volume.

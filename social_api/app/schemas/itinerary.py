@@ -415,6 +415,13 @@ class ItinerarySummary(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+# ItineraryFeedItem extends ItinerarySummary with owner attribution — the discovery
+# feed lists itineraries across users, so each card needs to show who authored it.
+# RaterInfo is reused (same user_id/username/display_name/avatar_url shape).
+class ItineraryFeedItem(ItinerarySummary):
+    owner: RaterInfo
+
+
 # ItineraryDetail extends ItinerarySummary with tracks (ordered) + segments.
 class ItineraryDetail(ItinerarySummary):
     description: Optional[str]

@@ -179,6 +179,8 @@ Railway (single Dockerfile) + Cloudflare DNS + Let's Encrypt SSL.
 
 Railway env vars: `DATABASE_URL=${{Postgres.DATABASE_URL}}` · `SECRET_KEY` · `ALGORITHM=HS256` · `ACCESS_TOKEN_EXPIRE_MINUTES=1440` · `DEBUG=False` · `SHARE_BASE_URL=https://ntripi.app` · `ALLOWED_ORIGINS=https://ntripi.app` · `STORAGE_BACKEND=filesystem` · `STORAGE_FILESYSTEM_PATH=/app/uploads` · `STORAGE_PUBLIC_URL_PREFIX=/uploads`
 
+Optional: `FEED_TOP_MIN_RATINGS=3` — minimum rating count for an itinerary to appear in the "Top" discovery feed (defaults to 3; lower it while the catalogue is young).
+
 Persistent volume must be mounted at `/app/uploads` or images vanish on redeploy.
 
 ---

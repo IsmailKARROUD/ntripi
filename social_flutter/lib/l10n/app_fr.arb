@@ -14,7 +14,11 @@
   "navProfile": "Profil",
   "navItineraries": "Itinéraires",
   "navFeed": "Fil",
-  "feedComingSoon": "Le fil arrive bientôt !",
+  "feedTitle": "Découvrir",
+  "feedTabTop": "Top",
+  "feedTabRecent": "Récents",
+  "feedEmpty": "Aucun itinéraire public pour l'instant. Revenez bientôt !",
+  "feedTopEmpty": "Pas assez de voyages notés — voir Récents.",
 
   "offlineBanner": "Vous êtes hors ligne ! Certaines fonctionnalités peuvent être indisponibles.",
   "downloadBanner": "Pour une meilleure expérience, téléchargez l'application Ntripi.",
@@ -122,7 +126,7 @@
   "planFirstJourneyHint": "Ajoutez des étapes, des segments de transit et des notes. Partagez-le avec des amis ou gardez-le privé.",
   "createItinerary": "Créer un itinéraire",
   "needInspiration": "Besoin d'inspiration ?",
-  "browseForIdeas": "Parcourez vos itinéraires pour trouver des idées.",
+  "browseForIdeas": "Explorez le fil de la communauté pour trouver des idées.",
 
   "settingsTitle": "Paramètres",
   "settingsAccount": "Compte",

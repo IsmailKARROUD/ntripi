@@ -63,6 +63,10 @@ const kMyItinerariesEndpoint = '/itineraries/me';
 /// Create a new itinerary.
 const kItinerariesEndpoint = '/itineraries/';
 
+/// Public discovery feed. [sort] is 'recent' or 'top'.
+String feedEndpoint({required String sort, int limit = 20, int offset = 0}) =>
+    '/itineraries/feed?sort=$sort&limit=$limit&offset=$offset';
+
 /// CRUD for a single itinerary.
 String itineraryEndpoint(String id) => '/itineraries/$id';
 

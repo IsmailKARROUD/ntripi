@@ -11,6 +11,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:social_flutter/features/auth/presentation/login_screen.dart';
 import 'package:social_flutter/features/auth/presentation/register_screen.dart';
 import 'package:social_flutter/features/auth/presentation/splash_screen.dart';
+import 'package:social_flutter/features/feed/presentation/feed_screen.dart';
 import 'package:social_flutter/features/follows/presentation/follow_list_screen.dart';
 import 'package:social_flutter/features/follows/presentation/follow_requests_screen.dart';
 import 'package:social_flutter/features/itineraries/presentation/itinerary_detail_screen.dart';
@@ -232,12 +233,12 @@ final appRouter = GoRouter(
           ],
         ),
 
-        // Branch 3 — Feed (coming soon; tap intercepted in _AppShell)
+        // Branch 3 — Feed (public discovery feed)
         StatefulShellBranch(
           routes: [
             GoRoute(
               path: '/feed',
-              builder: (_, __) => const SizedBox.shrink(),
+              builder: (_, __) => const FeedScreen(),
             ),
           ],
         ),
@@ -331,15 +332,6 @@ class _AppShellState extends ConsumerState<_AppShell> {
           selectedItemColor: kForest,
           unselectedItemColor: const Color(0xFF93A898),
           onTap: (i) {
-            if (i == 3) {
-              // Feed is not yet available — intercept the tap.
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                    content:
-                        Text(AppLocalizations.of(context)!.feedComingSoon)),
-              );
-              return;
-            }
             widget.navigationShell.goBranch(
               i,
               // Tapping the active tab resets its navigation stack.

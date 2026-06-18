@@ -380,7 +380,7 @@ class _ItinerariesSliver extends StatelessWidget {
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
                 child: EmptyItinerariesCard(
                   onCreateTap: () => context.push('/itineraries/new'),
-                  onExploreTap: () => context.go('/itineraries'),
+                  onExploreTap: () => context.go('/feed'),
                 ),
               ),
             );
