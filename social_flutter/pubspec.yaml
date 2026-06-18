@@ -73,6 +73,7 @@ dependencies:
   flutter_markdown_plus: ^1.0.3
   # Direct dep so we can reference `md.ExtensionSet` to lock down the parser.
   markdown: ^7.3.0
+  email_validator: ^3.0.0
 
 
 

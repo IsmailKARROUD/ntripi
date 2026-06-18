@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:email_validator/email_validator.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -263,7 +264,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   decoration: InputDecoration(hintText: l10n.registerEmailHint),
                   validator: (v) {
                     if (v == null || v.trim().isEmpty) return l10n.registerEmailRequired;
-                    if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(v.trim())) {
+                    // EmailValidator does RFC-syntax checking; default allowTopLevelDomains=false
+                    // keeps single-label hosts (e.g. user@localhost) rejected, matching prior behavior.
+                    if (!EmailValidator.validate(v.trim())) {
                       return l10n.registerEmailInvalid;
                     }
                     return null;
