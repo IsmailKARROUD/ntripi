@@ -81,6 +81,14 @@ class Settings(BaseSettings):
     # as ratings accumulate.
     FEED_TOP_MIN_RATINGS: int = 3
 
+    # Google Sign-In OAuth 2.0 client IDs (from Google Cloud Console). A verified
+    # Google ID token's `aud` must match one of these. Android tokens carry the
+    # WEB client id as `aud` (via serverClientId); the Android id is listed for
+    # completeness. All empty = Google sign-in effectively disabled.
+    GOOGLE_WEB_CLIENT_ID: str = ""
+    GOOGLE_IOS_CLIENT_ID: str = ""
+    GOOGLE_ANDROID_CLIENT_ID: str = ""
+
     # Storage configuration — where user-uploaded files (cover images, etc.) are kept.
     # Set STORAGE_BACKEND="r2" and supply the R2_* vars below to activate Cloudflare R2.
     # "filesystem" is the local/fallback default and requires a Railway persistent volume.
@@ -101,6 +109,20 @@ class Settings(BaseSettings):
     # Tell pydantic-settings to look for a .env file in the working directory.
     # extra="ignore" means unknown .env keys don't cause validation errors.
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+
+    @property
+    def google_client_ids(self) -> set[str]:
+        """Accepted Google OAuth audiences — a verified ID token's `aud` must be
+        one of these. We accept any of our own client ids defensively."""
+        return {
+            cid.strip()
+            for cid in (
+                self.GOOGLE_WEB_CLIENT_ID,
+                self.GOOGLE_IOS_CLIENT_ID,
+                self.GOOGLE_ANDROID_CLIENT_ID,
+            )
+            if cid.strip()
+        }
 
 
 @lru_cache

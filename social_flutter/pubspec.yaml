@@ -5,7 +5,8 @@ publish_to: 'none'
 version: 0.3.0
 
 environment:
-  sdk: '>=3.3.0 <4.0.0'
+  # google_sign_in 7.x requires Dart >= 3.7 (the v7 rewrite). Local toolchain is 3.12.
+  sdk: '>=3.7.0 <4.0.0'
 
 dependencies:
   flutter:
@@ -74,6 +75,14 @@ dependencies:
   # Direct dep so we can reference `md.ExtensionSet` to lock down the parser.
   markdown: ^7.3.0
   email_validator: ^3.0.0
+
+  # "Sign in with Google". v7 API: GoogleSignIn.instance.initialize() +
+  # authenticate() (mobile/iOS) / renderButton (web). We send the resulting
+  # ID token to the backend, which verifies it and issues our own tokens.
+  google_sign_in: ^7.2.0
+  # Declared explicitly because the web build imports its `web_only.dart`
+  # (renderButton). It is otherwise a transitive dep of google_sign_in.
+  google_sign_in_web: ^1.1.3
 
 
 

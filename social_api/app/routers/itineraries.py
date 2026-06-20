@@ -38,7 +38,7 @@ from sqlalchemy.orm import Session, selectinload
 
 from app.config import Settings, get_settings
 from app.database import get_db
-from app.dependencies import get_current_user, require_etag
+from app.dependencies import get_current_user, require_etag, require_verified_email
 from app.limiter import limiter
 from app.models.annotation import Annotation
 from app.models.itinerary import Itinerary
@@ -451,7 +451,7 @@ def _get_leg_or_404(leg_id, segment_id, db):
 def create_itinerary(
     body: ItineraryCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_verified_email),  # high-value: verified email required
 ) -> ItinerarySummary:
     itinerary = Itinerary(
         user_id=current_user.id,
@@ -730,6 +730,7 @@ def add_stop(
     body: StopCreate,
     request: Request,
     db: Session = Depends(get_db),
+    _verified: User = Depends(require_verified_email),  # high-value: verified email required
     itinerary: Itinerary = Depends(require_etag),
 ) -> Response:
     """
@@ -1066,7 +1067,7 @@ def add_itinerary_annotation(
     itinerary_id: uuid.UUID,
     body: ItineraryAnnotationCreate,
     request: Request,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_verified_email),  # high-value: verified email required
     db: Session = Depends(get_db),
     itinerary: Itinerary = Depends(require_etag),
 ) -> ItineraryAnnotationResponse:
@@ -1156,7 +1157,7 @@ def add_annotation(
     body: AnnotationCreate,
     request: Request,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_verified_email),  # high-value: verified email required
     itinerary: Itinerary = Depends(require_etag),
 ) -> AnnotationResponse:
     stop = db.execute(
@@ -1254,7 +1255,7 @@ def upsert_rating(
     itinerary_id: uuid.UUID,
     body: RatingSubmit,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_verified_email),  # high-value: verified email required
 ) -> RatingResponse:
     itinerary = _get_itinerary_or_404(itinerary_id, db)
     if not can_view_itinerary(itinerary, current_user.id, db):
@@ -1426,7 +1427,7 @@ def create_segment(
     itinerary_id: uuid.UUID,
     body: TransitSegmentCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_verified_email),  # high-value: verified email required
 ) -> TransitSegmentResponse:
     itinerary = _get_itinerary_or_404(itinerary_id, db)
     _require_owner(itinerary, current_user)
@@ -1573,7 +1574,7 @@ def add_leg(
     segment_id: uuid.UUID,
     body: TransportLegCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_verified_email),  # high-value: verified email required
 ) -> TransportLegResponse:
     itinerary = _get_itinerary_or_404(itinerary_id, db)
     _require_owner(itinerary, current_user)
@@ -1657,7 +1658,7 @@ async def upload_itinerary_image(
     itinerary_id: uuid.UUID,
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_verified_email),  # high-value: verified email required
 ) -> ItineraryImageResponse:
     itinerary = _get_itinerary_or_404(itinerary_id, db)
     _require_owner(itinerary, current_user)

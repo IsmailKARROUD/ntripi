@@ -25,12 +25,14 @@ from app.constants.tos import TOS_DATE, TOS_SUMMARY, TOS_VERSION
 from app.database import get_db
 from app.limiter import limiter
 from app.schemas.auth import (
+    GoogleAuthRequest,
     LoginRequest,
     RefreshRequest,
     RegisterRequest,
     TokenPair,
 )
 from app.services import auth_service, refresh_token_service
+from app.services.auth import verify_google_id_token
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
@@ -94,6 +96,54 @@ def login(
     try:
         user, access_token = auth_service.authenticate_user(
             payload.identifier, payload.password, db
+        )
+    except auth_service.AuthError as e:
+        raise HTTPException(status_code=e.http_status, detail=e.message)
+
+    refresh_raw, refresh_row = refresh_token_service.issue(
+        db,
+        user_id=user.id,
+        user_agent=request.headers.get("user-agent"),
+    )
+    db.commit()
+    return _token_pair(user, access_token, refresh_raw, refresh_row)
+
+
+@router.post(
+    "/google",
+    response_model=TokenPair,
+    summary="Sign in or sign up with Google",
+)
+@limiter.limit("10/minute")
+def google_auth(
+    request: Request,
+    payload: GoogleAuthRequest,
+    db: Session = Depends(get_db),
+) -> TokenPair:
+    """
+    Verify a Google ID token, then log in / link / create the matching account
+    and return the same TokenPair as password login. Also Ntripi's email-
+    verification path: a Google-verified email flips the account to verified.
+    """
+    try:
+        claims = verify_google_id_token(payload.id_token)
+    except Exception:
+        # Any verification failure (bad signature/expiry/audience/issuer, or
+        # google-auth not installed) is an auth failure — never leak details.
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid Google token.",
+        )
+
+    try:
+        user, access_token = auth_service.login_or_register_google(
+            google_sub=claims["sub"],
+            email=claims.get("email", ""),
+            email_verified=bool(claims.get("email_verified", False)),
+            name=claims.get("name"),
+            picture=claims.get("picture"),
+            tos_accepted=payload.tos_accepted,
+            db=db,
         )
     except auth_service.AuthError as e:
         raise HTTPException(status_code=e.http_status, detail=e.message)

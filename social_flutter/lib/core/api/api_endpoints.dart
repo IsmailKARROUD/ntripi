@@ -25,6 +25,15 @@ const kRefreshEndpoint = '/auth/refresh';
 const kLogoutEndpoint = '/auth/logout';
 const kTosEndpoint = '/auth/tos';
 
+/// Exchange a Google ID token for a Ntripi token pair (sign in / up / verify).
+const kGoogleAuthEndpoint = '/auth/google';
+
+/// Google **web/server** OAuth client id, passed to the Google SDK as
+/// `serverClientId` so the issued ID token's `aud` equals the backend audience.
+/// Supply at build time: --dart-define=GOOGLE_SERVER_CLIENT_ID=<web-client-id>
+const kGoogleServerClientId =
+    String.fromEnvironment('GOOGLE_SERVER_CLIENT_ID', defaultValue: '');
+
 // ---------------------------------------------------------------------------
 // User endpoints
 // ---------------------------------------------------------------------------

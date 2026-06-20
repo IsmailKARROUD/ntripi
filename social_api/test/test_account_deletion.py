@@ -12,7 +12,7 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import text
 
-from conftest import auth_headers
+from conftest import auth_headers, mark_email_verified
 
 
 # ---------------------------------------------------------------------------
@@ -32,6 +32,8 @@ def register(client, username, email, password="test1234", tos_accepted=True):
 def register_ok(client, username, email, password="test1234"):
     r = register(client, username, email, password)
     assert r.status_code == 201, r.json()
+    # Verify the email so gated high-value actions (create itinerary, follow) work.
+    mark_email_verified(email)
     return r.json()
 
 

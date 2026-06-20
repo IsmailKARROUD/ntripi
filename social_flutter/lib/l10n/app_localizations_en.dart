@@ -896,6 +896,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get comingSoon => 'Coming soon';
 
   @override
+  String get verifyEmailTitle => 'Verify your email';
+
+  @override
+  String get verifyEmailMessage =>
+      'Sign in with Google to unlock creating trips, rating, and following people.';
+
+  @override
+  String get verifyEmailButton => 'Verify with Google';
+
+  @override
+  String get emailVerifiedSuccess => 'Email verified — you\'re all set!';
+
+  @override
   String get speaksLabel => 'Speaks';
 
   @override

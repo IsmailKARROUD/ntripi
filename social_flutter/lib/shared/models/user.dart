@@ -18,6 +18,10 @@ class User {
   /// Null for public profile views (other users can't see your email).
   final String? email;
 
+  /// Whether this account's email is verified. Only meaningful on the owner's
+  /// own profile (GET /users/me); gates high-value actions. Verify via Google.
+  final bool emailVerified;
+
   final String? displayName;
   final String? bio;
   final String? avatarUrl;
@@ -53,6 +57,7 @@ class User {
     required this.id,
     required this.username,
     this.email,
+    this.emailVerified = false,
     this.displayName,
     this.bio,
     this.avatarUrl,
@@ -73,6 +78,7 @@ class User {
       id: json['id'] as String,
       username: json['username'] as String,
       email: json['email'] as String?,
+      emailVerified: json['email_verified'] as bool? ?? false,
       displayName: json['display_name'] as String?,
       bio: json['bio'] as String?,
       avatarUrl: json['avatar_url'] as String?,
@@ -100,6 +106,7 @@ class User {
       'id': id,
       'username': username,
       if (email != null) 'email': email,
+      'email_verified': emailVerified,
       if (displayName != null) 'display_name': displayName,
       if (bio != null) 'bio': bio,
       if (avatarUrl != null) 'avatar_url': avatarUrl,
@@ -122,6 +129,7 @@ class User {
     String? id,
     String? username,
     String? email,
+    bool? emailVerified,
     String? displayName,
     String? bio,
     String? avatarUrl,
@@ -142,6 +150,7 @@ class User {
       id: id ?? this.id,
       username: username ?? this.username,
       email: email ?? this.email,
+      emailVerified: emailVerified ?? this.emailVerified,
       displayName: displayName ?? this.displayName,
       bio: bio ?? this.bio,
       avatarUrl: clearAvatarUrl ? null : (avatarUrl ?? this.avatarUrl),

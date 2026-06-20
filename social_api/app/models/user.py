@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime, timezone
 
-from sqlalchemy import Boolean, Integer, JSON, String, Text, DateTime, func
+from sqlalchemy import Boolean, Integer, JSON, String, Text, DateTime, func, false
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.dialects.postgresql import UUID
 
@@ -33,7 +33,21 @@ class User(Base):
         String(255), unique=True, nullable=False, index=True
     )
 
-    password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
+    # Nullable: Google-only accounts have no password. Password login against
+    # such an account is handled timing-safely in auth_service.authenticate_user.
+    password_hash: Mapped[str | None] = mapped_column(String(255), nullable=True)
+
+    # Google account id (the ID token `sub` claim) — stable per-user key for
+    # "Sign in with Google". Null for password-only accounts.
+    google_sub: Mapped[str | None] = mapped_column(
+        String(255), unique=True, nullable=True, index=True
+    )
+
+    # True once the user's email is proven (currently only via Google's
+    # email_verified claim). Gates high-value actions — see require_verified_email.
+    email_verified: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, server_default=false(), default=False
+    )
 
     # Optional free-form display name (Unicode-friendly, up to 50 chars).
     display_name: Mapped[str | None] = mapped_column(String(50), nullable=True)

@@ -137,7 +137,8 @@ def client():
 # ---------------------------------------------------------------------------
 
 def register_user(client: TestClient, username: str, email: str,
-                  password: str = "test1234", display_name: str | None = None) -> dict:
+                  password: str = "test1234", display_name: str | None = None,
+                  verified: bool = True) -> dict:
     """
     Registers a user and returns the full response body as a dict.
     This includes the access_token, user_id, and username.
@@ -145,6 +146,11 @@ def register_user(client: TestClient, username: str, email: str,
     Having this as a helper avoids repeating the same register code
     across dozens of tests — if the register endpoint changes, you
     only need to update this one function.
+
+    `verified` (default True): password signups are unverified in production
+    (high-value actions require verifying via Google — see require_verified_email).
+    Most tests want a fully-capable account, so we flip email_verified directly
+    in the DB by default. Pass verified=False to exercise the gate itself.
     """
     response = client.post("/auth/register", json={
         "username": username,
@@ -156,7 +162,26 @@ def register_user(client: TestClient, username: str, email: str,
     assert response.status_code == 201, (
         f"Registration failed for {username}: {response.json()}"
     )
+    if verified:
+        mark_email_verified(email)
     return response.json()
+
+
+def mark_email_verified(email: str) -> None:
+    """Flip a user's email_verified flag directly in the test DB (no Google
+    round-trip), so gated high-value endpoints accept the account."""
+    from sqlalchemy import select
+    from app.models.user import User
+
+    db = TestingSessionLocal()
+    try:
+        user = db.execute(
+            select(User).where(User.email == email.strip().lower())
+        ).scalar_one()
+        user.email_verified = True
+        db.commit()
+    finally:
+        db.close()
 
 
 def auth_headers(token: str) -> dict:

@@ -914,6 +914,19 @@ class AppLocalizationsFr extends AppLocalizations {
   String get comingSoon => 'Bientôt disponible';
 
   @override
+  String get verifyEmailTitle => 'Vérifiez votre e-mail';
+
+  @override
+  String get verifyEmailMessage =>
+      'Connectez-vous avec Google pour créer des itinéraires, noter et suivre des personnes.';
+
+  @override
+  String get verifyEmailButton => 'Vérifier avec Google';
+
+  @override
+  String get emailVerifiedSuccess => 'E-mail vérifié — tout est prêt !';
+
+  @override
   String get speaksLabel => 'Parle';
 
   @override

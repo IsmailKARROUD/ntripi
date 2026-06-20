@@ -60,3 +60,11 @@ class TokenPair(BaseModel):
 
 class RefreshRequest(BaseModel):
     refresh_token: str
+
+
+class GoogleAuthRequest(BaseModel):
+    """Body for POST /auth/google. `id_token` is the Google ID token obtained
+    by the client SDK. `tos_accepted` defaults True — tapping the Google button
+    implies acceptance (the ToS/Privacy links are shown next to it)."""
+    id_token: str
+    tos_accepted: bool = True

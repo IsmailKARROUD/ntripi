@@ -57,6 +57,9 @@ class UserPrivateProfile(UserBase):
     Includes email since you can only see your own profile here.
     """
     email: str
+    # Gates high-value actions client-side; the server is the source of truth.
+    # Verified by signing in with Google (see require_verified_email).
+    email_verified: bool
     is_active: bool
     updated_at: datetime
 

@@ -15,3 +15,7 @@ aiofiles==24.1.0
 slowapi==0.1.9
 Pillow==12.2.0
 boto3==1.43.2
+# google-auth[requests] verifies Google ID tokens server-side for "Sign in with
+# Google". The [requests] extra pulls in `requests`, needed by the
+# google.auth.transport.requests.Request transport (not a core google-auth dep).
+google-auth[requests]==2.55.0

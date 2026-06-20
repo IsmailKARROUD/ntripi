@@ -23,6 +23,7 @@ import 'package:social_flutter/features/profile/presentation/profile_identity_fa
 import 'package:social_flutter/features/profile/presentation/widgets/empty_itineraries_card.dart';
 import 'package:social_flutter/features/profile/presentation/widgets/follow_action_row.dart';
 import 'package:social_flutter/features/profile/presentation/widgets/follow_requests_banner.dart';
+import 'package:social_flutter/features/profile/presentation/widgets/verify_email_banner.dart';
 import 'package:social_flutter/features/profile/presentation/widgets/locked_profile_card.dart';
 import 'package:social_flutter/features/profile/presentation/widgets/profile_chrome.dart';
 import 'package:social_flutter/features/profile/presentation/widgets/profile_edit_form.dart';
@@ -246,6 +247,13 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   Padding(
                     padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
                     child: ProfileIdentityFacts(user: user),
+                  ),
+
+                // Self-only: verify-email prompt (gates create/rate/follow).
+                if (widget.isSelf && !user.emailVerified)
+                  const Padding(
+                    padding: EdgeInsets.fromLTRB(16, 12, 16, 0),
+                    child: VerifyEmailBanner(),
                   ),
 
                 // Self-only follow-requests banner.

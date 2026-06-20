@@ -97,6 +97,24 @@ class AuthRepository {
     return result;
   }
 
+  /// POST /auth/google — exchange a Google ID token for a Ntripi token pair.
+  /// Serves sign-in, sign-up, AND verifying an existing account: the backend
+  /// links by matching email and returns a fresh pair for the same user.
+  Future<AuthResult> loginWithGoogle({required String idToken}) async {
+    final response = await _dio.post(kGoogleAuthEndpoint, data: {
+      'id_token': idToken,
+      'tos_accepted': true, // tapping the Google button implies ToS acceptance
+    });
+
+    final result = AuthResult.fromJson(response.data as Map<String, dynamic>);
+    await saveTokens(
+      accessToken: result.accessToken,
+      refreshToken: result.refreshToken,
+      refreshExpiresAt: result.refreshExpiresAt,
+    );
+    return result;
+  }
+
   /// POST /auth/logout — best-effort server-side revocation, then local wipe.
   /// Failures are swallowed: the user expects logout to "just work" even
   /// when offline. The refresh token will eventually expire server-side.

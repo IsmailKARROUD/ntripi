@@ -1,9 +1,12 @@
 import 'package:dio/dio.dart';
 import 'package:social_flutter/core/utils/apple_platform.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:social_flutter/core/api/api_client.dart';
+import 'package:social_flutter/core/auth/google_signin_service.dart';
+import 'package:social_flutter/core/auth/google_web_button.dart';
 import 'package:social_flutter/core/ui/app_theme.dart';
 import 'package:social_flutter/core/ui/ntripi_logo.dart';
 import 'package:social_flutter/features/auth/providers/auth_provider.dart';
@@ -59,6 +62,63 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
+  }
+
+  /// Mobile/desktop Google sign-in: run the native picker, then exchange the
+  /// ID token with the backend. (Web uses the rendered button + [_onWebGoogleIdToken].)
+  Future<void> _loginWithGoogle() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+    try {
+      final idToken = await GoogleSignInService.instance.obtainIdToken();
+      if (idToken == null) return; // user canceled the picker
+      await _completeGoogleSignIn(idToken);
+    } on DioException catch (e) {
+      if (mounted) {
+        setState(() => _errorMessage = extractErrorMessage(e, AppLocalizations.of(context)!));
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() => _errorMessage = AppLocalizations.of(context)!.errorGenericRetry);
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  /// Called by the web rendered Google button once it yields an ID token.
+  Future<void> _onWebGoogleIdToken(String idToken) async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+    try {
+      await _completeGoogleSignIn(idToken);
+    } on DioException catch (e) {
+      if (mounted) {
+        setState(() => _errorMessage = extractErrorMessage(e, AppLocalizations.of(context)!));
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  void _onWebGoogleError(Object error) {
+    if (mounted) {
+      setState(() => _errorMessage = AppLocalizations.of(context)!.errorGenericRetry);
+    }
+  }
+
+  /// Shared tail for both flows: persist tokens (done in the repo) then route in.
+  Future<void> _completeGoogleSignIn(String idToken) async {
+    final repo = ref.read(authRepositoryProvider);
+    final result = await repo.loginWithGoogle(idToken: idToken);
+    ref.read(authNotifierProvider.notifier).setAuthenticated(result.userId);
+    ref.invalidate(myProfileProvider);
+    ref.invalidate(myItinerariesProvider);
+    if (mounted) context.go('/profile/me');
   }
 
   @override
@@ -195,21 +255,28 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 _OrDivider(label: l10n.loginOrContinueWith),
                 const SizedBox(height: 20),
 
-                // Social placeholder buttons
+                // Social sign-in buttons
                 Row(
                   children: [
-                    const Expanded(
-                      child: _SocialButton(
-                        label: 'Google',
-                        icon: Text(
-                          'G',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w700,
-                            color: kBark,
-                          ),
-                        ),
-                      ),
+                    Expanded(
+                      // Web can't use authenticate() — render Google's own button.
+                      child: kIsWeb
+                          ? GoogleWebButton(
+                              onIdToken: _onWebGoogleIdToken,
+                              onError: _onWebGoogleError,
+                            )
+                          : _SocialButton(
+                              label: 'Google',
+                              icon: const Text(
+                                'G',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w700,
+                                  color: kBark,
+                                ),
+                              ),
+                              onPressed: _isLoading ? null : _loginWithGoogle,
+                            ),
                     ),
                     const SizedBox(width: 12),
                    isApplePlatform() ? const Expanded(
@@ -340,14 +407,17 @@ class _OrDivider extends StatelessWidget {
 class _SocialButton extends StatelessWidget {
   final String label;
   final Widget icon;
-  const _SocialButton({required this.label, required this.icon});
+  final VoidCallback? onPressed;
+  const _SocialButton({required this.label, required this.icon, this.onPressed});
 
   @override
   Widget build(BuildContext context) {
     return OutlinedButton(
-      onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(AppLocalizations.of(context)!.comingSoon)),
-      ),
+      // Default (no onPressed, e.g. the Apple placeholder): "coming soon".
+      onPressed: onPressed ??
+          () => ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text(AppLocalizations.of(context)!.comingSoon)),
+              ),
       style: OutlinedButton.styleFrom(
         padding: const EdgeInsets.symmetric(vertical: 14),
         backgroundColor: kSurface,

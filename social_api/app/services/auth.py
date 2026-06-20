@@ -98,3 +98,41 @@ def decode_access_token(token: str) -> Optional[str]:
         return subject if subject else None
     except JWTError:
         return None
+
+
+# Valid `iss` values for a Google-issued ID token (both forms occur in the wild).
+_GOOGLE_ISSUERS = {"accounts.google.com", "https://accounts.google.com"}
+
+
+def verify_google_id_token(id_token_str: str) -> dict:
+    """
+    Verify a Google ID token and return its decoded claims dict.
+
+    google-auth fetches Google's public keys and checks the RS256 signature,
+    issuer, and expiry. We then enforce the audience against our own configured
+    client IDs. Raises ValueError on ANY failure (bad signature/expiry/issuer/
+    audience) — callers treat that as an authentication failure (401).
+
+    Imported lazily so this module still imports where google-auth is absent
+    (e.g. the SQLite test suite, which monkeypatches this function).
+    """
+    from google.oauth2 import id_token as google_id_token
+    from google.auth.transport import requests as google_requests
+
+    # audience=None: we accept several client ids (web + iOS), and
+    # verify_oauth2_token only takes a single audience — so we check `aud`
+    # ourselves below against the allowed set.
+    claims = google_id_token.verify_oauth2_token(
+        id_token_str, google_requests.Request()
+    )
+
+    allowed = get_settings().google_client_ids
+    if not allowed or claims.get("aud") not in allowed:
+        # aud must equal one of our OAuth client ids — blocks a token minted
+        # for a different app from authenticating against ours.
+        raise ValueError("invalid_audience")
+
+    if claims.get("iss") not in _GOOGLE_ISSUERS:
+        raise ValueError("invalid_issuer")
+
+    return claims

@@ -83,6 +83,23 @@ def get_current_user(
     return user
 
 
+def require_verified_email(
+    current_user: User = Depends(get_current_user),
+) -> User:
+    """
+    Like get_current_user, but also gates high-value actions behind a verified
+    email. Verification currently happens only by signing in with Google (which
+    carries Google's email_verified claim) — so unverified users get a 403 that
+    the client surfaces as a "verify with Google" prompt.
+    """
+    if not current_user.email_verified:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Please verify your email by signing in with Google to do this.",
+        )
+    return current_user
+
+
 # ---------------------------------------------------------------------------
 # ETag helpers
 # ---------------------------------------------------------------------------
