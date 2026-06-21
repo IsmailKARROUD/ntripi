@@ -171,6 +171,72 @@ def web_login(
     return response
 
 
+# ---------------------------------------------------------------------------
+# Password reset + email verification (emailed link landing pages)
+# ---------------------------------------------------------------------------
+
+@router.get("/reset-password", response_class=HTMLResponse)
+def reset_password_page(request: Request, token: str = "") -> HTMLResponse:
+    return templates.TemplateResponse(request, "reset_password.html", {
+        "page_title": "Reset password — Ntripi",
+        "token": token,
+    })
+
+
+@router.post("/web/reset-password", response_class=HTMLResponse)
+def web_reset_password(
+    request: Request,
+    token: str = Form(...),
+    password: str = Form(...),
+    password_confirm: str = Form(...),
+    db: Session = Depends(get_db),
+) -> HTMLResponse:
+    def _form_error(msg: str) -> HTMLResponse:
+        return templates.TemplateResponse(request, "reset_password.html", {
+            "page_title": "Reset password — Ntripi",
+            "token": token,
+            "error_message": msg,
+        }, status_code=200)
+
+    if password != password_confirm:
+        return _form_error("Passwords do not match.")
+    if len(password) < 8:
+        return _form_error("Password must be at least 8 characters.")
+    if not any(c.isdigit() for c in password):
+        return _form_error("Password must contain at least one digit.")
+
+    try:
+        auth_service.reset_password(db, token, password)
+    except auth_service.AuthError as e:
+        # Bad/expired token — re-showing the form won't help; show a terminal page.
+        return templates.TemplateResponse(request, "token_invalid.html", {
+            "page_title": "Link expired — Ntripi",
+            "message": e.message,
+        }, status_code=200)
+
+    return templates.TemplateResponse(request, "reset_password_done.html", {
+        "page_title": "Password updated — Ntripi",
+    })
+
+
+@router.get("/verify-email", response_class=HTMLResponse)
+def verify_email_page(
+    request: Request,
+    token: str = "",
+    db: Session = Depends(get_db),
+) -> HTMLResponse:
+    try:
+        auth_service.verify_email(db, token)
+    except auth_service.AuthError as e:
+        return templates.TemplateResponse(request, "token_invalid.html", {
+            "page_title": "Link expired — Ntripi",
+            "message": e.message,
+        }, status_code=200)
+    return templates.TemplateResponse(request, "email_verified.html", {
+        "page_title": "Email verified — Ntripi",
+    })
+
+
 @router.post("/web/register", response_class=HTMLResponse)
 def web_register(
     request: Request,
@@ -220,6 +286,11 @@ def web_register(
         )
     except auth_service.AuthError as e:
         return _error(e.message)
+
+    try:
+        auth_service.send_email_verification(db, user)  # best-effort
+    except Exception:
+        pass
 
     web_token = _issue_web_token(str(user.id), settings)
     response = RedirectResponse("/app/", status_code=302)

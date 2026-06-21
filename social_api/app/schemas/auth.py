@@ -68,3 +68,21 @@ class GoogleAuthRequest(BaseModel):
     implies acceptance (the ToS/Privacy links are shown next to it)."""
     id_token: str
     tos_accepted: bool = True
+
+
+class ForgotPasswordRequest(BaseModel):
+    """Body for POST /auth/forgot-password."""
+    email: EmailStr
+
+
+class ResetPasswordRequest(BaseModel):
+    """Body for the web reset form / API reset. Same password policy as register."""
+    token: str
+    new_password: str = Field(..., min_length=8, max_length=128)
+
+    @field_validator("new_password")
+    @classmethod
+    def password_must_contain_digit(cls, v: str) -> str:
+        if not any(c.isdigit() for c in v):
+            raise ValueError("Password must contain at least one digit.")
+        return v

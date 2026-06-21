@@ -28,6 +28,12 @@ const kTosEndpoint = '/auth/tos';
 /// Exchange a Google ID token for a Ntripi token pair (sign in / up / verify).
 const kGoogleAuthEndpoint = '/auth/google';
 
+/// Request a password-reset email (enumeration-safe; always 200).
+const kForgotPasswordEndpoint = '/auth/forgot-password';
+
+/// Resend the email-verification link to the signed-in user.
+const kResendVerificationEndpoint = '/auth/resend-verification';
+
 /// Google **web/server** OAuth client id, passed to the Google SDK as
 /// `serverClientId` so the issued ID token's `aud` equals the backend audience.
 /// Supply at build time: --dart-define=GOOGLE_SERVER_CLIENT_ID=<web-client-id>

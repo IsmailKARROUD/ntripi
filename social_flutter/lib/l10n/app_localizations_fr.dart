@@ -918,13 +918,43 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get verifyEmailMessage =>
-      'Connectez-vous avec Google pour créer des itinéraires, noter et suivre des personnes.';
+      'Vérifiez votre e-mail pour créer des itinéraires, noter et suivre des personnes.';
 
   @override
   String get verifyEmailButton => 'Vérifier avec Google';
 
   @override
   String get emailVerifiedSuccess => 'E-mail vérifié — tout est prêt !';
+
+  @override
+  String get resendVerificationButton => 'Renvoyer l\'e-mail de vérification';
+
+  @override
+  String get verificationEmailSent =>
+      'E-mail de vérification envoyé — vérifiez votre boîte de réception.';
+
+  @override
+  String get forgotPasswordTitle => 'Réinitialiser votre mot de passe';
+
+  @override
+  String get forgotPasswordSubtitle =>
+      'Entrez l\'e-mail de votre compte et nous vous enverrons un lien pour définir un nouveau mot de passe.';
+
+  @override
+  String get forgotPasswordEmailLabel => 'E-mail';
+
+  @override
+  String get forgotPasswordSubmit => 'Envoyer le lien';
+
+  @override
+  String get forgotPasswordSentTitle => 'Vérifiez votre e-mail';
+
+  @override
+  String get forgotPasswordSentBody =>
+      'Si un compte existe pour cet e-mail, nous avons envoyé un lien de réinitialisation. Vérifiez votre boîte de réception et vos spams.';
+
+  @override
+  String get backToSignIn => 'Retour à la connexion';
 
   @override
   String get speaksLabel => 'Parle';

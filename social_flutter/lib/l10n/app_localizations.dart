@@ -1679,7 +1679,7 @@ abstract class AppLocalizations {
   /// No description provided for @verifyEmailMessage.
   ///
   /// In en, this message translates to:
-  /// **'Sign in with Google to unlock creating trips, rating, and following people.'**
+  /// **'Verify your email to unlock creating trips, rating, and following people.'**
   String get verifyEmailMessage;
 
   /// No description provided for @verifyEmailButton.
@@ -1693,6 +1693,60 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Email verified — you\'re all set!'**
   String get emailVerifiedSuccess;
+
+  /// No description provided for @resendVerificationButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Resend verification email'**
+  String get resendVerificationButton;
+
+  /// No description provided for @verificationEmailSent.
+  ///
+  /// In en, this message translates to:
+  /// **'Verification email sent — check your inbox.'**
+  String get verificationEmailSent;
+
+  /// No description provided for @forgotPasswordTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset your password'**
+  String get forgotPasswordTitle;
+
+  /// No description provided for @forgotPasswordSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your account email and we\'ll send you a link to set a new password.'**
+  String get forgotPasswordSubtitle;
+
+  /// No description provided for @forgotPasswordEmailLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Email'**
+  String get forgotPasswordEmailLabel;
+
+  /// No description provided for @forgotPasswordSubmit.
+  ///
+  /// In en, this message translates to:
+  /// **'Send reset link'**
+  String get forgotPasswordSubmit;
+
+  /// No description provided for @forgotPasswordSentTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Check your email'**
+  String get forgotPasswordSentTitle;
+
+  /// No description provided for @forgotPasswordSentBody.
+  ///
+  /// In en, this message translates to:
+  /// **'If an account exists for that email, we\'ve sent a password reset link. Check your inbox and spam folder.'**
+  String get forgotPasswordSentBody;
+
+  /// No description provided for @backToSignIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Back to sign in'**
+  String get backToSignIn;
 
   /// No description provided for @speaksLabel.
   ///

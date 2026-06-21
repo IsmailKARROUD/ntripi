@@ -8,12 +8,14 @@ in one place — no duplication across routes.
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 
 from sqlalchemy import select, or_
 from sqlalchemy.orm import Session
 
+from app.config import get_settings
 from app.models.user import User
+from app.services import email_service, email_token_service, refresh_token_service
 from app.services.auth import create_access_token, hash_password, verify_password
 from app.validators.username import (
     validate_username,
@@ -223,3 +225,117 @@ def login_or_register_google(
     db.commit()
     db.refresh(new_user)
     return new_user, create_access_token(subject=str(new_user.id))
+
+
+# ---------------------------------------------------------------------------
+# Password reset + email verification (emailed single-use links)
+# ---------------------------------------------------------------------------
+
+_PASSWORD_RESET_TTL = timedelta(minutes=30)
+_EMAIL_VERIFY_TTL = timedelta(hours=24)
+
+
+def _email_html(heading: str, body: str, button_label: str, link: str) -> str:
+    """Minimal branded HTML email body shared by both flows."""
+    return f"""\
+<div style="font-family:-apple-system,Segoe UI,Roboto,sans-serif;max-width:480px;margin:0 auto;padding:24px;color:#1b2a22">
+  <h2 style="color:#1F5E3A;margin:0 0 12px">Ntripi</h2>
+  <h3 style="margin:0 0 8px">{heading}</h3>
+  <p style="color:#52615a;font-size:14px;margin:0 0 20px">{body}</p>
+  <a href="{link}" style="display:inline-block;background:#1F5E3A;color:#fff;
+     text-decoration:none;font-weight:700;padding:12px 22px;border-radius:50px">{button_label}</a>
+  <p style="color:#8a9690;font-size:12px;margin:24px 0 0">
+    If the button doesn't work, paste this link into your browser:<br>{link}
+  </p>
+</div>"""
+
+
+def send_password_reset(db: Session, email: str) -> None:
+    """
+    Email a password-reset link if a password account exists for `email`.
+    No-op (silently) otherwise — callers must NOT reveal whether the address
+    exists (enumeration-safe).
+    """
+    email = (email or "").strip().lower()
+    user = db.execute(select(User).where(User.email == email)).scalar_one_or_none()
+    # Only password accounts can reset a password; Google-only accounts have none.
+    if user is None or not user.password_hash or not user.is_active:
+        return
+
+    raw = email_token_service.issue(
+        db, user.id, email_token_service.PURPOSE_PASSWORD_RESET, _PASSWORD_RESET_TTL
+    )
+    db.commit()
+
+    link = f"{get_settings().share_base_url}/reset-password?token={raw}"
+    email_service.send_email(
+        to=user.email,
+        subject="Reset your Ntripi password",
+        html=_email_html(
+            "Reset your password",
+            "We received a request to reset your password. This link expires in 30 minutes.",
+            "Reset password",
+            link,
+        ),
+    )
+
+
+def reset_password(db: Session, token: str, new_password: str) -> None:
+    """Consume a reset token, set the new password, and revoke all the user's
+    refresh tokens (log out everywhere). Raises AuthError on a bad/expired token."""
+    try:
+        user_id = email_token_service.consume(
+            db, token, email_token_service.PURPOSE_PASSWORD_RESET
+        )
+    except email_token_service.InvalidTokenError:
+        raise AuthError("This reset link is invalid or has expired.", http_status=400)
+
+    user = db.get(User, user_id)
+    if user is None:
+        raise AuthError("This reset link is invalid or has expired.", http_status=400)
+
+    user.password_hash = hash_password(new_password)
+    refresh_token_service.revoke_all_for_user(db, user.id)
+    db.commit()
+
+
+def send_email_verification(db: Session, user: User) -> None:
+    """Issue an email-verification token and email the link. Best-effort —
+    callers wrap this so a send failure never breaks registration."""
+    if user.email_verified:
+        return
+    raw = email_token_service.issue(
+        db, user.id, email_token_service.PURPOSE_EMAIL_VERIFY, _EMAIL_VERIFY_TTL
+    )
+    db.commit()
+
+    link = f"{get_settings().share_base_url}/verify-email?token={raw}"
+    email_service.send_email(
+        to=user.email,
+        subject="Verify your email — Ntripi",
+        html=_email_html(
+            "Verify your email",
+            "Confirm your email address to unlock creating trips, rating, and following people.",
+            "Verify email",
+            link,
+        ),
+    )
+
+
+def verify_email(db: Session, token: str) -> User:
+    """Consume a verification token and mark the user's email verified.
+    Returns the user. Raises AuthError on a bad/expired token."""
+    try:
+        user_id = email_token_service.consume(
+            db, token, email_token_service.PURPOSE_EMAIL_VERIFY
+        )
+    except email_token_service.InvalidTokenError:
+        raise AuthError("This verification link is invalid or has expired.", http_status=400)
+
+    user = db.get(User, user_id)
+    if user is None:
+        raise AuthError("This verification link is invalid or has expired.", http_status=400)
+
+    user.email_verified = True
+    db.commit()
+    return user

@@ -89,6 +89,13 @@ class Settings(BaseSettings):
     GOOGLE_IOS_CLIENT_ID: str = ""
     GOOGLE_ANDROID_CLIENT_ID: str = ""
 
+    # Transactional email (password reset, email verification).
+    # EMAIL_BACKEND: "console" logs the message + link to stdout (dev default,
+    # no provider needed); "resend" sends via the Resend HTTP API.
+    EMAIL_BACKEND: str = "console"
+    RESEND_API_KEY: str | None = None
+    EMAIL_FROM: str = "Ntripi <noreply@ntripi.app>"
+
     # Storage configuration — where user-uploaded files (cover images, etc.) are kept.
     # Set STORAGE_BACKEND="r2" and supply the R2_* vars below to activate Cloudflare R2.
     # "filesystem" is the local/fallback default and requires a Railway persistent volume.

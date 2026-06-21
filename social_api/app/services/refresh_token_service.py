@@ -144,6 +144,20 @@ def revoke(db: Session, raw_token: str) -> None:
     row.revoked_at = datetime.now(timezone.utc)
 
 
+def revoke_all_for_user(db: Session, user_id: uuid.UUID) -> int:
+    """Revoke every still-active refresh token for a user. Used after a
+    password reset to log the account out of all existing sessions."""
+    result = db.execute(
+        update(RefreshToken)
+        .where(
+            RefreshToken.user_id == user_id,
+            RefreshToken.revoked_at.is_(None),
+        )
+        .values(revoked_at=datetime.now(timezone.utc))
+    )
+    return result.rowcount or 0
+
+
 def revoke_family(
     db: Session,
     family_id: uuid.UUID,

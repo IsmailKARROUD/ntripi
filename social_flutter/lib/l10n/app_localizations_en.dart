@@ -900,13 +900,43 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get verifyEmailMessage =>
-      'Sign in with Google to unlock creating trips, rating, and following people.';
+      'Verify your email to unlock creating trips, rating, and following people.';
 
   @override
   String get verifyEmailButton => 'Verify with Google';
 
   @override
   String get emailVerifiedSuccess => 'Email verified — you\'re all set!';
+
+  @override
+  String get resendVerificationButton => 'Resend verification email';
+
+  @override
+  String get verificationEmailSent =>
+      'Verification email sent — check your inbox.';
+
+  @override
+  String get forgotPasswordTitle => 'Reset your password';
+
+  @override
+  String get forgotPasswordSubtitle =>
+      'Enter your account email and we\'ll send you a link to set a new password.';
+
+  @override
+  String get forgotPasswordEmailLabel => 'Email';
+
+  @override
+  String get forgotPasswordSubmit => 'Send reset link';
+
+  @override
+  String get forgotPasswordSentTitle => 'Check your email';
+
+  @override
+  String get forgotPasswordSentBody =>
+      'If an account exists for that email, we\'ve sent a password reset link. Check your inbox and spam folder.';
+
+  @override
+  String get backToSignIn => 'Back to sign in';
 
   @override
   String get speaksLabel => 'Speaks';

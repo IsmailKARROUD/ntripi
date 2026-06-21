@@ -72,6 +72,25 @@ class _VerifyEmailBannerState extends ConsumerState<VerifyEmailBanner> {
     }
   }
 
+  /// Alternative to Google: ask the backend to email a verification link.
+  Future<void> _resend() async {
+    final l10n = AppLocalizations.of(context)!;
+    try {
+      await ref.read(authRepositoryProvider).resendVerification();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.verificationEmailSent)),
+        );
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.errorGenericRetry)),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -126,6 +145,15 @@ class _VerifyEmailBannerState extends ConsumerState<VerifyEmailBanner> {
               ),
               label: Text(l10n.verifyEmailButton),
             ),
+          // Email-link alternative for users who don't want to use Google.
+          Align(
+            alignment: Alignment.centerLeft,
+            child: TextButton(
+              onPressed: _busy ? null : _resend,
+              style: TextButton.styleFrom(padding: EdgeInsets.zero),
+              child: Text(l10n.resendVerificationButton),
+            ),
+          ),
         ],
       ),
     );

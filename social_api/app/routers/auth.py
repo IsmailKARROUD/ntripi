@@ -23,8 +23,11 @@ from starlette.requests import Request
 
 from app.constants.tos import TOS_DATE, TOS_SUMMARY, TOS_VERSION
 from app.database import get_db
+from app.dependencies import get_current_user
 from app.limiter import limiter
+from app.models.user import User
 from app.schemas.auth import (
+    ForgotPasswordRequest,
     GoogleAuthRequest,
     LoginRequest,
     RefreshRequest,
@@ -79,6 +82,14 @@ def register(
         user_agent=request.headers.get("user-agent"),
     )
     db.commit()
+
+    # Send the email-verification link. Best-effort — a mail outage must not
+    # fail the registration the user just completed.
+    try:
+        auth_service.send_email_verification(db, user)
+    except Exception:
+        pass
+
     return _token_pair(user, access_token, refresh_raw, refresh_row)
 
 
@@ -215,6 +226,39 @@ def logout(
     refresh_token_service.revoke(db, raw_token=payload.refresh_token)
     db.commit()
     return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.post(
+    "/forgot-password",
+    summary="Request a password-reset email",
+)
+@limiter.limit("3/hour")
+def forgot_password(
+    request: Request,
+    payload: ForgotPasswordRequest,
+    db: Session = Depends(get_db),
+) -> dict:
+    """
+    Email a reset link if a password account exists for this address.
+    Always returns the same 200 response regardless — never reveals whether
+    the email is registered (enumeration-safe).
+    """
+    auth_service.send_password_reset(db, payload.email)
+    return {"detail": "If an account exists for that email, a reset link has been sent."}
+
+
+@router.post(
+    "/resend-verification",
+    summary="Resend the email-verification link to the current user",
+)
+@limiter.limit("3/hour")
+def resend_verification(
+    request: Request,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> dict:
+    auth_service.send_email_verification(db, current_user)
+    return {"detail": "Verification email sent."}
 
 
 @router.get(

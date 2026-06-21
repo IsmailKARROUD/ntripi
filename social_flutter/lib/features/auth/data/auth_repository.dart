@@ -115,6 +115,19 @@ class AuthRepository {
     return result;
   }
 
+  /// POST /auth/forgot-password — ask the server to email a reset link.
+  /// Enumeration-safe (always succeeds). Uses `_bareDio` since it's called
+  /// from the login screen while logged out (no token to attach).
+  Future<void> forgotPassword({required String email}) async {
+    await _bareDio.post(kForgotPasswordEndpoint, data: {'email': email});
+  }
+
+  /// POST /auth/resend-verification — re-send the verify link to the signed-in
+  /// user (the AuthInterceptor attaches the Bearer token).
+  Future<void> resendVerification() async {
+    await _dio.post(kResendVerificationEndpoint);
+  }
+
   /// POST /auth/logout — best-effort server-side revocation, then local wipe.
   /// Failures are swallowed: the user expects logout to "just work" even
   /// when offline. The refresh token will eventually expire server-side.

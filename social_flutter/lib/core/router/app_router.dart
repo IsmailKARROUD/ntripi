@@ -8,6 +8,7 @@ import 'package:social_flutter/core/connectivity/connectivity_service.dart';
 import 'package:social_flutter/core/storage/secure_storage.dart';
 import 'package:social_flutter/core/ui/app_theme.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:social_flutter/features/auth/presentation/forgot_password_screen.dart';
 import 'package:social_flutter/features/auth/presentation/login_screen.dart';
 import 'package:social_flutter/features/auth/presentation/register_screen.dart';
 import 'package:social_flutter/features/auth/presentation/splash_screen.dart';
@@ -44,7 +45,7 @@ final appRouter = GoRouter(
         (refreshExp == null || refreshExp.isAfter(DateTime.now()));
 
     // Routes that require no authentication check
-    const publicRoutes = ['/login', '/register', '/splash'];
+    const publicRoutes = ['/login', '/register', '/splash', '/forgot-password'];
     final isPublic = publicRoutes.contains(state.matchedLocation);
 
     if (!hasAuth && !isPublic) return '/login';
@@ -71,6 +72,10 @@ final appRouter = GoRouter(
     GoRoute(
       path: '/register',
       builder: (context, state) => const RegisterScreen(),
+    ),
+    GoRoute(
+      path: '/forgot-password',
+      builder: (context, state) => const ForgotPasswordScreen(),
     ),
 
     // Protected routes with persistent bottom nav.
