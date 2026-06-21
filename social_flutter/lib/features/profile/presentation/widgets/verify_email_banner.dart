@@ -10,6 +10,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 import 'package:social_flutter/core/api/api_client.dart';
 import 'package:social_flutter/core/auth/google_signin_service.dart';
@@ -67,13 +68,15 @@ class _VerifyEmailBannerState extends ConsumerState<VerifyEmailBanner> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(AppLocalizations.of(context)!.errorGenericRetry)),
         );
-        setState(() => _busy = false);
       }
-    }
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    } 
   }
 
   /// Alternative to Google: ask the backend to email a verification link.
   Future<void> _resend() async {
+    setState(() => _busy = true);
     final l10n = AppLocalizations.of(context)!;
     try {
       await ref.read(authRepositoryProvider).resendVerification();
@@ -88,6 +91,8 @@ class _VerifyEmailBannerState extends ConsumerState<VerifyEmailBanner> {
           SnackBar(content: Text(l10n.errorGenericRetry)),
         );
       }
+    } finally {
+      if (mounted) setState(() => _busy = false);
     }
   }
 
@@ -139,19 +144,26 @@ class _VerifyEmailBannerState extends ConsumerState<VerifyEmailBanner> {
           else
             FilledButton.icon(
               onPressed: _verifyMobile,
-              icon: const Text(
-                'G',
-                style: TextStyle(fontWeight: FontWeight.w700),
+              icon: const Padding(
+                padding:  EdgeInsets.only(left: 8.0),
+                child:  FaIcon(FontAwesomeIcons.google,size: 23,),
+              ), // Google logo
+              label: Padding(
+                padding: const EdgeInsets.only(right: 8.0),
+                child: Text(l10n.verifyEmailButton),
               ),
-              label: Text(l10n.verifyEmailButton),
             ),
           // Email-link alternative for users who don't want to use Google.
-          Align(
+         if (!_busy)
+            Align(
             alignment: Alignment.centerLeft,
-            child: TextButton(
-              onPressed: _busy ? null : _resend,
-              style: TextButton.styleFrom(padding: EdgeInsets.zero),
-              child: Text(l10n.resendVerificationButton),
+            child: Padding(
+              padding: const EdgeInsets.only(left: 8.0,right: 8.0),
+              child: TextButton(
+                onPressed: _resend,
+                style: TextButton.styleFrom(padding: EdgeInsets.zero),
+                child: Text(l10n.resendVerificationButton),
+              ),
             ),
           ),
         ],
