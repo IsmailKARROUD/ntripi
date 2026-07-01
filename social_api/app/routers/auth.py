@@ -27,6 +27,7 @@ from app.dependencies import get_current_user
 from app.limiter import limiter
 from app.models.user import User
 from app.schemas.auth import (
+    ChangePasswordRequest,
     ForgotPasswordRequest,
     GoogleAuthRequest,
     LoginRequest,
@@ -35,7 +36,7 @@ from app.schemas.auth import (
     TokenPair,
 )
 from app.services import auth_service, refresh_token_service
-from app.services.auth import verify_google_id_token
+from app.services.auth import create_access_token, verify_google_id_token
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
@@ -245,6 +246,47 @@ def forgot_password(
     """
     auth_service.send_password_reset(db, payload.email)
     return {"detail": "If an account exists for that email, a reset link has been sent."}
+
+
+@router.post(
+    "/change-password",
+    response_model=TokenPair,
+    summary="Change the signed-in user's password",
+)
+@limiter.limit("5/hour")
+def change_password(
+    request: Request,
+    payload: ChangePasswordRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> TokenPair:
+    """
+    Verify the current password, set the new one, and revoke every session.
+    All other devices are logged out; this device gets a fresh TokenPair so it
+    stays signed in seamlessly. Rate-limited to blunt brute-forcing the current
+    password. request.client.host is the real client IP (ProxyHeadersMiddleware).
+    """
+    try:
+        auth_service.change_password(
+            db,
+            current_user,
+            payload.current_password,
+            payload.new_password,
+            ip=request.client.host if request.client else None,
+            user_agent=request.headers.get("user-agent"),
+        )
+    except auth_service.AuthError as e:
+        raise HTTPException(status_code=e.http_status, detail=e.message)
+
+    # Sessions were just revoked — reissue this device so the user stays logged in.
+    refresh_raw, refresh_row = refresh_token_service.issue(
+        db,
+        user_id=current_user.id,
+        user_agent=request.headers.get("user-agent"),
+    )
+    access_token = create_access_token(subject=str(current_user.id))
+    db.commit()
+    return _token_pair(current_user, access_token, refresh_raw, refresh_row)
 
 
 @router.post(

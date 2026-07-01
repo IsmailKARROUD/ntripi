@@ -96,6 +96,11 @@ class Settings(BaseSettings):
     RESEND_API_KEY: str | None = None
     EMAIL_FROM: str = "Ntripi <noreply@ntripi.app>"
 
+    # When True, new passwords are checked against Have I Been Pwned's breach
+    # corpus (k-anonymity range API) and rejected if seen. The check fails open
+    # (a HIBP outage never blocks a change). Disable in offline dev / tests.
+    PWNED_CHECK_ENABLED: bool = True
+
     # Storage configuration — where user-uploaded files (cover images, etc.) are kept.
     # Set STORAGE_BACKEND="r2" and supply the R2_* vars below to activate Cloudflare R2.
     # "filesystem" is the local/fallback default and requires a Railway persistent volume.

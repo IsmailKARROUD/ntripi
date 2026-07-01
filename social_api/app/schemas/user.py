@@ -60,6 +60,9 @@ class UserPrivateProfile(UserBase):
     # Gates high-value actions client-side; the server is the source of truth.
     # Verified by signing in with Google (see require_verified_email).
     email_verified: bool
+    # True when the account can log in with a password (not Google-only). The
+    # client uses this to show/hide "Change password". Reads User.has_password.
+    has_password: bool
     is_active: bool
     updated_at: datetime
 

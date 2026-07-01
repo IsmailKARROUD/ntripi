@@ -22,6 +22,10 @@ class User {
   /// own profile (GET /users/me); gates high-value actions. Verify via Google.
   final bool emailVerified;
 
+  /// True when the account can log in with a password (not Google-only). Only
+  /// present on GET /users/me; used to show/hide "Change password".
+  final bool hasPassword;
+
   final String? displayName;
   final String? bio;
   final String? avatarUrl;
@@ -58,6 +62,7 @@ class User {
     required this.username,
     this.email,
     this.emailVerified = false,
+    this.hasPassword = false,
     this.displayName,
     this.bio,
     this.avatarUrl,
@@ -79,6 +84,7 @@ class User {
       username: json['username'] as String,
       email: json['email'] as String?,
       emailVerified: json['email_verified'] as bool? ?? false,
+      hasPassword: json['has_password'] as bool? ?? false,
       displayName: json['display_name'] as String?,
       bio: json['bio'] as String?,
       avatarUrl: json['avatar_url'] as String?,
@@ -107,6 +113,7 @@ class User {
       'username': username,
       if (email != null) 'email': email,
       'email_verified': emailVerified,
+      'has_password': hasPassword,
       if (displayName != null) 'display_name': displayName,
       if (bio != null) 'bio': bio,
       if (avatarUrl != null) 'avatar_url': avatarUrl,
@@ -130,6 +137,7 @@ class User {
     String? username,
     String? email,
     bool? emailVerified,
+    bool? hasPassword,
     String? displayName,
     String? bio,
     String? avatarUrl,
@@ -151,6 +159,7 @@ class User {
       username: username ?? this.username,
       email: email ?? this.email,
       emailVerified: emailVerified ?? this.emailVerified,
+      hasPassword: hasPassword ?? this.hasPassword,
       displayName: displayName ?? this.displayName,
       bio: bio ?? this.bio,
       avatarUrl: clearAvatarUrl ? null : (avatarUrl ?? this.avatarUrl),

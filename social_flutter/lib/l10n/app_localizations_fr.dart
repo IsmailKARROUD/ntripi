@@ -349,6 +349,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get privacySection => 'Confidentialité';
 
   @override
+  String get securitySection => 'Sécurité';
+
+  @override
   String get dangerZoneSection => 'Zone de danger';
 
   @override
@@ -952,6 +955,37 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get forgotPasswordSentBody =>
       'Si un compte existe pour cet e-mail, nous avons envoyé un lien de réinitialisation. Vérifiez votre boîte de réception et vos spams.';
+
+  @override
+  String get changePasswordTitle => 'Changer le mot de passe';
+
+  @override
+  String get changePasswordSubtitle =>
+      'Saisissez votre mot de passe actuel, puis choisissez-en un nouveau. Le changement déconnecte tous les autres appareils.';
+
+  @override
+  String get changePasswordCurrentLabel => 'Mot de passe actuel';
+
+  @override
+  String get changePasswordNewLabel => 'Nouveau mot de passe';
+
+  @override
+  String get changePasswordConfirmLabel => 'Confirmer le nouveau mot de passe';
+
+  @override
+  String get changePasswordMismatch =>
+      'Les mots de passe ne correspondent pas.';
+
+  @override
+  String get changePasswordSameAsOld =>
+      'Le nouveau mot de passe doit être différent de l\'actuel.';
+
+  @override
+  String get changePasswordSubmit => 'Changer le mot de passe';
+
+  @override
+  String get changePasswordSuccess =>
+      'Mot de passe changé. Les autres appareils ont été déconnectés.';
 
   @override
   String get backToSignIn => 'Retour à la connexion';

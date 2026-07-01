@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:social_flutter/core/ui/app_theme.dart';
 import 'package:social_flutter/core/ui/destructive_actions.dart';
@@ -606,6 +607,53 @@ class _ProfileEditFormState extends ConsumerState<ProfileEditForm> {
                     onChanged: (v) => setState(() => _editIsPrivate = v),
                   ),
                 ]),
+                // Only password accounts can change a password — Google-only
+                // accounts (has_password == false) have nothing to change.
+                if (user.hasPassword) ...[
+                  _SectionLabel(
+                    icon: Icons.lock_outline_rounded,
+                    label: l10n.securitySection,
+                  ),
+                  _SectionCard(children: [
+                    InkWell(
+                      onTap: _saving
+                          ? null
+                          : () => context.push('/settings/change-password'),
+                      borderRadius: BorderRadius.circular(18),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 14, vertical: 13),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 32,
+                              height: 32,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFD0EBDA),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: const Icon(Icons.password_rounded,
+                                  size: 16, color: kForest),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                l10n.changePasswordTitle,
+                                style: const TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w600,
+                                  color: kBark,
+                                ),
+                              ),
+                            ),
+                            const Icon(Icons.chevron_right,
+                                size: 20, color: kText3),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ]),
+                ],
                 const SizedBox(height: 20),
                 _SectionLabel(
                   icon: Icons.warning_amber_rounded,

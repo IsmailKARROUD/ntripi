@@ -15,7 +15,14 @@ from sqlalchemy.orm import Session
 
 from app.config import get_settings
 from app.models.user import User
-from app.services import email_service, email_token_service, refresh_token_service
+from app.models.password_history import PasswordHistory
+from app.models.security_audit_log import SecurityAuditLog
+from app.services import (
+    email_service,
+    email_token_service,
+    pwned_service,
+    refresh_token_service,
+)
 from app.services.auth import create_access_token, hash_password, verify_password
 from app.validators.username import (
     validate_username,
@@ -131,6 +138,9 @@ def create_user(
     db.commit()
     db.refresh(new_user)
 
+    _record_password_history(db, new_user.id, new_user.password_hash)
+    db.commit()
+
     token = create_access_token(subject=str(new_user.id))
     return new_user, token
 
@@ -234,6 +244,9 @@ def login_or_register_google(
 _PASSWORD_RESET_TTL = timedelta(minutes=30)
 _EMAIL_VERIFY_TTL = timedelta(hours=24)
 
+# How many past passwords (including the current one) a user may not reuse.
+_PASSWORD_HISTORY_KEEP = 5
+
 
 def _email_html(heading: str, body: str, button_label: str, link: str) -> str:
     """Minimal branded HTML email body shared by both flows."""
@@ -295,8 +308,127 @@ def reset_password(db: Session, token: str, new_password: str) -> None:
         raise AuthError("This reset link is invalid or has expired.", http_status=400)
 
     user.password_hash = hash_password(new_password)
+    _record_password_history(db, user.id, user.password_hash)
     refresh_token_service.revoke_all_for_user(db, user.id)
     db.commit()
+
+
+# ---------------------------------------------------------------------------
+# Password change (authenticated, in-app) + supporting helpers
+# ---------------------------------------------------------------------------
+
+
+def _record_password_history(db: Session, user_id, password_hash: str) -> None:
+    """Append a password hash to the user's history and prune to the newest N,
+    so the reuse check stays bounded (bcrypt is deliberately slow)."""
+    db.add(PasswordHistory(user_id=user_id, password_hash=password_hash))
+    db.flush()
+    rows = (
+        db.execute(
+            select(PasswordHistory)
+            .where(PasswordHistory.user_id == user_id)
+            .order_by(PasswordHistory.created_at.desc(), PasswordHistory.id.desc())
+        )
+        .scalars()
+        .all()
+    )
+    for stale in rows[_PASSWORD_HISTORY_KEEP:]:
+        db.delete(stale)
+
+
+def _password_recently_used(db: Session, user: User, new_password: str) -> bool:
+    """True if new_password matches the current password or a recent historical
+    one — checked with bcrypt against each retained hash."""
+    hashes = {user.password_hash} if user.password_hash else set()
+    hashes.update(
+        row.password_hash
+        for row in db.execute(
+            select(PasswordHistory)
+            .where(PasswordHistory.user_id == user.id)
+            .order_by(PasswordHistory.created_at.desc(), PasswordHistory.id.desc())
+            .limit(_PASSWORD_HISTORY_KEEP)
+        ).scalars()
+    )
+    return any(verify_password(new_password, h) for h in hashes)
+
+
+def _record_security_event(
+    db: Session, user_id, event_type: str, ip: str | None, user_agent: str | None
+) -> None:
+    """Append a row to the security audit trail. Never stores secrets."""
+    db.add(
+        SecurityAuditLog(
+            user_id=user_id,
+            event_type=event_type,
+            ip_address=(ip or "")[:64] or None,
+            user_agent=(user_agent or "")[:255] or None,
+        )
+    )
+
+
+def _send_password_changed_email(user: User) -> None:
+    """Confirmation email with a 'not you?' fast track to the reset flow."""
+    link = f"{get_settings().share_base_url}/forgot-password"
+    email_service.send_email(
+        to=user.email,
+        subject="Your Ntripi password was changed",
+        html=_email_html(
+            "Your password was changed",
+            "Your Ntripi password was just changed and every other device was "
+            "signed out. If this wasn't you, secure your account now by resetting "
+            "your password.",
+            "Secure your account",
+            link,
+        ),
+    )
+
+
+def change_password(
+    db: Session,
+    user: User,
+    current_password: str,
+    new_password: str,
+    *,
+    ip: str | None = None,
+    user_agent: str | None = None,
+) -> None:
+    """Change the signed-in user's password.
+
+    Verifies the current password, blocks reuse of a recent password and any
+    known-breached one, revokes every session, writes an audit row, and emails
+    a confirmation. All other devices are logged out; the caller reissues this
+    device's tokens. Raises AuthError on any failure."""
+    if not user.password_hash:
+        # Google-only account — nothing to change. The UI hides this; guard anyway.
+        raise AuthError("This account has no password set.", http_status=400)
+
+    if not verify_password(current_password, user.password_hash):
+        _record_security_event(db, user.id, "password_change_failed", ip, user_agent)
+        db.commit()
+        raise AuthError("Your current password is incorrect.", http_status=401)
+
+    if _password_recently_used(db, user, new_password):
+        raise AuthError(
+            "You can't reuse a recent password. Choose a new one.", http_status=400
+        )
+
+    if pwned_service.is_pwned(new_password):
+        raise AuthError(
+            "This password appeared in a data breach. Choose a different one.",
+            http_status=400,
+        )
+
+    user.password_hash = hash_password(new_password)
+    _record_password_history(db, user.id, user.password_hash)
+    refresh_token_service.revoke_all_for_user(db, user.id)
+    _record_security_event(db, user.id, "password_change", ip, user_agent)
+    db.commit()
+
+    # Best-effort — a mail outage must not fail the change the user completed.
+    try:
+        _send_password_changed_email(user)
+    except Exception:
+        pass
 
 
 def send_email_verification(db: Session, user: User) -> None:

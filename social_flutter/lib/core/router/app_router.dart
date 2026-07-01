@@ -24,6 +24,7 @@ import 'package:social_flutter/features/itineraries/presentation/stop_form_scree
 import 'package:social_flutter/features/itineraries/domain/dimension_key.dart';
 import 'package:social_flutter/features/itineraries/presentation/dimension_ratings_screen.dart';
 import 'package:social_flutter/features/itineraries/presentation/ratings_page_screen.dart';
+import 'package:social_flutter/features/profile/presentation/change_password_screen.dart';
 import 'package:social_flutter/features/profile/presentation/delete_account_screen.dart';
 import 'package:social_flutter/features/profile/presentation/profile_screen.dart';
 import 'package:social_flutter/features/search/presentation/search_screen.dart';
@@ -131,6 +132,10 @@ final appRouter = GoRouter(
             GoRoute(
               path: '/profile/me',
               builder: (_, __) => const ProfileScreen(),
+            ),
+            GoRoute(
+              path: '/settings/change-password',
+              builder: (_, __) => const ChangePasswordScreen(),
             ),
             GoRoute(
               path: '/settings/delete-account',

@@ -86,3 +86,17 @@ class ResetPasswordRequest(BaseModel):
         if not any(c.isdigit() for c in v):
             raise ValueError("Password must contain at least one digit.")
         return v
+
+
+class ChangePasswordRequest(BaseModel):
+    """Body for POST /auth/change-password (authenticated). Same password policy
+    as register/reset. Confirm-match is a client concern — not sent here."""
+    current_password: str
+    new_password: str = Field(..., min_length=8, max_length=128)
+
+    @field_validator("new_password")
+    @classmethod
+    def password_must_contain_digit(cls, v: str) -> str:
+        if not any(c.isdigit() for c in v):
+            raise ValueError("Password must contain at least one digit.")
+        return v

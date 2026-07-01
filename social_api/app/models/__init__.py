@@ -4,6 +4,8 @@
 from app.models.user import User
 from app.models.refresh_token import RefreshToken
 from app.models.email_token import EmailToken
+from app.models.password_history import PasswordHistory
+from app.models.security_audit_log import SecurityAuditLog
 from app.models.follow import Follow, FollowStatus
 from app.models.itinerary import Itinerary
 from app.models.itinerary_allowed_user import ItineraryAllowedUser
@@ -17,7 +19,8 @@ from app.models.transport_leg import TransportLeg
 from app.models.waitlist import WaitlistEntry
 
 __all__ = [
-    "User", "RefreshToken", "EmailToken", "Follow", "FollowStatus",
+    "User", "RefreshToken", "EmailToken", "PasswordHistory", "SecurityAuditLog",
+    "Follow", "FollowStatus",
     "Itinerary", "ItineraryAllowedUser", "Track",
     "Stop", "Annotation", "ItineraryRating", "ItineraryAnnotation",
     "TransitSegment", "TransportLeg", "WaitlistEntry",

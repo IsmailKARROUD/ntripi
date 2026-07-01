@@ -342,6 +342,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get privacySection => 'Privacy';
 
   @override
+  String get securitySection => 'Security';
+
+  @override
   String get dangerZoneSection => 'Danger zone';
 
   @override
@@ -934,6 +937,36 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get forgotPasswordSentBody =>
       'If an account exists for that email, we\'ve sent a password reset link. Check your inbox and spam folder.';
+
+  @override
+  String get changePasswordTitle => 'Change password';
+
+  @override
+  String get changePasswordSubtitle =>
+      'Enter your current password, then choose a new one. Changing it signs out every other device.';
+
+  @override
+  String get changePasswordCurrentLabel => 'Current password';
+
+  @override
+  String get changePasswordNewLabel => 'New password';
+
+  @override
+  String get changePasswordConfirmLabel => 'Confirm new password';
+
+  @override
+  String get changePasswordMismatch => 'Passwords don\'t match.';
+
+  @override
+  String get changePasswordSameAsOld =>
+      'New password must differ from the current one.';
+
+  @override
+  String get changePasswordSubmit => 'Change password';
+
+  @override
+  String get changePasswordSuccess =>
+      'Password changed. Other devices were signed out.';
 
   @override
   String get backToSignIn => 'Back to sign in';

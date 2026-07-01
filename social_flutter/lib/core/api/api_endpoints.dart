@@ -34,6 +34,9 @@ const kForgotPasswordEndpoint = '/auth/forgot-password';
 /// Resend the email-verification link to the signed-in user.
 const kResendVerificationEndpoint = '/auth/resend-verification';
 
+/// Change the signed-in user's password (returns a fresh token pair).
+const kChangePasswordEndpoint = '/auth/change-password';
+
 /// Google **web/server** OAuth client id, passed to the Google SDK as
 /// `serverClientId` so the issued ID token's `aud` equals the backend audience.
 /// Supply at build time: --dart-define=GOOGLE_SERVER_CLIENT_ID=<web-client-id>

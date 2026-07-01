@@ -97,6 +97,13 @@ class User(Base):
     )
 
     @property
+    def has_password(self) -> bool:
+        """True when this account can log in with a password. Google-only
+        accounts have no password_hash — the frontend uses this to decide
+        whether to offer 'Change password'."""
+        return self.password_hash is not None
+
+    @property
     def name_for_display(self) -> str:
         """Returns display_name if set, else falls back to @username."""
         return self.display_name or f"@{self.username}"

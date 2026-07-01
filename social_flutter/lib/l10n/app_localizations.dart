@@ -716,6 +716,12 @@ abstract class AppLocalizations {
   /// **'Privacy'**
   String get privacySection;
 
+  /// No description provided for @securitySection.
+  ///
+  /// In en, this message translates to:
+  /// **'Security'**
+  String get securitySection;
+
   /// No description provided for @dangerZoneSection.
   ///
   /// In en, this message translates to:
@@ -1741,6 +1747,60 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'If an account exists for that email, we\'ve sent a password reset link. Check your inbox and spam folder.'**
   String get forgotPasswordSentBody;
+
+  /// No description provided for @changePasswordTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Change password'**
+  String get changePasswordTitle;
+
+  /// No description provided for @changePasswordSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your current password, then choose a new one. Changing it signs out every other device.'**
+  String get changePasswordSubtitle;
+
+  /// No description provided for @changePasswordCurrentLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Current password'**
+  String get changePasswordCurrentLabel;
+
+  /// No description provided for @changePasswordNewLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'New password'**
+  String get changePasswordNewLabel;
+
+  /// No description provided for @changePasswordConfirmLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm new password'**
+  String get changePasswordConfirmLabel;
+
+  /// No description provided for @changePasswordMismatch.
+  ///
+  /// In en, this message translates to:
+  /// **'Passwords don\'t match.'**
+  String get changePasswordMismatch;
+
+  /// No description provided for @changePasswordSameAsOld.
+  ///
+  /// In en, this message translates to:
+  /// **'New password must differ from the current one.'**
+  String get changePasswordSameAsOld;
+
+  /// No description provided for @changePasswordSubmit.
+  ///
+  /// In en, this message translates to:
+  /// **'Change password'**
+  String get changePasswordSubmit;
+
+  /// No description provided for @changePasswordSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Password changed. Other devices were signed out.'**
+  String get changePasswordSuccess;
 
   /// No description provided for @backToSignIn.
   ///

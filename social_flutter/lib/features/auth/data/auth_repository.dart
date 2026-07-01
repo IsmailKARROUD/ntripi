@@ -128,6 +128,26 @@ class AuthRepository {
     await _dio.post(kResendVerificationEndpoint);
   }
 
+  /// POST /auth/change-password — change the signed-in user's password.
+  /// The server revokes all other sessions and returns a fresh token pair for
+  /// THIS device; we persist it so the current session stays authenticated.
+  Future<void> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    final response = await _dio.post(kChangePasswordEndpoint, data: {
+      'current_password': currentPassword,
+      'new_password': newPassword,
+    });
+
+    final result = AuthResult.fromJson(response.data as Map<String, dynamic>);
+    await saveTokens(
+      accessToken: result.accessToken,
+      refreshToken: result.refreshToken,
+      refreshExpiresAt: result.refreshExpiresAt,
+    );
+  }
+
   /// POST /auth/logout — best-effort server-side revocation, then local wipe.
   /// Failures are swallowed: the user expects logout to "just work" even
   /// when offline. The refresh token will eventually expire server-side.
