@@ -368,7 +368,9 @@ def _record_security_event(
 
 def _send_password_changed_email(user: User) -> None:
     """Confirmation email with a 'not you?' fast track to the reset flow."""
-    link = f"{get_settings().share_base_url}/forgot-password"
+    # Hash deep-link into the Flutter web app (served at /app/, hash routing) —
+    # a bare /forgot-password is served by neither the backend nor the SPA.
+    link = f"{get_settings().share_base_url}/app/#/forgot-password"
     email_service.send_email(
         to=user.email,
         subject="Your Ntripi password was changed",

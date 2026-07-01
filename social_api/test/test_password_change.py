@@ -135,6 +135,9 @@ def test_change_password_sends_confirmation_email(client, monkeypatch):
     assert len(sent) == 1
     assert sent[0]["to"] == "mailer@example.com"
     assert "changed" in sent[0]["subject"].lower()
+    # "Secure your account" must deep-link into the Flutter web app (/app/, hash
+    # routing) — a bare /forgot-password is served by neither backend nor SPA.
+    assert "/app/#/forgot-password" in sent[0]["html"]
 
 
 def test_change_password_writes_audit_rows(client, monkeypatch):
