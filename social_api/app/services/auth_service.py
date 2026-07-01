@@ -405,7 +405,10 @@ def change_password(
     if not verify_password(current_password, user.password_hash):
         _record_security_event(db, user.id, "password_change_failed", ip, user_agent)
         db.commit()
-        raise AuthError("Your current password is incorrect.", http_status=401)
+        # 403 (not 401): the session is valid — only the re-auth check failed.
+        # The Flutter AuthInterceptor treats any 401 as session-dead and redirects
+        # to /login, which would kick the user off the change-password screen.
+        raise AuthError("Your current password is incorrect.", http_status=403)
 
     if _password_recently_used(db, user, new_password):
         raise AuthError(

@@ -984,8 +984,14 @@ class AppLocalizationsFr extends AppLocalizations {
   String get changePasswordSubmit => 'Changer le mot de passe';
 
   @override
+  String get changePasswordSuccessTitle => 'Mot de passe changé';
+
+  @override
   String get changePasswordSuccess =>
       'Mot de passe changé. Les autres appareils ont été déconnectés.';
+
+  @override
+  String get okButton => 'OK';
 
   @override
   String get backToSignIn => 'Retour à la connexion';

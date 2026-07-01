@@ -60,18 +60,38 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
             currentPassword: _currentController.text,
             newPassword: _newController.text,
           );
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.changePasswordSuccess)),
-      );
-      context.pop();
     } catch (e) {
       // Server `detail` carries the precise reason (wrong current / reuse /
-      // breached); extractErrorMessage surfaces it.
-      setState(() => _errorMessage = extractErrorMessage(e, l10n));
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
+      // breached); extractErrorMessage surfaces it. Stay on the screen so the
+      // user can correct the input.
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _errorMessage = extractErrorMessage(e, l10n);
+        });
+      }
+      return;
     }
+
+    if (!mounted) return;
+    setState(() => _isLoading = false);
+
+    // Confirm success, then leave only after the user acknowledges.
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        title: Text(l10n.changePasswordSuccessTitle),
+        content: Text(l10n.changePasswordSuccess),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: Text(l10n.okButton),
+          ),
+        ],
+      ),
+    );
+    if (mounted) context.pop();
   }
 
   @override

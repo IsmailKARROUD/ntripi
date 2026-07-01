@@ -1796,11 +1796,23 @@ abstract class AppLocalizations {
   /// **'Change password'**
   String get changePasswordSubmit;
 
+  /// No description provided for @changePasswordSuccessTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Password changed'**
+  String get changePasswordSuccessTitle;
+
   /// No description provided for @changePasswordSuccess.
   ///
   /// In en, this message translates to:
   /// **'Password changed. Other devices were signed out.'**
   String get changePasswordSuccess;
+
+  /// No description provided for @okButton.
+  ///
+  /// In en, this message translates to:
+  /// **'OK'**
+  String get okButton;
 
   /// No description provided for @backToSignIn.
   ///

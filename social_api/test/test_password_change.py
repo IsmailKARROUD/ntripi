@@ -56,11 +56,13 @@ def test_change_password_happy_path_rotates_and_revokes(client, monkeypatch):
         "identifier": "changer@example.com", "password": "oldpass123"}).status_code == 401
 
 
-def test_change_password_wrong_current_is_401(client, monkeypatch):
+def test_change_password_wrong_current_is_403(client, monkeypatch):
+    # 403, not 401 — a 401 would trip the Flutter AuthInterceptor into logging
+    # the user out mid-flow. The session is valid; only the re-auth check failed.
     _no_pwned(monkeypatch)
     reg = register_user(client, "wrongcur", "wrongcur@example.com", password="oldpass123")
     r = _change(client, reg["access_token"], "notmypassword1", "newpass456")
-    assert r.status_code == 401
+    assert r.status_code == 403
     assert "current password" in r.json()["detail"].lower()
 
 
