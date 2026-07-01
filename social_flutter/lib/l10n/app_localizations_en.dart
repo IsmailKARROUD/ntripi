@@ -965,14 +965,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get changePasswordSubmit => 'Change password';
 
   @override
-  String get changePasswordSuccessTitle => 'Password changed';
+  String get changePasswordConfirmMessage =>
+      'This signs you out on all your other devices. Continue?';
 
   @override
   String get changePasswordSuccess =>
       'Password changed. Other devices were signed out.';
-
-  @override
-  String get okButton => 'OK';
 
   @override
   String get backToSignIn => 'Back to sign in';

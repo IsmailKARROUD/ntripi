@@ -12,6 +12,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:social_flutter/core/api/api_client.dart';
 import 'package:social_flutter/core/ui/app_theme.dart';
+import 'package:social_flutter/core/ui/destructive_actions.dart';
 import 'package:social_flutter/core/utils/platform_utils.dart';
 import 'package:social_flutter/features/auth/providers/auth_provider.dart';
 import 'package:social_flutter/l10n/app_localizations.dart';
@@ -50,6 +51,18 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
     final l10n = AppLocalizations.of(context)!;
     if (!(_formKey.currentState?.validate() ?? false)) return;
 
+    // Consequential action — it signs out every other device — so confirm
+    // first via the shared Tier 2 helper (CLAUDE.md: never inline showDialog).
+    final confirmed = await confirmDestructiveAction(
+      context: context,
+      title: l10n.changePasswordTitle,
+      message: l10n.changePasswordConfirmMessage,
+      confirmLabel: l10n.changePasswordSubmit,
+      cancelLabel: l10n.cancel,
+      icon: Icons.lock_reset_rounded,
+    );
+    if (!confirmed || !mounted) return;
+
     setState(() {
       _isLoading = true;
       _errorMessage = null;
@@ -75,23 +88,10 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
 
     if (!mounted) return;
     setState(() => _isLoading = false);
-
-    // Confirm success, then leave only after the user acknowledges.
-    await showDialog<void>(
-      context: context,
-      barrierDismissible: false,
-      builder: (ctx) => AlertDialog(
-        title: Text(l10n.changePasswordSuccessTitle),
-        content: Text(l10n.changePasswordSuccess),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: Text(l10n.okButton),
-          ),
-        ],
-      ),
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(l10n.changePasswordSuccess)),
     );
-    if (mounted) context.pop();
+    context.pop();
   }
 
   @override
