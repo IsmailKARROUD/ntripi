@@ -69,6 +69,9 @@ class FullscreenLocationsMapScreen extends ConsumerWidget {
               initialCameraFit: CameraFit.bounds(
                 bounds: LatLngBounds.fromPoints(points),
                 padding: const EdgeInsets.all(40),
+                // Guard against zero-size bounds (single / all-identical points):
+                // an uncapped fit computes zoom=Infinity -> NaN camera -> hang.
+                maxZoom: 16,
               ),
             ),
             children: [

@@ -197,6 +197,11 @@ class ProfileMapHero extends StatelessWidget {
                                 .toList(),
                           ),
                           padding: const EdgeInsets.all(40),
+                          // A single location (or all-identical points) yields
+                          // zero-size bounds; without a finite cap flutter_map's
+                          // fit computes zoom=Infinity -> NaN camera -> infinite
+                          // tile grid -> main-thread ANR. Cap it.
+                          maxZoom: 16,
                         ),
                         interactionOptions: const InteractionOptions(
                           flags: InteractiveFlag.none,
