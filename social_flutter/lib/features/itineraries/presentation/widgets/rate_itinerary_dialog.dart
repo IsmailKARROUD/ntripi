@@ -2,8 +2,9 @@
 //
 // Bottom-sheet dialog matching the "Rate this itinerary" mockup:
 //   • Overall stars (required) — shows a thank-you line once tapped
-//   • "Want to share more?" section (optional) — Safety, Experience,
-//     Accessibility, Family-friendly sub-ratings
+//   • "Want to share more?" section (revealed once Overall is rated) —
+//     Safety, Experience, Accessibility, Family-friendly, Crowdedness sub-ratings
+//     (Crowdedness uses person glyphs instead of stars; higher = less crowded)
 //   • Save / Cancel action buttons
 
 import 'package:flutter/material.dart';
@@ -66,6 +67,7 @@ class _RateItinerarySheetState extends State<_RateItinerarySheet> {
   late int? _experience;
   late int? _accessibility;
   late int? _familyFriendly;
+  late int? _crowdedness;
   final _noteController = TextEditingController();
 
   bool _saving = false;
@@ -78,6 +80,7 @@ class _RateItinerarySheetState extends State<_RateItinerarySheet> {
     _experience = widget.current?.experienceStars;
     _accessibility = widget.current?.accessibilityStars;
     _familyFriendly = widget.current?.familyFriendlyStars;
+    _crowdedness = widget.current?.crowdednessStars;
     _noteController.text = widget.current?.note ?? '';
   }
 
@@ -124,6 +127,7 @@ class _RateItinerarySheetState extends State<_RateItinerarySheet> {
             experienceStars: _experience,
             accessibilityStars: _accessibility,
             familyFriendlyStars: _familyFriendly,
+            crowdednessStars: _crowdedness,
             note: trimmedNote.isEmpty ? null : trimmedNote,
           ));
       if (mounted) Navigator.of(context).pop();
@@ -166,12 +170,12 @@ class _RateItinerarySheetState extends State<_RateItinerarySheet> {
           Padding(
             padding: const EdgeInsets.fromLTRB(22, 4, 22, 12),
             child: Text(
-              'Overall is required. Skip any dimension you don\'t want to rate.',
+              'Rate your overall impression. Once you do, you can share more.',
               style: const TextStyle(fontSize: 12, color: kText2),
             ),
           ),
 
-          // ── All dimension rows in one SectionCard ────────────────────────
+          // ── Overall rating (required) ────────────────────────────────────
           Container(
             margin: const EdgeInsets.fromLTRB(16, 0, 16, 0),
             decoration: BoxDecoration(
@@ -180,44 +184,12 @@ class _RateItinerarySheetState extends State<_RateItinerarySheet> {
               border: Border.all(color: kBorder),
             ),
             clipBehavior: Clip.antiAlias,
-            child: Column(
-              children: [
-                _RatingSliderRow(
-                  icon: Icons.star_rounded,
-                  label: l10n.overallRatingLabel,
-                  isRequired: true,
-                  value: _overall,
-                  onChanged: (v) => setState(() => _overall = v),
-                ),
-                const Divider(height: 1, indent: 16, endIndent: 16),
-                _RatingSliderRow(
-                  icon: Icons.shield_outlined,
-                  label: l10n.safetyLabel,
-                  value: _safety,
-                  onChanged: (v) => setState(() => _safety = v),
-                ),
-                const Divider(height: 1, indent: 16, endIndent: 16),
-                _RatingSliderRow(
-                  icon: Icons.emoji_emotions_outlined,
-                  label: l10n.experienceLabel,
-                  value: _experience,
-                  onChanged: (v) => setState(() => _experience = v),
-                ),
-                const Divider(height: 1, indent: 16, endIndent: 16),
-                _RatingSliderRow(
-                  icon: Icons.accessible_outlined,
-                  label: l10n.accessibilityLabel,
-                  value: _accessibility,
-                  onChanged: (v) => setState(() => _accessibility = v),
-                ),
-                const Divider(height: 1, indent: 16, endIndent: 16),
-                _RatingSliderRow(
-                  icon: Icons.family_restroom_outlined,
-                  label: l10n.familyFriendlyLabel,
-                  value: _familyFriendly,
-                  onChanged: (v) => setState(() => _familyFriendly = v),
-                ),
-              ],
+            child: _RatingSliderRow(
+              icon: Icons.star_rounded,
+              label: l10n.overallRatingLabel,
+              isRequired: true,
+              value: _overall,
+              onChanged: (v) => setState(() => _overall = v),
             ),
           ),
 
@@ -252,6 +224,85 @@ class _RateItinerarySheetState extends State<_RateItinerarySheet> {
                 helpMessage: l10n.yourImpressionHelp,
               ),
             ),
+          ),
+
+          // ── Extra dimensions — revealed only after Overall is rated ──────
+          AnimatedSize(
+            duration: const Duration(milliseconds: 220),
+            curve: Curves.easeOut,
+            alignment: Alignment.topCenter,
+            child: _overall == null
+                ? const SizedBox(width: double.infinity)
+                : Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 14, 16, 6),
+                        child: Text(
+                          l10n.wantToShareMore.toUpperCase(),
+                          style: const TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: kText2,
+                            letterSpacing: 0.6,
+                          ),
+                        ),
+                      ),
+                      Container(
+                        margin: const EdgeInsets.fromLTRB(16, 0, 16, 0),
+                        decoration: BoxDecoration(
+                          color: kSurface,
+                          borderRadius: BorderRadius.circular(18),
+                          border: Border.all(color: kBorder),
+                        ),
+                        clipBehavior: Clip.antiAlias,
+                        child: Column(
+                          children: [
+                            _RatingSliderRow(
+                              icon: Icons.shield_outlined,
+                              label: l10n.safetyLabel,
+                              value: _safety,
+                              onChanged: (v) => setState(() => _safety = v),
+                            ),
+                            const Divider(height: 1, indent: 16, endIndent: 16),
+                            _RatingSliderRow(
+                              icon: Icons.emoji_emotions_outlined,
+                              label: l10n.experienceLabel,
+                              value: _experience,
+                              onChanged: (v) => setState(() => _experience = v),
+                            ),
+                            const Divider(height: 1, indent: 16, endIndent: 16),
+                            _RatingSliderRow(
+                              icon: Icons.accessible_outlined,
+                              label: l10n.accessibilityLabel,
+                              value: _accessibility,
+                              onChanged: (v) =>
+                                  setState(() => _accessibility = v),
+                            ),
+                            const Divider(height: 1, indent: 16, endIndent: 16),
+                            _RatingSliderRow(
+                              icon: Icons.family_restroom_outlined,
+                              label: l10n.familyFriendlyLabel,
+                              value: _familyFriendly,
+                              onChanged: (v) =>
+                                  setState(() => _familyFriendly = v),
+                            ),
+                            const Divider(height: 1, indent: 16, endIndent: 16),
+                            _RatingSliderRow(
+                              icon: Icons.groups_outlined,
+                              label: l10n.crowdednessLabel,
+                              // People glyphs (not stars) per design; higher = quieter.
+                              filledIcon: Icons.person,
+                              emptyIcon: Icons.person_outline,
+                              value: _crowdedness,
+                              onChanged: (v) =>
+                                  setState(() => _crowdedness = v),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
           ),
 
           const SizedBox(height: 20),
@@ -307,12 +358,18 @@ class _RatingSliderRow extends StatelessWidget {
   final int? value;
   final ValueChanged<int?> onChanged;
 
+  /// Rating glyphs — default stars, overridden to person icons for crowdedness.
+  final IconData filledIcon;
+  final IconData emptyIcon;
+
   const _RatingSliderRow({
     required this.icon,
     required this.label,
     required this.value,
     required this.onChanged,
     this.isRequired = false,
+    this.filledIcon = Icons.star_rounded,
+    this.emptyIcon = Icons.star_outline_rounded,
   });
 
   @override
@@ -347,9 +404,7 @@ class _RatingSliderRow extends StatelessWidget {
                   child: Padding(
                     padding: const EdgeInsets.only(right: 4),
                     child: Icon(
-                      filled
-                          ? Icons.star_rounded
-                          : Icons.star_outline_rounded,
+                      filled ? filledIcon : emptyIcon,
                       size: 26,
                       color: filled
                           ? ratingColor(value!.toDouble())

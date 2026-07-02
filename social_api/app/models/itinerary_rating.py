@@ -41,6 +41,10 @@ class ItineraryRating(Base):
             "family_friendly_stars IS NULL OR family_friendly_stars BETWEEN 1 AND 5",
             name="ck_rating_family_friendly_stars",
         ),
+        CheckConstraint(
+            "crowdedness_stars IS NULL OR crowdedness_stars BETWEEN 1 AND 5",
+            name="ck_rating_crowdedness_stars",
+        ),
     )
 
     id: Mapped[uuid.UUID] = mapped_column(
@@ -74,6 +78,9 @@ class ItineraryRating(Base):
     experience_stars: Mapped[int | None] = mapped_column(SmallInteger, nullable=True)
     accessibility_stars: Mapped[int | None] = mapped_column(SmallInteger, nullable=True)
     family_friendly_stars: Mapped[int | None] = mapped_column(SmallInteger, nullable=True)
+    # Crowdedness — higher = better (5 = pleasantly uncrowded, 1 = overcrowded),
+    # consistent with the other dimensions' higher-is-better semantics.
+    crowdedness_stars: Mapped[int | None] = mapped_column(SmallInteger, nullable=True)
 
     # Optional free-text review note (Markdown source). Rendered client-side
     # with link-inert config (no clickable URLs) to keep the surface free of

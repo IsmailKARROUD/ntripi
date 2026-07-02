@@ -10,7 +10,8 @@ enum DimensionKey {
   safety,
   experience,
   accessibility,
-  familyFriendly;
+  familyFriendly,
+  crowdedness;
 
   static DimensionKey fromPath(String p) => switch (p) {
         'overall' => overall,
@@ -18,6 +19,7 @@ enum DimensionKey {
         'experience' => experience,
         'accessibility' => accessibility,
         'family_friendly' => familyFriendly,
+        'crowdedness' => crowdedness,
         _ => overall,
       };
 
@@ -27,6 +29,7 @@ enum DimensionKey {
         experience => 'experience',
         accessibility => 'accessibility',
         familyFriendly => 'family_friendly',
+        crowdedness => 'crowdedness',
       };
 
   String get label => switch (this) {
@@ -35,6 +38,7 @@ enum DimensionKey {
         experience => 'Experience',
         accessibility => 'Accessibility',
         familyFriendly => 'Family-friendly',
+        crowdedness => 'Crowdedness',
       };
 
   String get description => switch (this) {
@@ -43,6 +47,8 @@ enum DimensionKey {
         experience => 'Quality of the overall experience',
         accessibility => 'Ease of access for all abilities',
         familyFriendly => 'Suitability for children and families',
+        // Higher = better: 5 = pleasantly uncrowded, 1 = overcrowded.
+        crowdedness => 'How comfortable the crowd levels felt',
       };
 
   IconData get icon => switch (this) {
@@ -51,5 +57,6 @@ enum DimensionKey {
         experience => Icons.emoji_emotions_outlined,
         accessibility => Icons.accessible_outlined,
         familyFriendly => Icons.family_restroom_outlined,
+        crowdedness => Icons.groups_outlined,
       };
 }

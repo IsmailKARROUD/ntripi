@@ -2774,6 +2774,18 @@ abstract class AppLocalizations {
   /// **'Optional. How suitable the trip is for families with children.'**
   String get familyFriendlyHelp;
 
+  /// No description provided for @crowdednessLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Crowdedness'**
+  String get crowdednessLabel;
+
+  /// No description provided for @crowdednessHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Optional. How comfortable the crowd levels felt — 5 = pleasantly uncrowded, 1 = overcrowded.'**
+  String get crowdednessHelp;
+
   /// Toggle label to reveal hidden optional fields on the stop/itinerary creation form
   ///
   /// In en, this message translates to:

@@ -137,7 +137,8 @@ Flutter: always use `PlaceType.fromString()` — handles legacy values, returns 
 `public` / `followers` / `restricted` / `only_me` (default). Single source of truth: `can_view_itinerary()`.
 
 ### Multi-Dimensional Ratings
-Required: `score` (1-5). Optional: `score_safety`, `score_experience`, `score_accessibility`, `score_family_friendly`. NULL = not rated. Show dimension averages only when count ≥ 3.
+Required: `score` (1-5). Optional (columns `*_stars` on `itinerary_ratings`, exposed as `*_score` in `RatingWithUser`): `safety`, `experience`, `accessibility`, `family_friendly`, `crowdedness`. NULL = not rated. All optional dimensions are higher-is-better (crowdedness: 5 = pleasantly uncrowded, 1 = overcrowded) so `ratingColor` green stays meaningful. Show dimension averages only when count ≥ 3.
+The rate dialog (`rate_itinerary_dialog.dart`) shows Overall + the review note first, then reveals the optional dimensions once Overall is rated. Crowdedness renders person glyphs instead of stars. Adding a dimension = new nullable `*_stars` column (model + migration + schemas + router mapping) plus a `DimensionKey` enum value (auto-wires the viewer/aggregate screens).
 
 ### Annotations
 Two systems — same four types (advice/caution/avoid/info):

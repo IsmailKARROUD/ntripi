@@ -1279,6 +1279,7 @@ def upsert_rating(
         existing.experience_stars = body.experience_stars
         existing.accessibility_stars = body.accessibility_stars
         existing.family_friendly_stars = body.family_friendly_stars
+        existing.crowdedness_stars = body.crowdedness_stars
         existing.note = note
         rating = existing
     else:
@@ -1290,6 +1291,7 @@ def upsert_rating(
             experience_stars=body.experience_stars,
             accessibility_stars=body.accessibility_stars,
             family_friendly_stars=body.family_friendly_stars,
+            crowdedness_stars=body.crowdedness_stars,
             note=note,
         )
         db.add(rating)
@@ -1369,6 +1371,7 @@ def get_ratings_page(
             ItineraryRating.experience_stars,
             ItineraryRating.accessibility_stars,
             ItineraryRating.family_friendly_stars,
+            ItineraryRating.crowdedness_stars,
             ItineraryRating.note,
             ItineraryRating.updated_at,
             ItineraryRating.user_id,
@@ -1396,6 +1399,7 @@ def get_ratings_page(
             experience_score=row.experience_stars,
             accessibility_score=row.accessibility_stars,
             family_friendly_score=row.family_friendly_stars,
+            crowdedness_score=row.crowdedness_stars,
             note=row.note,
             updated_at=row.updated_at,
             user=RaterInfo(

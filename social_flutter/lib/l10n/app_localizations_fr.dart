@@ -1569,6 +1569,13 @@ class AppLocalizationsFr extends AppLocalizations {
       'Optionnel. À quel point ce voyage convient aux familles avec enfants.';
 
   @override
+  String get crowdednessLabel => 'Affluence';
+
+  @override
+  String get crowdednessHelp =>
+      'Optionnel. Le confort du niveau d\'affluence — 5 = agréablement peu fréquenté, 1 = bondé.';
+
+  @override
   String get showOptionalFields => 'Afficher les champs optionnels';
 
   @override
