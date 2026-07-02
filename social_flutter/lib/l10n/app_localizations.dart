@@ -2777,13 +2777,13 @@ abstract class AppLocalizations {
   /// No description provided for @crowdednessLabel.
   ///
   /// In en, this message translates to:
-  /// **'Crowdedness'**
+  /// **'Uncrowded'**
   String get crowdednessLabel;
 
   /// No description provided for @crowdednessHelp.
   ///
   /// In en, this message translates to:
-  /// **'Optional. How comfortable the crowd levels felt — 5 = pleasantly uncrowded, 1 = overcrowded.'**
+  /// **'Optional. How uncrowded and spacious it felt — 5 = pleasantly uncrowded, 1 = overcrowded.'**
   String get crowdednessHelp;
 
   /// Toggle label to reveal hidden optional fields on the stop/itinerary creation form

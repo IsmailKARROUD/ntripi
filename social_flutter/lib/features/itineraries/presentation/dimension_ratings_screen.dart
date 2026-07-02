@@ -148,7 +148,7 @@ class DimensionRatingsScreen extends ConsumerWidget {
                         ],
                       ),
                       const SizedBox(height: 6),
-                      RatingStarRow(avg: avg),
+                      RatingStarRow(avg: avg, dimension: dimension),
                       const SizedBox(height: 6),
                       Text(
                         'Based on ${filtered.length} '

@@ -38,7 +38,7 @@ enum DimensionKey {
         experience => 'Experience',
         accessibility => 'Accessibility',
         familyFriendly => 'Family-friendly',
-        crowdedness => 'Crowdedness',
+        crowdedness => 'Uncrowded',
       };
 
   String get description => switch (this) {
@@ -48,7 +48,7 @@ enum DimensionKey {
         accessibility => 'Ease of access for all abilities',
         familyFriendly => 'Suitability for children and families',
         // Higher = better: 5 = pleasantly uncrowded, 1 = overcrowded.
-        crowdedness => 'How comfortable the crowd levels felt',
+        crowdedness => 'How uncrowded and spacious it felt',
       };
 
   IconData get icon => switch (this) {
@@ -58,5 +58,26 @@ enum DimensionKey {
         accessibility => Icons.accessible_outlined,
         familyFriendly => Icons.family_restroom_outlined,
         crowdedness => Icons.groups_outlined,
+      };
+
+  /// Uncrowded (crowdedness) is rendered inverted: filled people = crowd present
+  /// (bad/red), so the fill grows from the right and empties are colored too.
+  bool get invertedRating => this == crowdedness;
+
+  /// Glyphs used to render this dimension's score as an N-of-5 fill row.
+  /// Crowdedness uses person icons instead of stars; people have no half
+  /// variant, so the half tier falls back to a filled person.
+  ({IconData filled, IconData half, IconData empty}) get ratingGlyphs =>
+      switch (this) {
+        crowdedness => (
+            filled: Icons.person,
+            half: Icons.person,
+            empty: Icons.person_outline,
+          ),
+        _ => (
+            filled: Icons.star_rounded,
+            half: Icons.star_half_rounded,
+            empty: Icons.star_outline_rounded,
+          ),
       };
 }

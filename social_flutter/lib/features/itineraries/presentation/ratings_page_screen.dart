@@ -542,26 +542,44 @@ class _YourRatingSection extends StatelessWidget {
 
 // ─── Shared widgets ───────────────────────────────────────────────────────────
 
-/// Five partially-filled stars proportional to the average.
+/// Five partially-filled glyphs proportional to the average.
+/// Glyph set follows the dimension (people for crowdedness, stars otherwise).
 class RatingStarRow extends StatelessWidget {
   final double avg;
   final double size;
+  final DimensionKey dimension;
 
-  const RatingStarRow({super.key, required this.avg, this.size = 24});
+  const RatingStarRow({
+    super.key,
+    required this.avg,
+    this.size = 24,
+    this.dimension = DimensionKey.overall,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final glyphs = dimension.ratingGlyphs;
+    final inverted = dimension.invertedRating;
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: List.generate(5, (i) {
         final starValue = i + 1;
         final IconData icon;
-        if (avg >= starValue) {
-          icon = Icons.star_rounded;
+        if (inverted) {
+          // Uncrowded: fill grows from the right (fewer filled = quieter).
+          if (avg <= starValue - 1) {
+            icon = glyphs.filled;
+          } else if (avg <= starValue - 0.5) {
+            icon = glyphs.half;
+          } else {
+            icon = glyphs.empty;
+          }
+        } else if (avg >= starValue) {
+          icon = glyphs.filled;
         } else if (avg >= starValue - 0.5) {
-          icon = Icons.star_half_rounded;
+          icon = glyphs.half;
         } else {
-          icon = Icons.star_outline_rounded;
+          icon = glyphs.empty;
         }
         return Icon(icon, color: ratingColor(avg), size: size);
       }),
@@ -669,11 +687,16 @@ class _RatingListTileState extends State<_RatingListTile> {
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: List.generate(5, (i) {
-          final filled = i < score;
+          final glyphs = widget.dimension.ratingGlyphs;
+          final inverted = widget.dimension.invertedRating;
+          // Uncrowded: fill from the right; tint empties too.
+          final filled = inverted ? (i + 1) > score : i < score;
           return Icon(
-            filled ? Icons.star_rounded : Icons.star_outline_rounded,
+            filled ? glyphs.filled : glyphs.empty,
             size: 16,
-            color: filled ? ratingColor(score.toDouble()) : kText3,
+            color: inverted
+                ? ratingColor(score.toDouble())
+                : (filled ? ratingColor(score.toDouble()) : kText3),
           );
         }),
       ),

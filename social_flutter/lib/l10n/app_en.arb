@@ -632,8 +632,8 @@
   "accessibilityHelp": "Optional. How accessible the itinerary is (mobility, language, signage).",
   "familyFriendlyLabel": "Family-friendly",
   "familyFriendlyHelp": "Optional. How suitable the trip is for families with children.",
-  "crowdednessLabel": "Crowdedness",
-  "crowdednessHelp": "Optional. How comfortable the crowd levels felt — 5 = pleasantly uncrowded, 1 = overcrowded.",
+  "crowdednessLabel": "Uncrowded",
+  "crowdednessHelp": "Optional. How uncrowded and spacious it felt — 5 = pleasantly uncrowded, 1 = overcrowded.",
 
   "showOptionalFields": "Show optional fields",
   "@showOptionalFields": {"description": "Toggle label to reveal hidden optional fields on the stop/itinerary creation form"},

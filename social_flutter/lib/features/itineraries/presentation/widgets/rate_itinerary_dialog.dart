@@ -291,9 +291,11 @@ class _RateItinerarySheetState extends State<_RateItinerarySheet> {
                             _RatingSliderRow(
                               icon: Icons.groups_outlined,
                               label: l10n.crowdednessLabel,
-                              // People glyphs (not stars) per design; higher = quieter.
+                              // People glyphs (not stars); inverted so filled =
+                              // crowd present (red), empty = uncrowded (green).
                               filledIcon: Icons.person,
                               emptyIcon: Icons.person_outline,
+                              inverted: true,
                               value: _crowdedness,
                               onChanged: (v) =>
                                   setState(() => _crowdedness = v),
@@ -362,6 +364,10 @@ class _RatingSliderRow extends StatelessWidget {
   final IconData filledIcon;
   final IconData emptyIcon;
 
+  /// Inverted (Uncrowded): fill grows from the right and every glyph is tinted
+  /// by the value, so filled people read as "crowd present" (red = crowded).
+  final bool inverted;
+
   const _RatingSliderRow({
     required this.icon,
     required this.label,
@@ -370,6 +376,7 @@ class _RatingSliderRow extends StatelessWidget {
     this.isRequired = false,
     this.filledIcon = Icons.star_rounded,
     this.emptyIcon = Icons.star_outline_rounded,
+    this.inverted = false,
   });
 
   @override
@@ -398,7 +405,20 @@ class _RatingSliderRow extends StatelessWidget {
             children: [
               ...List.generate(5, (i) {
                 final star = i + 1;
-                final filled = value != null && star <= value!;
+                // Inverted (Uncrowded): fill grows from the right (star > value).
+                final filled = value != null &&
+                    (inverted ? star > value! : star <= value!);
+                final Color color;
+                if (value == null) {
+                  color = const Color(0xFFE4E4E4);
+                } else if (inverted) {
+                  // Tint every glyph (including empties) by the value.
+                  color = ratingColor(value!.toDouble());
+                } else {
+                  color = filled
+                      ? ratingColor(value!.toDouble())
+                      : const Color(0xFFE4E4E4);
+                }
                 return GestureDetector(
                   onTap: () => onChanged(value == star ? null : star),
                   child: Padding(
@@ -406,9 +426,7 @@ class _RatingSliderRow extends StatelessWidget {
                     child: Icon(
                       filled ? filledIcon : emptyIcon,
                       size: 26,
-                      color: filled
-                          ? ratingColor(value!.toDouble())
-                          : const Color(0xFFE4E4E4),
+                      color: color,
                     ),
                   ),
                 );

@@ -506,8 +506,8 @@
   "accessibilityHelp": "Optionnel. À quel point l'itinéraire est accessible (mobilité, langue, signalisation).",
   "familyFriendlyLabel": "Familial",
   "familyFriendlyHelp": "Optionnel. À quel point ce voyage convient aux familles avec enfants.",
-  "crowdednessLabel": "Affluence",
-  "crowdednessHelp": "Optionnel. Le confort du niveau d'affluence — 5 = agréablement peu fréquenté, 1 = bondé.",
+  "crowdednessLabel": "Tranquillité",
+  "crowdednessHelp": "Optionnel. À quel point l'endroit était peu fréquenté et spacieux — 5 = agréablement peu fréquenté, 1 = bondé.",
 
   "showOptionalFields": "Afficher les champs optionnels",
   "hideOptionalFields": "Masquer les champs optionnels"

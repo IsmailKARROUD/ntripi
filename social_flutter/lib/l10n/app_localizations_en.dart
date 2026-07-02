@@ -1543,11 +1543,11 @@ class AppLocalizationsEn extends AppLocalizations {
       'Optional. How suitable the trip is for families with children.';
 
   @override
-  String get crowdednessLabel => 'Crowdedness';
+  String get crowdednessLabel => 'Uncrowded';
 
   @override
   String get crowdednessHelp =>
-      'Optional. How comfortable the crowd levels felt — 5 = pleasantly uncrowded, 1 = overcrowded.';
+      'Optional. How uncrowded and spacious it felt — 5 = pleasantly uncrowded, 1 = overcrowded.';
 
   @override
   String get showOptionalFields => 'Show optional fields';
