@@ -161,9 +161,13 @@ final appRouter = GoRouter(
             ),
             GoRoute(
               path: '/itineraries/:id',
-              builder: (_, s) => ItineraryDetailScreen(
-                itineraryId: s.pathParameters['id']!,
-              ),
+              builder: (_, s) {
+                final extra = s.extra as Map<String, dynamic>?;
+                return ItineraryDetailScreen(
+                  itineraryId: s.pathParameters['id']!,
+                  justCreated: extra?['justCreated'] as bool? ?? false,
+                );
+              },
             ),
             GoRoute(
               path: '/itineraries/:id/edit',

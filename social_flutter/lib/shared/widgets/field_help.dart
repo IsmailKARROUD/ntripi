@@ -103,10 +103,15 @@ class LabelWithHelp extends StatelessWidget {
 /// Shows a compact help popover anchored to the widget that owns [context]
 /// (typically the `?` icon button). Tap anywhere outside the popover to
 /// dismiss it.
+///
+/// Set [pointer] to draw a small beak on the card that visually points at the
+/// anchor widget — used when the anchor is a real action button (e.g. the Edit
+/// pencil) rather than a `?` icon sitting right next to its label.
 void showFieldHelp(
   BuildContext context, {
   required String title,
   required String message,
+  bool pointer = false,
 }) {
   final renderObject = context.findRenderObject();
   if (renderObject is! RenderBox || !renderObject.attached) return;
@@ -141,10 +146,17 @@ void showFieldHelp(
       screenSize.height - safePadding.bottom - iconBottomY - verticalGap;
   final showAbove = spaceBelow < estimatedPopoverHeight;
 
-  final double? top = showAbove ? null : iconBottomY + verticalGap;
-  final double? bottom = showAbove
-      ? screenSize.height - iconTopLeft.dy + verticalGap
-      : null;
+  // Tuck the card closer to the anchor when a beak bridges the gap.
+  final gap = pointer ? 3.0 : verticalGap;
+  final double? top = showAbove ? null : iconBottomY + gap;
+  final double? bottom =
+      showAbove ? screenSize.height - iconTopLeft.dy + gap : null;
+
+  // Horizontal offset of the beak inside the card so its tip sits under the
+  // anchor's center (clamped so it stays within the card's rounded corners).
+  const beakWidth = 18.0;
+  final beakLeft = (iconCenterX - left - beakWidth / 2)
+      .clamp(14.0, popoverWidth - beakWidth - 14.0);
 
   final overlay = Overlay.of(context, rootOverlay: true);
   late OverlayEntry entry;
@@ -182,12 +194,26 @@ void showFieldHelp(
                 child: child,
               ),
             ),
-            child: _FieldHelpCard(
-              title: title,
-              message: message,
-              theme: theme,
-              onClose: dismiss,
-            ),
+            child: pointer
+                ? _PointerPopover(
+                    pointingUp: !showAbove,
+                    beakLeft: beakLeft,
+                    beakWidth: beakWidth,
+                    fill: theme.colorScheme.surface,
+                    border: theme.colorScheme.outlineVariant,
+                    card: _FieldHelpCard(
+                      title: title,
+                      message: message,
+                      theme: theme,
+                      onClose: dismiss,
+                    ),
+                  )
+                : _FieldHelpCard(
+                    title: title,
+                    message: message,
+                    theme: theme,
+                    onClose: dismiss,
+                  ),
           ),
         ),
       ],
@@ -267,4 +293,98 @@ class _FieldHelpCard extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Stacks a help [card] with a small triangular beak so the popover visibly
+/// points at its anchor. The beak sits above the card ([pointingUp]) or below
+/// it, offset by [beakLeft] so its tip lines up under the anchor's center.
+class _PointerPopover extends StatelessWidget {
+  final Widget card;
+  final bool pointingUp;
+  final double beakLeft;
+  final double beakWidth;
+  final Color fill;
+  final Color border;
+
+  const _PointerPopover({
+    required this.card,
+    required this.pointingUp,
+    required this.beakLeft,
+    required this.beakWidth,
+    required this.fill,
+    required this.border,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    const beakHeight = 9.0;
+    final beak = Positioned(
+      left: beakLeft,
+      top: pointingUp ? 0 : null,
+      bottom: pointingUp ? null : 0,
+      child: CustomPaint(
+        size: Size(beakWidth, beakHeight),
+        painter: _BeakPainter(pointingUp: pointingUp, fill: fill, border: border),
+      ),
+    );
+    // Card overlaps the beak base by 1px, and the beak is painted last (on top),
+    // so its fill hides the card's border where they meet — no seam line.
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        Padding(
+          padding: EdgeInsets.only(
+            top: pointingUp ? beakHeight - 1 : 0,
+            bottom: pointingUp ? 0 : beakHeight - 1,
+          ),
+          child: card,
+        ),
+        beak,
+      ],
+    );
+  }
+}
+
+/// Draws a triangle whose apex points toward the anchor. Only the two slanted
+/// edges are stroked (the base is left open) so the beak merges into the card.
+class _BeakPainter extends CustomPainter {
+  final bool pointingUp;
+  final Color fill;
+  final Color border;
+
+  _BeakPainter({
+    required this.pointingUp,
+    required this.fill,
+    required this.border,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final w = size.width;
+    final h = size.height;
+    final path = Path();
+    if (pointingUp) {
+      path.moveTo(0, h);
+      path.lineTo(w / 2, 0);
+      path.lineTo(w, h);
+    } else {
+      path.moveTo(0, 0);
+      path.lineTo(w / 2, h);
+      path.lineTo(w, 0);
+    }
+    canvas.drawPath(path, Paint()..color = fill);
+    canvas.drawPath(
+      path,
+      Paint()
+        ..color = border
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _BeakPainter old) =>
+      old.pointingUp != pointingUp ||
+      old.fill != fill ||
+      old.border != border;
 }

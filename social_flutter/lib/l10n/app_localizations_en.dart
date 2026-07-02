@@ -232,6 +232,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get noStopsYet => 'No stops yet';
 
   @override
+  String get addStopHintTitle => 'Add your stops';
+
+  @override
+  String get addStopHintMessage => 'To add stops, tap Edit ✎ at the top.';
+
+  @override
   String stopCount(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,

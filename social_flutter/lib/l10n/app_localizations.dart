@@ -524,6 +524,18 @@ abstract class AppLocalizations {
   /// **'No stops yet'**
   String get noStopsYet;
 
+  /// No description provided for @addStopHintTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Add your stops'**
+  String get addStopHintTitle;
+
+  /// No description provided for @addStopHintMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'To add stops, tap Edit ✎ at the top.'**
+  String get addStopHintMessage;
+
   /// No description provided for @stopCount.
   ///
   /// In en, this message translates to:

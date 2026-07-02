@@ -237,6 +237,13 @@ class AppLocalizationsFr extends AppLocalizations {
   String get noStopsYet => 'Aucune étape';
 
   @override
+  String get addStopHintTitle => 'Ajoutez vos étapes';
+
+  @override
+  String get addStopHintMessage =>
+      'Pour ajouter des étapes, appuyez sur Modifier ✎ en haut.';
+
+  @override
   String stopCount(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,

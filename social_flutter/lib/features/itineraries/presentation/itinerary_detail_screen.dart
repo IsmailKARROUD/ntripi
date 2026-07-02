@@ -57,6 +57,7 @@ import 'package:social_flutter/features/itineraries/presentation/widgets/rate_it
 import 'package:social_flutter/features/itineraries/presentation/widgets/parallel_stop_group.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/segment_card.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/track_reorder_view.dart';
+import 'package:social_flutter/shared/widgets/field_help.dart';
 import 'package:social_flutter/shared/widgets/loaders.dart';
 import 'package:social_flutter/shared/widgets/shadow_divider.dart';
 import 'package:social_flutter/core/utils/platform_utils.dart';
@@ -67,8 +68,14 @@ import 'package:social_flutter/shared/widgets/visibility_badge.dart';
 
 class ItineraryDetailScreen extends ConsumerStatefulWidget {
   final String itineraryId;
+  // Set only when navigated here right after creation → auto-show the add-stop hint once.
+  final bool justCreated;
 
-  const ItineraryDetailScreen({super.key, required this.itineraryId});
+  const ItineraryDetailScreen({
+    super.key,
+    required this.itineraryId,
+    this.justCreated = false,
+  });
 
   @override
   ConsumerState<ItineraryDetailScreen> createState() =>
@@ -82,6 +89,9 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
   // GlobalKey per track widget so we can call Scrollable.ensureVisible after a
   // cross-track move to scroll the destination track into view.
   final Map<String, GlobalKey> _trackKeys = {};
+  // Anchors the "tap Edit to add stops" popover to the hero's Edit pencil.
+  final GlobalKey _editButtonKey = GlobalKey();
+  bool _creationHintShown = false; // one-shot guard for the just-created auto-hint
   //start with map hidden on mobile to avoid unnecessary API calls and improve performance, since the map is less likely to be used on mobile and can be accessed via a button
   bool _mapVisible = false;
   final TextEditingController _descriptionController = TextEditingController();
@@ -124,6 +134,21 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
         desc; // must be set before controller.text to avoid a false dirty signal
     _descriptionController.text = desc;
     setState(() => _editMode = true);
+  }
+
+  // Pops the help card out of the hero's Edit pencil, telling the owner to tap
+  // Edit before they can add stops. currentContext is null unless that pencil is
+  // laid out (owner, read mode) — skip silently if so.
+  void _showAddStopHint() {
+    final ctx = _editButtonKey.currentContext;
+    if (ctx == null) return;
+    final l10n = AppLocalizations.of(context)!;
+    showFieldHelp(
+      ctx,
+      title: l10n.addStopHintTitle,
+      message: l10n.addStopHintMessage,
+      pointer: true, // draw a beak pointing up at the Edit pencil
+    );
   }
 
   Future<void> _undoDescription() async {
@@ -457,6 +482,18 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                   final tracks = itinerary.tracks;
                   final canEdit = isOwner && _editMode;
 
+                  // Freshly created + still empty → point the owner at Edit once.
+                  if (widget.justCreated &&
+                      isOwner &&
+                      tracks.isEmpty &&
+                      !_editMode &&
+                      !_creationHintShown) {
+                    _creationHintShown = true; // set now so we schedule exactly once
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      if (mounted) _showAddStopHint(); // hero + key laid out by now
+                    });
+                  }
+
                   final segmentByFromStop = {
                     for (final seg in itinerary.segments) seg.fromStopId: seg,
                   };
@@ -707,6 +744,7 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                             itinerary: itinerary,
                             isOwner: isOwner,
                             editMode: _editMode,
+                            editButtonKey: _editButtonKey,
                             onBack: () => context.pop(),
                             onShare: itinerary.visibility !=
                                     ItineraryVisibility.onlyMe
@@ -1081,27 +1119,24 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                             child: Padding(
                               padding: const EdgeInsets.symmetric(vertical: 48),
                               child: canEdit
+                                  // Edit mode: tapping the placeholder adds a stop.
                                   ? GestureDetector(
                                       onTap: () => context.push(
                                         '/itineraries/${widget.itineraryId}/stops/new',
                                       ),
-                                      child: Column(
-                                        children: [
-                                          const Icon(Icons.place_outlined,
-                                              size: 48, color: kText3),
-                                          const SizedBox(height: 12),
-                                          Text(l10n.noStopsYetTapPlus),
-                                        ],
-                                      ),
+                                      child: _EmptyStopsPlaceholder(
+                                          text: l10n.noStopsYetTapPlus),
                                     )
-                                  : Column(
-                                      children: [
-                                        const Icon(Icons.place_outlined,
-                                            size: 48, color: kText3),
-                                        const SizedBox(height: 12),
-                                        Text(l10n.noStopsYet),
-                                      ],
-                                    ),
+                                  : isOwner
+                                      // Read mode, owner: tap points them at Edit.
+                                      ? GestureDetector(
+                                          onTap: _showAddStopHint,
+                                          child: _EmptyStopsPlaceholder(
+                                              text: l10n.noStopsYet),
+                                        )
+                                      // Viewers: inert.
+                                      : _EmptyStopsPlaceholder(
+                                          text: l10n.noStopsYet),
                             ),
                           )
                         else
@@ -1154,6 +1189,8 @@ class _CoverHero extends StatefulWidget {
   final Itinerary itinerary;
   final bool isOwner;
   final bool editMode;
+  // Attached to the Edit pencil so the parent can anchor the add-stop hint to it.
+  final GlobalKey editButtonKey;
   final VoidCallback onBack;
   final VoidCallback? onShare;
   final VoidCallback? onEditDetails;
@@ -1165,6 +1202,7 @@ class _CoverHero extends StatefulWidget {
     required this.itinerary,
     required this.isOwner,
     required this.editMode,
+    required this.editButtonKey,
     required this.onBack,
     this.onShare,
     this.onEditDetails,
@@ -1255,6 +1293,7 @@ class _CoverHeroState extends State<_CoverHero> {
                     ),
                     const SizedBox(width: 6),
                     EditPencilButton(
+                      key: widget.editButtonKey,
                       onTap: widget.onEnterEdit,
                       iconSize: 22,
                     ),
@@ -1307,6 +1346,24 @@ class _HeroPlaceholder extends StatelessWidget {
           colors: [kForest, kCanopy],
         ),
       ),
+    );
+  }
+}
+
+// Centered place-pin + caption shown when an itinerary has no stops.
+class _EmptyStopsPlaceholder extends StatelessWidget {
+  final String text;
+
+  const _EmptyStopsPlaceholder({required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        const Icon(Icons.place_outlined, size: 48, color: kText3),
+        const SizedBox(height: 12),
+        Text(text),
+      ],
     );
   }
 }
