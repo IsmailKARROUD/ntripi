@@ -69,6 +69,9 @@ Widget _buildScreen({
 }) {
   FlutterSecureStorage.setMockInitialValues({});
   return ProviderScope(
+    // Riverpod 3 auto-retries thrown Exceptions; disable so error-state
+    // tests surface AsyncError immediately (matches app root ProviderScope).
+    retry: (_, _) => null,
     overrides: [
       searchResultsProvider.overrideWith(
         notifier ?? () => _FakeSearchResults(results ?? []),
@@ -350,6 +353,9 @@ void main() {
 
         await tester.pumpWidget(
           ProviderScope(
+            // Riverpod 3 auto-retries thrown Exceptions; disable so error-state
+            // tests surface AsyncError immediately (matches app root ProviderScope).
+            retry: (_, _) => null,
             overrides: [
               searchResultsProvider
                   .overrideWith(() => _FakeSearchResults([_makeUser()])),

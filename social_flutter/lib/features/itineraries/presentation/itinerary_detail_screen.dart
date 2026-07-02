@@ -118,7 +118,7 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
 
   void _enterEditMode() {
     final itinerary =
-        ref.read(itineraryDetailProvider(widget.itineraryId)).valueOrNull;
+        ref.read(itineraryDetailProvider(widget.itineraryId)).value;
     final desc = itinerary?.description ?? '';
     _savedDescription =
         desc; // must be set before controller.text to avoid a false dirty signal
@@ -408,11 +408,11 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
     final l10n = AppLocalizations.of(context)!;
     final itineraryAsync =
         ref.watch(itineraryDetailProvider(widget.itineraryId));
-    final currentUserId = ref.watch(myProfileProvider).valueOrNull?.id;
+    final currentUserId = ref.watch(myProfileProvider).value?.id;
     final isOwner = currentUserId != null &&
-        itineraryAsync.valueOrNull?.userId == currentUserId;
+        itineraryAsync.value?.userId == currentUserId;
 
-    final ownerUserId = itineraryAsync.valueOrNull?.userId ?? '';
+    final ownerUserId = itineraryAsync.value?.userId ?? '';
 
     return PopScope(
       canPop: !_editMode,
@@ -971,8 +971,8 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                                 const Spacer(),
                                 // Edit mode controls
                                 if (canEdit &&
-                                    itineraryAsync.valueOrNull != null &&
-                                    itineraryAsync.valueOrNull!.tracks.length >=
+                                    itineraryAsync.value != null &&
+                                    itineraryAsync.value!.tracks.length >=
                                         2) ...[
                                   EditPencilButton(
                                     icon: Icons.reorder,
@@ -982,9 +982,9 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                                       context: context,
                                       itineraryId: widget.itineraryId,
                                       tracks:
-                                          itineraryAsync.valueOrNull!.tracks,
+                                          itineraryAsync.value!.tracks,
                                       segments:
-                                          itineraryAsync.valueOrNull!.segments,
+                                          itineraryAsync.value!.segments,
                                     ),
                                   ),
                                   const SizedBox(width: 8),
@@ -1362,7 +1362,7 @@ class _OwnerRow extends ConsumerWidget {
             : owner.avatarUrl!)
         : null;
     final ratingAvg = itinerary.ratingAvg;
-    final myRating = ref.watch(myRatingProvider(itineraryId)).valueOrNull;
+    final myRating = ref.watch(myRatingProvider(itineraryId)).value;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
@@ -1623,7 +1623,7 @@ class _RateCta extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final myRating = ref.watch(myRatingProvider(itineraryId)).valueOrNull;
+    final myRating = ref.watch(myRatingProvider(itineraryId)).value;
     return SizedBox(
       width: double.infinity,
       height: 48,

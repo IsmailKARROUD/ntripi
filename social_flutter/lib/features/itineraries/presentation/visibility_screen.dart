@@ -58,7 +58,7 @@ class _VisibilityScreenState extends ConsumerState<VisibilityScreen> {
   Future<void> _handleAddPeople() async {
     final itineraryId = widget.itineraryId!;
     final savedVisibility =
-        ref.read(itineraryDetailProvider(itineraryId)).valueOrNull?.visibility;
+        ref.read(itineraryDetailProvider(itineraryId)).value?.visibility;
 
     if (savedVisibility != ItineraryVisibility.restricted) {
       setState(() => _submitting = true);
@@ -303,7 +303,7 @@ class _AllowlistSection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final allowedAsync = ref.watch(allowedUsersProvider(itineraryId));
-    final allowed = allowedAsync.valueOrNull ?? [];
+    final allowed = allowedAsync.value ?? [];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

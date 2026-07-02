@@ -33,8 +33,8 @@ class RatingsHubScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final ratingsAsync = ref.watch(ratingsPageProvider(itineraryId));
-    final myRating = ref.watch(myRatingProvider(itineraryId)).valueOrNull;
-    final page = ratingsAsync.valueOrNull;
+    final myRating = ref.watch(myRatingProvider(itineraryId)).value;
+    final page = ratingsAsync.value;
 
     return Scaffold(
       backgroundColor: kSand,

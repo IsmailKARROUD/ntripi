@@ -12,9 +12,13 @@ const _storage = FlutterSecureStorage(
   aOptions: AndroidOptions(encryptedSharedPreferences: true),
 );
 
-class LocaleNotifier extends StateNotifier<Locale> {
-  LocaleNotifier() : super(const Locale('en')) {
+class LocaleNotifier extends Notifier<Locale> {
+  @override
+  Locale build() {
+    // Kick off the async load; state updates once storage/system locale resolves.
+    // Returning a sync default keeps the first frame from blocking on secure storage.
     _load();
+    return const Locale('en');
   }
 
   Future<void> _load() async {
@@ -38,6 +42,5 @@ class LocaleNotifier extends StateNotifier<Locale> {
   }
 }
 
-final localeProvider = StateNotifierProvider<LocaleNotifier, Locale>(
-  (_) => LocaleNotifier(),
-);
+final localeProvider =
+    NotifierProvider<LocaleNotifier, Locale>(LocaleNotifier.new);

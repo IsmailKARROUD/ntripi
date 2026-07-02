@@ -7,6 +7,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart'; // Riverpod 3 exports the Override type here
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -60,28 +61,30 @@ final _testItinerary = Itinerary(
 // ── Fake notifiers ────────────────────────────────────────────────────────
 
 class _FakeUserProfile extends UserProfileNotifier {
-  _FakeUserProfile(this._user);
+  _FakeUserProfile(this._user) : super(''); // family arg unused by the fake
   final User _user;
   @override
-  Future<User> build(String userId) async => _user;
+  Future<User> build() async => _user;
 }
 
 class _FakeUserProfileLoading extends UserProfileNotifier {
+  _FakeUserProfileLoading() : super('');
   @override
-  Future<User> build(String userId) => Completer<User>().future;
+  Future<User> build() => Completer<User>().future;
 }
 
 class _FakeUserProfileError extends UserProfileNotifier {
+  _FakeUserProfileError() : super('');
   @override
-  Future<User> build(String userId) async =>
+  Future<User> build() async =>
       throw Exception('Not found');
 }
 
 class _FakeUserItineraries extends UserItinerariesNotifier {
-  _FakeUserItineraries(this._items);
+  _FakeUserItineraries(this._items) : super(''); // family arg unused by the fake
   final List<Itinerary> _items;
   @override
-  Future<List<Itinerary>> build(String userId) async => _items;
+  Future<List<Itinerary>> build() async => _items;
 }
 
 // ── Widget builder ────────────────────────────────────────────────────────
@@ -93,10 +96,10 @@ List<Override> _overrides({
 }) {
   final u = user ?? _makeUser();
   return [
-    userProfileProvider.overrideWith(
-        profileNotifier ?? () => _FakeUserProfile(u)),
+    userProfileProvider.overrideWith2(
+        (_) => (profileNotifier ?? () => _FakeUserProfile(u))()),
     userItinerariesProvider
-        .overrideWith(() => _FakeUserItineraries(itineraries ?? [_testItinerary])),
+        .overrideWith2((_) => _FakeUserItineraries(itineraries ?? [_testItinerary])),
   ];
 }
 
@@ -107,6 +110,9 @@ Widget _buildScreen({
 }) {
   FlutterSecureStorage.setMockInitialValues({});
   return ProviderScope(
+    // Riverpod 3 auto-retries thrown Exceptions; disable so error-state
+    // tests surface AsyncError immediately (matches app root ProviderScope).
+    retry: (_, _) => null,
     overrides: _overrides(
         user: user, itineraries: itineraries, profileNotifier: profileNotifier),
     child: MaterialApp(
@@ -124,6 +130,9 @@ Widget _buildRouterScreen({
 }) {
   FlutterSecureStorage.setMockInitialValues({});
   return ProviderScope(
+    // Riverpod 3 auto-retries thrown Exceptions; disable so error-state
+    // tests surface AsyncError immediately (matches app root ProviderScope).
+    retry: (_, _) => null,
     overrides: _overrides(user: user, itineraries: itineraries),
     child: MaterialApp.router(
       routerConfig: router,

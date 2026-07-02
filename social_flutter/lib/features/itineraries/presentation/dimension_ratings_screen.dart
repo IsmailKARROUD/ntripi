@@ -51,7 +51,7 @@ class DimensionRatingsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final ratingsAsync = ref.watch(ratingsPageProvider(itineraryId));
-    final page = ratingsAsync.valueOrNull;
+    final page = ratingsAsync.value;
 
     final filtered = page != null ? _filtered(page.ratings) : <RatingWithUser>[];
     final avg = _avg(filtered);

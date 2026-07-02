@@ -12,6 +12,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart'; // Riverpod 3 exports the Override type here
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -77,23 +78,24 @@ class _FakeMyProfile extends MyProfileNotifier {
 }
 
 class _FakeFollowers extends FollowersNotifier {
-  _FakeFollowers(this._items);
+  _FakeFollowers(this._items) : super(''); // family arg unused by the fake
   final List<FollowerListItem> _items;
   @override
-  Future<List<FollowerListItem>> build(String userId) async => _items;
+  Future<List<FollowerListItem>> build() async => _items;
 }
 
 class _FakeFollowersError extends FollowersNotifier {
+  _FakeFollowersError() : super('');
   @override
-  Future<List<FollowerListItem>> build(String userId) async =>
+  Future<List<FollowerListItem>> build() async =>
       throw Exception('403 Forbidden');
 }
 
 class _FakeFollowing extends FollowingNotifier {
-  _FakeFollowing(this._items);
+  _FakeFollowing(this._items) : super(''); // family arg unused by the fake
   final List<FollowerListItem> _items;
   @override
-  Future<List<FollowerListItem>> build(String userId) async => _items;
+  Future<List<FollowerListItem>> build() async => _items;
 }
 
 class _FakeFollowRequests extends FollowRequestsNotifier {
@@ -126,14 +128,17 @@ Widget _buildScreen({
 }) {
   FlutterSecureStorage.setMockInitialValues({});
   return ProviderScope(
+    // Riverpod 3 auto-retries thrown Exceptions; disable so error-state
+    // tests surface AsyncError immediately (matches app root ProviderScope).
+    retry: (_, _) => null,
     overrides: [
       myProfileProvider.overrideWith(
           () => _FakeMyProfile(myProfile ?? _ownUser)),
-      followersProvider.overrideWith(followersError
-          ? () => _FakeFollowersError()
-          : () => _FakeFollowers(followers ?? [])),
+      followersProvider.overrideWith2(followersError
+          ? (_) => _FakeFollowersError()
+          : (_) => _FakeFollowers(followers ?? [])),
       followingProvider
-          .overrideWith(() => _FakeFollowing(following ?? [])),
+          .overrideWith2((_) => _FakeFollowing(following ?? [])),
       followRequestsProvider.overrideWith(
           () => _FakeFollowRequests(requests ?? [])),
     ],
@@ -154,10 +159,10 @@ List<Override> _providerOverrides({
 }) =>
     [
       myProfileProvider.overrideWith(() => _FakeMyProfile(myProfile ?? _ownUser)),
-      followersProvider.overrideWith(followersError
-          ? () => _FakeFollowersError()
-          : () => _FakeFollowers(followers ?? [])),
-      followingProvider.overrideWith(() => _FakeFollowing(following ?? [])),
+      followersProvider.overrideWith2(followersError
+          ? (_) => _FakeFollowersError()
+          : (_) => _FakeFollowers(followers ?? [])),
+      followingProvider.overrideWith2((_) => _FakeFollowing(following ?? [])),
       followRequestsProvider
           .overrideWith(() => _FakeFollowRequests(requests ?? [])),
     ];
@@ -479,6 +484,9 @@ void main() {
       }) {
         FlutterSecureStorage.setMockInitialValues({});
         return ProviderScope(
+          // Riverpod 3 auto-retries thrown Exceptions; disable so error-state
+          // tests surface AsyncError immediately (matches app root ProviderScope).
+          retry: (_, _) => null,
           overrides: _providerOverrides(
               followers: followers, following: following),
           child: MaterialApp.router(

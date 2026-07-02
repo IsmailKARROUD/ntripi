@@ -140,6 +140,9 @@ Widget _buildScreen({
 }) {
   FlutterSecureStorage.setMockInitialValues({});
   return ProviderScope(
+    // Riverpod 3 auto-retries thrown Exceptions; disable so error-state
+    // tests surface AsyncError immediately (matches app root ProviderScope).
+    retry: (_, _) => null,
     overrides: [
       myProfileProvider.overrideWith(
           profileNotifier ?? () => _FakeMyProfile(user ?? _testUser)),

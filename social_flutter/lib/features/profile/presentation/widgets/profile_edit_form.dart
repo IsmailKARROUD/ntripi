@@ -136,7 +136,7 @@ class _ProfileEditFormState extends ConsumerState<ProfileEditForm> {
     // need to show an error snackbar.
     final messenger = ScaffoldMessenger.maybeOf(context);
     final pendingCount =
-        ref.read(followRequestsProvider).valueOrNull?.length ?? 0;
+        ref.read(followRequestsProvider).value?.length ?? 0;
     final switchingToPublic =
         widget.user.isPrivate && _editIsPrivate == false;
 

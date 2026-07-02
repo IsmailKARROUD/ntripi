@@ -43,14 +43,14 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     setState(() {}); // refresh clear button visibility
     _debounceTimer?.cancel();
     _debounceTimer = Timer(const Duration(milliseconds: 400), () {
-      ref.read(searchQueryProvider.notifier).state = value;
+      ref.read(searchQueryProvider.notifier).set(value);
     });
   }
 
   void _clearSearch() {
     _searchController.clear();
     setState(() {});
-    ref.read(searchQueryProvider.notifier).state = '';
+    ref.read(searchQueryProvider.notifier).set('');
   }
 
   @override

@@ -71,12 +71,13 @@ final followRequestsProvider =
 
 /// Loads and caches the accepted followers list for a given user ID.
 /// Returns a 403 error for private accounts the current user doesn't follow.
-class FollowersNotifier extends FamilyAsyncNotifier<List<FollowerListItem>, String> {
+class FollowersNotifier extends AsyncNotifier<List<FollowerListItem>> {
+  FollowersNotifier(this.arg); // family argument: user id
+  final String arg;
+
   @override
-  Future<List<FollowerListItem>> build(String userId) {
-    // `userId` here is the same as `arg` — Riverpod passes it as a parameter
-    // on the initial build only. Use `arg` in all other methods.
-    return ref.read(followRepositoryProvider).getFollowers(userId);
+  Future<List<FollowerListItem>> build() {
+    return ref.read(followRepositoryProvider).getFollowers(arg);
   }
 
   /// Re-fetches from the server and replaces the current state.
@@ -94,16 +95,19 @@ class FollowersNotifier extends FamilyAsyncNotifier<List<FollowerListItem>, Stri
 }
 
 final followersProvider =
-    AsyncNotifierProviderFamily<FollowersNotifier, List<FollowerListItem>, String>(
-  () => FollowersNotifier(),
+    AsyncNotifierProvider.family<FollowersNotifier, List<FollowerListItem>, String>(
+  FollowersNotifier.new,
 );
 
 /// Loads and caches the list of users that a given user follows.
 /// Returns a 403 error for private accounts the current user doesn't follow.
-class FollowingNotifier extends FamilyAsyncNotifier<List<FollowerListItem>, String> {
+class FollowingNotifier extends AsyncNotifier<List<FollowerListItem>> {
+  FollowingNotifier(this.arg); // family argument: user id
+  final String arg;
+
   @override
-  Future<List<FollowerListItem>> build(String userId) {
-    return ref.read(followRepositoryProvider).getFollowing(userId);
+  Future<List<FollowerListItem>> build() {
+    return ref.read(followRepositoryProvider).getFollowing(arg);
   }
 
   /// Re-fetches from the server and replaces the current state.
@@ -119,6 +123,6 @@ class FollowingNotifier extends FamilyAsyncNotifier<List<FollowerListItem>, Stri
 }
 
 final followingProvider =
-    AsyncNotifierProviderFamily<FollowingNotifier, List<FollowerListItem>, String>(
-  () => FollowingNotifier(),
+    AsyncNotifierProvider.family<FollowingNotifier, List<FollowerListItem>, String>(
+  FollowingNotifier.new,
 );

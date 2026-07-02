@@ -9,7 +9,10 @@ class ShareService {
   Future<void> shareItinerary(Itinerary itinerary) async {
     final url = shareUrlFor(itinerary.id);
     final caption = _buildCaption(itinerary);
-    await Share.share('$caption\n$url', subject: itinerary.title);
+    // share_plus 13 replaced the top-level Share.share() with the instance API.
+    await SharePlus.instance.share(
+      ShareParams(text: '$caption\n$url', subject: itinerary.title),
+    );
   }
 
   String _buildCaption(Itinerary itinerary) {

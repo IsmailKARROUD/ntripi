@@ -204,7 +204,7 @@ class _ItineraryFormScreenState extends ConsumerState<ItineraryFormScreen> {
   Future<void> _evictCoverImageCache() async {
     final url = ref
         .read(itineraryDetailProvider(widget.itineraryId!))
-        .valueOrNull
+        .value
         ?.coverImageUrl;
     if (url == null) return;
     final absUrl = url.startsWith('/') ? '$kApiBaseUrl$url' : url;
@@ -302,7 +302,7 @@ class _ItineraryFormScreenState extends ConsumerState<ItineraryFormScreen> {
 
   Future<void> _deleteItinerary() async {
     final itinerary =
-        ref.read(itineraryDetailProvider(widget.itineraryId!)).valueOrNull;
+        ref.read(itineraryDetailProvider(widget.itineraryId!)).value;
     final title = itinerary?.title ?? 'this itinerary';
     final router = GoRouter.of(context);
     final messenger = ScaffoldMessenger.of(context);
@@ -522,7 +522,7 @@ class _ItineraryFormScreenState extends ConsumerState<ItineraryFormScreen> {
                     initialUrl: widget.mode == ItineraryFormMode.edit
                         ? ref
                             .read(itineraryDetailProvider(widget.itineraryId!))
-                            .valueOrNull
+                            .value
                             ?.coverImageUrl
                         : null,
                     onImageSelected: (bytes, filename) => setState(() {

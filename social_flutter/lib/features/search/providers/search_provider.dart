@@ -1,6 +1,6 @@
 // features/search/providers/search_provider.dart — Search state management.
 //
-// The search query is stored in a simple StateProvider<String>.
+// The search query is stored in a simple Notifier<String>.
 // The search results are derived from that query using an AsyncNotifier.
 //
 // Debouncing (400ms) is implemented in the SearchScreen UI layer using a Timer.
@@ -18,7 +18,15 @@ final searchRepositoryProvider = Provider<SearchRepository>((ref) {
 });
 
 /// The current search query string entered by the user.
-final searchQueryProvider = StateProvider<String>((ref) => '');
+class SearchQueryNotifier extends Notifier<String> {
+  @override
+  String build() => '';
+
+  void set(String query) => state = query;
+}
+
+final searchQueryProvider =
+    NotifierProvider<SearchQueryNotifier, String>(SearchQueryNotifier.new);
 
 /// Search results, automatically updated when the query changes.
 /// Returns an empty list for empty queries (no API call needed).

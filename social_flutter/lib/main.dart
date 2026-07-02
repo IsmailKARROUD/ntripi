@@ -40,6 +40,11 @@ Future<void> main() async {
 
   runApp(
     ProviderScope(
+      // Riverpod 3 auto-retries any provider whose build throws a non-Error
+      // (incl. DioException) up to 10× with backoff. The app already renders
+      // explicit error states (Retry buttons, lock placeholders), so disable
+      // auto-retry to surface AsyncError immediately — matching Riverpod 2.
+      retry: (_, _) => null,
       overrides: [
         // Provide the singleton TokenManager so AuthInterceptor and any
         // future consumers share the same in-flight refresh dedup state.

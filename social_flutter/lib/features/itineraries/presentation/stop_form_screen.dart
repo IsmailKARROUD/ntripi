@@ -358,7 +358,7 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
     if (widget.isEditMode) return null;
     final stops = ref
             .read(itineraryDetailProvider(widget.itineraryId))
-            .valueOrNull
+            .value
             ?.stops ??
         [];
     for (final s in stops) {
@@ -617,10 +617,10 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
     final suggestionsAsync = ref.watch(placeSearchProvider);
     final duplicate = _findDuplicate();
 
-    final currentUserId = ref.watch(myProfileProvider).valueOrNull?.id;
+    final currentUserId = ref.watch(myProfileProvider).value?.id;
     final itineraryAsync = ref.watch(itineraryDetailProvider(widget.itineraryId));
     final isOwner = currentUserId != null &&
-        itineraryAsync.valueOrNull?.userId == currentUserId;
+        itineraryAsync.value?.userId == currentUserId;
     final bool showEditHint = readOnly && isOwner;
 
     // In edit mode, keep local stop in sync when provider updates.

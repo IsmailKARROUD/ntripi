@@ -146,11 +146,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         ? ref.watch(myItinerariesProvider)
         : ref.watch(userItinerariesProvider(widget.userId!));
     final pendingCount = widget.isSelf
-        ? (ref.watch(followRequestsProvider).valueOrNull?.length ?? 0)
+        ? (ref.watch(followRequestsProvider).value?.length ?? 0)
         : 0;
     final totalStops = isContentHidden
         ? 0
-        : (itinerariesAsync.valueOrNull
+        : (itinerariesAsync.value
                 ?.fold<int>(0, (s, it) => s + it.stopsCount) ??
             0);
 
@@ -159,7 +159,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     final shouldFetchLocations =
         user.coverImageUrl == null && !isContentHidden;
     final List<VisitedLocation> heroLocations = shouldFetchLocations
-        ? (ref.watch(userLocationsProvider(user.id)).valueOrNull ??
+        ? (ref.watch(userLocationsProvider(user.id)).value ??
             const <VisitedLocation>[])
         : const <VisitedLocation>[];
 

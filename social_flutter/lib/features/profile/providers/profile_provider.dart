@@ -126,7 +126,7 @@ class MyProfileNotifier extends AsyncNotifier<User> {
   /// State gets disposed, `mounted` becomes false, and the onSaved callback
   /// that closes the form never fires.
   Future<void> deleteAvatar() async {
-    await _evictImageCache(state.valueOrNull?.avatarUrl);
+    await _evictImageCache(state.value?.avatarUrl);
     await ref.read(profileRepositoryProvider).deleteAvatarImage();
     state.whenData((user) {
       state = AsyncData(user.copyWith(clearAvatarUrl: true));
@@ -147,7 +147,7 @@ class MyProfileNotifier extends AsyncNotifier<User> {
   /// Delete the cover image. Optimistic local update — see deleteAvatar for
   /// the reason refresh() must NOT be used here.
   Future<void> deleteCoverImage() async {
-    await _evictImageCache(state.valueOrNull?.coverImageUrl);
+    await _evictImageCache(state.value?.coverImageUrl);
     await ref.read(profileRepositoryProvider).deleteCoverImage();
     state.whenData((user) {
       state = AsyncData(user.copyWith(clearCoverImageUrl: true));
@@ -160,10 +160,13 @@ final myProfileProvider =
 
 /// Loads a specific user's public profile by their ID.
 /// We use a family provider so each user ID gets its own cached state.
-class UserProfileNotifier extends FamilyAsyncNotifier<User, String> {
+class UserProfileNotifier extends AsyncNotifier<User> {
+  UserProfileNotifier(this.arg); // family argument: user id
+  final String arg;
+
   @override
-  Future<User> build(String userId) async {
-    return ref.read(profileRepositoryProvider).getUserProfile(userId);
+  Future<User> build() async {
+    return ref.read(profileRepositoryProvider).getUserProfile(arg);
   }
 
   Future<void> refresh() async {
@@ -189,6 +192,6 @@ class UserProfileNotifier extends FamilyAsyncNotifier<User, String> {
 }
 
 final userProfileProvider =
-    AsyncNotifierProviderFamily<UserProfileNotifier, User, String>(
-  () => UserProfileNotifier(),
+    AsyncNotifierProvider.family<UserProfileNotifier, User, String>(
+  UserProfileNotifier.new,
 );

@@ -76,26 +76,26 @@ class _FollowListScreenState extends ConsumerState<FollowListScreen>
         ref.watch(followingProvider(widget.userId));
 
     // Determine if this is the current user's own list.
-    final myProfile = ref.watch(myProfileProvider).valueOrNull;
+    final myProfile = ref.watch(myProfileProvider).value;
     final isOwnProfile = myProfile?.id == widget.userId;
 
     // Pending requests — only relevant when viewing own profile.
     final pendingRequests = isOwnProfile
-        ? ref.watch(followRequestsProvider).valueOrNull ?? []
+        ? ref.watch(followRequestsProvider).value ?? []
         : <FollowRequestItem>[];
 
     // Counts for tab labels — use loaded-list length as best proxy.
     final followerCount =
-        followersAsync.valueOrNull?.length ?? 0;
+        followersAsync.value?.length ?? 0;
     final followingCount =
-        followingAsync.valueOrNull?.length ?? 0;
+        followingAsync.value?.length ?? 0;
 
     // Handle for the top-bar title.
     final handle = isOwnProfile
         ? (myProfile?.handle ?? '')
         : ref
                 .watch(userProfileProvider(widget.userId))
-                .valueOrNull
+                .value
                 ?.handle ??
             '';
 

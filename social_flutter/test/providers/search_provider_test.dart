@@ -4,7 +4,7 @@
 // Strategy:
 //   - Subclass SearchRepository and override searchUsers to capture calls.
 //   - Override searchRepositoryProvider in a ProviderContainer.
-//   - Drive the search query via searchQueryProvider.notifier.state = '...'.
+//   - Drive the search query via searchQueryProvider.notifier.set('...').
 //   - Debouncing lives in the UI layer (Timer), so the provider fires immediately
 //     here — no artificial delays needed.
 
@@ -83,7 +83,7 @@ void main() {
 
     test('Given whitespace-only query, returns empty list without calling repo',
         () async {
-      container.read(searchQueryProvider.notifier).state = '   ';
+      container.read(searchQueryProvider.notifier).set('   ');
       final results = await container.read(searchResultsProvider.future);
 
       expect(results, isEmpty);
@@ -94,7 +94,7 @@ void main() {
   group('SearchResultsNotifier — non-empty query', () {
     test('Given non-empty query, calls repo.searchUsers with that query',
         () async {
-      container.read(searchQueryProvider.notifier).state = 'alice';
+      container.read(searchQueryProvider.notifier).set('alice');
       await container.read(searchResultsProvider.future);
 
       expect(fakeRepo.searchCalls, ['alice']);
@@ -102,7 +102,7 @@ void main() {
 
     test('Given query with surrounding spaces, calls repo with trimmed query',
         () async {
-      container.read(searchQueryProvider.notifier).state = '  alice  ';
+      container.read(searchQueryProvider.notifier).set('  alice  ');
       await container.read(searchResultsProvider.future);
 
       expect(fakeRepo.searchCalls, ['alice']);
@@ -110,7 +110,7 @@ void main() {
 
     test('Given repo returns users, provider exposes them', () async {
       fakeRepo.usersToReturn = [_makeUser(username: 'alice')];
-      container.read(searchQueryProvider.notifier).state = 'alice';
+      container.read(searchQueryProvider.notifier).set('alice');
 
       final results = await container.read(searchResultsProvider.future);
 
@@ -120,7 +120,7 @@ void main() {
 
     test('Given repo returns empty list, provider exposes empty list', () async {
       fakeRepo.usersToReturn = [];
-      container.read(searchQueryProvider.notifier).state = 'unknown_xyz';
+      container.read(searchQueryProvider.notifier).set('unknown_xyz');
 
       final results = await container.read(searchResultsProvider.future);
 
@@ -135,7 +135,7 @@ void main() {
       expect(fakeRepo.searchCalls, isEmpty);
 
       // Update the query.
-      container.read(searchQueryProvider.notifier).state = 'bob';
+      container.read(searchQueryProvider.notifier).set('bob');
       await container.read(searchResultsProvider.future);
 
       expect(fakeRepo.searchCalls, ['bob']);
@@ -143,12 +143,12 @@ void main() {
 
     test('When query changes from non-empty to empty, repo is not called again',
         () async {
-      container.read(searchQueryProvider.notifier).state = 'alice';
+      container.read(searchQueryProvider.notifier).set('alice');
       await container.read(searchResultsProvider.future);
       expect(fakeRepo.searchCalls, hasLength(1));
 
       // Clear the query.
-      container.read(searchQueryProvider.notifier).state = '';
+      container.read(searchQueryProvider.notifier).set('');
       final results = await container.read(searchResultsProvider.future);
 
       expect(results, isEmpty);
@@ -158,10 +158,10 @@ void main() {
 
     test('When query changes between two non-empty values, repo is called twice',
         () async {
-      container.read(searchQueryProvider.notifier).state = 'alice';
+      container.read(searchQueryProvider.notifier).set('alice');
       await container.read(searchResultsProvider.future);
 
-      container.read(searchQueryProvider.notifier).state = 'bob';
+      container.read(searchQueryProvider.notifier).set('bob');
       await container.read(searchResultsProvider.future);
 
       expect(fakeRepo.searchCalls, ['alice', 'bob']);

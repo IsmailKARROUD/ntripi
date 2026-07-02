@@ -62,11 +62,16 @@ final myItinerariesProvider =
 // ItineraryDetailNotifier
 // ---------------------------------------------------------------------------
 
-class ItineraryDetailNotifier
-    extends FamilyAsyncNotifier<Itinerary, String> {
+class ItineraryDetailNotifier extends AsyncNotifier<Itinerary> {
+  // Riverpod 3 removed FamilyAsyncNotifier; the family argument (itinerary id)
+  // now arrives via the constructor and is kept in `arg` so method bodies below
+  // read identically to the pre-migration code.
+  ItineraryDetailNotifier(this.arg);
+  final String arg;
+
   @override
-  Future<Itinerary> build(String id) {
-    return ref.read(itineraryRepositoryProvider).getItinerary(id);
+  Future<Itinerary> build() {
+    return ref.read(itineraryRepositoryProvider).getItinerary(arg);
   }
 
   /// Current ETag for the If-Match header on every mutation.
@@ -277,19 +282,21 @@ class ItineraryDetailNotifier
 }
 
 final itineraryDetailProvider =
-    AsyncNotifierProviderFamily<ItineraryDetailNotifier, Itinerary, String>(
-  () => ItineraryDetailNotifier(),
+    AsyncNotifierProvider.family<ItineraryDetailNotifier, Itinerary, String>(
+  ItineraryDetailNotifier.new,
 );
 
 // ---------------------------------------------------------------------------
 // AllowedUsersNotifier
 // ---------------------------------------------------------------------------
 
-class AllowedUsersNotifier
-    extends FamilyAsyncNotifier<List<AllowedUser>, String> {
+class AllowedUsersNotifier extends AsyncNotifier<List<AllowedUser>> {
+  AllowedUsersNotifier(this.arg); // family argument: itinerary id
+  final String arg;
+
   @override
-  Future<List<AllowedUser>> build(String itineraryId) {
-    return ref.read(itineraryRepositoryProvider).getAllowedUsers(itineraryId);
+  Future<List<AllowedUser>> build() {
+    return ref.read(itineraryRepositoryProvider).getAllowedUsers(arg);
   }
 
   Future<void> addUser(String userId) async {
@@ -312,19 +319,21 @@ class AllowedUsersNotifier
 }
 
 final allowedUsersProvider =
-    AsyncNotifierProviderFamily<AllowedUsersNotifier, List<AllowedUser>, String>(
-  () => AllowedUsersNotifier(),
+    AsyncNotifierProvider.family<AllowedUsersNotifier, List<AllowedUser>, String>(
+  AllowedUsersNotifier.new,
 );
 
 // ---------------------------------------------------------------------------
 // UserItinerariesNotifier
 // ---------------------------------------------------------------------------
 
-class UserItinerariesNotifier
-    extends FamilyAsyncNotifier<List<Itinerary>, String> {
+class UserItinerariesNotifier extends AsyncNotifier<List<Itinerary>> {
+  UserItinerariesNotifier(this.arg); // family argument: user id
+  final String arg;
+
   @override
-  Future<List<Itinerary>> build(String userId) {
-    return ref.read(itineraryRepositoryProvider).getUserItineraries(userId);
+  Future<List<Itinerary>> build() {
+    return ref.read(itineraryRepositoryProvider).getUserItineraries(arg);
   }
 
   Future<void> refresh() async {
@@ -337,19 +346,22 @@ class UserItinerariesNotifier
   }
 }
 
-final userItinerariesProvider = AsyncNotifierProviderFamily<
+final userItinerariesProvider = AsyncNotifierProvider.family<
     UserItinerariesNotifier, List<Itinerary>, String>(
-  () => UserItinerariesNotifier(),
+  UserItinerariesNotifier.new,
 );
 
 // ---------------------------------------------------------------------------
 // MyRatingNotifier
 // ---------------------------------------------------------------------------
 
-class MyRatingNotifier extends FamilyAsyncNotifier<MyRating?, String> {
+class MyRatingNotifier extends AsyncNotifier<MyRating?> {
+  MyRatingNotifier(this.arg); // family argument: itinerary id
+  final String arg;
+
   @override
-  Future<MyRating?> build(String itineraryId) {
-    return ref.read(itineraryRepositoryProvider).getMyRating(itineraryId);
+  Future<MyRating?> build() {
+    return ref.read(itineraryRepositoryProvider).getMyRating(arg);
   }
 
   Future<void> submitRating(MyRating rating) async {
@@ -368,18 +380,21 @@ class MyRatingNotifier extends FamilyAsyncNotifier<MyRating?, String> {
 }
 
 final myRatingProvider =
-    AsyncNotifierProviderFamily<MyRatingNotifier, MyRating?, String>(
-  () => MyRatingNotifier(),
+    AsyncNotifierProvider.family<MyRatingNotifier, MyRating?, String>(
+  MyRatingNotifier.new,
 );
 
 // ---------------------------------------------------------------------------
 // RatingsPageNotifier
 // ---------------------------------------------------------------------------
 
-class RatingsPageNotifier extends FamilyAsyncNotifier<RatingsPage, String> {
+class RatingsPageNotifier extends AsyncNotifier<RatingsPage> {
+  RatingsPageNotifier(this.arg); // family argument: itinerary id
+  final String arg;
+
   @override
-  Future<RatingsPage> build(String itineraryId) {
-    return ref.read(itineraryRepositoryProvider).getRatingsPage(itineraryId);
+  Future<RatingsPage> build() {
+    return ref.read(itineraryRepositoryProvider).getRatingsPage(arg);
   }
 
   Future<void> refresh() async {
@@ -393,8 +408,8 @@ class RatingsPageNotifier extends FamilyAsyncNotifier<RatingsPage, String> {
 }
 
 final ratingsPageProvider =
-    AsyncNotifierProviderFamily<RatingsPageNotifier, RatingsPage, String>(
-  () => RatingsPageNotifier(),
+    AsyncNotifierProvider.family<RatingsPageNotifier, RatingsPage, String>(
+  RatingsPageNotifier.new,
 );
 
 // ---------------------------------------------------------------------------

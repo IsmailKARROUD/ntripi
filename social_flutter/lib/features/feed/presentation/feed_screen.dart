@@ -171,7 +171,7 @@ class _FeedScreenState extends ConsumerState<FeedScreen> {
             selected: {sort},
             showSelectedIcon: false,
             onSelectionChanged: (s) =>
-                ref.read(feedSortProvider.notifier).state = s.first,
+                ref.read(feedSortProvider.notifier).set(s.first),
           ),
         ],
       ),

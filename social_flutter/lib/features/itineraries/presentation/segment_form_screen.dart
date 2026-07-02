@@ -97,7 +97,7 @@ class _SegmentFormScreenState extends ConsumerState<SegmentFormScreen> {
     // Detect duplicate on a fresh create (not already resolved via Join).
     if (!_isEdit && _resolvedSegmentId == null) {
       final itinerary =
-          ref.read(itineraryDetailProvider(widget.itineraryId)).valueOrNull;
+          ref.read(itineraryDetailProvider(widget.itineraryId)).value;
       final duplicate = itinerary?.segments
           .where((s) => s.fromStopId == _fromStopId && s.toStopId == _toStopId)
           .firstOrNull;

@@ -19,7 +19,15 @@ enum FeedSort {
   const FeedSort(this.value);
 }
 
-final feedSortProvider = StateProvider<FeedSort>((ref) => FeedSort.recent);
+class FeedSortNotifier extends Notifier<FeedSort> {
+  @override
+  FeedSort build() => FeedSort.recent;
+
+  void set(FeedSort sort) => state = sort;
+}
+
+final feedSortProvider =
+    NotifierProvider<FeedSortNotifier, FeedSort>(FeedSortNotifier.new);
 
 class FeedNotifier extends AsyncNotifier<List<FeedItem>> {
   int _offset = 0;

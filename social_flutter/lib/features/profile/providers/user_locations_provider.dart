@@ -9,11 +9,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:social_flutter/features/profile/domain/visited_location.dart';
 import 'package:social_flutter/features/profile/providers/profile_provider.dart';
 
-class UserLocationsNotifier
-    extends FamilyAsyncNotifier<List<VisitedLocation>, String> {
+class UserLocationsNotifier extends AsyncNotifier<List<VisitedLocation>> {
+  UserLocationsNotifier(this.arg); // family argument: user id
+  final String arg;
+
   @override
-  Future<List<VisitedLocation>> build(String userId) async {
-    return ref.read(profileRepositoryProvider).getUserLocations(userId);
+  Future<List<VisitedLocation>> build() async {
+    return ref.read(profileRepositoryProvider).getUserLocations(arg);
   }
 
   Future<void> refresh() async {
@@ -25,7 +27,7 @@ class UserLocationsNotifier
   }
 }
 
-final userLocationsProvider = AsyncNotifierProviderFamily<
+final userLocationsProvider = AsyncNotifierProvider.family<
     UserLocationsNotifier, List<VisitedLocation>, String>(
-  () => UserLocationsNotifier(),
+  UserLocationsNotifier.new,
 );
