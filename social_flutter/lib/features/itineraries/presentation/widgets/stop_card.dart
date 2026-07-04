@@ -7,6 +7,7 @@
 //            chips (with add-note affordance) instead of dots
 
 import 'package:flutter/material.dart';
+import 'package:social_flutter/core/services/currency.dart';
 import 'package:social_flutter/core/ui/app_theme.dart';
 import 'package:social_flutter/features/itineraries/domain/annotation.dart';
 import 'package:social_flutter/features/itineraries/domain/stop.dart';
@@ -110,6 +111,29 @@ class StopCard extends StatelessWidget {
                               ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                  // Price — only when the stop is actually paid; free and
+                  // unset-cost (cost==0, not free) stops show nothing.
+                  if (!stop.isFree && stop.cost > 0)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 2),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          const Icon(Icons.payments_rounded,
+                              size: 12, color: kText3),
+                          const SizedBox(width: 2),
+                          Text(
+                            formatMoney(stop.cost, currency),
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: kText2,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
                         ],

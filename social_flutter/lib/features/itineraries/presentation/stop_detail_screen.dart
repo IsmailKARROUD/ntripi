@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:social_flutter/core/api/api_client.dart';
+import 'package:social_flutter/core/services/currency.dart';
 import 'package:social_flutter/core/ui/app_theme.dart';
 import 'package:social_flutter/features/itineraries/domain/annotation.dart';
 import 'package:social_flutter/features/itineraries/domain/stop.dart';
@@ -150,7 +151,7 @@ class _StopDetailView extends ConsumerWidget {
                     value: stop.isFree
                         ? 'Free'
                         : stop.cost > 0
-                            ? '${stop.cost.toStringAsFixed(0)} $currency'
+                            ? formatMoney(stop.cost, currency)
                             : '—',
                   ),
                 ],
@@ -527,12 +528,12 @@ class _TransitFullRow extends StatelessWidget {
 
   String _fmtLegCost(double cost, bool isFree) {
     if (isFree || cost <= 0) return 'Free';
-    return '${cost.toStringAsFixed(0)} $currency';
+    return formatMoney(cost, currency);
   }
 
   String _totalCost() {
     if (segment.totalCost <= 0) return 'Free';
-    return '${segment.totalCost.toStringAsFixed(0)} $currency';
+    return formatMoney(segment.totalCost, currency);
   }
 
   @override
