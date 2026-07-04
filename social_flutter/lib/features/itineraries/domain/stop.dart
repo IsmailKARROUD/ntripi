@@ -18,6 +18,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:social_flutter/features/itineraries/domain/annotation.dart';
+import 'package:social_flutter/l10n/app_localizations.dart';
 
 enum StopType {
   origin,
@@ -34,23 +35,24 @@ enum PlaceType {
   buy,
   playWatch,
   nature,
-  travel,
+  transport,
   healBathe,
   entertainment,
   sight;
 
-  String get label => switch (this) {
-        PlaceType.eatDrink => 'Eat & Drink',
-        PlaceType.sleep => 'Sleep',
-        PlaceType.pray => 'Pray',
-        PlaceType.learnSee => 'Learn & See',
-        PlaceType.buy => 'Buy',
-        PlaceType.playWatch => 'Play & Watch',
-        PlaceType.nature => 'Nature',
-        PlaceType.travel => 'Travel',
-        PlaceType.healBathe => 'Heal & Bathe',
-        PlaceType.entertainment => 'Entertainment',
-        PlaceType.sight => 'Sight',
+  // Localized display name — resolved against the active locale (en/fr).
+  String label(AppLocalizations l10n) => switch (this) {
+        PlaceType.eatDrink => l10n.placeTypeEatDrink,
+        PlaceType.sleep => l10n.placeTypeSleep,
+        PlaceType.pray => l10n.placeTypePray,
+        PlaceType.learnSee => l10n.placeTypeLearnSee,
+        PlaceType.buy => l10n.placeTypeBuy,
+        PlaceType.playWatch => l10n.placeTypePlayWatch,
+        PlaceType.nature => l10n.placeTypeNature,
+        PlaceType.transport => l10n.placeTypeTransport,
+        PlaceType.healBathe => l10n.placeTypeHealBathe,
+        PlaceType.entertainment => l10n.placeTypeEntertainment,
+        PlaceType.sight => l10n.placeTypeSight,
       };
 
   // Legacy DB values (stored before the camelCase rename) mapped to their
@@ -61,10 +63,12 @@ enum PlaceType {
     'museum': PlaceType.learnSee,
     'hotel': PlaceType.sleep,
     'park': PlaceType.nature,
-    'station': PlaceType.travel,
-    'airport': PlaceType.travel,
+    'station': PlaceType.transport,
+    'airport': PlaceType.transport,
     'beach': PlaceType.nature,
     'landmark': PlaceType.sight,
+    // Pre-rename value: stops stored 'travel' before the transport rename.
+    'travel': PlaceType.transport,
     'other': null,
   };
 
@@ -80,18 +84,19 @@ enum PlaceType {
     }
   }
 
-  String get hint => switch (this) {
-        PlaceType.eatDrink => 'cafe, restaurant, bar, bakery, food truck',
-        PlaceType.sleep => 'hotel, hostel, campsite, inn, lodge',
-        PlaceType.pray => 'church, mosque, temple, synagogue, shrine',
-        PlaceType.learnSee => 'museum, gallery, library, aquarium, observatory',
-        PlaceType.buy => 'shop, market, mall, boutique, stall',
-        PlaceType.playWatch => 'stadium, gym, arena, court, bowling alley',
-        PlaceType.nature => 'beach, park, forest, mountain, waterfall',
-        PlaceType.travel => 'airport, train station, bus stop, ferry terminal',
-        PlaceType.healBathe => 'spa, hot spring, pool, sauna, bathhouse',
-        PlaceType.entertainment => 'theater, cinema, concert hall, nightclub',
-        PlaceType.sight => 'monument, viewpoint, castle, square, ruin',
+  // Localized example hint shown under the label in the type picker.
+  String hint(AppLocalizations l10n) => switch (this) {
+        PlaceType.eatDrink => l10n.placeTypeHintEatDrink,
+        PlaceType.sleep => l10n.placeTypeHintSleep,
+        PlaceType.pray => l10n.placeTypeHintPray,
+        PlaceType.learnSee => l10n.placeTypeHintLearnSee,
+        PlaceType.buy => l10n.placeTypeHintBuy,
+        PlaceType.playWatch => l10n.placeTypeHintPlayWatch,
+        PlaceType.nature => l10n.placeTypeHintNature,
+        PlaceType.transport => l10n.placeTypeHintTransport,
+        PlaceType.healBathe => l10n.placeTypeHintHealBathe,
+        PlaceType.entertainment => l10n.placeTypeHintEntertainment,
+        PlaceType.sight => l10n.placeTypeHintSight,
       };
 
   Color get color => switch (this) {
@@ -102,7 +107,7 @@ enum PlaceType {
         PlaceType.buy => const Color(0xFFD81B60),
         PlaceType.playWatch => const Color(0xFF43A047),
         PlaceType.nature => const Color(0xFF2E7D32),
-        PlaceType.travel => const Color(0xFF546E7A),
+        PlaceType.transport => const Color(0xFF546E7A),
         PlaceType.healBathe => const Color(0xFF0097A7),
         PlaceType.entertainment => const Color(0xFF6A1B9A),
         PlaceType.sight => const Color(0xFFF57F17),
@@ -116,7 +121,7 @@ enum PlaceType {
         PlaceType.buy => Icons.shopping_bag_outlined,
         PlaceType.playWatch => Icons.sports,
         PlaceType.nature => Icons.park_outlined,
-        PlaceType.travel => Icons.directions_transit,
+        PlaceType.transport => Icons.directions_transit,
         PlaceType.healBathe => Icons.spa_outlined,
         PlaceType.entertainment => Icons.theater_comedy_outlined,
         PlaceType.sight => Icons.photo_camera_outlined,

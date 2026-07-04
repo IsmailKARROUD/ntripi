@@ -89,7 +89,7 @@ class Stop(Base):
 
     # 11 purpose-based categories (camelCase strings):
     # eatDrink | sleep | pray | learnSee | buy | playWatch | nature |
-    # travel | healBathe | entertainment | sight
+    # transport | healBathe | entertainment | sight
     place_type: Mapped[str | None] = mapped_column(String(50), nullable=True)
 
     duration_min: Mapped[int | None] = mapped_column(Integer, nullable=True)

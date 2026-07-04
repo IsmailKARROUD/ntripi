@@ -965,7 +965,7 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                         icon: _placeType?.icon ?? Icons.category_rounded,
                         iconColor: _placeType?.color ?? kForest,
                         label: l10n.placeTypeLabel.toUpperCase(),
-                        value: _placeType?.label ?? '—',
+                        value: _placeType?.label(l10n) ?? '—',
                         onTap: readOnly ? null : _showPlaceTypePicker,
                       ),
                       const _SFDivider(),
@@ -1218,6 +1218,7 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                 child: ListView(
                   shrinkWrap: true,
                   children: PlaceType.values.map((t) {
+                    final l10n = AppLocalizations.of(context)!;
                     final selected = _placeType == t;
                     return ListTile(
                       leading: Container(
@@ -1230,10 +1231,10 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                         alignment: Alignment.center,
                         child: Icon(t.icon, size: 18, color: t.color),
                       ),
-                      title: Text(t.label,
+                      title: Text(t.label(l10n),
                           style: const TextStyle(
                               fontWeight: FontWeight.w700, color: kBark)),
-                      subtitle: Text(t.hint,
+                      subtitle: Text(t.hint(l10n),
                           style: const TextStyle(
                               fontSize: 11, color: kText2)),
                       trailing: selected

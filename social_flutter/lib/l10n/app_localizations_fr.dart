@@ -1289,6 +1289,80 @@ class AppLocalizationsFr extends AppLocalizations {
   String get selectPlaceType => 'Sélectionner le type';
 
   @override
+  String get placeTypeEatDrink => 'Manger & Boire';
+
+  @override
+  String get placeTypeSleep => 'Dormir';
+
+  @override
+  String get placeTypePray => 'Prier';
+
+  @override
+  String get placeTypeLearnSee => 'Apprendre & Voir';
+
+  @override
+  String get placeTypeBuy => 'Acheter';
+
+  @override
+  String get placeTypePlayWatch => 'Jouer & Regarder';
+
+  @override
+  String get placeTypeNature => 'Nature';
+
+  @override
+  String get placeTypeTransport => 'Transport';
+
+  @override
+  String get placeTypeHealBathe => 'Soins & Bains';
+
+  @override
+  String get placeTypeEntertainment => 'Divertissement';
+
+  @override
+  String get placeTypeSight => 'Site';
+
+  @override
+  String get placeTypeHintEatDrink =>
+      'café, restaurant, bar, boulangerie, food truck';
+
+  @override
+  String get placeTypeHintSleep => 'hôtel, auberge, camping, gîte, lodge';
+
+  @override
+  String get placeTypeHintPray =>
+      'église, mosquée, temple, synagogue, sanctuaire';
+
+  @override
+  String get placeTypeHintLearnSee =>
+      'musée, galerie, bibliothèque, aquarium, observatoire';
+
+  @override
+  String get placeTypeHintBuy => 'boutique, marché, centre commercial, échoppe';
+
+  @override
+  String get placeTypeHintPlayWatch =>
+      'stade, salle de sport, arène, court, bowling';
+
+  @override
+  String get placeTypeHintNature => 'plage, parc, forêt, montagne, cascade';
+
+  @override
+  String get placeTypeHintTransport =>
+      'aéroport, gare, arrêt de bus, terminal de ferry';
+
+  @override
+  String get placeTypeHintHealBathe =>
+      'spa, source chaude, piscine, sauna, bains';
+
+  @override
+  String get placeTypeHintEntertainment =>
+      'théâtre, cinéma, salle de concert, boîte de nuit';
+
+  @override
+  String get placeTypeHintSight =>
+      'monument, point de vue, château, place, ruines';
+
+  @override
   String get recommendedTimeLabel => 'Temps recommandé à passer';
 
   @override

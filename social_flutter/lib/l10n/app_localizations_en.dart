@@ -1265,6 +1265,78 @@ class AppLocalizationsEn extends AppLocalizations {
   String get selectPlaceType => 'Select place type';
 
   @override
+  String get placeTypeEatDrink => 'Eat & Drink';
+
+  @override
+  String get placeTypeSleep => 'Sleep';
+
+  @override
+  String get placeTypePray => 'Pray';
+
+  @override
+  String get placeTypeLearnSee => 'Learn & See';
+
+  @override
+  String get placeTypeBuy => 'Buy';
+
+  @override
+  String get placeTypePlayWatch => 'Play & Watch';
+
+  @override
+  String get placeTypeNature => 'Nature';
+
+  @override
+  String get placeTypeTransport => 'Transport';
+
+  @override
+  String get placeTypeHealBathe => 'Heal & Bathe';
+
+  @override
+  String get placeTypeEntertainment => 'Entertainment';
+
+  @override
+  String get placeTypeSight => 'Sight';
+
+  @override
+  String get placeTypeHintEatDrink =>
+      'cafe, restaurant, bar, bakery, food truck';
+
+  @override
+  String get placeTypeHintSleep => 'hotel, hostel, campsite, inn, lodge';
+
+  @override
+  String get placeTypeHintPray => 'church, mosque, temple, synagogue, shrine';
+
+  @override
+  String get placeTypeHintLearnSee =>
+      'museum, gallery, library, aquarium, observatory';
+
+  @override
+  String get placeTypeHintBuy => 'shop, market, mall, boutique, stall';
+
+  @override
+  String get placeTypeHintPlayWatch =>
+      'stadium, gym, arena, court, bowling alley';
+
+  @override
+  String get placeTypeHintNature => 'beach, park, forest, mountain, waterfall';
+
+  @override
+  String get placeTypeHintTransport =>
+      'airport, train station, bus stop, ferry terminal';
+
+  @override
+  String get placeTypeHintHealBathe =>
+      'spa, hot spring, pool, sauna, bathhouse';
+
+  @override
+  String get placeTypeHintEntertainment =>
+      'theater, cinema, concert hall, nightclub';
+
+  @override
+  String get placeTypeHintSight => 'monument, viewpoint, castle, square, ruin';
+
+  @override
   String get recommendedTimeLabel => 'Recommended time to spend';
 
   @override

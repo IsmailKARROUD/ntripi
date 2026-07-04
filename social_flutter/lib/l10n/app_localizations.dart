@@ -2306,6 +2306,138 @@ abstract class AppLocalizations {
   /// **'Select place type'**
   String get selectPlaceType;
 
+  /// No description provided for @placeTypeEatDrink.
+  ///
+  /// In en, this message translates to:
+  /// **'Eat & Drink'**
+  String get placeTypeEatDrink;
+
+  /// No description provided for @placeTypeSleep.
+  ///
+  /// In en, this message translates to:
+  /// **'Sleep'**
+  String get placeTypeSleep;
+
+  /// No description provided for @placeTypePray.
+  ///
+  /// In en, this message translates to:
+  /// **'Pray'**
+  String get placeTypePray;
+
+  /// No description provided for @placeTypeLearnSee.
+  ///
+  /// In en, this message translates to:
+  /// **'Learn & See'**
+  String get placeTypeLearnSee;
+
+  /// No description provided for @placeTypeBuy.
+  ///
+  /// In en, this message translates to:
+  /// **'Buy'**
+  String get placeTypeBuy;
+
+  /// No description provided for @placeTypePlayWatch.
+  ///
+  /// In en, this message translates to:
+  /// **'Play & Watch'**
+  String get placeTypePlayWatch;
+
+  /// No description provided for @placeTypeNature.
+  ///
+  /// In en, this message translates to:
+  /// **'Nature'**
+  String get placeTypeNature;
+
+  /// No description provided for @placeTypeTransport.
+  ///
+  /// In en, this message translates to:
+  /// **'Transport'**
+  String get placeTypeTransport;
+
+  /// No description provided for @placeTypeHealBathe.
+  ///
+  /// In en, this message translates to:
+  /// **'Heal & Bathe'**
+  String get placeTypeHealBathe;
+
+  /// No description provided for @placeTypeEntertainment.
+  ///
+  /// In en, this message translates to:
+  /// **'Entertainment'**
+  String get placeTypeEntertainment;
+
+  /// No description provided for @placeTypeSight.
+  ///
+  /// In en, this message translates to:
+  /// **'Sight'**
+  String get placeTypeSight;
+
+  /// No description provided for @placeTypeHintEatDrink.
+  ///
+  /// In en, this message translates to:
+  /// **'cafe, restaurant, bar, bakery, food truck'**
+  String get placeTypeHintEatDrink;
+
+  /// No description provided for @placeTypeHintSleep.
+  ///
+  /// In en, this message translates to:
+  /// **'hotel, hostel, campsite, inn, lodge'**
+  String get placeTypeHintSleep;
+
+  /// No description provided for @placeTypeHintPray.
+  ///
+  /// In en, this message translates to:
+  /// **'church, mosque, temple, synagogue, shrine'**
+  String get placeTypeHintPray;
+
+  /// No description provided for @placeTypeHintLearnSee.
+  ///
+  /// In en, this message translates to:
+  /// **'museum, gallery, library, aquarium, observatory'**
+  String get placeTypeHintLearnSee;
+
+  /// No description provided for @placeTypeHintBuy.
+  ///
+  /// In en, this message translates to:
+  /// **'shop, market, mall, boutique, stall'**
+  String get placeTypeHintBuy;
+
+  /// No description provided for @placeTypeHintPlayWatch.
+  ///
+  /// In en, this message translates to:
+  /// **'stadium, gym, arena, court, bowling alley'**
+  String get placeTypeHintPlayWatch;
+
+  /// No description provided for @placeTypeHintNature.
+  ///
+  /// In en, this message translates to:
+  /// **'beach, park, forest, mountain, waterfall'**
+  String get placeTypeHintNature;
+
+  /// No description provided for @placeTypeHintTransport.
+  ///
+  /// In en, this message translates to:
+  /// **'airport, train station, bus stop, ferry terminal'**
+  String get placeTypeHintTransport;
+
+  /// No description provided for @placeTypeHintHealBathe.
+  ///
+  /// In en, this message translates to:
+  /// **'spa, hot spring, pool, sauna, bathhouse'**
+  String get placeTypeHintHealBathe;
+
+  /// No description provided for @placeTypeHintEntertainment.
+  ///
+  /// In en, this message translates to:
+  /// **'theater, cinema, concert hall, nightclub'**
+  String get placeTypeHintEntertainment;
+
+  /// No description provided for @placeTypeHintSight.
+  ///
+  /// In en, this message translates to:
+  /// **'monument, viewpoint, castle, square, ruin'**
+  String get placeTypeHintSight;
+
   /// No description provided for @recommendedTimeLabel.
   ///
   /// In en, this message translates to:

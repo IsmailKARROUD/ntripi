@@ -139,7 +139,7 @@ Constraints: UNIQUE(itinerary_id, rank). A track is always non-empty — it is c
 | place_address| TEXT          | Nullable                                                             |
 | lat          | NUMERIC(9,6)  | Nullable — ~11cm precision                                           |
 | lng          | NUMERIC(9,6)  | Nullable                                                             |
-| place_type   | VARCHAR(50)   | Nullable — camelCase: eatDrink/sleep/pray/learnSee/buy/playWatch/nature/travel/healBathe/entertainment/sight |
+| place_type   | VARCHAR(50)   | Nullable — camelCase: eatDrink/sleep/pray/learnSee/buy/playWatch/nature/transport/healBathe/entertainment/sight |
 | duration_min | INTEGER       | Nullable                                                             |
 | cost         | NUMERIC(10,2) | Default 0.00                                                         |
 | is_free      | BOOLEAN       | Explicitly free (park, beach, etc.)                                  |
