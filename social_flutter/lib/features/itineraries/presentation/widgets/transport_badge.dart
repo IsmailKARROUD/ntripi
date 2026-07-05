@@ -3,6 +3,7 @@
 // Displays: mode icon · leg summary · per-leg cost · per-leg duration.
 
 import 'package:flutter/material.dart';
+import 'package:social_flutter/core/services/currency.dart';
 import 'package:social_flutter/core/ui/app_theme.dart';
 import 'package:social_flutter/features/itineraries/domain/transport_leg.dart';
 
@@ -17,7 +18,7 @@ class TransportBadge extends StatelessWidget {
   // so the badge doesn't show a misleading "0.00" or empty label.
   String? get _costLabel {
     if (leg.isFree) return 'Free';
-    if (leg.cost > 0) return '${leg.cost.toStringAsFixed(2)} $currency';
+    if (leg.cost > 0) return formatMoney(leg.cost, currency);
     return null;
   }
 

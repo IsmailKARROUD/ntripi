@@ -1,6 +1,7 @@
 // features/itineraries/domain/itinerary.dart — Itinerary Dart model.
 
 import 'package:flutter/material.dart';
+import 'package:social_flutter/core/services/currency.dart';
 import 'package:social_flutter/features/itineraries/domain/itinerary_annotation.dart';
 import 'package:social_flutter/features/itineraries/domain/stop.dart';
 import 'package:social_flutter/features/itineraries/domain/track.dart';
@@ -253,7 +254,7 @@ class Itinerary {
 
   String get formattedCost {
     if (totalCost <= 0.0) return 'Free';
-    return '${totalCost.toStringAsFixed(2)} $currency';
+    return formatMoney(totalCost, currency);
   }
 
   /// The origin stop (first stop in the first track), if any.

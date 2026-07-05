@@ -4,6 +4,7 @@
 // They are read-only in Flutter; the backend recalculates them on every
 // segment create / update.
 
+import 'package:social_flutter/core/services/currency.dart';
 import 'package:social_flutter/features/itineraries/domain/transport_leg.dart';
 
 class TransitSegment {
@@ -89,6 +90,6 @@ class TransitSegment {
 
   String formattedCost(String currency) {
     if (totalCost <= 0.0) return 'Free';
-    return '${totalCost.toStringAsFixed(2)} $currency';
+    return formatMoney(totalCost, currency);
   }
 }

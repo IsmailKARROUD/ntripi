@@ -13,6 +13,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:social_flutter/core/api/api_client.dart';
+import 'package:social_flutter/core/services/currency.dart';
 import 'package:social_flutter/core/ui/app_theme.dart';
 import 'package:social_flutter/features/itineraries/domain/transit_segment.dart';
 import 'package:social_flutter/features/itineraries/domain/transport_leg.dart';
@@ -136,7 +137,7 @@ class _SegmentCardState extends ConsumerState<SegmentCard> {
 
     String fmtCost(double cost, bool isFree) {
       if (isFree || cost <= 0) return 'Free';
-      return '${cost.toStringAsFixed(0)} ${widget.currency}';
+      return formatMoney(cost, widget.currency);
     }
 
     String fmtMin(int? m) {
@@ -155,7 +156,7 @@ class _SegmentCardState extends ConsumerState<SegmentCard> {
         segment.totalDurationMin > 0 ? fmtMin(segment.totalDurationMin) : '';
     final totalCost = segment.totalCost <= 0
         ? 'Free'
-        : '${segment.totalCost.toStringAsFixed(0)} ${widget.currency}';
+        : formatMoney(segment.totalCost, widget.currency);
 
     return Container(
       margin: const EdgeInsets.fromLTRB(28, 6, 28, 6),
@@ -336,7 +337,7 @@ class _TransitRow extends StatelessWidget {
 
   String _fmtCost(double cost, bool isFree) {
     if (isFree || cost <= 0) return 'Free';
-    return '${cost.toStringAsFixed(0)} $currency';
+    return formatMoney(cost, currency);
   }
 
   String _fmtMin(int? minutes) {
@@ -350,7 +351,7 @@ class _TransitRow extends StatelessWidget {
 
   String _totalCost() {
     if (segment.totalCost <= 0) return 'Free';
-    return '${segment.totalCost.toStringAsFixed(0)} $currency';
+    return formatMoney(segment.totalCost, currency);
   }
 
   String _totalDuration() => _fmtMin(segment.totalDurationMin);
