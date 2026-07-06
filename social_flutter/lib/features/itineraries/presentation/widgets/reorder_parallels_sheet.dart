@@ -98,11 +98,12 @@ class _ReorderParallelsSheetState
 
   Future<bool> _confirmDiscardIfDirty() async {
     if (!_dirty) return true;
+    final l10n = AppLocalizations.of(context)!;
     return confirmDestructiveAction(
       context: context,
-      title: 'Discard changes?',
-      message: 'Your reorder will not be saved.',
-      confirmLabel: 'Discard',
+      title: l10n.discardChangesTitle,
+      message: l10n.discardReorderMessage,
+      confirmLabel: l10n.discardButton,
     );
   }
 
@@ -129,10 +130,8 @@ class _ReorderParallelsSheetState
       if (!mounted) return;
       setState(() => _busy = false);
       messenger.showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Itinerary changed elsewhere — close and reopen to see the latest order.',
-          ),
+        SnackBar(
+          content: Text(AppLocalizations.of(context)!.itineraryChangedElsewhere),
         ),
       );
       return;
@@ -168,11 +167,13 @@ class _ReorderParallelsSheetState
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // ── Header ──────────────────────────────────────────────────
-                const Padding(
-                  padding: EdgeInsets.fromLTRB(6, 6, 6, 4),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(6, 6, 6, 4),
                   child: Text(
-                    'REORDER ALTERNATIVES',
-                    style: TextStyle(
+                    AppLocalizations.of(context)!
+                        .reorderAlternativesTitle
+                        .toUpperCase(),
+                    style: const TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w700,
                       color: kText2,
@@ -180,11 +181,11 @@ class _ReorderParallelsSheetState
                     ),
                   ),
                 ),
-                const Padding(
-                  padding: EdgeInsets.fromLTRB(6, 0, 6, 10),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(6, 0, 6, 10),
                   child: Text(
-                    'Drag to change which option appears first. Tap Save to apply.',
-                    style: TextStyle(fontSize: 12, color: kText2),
+                    AppLocalizations.of(context)!.reorderAlternativesHint,
+                    style: const TextStyle(fontSize: 12, color: kText2),
                   ),
                 ),
 

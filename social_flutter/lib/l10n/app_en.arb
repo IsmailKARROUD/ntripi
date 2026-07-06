@@ -660,5 +660,255 @@
   "showOptionalFields": "Show optional fields",
   "@showOptionalFields": {"description": "Toggle label to reveal hidden optional fields on the stop/itinerary creation form"},
   "hideOptionalFields": "Hide optional fields",
-  "@hideOptionalFields": {"description": "Toggle label to hide optional fields again on the stop/itinerary creation form"}
+  "@hideOptionalFields": {"description": "Toggle label to hide optional fields again on the stop/itinerary creation form"},
+
+  "transportModeWalk": "Walk",
+  "transportModeBus": "Bus",
+  "transportModeTram": "Tram",
+  "transportModeMetro": "Metro",
+  "transportModeTrain": "Train",
+  "transportModeTaxi": "Taxi",
+  "transportModeUber": "Uber",
+  "transportModeBike": "Bike",
+  "transportModeFerry": "Ferry",
+  "transportModeCar": "Car",
+  "transportModeAirplane": "Airplane",
+
+  "dimensionOverall": "Overall",
+  "dimensionOverallDesc": "General impression",
+  "dimensionSafetyDesc": "How safe you felt throughout",
+  "dimensionExperienceDesc": "Quality of the overall experience",
+  "dimensionAccessibilityDesc": "Ease of access for all abilities",
+  "dimensionFamilyFriendlyDesc": "Suitability for children and families",
+  "dimensionCrowdednessDesc": "How uncrowded and spacious it felt",
+  "dimensionRatingTitle": "{label} Rating",
+  "@dimensionRatingTitle": {
+    "placeholders": {
+      "label": { "type": "String" }
+    }
+  },
+  "noRatingsYetFor": "No ratings yet for {label}",
+  "@noRatingsYetFor": {
+    "placeholders": {
+      "label": { "type": "String" }
+    }
+  },
+  "basedOnRatings": "{count, plural, one{Based on {count} rating} other{Based on {count} ratings}}",
+  "@basedOnRatings": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "ratersLabel": "Raters",
+
+  "annotationAdviceDesc": "Something useful or pro-tip.",
+  "annotationCautionDesc": "Pay attention — surprises possible.",
+  "annotationAvoidDesc": "Don't do this. Save your time.",
+  "annotationInfoDesc": "A neutral fact worth knowing.",
+
+  "unknownUser": "Unknown",
+  "timeAgoMonths": "{count}mo ago",
+  "@timeAgoMonths": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "timeAgoDays": "{count}d ago",
+  "@timeAgoDays": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "timeAgoHours": "{count}h ago",
+  "@timeAgoHours": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "timeAgoMinutes": "{count}min ago",
+  "@timeAgoMinutes": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "timeJustNow": "Just now",
+
+  "yearsAbbrev": "y",
+
+  "timeLabel": "Time",
+  "transitLabel": "Transit",
+  "noLegsYetTapAdd": "No legs yet. Tap ＋ to add.",
+  "segmentNeedsOneLeg": "A segment needs at least one leg. Delete the segment instead.",
+  "fromStopName": "From {name}",
+  "@fromStopName": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "toStopName": "To {name}",
+  "@toStopName": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+
+  "visibilityPublicDesc": "Anyone with the link can view.",
+  "visibilityFollowersDesc": "Only people who follow you.",
+  "visibilityRestrictedDesc": "Only people you allow.",
+  "visibilityOnlyMeDesc": "Just you.",
+  "saveItineraryFirstAllowlist": "Save the itinerary first, then manage your allowlist from the edit screen.",
+  "allowlistLabel": "Allowlist",
+  "personCount": "{count, plural, one{{count} person} other{{count} people}}",
+  "@personCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "removedFromAllowlist": "Removed {name} from allowlist",
+  "@removedFromAllowlist": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "addPeople": "Add people",
+
+  "otherOption": "Other",
+  "thisItineraryFallback": "this itinerary",
+  "discardReorderMessage": "Your reorder will not be saved.",
+  "emptyTrackName": "(empty)",
+  "unnamedStop": "(unnamed)",
+  "unknownStop": "(unknown)",
+  "dragToChangeTrackOrder": "Drag to change the track order",
+  "transitSegmentsWillBeDeleted": "{count, plural, one{1 transit segment will be deleted} other{{count} transit segments will be deleted}}",
+  "@transitSegmentsWillBeDeleted": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "andMoreCount": "… and {count} more",
+  "@andMoreCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "altsCount": "{count, plural, one{{count} alt} other{{count} alts}}",
+  "@altsCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "segmentToWillBeDeleted": "→ {name}  —  segment will be deleted",
+  "@segmentToWillBeDeleted": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+
+  "reorderAlternativesTitle": "Reorder alternatives",
+  "reorderAlternativesHint": "Drag to change which option appears first. Tap Save to apply.",
+  "emptyTrackLabel": "(empty track)",
+  "moveStopToLabel": "Move stop to",
+  "messageLabel": "Message",
+  "annotationKeepShortHint": "Keep it short — under 200 characters reads best on small screens.",
+  "transportModeSection": "Transport mode",
+  "lineDirectionSection": "Line & direction",
+  "durationCostSection": "Duration & cost",
+  "allRatersLabel": "All raters",
+  "travelersRatedThis": "{count, plural, one{{count} traveler rated this} other{{count} travelers rated this}}",
+  "@travelersRatedThis": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "byDimensionLabel": "By dimension",
+  "notEnoughRatings": "Not enough ratings",
+  "youRatedThis": "You rated this",
+  "changeButton": "Change",
+  "hideReview": "Hide review",
+  "readReview": "Read review",
+
+  "notesLabel": "Notes",
+  "viewLess": "view less",
+  "viewMore": "... view more",
+  "addNoteButton": "Add note",
+  "imageTooLarge": "Image is too large (max 10 MB).",
+  "couldNotLoadImage": "Could not load image. Please try another.",
+  "pinchToZoomHint": "Pinch to zoom · Drag to reposition",
+  "addCoverImage": "Add a cover image",
+  "coverOptionalMapFallback": "Optional — the map will be used otherwise.",
+  "mapTapToPlacePin": "Tap the map to place a pin",
+  "mapTapToMovePin": "Tap elsewhere to move the pin, then tap Confirm",
+  "nothingToPreview": "Nothing to preview yet.",
+  "rateOverallFirstHint": "Rate your overall impression. Once you do, you can share more.",
+  "splashTagline": "Discover & share travel itineraries\ncrafted by real explorers",
+  "splashMotto": "Explore the world, one route at a time",
+  "tripsPillLabel": "trips",
+  "stopsPillLabel": "stops",
+  "travelledPillLabel": "travelled",
+  "stopFallbackName": "Stop",
+  "undoLabel": "Undo",
+  "updateYourRating": "Update your rating",
+  "moveActionLabel": "move",
+  "reorderActionLabel": "reorder",
+  "aStopFallback": "A stop",
+  "locationLabel": "Location",
+  "noLocationSet": "No location set",
+  "detailsSection": "Details",
+  "addLanguageTitle": "Add language",
+  "alreadyInItinerary": "{name} is already in this itinerary.",
+  "@alreadyInItinerary": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "stopNumberOfTotal": "Stop {n} of {total}",
+  "@stopNumberOfTotal": {
+    "placeholders": {
+      "n": { "type": "int" },
+      "total": { "type": "int" }
+    }
+  },
+  "shareCaption": "Check out \"{title}\" on Ntripi — {stops}, {duration}",
+  "@shareCaption": {
+    "placeholders": {
+      "title": { "type": "String" },
+      "stops": { "type": "String" },
+      "duration": { "type": "String" }
+    }
+  },
+
+  "apiErrorNotAuthenticated": "You are not signed in.",
+  "apiErrorAccountDeactivated": "Your account has been deactivated.",
+  "apiErrorEmailUnverified": "Verify your email via Google to do this.",
+  "apiErrorItineraryNotFound": "Itinerary not found.",
+  "apiErrorItineraryNotOwner": "You don't have permission to modify this itinerary.",
+  "apiErrorIfMatchRequired": "This change could not be saved — please reload and try again.",
+  "apiErrorItineraryStale": "The itinerary was modified — please reload.",
+  "apiErrorWaitlistContactRequired": "Provide at least an email or a WhatsApp number.",
+  "apiErrorGoogleTokenInvalid": "Invalid Google token.",
+  "apiErrorInvalidGrant": "Your session expired. Please sign in again.",
+  "apiErrorStopNotFound": "Stop not found.",
+  "apiErrorTrackNotFound": "Track not found, or it doesn't belong to this itinerary.",
+  "apiErrorSegmentNotFound": "Transit segment not found.",
+  "apiErrorLegNotFound": "Transport leg not found.",
+  "apiErrorItineraryAccessDenied": "You don't have access to this itinerary.",
+  "apiErrorAllowlistRestrictedOnly": "The allowlist only applies to restricted itineraries.",
+  "apiErrorUserNotFound": "User not found.",
+  "apiErrorAllowlistUserExists": "This user already has access.",
+  "apiErrorAllowlistUserNotFound": "User not found in the allowlist.",
+  "apiErrorRankCollision": "Ordering conflict — please retry.",
+  "apiErrorAnnotationNotFound": "Annotation not found.",
+  "apiErrorRatingNotFound": "You haven't rated this itinerary.",
+  "apiErrorSegmentAlreadyExists": "A segment already connects these two stops.",
+  "apiErrorIncorrectPassword": "Incorrect password.",
+  "apiErrorLoginInvalid": "Incorrect email/username or password.",
+  "apiErrorCannotFollowSelf": "You cannot follow yourself.",
+  "apiErrorNotFollowing": "You are not following this user.",
+  "apiErrorFollowRequestNotFound": "Follow request not found.",
+  "apiErrorFollowRequestAlreadyAccepted": "This follow request has already been accepted.",
+  "apiErrorCannotRejectRequest": "You cannot reject this follow request.",
+  "apiErrorAccountPrivate": "This account is private.",
+  "apiErrorTosRequired": "You must accept the Terms of Service to register.",
+  "apiErrorUsernameTaken": "This username is already taken.",
+  "apiErrorEmailTaken": "An account with this email already exists."
 }

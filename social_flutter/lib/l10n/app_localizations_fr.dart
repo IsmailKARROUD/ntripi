@@ -58,7 +58,7 @@ class AppLocalizationsFr extends AppLocalizations {
       'Aucun itinéraire public pour l\'instant. Revenez bientôt !';
 
   @override
-  String get feedTopEmpty => 'Pas assez de voyages notés — voir Récents.';
+  String get feedTopEmpty => 'Pas assez de voyages évalués — voir Récents.';
 
   @override
   String get offlineBanner =>
@@ -78,11 +78,11 @@ class AppLocalizationsFr extends AppLocalizations {
   String get loginSubtitle => 'Connectez-vous pour continuer votre voyage';
 
   @override
-  String get loginEmailLabel => 'Email ou nom d\'utilisateur';
+  String get loginEmailLabel => 'E-mail ou nom d\'utilisateur';
 
   @override
   String get loginEmailHelp =>
-      'Connectez-vous avec l\'email avec lequel vous vous êtes inscrit, ou votre @identifiant.';
+      'Connectez-vous avec l\'e-mail avec lequel vous vous êtes inscrit, ou votre @identifiant.';
 
   @override
   String get loginEmailHint => 'vous@exemple.com ou @identifiant';
@@ -137,7 +137,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get registerUsernameHint => 'votreidentifiant';
 
   @override
-  String get registerEmail => 'Email *';
+  String get registerEmail => 'E-mail *';
 
   @override
   String get registerEmailHelp =>
@@ -147,10 +147,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get registerEmailHint => 'vous@exemple.com';
 
   @override
-  String get registerEmailRequired => 'L\'email est requis.';
+  String get registerEmailRequired => 'L\'e-mail est requis.';
 
   @override
-  String get registerEmailInvalid => 'Veuillez entrer un email valide.';
+  String get registerEmailInvalid => 'Veuillez entrer un e-mail valide.';
 
   @override
   String get registerPassword => 'Mot de passe *';
@@ -258,7 +258,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get expand => 'Agrandir';
 
   @override
-  String get tapToSeeStops => 'Toucher pour voir les arrêts';
+  String get tapToSeeStops => 'Toucher pour voir les étapes';
 
   @override
   String get coverImageSection => 'Image de couverture';
@@ -578,7 +578,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get coverImageHelp =>
-      'Une image 1200×630 affichée sur la carte de l\'itinéraire et les aperçus de liens.';
+      'Une image 1200×630 affichée sur la carte de l\'itinéraire et les aperçus de liens. Faites glisser dans la zone de recadrage pour repositionner.';
 
   @override
   String get itineraryTitleLabel => 'Titre *';
@@ -598,14 +598,14 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get descriptionHelp =>
-      'Facultatif. Un résumé du voyage. Utilisez la barre d\'outils pour mettre du texte en gras ou en italique, ajouter des titres et créer des listes.';
+      'Optionnel. Un résumé du voyage. Utilisez la barre d\'outils pour mettre du texte en gras ou en italique, ajouter des titres et créer des listes à puces ou numérotées. Passez à l\'onglet Aperçu pour voir le rendu final.';
 
   @override
   String get currencyLabel => 'Devise';
 
   @override
   String get currencyHelp =>
-      'Devise par défaut pour tous les coûts de ce voyage.';
+      'Devise par défaut pour tous les coûts des étapes et des transports de cet itinéraire.';
 
   @override
   String get visibilityLabel => 'Visibilité';
@@ -743,11 +743,11 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get segmentSelectBothStops =>
-      'Sélectionnez un arrêt de départ et un arrêt d\'arrivée.';
+      'Sélectionnez une étape de départ et une étape d\'arrivée.';
 
   @override
   String get segmentStopsMustDiffer =>
-      'Les arrêts de départ et d\'arrivée doivent être différents.';
+      'Les étapes de départ et d\'arrivée doivent être différentes.';
 
   @override
   String get segmentAddLegFirst =>
@@ -758,7 +758,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get segmentAlreadyExistsMessage =>
-      'Un segment relie déjà ces deux arrêts. Que souhaitez-vous faire ?';
+      'Un segment relie déjà ces deux étapes. Que souhaitez-vous faire ?';
 
   @override
   String get segmentJoin => 'Rejoindre';
@@ -767,10 +767,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get segmentReplace => 'Remplacer';
 
   @override
-  String get segmentFromStopLabel => 'Arrêt de départ';
+  String get segmentFromStopLabel => 'Étape de départ';
 
   @override
-  String get segmentToStopLabel => 'Arrêt d\'arrivée';
+  String get segmentToStopLabel => 'Étape d\'arrivée';
 
   @override
   String get visibilityScreenTitle => 'Qui peut voir ça ?';
@@ -887,9 +887,9 @@ class AppLocalizationsFr extends AppLocalizations {
       count,
       locale: localeName,
       other:
-          '$count tronçons de transport seront supprimés car leurs arrêts ne seront plus dans des pistes adjacentes :\n\n$segments',
+          '$count segments de transit seront supprimés car leurs étapes ne seront plus dans des pistes adjacentes :\n\n$segments',
       one:
-          '$count tronçon de transport sera supprimé car ses arrêts ne seront plus dans des pistes adjacentes :\n\n$segments',
+          '$count segment de transit sera supprimé car ses étapes ne seront plus dans des pistes adjacentes :\n\n$segments',
     );
     return '$_temp0';
   }
@@ -928,7 +928,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get verifyEmailMessage =>
-      'Vérifiez votre e-mail pour créer des itinéraires, noter et suivre des personnes.';
+      'Vérifiez votre e-mail pour créer des voyages, évaluer des itinéraires et suivre des personnes.';
 
   @override
   String get verifyEmailButton => 'Vérifier avec Google';
@@ -1390,14 +1390,14 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get thoughtsHelp =>
-      'Votre avis personnel sur cette étape — ce à quoi s\'attendre, ce que vous avez aimé, ce à éviter, conseils pratiques.';
+      'Votre avis personnel sur cette étape — ce à quoi s\'attendre, ce que vous avez aimé, ce à éviter, conseils pratiques. Utilisez la barre d\'outils pour ajouter du gras, de l\'italique, des titres ou des listes à puces.';
 
   @override
   String get annotationsLabel => 'Annotations';
 
   @override
   String get annotationsHelp =>
-      'Notes courtes taguées (conseil, prudence, éviter, info) attachées à cette étape.';
+      'Notes courtes taguées (conseil, prudence, éviter, info) attachées à cette étape. Utile pour les avertissements ou les conseils.';
 
   @override
   String get saveChangesButton => 'Enregistrer';
@@ -1425,7 +1425,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get transportModeHelp =>
-      'Comment vous voyagez sur ce tronçon (marche, bus, train, ferry, etc.).';
+      'Comment vous voyagez sur ce tronçon (marche, bus, train, ferry, etc.). Certains modes affichent des champs supplémentaires pour la ligne et la direction.';
 
   @override
   String get transitLineLabel => 'Ligne (optionnel)';
@@ -1654,4 +1654,533 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get hideOptionalFields => 'Masquer les champs optionnels';
+
+  @override
+  String get transportModeWalk => 'Marche';
+
+  @override
+  String get transportModeBus => 'Bus';
+
+  @override
+  String get transportModeTram => 'Tramway';
+
+  @override
+  String get transportModeMetro => 'Métro';
+
+  @override
+  String get transportModeTrain => 'Train';
+
+  @override
+  String get transportModeTaxi => 'Taxi';
+
+  @override
+  String get transportModeUber => 'Uber';
+
+  @override
+  String get transportModeBike => 'Vélo';
+
+  @override
+  String get transportModeFerry => 'Ferry';
+
+  @override
+  String get transportModeCar => 'Voiture';
+
+  @override
+  String get transportModeAirplane => 'Avion';
+
+  @override
+  String get dimensionOverall => 'Globale';
+
+  @override
+  String get dimensionOverallDesc => 'Impression générale';
+
+  @override
+  String get dimensionSafetyDesc =>
+      'À quel point vous vous êtes senti en sécurité';
+
+  @override
+  String get dimensionExperienceDesc => 'Qualité de l\'expérience globale';
+
+  @override
+  String get dimensionAccessibilityDesc => 'Facilité d\'accès pour tous';
+
+  @override
+  String get dimensionFamilyFriendlyDesc =>
+      'Convient aux enfants et aux familles';
+
+  @override
+  String get dimensionCrowdednessDesc =>
+      'À quel point l\'endroit était peu fréquenté et spacieux';
+
+  @override
+  String dimensionRatingTitle(String label) {
+    return 'Évaluation $label';
+  }
+
+  @override
+  String noRatingsYetFor(String label) {
+    return 'Aucune évaluation pour $label pour l\'instant';
+  }
+
+  @override
+  String basedOnRatings(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Basé sur $count évaluations',
+      one: 'Basé sur $count évaluation',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get ratersLabel => 'Évaluateurs';
+
+  @override
+  String get annotationAdviceDesc =>
+      'Quelque chose d\'utile ou une astuce de pro.';
+
+  @override
+  String get annotationCautionDesc => 'Faites attention — surprises possibles.';
+
+  @override
+  String get annotationAvoidDesc => 'À ne pas faire. Gagnez du temps.';
+
+  @override
+  String get annotationInfoDesc => 'Un fait neutre bon à savoir.';
+
+  @override
+  String get unknownUser => 'Inconnu';
+
+  @override
+  String timeAgoMonths(int count) {
+    return 'il y a $count mois';
+  }
+
+  @override
+  String timeAgoDays(int count) {
+    return 'il y a $count j';
+  }
+
+  @override
+  String timeAgoHours(int count) {
+    return 'il y a $count h';
+  }
+
+  @override
+  String timeAgoMinutes(int count) {
+    return 'il y a $count min';
+  }
+
+  @override
+  String get timeJustNow => 'À l\'instant';
+
+  @override
+  String get yearsAbbrev => 'a';
+
+  @override
+  String get timeLabel => 'Temps';
+
+  @override
+  String get transitLabel => 'Transit';
+
+  @override
+  String get noLegsYetTapAdd =>
+      'Aucun tronçon. Appuyez sur ＋ pour en ajouter un.';
+
+  @override
+  String get segmentNeedsOneLeg =>
+      'Un segment doit avoir au moins un tronçon. Supprimez plutôt le segment.';
+
+  @override
+  String fromStopName(String name) {
+    return 'Depuis $name';
+  }
+
+  @override
+  String toStopName(String name) {
+    return 'Vers $name';
+  }
+
+  @override
+  String get visibilityPublicDesc =>
+      'Toute personne disposant du lien peut voir.';
+
+  @override
+  String get visibilityFollowersDesc =>
+      'Uniquement les personnes qui vous suivent.';
+
+  @override
+  String get visibilityRestrictedDesc =>
+      'Uniquement les personnes que vous autorisez.';
+
+  @override
+  String get visibilityOnlyMeDesc => 'Vous uniquement.';
+
+  @override
+  String get saveItineraryFirstAllowlist =>
+      'Enregistrez d\'abord l\'itinéraire, puis gérez votre liste d\'accès depuis l\'écran de modification.';
+
+  @override
+  String get allowlistLabel => 'Liste d\'accès';
+
+  @override
+  String personCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count personnes',
+      one: '$count personne',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String removedFromAllowlist(String name) {
+    return '$name retiré de la liste d\'accès';
+  }
+
+  @override
+  String get addPeople => 'Ajouter des personnes';
+
+  @override
+  String get otherOption => 'Autre';
+
+  @override
+  String get thisItineraryFallback => 'cet itinéraire';
+
+  @override
+  String get discardReorderMessage =>
+      'Votre réorganisation ne sera pas enregistrée.';
+
+  @override
+  String get emptyTrackName => '(vide)';
+
+  @override
+  String get unnamedStop => '(sans nom)';
+
+  @override
+  String get unknownStop => '(inconnu)';
+
+  @override
+  String get dragToChangeTrackOrder =>
+      'Faites glisser pour changer l\'ordre des pistes';
+
+  @override
+  String transitSegmentsWillBeDeleted(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count segments de transit seront supprimés',
+      one: '1 segment de transit sera supprimé',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String andMoreCount(int count) {
+    return '… et $count de plus';
+  }
+
+  @override
+  String altsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count alt.',
+      one: '$count alt.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String segmentToWillBeDeleted(String name) {
+    return '→ $name  —  le segment sera supprimé';
+  }
+
+  @override
+  String get reorderAlternativesTitle => 'Réorganiser les alternatives';
+
+  @override
+  String get reorderAlternativesHint =>
+      'Faites glisser pour changer l\'option qui apparaît en premier. Appuyez sur Enregistrer pour appliquer.';
+
+  @override
+  String get emptyTrackLabel => '(piste vide)';
+
+  @override
+  String get moveStopToLabel => 'Déplacer l\'étape vers';
+
+  @override
+  String get messageLabel => 'Message';
+
+  @override
+  String get annotationKeepShortHint =>
+      'Restez concis — moins de 200 caractères pour une meilleure lisibilité sur petits écrans.';
+
+  @override
+  String get transportModeSection => 'Mode de transport';
+
+  @override
+  String get lineDirectionSection => 'Ligne et direction';
+
+  @override
+  String get durationCostSection => 'Durée et coût';
+
+  @override
+  String get allRatersLabel => 'Tous les évaluateurs';
+
+  @override
+  String travelersRatedThis(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count voyageurs ont évalué cet itinéraire',
+      one: '$count voyageur a évalué cet itinéraire',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get byDimensionLabel => 'Par dimension';
+
+  @override
+  String get notEnoughRatings => 'Pas assez d\'évaluations';
+
+  @override
+  String get youRatedThis => 'Vous avez évalué';
+
+  @override
+  String get changeButton => 'Modifier';
+
+  @override
+  String get hideReview => 'Masquer l\'avis';
+
+  @override
+  String get readReview => 'Lire l\'avis';
+
+  @override
+  String get notesLabel => 'Notes';
+
+  @override
+  String get viewLess => 'voir moins';
+
+  @override
+  String get viewMore => '… voir plus';
+
+  @override
+  String get addNoteButton => 'Ajouter une note';
+
+  @override
+  String get imageTooLarge => 'L\'image est trop volumineuse (max 10 Mo).';
+
+  @override
+  String get couldNotLoadImage =>
+      'Impossible de charger l\'image. Veuillez en essayer une autre.';
+
+  @override
+  String get pinchToZoomHint =>
+      'Pincez pour zoomer · Faites glisser pour repositionner';
+
+  @override
+  String get addCoverImage => 'Ajouter une image de couverture';
+
+  @override
+  String get coverOptionalMapFallback =>
+      'Optionnel — la carte sera utilisée sinon.';
+
+  @override
+  String get mapTapToPlacePin => 'Appuyez sur la carte pour placer un repère';
+
+  @override
+  String get mapTapToMovePin =>
+      'Appuyez ailleurs pour déplacer le repère, puis appuyez sur Confirmer';
+
+  @override
+  String get nothingToPreview => 'Rien à prévisualiser pour l\'instant.';
+
+  @override
+  String get rateOverallFirstHint =>
+      'Évaluez votre impression générale. Ensuite, vous pourrez en dire plus.';
+
+  @override
+  String get splashTagline =>
+      'Découvrez et partagez des itinéraires de voyage\ncréés par de vrais explorateurs';
+
+  @override
+  String get splashMotto => 'Explorez le monde, une route à la fois';
+
+  @override
+  String get tripsPillLabel => 'voyages';
+
+  @override
+  String get stopsPillLabel => 'étapes';
+
+  @override
+  String get travelledPillLabel => 'de voyage';
+
+  @override
+  String get stopFallbackName => 'Étape';
+
+  @override
+  String get undoLabel => 'Annuler';
+
+  @override
+  String get updateYourRating => 'Modifier votre évaluation';
+
+  @override
+  String get moveActionLabel => 'déplacer';
+
+  @override
+  String get reorderActionLabel => 'réorganiser';
+
+  @override
+  String get aStopFallback => 'Une étape';
+
+  @override
+  String get locationLabel => 'Localisation';
+
+  @override
+  String get noLocationSet => 'Aucune localisation définie';
+
+  @override
+  String get detailsSection => 'Détails';
+
+  @override
+  String get addLanguageTitle => 'Ajouter une langue';
+
+  @override
+  String alreadyInItinerary(String name) {
+    return '$name est déjà dans cet itinéraire.';
+  }
+
+  @override
+  String stopNumberOfTotal(int n, int total) {
+    return 'Étape $n sur $total';
+  }
+
+  @override
+  String shareCaption(String title, String stops, String duration) {
+    return 'Découvrez « $title » sur Ntripi — $stops, $duration';
+  }
+
+  @override
+  String get apiErrorNotAuthenticated => 'Vous n\'êtes pas connecté.';
+
+  @override
+  String get apiErrorAccountDeactivated => 'Votre compte a été désactivé.';
+
+  @override
+  String get apiErrorEmailUnverified =>
+      'Vérifiez votre e-mail via Google pour effectuer cette action.';
+
+  @override
+  String get apiErrorItineraryNotFound => 'Itinéraire introuvable.';
+
+  @override
+  String get apiErrorItineraryNotOwner =>
+      'Vous n\'avez pas la permission de modifier cet itinéraire.';
+
+  @override
+  String get apiErrorIfMatchRequired =>
+      'Cette modification n\'a pas pu être enregistrée — rechargez et réessayez.';
+
+  @override
+  String get apiErrorItineraryStale =>
+      'L\'itinéraire a été modifié — veuillez recharger.';
+
+  @override
+  String get apiErrorWaitlistContactRequired =>
+      'Indiquez au moins un e-mail ou un numéro WhatsApp.';
+
+  @override
+  String get apiErrorGoogleTokenInvalid => 'Jeton Google invalide.';
+
+  @override
+  String get apiErrorInvalidGrant =>
+      'Votre session a expiré. Veuillez vous reconnecter.';
+
+  @override
+  String get apiErrorStopNotFound => 'Étape introuvable.';
+
+  @override
+  String get apiErrorTrackNotFound =>
+      'Piste introuvable ou n\'appartenant pas à cet itinéraire.';
+
+  @override
+  String get apiErrorSegmentNotFound => 'Segment de transit introuvable.';
+
+  @override
+  String get apiErrorLegNotFound => 'Tronçon de transport introuvable.';
+
+  @override
+  String get apiErrorItineraryAccessDenied =>
+      'Vous n\'avez pas accès à cet itinéraire.';
+
+  @override
+  String get apiErrorAllowlistRestrictedOnly =>
+      'La liste d\'accès ne s\'applique qu\'aux itinéraires restreints.';
+
+  @override
+  String get apiErrorUserNotFound => 'Utilisateur introuvable.';
+
+  @override
+  String get apiErrorAllowlistUserExists => 'Cet utilisateur a déjà accès.';
+
+  @override
+  String get apiErrorAllowlistUserNotFound =>
+      'Utilisateur introuvable dans la liste d\'accès.';
+
+  @override
+  String get apiErrorRankCollision => 'Conflit d\'ordre — veuillez réessayer.';
+
+  @override
+  String get apiErrorAnnotationNotFound => 'Annotation introuvable.';
+
+  @override
+  String get apiErrorRatingNotFound =>
+      'Vous n\'avez pas évalué cet itinéraire.';
+
+  @override
+  String get apiErrorSegmentAlreadyExists =>
+      'Un segment relie déjà ces deux étapes.';
+
+  @override
+  String get apiErrorIncorrectPassword => 'Mot de passe incorrect.';
+
+  @override
+  String get apiErrorLoginInvalid =>
+      'E-mail/identifiant ou mot de passe incorrect.';
+
+  @override
+  String get apiErrorCannotFollowSelf =>
+      'Vous ne pouvez pas vous suivre vous-même.';
+
+  @override
+  String get apiErrorNotFollowing => 'Vous ne suivez pas cet utilisateur.';
+
+  @override
+  String get apiErrorFollowRequestNotFound =>
+      'Demande d\'abonnement introuvable.';
+
+  @override
+  String get apiErrorFollowRequestAlreadyAccepted =>
+      'Cette demande d\'abonnement a déjà été acceptée.';
+
+  @override
+  String get apiErrorCannotRejectRequest =>
+      'Vous ne pouvez pas refuser cette demande d\'abonnement.';
+
+  @override
+  String get apiErrorAccountPrivate => 'Ce compte est privé.';
+
+  @override
+  String get apiErrorTosRequired =>
+      'Vous devez accepter les Conditions d\'utilisation pour vous inscrire.';
+
+  @override
+  String get apiErrorUsernameTaken => 'Cet identifiant est déjà pris.';
+
+  @override
+  String get apiErrorEmailTaken => 'Un compte existe déjà avec cet e-mail.';
 }

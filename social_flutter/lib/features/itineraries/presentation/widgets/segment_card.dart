@@ -20,6 +20,7 @@ import 'package:social_flutter/features/itineraries/domain/transport_leg.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/leg_form_dialog.dart';
 import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
 import 'package:social_flutter/l10n/app_localizations.dart';
+import 'package:social_flutter/shared/utils/duration_format.dart';
 import 'package:social_flutter/shared/widgets/loaders.dart';
 
 class SegmentCard extends ConsumerStatefulWidget {
@@ -107,9 +108,8 @@ class _SegmentCardState extends ConsumerState<SegmentCard> {
       if (widget.segment.legs.length == 1) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-                'A segment needs at least one leg. Delete the segment instead.'),
+          SnackBar(
+            content: Text(AppLocalizations.of(context)!.segmentNeedsOneLeg),
           ),
         );
         return;
@@ -128,6 +128,7 @@ class _SegmentCardState extends ConsumerState<SegmentCard> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final segment = widget.segment;
 
     // Read mode: compact amber transit row matching the design.
@@ -136,26 +137,18 @@ class _SegmentCardState extends ConsumerState<SegmentCard> {
     // Edit mode: amber editorial container with tappable leg rows.
 
     String fmtCost(double cost, bool isFree) {
-      if (isFree || cost <= 0) return 'Free';
+      if (isFree || cost <= 0) return l10n.freeLegLabel;
       return formatMoney(cost, widget.currency);
     }
 
-    String fmtMin(int? m) {
-      if (m == null || m <= 0) return '';
-      final h = m ~/ 60;
-      final min = m % 60;
-      if (h == 0) return '${min}min';
-      if (min == 0) return '${h}h';
-      return '${h}h ${min}min';
-    }
+    String fmtMin(int? m) => formatDuration(m, l10n, fallback: '');
 
     final legs = segment.legs;
     final multiLeg = legs.length > 1;
 
-    final totalDur =
-        segment.totalDurationMin > 0 ? fmtMin(segment.totalDurationMin) : '';
+    final totalDur = fmtMin(segment.totalDurationMin);
     final totalCost = segment.totalCost <= 0
-        ? 'Free'
+        ? l10n.freeLegLabel
         : formatMoney(segment.totalCost, widget.currency);
 
     return Container(
@@ -174,9 +167,9 @@ class _SegmentCardState extends ConsumerState<SegmentCard> {
             padding: const EdgeInsets.fromLTRB(12, 6, 8, 6),
             child: Row(
               children: [
-                const Text(
-                  'TRANSIT',
-                  style: TextStyle(
+                Text(
+                  l10n.transitLabel.toUpperCase(),
+                  style: const TextStyle(
                     fontSize: 10,
                     fontWeight: FontWeight.w700,
                     color: kTransitIcon,
@@ -201,11 +194,11 @@ class _SegmentCardState extends ConsumerState<SegmentCard> {
           if (legs.isEmpty)
             InkWell(
               onTap: _saving ? null : _addLeg,
-              child: const Padding(
-                padding: EdgeInsets.fromLTRB(12, 10, 12, 10),
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
                 child: Text(
-                  'No legs yet. Tap ＋ to add.',
-                  style: TextStyle(
+                  l10n.noLegsYetTapAdd,
+                  style: const TextStyle(
                       fontSize: 12,
                       color: kTransitText,
                       fontStyle: FontStyle.italic),
@@ -227,7 +220,7 @@ class _SegmentCardState extends ConsumerState<SegmentCard> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(legs[i].mode.label,
+                            Text(legs[i].mode.label(l10n),
                                 style: const TextStyle(
                                     fontSize: 12,
                                     fontWeight: FontWeight.w700,
@@ -335,29 +328,25 @@ class _TransitRow extends StatelessWidget {
   static const _kTransitIcon = Color(0xFFA06D1F);
   static const _kTransitText = Color(0xFF8A5A18);
 
-  String _fmtCost(double cost, bool isFree) {
-    if (isFree || cost <= 0) return 'Free';
+  String _fmtCost(double cost, bool isFree, AppLocalizations l10n) {
+    if (isFree || cost <= 0) return l10n.freeLegLabel;
     return formatMoney(cost, currency);
   }
 
-  String _fmtMin(int? minutes) {
-    if (minutes == null || minutes <= 0) return '';
-    final h = minutes ~/ 60;
-    final m = minutes % 60;
-    if (h == 0) return '${m}min';
-    if (m == 0) return '${h}h';
-    return '${h}h ${m}min';
-  }
+  String _fmtMin(int? minutes, AppLocalizations l10n) =>
+      formatDuration(minutes, l10n, fallback: '');
 
-  String _totalCost() {
-    if (segment.totalCost <= 0) return 'Free';
+  String _totalCost(AppLocalizations l10n) {
+    if (segment.totalCost <= 0) return l10n.freeLegLabel;
     return formatMoney(segment.totalCost, currency);
   }
 
-  String _totalDuration() => _fmtMin(segment.totalDurationMin);
+  String _totalDuration(AppLocalizations l10n) =>
+      _fmtMin(segment.totalDurationMin, l10n);
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final legs = segment.legs;
     final multiLeg = legs.length > 1;
 
@@ -382,7 +371,7 @@ class _TransitRow extends StatelessWidget {
                   Icon(legs[i].mode.icon, size: 16, color: _kTransitIcon),
                   const SizedBox(width: 8),
                   Text(
-                    legs[i].mode.label,
+                    legs[i].mode.label(l10n),
                     style: const TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w700,
@@ -399,9 +388,9 @@ class _TransitRow extends StatelessWidget {
                   ],
                   const Spacer(),
                   // per-leg duration
-                  if (_fmtMin(legs[i].durationMin).isNotEmpty) ...[
+                  if (_fmtMin(legs[i].durationMin, l10n).isNotEmpty) ...[
                     Text(
-                      _fmtMin(legs[i].durationMin),
+                      _fmtMin(legs[i].durationMin, l10n),
                       style: const TextStyle(fontSize: 12, color: _kTransitText),
                     ),
                     const Padding(
@@ -412,7 +401,7 @@ class _TransitRow extends StatelessWidget {
                   ],
                   // per-leg cost
                   Text(
-                    _fmtCost(legs[i].cost, legs[i].isFree),
+                    _fmtCost(legs[i].cost, legs[i].isFree, l10n),
                     style: const TextStyle(fontSize: 12, color: _kTransitText),
                   ),
                 ],
@@ -440,9 +429,9 @@ class _TransitRow extends StatelessWidget {
                     ),
                   ),
                   const Spacer(),
-                  if (_totalDuration().isNotEmpty) ...[
+                  if (_totalDuration(l10n).isNotEmpty) ...[
                     Text(
-                      _totalDuration(),
+                      _totalDuration(l10n),
                       style: const TextStyle(
                           fontSize: 11, color: _kTransitIcon),
                     ),
@@ -454,7 +443,7 @@ class _TransitRow extends StatelessWidget {
                     ),
                   ],
                   Text(
-                    _totalCost(),
+                    _totalCost(l10n),
                     style: const TextStyle(
                         fontSize: 11, color: _kTransitIcon),
                   ),

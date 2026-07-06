@@ -18,7 +18,7 @@
   "feedTabTop": "Top",
   "feedTabRecent": "Récents",
   "feedEmpty": "Aucun itinéraire public pour l'instant. Revenez bientôt !",
-  "feedTopEmpty": "Pas assez de voyages notés — voir Récents.",
+  "feedTopEmpty": "Pas assez de voyages évalués — voir Récents.",
 
   "offlineBanner": "Vous êtes hors ligne ! Certaines fonctionnalités peuvent être indisponibles.",
   "downloadBanner": "Pour une meilleure expérience, téléchargez l'application Ntripi.",
@@ -26,8 +26,8 @@
 
   "loginTitle": "Bon retour",
   "loginSubtitle": "Connectez-vous pour continuer votre voyage",
-  "loginEmailLabel": "Email ou nom d'utilisateur",
-  "loginEmailHelp": "Connectez-vous avec l'email avec lequel vous vous êtes inscrit, ou votre @identifiant.",
+  "loginEmailLabel": "E-mail ou nom d'utilisateur",
+  "loginEmailHelp": "Connectez-vous avec l'e-mail avec lequel vous vous êtes inscrit, ou votre @identifiant.",
   "loginEmailHint": "vous@exemple.com ou @identifiant",
   "loginPasswordLabel": "Mot de passe",
   "loginPasswordHelp": "Votre mot de passe. Appuyez sur l'icône œil pour l'afficher ou le masquer.",
@@ -45,11 +45,11 @@
   "registerUsername": "Identifiant *",
   "registerUsernameHelp": "Votre @identifiant unique. Lettres minuscules, chiffres et tirets bas uniquement. Impossible à modifier plus tard.",
   "registerUsernameHint": "votreidentifiant",
-  "registerEmail": "Email *",
+  "registerEmail": "E-mail *",
   "registerEmailHelp": "Utilisé pour se connecter et récupérer votre compte. Nous ne l'affichons jamais publiquement.",
   "registerEmailHint": "vous@exemple.com",
-  "registerEmailRequired": "L'email est requis.",
-  "registerEmailInvalid": "Veuillez entrer un email valide.",
+  "registerEmailRequired": "L'e-mail est requis.",
+  "registerEmailInvalid": "Veuillez entrer un e-mail valide.",
   "registerPassword": "Mot de passe *",
   "registerPasswordHelp": "Au moins 8 caractères avec au moins un chiffre.",
   "registerPasswordHint": "Min. 8 caractères",
@@ -81,7 +81,7 @@
   "addStopHintMessage": "Pour ajouter des étapes, appuyez sur Modifier ✎ en haut.",
   "stopCount": "{count, plural, one{{count} étape} other{{count} étapes}}",
   "expand": "Agrandir",
-  "tapToSeeStops": "Toucher pour voir les arrêts",
+  "tapToSeeStops": "Toucher pour voir les étapes",
   "coverImageSection": "Image de couverture",
   "coverImageUrlLabel": "URL de l'image de couverture",
   "uploadCoverImage": "Téléverser une image de couverture",
@@ -183,15 +183,15 @@
   "newItinerary": "Nouvel itinéraire",
   "editItinerary": "Modifier l'itinéraire",
   "coverImageLabel": "Image de couverture",
-  "coverImageHelp": "Une image 1200×630 affichée sur la carte de l'itinéraire et les aperçus de liens.",
+  "coverImageHelp": "Une image 1200×630 affichée sur la carte de l'itinéraire et les aperçus de liens. Faites glisser dans la zone de recadrage pour repositionner.",
   "itineraryTitleLabel": "Titre *",
   "itineraryTitleHint": "ex. 10 jours à Kyoto & Osaka",
   "itineraryTitleHelp": "Un nom court et clair pour ce voyage. Affiché sur la carte et les aperçus de partage.",
   "itineraryTitleRequired": "Le titre est requis",
   "descriptionLabel": "Description",
-  "descriptionHelp": "Facultatif. Un résumé du voyage. Utilisez la barre d'outils pour mettre du texte en gras ou en italique, ajouter des titres et créer des listes.",
+  "descriptionHelp": "Optionnel. Un résumé du voyage. Utilisez la barre d'outils pour mettre du texte en gras ou en italique, ajouter des titres et créer des listes à puces ou numérotées. Passez à l'onglet Aperçu pour voir le rendu final.",
   "currencyLabel": "Devise",
-  "currencyHelp": "Devise par défaut pour tous les coûts de ce voyage.",
+  "currencyHelp": "Devise par défaut pour tous les coûts des étapes et des transports de cet itinéraire.",
   "visibilityLabel": "Visibilité",
   "visibilityHelp": "Public : tout le monde peut voir. Abonnés : uniquement les personnes qui vous suivent. Restreint : uniquement les utilisateurs autorisés. Moi uniquement : privé pour vous.",
   "visibilityPublic": "Public",
@@ -248,15 +248,15 @@
   "keepEditingButton": "Continuer l'édition",
   "orderSavedMessage": "Ordre enregistré",
 
-  "segmentSelectBothStops": "Sélectionnez un arrêt de départ et un arrêt d'arrivée.",
-  "segmentStopsMustDiffer": "Les arrêts de départ et d'arrivée doivent être différents.",
+  "segmentSelectBothStops": "Sélectionnez une étape de départ et une étape d'arrivée.",
+  "segmentStopsMustDiffer": "Les étapes de départ et d'arrivée doivent être différentes.",
   "segmentAddLegFirst": "Ajoutez au moins un tronçon avant d'enregistrer.",
   "segmentAlreadyExistsTitle": "Segment déjà existant",
-  "segmentAlreadyExistsMessage": "Un segment relie déjà ces deux arrêts. Que souhaitez-vous faire ?",
+  "segmentAlreadyExistsMessage": "Un segment relie déjà ces deux étapes. Que souhaitez-vous faire ?",
   "segmentJoin": "Rejoindre",
   "segmentReplace": "Remplacer",
-  "segmentFromStopLabel": "Arrêt de départ",
-  "segmentToStopLabel": "Arrêt d'arrivée",
+  "segmentFromStopLabel": "Étape de départ",
+  "segmentToStopLabel": "Étape d'arrivée",
 
   "visibilityScreenTitle": "Qui peut voir ça ?",
   "visibilityAddPerson": "Ajouter une personne",
@@ -302,7 +302,7 @@
   "addLegButton": "Ajouter un tronçon",
   "totalLabel": "Total",
   "reorderOrphanTitle": "Enregistrer la réorganisation ?",
-  "reorderOrphanMessage": "{count, plural, one{{count} tronçon de transport sera supprimé car ses arrêts ne seront plus dans des pistes adjacentes :\n\n{segments}} other{{count} tronçons de transport seront supprimés car leurs arrêts ne seront plus dans des pistes adjacentes :\n\n{segments}}}",
+  "reorderOrphanMessage": "{count, plural, one{{count} segment de transit sera supprimé car ses étapes ne seront plus dans des pistes adjacentes :\n\n{segments}} other{{count} segments de transit seront supprimés car leurs étapes ne seront plus dans des pistes adjacentes :\n\n{segments}}}",
   "@reorderOrphanMessage": {
     "placeholders": {
       "count": { "type": "int" },
@@ -319,7 +319,7 @@
   "displayNameTooLong": "Le nom affiché ne peut pas dépasser 50 caractères",
   "comingSoon": "Bientôt disponible",
   "verifyEmailTitle": "Vérifiez votre e-mail",
-  "verifyEmailMessage": "Vérifiez votre e-mail pour créer des itinéraires, noter et suivre des personnes.",
+  "verifyEmailMessage": "Vérifiez votre e-mail pour créer des voyages, évaluer des itinéraires et suivre des personnes.",
   "verifyEmailButton": "Vérifier avec Google",
   "emailVerifiedSuccess": "E-mail vérifié — tout est prêt !",
   "resendVerificationButton": "Renvoyer l'e-mail de vérification",
@@ -454,9 +454,9 @@
   "costHelp": "Coût approximatif par personne, dans la devise de l'itinéraire.",
   "enterValidNumber": "Entrez un nombre valide",
   "thoughtsLabel": "Réflexions",
-  "thoughtsHelp": "Votre avis personnel sur cette étape — ce à quoi s'attendre, ce que vous avez aimé, ce à éviter, conseils pratiques.",
+  "thoughtsHelp": "Votre avis personnel sur cette étape — ce à quoi s'attendre, ce que vous avez aimé, ce à éviter, conseils pratiques. Utilisez la barre d'outils pour ajouter du gras, de l'italique, des titres ou des listes à puces.",
   "annotationsLabel": "Annotations",
-  "annotationsHelp": "Notes courtes taguées (conseil, prudence, éviter, info) attachées à cette étape.",
+  "annotationsHelp": "Notes courtes taguées (conseil, prudence, éviter, info) attachées à cette étape. Utile pour les avertissements ou les conseils.",
   "saveChangesButton": "Enregistrer",
   "addStopButton": "Ajouter l'étape",
   "deleteStopButton": "Supprimer l'étape",
@@ -466,7 +466,7 @@
   "addTransitTitle": "Ajouter un transit",
   "updateTransitButton": "Mettre à jour le transit",
   "transportModeLabel": "Mode",
-  "transportModeHelp": "Comment vous voyagez sur ce tronçon (marche, bus, train, ferry, etc.).",
+  "transportModeHelp": "Comment vous voyagez sur ce tronçon (marche, bus, train, ferry, etc.). Certains modes affichent des champs supplémentaires pour la ligne et la direction.",
   "transitLineLabel": "Ligne (optionnel)",
   "transitLineHelp": "Optionnel. Le numéro ou nom de la ligne (ex. « Bus 42 », « M1 »).",
   "transitDirectionLabel": "Direction (optionnel)",
@@ -532,5 +532,255 @@
   "crowdednessHelp": "Optionnel. À quel point l'endroit était peu fréquenté et spacieux — 5 = agréablement peu fréquenté, 1 = bondé.",
 
   "showOptionalFields": "Afficher les champs optionnels",
-  "hideOptionalFields": "Masquer les champs optionnels"
+  "hideOptionalFields": "Masquer les champs optionnels",
+
+  "transportModeWalk": "Marche",
+  "transportModeBus": "Bus",
+  "transportModeTram": "Tramway",
+  "transportModeMetro": "Métro",
+  "transportModeTrain": "Train",
+  "transportModeTaxi": "Taxi",
+  "transportModeUber": "Uber",
+  "transportModeBike": "Vélo",
+  "transportModeFerry": "Ferry",
+  "transportModeCar": "Voiture",
+  "transportModeAirplane": "Avion",
+
+  "dimensionOverall": "Globale",
+  "dimensionOverallDesc": "Impression générale",
+  "dimensionSafetyDesc": "À quel point vous vous êtes senti en sécurité",
+  "dimensionExperienceDesc": "Qualité de l'expérience globale",
+  "dimensionAccessibilityDesc": "Facilité d'accès pour tous",
+  "dimensionFamilyFriendlyDesc": "Convient aux enfants et aux familles",
+  "dimensionCrowdednessDesc": "À quel point l'endroit était peu fréquenté et spacieux",
+  "dimensionRatingTitle": "Évaluation {label}",
+  "@dimensionRatingTitle": {
+    "placeholders": {
+      "label": { "type": "String" }
+    }
+  },
+  "noRatingsYetFor": "Aucune évaluation pour {label} pour l'instant",
+  "@noRatingsYetFor": {
+    "placeholders": {
+      "label": { "type": "String" }
+    }
+  },
+  "basedOnRatings": "{count, plural, one{Basé sur {count} évaluation} other{Basé sur {count} évaluations}}",
+  "@basedOnRatings": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "ratersLabel": "Évaluateurs",
+
+  "annotationAdviceDesc": "Quelque chose d'utile ou une astuce de pro.",
+  "annotationCautionDesc": "Faites attention — surprises possibles.",
+  "annotationAvoidDesc": "À ne pas faire. Gagnez du temps.",
+  "annotationInfoDesc": "Un fait neutre bon à savoir.",
+
+  "unknownUser": "Inconnu",
+  "timeAgoMonths": "il y a {count} mois",
+  "@timeAgoMonths": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "timeAgoDays": "il y a {count} j",
+  "@timeAgoDays": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "timeAgoHours": "il y a {count} h",
+  "@timeAgoHours": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "timeAgoMinutes": "il y a {count} min",
+  "@timeAgoMinutes": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "timeJustNow": "À l'instant",
+
+  "yearsAbbrev": "a",
+
+  "timeLabel": "Temps",
+  "transitLabel": "Transit",
+  "noLegsYetTapAdd": "Aucun tronçon. Appuyez sur ＋ pour en ajouter un.",
+  "segmentNeedsOneLeg": "Un segment doit avoir au moins un tronçon. Supprimez plutôt le segment.",
+  "fromStopName": "Depuis {name}",
+  "@fromStopName": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "toStopName": "Vers {name}",
+  "@toStopName": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+
+  "visibilityPublicDesc": "Toute personne disposant du lien peut voir.",
+  "visibilityFollowersDesc": "Uniquement les personnes qui vous suivent.",
+  "visibilityRestrictedDesc": "Uniquement les personnes que vous autorisez.",
+  "visibilityOnlyMeDesc": "Vous uniquement.",
+  "saveItineraryFirstAllowlist": "Enregistrez d'abord l'itinéraire, puis gérez votre liste d'accès depuis l'écran de modification.",
+  "allowlistLabel": "Liste d'accès",
+  "personCount": "{count, plural, one{{count} personne} other{{count} personnes}}",
+  "@personCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "removedFromAllowlist": "{name} retiré de la liste d'accès",
+  "@removedFromAllowlist": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "addPeople": "Ajouter des personnes",
+
+  "otherOption": "Autre",
+  "thisItineraryFallback": "cet itinéraire",
+  "discardReorderMessage": "Votre réorganisation ne sera pas enregistrée.",
+  "emptyTrackName": "(vide)",
+  "unnamedStop": "(sans nom)",
+  "unknownStop": "(inconnu)",
+  "dragToChangeTrackOrder": "Faites glisser pour changer l'ordre des pistes",
+  "transitSegmentsWillBeDeleted": "{count, plural, one{1 segment de transit sera supprimé} other{{count} segments de transit seront supprimés}}",
+  "@transitSegmentsWillBeDeleted": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "andMoreCount": "… et {count} de plus",
+  "@andMoreCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "altsCount": "{count, plural, one{{count} alt.} other{{count} alt.}}",
+  "@altsCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "segmentToWillBeDeleted": "→ {name}  —  le segment sera supprimé",
+  "@segmentToWillBeDeleted": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+
+  "reorderAlternativesTitle": "Réorganiser les alternatives",
+  "reorderAlternativesHint": "Faites glisser pour changer l'option qui apparaît en premier. Appuyez sur Enregistrer pour appliquer.",
+  "emptyTrackLabel": "(piste vide)",
+  "moveStopToLabel": "Déplacer l'étape vers",
+  "messageLabel": "Message",
+  "annotationKeepShortHint": "Restez concis — moins de 200 caractères pour une meilleure lisibilité sur petits écrans.",
+  "transportModeSection": "Mode de transport",
+  "lineDirectionSection": "Ligne et direction",
+  "durationCostSection": "Durée et coût",
+  "allRatersLabel": "Tous les évaluateurs",
+  "travelersRatedThis": "{count, plural, one{{count} voyageur a évalué cet itinéraire} other{{count} voyageurs ont évalué cet itinéraire}}",
+  "@travelersRatedThis": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "byDimensionLabel": "Par dimension",
+  "notEnoughRatings": "Pas assez d'évaluations",
+  "youRatedThis": "Vous avez évalué",
+  "changeButton": "Modifier",
+  "hideReview": "Masquer l'avis",
+  "readReview": "Lire l'avis",
+
+  "notesLabel": "Notes",
+  "viewLess": "voir moins",
+  "viewMore": "… voir plus",
+  "addNoteButton": "Ajouter une note",
+  "imageTooLarge": "L'image est trop volumineuse (max 10 Mo).",
+  "couldNotLoadImage": "Impossible de charger l'image. Veuillez en essayer une autre.",
+  "pinchToZoomHint": "Pincez pour zoomer · Faites glisser pour repositionner",
+  "addCoverImage": "Ajouter une image de couverture",
+  "coverOptionalMapFallback": "Optionnel — la carte sera utilisée sinon.",
+  "mapTapToPlacePin": "Appuyez sur la carte pour placer un repère",
+  "mapTapToMovePin": "Appuyez ailleurs pour déplacer le repère, puis appuyez sur Confirmer",
+  "nothingToPreview": "Rien à prévisualiser pour l'instant.",
+  "rateOverallFirstHint": "Évaluez votre impression générale. Ensuite, vous pourrez en dire plus.",
+  "splashTagline": "Découvrez et partagez des itinéraires de voyage\ncréés par de vrais explorateurs",
+  "splashMotto": "Explorez le monde, une route à la fois",
+  "tripsPillLabel": "voyages",
+  "stopsPillLabel": "étapes",
+  "travelledPillLabel": "de voyage",
+  "stopFallbackName": "Étape",
+  "undoLabel": "Annuler",
+  "updateYourRating": "Modifier votre évaluation",
+  "moveActionLabel": "déplacer",
+  "reorderActionLabel": "réorganiser",
+  "aStopFallback": "Une étape",
+  "locationLabel": "Localisation",
+  "noLocationSet": "Aucune localisation définie",
+  "detailsSection": "Détails",
+  "addLanguageTitle": "Ajouter une langue",
+  "alreadyInItinerary": "{name} est déjà dans cet itinéraire.",
+  "@alreadyInItinerary": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "stopNumberOfTotal": "Étape {n} sur {total}",
+  "@stopNumberOfTotal": {
+    "placeholders": {
+      "n": { "type": "int" },
+      "total": { "type": "int" }
+    }
+  },
+  "shareCaption": "Découvrez « {title} » sur Ntripi — {stops}, {duration}",
+  "@shareCaption": {
+    "placeholders": {
+      "title": { "type": "String" },
+      "stops": { "type": "String" },
+      "duration": { "type": "String" }
+    }
+  },
+
+  "apiErrorNotAuthenticated": "Vous n'êtes pas connecté.",
+  "apiErrorAccountDeactivated": "Votre compte a été désactivé.",
+  "apiErrorEmailUnverified": "Vérifiez votre e-mail via Google pour effectuer cette action.",
+  "apiErrorItineraryNotFound": "Itinéraire introuvable.",
+  "apiErrorItineraryNotOwner": "Vous n'avez pas la permission de modifier cet itinéraire.",
+  "apiErrorIfMatchRequired": "Cette modification n'a pas pu être enregistrée — rechargez et réessayez.",
+  "apiErrorItineraryStale": "L'itinéraire a été modifié — veuillez recharger.",
+  "apiErrorWaitlistContactRequired": "Indiquez au moins un e-mail ou un numéro WhatsApp.",
+  "apiErrorGoogleTokenInvalid": "Jeton Google invalide.",
+  "apiErrorInvalidGrant": "Votre session a expiré. Veuillez vous reconnecter.",
+  "apiErrorStopNotFound": "Étape introuvable.",
+  "apiErrorTrackNotFound": "Piste introuvable ou n'appartenant pas à cet itinéraire.",
+  "apiErrorSegmentNotFound": "Segment de transit introuvable.",
+  "apiErrorLegNotFound": "Tronçon de transport introuvable.",
+  "apiErrorItineraryAccessDenied": "Vous n'avez pas accès à cet itinéraire.",
+  "apiErrorAllowlistRestrictedOnly": "La liste d'accès ne s'applique qu'aux itinéraires restreints.",
+  "apiErrorUserNotFound": "Utilisateur introuvable.",
+  "apiErrorAllowlistUserExists": "Cet utilisateur a déjà accès.",
+  "apiErrorAllowlistUserNotFound": "Utilisateur introuvable dans la liste d'accès.",
+  "apiErrorRankCollision": "Conflit d'ordre — veuillez réessayer.",
+  "apiErrorAnnotationNotFound": "Annotation introuvable.",
+  "apiErrorRatingNotFound": "Vous n'avez pas évalué cet itinéraire.",
+  "apiErrorSegmentAlreadyExists": "Un segment relie déjà ces deux étapes.",
+  "apiErrorIncorrectPassword": "Mot de passe incorrect.",
+  "apiErrorLoginInvalid": "E-mail/identifiant ou mot de passe incorrect.",
+  "apiErrorCannotFollowSelf": "Vous ne pouvez pas vous suivre vous-même.",
+  "apiErrorNotFollowing": "Vous ne suivez pas cet utilisateur.",
+  "apiErrorFollowRequestNotFound": "Demande d'abonnement introuvable.",
+  "apiErrorFollowRequestAlreadyAccepted": "Cette demande d'abonnement a déjà été acceptée.",
+  "apiErrorCannotRejectRequest": "Vous ne pouvez pas refuser cette demande d'abonnement.",
+  "apiErrorAccountPrivate": "Ce compte est privé.",
+  "apiErrorTosRequired": "Vous devez accepter les Conditions d'utilisation pour vous inscrire.",
+  "apiErrorUsernameTaken": "Cet identifiant est déjà pris.",
+  "apiErrorEmailTaken": "Un compte existe déjà avec cet e-mail."
 }

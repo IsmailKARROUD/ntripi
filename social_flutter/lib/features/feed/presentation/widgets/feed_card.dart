@@ -69,7 +69,7 @@ class FeedCard extends ConsumerWidget {
                 tooltip: l10n.shareTooltip,
                 onPressed: () => ref
                     .read(shareServiceProvider)
-                    .shareItinerary(item.itinerary),
+                    .shareItinerary(item.itinerary, l10n),
               ),
             ],
           ),

@@ -383,8 +383,8 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
     if (!widget.isEditMode) {
       final duplicate = _findDuplicate();
       if (duplicate != null) {
-        final stopLabel = duplicate.placeName ?? 'A stop';
         final l10n = AppLocalizations.of(context)!;
+        final stopLabel = duplicate.placeName ?? l10n.aStopFallback;
         final confirmed = await showDialog<bool>(
           context: context,
           builder: (ctx) => AlertDialog(
@@ -879,10 +879,10 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                     children: [
                       _SFPickerRow(
                         icon: Icons.map_rounded,
-                        label: 'LOCATION',
+                        label: l10n.locationLabel.toUpperCase(),
                         value: _lat != null && _lng != null
                             ? 'Lat: ${_lat!.toStringAsFixed(5)}, Lng: ${_lng!.toStringAsFixed(5)}'
-                            : 'No location set',
+                            : l10n.noLocationSet,
                         onTap: readOnly ? null : _pickOnMap,
                       ),
                     ],
@@ -905,7 +905,8 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
-                              '${duplicate.placeName ?? 'A stop'} is already in this itinerary.',
+                              l10n.alreadyInItinerary(
+                                  duplicate.placeName ?? l10n.aStopFallback),
                               style: const TextStyle(
                                   fontSize: 12, color: kTransitText),
                             ),
@@ -957,7 +958,7 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
 
                   if (!collapseOptional) ...[
                   // ── DETAILS ────────────────────────────────────────────
-                  const _SFSectionLabel(text: 'DETAILS'),
+                  _SFSectionLabel(text: l10n.detailsSection.toUpperCase()),
                   _SFSectionCard(
                     children: [
                       // Place type
@@ -972,7 +973,7 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                       // Duration
                       _SFPickerRow(
                         icon: Icons.schedule_rounded,
-                        label: 'TIME SPENT',
+                        label: l10n.timeToSpendModalTitle.toUpperCase(),
                         value: _durationLabel,
                         onTap: readOnly ? null : _showDurationPicker,
                       ),
@@ -1086,7 +1087,7 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                   ),
 
                   // ── NOTES ─────────────────────────────────────────────
-                  const _SFSectionLabel(text: 'NOTES'),
+                  _SFSectionLabel(text: l10n.notesLabel.toUpperCase()),
                   _SFSectionCard(
                     children: [
                       Padding(

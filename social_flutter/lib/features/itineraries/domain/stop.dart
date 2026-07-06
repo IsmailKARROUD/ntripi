@@ -19,6 +19,7 @@
 import 'package:flutter/material.dart';
 import 'package:social_flutter/features/itineraries/domain/annotation.dart';
 import 'package:social_flutter/l10n/app_localizations.dart';
+import 'package:social_flutter/shared/utils/duration_format.dart';
 
 enum StopType {
   origin,
@@ -259,19 +260,6 @@ class Stop {
     );
   }
 
-  String get formattedDuration {
-    if (durationMin == null || durationMin! <= 0) return '—';
-    final years = durationMin! ~/ (60 * 24 * 365);
-    int remainingMin = durationMin! % (60 * 24 * 365);
-    final days = remainingMin ~/ (60 * 24);
-    remainingMin = remainingMin % (60 * 24);
-    final hours = remainingMin ~/ 60;
-    final minutes = remainingMin % 60;
-    String returnvalue = '';
-    if (years > 0) returnvalue += '${years}y ';
-    if (days > 0) returnvalue += '${days}d ';
-    if (hours > 0) returnvalue += '${hours}h ';
-    if (minutes > 0) returnvalue += '${minutes}min';
-    return returnvalue;
-  }
+  String formattedDuration(AppLocalizations l10n) =>
+      formatDuration(durationMin, l10n);
 }

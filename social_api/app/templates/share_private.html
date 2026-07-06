@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{{ lang or 'en' }}">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -153,17 +153,16 @@
   <div class="card">
     <div class="lock-icon">🔒</div>
     <h1>{{ itinerary.title }}</h1>
-    <p class="author">by @{{ owner.username }}</p>
+    <p class="author">{{ _('share_by') }} @{{ owner.username }}</p>
     <p class="message">
-      This is a private itinerary.<br>
-      Open in Ntripi app to view the full trip.
+      {{ _('share_private_message') }}
     </p>
 
     <a href="ntripi://itinerary/{{ itinerary.id }}" class="open-app-btn">
-      Open in Ntripi
+      {{ _('share_open_in_app') }}
     </a>
 
-    <p class="install-prompt">Don't have Ntripi?</p>
+    <p class="install-prompt">{{ _('share_install_prompt') }}</p>
     <div class="store-badges">
       <a href="#" class="store-badge">App Store</a>
       <a href="#" class="store-badge">Google Play</a>
@@ -172,7 +171,7 @@
 </main>
 
 <footer>
-  <p>Shared via Ntripi · <a href="/">ntripi.app</a></p>
+  <p>{{ _('share_shared_via') }} · <a href="/">ntripi.app</a></p>
 </footer>
 
 </body>

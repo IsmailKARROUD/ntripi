@@ -138,8 +138,8 @@ class _MapPickerScreenState extends ConsumerState<MapPickerScreen> {
                 padding: const EdgeInsets.all(12),
                 child: Text(
                   _selectedLocation == null
-                      ? 'Tap the map to place a pin'
-                      : 'Tap elsewhere to move the pin, then tap Confirm',
+                      ? AppLocalizations.of(context)!.mapTapToPlacePin
+                      : AppLocalizations.of(context)!.mapTapToMovePin,
                   textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.bodySmall,
                 ),

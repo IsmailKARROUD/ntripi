@@ -2,6 +2,7 @@
 // Domain models for the GET /itineraries/{id}/ratings response.
 
 import 'package:social_flutter/features/itineraries/domain/dimension_key.dart';
+import 'package:social_flutter/l10n/app_localizations.dart';
 
 /// Identity of someone who rated an itinerary.
 ///
@@ -25,9 +26,9 @@ class RaterInfo {
   bool get isDeleted => userId == null;
 
   /// Safe name to display regardless of deletion state.
-  String get displayNameOrFallback {
-    if (isDeleted) return 'Deleted User';
-    return displayName ?? username ?? 'Unknown';
+  String displayNameOrFallback(AppLocalizations l10n) {
+    if (isDeleted) return l10n.deletedUser;
+    return displayName ?? username ?? l10n.unknownUser;
   }
 
   factory RaterInfo.fromJson(Map<String, dynamic> json) => RaterInfo(
@@ -83,13 +84,13 @@ class RatingWithUser {
       };
 
   /// Human-readable relative time — e.g. "3d ago", "2mo ago", "Just now".
-  String get timeAgo {
+  String timeAgo(AppLocalizations l10n) {
     final diff = DateTime.now().difference(updatedAt);
-    if (diff.inDays > 30) return '${(diff.inDays / 30).floor()}mo ago';
-    if (diff.inDays > 0) return '${diff.inDays}d ago';
-    if (diff.inHours > 0) return '${diff.inHours}h ago';
-    if (diff.inMinutes > 0) return '${diff.inMinutes}min ago';
-    return 'Just now';
+    if (diff.inDays > 30) return l10n.timeAgoMonths((diff.inDays / 30).floor());
+    if (diff.inDays > 0) return l10n.timeAgoDays(diff.inDays);
+    if (diff.inHours > 0) return l10n.timeAgoHours(diff.inHours);
+    if (diff.inMinutes > 0) return l10n.timeAgoMinutes(diff.inMinutes);
+    return l10n.timeJustNow;
   }
 
   factory RatingWithUser.fromJson(Map<String, dynamic> json) => RatingWithUser(

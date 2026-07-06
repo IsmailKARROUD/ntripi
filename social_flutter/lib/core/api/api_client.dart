@@ -23,6 +23,7 @@ import 'package:flutter/widgets.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:social_flutter/core/api/api_endpoints.dart';
+import 'package:social_flutter/core/api/api_error_codes.dart';
 import 'package:social_flutter/core/auth/token_manager.dart';
 import 'package:social_flutter/l10n/app_localizations.dart';
 
@@ -245,6 +246,13 @@ String extractErrorMessage(dynamic e, [AppLocalizations? l10n]) {
     try {
       final data = e.response?.data;
       if (data is Map<String, dynamic>) {
+        // Prefer the localized message for a known backend `code`; fall back to
+        // the server's human `detail`, then a generic message.
+        final code = data['code'];
+        if (code is String && l10n != null) {
+          final localized = localizedApiError(code, l10n);
+          if (localized != null) return localized;
+        }
         return data['detail']?.toString() ?? (l10n?.errorGeneric ?? 'An error occurred.');
       }
     } catch (_) {}

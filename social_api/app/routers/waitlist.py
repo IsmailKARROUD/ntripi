@@ -17,6 +17,7 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.models.waitlist import WaitlistEntry
+from app.errors import ApiError
 
 router = APIRouter(tags=["Waitlist"])
 
@@ -43,9 +44,9 @@ def join_waitlist(
     db: Session = Depends(get_db),
 ) -> dict:
     if not body.email and not body.whatsapp:
-        raise HTTPException(
+        raise ApiError(
             status_code=422,
-            detail="Provide at least an email or a WhatsApp number.",
+            code="waitlist_contact_required", detail="Provide at least an email or a WhatsApp number.",
         )
 
     entry = WaitlistEntry(

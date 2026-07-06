@@ -17,6 +17,7 @@ import 'package:social_flutter/features/itineraries/presentation/widgets/edit_pe
 import 'package:social_flutter/features/itineraries/presentation/widgets/markdown_notes_editor.dart';
 import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
 import 'package:social_flutter/l10n/app_localizations.dart';
+import 'package:social_flutter/shared/utils/duration_format.dart';
 import 'package:social_flutter/shared/widgets/loaders.dart';
 
 class StopDetailScreen extends ConsumerWidget {
@@ -110,6 +111,7 @@ class _StopDetailView extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     final hasNotes = stop.notes != null && stop.notes!.trim().isNotEmpty;
     final hasAnnotations = stop.annotations.isNotEmpty;
     final hasTransit = inboundSegment != null || outboundSegment != null;
@@ -139,17 +141,15 @@ class _StopDetailView extends ConsumerWidget {
                 children: [
                   _StopStat(
                     icon: Icons.schedule_rounded,
-                    label: 'Time',
-                    value: stop.durationMin != null
-                        ? stop.formattedDuration
-                        : '—',
+                    label: l10n.timeLabel,
+                    value: stop.formattedDuration(l10n),
                   ),
                   const SizedBox(width: 8),
                   _StopStat(
                     icon: Icons.payments_rounded,
-                    label: 'Cost',
+                    label: l10n.costLabel,
                     value: stop.isFree
-                        ? 'Free'
+                        ? l10n.freeLegLabel
                         : stop.cost > 0
                             ? formatMoney(stop.cost, currency)
                             : '—',
@@ -165,7 +165,7 @@ class _StopDetailView extends ConsumerWidget {
             SliverToBoxAdapter(
               child: _SectionLabel(
                 icon: Icons.bookmark_rounded,
-                label: 'Annotations · ${stop.annotations.length}',
+                label: '${l10n.annotationsLabel} · ${stop.annotations.length}',
               ),
             ),
             SliverToBoxAdapter(
@@ -185,9 +185,9 @@ class _StopDetailView extends ConsumerWidget {
 
           // ── Transit ────────────────────────────────────────────────────────
           if (hasTransit) ...[
-            const SliverToBoxAdapter(
+            SliverToBoxAdapter(
               child: _SectionLabel(
-                  icon: Icons.alt_route_rounded, label: 'Transit'),
+                  icon: Icons.alt_route_rounded, label: l10n.transitLabel),
             ),
             SliverToBoxAdapter(
               child: _SectionCard(
@@ -217,8 +217,9 @@ class _StopDetailView extends ConsumerWidget {
           
           // ── Notes ──────────────────────────────────────────────────────────
           if (hasNotes) ...[
-            const SliverToBoxAdapter(
-              child: _SectionLabel(icon: Icons.description_rounded, label: 'Notes'),
+            SliverToBoxAdapter(
+              child: _SectionLabel(
+                  icon: Icons.description_rounded, label: l10n.notesLabel),
             ),
             SliverToBoxAdapter(
               child: _SectionCard(
@@ -310,7 +311,8 @@ class _StopHero extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Stop $stopNumber of $totalStops',
+                      AppLocalizations.of(context)!
+                          .stopNumberOfTotal(stopNumber, totalStops),
                       style: const TextStyle(
                         fontSize: 10,
                         fontWeight: FontWeight.w700,
@@ -420,44 +422,16 @@ class _AnnotationFullRow extends StatelessWidget {
   final Annotation annotation;
   const _AnnotationFullRow({required this.annotation});
 
-  static const _palette = {
-    AnnotationType.advice: (
-      bg: Color(0xFFE0EBE4),
-      fg: kForest,
-      icon: Icons.lightbulb_rounded,
-      label: 'Tip',
-    ),
-    AnnotationType.caution: (
-      bg: Color(0xFFFFE3CC),
-      fg: Color(0xFFA05D1F),
-      icon: Icons.warning_rounded,
-      label: 'Caution',
-    ),
-    AnnotationType.avoid: (
-      bg: Color(0xFFFFD6D2),
-      fg: Color(0xFFA02828),
-      icon: Icons.block_rounded,
-      label: 'Avoid',
-    ),
-    AnnotationType.info: (
-      bg: Color(0xFFDCEAF6),
-      fg: Color(0xFF3B6EA5),
-      icon: Icons.info_rounded,
-      label: 'Info',
-    ),
-  };
-
   @override
   Widget build(BuildContext context) {
-    final p = _palette[annotation.type];
-    if (p == null) return const SizedBox.shrink();
+    final t = annotation.type;
 
     return Container(
       padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
       decoration: BoxDecoration(
-        color: p.bg,
+        color: t.bg,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: p.fg.withValues(alpha: 0.13)),
+        border: Border.all(color: t.fg.withValues(alpha: 0.13)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -466,11 +440,11 @@ class _AnnotationFullRow extends StatelessWidget {
             width: 28,
             height: 28,
             decoration: BoxDecoration(
-              color: p.fg.withValues(alpha: 0.2),
+              color: t.fg.withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(10),
             ),
             alignment: Alignment.center,
-            child: Icon(p.icon, size: 15, color: p.fg),
+            child: Icon(t.icon, size: 15, color: t.fg),
           ),
           const SizedBox(width: 10),
           Expanded(
@@ -478,11 +452,11 @@ class _AnnotationFullRow extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  p.label.toUpperCase(),
+                  t.label(AppLocalizations.of(context)!).toUpperCase(),
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
-                    color: p.fg,
+                    color: t.fg,
                     letterSpacing: 0.5,
                   ),
                 ),
@@ -526,18 +500,19 @@ class _TransitFullRow extends StatelessWidget {
           orElse: () => allStops.first).placeName ??
       '—';
 
-  String _fmtLegCost(double cost, bool isFree) {
-    if (isFree || cost <= 0) return 'Free';
+  String _fmtLegCost(double cost, bool isFree, AppLocalizations l10n) {
+    if (isFree || cost <= 0) return l10n.freeLegLabel;
     return formatMoney(cost, currency);
   }
 
-  String _totalCost() {
-    if (segment.totalCost <= 0) return 'Free';
+  String _totalCost(AppLocalizations l10n) {
+    if (segment.totalCost <= 0) return l10n.freeLegLabel;
     return formatMoney(segment.totalCost, currency);
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final isInbound = direction == _TransitDirection.inbound;
     final otherName = isInbound
         ? _stopName(segment.fromStopId)
@@ -563,7 +538,9 @@ class _TransitFullRow extends StatelessWidget {
               const SizedBox(width: 4),
               Expanded(
                 child: Text(
-                  isInbound ? 'From $otherName' : 'To $otherName',
+                  isInbound
+                      ? l10n.fromStopName(otherName)
+                      : l10n.toStopName(otherName),
                   style: const TextStyle(
                     fontSize: 11,
                     color: kText2,
@@ -613,7 +590,7 @@ class _TransitFullRow extends StatelessWidget {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                legs[i].mode.label,
+                                legs[i].mode.label(l10n),
                                 style: const TextStyle(
                                   fontSize: 13,
                                   fontWeight: FontWeight.w700,
@@ -637,7 +614,7 @@ class _TransitFullRow extends StatelessWidget {
                             if (legs[i].durationMin != null &&
                                 legs[i].durationMin! > 0)
                               Text(
-                                _fmtDuration(legs[i].durationMin!),
+                                formatDuration(legs[i].durationMin, l10n),
                                 style: const TextStyle(
                                     fontSize: 12,
                                     fontWeight: FontWeight.w600,
@@ -645,7 +622,7 @@ class _TransitFullRow extends StatelessWidget {
                               ),
                             Text(
                               _fmtLegCost(
-                                  legs[i].cost, legs[i].isFree),
+                                  legs[i].cost, legs[i].isFree, l10n),
                               style: const TextStyle(
                                   fontSize: 11, color: kText2),
                             ),
@@ -666,9 +643,9 @@ class _TransitFullRow extends StatelessWidget {
                         const Icon(Icons.summarize_rounded,
                             size: 13, color: kTransitIcon),
                         const SizedBox(width: 6),
-                        const Text(
-                          'Total',
-                          style: TextStyle(
+                        Text(
+                          l10n.totalLabel,
+                          style: const TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w700,
                             color: kTransitIcon,
@@ -677,7 +654,7 @@ class _TransitFullRow extends StatelessWidget {
                         const Spacer(),
                         if (segment.totalDurationMin > 0) ...[
                           Text(
-                            _fmtDuration(segment.totalDurationMin),
+                            formatDuration(segment.totalDurationMin, l10n),
                             style: const TextStyle(
                                 fontSize: 11, color: kTransitIcon),
                           ),
@@ -690,7 +667,7 @@ class _TransitFullRow extends StatelessWidget {
                           ),
                         ],
                         Text(
-                          _totalCost(),
+                          _totalCost(l10n),
                           style: const TextStyle(
                               fontSize: 11, color: kTransitIcon),
                         ),
@@ -707,13 +684,6 @@ class _TransitFullRow extends StatelessWidget {
   }
 }
 
-String _fmtDuration(int minutes) {
-  final h = minutes ~/ 60;
-  final m = minutes % 60;
-  if (h == 0) return '${m}min';
-  if (m == 0) return '${h}h';
-  return '${h}h ${m}min';
-}
 
 // ─── Shared section widgets ───────────────────────────────────────────────────
 class _SectionLabel extends StatelessWidget {

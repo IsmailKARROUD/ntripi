@@ -86,6 +86,7 @@ from app.services.image_service import ImageProcessingError, process_cover_image
 from app.services.itinerary_access import can_view_itinerary, recalculate_rating
 from app.services.ordering import MAX_RANK_LENGTH, key_between, n_keys_between
 from app.storage.factory import storage
+from app.errors import ApiError
 
 router = APIRouter(tags=["Itineraries"])
 user_itineraries_router = APIRouter(tags=["Itineraries"])
@@ -135,15 +136,15 @@ def _bump_and_etag(itinerary: Itinerary, db: Session) -> str:
 def _get_itinerary_or_404(itinerary_id: uuid.UUID, db: Session) -> Itinerary:
     itinerary = db.get(Itinerary, itinerary_id)
     if not itinerary:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                            detail="Itinerary not found.")
+        raise ApiError(status_code=status.HTTP_404_NOT_FOUND,
+                            code="itinerary_not_found", detail="Itinerary not found.")
     return itinerary
 
 
 def _require_owner(itinerary: Itinerary, current_user: User) -> None:
     if itinerary.user_id != current_user.id:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
-                            detail="You do not have permission to modify this itinerary.")
+        raise ApiError(status_code=status.HTTP_403_FORBIDDEN,
+                            code="itinerary_not_owner", detail="You do not have permission to modify this itinerary.")
 
 
 def _recalculate_segment_totals(segment: TransitSegment, db: Session) -> None:
@@ -206,8 +207,8 @@ def _load_itinerary_detail(itinerary_id: uuid.UUID, db: Session) -> Itinerary:
     ).scalar_one_or_none()
 
     if not itinerary:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                            detail="Itinerary not found.")
+        raise ApiError(status_code=status.HTTP_404_NOT_FOUND,
+                            code="itinerary_not_found", detail="Itinerary not found.")
 
     # Sort tracks and stops by rank. Because rank is COLLATE "C" in the DB
     # and Python uses the same byte ordering by default, the Python sort and
@@ -226,8 +227,8 @@ def _get_stop_or_404(stop_id: uuid.UUID, itinerary_id: uuid.UUID, db: Session) -
         .where(Stop.id == stop_id, Stop.itinerary_id == itinerary_id)
     ).scalar_one_or_none()
     if not stop:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                            detail="Stop not found.")
+        raise ApiError(status_code=status.HTTP_404_NOT_FOUND,
+                            code="stop_not_found", detail="Stop not found.")
     return stop
 
 
@@ -236,8 +237,8 @@ def _get_track_or_404(track_id: uuid.UUID, itinerary_id: uuid.UUID, db: Session)
         select(Track).where(Track.id == track_id, Track.itinerary_id == itinerary_id)
     ).scalar_one_or_none()
     if not track:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                            detail="Track not found or does not belong to this itinerary.")
+        raise ApiError(status_code=status.HTTP_404_NOT_FOUND,
+                            code="track_not_found", detail="Track not found or does not belong to this itinerary.")
     return track
 
 
@@ -353,9 +354,9 @@ def _resolve_stop_rank(
             before_rank = before_stop.rank
 
         if after_rank and before_rank and after_rank >= before_rank:
-            raise HTTPException(
+            raise ApiError(
                 status_code=status.HTTP_412_PRECONDITION_FAILED,
-                detail="itinerary modified, please reload",
+                code="itinerary_stale", detail="itinerary modified, please reload",
             )
 
         # No anchors → tail insert: place after the last existing stop in this track.
@@ -410,9 +411,9 @@ def _resolve_track_rank(
         before_rank = before_track.rank
 
     if after_rank and before_rank and after_rank >= before_rank:
-        raise HTTPException(
+        raise ApiError(
             status_code=status.HTTP_412_PRECONDITION_FAILED,
-            detail="itinerary modified, please reload",
+            code="itinerary_stale", detail="itinerary modified, please reload",
         )
 
     return key_between(after_rank, before_rank)
@@ -426,8 +427,8 @@ def _get_segment_or_404(segment_id, itinerary_id, db):
                TransitSegment.itinerary_id == itinerary_id)
     ).scalar_one_or_none()
     if not segment:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                            detail="Transit segment not found.")
+        raise ApiError(status_code=status.HTTP_404_NOT_FOUND,
+                            code="segment_not_found", detail="Transit segment not found.")
     return segment
 
 
@@ -437,8 +438,8 @@ def _get_leg_or_404(leg_id, segment_id, db):
                                    TransportLeg.segment_id == segment_id)
     ).scalar_one_or_none()
     if not leg:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                            detail="Transport leg not found.")
+        raise ApiError(status_code=status.HTTP_404_NOT_FOUND,
+                            code="leg_not_found", detail="Transport leg not found.")
     return leg
 
 
@@ -563,8 +564,8 @@ def get_itinerary(
     itinerary = _load_itinerary_detail(itinerary_id, db)
 
     if not can_view_itinerary(itinerary, current_user.id, db):
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
-                            detail="You don't have access to this itinerary")
+        raise ApiError(status_code=status.HTTP_403_FORBIDDEN,
+                            code="itinerary_access_denied", detail="You don't have access to this itinerary")
 
     from fastapi.responses import JSONResponse
     import json
@@ -634,12 +635,12 @@ def add_allowed_user(
     _require_owner(itinerary, current_user)
 
     if itinerary.visibility != 'restricted':
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
-                            detail="Allowlist only applies to restricted itineraries")
+        raise ApiError(status_code=status.HTTP_400_BAD_REQUEST,
+                            code="allowlist_restricted_only", detail="Allowlist only applies to restricted itineraries")
 
     target_user = db.get(User, body.user_id)
     if not target_user:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found.")
+        raise ApiError(status_code=status.HTTP_404_NOT_FOUND, code="user_not_found", detail="User not found.")
 
     existing = db.execute(
         select(ItineraryAllowedUser).where(
@@ -648,8 +649,8 @@ def add_allowed_user(
         )
     ).scalar_one_or_none()
     if existing:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT,
-                            detail="User already has access")
+        raise ApiError(status_code=status.HTTP_409_CONFLICT,
+                            code="allowlist_user_exists", detail="User already has access")
 
     entry = ItineraryAllowedUser(itinerary_id=itinerary_id, user_id=body.user_id)
     db.add(entry)
@@ -712,8 +713,8 @@ def remove_allowed_user(
     ).scalar_one_or_none()
 
     if not entry:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                            detail="User not found in allowlist")
+        raise ApiError(status_code=status.HTTP_404_NOT_FOUND,
+                            code="allowlist_user_not_found", detail="User not found in allowlist")
 
     db.delete(entry)
     db.commit()
@@ -786,8 +787,8 @@ def add_stop(
         except IntegrityError:
             db.rollback()
             if attempt == 2:
-                raise HTTPException(status_code=status.HTTP_409_CONFLICT,
-                                    detail="Rank collision — please retry.")
+                raise ApiError(status_code=status.HTTP_409_CONFLICT,
+                                    code="rank_collision", detail="Rank collision — please retry.")
             # The rank we computed collided with a concurrent insert at the same
             # anchor. Roll back, let the loop re-run _resolve_*_rank with fresh DB
             # state, which will now see the concurrent row and bisect around it.
@@ -897,8 +898,8 @@ def delete_stop(
     ).scalar_one_or_none()
 
     if not stop:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                            detail="Stop not found.")
+        raise ApiError(status_code=status.HTTP_404_NOT_FOUND,
+                            code="stop_not_found", detail="Stop not found.")
 
     track_id = stop.track_id
     db.delete(stop)
@@ -1103,8 +1104,8 @@ def update_itinerary_annotation(
     ).scalar_one_or_none()
 
     if not annotation:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                            detail="Annotation not found.")
+        raise ApiError(status_code=status.HTTP_404_NOT_FOUND,
+                            code="annotation_not_found", detail="Annotation not found.")
 
     if body.type is not None:
         annotation.type = body.type
@@ -1136,8 +1137,8 @@ def delete_itinerary_annotation(
     ).scalar_one_or_none()
 
     if not annotation:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                            detail="Annotation not found.")
+        raise ApiError(status_code=status.HTTP_404_NOT_FOUND,
+                            code="annotation_not_found", detail="Annotation not found.")
 
     db.delete(annotation)
     _touch_itinerary(itinerary)
@@ -1165,8 +1166,8 @@ def add_annotation(
     ).scalar_one_or_none()
 
     if not stop:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                            detail="Stop not found.")
+        raise ApiError(status_code=status.HTTP_404_NOT_FOUND,
+                            code="stop_not_found", detail="Stop not found.")
 
     annotation = Annotation(stop_id=stop_id, type=body.type, content=body.content)
     db.add(annotation)
@@ -1199,8 +1200,8 @@ def delete_annotation(
     ).scalar_one_or_none()
 
     if not annotation:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                            detail="Annotation not found.")
+        raise ApiError(status_code=status.HTTP_404_NOT_FOUND,
+                            code="annotation_not_found", detail="Annotation not found.")
 
     db.delete(annotation)
     _touch_itinerary(itinerary)
@@ -1230,8 +1231,8 @@ def update_annotation(
     ).scalar_one_or_none()
 
     if not annotation:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                            detail="Annotation not found.")
+        raise ApiError(status_code=status.HTTP_404_NOT_FOUND,
+                            code="annotation_not_found", detail="Annotation not found.")
 
     if body.content is not None:
         annotation.content = body.content
@@ -1259,8 +1260,8 @@ def upsert_rating(
 ) -> RatingResponse:
     itinerary = _get_itinerary_or_404(itinerary_id, db)
     if not can_view_itinerary(itinerary, current_user.id, db):
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
-                            detail="You do not have access to this itinerary.")
+        raise ApiError(status_code=status.HTTP_403_FORBIDDEN,
+                            code="itinerary_access_denied", detail="You do not have access to this itinerary.")
 
     existing = db.execute(
         select(ItineraryRating).where(
@@ -1320,8 +1321,8 @@ def delete_my_rating(
     ).scalar_one_or_none()
 
     if not rating:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                            detail="You have not rated this itinerary.")
+        raise ApiError(status_code=status.HTTP_404_NOT_FOUND,
+                            code="rating_not_found", detail="You have not rated this itinerary.")
 
     db.delete(rating)
     db.flush()
@@ -1346,8 +1347,8 @@ def get_my_rating(
     ).scalar_one_or_none()
 
     if not rating:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                            detail="You have not rated this itinerary.")
+        raise ApiError(status_code=status.HTTP_404_NOT_FOUND,
+                            code="rating_not_found", detail="You have not rated this itinerary.")
 
     return rating  # type: ignore[return-value]
 
@@ -1361,8 +1362,8 @@ def get_ratings_page(
 ) -> RatingsPageResponse:
     itinerary = _get_itinerary_or_404(itinerary_id, db)
     if not can_view_itinerary(itinerary, current_user.id, db):
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
-                            detail="You do not have access to this itinerary.")
+        raise ApiError(status_code=status.HTTP_403_FORBIDDEN,
+                            code="itinerary_access_denied", detail="You do not have access to this itinerary.")
 
     rows = db.execute(
         select(
@@ -1454,8 +1455,8 @@ def create_segment(
         db.flush()
     except IntegrityError:
         db.rollback()
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT,
-                            detail="A segment between these two stops already exists.")
+        raise ApiError(status_code=status.HTTP_409_CONFLICT,
+                            code="segment_already_exists", detail="A segment between these two stops already exists.")
 
     for leg_data in body.legs:
         leg = TransportLeg(segment_id=segment.id, **leg_data.model_dump())
@@ -1478,8 +1479,8 @@ def list_segments(
 ) -> list[TransitSegmentResponse]:
     itinerary = _get_itinerary_or_404(itinerary_id, db)
     if not can_view_itinerary(itinerary, current_user.id, db):
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
-                            detail="You do not have access to this itinerary.")
+        raise ApiError(status_code=status.HTTP_403_FORBIDDEN,
+                            code="itinerary_access_denied", detail="You do not have access to this itinerary.")
 
     segments = db.execute(
         select(TransitSegment)
@@ -1536,8 +1537,8 @@ def update_segment(
         db.flush()
     except IntegrityError:
         db.rollback()
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT,
-                            detail="A segment between these two stops already exists.")
+        raise ApiError(status_code=status.HTTP_409_CONFLICT,
+                            code="segment_already_exists", detail="A segment between these two stops already exists.")
 
     _recalculate_segment_totals(segment, db)
     _recalculate_totals(itinerary, db)
@@ -1714,8 +1715,8 @@ def get_user_itineraries(
 ) -> list[ItinerarySummary]:
     target_user = db.get(User, user_id)
     if not target_user or not target_user.is_active:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                            detail="User not found.")
+        raise ApiError(status_code=status.HTTP_404_NOT_FOUND,
+                            code="user_not_found", detail="User not found.")
 
     itineraries = db.execute(
         select(Itinerary)

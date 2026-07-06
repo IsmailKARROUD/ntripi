@@ -1626,4 +1626,518 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get hideOptionalFields => 'Hide optional fields';
+
+  @override
+  String get transportModeWalk => 'Walk';
+
+  @override
+  String get transportModeBus => 'Bus';
+
+  @override
+  String get transportModeTram => 'Tram';
+
+  @override
+  String get transportModeMetro => 'Metro';
+
+  @override
+  String get transportModeTrain => 'Train';
+
+  @override
+  String get transportModeTaxi => 'Taxi';
+
+  @override
+  String get transportModeUber => 'Uber';
+
+  @override
+  String get transportModeBike => 'Bike';
+
+  @override
+  String get transportModeFerry => 'Ferry';
+
+  @override
+  String get transportModeCar => 'Car';
+
+  @override
+  String get transportModeAirplane => 'Airplane';
+
+  @override
+  String get dimensionOverall => 'Overall';
+
+  @override
+  String get dimensionOverallDesc => 'General impression';
+
+  @override
+  String get dimensionSafetyDesc => 'How safe you felt throughout';
+
+  @override
+  String get dimensionExperienceDesc => 'Quality of the overall experience';
+
+  @override
+  String get dimensionAccessibilityDesc => 'Ease of access for all abilities';
+
+  @override
+  String get dimensionFamilyFriendlyDesc =>
+      'Suitability for children and families';
+
+  @override
+  String get dimensionCrowdednessDesc => 'How uncrowded and spacious it felt';
+
+  @override
+  String dimensionRatingTitle(String label) {
+    return '$label Rating';
+  }
+
+  @override
+  String noRatingsYetFor(String label) {
+    return 'No ratings yet for $label';
+  }
+
+  @override
+  String basedOnRatings(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Based on $count ratings',
+      one: 'Based on $count rating',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get ratersLabel => 'Raters';
+
+  @override
+  String get annotationAdviceDesc => 'Something useful or pro-tip.';
+
+  @override
+  String get annotationCautionDesc => 'Pay attention — surprises possible.';
+
+  @override
+  String get annotationAvoidDesc => 'Don\'t do this. Save your time.';
+
+  @override
+  String get annotationInfoDesc => 'A neutral fact worth knowing.';
+
+  @override
+  String get unknownUser => 'Unknown';
+
+  @override
+  String timeAgoMonths(int count) {
+    return '${count}mo ago';
+  }
+
+  @override
+  String timeAgoDays(int count) {
+    return '${count}d ago';
+  }
+
+  @override
+  String timeAgoHours(int count) {
+    return '${count}h ago';
+  }
+
+  @override
+  String timeAgoMinutes(int count) {
+    return '${count}min ago';
+  }
+
+  @override
+  String get timeJustNow => 'Just now';
+
+  @override
+  String get yearsAbbrev => 'y';
+
+  @override
+  String get timeLabel => 'Time';
+
+  @override
+  String get transitLabel => 'Transit';
+
+  @override
+  String get noLegsYetTapAdd => 'No legs yet. Tap ＋ to add.';
+
+  @override
+  String get segmentNeedsOneLeg =>
+      'A segment needs at least one leg. Delete the segment instead.';
+
+  @override
+  String fromStopName(String name) {
+    return 'From $name';
+  }
+
+  @override
+  String toStopName(String name) {
+    return 'To $name';
+  }
+
+  @override
+  String get visibilityPublicDesc => 'Anyone with the link can view.';
+
+  @override
+  String get visibilityFollowersDesc => 'Only people who follow you.';
+
+  @override
+  String get visibilityRestrictedDesc => 'Only people you allow.';
+
+  @override
+  String get visibilityOnlyMeDesc => 'Just you.';
+
+  @override
+  String get saveItineraryFirstAllowlist =>
+      'Save the itinerary first, then manage your allowlist from the edit screen.';
+
+  @override
+  String get allowlistLabel => 'Allowlist';
+
+  @override
+  String personCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count people',
+      one: '$count person',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String removedFromAllowlist(String name) {
+    return 'Removed $name from allowlist';
+  }
+
+  @override
+  String get addPeople => 'Add people';
+
+  @override
+  String get otherOption => 'Other';
+
+  @override
+  String get thisItineraryFallback => 'this itinerary';
+
+  @override
+  String get discardReorderMessage => 'Your reorder will not be saved.';
+
+  @override
+  String get emptyTrackName => '(empty)';
+
+  @override
+  String get unnamedStop => '(unnamed)';
+
+  @override
+  String get unknownStop => '(unknown)';
+
+  @override
+  String get dragToChangeTrackOrder => 'Drag to change the track order';
+
+  @override
+  String transitSegmentsWillBeDeleted(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count transit segments will be deleted',
+      one: '1 transit segment will be deleted',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String andMoreCount(int count) {
+    return '… and $count more';
+  }
+
+  @override
+  String altsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count alts',
+      one: '$count alt',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String segmentToWillBeDeleted(String name) {
+    return '→ $name  —  segment will be deleted';
+  }
+
+  @override
+  String get reorderAlternativesTitle => 'Reorder alternatives';
+
+  @override
+  String get reorderAlternativesHint =>
+      'Drag to change which option appears first. Tap Save to apply.';
+
+  @override
+  String get emptyTrackLabel => '(empty track)';
+
+  @override
+  String get moveStopToLabel => 'Move stop to';
+
+  @override
+  String get messageLabel => 'Message';
+
+  @override
+  String get annotationKeepShortHint =>
+      'Keep it short — under 200 characters reads best on small screens.';
+
+  @override
+  String get transportModeSection => 'Transport mode';
+
+  @override
+  String get lineDirectionSection => 'Line & direction';
+
+  @override
+  String get durationCostSection => 'Duration & cost';
+
+  @override
+  String get allRatersLabel => 'All raters';
+
+  @override
+  String travelersRatedThis(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count travelers rated this',
+      one: '$count traveler rated this',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get byDimensionLabel => 'By dimension';
+
+  @override
+  String get notEnoughRatings => 'Not enough ratings';
+
+  @override
+  String get youRatedThis => 'You rated this';
+
+  @override
+  String get changeButton => 'Change';
+
+  @override
+  String get hideReview => 'Hide review';
+
+  @override
+  String get readReview => 'Read review';
+
+  @override
+  String get notesLabel => 'Notes';
+
+  @override
+  String get viewLess => 'view less';
+
+  @override
+  String get viewMore => '... view more';
+
+  @override
+  String get addNoteButton => 'Add note';
+
+  @override
+  String get imageTooLarge => 'Image is too large (max 10 MB).';
+
+  @override
+  String get couldNotLoadImage => 'Could not load image. Please try another.';
+
+  @override
+  String get pinchToZoomHint => 'Pinch to zoom · Drag to reposition';
+
+  @override
+  String get addCoverImage => 'Add a cover image';
+
+  @override
+  String get coverOptionalMapFallback =>
+      'Optional — the map will be used otherwise.';
+
+  @override
+  String get mapTapToPlacePin => 'Tap the map to place a pin';
+
+  @override
+  String get mapTapToMovePin =>
+      'Tap elsewhere to move the pin, then tap Confirm';
+
+  @override
+  String get nothingToPreview => 'Nothing to preview yet.';
+
+  @override
+  String get rateOverallFirstHint =>
+      'Rate your overall impression. Once you do, you can share more.';
+
+  @override
+  String get splashTagline =>
+      'Discover & share travel itineraries\ncrafted by real explorers';
+
+  @override
+  String get splashMotto => 'Explore the world, one route at a time';
+
+  @override
+  String get tripsPillLabel => 'trips';
+
+  @override
+  String get stopsPillLabel => 'stops';
+
+  @override
+  String get travelledPillLabel => 'travelled';
+
+  @override
+  String get stopFallbackName => 'Stop';
+
+  @override
+  String get undoLabel => 'Undo';
+
+  @override
+  String get updateYourRating => 'Update your rating';
+
+  @override
+  String get moveActionLabel => 'move';
+
+  @override
+  String get reorderActionLabel => 'reorder';
+
+  @override
+  String get aStopFallback => 'A stop';
+
+  @override
+  String get locationLabel => 'Location';
+
+  @override
+  String get noLocationSet => 'No location set';
+
+  @override
+  String get detailsSection => 'Details';
+
+  @override
+  String get addLanguageTitle => 'Add language';
+
+  @override
+  String alreadyInItinerary(String name) {
+    return '$name is already in this itinerary.';
+  }
+
+  @override
+  String stopNumberOfTotal(int n, int total) {
+    return 'Stop $n of $total';
+  }
+
+  @override
+  String shareCaption(String title, String stops, String duration) {
+    return 'Check out \"$title\" on Ntripi — $stops, $duration';
+  }
+
+  @override
+  String get apiErrorNotAuthenticated => 'You are not signed in.';
+
+  @override
+  String get apiErrorAccountDeactivated => 'Your account has been deactivated.';
+
+  @override
+  String get apiErrorEmailUnverified =>
+      'Verify your email via Google to do this.';
+
+  @override
+  String get apiErrorItineraryNotFound => 'Itinerary not found.';
+
+  @override
+  String get apiErrorItineraryNotOwner =>
+      'You don\'t have permission to modify this itinerary.';
+
+  @override
+  String get apiErrorIfMatchRequired =>
+      'This change could not be saved — please reload and try again.';
+
+  @override
+  String get apiErrorItineraryStale =>
+      'The itinerary was modified — please reload.';
+
+  @override
+  String get apiErrorWaitlistContactRequired =>
+      'Provide at least an email or a WhatsApp number.';
+
+  @override
+  String get apiErrorGoogleTokenInvalid => 'Invalid Google token.';
+
+  @override
+  String get apiErrorInvalidGrant =>
+      'Your session expired. Please sign in again.';
+
+  @override
+  String get apiErrorStopNotFound => 'Stop not found.';
+
+  @override
+  String get apiErrorTrackNotFound =>
+      'Track not found, or it doesn\'t belong to this itinerary.';
+
+  @override
+  String get apiErrorSegmentNotFound => 'Transit segment not found.';
+
+  @override
+  String get apiErrorLegNotFound => 'Transport leg not found.';
+
+  @override
+  String get apiErrorItineraryAccessDenied =>
+      'You don\'t have access to this itinerary.';
+
+  @override
+  String get apiErrorAllowlistRestrictedOnly =>
+      'The allowlist only applies to restricted itineraries.';
+
+  @override
+  String get apiErrorUserNotFound => 'User not found.';
+
+  @override
+  String get apiErrorAllowlistUserExists => 'This user already has access.';
+
+  @override
+  String get apiErrorAllowlistUserNotFound =>
+      'User not found in the allowlist.';
+
+  @override
+  String get apiErrorRankCollision => 'Ordering conflict — please retry.';
+
+  @override
+  String get apiErrorAnnotationNotFound => 'Annotation not found.';
+
+  @override
+  String get apiErrorRatingNotFound => 'You haven\'t rated this itinerary.';
+
+  @override
+  String get apiErrorSegmentAlreadyExists =>
+      'A segment already connects these two stops.';
+
+  @override
+  String get apiErrorIncorrectPassword => 'Incorrect password.';
+
+  @override
+  String get apiErrorLoginInvalid => 'Incorrect email/username or password.';
+
+  @override
+  String get apiErrorCannotFollowSelf => 'You cannot follow yourself.';
+
+  @override
+  String get apiErrorNotFollowing => 'You are not following this user.';
+
+  @override
+  String get apiErrorFollowRequestNotFound => 'Follow request not found.';
+
+  @override
+  String get apiErrorFollowRequestAlreadyAccepted =>
+      'This follow request has already been accepted.';
+
+  @override
+  String get apiErrorCannotRejectRequest =>
+      'You cannot reject this follow request.';
+
+  @override
+  String get apiErrorAccountPrivate => 'This account is private.';
+
+  @override
+  String get apiErrorTosRequired =>
+      'You must accept the Terms of Service to register.';
+
+  @override
+  String get apiErrorUsernameTaken => 'This username is already taken.';
+
+  @override
+  String get apiErrorEmailTaken => 'An account with this email already exists.';
 }

@@ -37,21 +37,26 @@ class _LanguagePickerSheetState extends State<_LanguagePickerSheet> {
     super.dispose();
   }
 
-  List<Language> get _filtered {
+  List<Language> _filtered(String langCode) {
     final excluded = widget.exclude.map((c) => c.toUpperCase()).toSet();
     final list = kLanguages.where((l) => !excluded.contains(l.code)).toList();
+    // Source list is EN-alphabetical; re-sort so FR users get FR order.
+    list.sort((a, b) => a.localizedName(langCode).compareTo(b.localizedName(langCode)));
     if (_query.isEmpty) return list;
     final q = _query.toLowerCase();
+    // Match both spellings so "German" still finds "Allemand" and vice versa.
     return list
         .where((l) =>
             l.name.toLowerCase().contains(q) ||
+            l.nameFr.toLowerCase().contains(q) ||
             l.code.toLowerCase().contains(q))
         .toList();
   }
 
   @override
   Widget build(BuildContext context) {
-    final filtered = _filtered;
+    final langCode = Localizations.localeOf(context).languageCode;
+    final filtered = _filtered(langCode);
     final maxHeight = MediaQuery.of(context).size.height * 0.85;
     return Container(
       constraints: BoxConstraints(maxHeight: maxHeight),
@@ -72,13 +77,13 @@ class _LanguagePickerSheetState extends State<_LanguagePickerSheet> {
               borderRadius: BorderRadius.circular(2),
             ),
           ),
-          const Padding(
-            padding: EdgeInsets.fromLTRB(16, 14, 16, 4),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 14, 16, 4),
             child: Align(
               alignment: Alignment.centerLeft,
               child: Text(
-                'Add language',
-                style: TextStyle(
+                AppLocalizations.of(context)!.addLanguageTitle,
+                style: const TextStyle(
                   fontSize: 17,
                   fontWeight: FontWeight.w700,
                   color: kBark,
@@ -132,7 +137,7 @@ class _LanguagePickerSheetState extends State<_LanguagePickerSheet> {
                 final lang = filtered[index];
                 return ListTile(
                   title: Text(
-                    lang.name,
+                    lang.localizedName(langCode),
                     style: const TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w500,

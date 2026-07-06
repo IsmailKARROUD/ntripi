@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{{ lang or 'en' }}">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Itinerary Not Found — Ntripi</title>
-  <meta name="description" content="This itinerary is not available.">
+  <title>{{ _('share_not_found_title') }}</title>
+  <meta name="description" content="{{ _('share_not_found_body') }}">
 
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -106,9 +106,9 @@
 <main>
   <div class="card">
     <div class="icon">🗺️</div>
-    <h1>Itinerary not found</h1>
-    <p>This itinerary is not available or may have been removed.</p>
-    <a href="/" class="home-link">Go to Ntripi</a>
+    <h1>{{ _('share_not_found_heading') }}</h1>
+    <p>{{ _('share_not_found_body') }}</p>
+    <a href="/" class="home-link">{{ _('share_go_to_ntripi') }}</a>
   </div>
 </main>
 

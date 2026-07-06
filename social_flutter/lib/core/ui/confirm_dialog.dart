@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:social_flutter/l10n/app_localizations.dart';
 
 import 'app_theme.dart';
 
@@ -17,16 +18,18 @@ class ConfirmDialog extends StatelessWidget {
     required this.title,
     this.message,
     this.icon = Icons.help_outline,
-    this.confirmLabel = 'Confirm',
-    this.cancelLabel = 'Cancel',
+    this.confirmLabel,
+    this.cancelLabel,
     this.tone = ConfirmTone.defaultTone,
   });
 
   final String title;
   final String? message;
   final IconData icon;
-  final String confirmLabel;
-  final String cancelLabel;
+
+  /// Defaults to the localized Confirm / Cancel labels when null.
+  final String? confirmLabel;
+  final String? cancelLabel;
   final ConfirmTone tone;
 
   static Future<bool> show(
@@ -34,8 +37,8 @@ class ConfirmDialog extends StatelessWidget {
     required String title,
     String? message,
     IconData icon = Icons.help_outline,
-    String confirmLabel = 'Confirm',
-    String cancelLabel = 'Cancel',
+    String? confirmLabel,
+    String? cancelLabel,
     ConfirmTone tone = ConfirmTone.defaultTone,
   }) async {
     // showGeneralDialog (not showDialog) so we control the scrim tint and the
@@ -75,6 +78,7 @@ class ConfirmDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final isDanger = tone == ConfirmTone.danger;
     final accent = isDanger ? kDanger : kForest;
     final badgeBg = isDanger ? kDangerTint : kMist;
@@ -136,7 +140,7 @@ class ConfirmDialog extends StatelessWidget {
                 children: [
                   Expanded(
                     child: _ConfirmButton(
-                      label: cancelLabel,
+                      label: cancelLabel ?? l10n.cancel,
                       // calm/safe action: sand fill, bordered, dark text
                       background: kSand,
                       foreground: kBark,
@@ -148,7 +152,7 @@ class ConfirmDialog extends StatelessWidget {
                   const SizedBox(width: 10),
                   Expanded(
                     child: _ConfirmButton(
-                      label: confirmLabel,
+                      label: confirmLabel ?? l10n.confirmButton,
                       // committing action: filled with tone accent, white text
                       background: accent,
                       foreground: Colors.white,

@@ -40,21 +40,26 @@ class _CountryPickerScreenState extends State<CountryPickerScreen> {
     super.dispose();
   }
 
-  List<Country> get _filtered {
+  List<Country> _filtered(String langCode) {
     final excluded = widget.exclude.map((c) => c.toUpperCase()).toSet();
     final list = kCountries.where((c) => !excluded.contains(c.code)).toList();
+    // Source list is EN-alphabetical; re-sort so FR users get FR order.
+    list.sort((a, b) => a.localizedName(langCode).compareTo(b.localizedName(langCode)));
     if (_query.isEmpty) return list;
     final q = _query.toLowerCase().trim();
+    // Match both spellings so "Germany" still finds "Allemagne" and vice versa.
     return list
         .where((c) =>
             c.name.toLowerCase().contains(q) ||
+            c.nameFr.toLowerCase().contains(q) ||
             c.code.toLowerCase().contains(q))
         .toList();
   }
 
   @override
   Widget build(BuildContext context) {
-    final filtered = _filtered;
+    final langCode = Localizations.localeOf(context).languageCode;
+    final filtered = _filtered(langCode);
     return Scaffold(
       resizeToAvoidBottomInset: false,
       backgroundColor: kSand,
@@ -134,7 +139,7 @@ class _CountryPickerScreenState extends State<CountryPickerScreen> {
                     style: const TextStyle(fontSize: 24),
                   ),
                   title: Text(
-                    country.name,
+                    country.localizedName(langCode),
                     style: const TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w500,

@@ -22,30 +22,28 @@ class AnnotationChip extends StatelessWidget {
     this.onDelete,
   });
 
+  // Compact outline-icon variant — intentionally lighter than the editorial
+  // palette on AnnotationType itself; type names come from type.label(l10n).
   static const _configs = {
     AnnotationType.advice: (
       icon: Icons.lightbulb_outline,
       bg: Color(0xFFE8F5E9),
       fg: Color(0xFF2E7D32),
-      label: 'Advice',
     ),
     AnnotationType.caution: (
       icon: Icons.warning_amber_outlined,
       bg: Color(0xFFFFF3E0),
       fg: Color(0xFFE65100),
-      label: 'Caution',
     ),
     AnnotationType.avoid: (
       icon: Icons.block,
       bg: Color(0xFFFFEBEE),
       fg: Color(0xFFC62828),
-      label: 'Avoid',
     ),
     AnnotationType.info: (
       icon: Icons.info_outline,
       bg: Color(0xFFE3F2FD),
       fg: Color(0xFF1565C0),
-      label: 'Info',
     ),
   };
 

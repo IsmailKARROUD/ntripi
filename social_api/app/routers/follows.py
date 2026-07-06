@@ -31,6 +31,7 @@ from app.dependencies import get_current_user, require_verified_email
 from app.models.follow import Follow, FollowStatus
 from app.models.user import User
 from app.schemas.follow import FollowRequestItem, FollowResponse, FollowerListItem
+from app.errors import ApiError
 
 router = APIRouter(tags=["Follows"])
 
@@ -59,16 +60,16 @@ def follow_user(
     Returns 400 if the user tries to follow themselves.
     """
     if user_id == current_user.id:
-        raise HTTPException(
+        raise ApiError(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="You cannot follow yourself.",
+            code="cannot_follow_self", detail="You cannot follow yourself.",
         )
 
     target_user = db.get(User, user_id)
     if not target_user or not target_user.is_active:
-        raise HTTPException(
+        raise ApiError(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="User not found.",
+            code="user_not_found", detail="User not found.",
         )
 
     # Check if a follow record already exists (either pending or accepted).
@@ -140,9 +141,9 @@ def unfollow_user(
     ).scalar_one_or_none()
 
     if not follow:
-        raise HTTPException(
+        raise ApiError(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="You are not following this user.",
+            code="not_following", detail="You are not following this user.",
         )
 
     was_accepted = follow.status == FollowStatus.accepted
@@ -223,23 +224,23 @@ def accept_follow_request(
     follow = db.get(Follow, follow_id)
 
     if not follow:
-        raise HTTPException(
+        raise ApiError(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Follow request not found.",
+            code="follow_request_not_found", detail="Follow request not found.",
         )
 
     # Security check: only the target user can accept.
     # Return 404 (not 403) to avoid leaking the existence of other users' requests.
     if follow.following_id != current_user.id:
-        raise HTTPException(
+        raise ApiError(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Follow request not found.",
+            code="follow_request_not_found", detail="Follow request not found.",
         )
 
     if follow.status != FollowStatus.pending:
-        raise HTTPException(
+        raise ApiError(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="This follow request has already been accepted.",
+            code="follow_request_already_accepted", detail="This follow request has already been accepted.",
         )
 
     # Accept the request and update counters.
@@ -279,16 +280,16 @@ def reject_follow_request(
     follow = db.get(Follow, follow_id)
 
     if not follow:
-        raise HTTPException(
+        raise ApiError(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Follow request not found.",
+            code="follow_request_not_found", detail="Follow request not found.",
         )
 
     # Security check.
     if follow.following_id != current_user.id:
-        raise HTTPException(
+        raise ApiError(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="You cannot reject this follow request.",
+            code="cannot_reject_request", detail="You cannot reject this follow request.",
         )
 
     db.delete(follow)
@@ -323,7 +324,7 @@ def list_followers(
     """
     target_user = db.get(User, user_id)
     if not target_user or not target_user.is_active:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found.")
+        raise ApiError(status_code=status.HTTP_404_NOT_FOUND, code="user_not_found", detail="User not found.")
 
     # Check privacy access.
     if target_user.is_private and target_user.id != current_user.id:
@@ -337,9 +338,9 @@ def list_followers(
         ).scalar_one_or_none()
 
         if not follow_check:
-            raise HTTPException(
+            raise ApiError(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="This account is private.",
+                code="account_private", detail="This account is private.",
             )
 
     # Get accepted followers.
@@ -390,7 +391,7 @@ def list_following(
     """
     target_user = db.get(User, user_id)
     if not target_user or not target_user.is_active:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found.")
+        raise ApiError(status_code=status.HTTP_404_NOT_FOUND, code="user_not_found", detail="User not found.")
 
     # Privacy check: same logic as list_followers.
     if target_user.is_private and target_user.id != current_user.id:
@@ -403,9 +404,9 @@ def list_following(
         ).scalar_one_or_none()
 
         if not follow_check:
-            raise HTTPException(
+            raise ApiError(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="This account is private.",
+                code="account_private", detail="This account is private.",
             )
 
     follows = db.execute(

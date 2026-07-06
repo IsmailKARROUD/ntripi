@@ -2929,6 +2929,852 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Hide optional fields'**
   String get hideOptionalFields;
+
+  /// No description provided for @transportModeWalk.
+  ///
+  /// In en, this message translates to:
+  /// **'Walk'**
+  String get transportModeWalk;
+
+  /// No description provided for @transportModeBus.
+  ///
+  /// In en, this message translates to:
+  /// **'Bus'**
+  String get transportModeBus;
+
+  /// No description provided for @transportModeTram.
+  ///
+  /// In en, this message translates to:
+  /// **'Tram'**
+  String get transportModeTram;
+
+  /// No description provided for @transportModeMetro.
+  ///
+  /// In en, this message translates to:
+  /// **'Metro'**
+  String get transportModeMetro;
+
+  /// No description provided for @transportModeTrain.
+  ///
+  /// In en, this message translates to:
+  /// **'Train'**
+  String get transportModeTrain;
+
+  /// No description provided for @transportModeTaxi.
+  ///
+  /// In en, this message translates to:
+  /// **'Taxi'**
+  String get transportModeTaxi;
+
+  /// No description provided for @transportModeUber.
+  ///
+  /// In en, this message translates to:
+  /// **'Uber'**
+  String get transportModeUber;
+
+  /// No description provided for @transportModeBike.
+  ///
+  /// In en, this message translates to:
+  /// **'Bike'**
+  String get transportModeBike;
+
+  /// No description provided for @transportModeFerry.
+  ///
+  /// In en, this message translates to:
+  /// **'Ferry'**
+  String get transportModeFerry;
+
+  /// No description provided for @transportModeCar.
+  ///
+  /// In en, this message translates to:
+  /// **'Car'**
+  String get transportModeCar;
+
+  /// No description provided for @transportModeAirplane.
+  ///
+  /// In en, this message translates to:
+  /// **'Airplane'**
+  String get transportModeAirplane;
+
+  /// No description provided for @dimensionOverall.
+  ///
+  /// In en, this message translates to:
+  /// **'Overall'**
+  String get dimensionOverall;
+
+  /// No description provided for @dimensionOverallDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'General impression'**
+  String get dimensionOverallDesc;
+
+  /// No description provided for @dimensionSafetyDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'How safe you felt throughout'**
+  String get dimensionSafetyDesc;
+
+  /// No description provided for @dimensionExperienceDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Quality of the overall experience'**
+  String get dimensionExperienceDesc;
+
+  /// No description provided for @dimensionAccessibilityDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Ease of access for all abilities'**
+  String get dimensionAccessibilityDesc;
+
+  /// No description provided for @dimensionFamilyFriendlyDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Suitability for children and families'**
+  String get dimensionFamilyFriendlyDesc;
+
+  /// No description provided for @dimensionCrowdednessDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'How uncrowded and spacious it felt'**
+  String get dimensionCrowdednessDesc;
+
+  /// No description provided for @dimensionRatingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'{label} Rating'**
+  String dimensionRatingTitle(String label);
+
+  /// No description provided for @noRatingsYetFor.
+  ///
+  /// In en, this message translates to:
+  /// **'No ratings yet for {label}'**
+  String noRatingsYetFor(String label);
+
+  /// No description provided for @basedOnRatings.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{Based on {count} rating} other{Based on {count} ratings}}'**
+  String basedOnRatings(int count);
+
+  /// No description provided for @ratersLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Raters'**
+  String get ratersLabel;
+
+  /// No description provided for @annotationAdviceDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Something useful or pro-tip.'**
+  String get annotationAdviceDesc;
+
+  /// No description provided for @annotationCautionDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Pay attention — surprises possible.'**
+  String get annotationCautionDesc;
+
+  /// No description provided for @annotationAvoidDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Don\'t do this. Save your time.'**
+  String get annotationAvoidDesc;
+
+  /// No description provided for @annotationInfoDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'A neutral fact worth knowing.'**
+  String get annotationInfoDesc;
+
+  /// No description provided for @unknownUser.
+  ///
+  /// In en, this message translates to:
+  /// **'Unknown'**
+  String get unknownUser;
+
+  /// No description provided for @timeAgoMonths.
+  ///
+  /// In en, this message translates to:
+  /// **'{count}mo ago'**
+  String timeAgoMonths(int count);
+
+  /// No description provided for @timeAgoDays.
+  ///
+  /// In en, this message translates to:
+  /// **'{count}d ago'**
+  String timeAgoDays(int count);
+
+  /// No description provided for @timeAgoHours.
+  ///
+  /// In en, this message translates to:
+  /// **'{count}h ago'**
+  String timeAgoHours(int count);
+
+  /// No description provided for @timeAgoMinutes.
+  ///
+  /// In en, this message translates to:
+  /// **'{count}min ago'**
+  String timeAgoMinutes(int count);
+
+  /// No description provided for @timeJustNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Just now'**
+  String get timeJustNow;
+
+  /// No description provided for @yearsAbbrev.
+  ///
+  /// In en, this message translates to:
+  /// **'y'**
+  String get yearsAbbrev;
+
+  /// No description provided for @timeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Time'**
+  String get timeLabel;
+
+  /// No description provided for @transitLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Transit'**
+  String get transitLabel;
+
+  /// No description provided for @noLegsYetTapAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'No legs yet. Tap ＋ to add.'**
+  String get noLegsYetTapAdd;
+
+  /// No description provided for @segmentNeedsOneLeg.
+  ///
+  /// In en, this message translates to:
+  /// **'A segment needs at least one leg. Delete the segment instead.'**
+  String get segmentNeedsOneLeg;
+
+  /// No description provided for @fromStopName.
+  ///
+  /// In en, this message translates to:
+  /// **'From {name}'**
+  String fromStopName(String name);
+
+  /// No description provided for @toStopName.
+  ///
+  /// In en, this message translates to:
+  /// **'To {name}'**
+  String toStopName(String name);
+
+  /// No description provided for @visibilityPublicDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Anyone with the link can view.'**
+  String get visibilityPublicDesc;
+
+  /// No description provided for @visibilityFollowersDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Only people who follow you.'**
+  String get visibilityFollowersDesc;
+
+  /// No description provided for @visibilityRestrictedDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Only people you allow.'**
+  String get visibilityRestrictedDesc;
+
+  /// No description provided for @visibilityOnlyMeDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Just you.'**
+  String get visibilityOnlyMeDesc;
+
+  /// No description provided for @saveItineraryFirstAllowlist.
+  ///
+  /// In en, this message translates to:
+  /// **'Save the itinerary first, then manage your allowlist from the edit screen.'**
+  String get saveItineraryFirstAllowlist;
+
+  /// No description provided for @allowlistLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Allowlist'**
+  String get allowlistLabel;
+
+  /// No description provided for @personCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{{count} person} other{{count} people}}'**
+  String personCount(int count);
+
+  /// No description provided for @removedFromAllowlist.
+  ///
+  /// In en, this message translates to:
+  /// **'Removed {name} from allowlist'**
+  String removedFromAllowlist(String name);
+
+  /// No description provided for @addPeople.
+  ///
+  /// In en, this message translates to:
+  /// **'Add people'**
+  String get addPeople;
+
+  /// No description provided for @otherOption.
+  ///
+  /// In en, this message translates to:
+  /// **'Other'**
+  String get otherOption;
+
+  /// No description provided for @thisItineraryFallback.
+  ///
+  /// In en, this message translates to:
+  /// **'this itinerary'**
+  String get thisItineraryFallback;
+
+  /// No description provided for @discardReorderMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Your reorder will not be saved.'**
+  String get discardReorderMessage;
+
+  /// No description provided for @emptyTrackName.
+  ///
+  /// In en, this message translates to:
+  /// **'(empty)'**
+  String get emptyTrackName;
+
+  /// No description provided for @unnamedStop.
+  ///
+  /// In en, this message translates to:
+  /// **'(unnamed)'**
+  String get unnamedStop;
+
+  /// No description provided for @unknownStop.
+  ///
+  /// In en, this message translates to:
+  /// **'(unknown)'**
+  String get unknownStop;
+
+  /// No description provided for @dragToChangeTrackOrder.
+  ///
+  /// In en, this message translates to:
+  /// **'Drag to change the track order'**
+  String get dragToChangeTrackOrder;
+
+  /// No description provided for @transitSegmentsWillBeDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{1 transit segment will be deleted} other{{count} transit segments will be deleted}}'**
+  String transitSegmentsWillBeDeleted(int count);
+
+  /// No description provided for @andMoreCount.
+  ///
+  /// In en, this message translates to:
+  /// **'… and {count} more'**
+  String andMoreCount(int count);
+
+  /// No description provided for @altsCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{{count} alt} other{{count} alts}}'**
+  String altsCount(int count);
+
+  /// No description provided for @segmentToWillBeDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'→ {name}  —  segment will be deleted'**
+  String segmentToWillBeDeleted(String name);
+
+  /// No description provided for @reorderAlternativesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Reorder alternatives'**
+  String get reorderAlternativesTitle;
+
+  /// No description provided for @reorderAlternativesHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Drag to change which option appears first. Tap Save to apply.'**
+  String get reorderAlternativesHint;
+
+  /// No description provided for @emptyTrackLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'(empty track)'**
+  String get emptyTrackLabel;
+
+  /// No description provided for @moveStopToLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Move stop to'**
+  String get moveStopToLabel;
+
+  /// No description provided for @messageLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Message'**
+  String get messageLabel;
+
+  /// No description provided for @annotationKeepShortHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep it short — under 200 characters reads best on small screens.'**
+  String get annotationKeepShortHint;
+
+  /// No description provided for @transportModeSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Transport mode'**
+  String get transportModeSection;
+
+  /// No description provided for @lineDirectionSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Line & direction'**
+  String get lineDirectionSection;
+
+  /// No description provided for @durationCostSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Duration & cost'**
+  String get durationCostSection;
+
+  /// No description provided for @allRatersLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'All raters'**
+  String get allRatersLabel;
+
+  /// No description provided for @travelersRatedThis.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{{count} traveler rated this} other{{count} travelers rated this}}'**
+  String travelersRatedThis(int count);
+
+  /// No description provided for @byDimensionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'By dimension'**
+  String get byDimensionLabel;
+
+  /// No description provided for @notEnoughRatings.
+  ///
+  /// In en, this message translates to:
+  /// **'Not enough ratings'**
+  String get notEnoughRatings;
+
+  /// No description provided for @youRatedThis.
+  ///
+  /// In en, this message translates to:
+  /// **'You rated this'**
+  String get youRatedThis;
+
+  /// No description provided for @changeButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Change'**
+  String get changeButton;
+
+  /// No description provided for @hideReview.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide review'**
+  String get hideReview;
+
+  /// No description provided for @readReview.
+  ///
+  /// In en, this message translates to:
+  /// **'Read review'**
+  String get readReview;
+
+  /// No description provided for @notesLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Notes'**
+  String get notesLabel;
+
+  /// No description provided for @viewLess.
+  ///
+  /// In en, this message translates to:
+  /// **'view less'**
+  String get viewLess;
+
+  /// No description provided for @viewMore.
+  ///
+  /// In en, this message translates to:
+  /// **'... view more'**
+  String get viewMore;
+
+  /// No description provided for @addNoteButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Add note'**
+  String get addNoteButton;
+
+  /// No description provided for @imageTooLarge.
+  ///
+  /// In en, this message translates to:
+  /// **'Image is too large (max 10 MB).'**
+  String get imageTooLarge;
+
+  /// No description provided for @couldNotLoadImage.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load image. Please try another.'**
+  String get couldNotLoadImage;
+
+  /// No description provided for @pinchToZoomHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Pinch to zoom · Drag to reposition'**
+  String get pinchToZoomHint;
+
+  /// No description provided for @addCoverImage.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a cover image'**
+  String get addCoverImage;
+
+  /// No description provided for @coverOptionalMapFallback.
+  ///
+  /// In en, this message translates to:
+  /// **'Optional — the map will be used otherwise.'**
+  String get coverOptionalMapFallback;
+
+  /// No description provided for @mapTapToPlacePin.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap the map to place a pin'**
+  String get mapTapToPlacePin;
+
+  /// No description provided for @mapTapToMovePin.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap elsewhere to move the pin, then tap Confirm'**
+  String get mapTapToMovePin;
+
+  /// No description provided for @nothingToPreview.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing to preview yet.'**
+  String get nothingToPreview;
+
+  /// No description provided for @rateOverallFirstHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Rate your overall impression. Once you do, you can share more.'**
+  String get rateOverallFirstHint;
+
+  /// No description provided for @splashTagline.
+  ///
+  /// In en, this message translates to:
+  /// **'Discover & share travel itineraries\ncrafted by real explorers'**
+  String get splashTagline;
+
+  /// No description provided for @splashMotto.
+  ///
+  /// In en, this message translates to:
+  /// **'Explore the world, one route at a time'**
+  String get splashMotto;
+
+  /// No description provided for @tripsPillLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'trips'**
+  String get tripsPillLabel;
+
+  /// No description provided for @stopsPillLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'stops'**
+  String get stopsPillLabel;
+
+  /// No description provided for @travelledPillLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'travelled'**
+  String get travelledPillLabel;
+
+  /// No description provided for @stopFallbackName.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop'**
+  String get stopFallbackName;
+
+  /// No description provided for @undoLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Undo'**
+  String get undoLabel;
+
+  /// No description provided for @updateYourRating.
+  ///
+  /// In en, this message translates to:
+  /// **'Update your rating'**
+  String get updateYourRating;
+
+  /// No description provided for @moveActionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'move'**
+  String get moveActionLabel;
+
+  /// No description provided for @reorderActionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'reorder'**
+  String get reorderActionLabel;
+
+  /// No description provided for @aStopFallback.
+  ///
+  /// In en, this message translates to:
+  /// **'A stop'**
+  String get aStopFallback;
+
+  /// No description provided for @locationLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Location'**
+  String get locationLabel;
+
+  /// No description provided for @noLocationSet.
+  ///
+  /// In en, this message translates to:
+  /// **'No location set'**
+  String get noLocationSet;
+
+  /// No description provided for @detailsSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Details'**
+  String get detailsSection;
+
+  /// No description provided for @addLanguageTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Add language'**
+  String get addLanguageTitle;
+
+  /// No description provided for @alreadyInItinerary.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} is already in this itinerary.'**
+  String alreadyInItinerary(String name);
+
+  /// No description provided for @stopNumberOfTotal.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop {n} of {total}'**
+  String stopNumberOfTotal(int n, int total);
+
+  /// No description provided for @shareCaption.
+  ///
+  /// In en, this message translates to:
+  /// **'Check out \"{title}\" on Ntripi — {stops}, {duration}'**
+  String shareCaption(String title, String stops, String duration);
+
+  /// No description provided for @apiErrorNotAuthenticated.
+  ///
+  /// In en, this message translates to:
+  /// **'You are not signed in.'**
+  String get apiErrorNotAuthenticated;
+
+  /// No description provided for @apiErrorAccountDeactivated.
+  ///
+  /// In en, this message translates to:
+  /// **'Your account has been deactivated.'**
+  String get apiErrorAccountDeactivated;
+
+  /// No description provided for @apiErrorEmailUnverified.
+  ///
+  /// In en, this message translates to:
+  /// **'Verify your email via Google to do this.'**
+  String get apiErrorEmailUnverified;
+
+  /// No description provided for @apiErrorItineraryNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'Itinerary not found.'**
+  String get apiErrorItineraryNotFound;
+
+  /// No description provided for @apiErrorItineraryNotOwner.
+  ///
+  /// In en, this message translates to:
+  /// **'You don\'t have permission to modify this itinerary.'**
+  String get apiErrorItineraryNotOwner;
+
+  /// No description provided for @apiErrorIfMatchRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'This change could not be saved — please reload and try again.'**
+  String get apiErrorIfMatchRequired;
+
+  /// No description provided for @apiErrorItineraryStale.
+  ///
+  /// In en, this message translates to:
+  /// **'The itinerary was modified — please reload.'**
+  String get apiErrorItineraryStale;
+
+  /// No description provided for @apiErrorWaitlistContactRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Provide at least an email or a WhatsApp number.'**
+  String get apiErrorWaitlistContactRequired;
+
+  /// No description provided for @apiErrorGoogleTokenInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid Google token.'**
+  String get apiErrorGoogleTokenInvalid;
+
+  /// No description provided for @apiErrorInvalidGrant.
+  ///
+  /// In en, this message translates to:
+  /// **'Your session expired. Please sign in again.'**
+  String get apiErrorInvalidGrant;
+
+  /// No description provided for @apiErrorStopNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop not found.'**
+  String get apiErrorStopNotFound;
+
+  /// No description provided for @apiErrorTrackNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'Track not found, or it doesn\'t belong to this itinerary.'**
+  String get apiErrorTrackNotFound;
+
+  /// No description provided for @apiErrorSegmentNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'Transit segment not found.'**
+  String get apiErrorSegmentNotFound;
+
+  /// No description provided for @apiErrorLegNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'Transport leg not found.'**
+  String get apiErrorLegNotFound;
+
+  /// No description provided for @apiErrorItineraryAccessDenied.
+  ///
+  /// In en, this message translates to:
+  /// **'You don\'t have access to this itinerary.'**
+  String get apiErrorItineraryAccessDenied;
+
+  /// No description provided for @apiErrorAllowlistRestrictedOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'The allowlist only applies to restricted itineraries.'**
+  String get apiErrorAllowlistRestrictedOnly;
+
+  /// No description provided for @apiErrorUserNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'User not found.'**
+  String get apiErrorUserNotFound;
+
+  /// No description provided for @apiErrorAllowlistUserExists.
+  ///
+  /// In en, this message translates to:
+  /// **'This user already has access.'**
+  String get apiErrorAllowlistUserExists;
+
+  /// No description provided for @apiErrorAllowlistUserNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'User not found in the allowlist.'**
+  String get apiErrorAllowlistUserNotFound;
+
+  /// No description provided for @apiErrorRankCollision.
+  ///
+  /// In en, this message translates to:
+  /// **'Ordering conflict — please retry.'**
+  String get apiErrorRankCollision;
+
+  /// No description provided for @apiErrorAnnotationNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'Annotation not found.'**
+  String get apiErrorAnnotationNotFound;
+
+  /// No description provided for @apiErrorRatingNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'You haven\'t rated this itinerary.'**
+  String get apiErrorRatingNotFound;
+
+  /// No description provided for @apiErrorSegmentAlreadyExists.
+  ///
+  /// In en, this message translates to:
+  /// **'A segment already connects these two stops.'**
+  String get apiErrorSegmentAlreadyExists;
+
+  /// No description provided for @apiErrorIncorrectPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Incorrect password.'**
+  String get apiErrorIncorrectPassword;
+
+  /// No description provided for @apiErrorLoginInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Incorrect email/username or password.'**
+  String get apiErrorLoginInvalid;
+
+  /// No description provided for @apiErrorCannotFollowSelf.
+  ///
+  /// In en, this message translates to:
+  /// **'You cannot follow yourself.'**
+  String get apiErrorCannotFollowSelf;
+
+  /// No description provided for @apiErrorNotFollowing.
+  ///
+  /// In en, this message translates to:
+  /// **'You are not following this user.'**
+  String get apiErrorNotFollowing;
+
+  /// No description provided for @apiErrorFollowRequestNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'Follow request not found.'**
+  String get apiErrorFollowRequestNotFound;
+
+  /// No description provided for @apiErrorFollowRequestAlreadyAccepted.
+  ///
+  /// In en, this message translates to:
+  /// **'This follow request has already been accepted.'**
+  String get apiErrorFollowRequestAlreadyAccepted;
+
+  /// No description provided for @apiErrorCannotRejectRequest.
+  ///
+  /// In en, this message translates to:
+  /// **'You cannot reject this follow request.'**
+  String get apiErrorCannotRejectRequest;
+
+  /// No description provided for @apiErrorAccountPrivate.
+  ///
+  /// In en, this message translates to:
+  /// **'This account is private.'**
+  String get apiErrorAccountPrivate;
+
+  /// No description provided for @apiErrorTosRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'You must accept the Terms of Service to register.'**
+  String get apiErrorTosRequired;
+
+  /// No description provided for @apiErrorUsernameTaken.
+  ///
+  /// In en, this message translates to:
+  /// **'This username is already taken.'**
+  String get apiErrorUsernameTaken;
+
+  /// No description provided for @apiErrorEmailTaken.
+  ///
+  /// In en, this message translates to:
+  /// **'An account with this email already exists.'**
+  String get apiErrorEmailTaken;
 }
 
 class _AppLocalizationsDelegate

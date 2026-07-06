@@ -170,7 +170,7 @@ class _RateItinerarySheetState extends State<_RateItinerarySheet> {
           Padding(
             padding: const EdgeInsets.fromLTRB(22, 4, 22, 12),
             child: Text(
-              'Rate your overall impression. Once you do, you can share more.',
+              l10n.rateOverallFirstHint,
               style: const TextStyle(fontSize: 12, color: kText2),
             ),
           ),
@@ -196,9 +196,9 @@ class _RateItinerarySheetState extends State<_RateItinerarySheet> {
           // ── Your review (optional) ────────────────────────────────────────
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 14, 16, 6),
-            child: const Text(
-              'YOUR REVIEW (OPTIONAL)',
-              style: TextStyle(
+            child: Text(
+              l10n.yourImpressionLabel.toUpperCase(),
+              style: const TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.w700,
                 color: kText2,

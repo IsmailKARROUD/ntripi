@@ -7,6 +7,7 @@
 import 'package:flutter/material.dart';
 import 'package:social_flutter/features/itineraries/domain/transport_leg.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/edit_pencil_button.dart';
+import 'package:social_flutter/l10n/app_localizations.dart';
 
 class LegTile extends StatelessWidget {
   final TransportLeg leg;
@@ -30,7 +31,7 @@ class LegTile extends StatelessWidget {
         child: Icon(leg.mode.icon, size: 14, color: Colors.blue.shade700),
       ),
       title: Text(
-        leg.summary,
+        leg.summary(AppLocalizations.of(context)!),
         style: Theme.of(context).textTheme.bodyMedium,
       ),
       subtitle: _subtitle(context),
@@ -56,10 +57,13 @@ class LegTile extends StatelessWidget {
   }
 
   Widget? _subtitle(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final parts = <String>[];
-    if (leg.durationMin != null) parts.add('${leg.durationMin} min');
+    if (leg.durationMin != null) {
+      parts.add('${leg.durationMin} ${l10n.minutesLabel}');
+    }
     if (leg.isFree) {
-      parts.add('Free');
+      parts.add(l10n.freeLegLabel);
     } else if (leg.cost > 0) {
       parts.add(leg.cost.toStringAsFixed(2));
     }

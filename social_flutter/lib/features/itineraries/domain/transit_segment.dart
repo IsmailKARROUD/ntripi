@@ -6,6 +6,8 @@
 
 import 'package:social_flutter/core/services/currency.dart';
 import 'package:social_flutter/features/itineraries/domain/transport_leg.dart';
+import 'package:social_flutter/l10n/app_localizations.dart';
+import 'package:social_flutter/shared/utils/duration_format.dart';
 
 class TransitSegment {
   final String id;
@@ -67,29 +69,16 @@ class TransitSegment {
   }
 
   /// All leg summaries joined with "·" separator.
-  String get summary {
+  String summary(AppLocalizations l10n) {
     if (legs.isEmpty) return '—';
-    return legs.map((l) => l.summary).join(' · ');
+    return legs.map((l) => l.summary(l10n)).join(' · ');
   }
 
-  String get formattedDuration {
-    if (totalDurationMin <= 0) return '—';
-    final years = totalDurationMin ~/ (60 * 24 * 365);
-    int remainingMin = totalDurationMin % (60 * 24 * 365);
-    final days = remainingMin ~/ (60 * 24);
-    remainingMin = remainingMin % (60 * 24);
-    final hours = remainingMin ~/ 60;
-    final minutes = remainingMin % 60;
-    String returnvalue = '';
-    if (years > 0) returnvalue += '${years}y ';
-    if (days > 0) returnvalue += '${days}d ';
-    if (hours > 0) returnvalue += '${hours}h ';
-    if (minutes > 0) returnvalue += '${minutes}min';
-    return returnvalue;
-  }
+  String formattedDuration(AppLocalizations l10n) =>
+      formatDuration(totalDurationMin, l10n);
 
-  String formattedCost(String currency) {
-    if (totalCost <= 0.0) return 'Free';
+  String formattedCost(String currency, AppLocalizations l10n) {
+    if (totalCost <= 0.0) return l10n.freeLegLabel;
     return formatMoney(totalCost, currency);
   }
 }

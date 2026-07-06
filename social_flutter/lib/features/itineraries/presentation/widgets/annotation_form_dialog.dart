@@ -33,38 +33,6 @@ class _AnnotationFormDialogState extends State<AnnotationFormDialog> {
   late AnnotationType _type;
   late final TextEditingController _contentController;
 
-  // Design tokens for each annotation type.
-  static const _palette = {
-    AnnotationType.advice: (
-      bg: Color(0xFFE0EBE4),
-      fg: kForest,
-      icon: Icons.lightbulb_rounded,
-      label: 'Tip',
-      desc: 'Something useful or pro-tip.',
-    ),
-    AnnotationType.caution: (
-      bg: Color(0xFFFFE3CC),
-      fg: Color(0xFFA05D1F),
-      icon: Icons.warning_rounded,
-      label: 'Caution',
-      desc: 'Pay attention — surprises possible.',
-    ),
-    AnnotationType.avoid: (
-      bg: Color(0xFFFFD6D2),
-      fg: Color(0xFFA02828),
-      icon: Icons.block_rounded,
-      label: 'Avoid',
-      desc: 'Don\'t do this. Save your time.',
-    ),
-    AnnotationType.info: (
-      bg: Color(0xFFDCEAF6),
-      fg: Color(0xFF3B6EA5),
-      icon: Icons.info_rounded,
-      label: 'Info',
-      desc: 'A neutral fact worth knowing.',
-    ),
-  };
-
   @override
   void initState() {
     super.initState();
@@ -95,11 +63,11 @@ class _AnnotationFormDialogState extends State<AnnotationFormDialog> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // ── 2×2 type card grid ─────────────────────────────────────────
-            const Padding(
-              padding: EdgeInsets.only(bottom: 8),
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
               child: Text(
-                'TYPE',
-                style: TextStyle(
+                l10n.annotationTypeLabel.toUpperCase(),
+                style: const TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w700,
                   color: kText2,
@@ -115,7 +83,6 @@ class _AnnotationFormDialogState extends State<AnnotationFormDialog> {
               crossAxisSpacing: 8,
               childAspectRatio: 1.6,
               children: AnnotationType.values.map((t) {
-                final p = _palette[t]!;
                 final active = _type == t;
                 return GestureDetector(
                   onTap: () => setState(() => _type = t),
@@ -123,10 +90,10 @@ class _AnnotationFormDialogState extends State<AnnotationFormDialog> {
                     duration: const Duration(milliseconds: 150),
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: active ? p.bg : kSurface,
+                      color: active ? t.bg : kSurface,
                       borderRadius: BorderRadius.circular(14),
                       border: Border.all(
-                        color: active ? p.fg : kBorder,
+                        color: active ? t.fg : kBorder,
                         width: active ? 2 : 1,
                       ),
                     ),
@@ -138,20 +105,20 @@ class _AnnotationFormDialogState extends State<AnnotationFormDialog> {
                           height: 26,
                           decoration: BoxDecoration(
                             color: active
-                                ? p.fg.withValues(alpha: 0.2)
-                                : p.bg,
+                                ? t.fg.withValues(alpha: 0.2)
+                                : t.bg,
                             borderRadius: BorderRadius.circular(8),
                           ),
                           alignment: Alignment.center,
-                          child: Icon(p.icon, size: 14, color: p.fg),
+                          child: Icon(t.icon, size: 14, color: t.fg),
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          p.label,
+                          t.label(l10n),
                           style: TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.w700,
-                            color: p.fg,
+                            color: t.fg,
                           ),
                         ),
                       ],
@@ -163,11 +130,11 @@ class _AnnotationFormDialogState extends State<AnnotationFormDialog> {
             const SizedBox(height: 14),
 
             // ── Content field ──────────────────────────────────────────────
-            const Padding(
-              padding: EdgeInsets.only(bottom: 8),
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
               child: Text(
-                'MESSAGE',
-                style: TextStyle(
+                l10n.messageLabel.toUpperCase(),
+                style: const TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w700,
                   color: kText2,

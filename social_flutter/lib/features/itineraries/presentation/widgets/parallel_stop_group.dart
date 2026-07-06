@@ -408,7 +408,7 @@ class _MoveToTrackButton extends StatelessWidget {
               const Icon(Icons.swap_vert, size: 16, color: kEditBlue),
               const SizedBox(height: 2),
               Text(
-                'move',
+                AppLocalizations.of(context)!.moveActionLabel,
                 style: theme.textTheme.labelSmall?.copyWith(
                   color: kEditBlue,
                   fontWeight: FontWeight.w600,
@@ -447,7 +447,7 @@ class _ReorderParallelsButton extends StatelessWidget {
               const Icon(Icons.swap_horiz, size: 16, color: kEditBlue),
               const SizedBox(height: 2),
               Text(
-                'reorder',
+                AppLocalizations.of(context)!.reorderActionLabel,
                 style: theme.textTheme.labelSmall?.copyWith(
                   color: kEditBlue,
                   fontWeight: FontWeight.w600,

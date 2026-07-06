@@ -41,6 +41,9 @@
   {% if tos_version %}
   <span class="version-badge">Version {{ tos_version }}</span>
   {% endif %}
+  {% if _('legal_en_only_notice') %}
+  <div class="error-banner">{{ _('legal_en_only_notice') }}</div>
+  {% endif %}
   <div class="prose">{{ content }}</div>
 </section>
 

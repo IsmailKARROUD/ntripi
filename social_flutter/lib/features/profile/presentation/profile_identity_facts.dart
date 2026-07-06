@@ -36,11 +36,12 @@ class ProfileIdentityFacts extends StatelessWidget {
     }
 
     final l10n = AppLocalizations.of(context)!;
+    final langCode = Localizations.localeOf(context).languageCode;
     final residentChip = hasResident
         ? _IdentityFactChip(
             icon: Icons.location_on_rounded,
             subLabel: l10n.livesInLabel,
-            value: countryByCode(resident)?.name ?? resident,
+            value: countryByCode(resident)?.localizedName(langCode) ?? resident,
             prefix: countryByCode(resident)?.flag,
           )
         : null;
@@ -104,7 +105,9 @@ class _PassportRow extends StatelessWidget {
                   children: codes.map((c) {
                     final country = countryByCode(c);
                     final flag = country?.flag ?? '';
-                    final name = country?.name ?? c;
+                    final name = country?.localizedName(
+                            Localizations.localeOf(context).languageCode) ??
+                        c;
                     return Padding(
                       padding: const EdgeInsets.only(right: 12),
                       child: Text(

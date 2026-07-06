@@ -184,37 +184,38 @@ class _SummaryPillsRow extends StatelessWidget {
 
   const _SummaryPillsRow({required this.itineraries});
 
-  String _totalTravelled() {
+  String _totalTravelled(AppLocalizations l10n) {
     final totalMin =
         itineraries.fold(0, (sum, it) => sum + it.totalDurationMin);
     if (totalMin <= 0) return '—';
     final days = totalMin ~/ (60 * 24);
-    if (days >= 1) return '${days}d';
+    if (days >= 1) return '$days${l10n.daysLabel}';
     final hours = totalMin ~/ 60;
-    return '${hours}h';
+    return '$hours${l10n.hoursLabel}';
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final totalStops = itineraries.fold(0, (sum, it) => sum + it.stopsCount);
     return Row(
       children: [
         _SummaryPill(
           icon: Icons.route_rounded,
           value: '${itineraries.length}',
-          label: 'trips',
+          label: l10n.tripsPillLabel,
         ),
         const SizedBox(width: 8),
         _SummaryPill(
           icon: Icons.location_on_rounded,
           value: '$totalStops',
-          label: 'stops',
+          label: l10n.stopsPillLabel,
         ),
         const SizedBox(width: 8),
         _SummaryPill(
           icon: Icons.schedule_rounded,
-          value: _totalTravelled(),
-          label: 'travelled',
+          value: _totalTravelled(l10n),
+          label: l10n.travelledPillLabel,
         ),
       ],
     );

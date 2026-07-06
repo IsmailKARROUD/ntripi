@@ -302,7 +302,10 @@ class _LegFormDialogState extends State<LegFormDialog> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const _LFSectionLabel(text: 'TRANSPORT MODE'),
+              _LFSectionLabel(
+                  text: AppLocalizations.of(ctx)!
+                      .transportModeSection
+                      .toUpperCase()),
               // Flexible lets the card fill remaining sheet space and scroll.
               Flexible(
                 child: Container(
@@ -343,7 +346,7 @@ class _LegFormDialogState extends State<LegFormDialog> {
                               const SizedBox(width: 12),
                               Expanded(
                                 child: Text(
-                                  mode.label,
+                                  mode.label(AppLocalizations.of(ctx)!),
                                   style: const TextStyle(
                                     fontSize: 15,
                                     fontWeight: FontWeight.w600,
@@ -400,13 +403,13 @@ class _LegFormDialogState extends State<LegFormDialog> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             // ── TRANSPORT MODE ─────────────────────────────────────────────
-            const _LFSectionLabel(text: 'TRANSPORT MODE'),
+            _LFSectionLabel(text: l10n.transportModeSection.toUpperCase()),
             _LFSectionCard(
               children: [
                 _LFPickerRow(
                   icon: _mode.icon,
                   label: l10n.transportModeLabel.toUpperCase(),
-                  value: _mode.label,
+                  value: _mode.label(l10n),
                   onTap: _showModePicker,
                 ),
               ],
@@ -414,7 +417,7 @@ class _LegFormDialogState extends State<LegFormDialog> {
 
             // ── LINE & DIRECTION (transit modes only) ──────────────────────
             if (_showTransitLine) ...[
-              const _LFSectionLabel(text: 'LINE & DIRECTION'),
+              _LFSectionLabel(text: l10n.lineDirectionSection.toUpperCase()),
               _LFSectionCard(
                 children: [
                   _LFBorderlessField(
@@ -459,7 +462,7 @@ class _LegFormDialogState extends State<LegFormDialog> {
             ],
 
             // ── DURATION & COST ────────────────────────────────────────────
-            const _LFSectionLabel(text: 'DURATION & COST'),
+            _LFSectionLabel(text: l10n.durationCostSection.toUpperCase()),
             _LFSectionCard(
               children: [
                 _LFPickerRow(
@@ -491,9 +494,9 @@ class _LegFormDialogState extends State<LegFormDialog> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text(
-                              'COST',
-                              style: TextStyle(
+                            Text(
+                              l10n.costLabel.toUpperCase(),
+                              style: const TextStyle(
                                 fontSize: 11,
                                 fontWeight: FontWeight.w700,
                                 color: kText2,
@@ -556,7 +559,7 @@ class _LegFormDialogState extends State<LegFormDialog> {
             ),
 
             // ── THOUGHTS ──────────────────────────────────────────────────
-            const _LFSectionLabel(text: 'THOUGHTS'),
+            _LFSectionLabel(text: l10n.thoughtsLabel.toUpperCase()),
             _LFSectionCard(
               children: [
                 Padding(

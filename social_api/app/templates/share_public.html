@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{{ lang or 'en' }}">
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
@@ -251,7 +251,7 @@
     </svg>
     <span class="nav-logo-text">Tripi</span>
   </a>
-  <a href="/app/" class="nav-cta">Get the app</a>
+  <a href="/app/" class="nav-cta">{{ _('share_get_the_app') }}</a>
 </nav>
 
 <div class="container">
@@ -269,7 +269,7 @@
     </svg>
     {% endif %}
     <div class="hero-cover-overlay"></div>
-    <div class="share-badge"><div class="share-badge-dot"></div>Public itinerary</div>
+    <div class="share-badge"><div class="share-badge-dot"></div>{{ _('share_public_badge') }}</div>
     <div class="hero-cover-content">
       <div class="cover-author">
         <div class="author-avatar">{{ owner.username[0]|upper }}</div>
@@ -340,7 +340,7 @@
       <line x1="6" y1="10" x2="10" y2="10" stroke-linecap="round"/>
     </svg>
     <div>
-      <div class="note-label">Note from author</div>
+      <div class="note-label">{{ _('share_note_from_author') }}</div>
       <div class="note-text">{{ itinerary.description }}</div>
     </div>
   </div>
@@ -348,7 +348,7 @@
 
   <!-- STOPS -->
   {% if stops %}
-  <div class="section-title">The Route</div>
+  <div class="section-title">{{ _('share_the_route') }}</div>
   <div class="stops">
     {% for stop in stops %}
     <div class="stop-item">
@@ -357,7 +357,7 @@
         <div class="stop-name" dir="auto">{{ stop.place_name }}</div>
         <div class="stop-meta">
           {% if stop.is_free %}
-          <span class="stop-cost">Free</span>
+          <span class="stop-cost">{{ _('share_free') }}</span>
           {% elif stop.cost > 0 %}
           <span class="stop-cost">{{ "%.2f"|format(stop.cost) }} {{ itinerary.currency }}</span>
           {% endif %}
@@ -383,24 +383,24 @@
 
   <!-- CTA BAND -->
   <div class="cta-band">
-    <h2 class="cta-title">Plan your own journey</h2>
-    <p class="cta-sub">Open this itinerary in the Ntripi app, or download to start creating your own.</p>
+    <h2 class="cta-title">{{ _('share_plan_own') }}</h2>
+    <p class="cta-sub">{{ _('share_plan_own_sub') }}</p>
     <div class="cta-buttons">
       <a class="btn-open-app" href="ntripi://itinerary/{{ itinerary.id }}">
-        Open in app
+        {{ _('share_open_in_app_short') }}
         <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M3 7h8M7 3l4 4-4 4" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
       </a>
     </div>
-    <div class="cta-divider">or download</div>
+    <div class="cta-divider">{{ _('share_or_download') }}</div>
     <div class="cta-buttons">
       <a class="btn-store" href="#">
         <svg width="20" height="20" viewBox="0 0 22 22" fill="white">
           <path d="M16.2 11.7c0-2.7 2.2-4 2.3-4.1C17 5.8 15 5.5 14.3 5.5c-1.7-.2-3.4 1-4.3 1s-2.3-1-3.7-1c-1.9 0-3.7 1.1-4.7 2.8C-.5 11.5.8 17 3 20.1c1 1.5 2.3 3.1 3.9 3.1 1.5-.1 2.1-1 3.9-1s2.4 1 3.9 1c1.7 0 2.8-1.5 3.8-3 1.2-1.7 1.7-3.4 1.8-3.5-.1-.1-3.1-1.3-3.1-5zm-2.9-9.5c.9-1 1.5-2.5 1.3-3.9-1.3 0-2.8.8-3.7 1.8-.8.9-1.5 2.4-1.3 3.8 1.4.1 2.8-.7 3.7-1.7z"/>
         </svg>
         <div>
-          <div class="btn-store-sub">Download on the</div>
+          <div class="btn-store-sub">{{ _('share_download_on') }}</div>
           <div class="btn-store-title">App Store</div>
         </div>
       </a>
@@ -409,7 +409,7 @@
           <path d="M3 1.5l15 9.5-15 9.5V1.5z" opacity=".9"/>
         </svg>
         <div>
-          <div class="btn-store-sub">Get it on</div>
+          <div class="btn-store-sub">{{ _('share_get_it_on') }}</div>
           <div class="btn-store-title">Google Play</div>
         </div>
       </a>

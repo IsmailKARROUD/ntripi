@@ -4,6 +4,7 @@
 // Used by DimensionRatingsScreen and client-side filtering helpers.
 
 import 'package:flutter/material.dart';
+import 'package:social_flutter/l10n/app_localizations.dart';
 
 enum DimensionKey {
   overall,
@@ -32,23 +33,25 @@ enum DimensionKey {
         crowdedness => 'crowdedness',
       };
 
-  String get label => switch (this) {
-        overall => 'Overall',
-        safety => 'Safety',
-        experience => 'Experience',
-        accessibility => 'Accessibility',
-        familyFriendly => 'Family-friendly',
-        crowdedness => 'Uncrowded',
+  // Reuses the rate-dialog's *Label keys so the same dimension never shows
+  // two different names.
+  String label(AppLocalizations l10n) => switch (this) {
+        overall => l10n.dimensionOverall,
+        safety => l10n.safetyLabel,
+        experience => l10n.experienceLabel,
+        accessibility => l10n.accessibilityLabel,
+        familyFriendly => l10n.familyFriendlyLabel,
+        crowdedness => l10n.crowdednessLabel,
       };
 
-  String get description => switch (this) {
-        overall => 'General impression',
-        safety => 'How safe you felt throughout',
-        experience => 'Quality of the overall experience',
-        accessibility => 'Ease of access for all abilities',
-        familyFriendly => 'Suitability for children and families',
+  String description(AppLocalizations l10n) => switch (this) {
+        overall => l10n.dimensionOverallDesc,
+        safety => l10n.dimensionSafetyDesc,
+        experience => l10n.dimensionExperienceDesc,
+        accessibility => l10n.dimensionAccessibilityDesc,
+        familyFriendly => l10n.dimensionFamilyFriendlyDesc,
         // Higher = better: 5 = pleasantly uncrowded, 1 = overcrowded.
-        crowdedness => 'How uncrowded and spacious it felt',
+        crowdedness => l10n.dimensionCrowdednessDesc,
       };
 
   IconData get icon => switch (this) {

@@ -20,26 +20,22 @@ Cookie strategy:
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta
-from pathlib import Path
+from datetime import timedelta
 
 from fastapi import APIRouter, Cookie, Depends, Form, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
-from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
 from app.config import Settings, get_settings
 from app.constants.privacy import PRIVACY_CONTENT, PRIVACY_DATE
 from app.constants.tos import TOS_DATE, TOS_SUMMARY, TOS_VERSION
 from app.database import get_db
+from app.i18n import resolve_lang
 from app.services import auth_service
 from app.services.auth import create_access_token, decode_access_token
+from app.templating import templates
 
 router = APIRouter(tags=["web"])
-
-_TEMPLATES_DIR = Path(__file__).parent.parent / "templates"
-templates = Jinja2Templates(directory=str(_TEMPLATES_DIR))
-templates.env.globals["current_year"] = datetime.now().year
 
 
 # ---------------------------------------------------------------------------
@@ -50,6 +46,13 @@ def _is_logged_in(session_token: str | None) -> bool:
     if not session_token:
         return False
     return decode_access_token(session_token) is not None
+
+
+def _t(request: Request):
+    """Translator bound to the request's resolved language (for page titles)."""
+    from app.i18n import translator
+
+    return translator(resolve_lang(request))
 
 
 def _issue_web_token(user_id: str, settings: Settings) -> str:
@@ -87,9 +90,10 @@ def homepage(
     request: Request,
     settings: Settings = Depends(get_settings),
 ) -> HTMLResponse:
+    t = _t(request)
     return templates.TemplateResponse(request, "home.html", {
-        "page_title": "Ntripi — Share your travel itineraries",
-        "page_description": "Plan, share, and discover travel itineraries",
+        "page_title": t("home_title"),
+        "page_description": t("home_description"),
         "android_download_url": settings.ANDROID_DOWNLOAD_URL,
     })
 
@@ -102,7 +106,7 @@ def login_page(
     if _is_logged_in(ntripi_session):
         return RedirectResponse("/app/", status_code=302)
     return templates.TemplateResponse(request, "login.html", {
-        "page_title": "Sign in — Ntripi",
+        "page_title": _t(request)("login_title"),
     })
 
 
@@ -114,7 +118,7 @@ def register_page(
     if _is_logged_in(ntripi_session):
         return RedirectResponse("/app/", status_code=302)
     return templates.TemplateResponse(request, "register.html", {
-        "page_title": "Create account — Ntripi",
+        "page_title": _t(request)("register_title"),
     })
 
 

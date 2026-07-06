@@ -15,11 +15,8 @@ Visibility enforcement happens at the template level:
 from __future__ import annotations
 
 import uuid
-from pathlib import Path
-
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import HTMLResponse
-from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session, selectinload
 from sqlalchemy import select
 
@@ -31,11 +28,9 @@ from app.models.track import Track
 from app.models.transit_segment import TransitSegment
 from app.models.user import User
 from app.services.share_service import prepare_share_context, _resolve_preview_image_url
+from app.templating import templates
 
 router = APIRouter(prefix="/share", tags=["share"])
-
-_TEMPLATES_DIR = Path(__file__).parent.parent / "templates"
-templates = Jinja2Templates(directory=str(_TEMPLATES_DIR))
 
 
 @router.get("/i/{itinerary_id}", response_class=HTMLResponse)

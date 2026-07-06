@@ -94,8 +94,9 @@ class _MoveStopToTrackSheetState extends ConsumerState<_MoveStopToTrackSheet> {
       );
 
   String _primaryName(Track t) {
-    if (t.stops.isEmpty) return '(empty track)';
-    return t.stops.first.placeName ?? '(unnamed)';
+    final l10n = AppLocalizations.of(context)!;
+    if (t.stops.isEmpty) return l10n.emptyTrackLabel;
+    return t.stops.first.placeName ?? l10n.unnamedStop;
   }
 
   bool _isAtCapacity(Track t) => t.stops.length >= Track.maxParallelStops;
@@ -420,11 +421,11 @@ class _MoveStopToTrackSheetState extends ConsumerState<_MoveStopToTrackSheet> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Section label
-              const Padding(
-                padding: EdgeInsets.fromLTRB(6, 6, 6, 6),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(6, 6, 6, 6),
                 child: Text(
-                  'MOVE STOP TO',
-                  style: TextStyle(
+                  AppLocalizations.of(context)!.moveStopToLabel.toUpperCase(),
+                  style: const TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
                     color: kText2,

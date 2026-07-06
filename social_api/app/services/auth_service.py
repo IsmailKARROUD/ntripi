@@ -39,9 +39,12 @@ _DUMMY_HASH = hash_password("dummy_timing_placeholder_password1")
 
 
 class AuthError(Exception):
-    def __init__(self, message: str, http_status: int = 400) -> None:
+    def __init__(
+        self, message: str, http_status: int = 400, code: str = "auth_error"
+    ) -> None:
         self.message = message
         self.http_status = http_status
+        self.code = code
         super().__init__(message)
 
 
@@ -71,10 +74,18 @@ def authenticate_user(identifier: str, password: str, db: Session) -> tuple[User
     )
 
     if not user or not password_matches:
-        raise AuthError("Incorrect email/username or password.", http_status=401)
+        raise AuthError(
+            "Incorrect email/username or password.",
+            http_status=401,
+            code="login_invalid",
+        )
 
     if not user.is_active:
-        raise AuthError("Your account has been deactivated.", http_status=403)
+        raise AuthError(
+            "Your account has been deactivated.",
+            http_status=403,
+            code="account_deactivated",
+        )
 
     token = create_access_token(subject=str(user.id))
     return user, token
@@ -96,13 +107,14 @@ def create_user(
         raise AuthError(
             "You must accept the Terms of Service to register.",
             http_status=400,
+            code="tos_required",
         )
 
     # Defense-in-depth: validate even though Pydantic schema already checked.
     try:
         username = validate_username(username)
     except ValueError as exc:
-        raise AuthError(str(exc), http_status=422)
+        raise AuthError(str(exc), http_status=422, code="username_invalid")
 
     username_lower = normalize_username(username)
     email = email.strip().lower()
@@ -110,20 +122,26 @@ def create_user(
     try:
         display_name = validate_display_name(display_name)
     except ValueError as exc:
-        raise AuthError(str(exc), http_status=422)
+        raise AuthError(str(exc), http_status=422, code="display_name_invalid")
 
     existing_username = db.execute(
         select(User).where(User.username_lower == username_lower)
     ).scalar_one_or_none()
     if existing_username:
-        raise AuthError("This username is already taken.", http_status=409)
+        raise AuthError(
+            "This username is already taken.",
+            http_status=409,
+            code="username_taken",
+        )
 
     existing_email = db.execute(
         select(User).where(User.email == email)
     ).scalar_one_or_none()
     if existing_email:
         raise AuthError(
-            "An account with this email already exists.", http_status=409
+            "An account with this email already exists.",
+            http_status=409,
+            code="email_taken",
         )
 
     new_user = User(

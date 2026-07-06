@@ -53,37 +53,6 @@ class _AnnotationScreenState extends State<AnnotationScreen> {
   late final TextEditingController _contentController;
   bool _saving = false;
 
-  static const _palette = {
-    AnnotationType.advice: (
-      bg: Color(0xFFE0EBE4),
-      fg: kForest,
-      icon: Icons.lightbulb_rounded,
-      label: 'Tip',
-      desc: 'Something useful or pro-tip.',
-    ),
-    AnnotationType.caution: (
-      bg: Color(0xFFFFE3CC),
-      fg: Color(0xFFA05D1F),
-      icon: Icons.warning_rounded,
-      label: 'Caution',
-      desc: 'Pay attention — surprises possible.',
-    ),
-    AnnotationType.avoid: (
-      bg: Color(0xFFFFD6D2),
-      fg: Color(0xFFA02828),
-      icon: Icons.block_rounded,
-      label: 'Avoid',
-      desc: 'Don\'t do this. Save your time.',
-    ),
-    AnnotationType.info: (
-      bg: Color(0xFFDCEAF6),
-      fg: Color(0xFF3B6EA5),
-      icon: Icons.info_rounded,
-      label: 'Info',
-      desc: 'A neutral fact worth knowing.',
-    ),
-  };
-
   // Baseline of the editable fields, captured after seeding from widget, so
   // backing out without changes does not trigger the discard confirmation.
   List<Object?>? _initialSnapshot;
@@ -246,11 +215,11 @@ class _AnnotationScreenState extends State<AnnotationScreen> {
             ),
 
           // ── Type selector ─────────────────────────────────────────────────
-          const Padding(
-            padding: EdgeInsets.fromLTRB(22, 14, 22, 6),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(22, 14, 22, 6),
             child: Text(
-              'TYPE',
-              style: TextStyle(
+              l10n.annotationTypeLabel.toUpperCase(),
+              style: const TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.w700,
                 color: kText2,
@@ -268,7 +237,6 @@ class _AnnotationScreenState extends State<AnnotationScreen> {
               crossAxisSpacing: 8,
               childAspectRatio: 1.2,
               children: AnnotationType.values.map((t) {
-                final p = _palette[t]!;
                 final active = _type == t;
                 return GestureDetector(
                   onTap: () => setState(() => _type = t),
@@ -276,10 +244,10 @@ class _AnnotationScreenState extends State<AnnotationScreen> {
                     duration: const Duration(milliseconds: 150),
                     padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
-                      color: active ? p.bg : kSurface,
+                      color: active ? t.bg : kSurface,
                       borderRadius: BorderRadius.circular(14),
                       border: Border.all(
-                        color: active ? p.fg : kBorder,
+                        color: active ? t.fg : kBorder,
                         width: active ? 2 : 1,
                       ),
                     ),
@@ -291,25 +259,25 @@ class _AnnotationScreenState extends State<AnnotationScreen> {
                           height: 30,
                           decoration: BoxDecoration(
                             color: active
-                                ? p.fg.withValues(alpha: 0.2)
-                                : p.bg,
+                                ? t.fg.withValues(alpha: 0.2)
+                                : t.bg,
                             borderRadius: BorderRadius.circular(10),
                           ),
                           alignment: Alignment.center,
-                          child: Icon(p.icon, size: 16, color: p.fg),
+                          child: Icon(t.icon, size: 16, color: t.fg),
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          p.label,
+                          t.label(l10n),
                           style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w700,
-                            color: p.fg,
+                            color: t.fg,
                           ),
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          p.desc,
+                          t.description(l10n),
                           style: const TextStyle(
                             fontSize: 11,
                             color: kText2,
@@ -325,11 +293,11 @@ class _AnnotationScreenState extends State<AnnotationScreen> {
           ),
 
           // ── Message field ─────────────────────────────────────────────────
-          const Padding(
-            padding: EdgeInsets.fromLTRB(22, 14, 22, 6),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(22, 14, 22, 6),
             child: Text(
-              'MESSAGE',
-              style: TextStyle(
+              l10n.messageLabel.toUpperCase(),
+              style: const TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.w700,
                 color: kText2,
@@ -367,11 +335,11 @@ class _AnnotationScreenState extends State<AnnotationScreen> {
           ),
 
           // Hint
-          const Padding(
-            padding: EdgeInsets.fromLTRB(22, 6, 22, 0),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(22, 6, 22, 0),
             child: Text(
-              'Keep it short — under 200 characters reads best on small screens.',
-              style: TextStyle(fontSize: 11, color: kText2),
+              l10n.annotationKeepShortHint,
+              style: const TextStyle(fontSize: 11, color: kText2),
             ),
           ),
         ],

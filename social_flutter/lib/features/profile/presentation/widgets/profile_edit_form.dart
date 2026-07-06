@@ -470,7 +470,7 @@ class _ProfileEditFormState extends ConsumerState<ProfileEditForm> {
                   const _FieldDivider(),
                   _EditFieldRow(
                     icon: Icons.alternate_email_rounded,
-                    label: 'Username',
+                    label: l10n.usernameLabel,
                     child: Text(
                       user.handle,
                       style: const TextStyle(
@@ -936,8 +936,8 @@ class _PickerRow extends StatelessWidget {
                   const SizedBox(height: 3),
                   Text(
                     country != null
-                        ? '${country.flag} ${country.name}'
-                        : 'Select a country',
+                        ? '${country.flag} ${country.localizedName(Localizations.localeOf(context).languageCode)}'
+                        : AppLocalizations.of(context)!.countryPickerTitle,
                     style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w500,
@@ -1076,14 +1076,14 @@ class _AddChip extends StatelessWidget {
           border:
               Border.all(color: kText3, style: BorderStyle.solid, width: 1.5),
         ),
-        child: const Row(
+        child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.add_rounded, size: 13, color: kText2),
-            SizedBox(width: 3),
+            const Icon(Icons.add_rounded, size: 13, color: kText2),
+            const SizedBox(width: 3),
             Text(
-              'Add',
-              style: TextStyle(
+              AppLocalizations.of(context)!.addButton,
+              style: const TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w700,
                 color: kText2,

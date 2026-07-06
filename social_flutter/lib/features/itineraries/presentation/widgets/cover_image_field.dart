@@ -136,13 +136,17 @@ class _CoverImageFieldState extends State<CoverImageField> {
       if (picked == null || !mounted) return;
       final bytes = await picked.readAsBytes();
       if (bytes.length > _maxFileSizeBytes) {
-        setState(() => _error = 'Image is too large (max 10 MB).');
+        if (mounted) {
+          setState(
+              () => _error = AppLocalizations.of(context)!.imageTooLarge);
+        }
         return;
       }
       await _openCrop(bytes, picked.name);
     } catch (e) {
       if (mounted)
-        setState(() => _error = 'Could not load image. Please try another.');
+        setState(
+            () => _error = AppLocalizations.of(context)!.couldNotLoadImage);
     } finally {
       if (mounted) setState(() => _picking = false);
     }
@@ -527,9 +531,9 @@ class _CropScreenState extends State<_CropScreen> {
             ),
           ),
           const SizedBox(height: 20),
-          const Text(
-            'Pinch to zoom · Drag to reposition',
-            style: TextStyle(color: kSand, fontSize: 13),
+          Text(
+            AppLocalizations.of(context)!.pinchToZoomHint,
+            style: const TextStyle(color: kSand, fontSize: 13),
           ),
         ],
       ),
@@ -616,22 +620,22 @@ class _ImagePlaceholder extends StatelessWidget {
             ? const Center(child: NTripiRingLoader())
             : Column(
                 mainAxisAlignment: MainAxisAlignment.center,
-                children: const [
-                  Icon(Icons.add_photo_alternate_rounded,
+                children: [
+                  const Icon(Icons.add_photo_alternate_rounded,
                       size: 28, color: kForest),
-                  SizedBox(height: 6),
+                  const SizedBox(height: 6),
                   Text(
-                    'Add a cover image',
-                    style: TextStyle(
+                    AppLocalizations.of(context)!.addCoverImage,
+                    style: const TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w700,
                       color: kBark,
                     ),
                   ),
-                  SizedBox(height: 2),
+                  const SizedBox(height: 2),
                   Text(
-                    'Optional — the map will be used otherwise.',
-                    style: TextStyle(fontSize: 11, color: kText2),
+                    AppLocalizations.of(context)!.coverOptionalMapFallback,
+                    style: const TextStyle(fontSize: 11, color: kText2),
                   ),
                 ],
               ),

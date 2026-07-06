@@ -37,6 +37,7 @@ from app.schemas.auth import (
 )
 from app.services import auth_service, refresh_token_service
 from app.services.auth import create_access_token, verify_google_id_token
+from app.errors import ApiError
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
@@ -75,7 +76,7 @@ def register(
             db=db,
         )
     except auth_service.AuthError as e:
-        raise HTTPException(status_code=e.http_status, detail=e.message)
+        raise ApiError(status_code=e.http_status, code=e.code, detail=e.message)
 
     refresh_raw, refresh_row = refresh_token_service.issue(
         db,
@@ -110,7 +111,7 @@ def login(
             payload.identifier, payload.password, db
         )
     except auth_service.AuthError as e:
-        raise HTTPException(status_code=e.http_status, detail=e.message)
+        raise ApiError(status_code=e.http_status, code=e.code, detail=e.message)
 
     refresh_raw, refresh_row = refresh_token_service.issue(
         db,
@@ -142,9 +143,9 @@ def google_auth(
     except Exception:
         # Any verification failure (bad signature/expiry/audience/issuer, or
         # google-auth not installed) is an auth failure — never leak details.
-        raise HTTPException(
+        raise ApiError(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid Google token.",
+            code="google_token_invalid", detail="Invalid Google token.",
         )
 
     try:
@@ -158,7 +159,7 @@ def google_auth(
             db=db,
         )
     except auth_service.AuthError as e:
-        raise HTTPException(status_code=e.http_status, detail=e.message)
+        raise ApiError(status_code=e.http_status, code=e.code, detail=e.message)
 
     refresh_raw, refresh_row = refresh_token_service.issue(
         db,
@@ -198,8 +199,8 @@ def refresh(
         )
     except refresh_token_service.InvalidGrantError:
         db.commit()  # persist any family revocation done during theft detection
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="invalid_grant"
+        raise ApiError(
+            status_code=status.HTTP_401_UNAUTHORIZED, code="invalid_grant", detail="invalid_grant"
         )
 
     # Reload user for the response payload — refresh_token_service has the
@@ -276,7 +277,7 @@ def change_password(
             user_agent=request.headers.get("user-agent"),
         )
     except auth_service.AuthError as e:
-        raise HTTPException(status_code=e.http_status, detail=e.message)
+        raise ApiError(status_code=e.http_status, code=e.code, detail=e.message)
 
     # Sessions were just revoked — reissue this device so the user stays logged in.
     refresh_raw, refresh_row = refresh_token_service.issue(

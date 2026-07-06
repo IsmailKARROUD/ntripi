@@ -98,12 +98,14 @@ class RatingsHubScreen extends ConsumerWidget {
                   ),
 
                   // ── 4. All raters header ─────────────────────────────────
-                  const SliverToBoxAdapter(
+                  SliverToBoxAdapter(
                     child: Padding(
-                      padding:  EdgeInsets.fromLTRB(16, 16, 16, 4),
+                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
                       child: Text(
-                        'ALL RATERS',
-                        style:  TextStyle(
+                        AppLocalizations.of(context)!
+                            .allRatersLabel
+                            .toUpperCase(),
+                        style: const TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w700,
                           color: kText2,
@@ -239,7 +241,7 @@ class _OverallHero extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           Text(
-            '$count traveler${count == 1 ? '' : 's'} rated this',
+            AppLocalizations.of(context)!.travelersRatedThis(count),
             style: const TextStyle(fontSize: 12, color: kText2),
           ),
         ],
@@ -274,11 +276,11 @@ class _DimensionSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Padding(
-          padding: EdgeInsets.fromLTRB(16, 14, 16, 6),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 14, 16, 6),
           child: Text(
-            'BY DIMENSION',
-            style: TextStyle(
+            AppLocalizations.of(context)!.byDimensionLabel.toUpperCase(),
+            style: const TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w700,
               color: kText2,
@@ -352,7 +354,7 @@ class _DimRow extends StatelessWidget {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    dim.label,
+                    dim.label(AppLocalizations.of(context)!),
                     style: const TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
@@ -361,9 +363,9 @@ class _DimRow extends StatelessWidget {
                   ),
                 ),
                 if (avg == null || insufficient)
-                  const Text(
-                    'Not enough ratings',
-                    style: TextStyle(
+                  Text(
+                    AppLocalizations.of(context)!.notEnoughRatings,
+                    style: const TextStyle(
                       fontSize: 11,
                       color: kText3,
                       fontStyle: FontStyle.italic,
@@ -403,7 +405,7 @@ class _DimRow extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.only(left: 36, top: 3),
               child: Text(
-                '$count ${count == 1 ? 'rating' : 'ratings'}',
+                AppLocalizations.of(context)!.ratingCount(count),
                 style: const TextStyle(fontSize: 10, color: kText3),
               ),
             ),
@@ -431,15 +433,15 @@ class _YourRatingSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Padding(
-          padding:  EdgeInsets.fromLTRB(16, 14, 16, 6),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 14, 16, 6),
           child: Row(
-            children:  [
-              Icon(Icons.person_rounded, size: 13, color: kForest),
-              SizedBox(width: 6),
+            children: [
+              const Icon(Icons.person_rounded, size: 13, color: kForest),
+              const SizedBox(width: 6),
               Text(
-                'YOUR RATING',
-                style: TextStyle(
+                AppLocalizations.of(context)!.yourRating.toUpperCase(),
+                style: const TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w700,
                   color: kForest,
@@ -482,7 +484,9 @@ class _YourRatingSection extends StatelessWidget {
                             style: const TextStyle(
                                 fontSize: 13, color: kText2),
                             children: [
-                              const TextSpan(text: 'You rated this '),
+                              TextSpan(
+                                  text:
+                                      '${AppLocalizations.of(context)!.youRatedThis} '),
                               TextSpan(
                                 text: '${myRating.stars}/5',
                                 style: const TextStyle(
@@ -508,9 +512,9 @@ class _YourRatingSection extends StatelessWidget {
                             borderRadius: BorderRadius.circular(10),
                             border: Border.all(color: kBorder, width: 1.5),
                           ),
-                          child: const Text(
-                            'Change',
-                            style: TextStyle(
+                          child: Text(
+                            AppLocalizations.of(context)!.changeButton,
+                            style: const TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w700,
                               color: kBark,
@@ -663,6 +667,7 @@ class _RatingListTileState extends State<_RatingListTile> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final rating = widget.rating;
     final user = rating.user;
     final score = rating.scoreForDimension(widget.dimension) ?? rating.score;
@@ -679,11 +684,11 @@ class _RatingListTileState extends State<_RatingListTile> {
             )
           : UserAvatar(avatarUrl: user.avatarUrl, radius: 20),
       title: user.isDeleted
-          ? Text(AppLocalizations.of(context)!.deletedUser,
+          ? Text(l10n.deletedUser,
               style: const TextStyle(fontStyle: FontStyle.italic, color: kText3))
-          : Text(user.displayNameOrFallback,
+          : Text(user.displayNameOrFallback(l10n),
               style: const TextStyle(fontWeight: FontWeight.w600)),
-      subtitle: Text(rating.timeAgo),
+      subtitle: Text(rating.timeAgo(l10n)),
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: List.generate(5, (i) {
@@ -757,7 +762,9 @@ class _ReviewNote extends StatelessWidget {
                 const Icon(Icons.format_quote, size: 14, color: kText2),
                 const SizedBox(width: 4),
                 Text(
-                  expanded ? 'Hide review' : 'Read review',
+                  expanded
+                      ? AppLocalizations.of(context)!.hideReview
+                      : AppLocalizations.of(context)!.readReview,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: kText2,
                         fontWeight: FontWeight.w500,

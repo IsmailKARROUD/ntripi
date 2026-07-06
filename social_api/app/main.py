@@ -32,8 +32,10 @@ from starlette.responses import Response
 from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
 
 from app.config import get_settings
+from app.errors import ApiError
 from app.limiter import limiter
 from app.middleware.etag import ETagMiddleware
+from app.middleware.language import LanguageCookieMiddleware
 from app.middleware.security_headers import SecurityHeadersMiddleware
 from app.routers import auth, users, follows, itineraries, share, web, waitlist
 from app.storage.factory import storage
@@ -115,9 +117,13 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 # Desired request order: ProxyHeaders → TrustedHost → ContentSizeLimit →
 #   SecurityHeaders → CORS → ETag → handlers
 
-# ETag / 304 Not Modified (innermost — closest to handlers)
+# Language cookie + Vary: Accept-Language on HTML (innermost — touches only
+# text/html responses, never the JSON API, so it does not affect the security
+# stack ordering below).
+app.add_middleware(LanguageCookieMiddleware)
+
+# ETag / 304 Not Modified — closest to handlers among the JSON-API layers.
 # Hash JSON GET response bodies; serve 304 when client returns If-None-Match.
-# Added first so it sits innermost in the stack.
 app.add_middleware(ETagMiddleware)
 
 # CORS — whitelist Flutter app domain only; never wildcard
@@ -210,6 +216,17 @@ def health_check() -> dict:
 # precedence over this handler, so it only fires for truly unhandled exceptions.
 # Async cancellation must be re-raised — intercepting it breaks Starlette's
 # lifespan and request lifecycle.
+@app.exception_handler(ApiError)
+async def api_error_handler(request: Request, exc: ApiError) -> JSONResponse:
+    # detail stays byte-identical to the old HTTPException body; `code` is added
+    # so the Flutter client can localize without string-matching the message.
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={"detail": exc.detail, "code": exc.code},
+        headers=exc.headers,
+    )
+
+
 @app.exception_handler(Exception)
 async def generic_exception_handler(request: Request, exc: Exception) -> JSONResponse:
     if isinstance(exc, (asyncio.CancelledError, KeyboardInterrupt, SystemExit)):

@@ -33,6 +33,7 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models.user import User
 from app.services.auth import decode_access_token
+from app.errors import ApiError
 
 bearer_scheme = HTTPBearer(auto_error=False)
 
@@ -51,9 +52,9 @@ def get_current_user(
       - 403 if the user's account is deactivated.
     """
     if credentials is None:
-        raise HTTPException(
+        raise ApiError(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Not authenticated.",
+            code="not_authenticated", detail="Not authenticated.",
         )
 
     credentials_exception = HTTPException(
@@ -75,9 +76,9 @@ def get_current_user(
         raise credentials_exception
 
     if not user.is_active:
-        raise HTTPException(
+        raise ApiError(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Your account has been deactivated.",
+            code="account_deactivated", detail="Your account has been deactivated.",
         )
 
     return user
@@ -93,9 +94,9 @@ def require_verified_email(
     the client surfaces as a "verify with Google" prompt.
     """
     if not current_user.email_verified:
-        raise HTTPException(
+        raise ApiError(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Please verify your email by signing in with Google to do this.",
+            code="email_unverified", detail="Please verify your email by signing in with Google to do this.",
         )
     return current_user
 
@@ -161,23 +162,23 @@ def make_etag_checker(itinerary_id_param: str = "itinerary_id"):
         itinerary = db.execute(stmt).scalar_one_or_none()
 
         if not itinerary:
-            raise HTTPException(
+            raise ApiError(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="Itinerary not found.",
+                code="itinerary_not_found", detail="Itinerary not found.",
             )
 
         if itinerary.user_id != current_user.id:
-            raise HTTPException(
+            raise ApiError(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="You do not have permission to modify this itinerary.",
+                code="itinerary_not_owner", detail="You do not have permission to modify this itinerary.",
             )
 
         if_match = request.headers.get("If-Match")
         if not if_match:
             # Client forgot to send the header — reject immediately.
-            raise HTTPException(
+            raise ApiError(
                 status_code=status.HTTP_428_PRECONDITION_REQUIRED,
-                detail="If-Match header is required for mutations.",
+                code="if_match_required", detail="If-Match header is required for mutations.",
             )
 
         # Normalize both sides to the same timezone representation before comparing.
@@ -187,9 +188,9 @@ def make_etag_checker(itinerary_id_param: str = "itinerary_id"):
         if client_etag != server_etag:
             # The itinerary was modified between the client's last fetch and now.
             # The client must reload before retrying.
-            raise HTTPException(
+            raise ApiError(
                 status_code=status.HTTP_412_PRECONDITION_FAILED,
-                detail="itinerary modified, please reload",
+                code="itinerary_stale", detail="itinerary modified, please reload",
             )
 
         return itinerary

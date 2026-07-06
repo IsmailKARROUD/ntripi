@@ -143,16 +143,16 @@ class _VisibilityScreenState extends ConsumerState<VisibilityScreen> {
                   borderRadius: BorderRadius.circular(14),
                   border: Border.all(color: const Color(0xFFF0E2C2)),
                 ),
-                child: const Row(
+                child: Row(
                   children: [
-                    Icon(Icons.info_rounded,
+                    const Icon(Icons.info_rounded,
                         size: 16, color: Color(0xFFA06D1F)),
-                    SizedBox(width: 10),
+                    const SizedBox(width: 10),
                     Expanded(
                       child: Text(
-                        'Save the itinerary first, then manage your allowlist from the edit screen.',
-                        style:
-                            TextStyle(fontSize: 12, color: Color(0xFF8A5A18)),
+                        AppLocalizations.of(context)!.saveItineraryFirstAllowlist,
+                        style: const TextStyle(
+                            fontSize: 12, color: Color(0xFF8A5A18)),
                       ),
                     ),
                   ],
@@ -167,38 +167,18 @@ class _VisibilityScreenState extends ConsumerState<VisibilityScreen> {
 
 // ─── Visibility option data ───────────────────────────────────────────────────
 
+// Labels/descriptions come from ItineraryVisibility.label/description; only
+// the screen-specific rounded icon variant lives here.
 typedef _VisOption = ({
   ItineraryVisibility value,
   IconData icon,
-  String label,
-  String desc,
 });
 
 const _kOptions = <_VisOption>[
-  (
-    value: ItineraryVisibility.public,
-    icon: Icons.public_rounded,
-    label: 'Public',
-    desc: 'Anyone with the link can view.',
-  ),
-  (
-    value: ItineraryVisibility.followers,
-    icon: Icons.group_rounded,
-    label: 'Followers',
-    desc: 'Only people who follow you.',
-  ),
-  (
-    value: ItineraryVisibility.restricted,
-    icon: Icons.key_rounded,
-    label: 'Restricted',
-    desc: 'Only people you allow.',
-  ),
-  (
-    value: ItineraryVisibility.onlyMe,
-    icon: Icons.lock_rounded,
-    label: 'Only me',
-    desc: 'Just you.',
-  ),
+  (value: ItineraryVisibility.public, icon: Icons.public_rounded),
+  (value: ItineraryVisibility.followers, icon: Icons.group_rounded),
+  (value: ItineraryVisibility.restricted, icon: Icons.key_rounded),
+  (value: ItineraryVisibility.onlyMe, icon: Icons.lock_rounded),
 ];
 
 // ─── Visibility card ──────────────────────────────────────────────────────────
@@ -247,7 +227,7 @@ class _VisCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    opt.label,
+                    opt.value.label(AppLocalizations.of(context)!),
                     style: const TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w700,
@@ -255,7 +235,7 @@ class _VisCard extends StatelessWidget {
                     ),
                   ),
                   Text(
-                    opt.desc,
+                    opt.value.description(AppLocalizations.of(context)!),
                     style:
                         const TextStyle(fontSize: 11, color: kText2),
                   ),
@@ -316,7 +296,7 @@ class _AllowlistSection extends ConsumerWidget {
               const Icon(Icons.group_add_rounded, size: 13, color: kText2),
               const SizedBox(width: 6),
               Text(
-                'ALLOWLIST${allowed.isNotEmpty ? ' · ${allowed.length} ${allowed.length == 1 ? 'person' : 'people'}' : ''}',
+                '${AppLocalizations.of(context)!.allowlistLabel.toUpperCase()}${allowed.isNotEmpty ? ' · ${AppLocalizations.of(context)!.personCount(allowed.length)}' : ''}',
                 style: const TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w700,
@@ -366,7 +346,8 @@ class _AllowlistSection extends ConsumerWidget {
                       showUndoableActionSnackbar(
                         context: context,
                         duration: const Duration(seconds: 30),
-                        message: 'Removed $label from allowlist',
+                        message: AppLocalizations.of(context)!
+                            .removedFromAllowlist(label),
                         onUndo: () async {
                           await ref
                               .read(allowedUsersProvider(itineraryId)
@@ -396,14 +377,15 @@ class _AllowlistSection extends ConsumerWidget {
             ),
             child: submitting
                 ? const Center(child: NTripiRingLoader(size: 20))
-                : const Row(
+                : Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.person_add_rounded, size: 18, color: kForest),
-                      SizedBox(width: 6),
+                      const Icon(Icons.person_add_rounded,
+                          size: 18, color: kForest),
+                      const SizedBox(width: 6),
                       Text(
-                        'Add people',
-                        style: TextStyle(
+                        AppLocalizations.of(context)!.addPeople,
+                        style: const TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w700,
                           color: kBark,

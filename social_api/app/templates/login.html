@@ -60,7 +60,7 @@
 </style>
 
 <section class="auth-form">
-  <h2>Sign in to Ntripi</h2>
+  <h2>{{ _('login_heading') }}</h2>
 
   {% if error_message %}
   <div class="error-banner">{{ error_message }}</div>
@@ -68,21 +68,21 @@
 
   <form method="POST" action="/web/login">
     <label>
-      Email or username
+      {{ _('login_email_or_username') }}
       <input type="text" name="identifier" required autofocus
              value="{{ identifier or '' }}" autocomplete="username">
     </label>
 
     <label>
-      Password
+      {{ _('login_password') }}
       <input type="password" name="password" required autocomplete="current-password">
     </label>
 
-    <button type="submit" class="btn-primary btn-large">Sign in</button>
+    <button type="submit" class="btn-primary btn-large">{{ _('login_submit') }}</button>
   </form>
 
   <p class="auth-switch">
-    New to Ntripi? <a href="/register">Create an account</a>
+    {{ _('login_new_prompt') }} <a href="/register">{{ _('login_create_account') }}</a>
   </p>
 </section>
 

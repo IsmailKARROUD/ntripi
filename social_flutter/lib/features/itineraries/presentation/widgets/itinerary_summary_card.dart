@@ -9,6 +9,7 @@ import 'package:social_flutter/core/api/api_endpoints.dart';
 import 'package:social_flutter/core/cache/image_cache.dart';
 import 'package:social_flutter/core/ui/app_theme.dart';
 import 'package:social_flutter/features/itineraries/domain/itinerary.dart';
+import 'package:social_flutter/l10n/app_localizations.dart';
 import 'package:social_flutter/shared/widgets/visibility_badge.dart';
 
 class ItinerarySummaryCard extends ConsumerWidget {
@@ -25,6 +26,7 @@ class ItinerarySummaryCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     final coverUrl = itinerary.coverImageUrl != null
         ? (itinerary.coverImageUrl!.startsWith('/')
             ? '$kApiBaseUrl${itinerary.coverImageUrl}'
@@ -96,16 +98,15 @@ class ItinerarySummaryCard extends ConsumerWidget {
                     children: [
                       _MetaChip(
                         icon: Icons.schedule_rounded,
-                        label: itinerary.formattedDuration,
+                        label: itinerary.formattedDuration(l10n),
                       ),
                       _MetaChip(
                         icon: Icons.payments_rounded,
-                        label: itinerary.formattedCost,
+                        label: itinerary.formattedCost(l10n),
                       ),
                       _MetaChip(
                         icon: Icons.location_on_rounded,
-                        label:
-                            '${itinerary.stopsCount} stop${itinerary.stopsCount == 1 ? '' : 's'}',
+                        label: l10n.stopCount(itinerary.stopsCount),
                       ),
                     ],
                   ),

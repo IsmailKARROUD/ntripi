@@ -304,11 +304,11 @@ class _ItineraryFormScreenState extends ConsumerState<ItineraryFormScreen> {
   Future<void> _deleteItinerary() async {
     final itinerary =
         ref.read(itineraryDetailProvider(widget.itineraryId!)).value;
-    final title = itinerary?.title ?? 'this itinerary';
     final router = GoRouter.of(context);
     final messenger = ScaffoldMessenger.of(context);
 
     final l10n = AppLocalizations.of(context)!;
+    final title = itinerary?.title ?? l10n.thisItineraryFallback;
     final confirmed = await confirmTypedDestructiveAction(
       context: context,
       title: l10n.deleteItineraryFormTitle,
@@ -365,7 +365,7 @@ class _ItineraryFormScreenState extends ConsumerState<ItineraryFormScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final visLabel = _visibilityLabel(_visibility, l10n);
+    final visLabel = _visibility.label(l10n);
     final visIcon = _visibilityIcon(_visibility);
     final visColor = _visibilityColor(_visibility);
     // Only the title is mandatory at creation — hide the rest behind a toggle
@@ -546,7 +546,10 @@ class _ItineraryFormScreenState extends ConsumerState<ItineraryFormScreen> {
                     _PickerRow(
                       icon: Icons.payments_rounded,
                       label: l10n.formLabelCurrency,
-                      value: _currency ?? 'EUR',
+                      // 'Other' is an internal sentinel — show it localized.
+                      value: _currency == 'Other'
+                          ? l10n.otherOption
+                          : (_currency ?? 'EUR'),
                       onTap: _showCurrencyPicker,
                     ),
                     const _FieldDivider(),
@@ -812,14 +815,8 @@ class _CurrencyPickerSheetState extends State<_CurrencyPickerSheet> {
 }
 
 // ─── Visibility helpers ───────────────────────────────────────────────────────
-
-String _visibilityLabel(ItineraryVisibility v, AppLocalizations l10n) =>
-    switch (v) {
-      ItineraryVisibility.public => l10n.visibilityPublic,
-      ItineraryVisibility.followers => l10n.visibilityFollowers,
-      ItineraryVisibility.restricted => l10n.visibilityRestricted,
-      ItineraryVisibility.onlyMe => l10n.visibilityOnlyMe,
-    };
+// Labels come from ItineraryVisibility.label(l10n); the rounded icon variant
+// below is specific to this screen's design.
 
 IconData _visibilityIcon(ItineraryVisibility v) => switch (v) {
       ItineraryVisibility.public => Icons.public_rounded,

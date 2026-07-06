@@ -92,17 +92,19 @@ class _TrackReorderSheetState extends ConsumerState<_TrackReorderSheet> {
   }
 
   String _primaryName(Track t) {
-    if (t.stops.isEmpty) return '(empty)';
-    return t.stops.first.placeName ?? '(unnamed)';
+    final l10n = AppLocalizations.of(context)!;
+    if (t.stops.isEmpty) return l10n.emptyTrackName;
+    return t.stops.first.placeName ?? l10n.unnamedStop;
   }
 
   String _stopName(String stopId) {
+    final l10n = AppLocalizations.of(context)!;
     for (final t in _local) {
       for (final s in t.stops) {
-        if (s.id == stopId) return s.placeName ?? '(unnamed)';
+        if (s.id == stopId) return s.placeName ?? l10n.unnamedStop;
       }
     }
-    return '(unknown)';
+    return l10n.unknownStop;
   }
 
   void _onReorder(int oldIndex, int newIndex) {
@@ -117,11 +119,12 @@ class _TrackReorderSheetState extends ConsumerState<_TrackReorderSheet> {
 
   Future<bool> _confirmDiscardIfDirty() async {
     if (!_dirty) return true;
+    final l10n = AppLocalizations.of(context)!;
     return confirmDestructiveAction(
       context: context,
-      title: 'Discard changes?',
-      message: 'Your reorder will not be saved.',
-      confirmLabel: 'Discard',
+      title: l10n.discardChangesTitle,
+      message: l10n.discardReorderMessage,
+      confirmLabel: l10n.discardButton,
     );
   }
 
@@ -166,10 +169,8 @@ class _TrackReorderSheetState extends ConsumerState<_TrackReorderSheet> {
       if (!mounted) return;
       setState(() => _busy = false);
       messenger.showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Itinerary changed elsewhere — close and reopen to see the latest order.',
-          ),
+        SnackBar(
+          content: Text(AppLocalizations.of(context)!.itineraryChangedElsewhere),
         ),
       );
       return;
@@ -221,11 +222,13 @@ class _TrackReorderSheetState extends ConsumerState<_TrackReorderSheet> {
                   ),
 
                 // ── Section label ────────────────────────────────────────
-                const Padding(
-                  padding: EdgeInsets.fromLTRB(6, 6, 6, 4),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(6, 6, 6, 4),
                   child: Text(
-                    'DRAG TO CHANGE THE TRACK ORDER',
-                    style: TextStyle(
+                    AppLocalizations.of(context)!
+                        .dragToChangeTrackOrder
+                        .toUpperCase(),
+                    style: const TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w700,
                       color: kText2,
@@ -349,9 +352,8 @@ class _OrphanSummaryBanner extends StatelessWidget {
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  count == 1
-                      ? '1 transit segment will be deleted'
-                      : '$count transit segments will be deleted',
+                  AppLocalizations.of(context)!
+                      .transitSegmentsWillBeDeleted(count),
                   style: const TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
@@ -374,7 +376,7 @@ class _OrphanSummaryBanner extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.only(left: 24, top: 3),
               child: Text(
-                '… and $moreCount more',
+                AppLocalizations.of(context)!.andMoreCount(moreCount),
                 style: const TextStyle(
                   fontSize: 12,
                   color: kTransitText,
@@ -468,7 +470,7 @@ class _TrackRow extends StatelessWidget {
                     borderRadius: BorderRadius.circular(999),
                   ),
                   child: Text(
-                    '$parallelCount alts',
+                    AppLocalizations.of(context)!.altsCount(parallelCount),
                     style: const TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w600,
@@ -491,7 +493,8 @@ class _TrackRow extends StatelessWidget {
                 const SizedBox(width: 4),
                 Expanded(
                   child: Text(
-                    '→ $destName  —  segment will be deleted',
+                    AppLocalizations.of(context)!
+                        .segmentToWillBeDeleted(destName),
                     style: const TextStyle(fontSize: 11, color: kRatingRed),
                   ),
                 ),

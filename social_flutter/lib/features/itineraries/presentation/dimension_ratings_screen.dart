@@ -50,6 +50,7 @@ class DimensionRatingsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     final ratingsAsync = ref.watch(ratingsPageProvider(itineraryId));
     final page = ratingsAsync.value;
 
@@ -64,7 +65,8 @@ class DimensionRatingsScreen extends ConsumerWidget {
         children: [
           SafeArea(
             bottom: false,
-            child: EditorialTopBar(title: '${dimension.label} Rating'),
+            child: EditorialTopBar(
+                title: l10n.dimensionRatingTitle(dimension.label(l10n))),
           ),
           Container(height: 1, color: kBorder),
           Expanded(
@@ -111,7 +113,8 @@ class DimensionRatingsScreen extends ConsumerWidget {
                       Icon(dimension.icon, size: 56, color: kText3),
                       const SizedBox(height: 12),
                       Text(
-                        'No ratings yet for ${dimension.label.toLowerCase()}',
+                        l10n.noRatingsYetFor(
+                            dimension.label(l10n).toLowerCase()),
                         style: const TextStyle(
                             fontSize: 16, fontWeight: FontWeight.w500),
                       ),
@@ -151,8 +154,7 @@ class DimensionRatingsScreen extends ConsumerWidget {
                       RatingStarRow(avg: avg, dimension: dimension),
                       const SizedBox(height: 6),
                       Text(
-                        'Based on ${filtered.length} '
-                        'rating${filtered.length == 1 ? '' : 's'}',
+                        l10n.basedOnRatings(filtered.length),
                         style: const TextStyle(color: kText2),
                       ),
                     ],
@@ -178,7 +180,7 @@ class DimensionRatingsScreen extends ConsumerWidget {
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
                   child: Text(
-                    'Raters',
+                    l10n.ratersLabel,
                     style: Theme.of(context).textTheme.titleSmall?.copyWith(
                           color: kText2,
                           letterSpacing: 0.5,

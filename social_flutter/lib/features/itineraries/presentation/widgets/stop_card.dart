@@ -14,6 +14,7 @@ import 'package:social_flutter/features/itineraries/domain/stop.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/annotation_chip.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/edit_pencil_button.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/markdown_notes_editor.dart';
+import 'package:social_flutter/l10n/app_localizations.dart';
 
 class StopCard extends StatelessWidget {
   final Stop stop;
@@ -207,7 +208,7 @@ class _EditNotesSectionState extends State<_EditNotesSection> {
                 Icon(Icons.notes_rounded, size: 14, color: kText3),
                 const SizedBox(width: 4),
                 Text(
-                  'Notes',
+                  AppLocalizations.of(context)!.notesLabel,
                   style: const TextStyle(
                     fontSize: 12,
                     color: kText2,
@@ -284,7 +285,9 @@ class _ReadNotesSectionState extends State<_ReadNotesSection> {
                 child: Padding(
                   padding: const EdgeInsets.only(top: 2),
                   child: Text(
-                    _expanded ? 'view less' : '... view more',
+                    _expanded
+                        ? AppLocalizations.of(context)!.viewLess
+                        : AppLocalizations.of(context)!.viewMore,
                     style: const TextStyle(
                       fontSize: 12,
                       color: kForest,
@@ -338,14 +341,14 @@ class _AnnotationChipsRow extends StatelessWidget {
                 borderRadius: BorderRadius.circular(999),
                 border: Border.all(color: kEditBlue.withValues(alpha: 0.13)),
               ),
-              child: const Row(
+              child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.add_rounded, size: 13, color: kEditBlue),
-                  SizedBox(width: 3),
+                  const Icon(Icons.add_rounded, size: 13, color: kEditBlue),
+                  const SizedBox(width: 3),
                   Text(
-                    'Add note',
-                    style: TextStyle(fontSize: 12, color: kEditBlue),
+                    AppLocalizations.of(context)!.addNoteButton,
+                    style: const TextStyle(fontSize: 12, color: kEditBlue),
                   ),
                 ],
               ),

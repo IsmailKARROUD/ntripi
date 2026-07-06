@@ -6,6 +6,8 @@
 
 import 'package:flutter/material.dart';
 import 'package:social_flutter/features/itineraries/domain/annotation.dart';
+import 'package:social_flutter/l10n/app_localizations.dart';
+import 'package:social_flutter/shared/utils/duration_format.dart';
 
 enum TransportMode {
   walk,
@@ -20,19 +22,21 @@ enum TransportMode {
   car,
   airplane;
 
-  String get label => const {
-        TransportMode.walk: 'Walk',
-        TransportMode.bus: 'Bus',
-        TransportMode.tram: 'Tram',
-        TransportMode.metro: 'Metro',
-        TransportMode.train: 'Train',
-        TransportMode.taxi: 'Taxi',
-        TransportMode.uber: 'Uber',
-        TransportMode.bike: 'Bike',
-        TransportMode.ferry: 'Ferry',
-        TransportMode.car: 'Car',
-        TransportMode.airplane: 'Airplane',
-      }[this]!;
+  // Same l10n-parameter pattern as PlaceType in stop.dart — domain code never
+  // touches BuildContext.
+  String label(AppLocalizations l10n) => switch (this) {
+        TransportMode.walk => l10n.transportModeWalk,
+        TransportMode.bus => l10n.transportModeBus,
+        TransportMode.tram => l10n.transportModeTram,
+        TransportMode.metro => l10n.transportModeMetro,
+        TransportMode.train => l10n.transportModeTrain,
+        TransportMode.taxi => l10n.transportModeTaxi,
+        TransportMode.uber => l10n.transportModeUber,
+        TransportMode.bike => l10n.transportModeBike,
+        TransportMode.ferry => l10n.transportModeFerry,
+        TransportMode.car => l10n.transportModeCar,
+        TransportMode.airplane => l10n.transportModeAirplane,
+      };
 
   IconData get icon => const {
         TransportMode.walk: Icons.directions_walk,
@@ -143,28 +147,13 @@ class TransportLeg {
     );
   }
 
-  String get formattedDuration {
-    final d = durationMin;
-    if (d == null || d <= 0) return '';
-    final years = d ~/ (60 * 24 * 365);
-    var remaining = d % (60 * 24 * 365);
-    final days = remaining ~/ (60 * 24);
-    remaining = remaining % (60 * 24);
-    final hours = remaining ~/ 60;
-    final minutes = remaining % 60;
-    final parts = <String>[
-      if (years > 0) '${years}y',
-      if (days > 0) '${days}d',
-      if (hours > 0) '${hours}h',
-      if (minutes > 0) '${minutes}min',
-    ];
-    return parts.join(' ');
-  }
+  String formattedDuration(AppLocalizations l10n) =>
+      formatDuration(durationMin, l10n, fallback: '');
 
   /// Compact one-line summary: "Metro · Line 9 → direction Nation"
-  String get summary {
+  String summary(AppLocalizations l10n) {
     final parts = <String>[
-      mode.label,
+      mode.label(l10n),
       if (line != null && line!.isNotEmpty) line!,
       if (direction != null && direction!.isNotEmpty) '→ $direction',
     ];

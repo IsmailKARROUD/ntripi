@@ -139,7 +139,7 @@ class _PreviewBody extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       child: text.trim().isEmpty
           ? Text(
-              'Nothing to preview yet.',
+              AppLocalizations.of(context)!.nothingToPreview,
               style: TextStyle(
                 color: Theme.of(context).hintColor,
                 fontStyle: FontStyle.italic,

@@ -6,9 +6,37 @@ import 'package:social_flutter/features/itineraries/domain/itinerary_annotation.
 import 'package:social_flutter/features/itineraries/domain/stop.dart';
 import 'package:social_flutter/features/itineraries/domain/track.dart';
 import 'package:social_flutter/features/itineraries/domain/transit_segment.dart';
+import 'package:social_flutter/l10n/app_localizations.dart';
+import 'package:social_flutter/shared/utils/duration_format.dart';
 
 /// Four-level visibility for an itinerary.
-enum ItineraryVisibility { public, followers, restricted, onlyMe }
+enum ItineraryVisibility {
+  public,
+  followers,
+  restricted,
+  onlyMe;
+
+  String label(AppLocalizations l10n) => switch (this) {
+        public => l10n.visibilityPublic,
+        followers => l10n.visibilityFollowers,
+        restricted => l10n.visibilityRestricted,
+        onlyMe => l10n.visibilityOnlyMe,
+      };
+
+  String description(AppLocalizations l10n) => switch (this) {
+        public => l10n.visibilityPublicDesc,
+        followers => l10n.visibilityFollowersDesc,
+        restricted => l10n.visibilityRestrictedDesc,
+        onlyMe => l10n.visibilityOnlyMeDesc,
+      };
+
+  IconData get icon => switch (this) {
+        public => Icons.public,
+        followers => Icons.people,
+        restricted => Icons.lock_outline,
+        onlyMe => Icons.lock,
+      };
+}
 
 /// A travel itinerary owned by a user.
 ///
@@ -218,42 +246,19 @@ class Itinerary {
   // Visibility helpers
   // ---------------------------------------------------------------------------
 
-  String get visibilityLabel => switch (visibility) {
-        ItineraryVisibility.public => 'Public',
-        ItineraryVisibility.followers => 'Followers',
-        ItineraryVisibility.restricted => 'Restricted',
-        ItineraryVisibility.onlyMe => 'Only Me',
-      };
+  String visibilityLabel(AppLocalizations l10n) => visibility.label(l10n);
 
-  IconData get visibilityIcon => switch (visibility) {
-        ItineraryVisibility.public => Icons.public,
-        ItineraryVisibility.followers => Icons.people,
-        ItineraryVisibility.restricted => Icons.lock_outline,
-        ItineraryVisibility.onlyMe => Icons.lock,
-      };
+  IconData get visibilityIcon => visibility.icon;
 
   // ---------------------------------------------------------------------------
   // Duration / cost helpers
   // ---------------------------------------------------------------------------
 
-  String get formattedDuration {
-    if (totalDurationMin <= 0) return '—';
-    final years = totalDurationMin ~/ (60 * 24 * 365);
-    int remainingMin = totalDurationMin % (60 * 24 * 365);
-    final days = remainingMin ~/ (60 * 24);
-    remainingMin = remainingMin % (60 * 24);
-    final hours = remainingMin ~/ 60;
-    final minutes = remainingMin % 60;
-    String returnvalue = '';
-    if (years > 0) returnvalue += '${years}y ';
-    if (days > 0) returnvalue += '${days}d ';
-    if (hours > 0) returnvalue += '${hours}h ';
-    if (minutes > 0) returnvalue += '${minutes}min';
-    return returnvalue;
-  }
+  String formattedDuration(AppLocalizations l10n) =>
+      formatDuration(totalDurationMin, l10n);
 
-  String get formattedCost {
-    if (totalCost <= 0.0) return 'Free';
+  String formattedCost(AppLocalizations l10n) {
+    if (totalCost <= 0.0) return l10n.freeLegLabel;
     return formatMoney(totalCost, currency);
   }
 

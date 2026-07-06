@@ -312,7 +312,8 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
   Future<void> _addAnnotation(Stop stop) async {
     final result = await showAnnotationScreen(
       context,
-      stopName: stop.placeName ?? 'Stop',
+      stopName:
+          stop.placeName ?? AppLocalizations.of(context)!.stopFallbackName,
       stopSubtitle: stop.placeAddress,
     );
     if (result == null || !mounted) return;
@@ -339,7 +340,8 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
       isEdit: true,
       initialContent: annotation.content,
       initialType: annotation.type,
-      stopName: stop.placeName ?? 'Stop',
+      stopName:
+          stop.placeName ?? AppLocalizations.of(context)!.stopFallbackName,
       stopSubtitle: stop.placeAddress,
     );
     if (result == null || !mounted) return;
@@ -750,7 +752,7 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                                     ItineraryVisibility.onlyMe
                                 ? () => ref
                                     .read(shareServiceProvider)
-                                    .shareItinerary(itinerary)
+                                    .shareItinerary(itinerary, l10n)
                                 : null,
                             onEditDetails: isOwner
                                 ? () => context.push(
@@ -789,11 +791,11 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                               children: [
                                 _DetailMetaChip(
                                   icon: Icons.schedule_rounded,
-                                  label: itinerary.formattedDuration,
+                                  label: itinerary.formattedDuration(l10n),
                                 ),
                                 _DetailMetaChip(
                                   icon: Icons.payments_rounded,
-                                  label: itinerary.formattedCost,
+                                  label: itinerary.formattedCost(l10n),
                                 ),
                                 _DetailMetaChip(
                                   icon: Icons.location_on_rounded,
@@ -841,9 +843,11 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                                                         Icons.undo_rounded,
                                                         color: kRatingRed,
                                                         size: 16),
-                                                    label: const Text(
-                                                      'Undo',
-                                                      style: TextStyle(
+                                                    label: Text(
+                                                      AppLocalizations.of(
+                                                              context)!
+                                                          .undoLabel,
+                                                      style: const TextStyle(
                                                           color: kRatingRed),
                                                     ),
                                                   ),
@@ -1501,14 +1505,15 @@ class _OwnerRow extends ConsumerWidget {
                       borderRadius: BorderRadius.circular(999),
                       border: Border.all(color: kForest),
                     ),
-                    child: const Row(
+                    child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.star_rounded, size: 13, color: kForest),
-                        SizedBox(width: 4),
+                        const Icon(Icons.star_rounded,
+                            size: 13, color: kForest),
+                        const SizedBox(width: 4),
                         Text(
-                          'Rate',
-                          style: TextStyle(
+                          AppLocalizations.of(context)!.rateIt,
+                          style: const TextStyle(
                               fontSize: 11,
                               fontWeight: FontWeight.w700,
                               color: kForest),
@@ -1692,7 +1697,9 @@ class _RateCta extends ConsumerWidget {
           current: myRating,
         ),
         icon: const Icon(Icons.star_rounded, size: 18),
-        label: Text(myRating != null ? 'Update your rating' : 'Rate this trip'),
+        label: Text(myRating != null
+            ? AppLocalizations.of(context)!.updateYourRating
+            : AppLocalizations.of(context)!.rateThisTrip),
         style: FilledButton.styleFrom(
           backgroundColor: kForest,
           shape:

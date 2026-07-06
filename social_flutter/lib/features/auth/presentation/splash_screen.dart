@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:social_flutter/core/auth/token_manager.dart';
 import 'package:social_flutter/core/storage/secure_storage.dart';
 import 'package:social_flutter/core/ui/app_theme.dart';
+import 'package:social_flutter/l10n/app_localizations.dart';
 import 'package:social_flutter/shared/widgets/loaders.dart';
 
 class SplashScreen extends ConsumerStatefulWidget {
@@ -58,12 +59,13 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
+    final l10n = AppLocalizations.of(context)!;
+    return Scaffold(
       resizeToAvoidBottomInset: false,
       backgroundColor: kForest,
       body: Stack(
         children: [
-          _RouteTexture(),
+          const _RouteTexture(),
           SafeArea(
             child: Column(
               children: [
@@ -71,9 +73,9 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      NTripiPeakLoader(size: 120),
-                      SizedBox(height: 24),
-                      Text(
+                      const NTripiPeakLoader(size: 120),
+                      const SizedBox(height: 24),
+                      const Text(
                         'NTripi',
                         style: TextStyle(
                           fontFamily: 'DM Sans',
@@ -83,11 +85,11 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
                           letterSpacing: -1,
                         ),
                       ),
-                      SizedBox(height: 12),
+                      const SizedBox(height: 12),
                       Text(
-                        'Discover & share travel itineraries\ncrafted by real explorers',
+                        l10n.splashTagline,
                         textAlign: TextAlign.center,
-                        style: TextStyle(
+                        style: const TextStyle(
                           color: Color(0xA8FFFFFF),
                           fontSize: 15,
                           height: 1.5,
@@ -98,10 +100,10 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
                 ),
                 Center(
                   child: Padding(
-                    padding: EdgeInsets.only(bottom: 48),
+                    padding: const EdgeInsets.only(bottom: 48),
                     child: Text(
-                      'Explore the world, one route at a time',
-                      style: TextStyle(
+                      l10n.splashMotto,
+                      style: const TextStyle(
                         fontSize: 12,
                         color: Color(0x66FFFFFF),
                         letterSpacing: 0.2,

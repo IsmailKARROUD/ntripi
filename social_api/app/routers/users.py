@@ -46,6 +46,7 @@ from app.services.image_service import (
 )
 from app.services.itinerary_access import can_view_itinerary
 from app.storage.factory import storage
+from app.errors import ApiError
 
 router = APIRouter(prefix="/users", tags=["Users"])
 
@@ -154,9 +155,9 @@ def delete_my_account(
     """
     # Step 1 — re-verify password.
     if not verify_password(payload.password, current_user.password_hash):
-        raise HTTPException(
+        raise ApiError(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect password.",
+            code="incorrect_password", detail="Incorrect password.",
         )
 
     # Step 2 — fix denormalized follow counters on other users.
@@ -219,9 +220,9 @@ def get_user_by_username(
     ).scalar_one_or_none()
 
     if not target_user or not target_user.is_active:
-        raise HTTPException(
+        raise ApiError(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="User not found.",
+            code="user_not_found", detail="User not found.",
         )
 
     follow_record = db.execute(
@@ -426,8 +427,8 @@ def get_user_locations(
 ) -> VisitedLocationsResponse:
     target_user = db.get(User, user_id)
     if not target_user or not target_user.is_active:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="User not found."
+        raise ApiError(
+            status_code=status.HTTP_404_NOT_FOUND, code="user_not_found", detail="User not found."
         )
 
     itineraries = db.execute(
@@ -488,9 +489,9 @@ def get_user_profile(
         ).scalar_one_or_none()
 
     if not target_user or not target_user.is_active:
-        raise HTTPException(
+        raise ApiError(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="User not found.",
+            code="user_not_found", detail="User not found.",
         )
 
     # Look up the follow relationship from current_user → target_user.

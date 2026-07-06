@@ -20,18 +20,19 @@ Future<bool> confirmDestructiveAction({
   required BuildContext context,
   required String title,
   required String message,
-  String confirmLabel = 'Delete',
-  String cancelLabel = 'Cancel',
+  String? confirmLabel,
+  String? cancelLabel,
   IconData icon = Icons.warning_amber_rounded,
 }) {
+  final l10n = AppLocalizations.of(context)!;
   return ConfirmDialog.show(
     context,
     tone: ConfirmTone.danger,
     icon: icon,
     title: title,
     message: message,
-    confirmLabel: confirmLabel,
-    cancelLabel: cancelLabel,
+    confirmLabel: confirmLabel ?? l10n.deleteButton,
+    cancelLabel: cancelLabel ?? l10n.cancel,
   );
 }
 
@@ -47,10 +48,11 @@ Future<bool> confirmTypedDestructiveAction({
   required String title,
   required String message,
   required String requiredText,
-  String confirmLabel = 'Delete',
-  String cancelLabel = 'Cancel',
+  String? confirmLabel,
+  String? cancelLabel,
   String? hintText,
 }) async {
+  final l10n = AppLocalizations.of(context)!;
   final result = await showDialog<bool>(
     context: context,
     barrierDismissible: false,
@@ -58,8 +60,8 @@ Future<bool> confirmTypedDestructiveAction({
       title: title,
       message: message,
       requiredText: requiredText,
-      confirmLabel: confirmLabel,
-      cancelLabel: cancelLabel,
+      confirmLabel: confirmLabel ?? l10n.deleteButton,
+      cancelLabel: cancelLabel ?? l10n.cancel,
       hintText: hintText ?? requiredText,
     ),
   );

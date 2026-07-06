@@ -85,7 +85,7 @@
 </style>
 
 <section class="auth-form">
-  <h2>Create your Ntripi account</h2>
+  <h2>{{ _('register_heading') }}</h2>
 
   {% if error_message %}
   <div class="error-banner">{{ error_message }}</div>
@@ -93,51 +93,51 @@
 
   <form method="POST" action="/web/register">
     <label>
-      Email
+      {{ _('register_email') }}
       <input type="email" name="email" required autofocus
              value="{{ email or '' }}" autocomplete="email">
     </label>
 
     <label>
-      Username
+      {{ _('register_username') }}
       <input type="text" name="username" required minlength="4" maxlength="30"
              value="{{ username or '' }}" autocomplete="username"
              pattern="[a-zA-Z][a-zA-Z0-9_.]{2,28}[a-zA-Z0-9]"
-             title="Must start with a letter, end with a letter or number, 4–30 chars, letters/numbers/periods/underscores only">
-      <span class="field-hint">4–30 chars: letters, numbers, periods, or underscores. Must start with a letter. Hyphens not allowed.</span>
+             title="{{ _('register_username_help') }}">
+      <span class="field-hint">{{ _('register_username_help') }}</span>
     </label>
 
     <label>
-      Display name <span style="font-weight:400;color:var(--sub)">(optional)</span>
+      {{ _('register_display_name') }} <span style="font-weight:400;color:var(--sub)">{{ _('register_optional') }}</span>
       <input type="text" name="display_name" maxlength="50"
              value="{{ display_name or '' }}">
-      <span class="field-hint">How others see you. Any language, emoji. Defaults to your @username.</span>
+      <span class="field-hint">{{ _('register_display_name_help') }}</span>
     </label>
 
     <label>
-      Password
+      {{ _('register_password') }}
       <input type="password" name="password" required minlength="8"
              autocomplete="new-password">
-      <span class="field-hint">At least 8 characters, must include a digit.</span>
+      <span class="field-hint">{{ _('register_password_help') }}</span>
     </label>
 
     <label>
-      Confirm password
+      {{ _('register_confirm_password') }}
       <input type="password" name="password_confirm" required
              autocomplete="new-password">
     </label>
 
     <label class="checkbox">
       <input type="checkbox" name="tos_accepted" required>
-      I agree to the <a href="/terms" target="_blank">Terms of Service</a> and
-      <a href="/privacy" target="_blank">Privacy Policy</a>
+      {{ _('register_agree_pre') }} <a href="/terms" target="_blank">{{ _('register_tos') }}</a> {{ _('register_agree_and') }}
+      <a href="/privacy" target="_blank">{{ _('register_privacy') }}</a>
     </label>
 
-    <button type="submit" class="btn-primary btn-large">Create account</button>
+    <button type="submit" class="btn-primary btn-large">{{ _('register_submit') }}</button>
   </form>
 
   <p class="auth-switch">
-    Already have an account? <a href="/login">Sign in</a>
+    {{ _('register_have_account') }} <a href="/login">{{ _('login_submit') }}</a>
   </p>
 </section>
 
