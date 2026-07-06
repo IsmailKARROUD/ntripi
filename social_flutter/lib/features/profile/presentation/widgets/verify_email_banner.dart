@@ -145,20 +145,20 @@ class _VerifyEmailBannerState extends ConsumerState<VerifyEmailBanner> {
             FilledButton.icon(
               onPressed: _verifyMobile,
               icon: const Padding(
-                padding:  EdgeInsets.only(left: 8.0),
+                padding:  EdgeInsetsDirectional.only(start: 8.0),
                 child:  FaIcon(FontAwesomeIcons.google,size: 23,),
               ), // Google logo
               label: Padding(
-                padding: const EdgeInsets.only(right: 8.0),
+                padding: const EdgeInsetsDirectional.only(end: 8.0),
                 child: Text(l10n.verifyEmailButton),
               ),
             ),
           // Email-link alternative for users who don't want to use Google.
          if (!_busy)
             Align(
-            alignment: Alignment.centerLeft,
+            alignment: AlignmentDirectional.centerStart,
             child: Padding(
-              padding: const EdgeInsets.only(left: 8.0,right: 8.0),
+              padding: const EdgeInsetsDirectional.only(start: 8.0,end: 8.0),
               child: TextButton(
                 onPressed: _resend,
                 style: TextButton.styleFrom(padding: EdgeInsets.zero),

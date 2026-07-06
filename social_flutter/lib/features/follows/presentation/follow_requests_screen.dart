@@ -234,7 +234,7 @@ class _FollowRequestTileState extends ConsumerState<_FollowRequestTile> {
         if (!widget.isLast)
           Container(
             height: 1,
-            margin: const EdgeInsets.only(left: 70),
+            margin: const EdgeInsetsDirectional.only(start: 70),
             color: kBorder,
           ),
       ],

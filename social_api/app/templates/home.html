@@ -112,7 +112,7 @@
     .how-step-num { width: 48px; height: 48px; border-radius: 50%; background: rgba(255,255,255,.12); border: 2px solid rgba(255,255,255,.2); display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 800; color: white; margin: 0 auto 16px; }
     .how-step h4 { font-size: 16px; font-weight: 700; color: white; margin-bottom: 8px; }
     .how-step p { font-size: 14px; color: rgba(255,255,255,.6); line-height: 1.6; }
-    .how-connector { position: absolute; top: 24px; left: calc(50% + 24px); right: calc(-50% + 24px); height: 1px; background: rgba(255,255,255,.15); }
+    .how-connector { position: absolute; top: 24px; inset-inline-start: calc(50% + 24px); inset-inline-end: calc(-50% + 24px); height: 1px; background: rgba(255,255,255,.15); }
 
     /* ── RATINGS ── */
     .ratings-section { padding: 80px 40px; max-width: 1100px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: 60px; align-items: center; }
@@ -127,7 +127,7 @@
     .ratings-big-num { font-size: 48px; font-weight: 800; color: var(--bark); line-height: 1; }
     .stars-row { display: flex; gap: 4px; }
     .bar-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
-    .bar-label { font-size: 12px; color: var(--text2); width: 14px; text-align: right; }
+    .bar-label { font-size: 12px; color: var(--text2); width: 14px; text-align: end; }
     .bar-track { flex: 1; height: 8px; border-radius: 4px; background: var(--mist); overflow: hidden; }
     .bar-fill { height: 100%; border-radius: 4px; background: var(--amber); }
 
@@ -175,7 +175,7 @@
     <span class="nav-logo-text">NTripi</span>
   </a>
   <div class="nav-links">
-    <a class="btn-ghost" href="?lang={{ 'en' if lang == 'fr' else 'fr' }}">{{ _('lang_switch_to') }}</a>
+    {% for code in supported if code != lang %}<a class="btn-ghost" href="?lang={{ code }}">{{ lang_names[code] }}</a>{% endfor %}
     <a class="btn-ghost" href="/login">{{ _('nav_sign_in') }}</a>
     <a class="btn-primary" href="/register">{{ _('nav_sign_up') }}</a>
   </div>
@@ -348,7 +348,7 @@
           <svg width="16" height="16" viewBox="0 0 14 14" fill="oklch(66% 0.17 75)" opacity=".4"><path d="M7 1.5l1.5 3 3.3.5-2.4 2.3.6 3.2L7 9l-3 1.5.6-3.2L2.2 5l3.3-.5z"/></svg>
         </div>
       </div>
-      <div style="font-size:13px;color:var(--text2);margin-left:8px">Based on<br>2,400+ ratings</div>
+      <div style="font-size:13px;color:var(--text2);margin-inline-start:8px">Based on<br>2,400+ ratings</div>
     </div>
     {% for stars, pct in [(5,72),(4,18),(3,6),(2,2),(1,2)] %}
     <div class="bar-row">
@@ -392,7 +392,7 @@
 <!-- WAITLIST MODAL -->
 <div id="waitlist-overlay" style="display:none;position:fixed;inset:0;z-index:1000;background:rgba(0,20,10,.55);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);align-items:center;justify-content:center;padding:20px;" onclick="if(event.target===this)closeWaitlist()">
   <div style="background:var(--surface);border-radius:24px;padding:40px 36px;max-width:440px;width:100%;box-shadow:var(--shadow-md);position:relative;">
-    <button onclick="closeWaitlist()" style="position:absolute;top:16px;right:16px;background:none;border:none;cursor:pointer;color:var(--text3);line-height:1;font-size:20px;" aria-label="Close">✕</button>
+    <button onclick="closeWaitlist()" style="position:absolute;top:16px;inset-inline-end:16px;background:none;border:none;cursor:pointer;color:var(--text3);line-height:1;font-size:20px;" aria-label="Close">✕</button>
 
     <!-- form view -->
     <div id="wl-form-view">

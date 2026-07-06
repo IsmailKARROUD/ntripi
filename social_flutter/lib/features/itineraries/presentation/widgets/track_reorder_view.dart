@@ -365,7 +365,7 @@ class _OrphanSummaryBanner extends StatelessWidget {
           ),
           ...entries.map(
             (e) => Padding(
-              padding: const EdgeInsets.only(left: 24, top: 3),
+              padding: const EdgeInsetsDirectional.only(start: 24, top: 3),
               child: Text(
                 '• $e',
                 style: const TextStyle(fontSize: 12, color: kTransitText),
@@ -374,7 +374,7 @@ class _OrphanSummaryBanner extends StatelessWidget {
           ),
           if (moreCount > 0)
             Padding(
-              padding: const EdgeInsets.only(left: 24, top: 3),
+              padding: const EdgeInsetsDirectional.only(start: 24, top: 3),
               child: Text(
                 AppLocalizations.of(context)!.andMoreCount(moreCount),
                 style: const TextStyle(
@@ -418,7 +418,7 @@ class _TrackRow extends StatelessWidget {
       children: [
         // ── Main row ──────────────────────────────────────────────────────
         Padding(
-          padding: const EdgeInsets.fromLTRB(8, 10, 14, 10),
+          padding: const EdgeInsetsDirectional.fromSTEB(8, 10, 14, 10),
           child: Row(
             children: [
               ReorderableDragStartListener(
@@ -486,7 +486,7 @@ class _TrackRow extends StatelessWidget {
         // ── Affected-segment strip ─────────────────────────────────────
         for (final destName in affected)
           Padding(
-            padding: const EdgeInsets.fromLTRB(56, 0, 14, 4),
+            padding: const EdgeInsetsDirectional.fromSTEB(56, 0, 14, 4),
             child: Row(
               children: [
                 const Icon(Icons.cancel_outlined, size: 13, color: kRatingRed),

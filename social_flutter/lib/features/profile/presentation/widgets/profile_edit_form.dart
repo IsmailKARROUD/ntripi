@@ -318,14 +318,14 @@ class _ProfileEditFormState extends ConsumerState<ProfileEditForm> {
                                             radius: 46,
                                           )),
                               ),
-                              // X badge — top-left. Removes the avatar (clears
+                              // X badge — top-start. Removes the avatar (clears
                               // picked bytes + URL, schedules deleteAvatar on
                               // save). Only shown when something is removable.
                               if (_pickedAvatarBytes != null ||
                                   (!_avatarRemoved && user.avatarUrl != null))
-                                Positioned(
+                                PositionedDirectional(
                                   top: 0,
-                                  left: 0,
+                                  start: 0,
                                   child: GestureDetector(
                                     behavior: HitTestBehavior.opaque,
                                     onTap: _removeAvatar,
@@ -353,9 +353,9 @@ class _ProfileEditFormState extends ConsumerState<ProfileEditForm> {
                                     ),
                                   ),
                                 ),
-                              Positioned(
+                              PositionedDirectional(
                                 bottom: 0,
-                                right: 0,
+                                end: 0,
                                 child: Container(
                                   width: 32,
                                   height: 32,
@@ -439,7 +439,7 @@ class _ProfileEditFormState extends ConsumerState<ProfileEditForm> {
                         hintStyle: TextStyle(color: kText3, fontSize: 14),
                         border: InputBorder.none,
                         contentPadding:
-                            EdgeInsets.only(left: 8, top: 8, bottom: 8),
+                            EdgeInsetsDirectional.only(start: 8, top: 8, bottom: 8),
                         isDense: true,
                       ),
                     ),
@@ -462,7 +462,7 @@ class _ProfileEditFormState extends ConsumerState<ProfileEditForm> {
                       decoration: const InputDecoration(
                         border: InputBorder.none,
                         contentPadding:
-                            EdgeInsets.only(left: 8, top: 8, bottom: 8),
+                            EdgeInsetsDirectional.only(start: 8, top: 8, bottom: 8),
                         isDense: true,
                       ),
                     ),
@@ -505,7 +505,7 @@ class _ProfileEditFormState extends ConsumerState<ProfileEditForm> {
                         hintStyle: TextStyle(color: kText3, fontSize: 14),
                         border: InputBorder.none,
                         contentPadding:
-                            EdgeInsets.only(left: 8, top: 8, bottom: 8),
+                            EdgeInsetsDirectional.only(start: 8, top: 8, bottom: 8),
                         isDense: true,
                       ),
                     ),
@@ -760,7 +760,7 @@ class _FieldDivider extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       height: 1,
-      margin: const EdgeInsets.only(left: 16),
+      margin: const EdgeInsetsDirectional.only(start: 16),
       color: kBorder,
     );
   }
@@ -1033,7 +1033,7 @@ class _Chip extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding:
-          const EdgeInsets.only(left: 10, right: 4, top: 5, bottom: 5),
+          const EdgeInsetsDirectional.only(start: 10, end: 4, top: 5, bottom: 5),
       decoration: BoxDecoration(
         color: const Color(0xFFD0EBDA),
         borderRadius: BorderRadius.circular(999),

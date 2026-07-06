@@ -12,14 +12,20 @@ from pathlib import Path
 from fastapi.templating import Jinja2Templates
 from starlette.requests import Request
 
-from app.i18n import resolve_lang, translator
+from app.i18n import LANG_NAMES, RTL_LANGS, SUPPORTED, resolve_lang, translator
 
 _TEMPLATES_DIR = Path(__file__).parent / "templates"
 
 
 def _i18n_context(request: Request) -> dict:
     lang = resolve_lang(request)
-    return {"_": translator(lang), "lang": lang}
+    return {
+        "_": translator(lang),
+        "lang": lang,
+        "dir": "rtl" if lang in RTL_LANGS else "ltr",
+        "supported": SUPPORTED,
+        "lang_names": LANG_NAMES,
+    }
 
 
 templates = Jinja2Templates(

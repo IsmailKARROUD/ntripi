@@ -1,0 +1,915 @@
+{
+  "@@locale": "ar",
+
+  "save": "حفظ",
+  "cancel": "إلغاء",
+  "delete": "حذف",
+  "required": "مطلوب",
+  "retry": "إعادة المحاولة",
+  "dismiss": "إغلاق",
+  "seeAll": "عرض الكل",
+  "back": "رجوع",
+
+  "navSearch": "بحث",
+  "navProfile": "الملف الشخصي",
+  "navItineraries": "خطوط السير",
+  "navFeed": "اكتشف",
+  "feedTitle": "اكتشف",
+  "feedTabTop": "الأفضل",
+  "feedTabRecent": "الأحدث",
+  "feedEmpty": "لا توجد خطوط سير عامة بعد. عُد قريبًا!",
+  "feedTopEmpty": "لا توجد رحلات مقيّمة كافية بعد — جرّب الأحدث.",
+
+  "offlineBanner": "أنت غير متصل بالإنترنت! قد لا تتوفر بعض الميزات.",
+  "downloadBanner": "لتجربة أفضل، نزّل تطبيق Ntripi.",
+  "downloadBannerButton": "تنزيل",
+
+  "loginTitle": "مرحبًا بعودتك",
+  "loginSubtitle": "سجّل الدخول لمواصلة رحلتك",
+  "loginEmailLabel": "البريد الإلكتروني أو اسم المستخدم",
+  "loginEmailHelp": "سجّل الدخول بالبريد الإلكتروني الذي سجّلت به، أو باسم المستخدم الخاص بك بصيغة @username.",
+  "loginEmailHint": "you@example.com أو @username",
+  "loginPasswordLabel": "كلمة المرور",
+  "loginPasswordHelp": "كلمة مرور حسابك. اضغط على أيقونة العين لإظهارها أو إخفائها.",
+  "loginForgotPassword": "هل نسيت كلمة المرور؟",
+  "loginSignIn": "تسجيل الدخول",
+  "loginNoAccount": "ليس لديك حساب؟ ",
+  "loginSignUp": "إنشاء حساب",
+  "loginOrContinueWith": "أو سجّل الدخول باستخدام",
+
+  "registerTitle": "إنشاء حساب",
+  "registerSubtitle": "انضم إلى آلاف المستكشفين الذين يشاركون رحلاتهم",
+  "registerDisplayName": "الاسم المعروض",
+  "registerDisplayNameHelp": "كيف يظهر اسمك للآخرين. حتى 50 حرفًا، بأي لغة ومع الرموز التعبيرية. إذا تُرك فارغًا يُستخدم @username.",
+  "registerDisplayNameHint": "اسمك",
+  "registerUsername": "اسم المستخدم *",
+  "registerUsernameHelp": "معرّفك @ الفريد. أحرف لاتينية صغيرة وأرقام وشرطات سفلية فقط. لا يمكن تغييره لاحقًا.",
+  "registerUsernameHint": "yourhandle",
+  "registerEmail": "البريد الإلكتروني *",
+  "registerEmailHelp": "يُستخدم لتسجيل الدخول واستعادة حسابك. لن نعرضه للعامة أبدًا.",
+  "registerEmailHint": "you@example.com",
+  "registerEmailRequired": "البريد الإلكتروني مطلوب.",
+  "registerEmailInvalid": "يرجى إدخال بريد إلكتروني صالح.",
+  "registerPassword": "كلمة المرور *",
+  "registerPasswordHelp": "8 أحرف على الأقل مع رقم واحد على الأقل.",
+  "registerPasswordHint": "8 أحرف على الأقل",
+  "registerPasswordRequired": "كلمة المرور مطلوبة.",
+  "registerPasswordTooShort": "يجب ألا تقل عن 8 أحرف.",
+  "registerPasswordNoDigit": "يجب أن تحتوي على رقم واحد على الأقل.",
+  "registerConfirmPassword": "تأكيد كلمة المرور *",
+  "registerConfirmPasswordHelp": "اكتب كلمة المرور مرة أخرى للتأكد من تطابقها.",
+  "registerConfirmRequired": "يرجى تأكيد كلمة المرور.",
+  "registerConfirmMismatch": "كلمتا المرور غير متطابقتين.",
+  "registerTosAgree": "أوافق على ",
+  "registerTos": "شروط الخدمة",
+  "registerTosAnd": " و",
+  "registerPrivacyPolicy": "سياسة الخصوصية",
+  "registerTosHelp": "يجب أن توافق على شروط الخدمة وسياسة الخصوصية لإنشاء حساب. اضغط على الروابط المسطّرة لقراءتها.",
+  "registerTosRequired": "يجب قبول شروط الخدمة.",
+  "registerTosTitle": "شروط الخدمة",
+  "registerTosLoading": "جارٍ التحميل…",
+  "registerCreateAccount": "إنشاء الحساب",
+  "registerAlreadyHaveAccount": "لديك حساب بالفعل؟ ",
+  "registerSignIn": "تسجيل الدخول",
+
+  "followers": "المتابِعون",
+  "following": "يتابِع",
+  "latestTrip": "أحدث رحلة",
+  "whereIveBeen": "الأماكن التي زرتها",
+  "noStopsYet": "لا توجد محطات بعد",
+  "addStopHintTitle": "أضف محطاتك",
+  "addStopHintMessage": "لإضافة محطات، اضغط على تعديل ✎ في الأعلى.",
+  "stopCount": "{count, plural, zero{لا توجد محطات} one{محطة واحدة} two{محطتان} few{{count} محطات} many{{count} محطة} other{{count} محطة}}",
+  "@stopCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "expand": "توسيع",
+  "tapToSeeStops": "اضغط لعرض المحطات",
+  "coverImageSection": "صورة الغلاف",
+  "coverImageUrlLabel": "رابط صورة الغلاف",
+  "uploadCoverImage": "رفع صورة الغلاف",
+  "followRequestsBannerTitle": "طلبات المتابعة ({count})",
+  "@followRequestsBannerTitle": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "tapToReview": "اضغط للمراجعة",
+  "editProfileTooltip": "تعديل الملف الشخصي",
+  "settingsTooltip": "الإعدادات",
+  "shareProfileTooltip": "مشاركة الملف الشخصي",
+  "couldNotLoadItineraries": "تعذّر تحميل خطوط السير.",
+  "whereTheyveBeen": "الأماكن التي زاروها",
+  "itinerariesSectionHeader": "خطوط السير",
+  "noPublicItinerariesYet": "لا توجد خطوط سير عامة بعد.",
+  "accountIsPrivateTitle": "هذا الحساب خاص",
+  "followRequestSentTitle": "تم إرسال الطلب",
+  "followRequestPendingMessage": "بعد قبول طلبك، ستتمكن من رؤية خطوط السير والمحطات وخريطة الرحلات.",
+  "followToSeeMessage": "تابِع {handle} لرؤية خطوط السير والمحطات وخريطة الرحلات.",
+  "@followToSeeMessage": {
+    "placeholders": {
+      "handle": { "type": "String" }
+    }
+  },
+
+  "editProfileTitle": "تعديل الملف الشخصي",
+  "uploadPhoto": "رفع صورة",
+  "identitySection": "الهوية",
+  "displayNameLabel": "الاسم المعروض",
+  "usernameLabel": "اسم المستخدم",
+  "bioLabel": "نبذة",
+  "bioHelpMessage": "وصف قصير. يدعم ماركداون **الغامق** والرموز التعبيرية.",
+  "avatarUrlLabel": "رابط الصورة الرمزية",
+  "travelIdentitySection": "هوية السفر",
+  "passportLabel": "جواز السفر",
+  "livesInLabel": "يقيم في",
+  "languagesLabel": "اللغات",
+  "privacySection": "الخصوصية",
+  "securitySection": "الأمان",
+  "dangerZoneSection": "منطقة الخطر",
+  "privateAccountLabel": "حساب خاص",
+  "privateAccountSubtitle": "يجب على الأشخاص طلب متابعتك لرؤية خطوط سيرك.",
+  "switchToPublicTitle": "التبديل إلى حساب عام؟",
+  "switchToPublicMessage": "{count, plural, zero{ليس لديك طلبات متابعة معلّقة. هل تريد الاستمرار؟} one{لديك طلب متابعة واحد معلّق. التبديل إلى العام سيقبله تلقائيًا. هل تريد الاستمرار؟} two{لديك طلبا متابعة معلّقان. التبديل إلى العام سيقبلهما تلقائيًا. هل تريد الاستمرار؟} few{لديك {count} طلبات متابعة معلّقة. التبديل إلى العام سيقبلها جميعًا تلقائيًا. هل تريد الاستمرار؟} many{لديك {count} طلب متابعة معلّقًا. التبديل إلى العام سيقبلها جميعًا تلقائيًا. هل تريد الاستمرار؟} other{لديك {count} طلب متابعة معلّق. التبديل إلى العام سيقبلها جميعًا تلقائيًا. هل تريد الاستمرار؟}}",
+  "@switchToPublicMessage": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "switchToPublicButton": "التبديل إلى عام",
+
+  "planFirstJourney": "خطط لرحلتك الأولى",
+  "planFirstJourneyHint": "أضف محطات ومقاطع تنقّل وملاحظات. شاركها مع أصدقائك أو احتفظ بها خاصة.",
+  "createItinerary": "إنشاء خط سير",
+  "needInspiration": "هل تحتاج إلى إلهام؟",
+  "browseForIdeas": "تصفّح رحلات المجتمع للحصول على أفكار.",
+
+  "settingsTitle": "الإعدادات",
+  "settingsAccount": "الحساب",
+  "settingsNotifications": "الإشعارات",
+  "settingsNotificationsOn": "مفعّلة",
+  "settingsNotificationsOff": "متوقفة",
+  "settingsLanguage": "اللغة",
+  "settingsSupport": "الدعم",
+  "settingsHelpCenter": "مركز المساعدة",
+  "settingsAbout": "حول Ntripi",
+  "settingsTerms": "الشروط والخصوصية",
+  "settingsLogout": "تسجيل الخروج",
+  "settingsDeleteAccount": "حذف الحساب",
+  "logoutConfirmTitle": "تسجيل الخروج",
+  "logoutConfirmMessage": "هل أنت متأكد أنك تريد تسجيل الخروج؟",
+  "logoutConfirmButton": "تسجيل الخروج",
+
+  "languagePickerTitle": "اللغة",
+  "languageEnglish": "English",
+  "languageFrench": "Français",
+  "languageArabic": "العربية",
+
+  "followRequestsTitle": "طلبات المتابعة",
+  "noRequests": "لا توجد طلبات معلّقة",
+  "requestsCountLabel": "الطلبات · {count}",
+  "@requestsCountLabel": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "acceptButton": "قبول",
+  "rejectButton": "رفض",
+
+  "followersTabLabel": "{count, plural, =0{المتابِعون} one{متابِع واحد} two{متابِعان} few{{count} متابِعين} many{{count} متابِعًا} other{{count} متابِع}}",
+  "@followersTabLabel": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "followingTabLabel": "{count, plural, =0{يتابِع} one{يتابِع شخصًا واحدًا} two{يتابِع شخصين} few{يتابِع {count} أشخاص} many{يتابِع {count} شخصًا} other{يتابِع {count} شخص}}",
+  "@followingTabLabel": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "followRequestsSectionLabel": "طلبات المتابعة · {count}",
+  "@followRequestsSectionLabel": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "allFollowersSection": "جميع المتابِعين",
+  "noFollowersYet": "لا يوجد متابِعون بعد.",
+  "notFollowingAnyone": "لا يتابع أحدًا بعد.",
+  "peopleYouFollow": "الأشخاص الذين تتابعهم",
+  "confirmButton": "تأكيد",
+
+  "searchPeoplePlaceholder": "ابحث عن أشخاص…",
+  "searchForPeople": "ابحث عن أشخاص لمتابعتهم",
+  "noUsersFound": "لم يُعثر على مستخدمين.",
+  "searchResultsCount": "النتائج · {count}",
+  "@searchResultsCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "followerCountLabel": "{count, plural, zero{لا متابعين} one{متابِع واحد} two{متابِعان} few{{count} متابِعين} many{{count} متابِعًا} other{{count} متابِع}}",
+  "@followerCountLabel": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "searchUsersHelp": "اعثر على الأشخاص عبر اسم المستخدم @ أو الاسم المعروض. اضغط على نتيجة لعرض الملف الشخصي.",
+
+  "myItineraries": "خطوط سيري",
+  "noItinerariesYet": "لا توجد خطوط سير بعد.",
+  "tapToCreateFirst": "اضغط + لإنشاء رحلتك الأولى.",
+  "deleteItineraryTitle": "حذف خط السير هذا؟",
+  "deleteItineraryMessage": "ستُحذف نهائيًا جميع المحطات والتنويهات ومقاطع التنقّل والتقييمات وروابط المشاركة. لا يمكن التراجع عن هذا.",
+  "deleteItineraryButton": "حذف خط السير",
+
+  "newItinerary": "خط سير جديد",
+  "editItinerary": "تعديل خط السير",
+  "coverImageLabel": "صورة الغلاف",
+  "coverImageHelp": "صورة بمقاس 1200×630 تظهر على بطاقة خط السير ومعاينات الروابط. اسحب داخل مربع الاقتصاص لتغيير الموضع.",
+  "itineraryTitleLabel": "العنوان *",
+  "itineraryTitleHint": "مثال: 10 أيام في كيوتو وأوساكا",
+  "itineraryTitleHelp": "اسم قصير وواضح لهذه الرحلة. يظهر على بطاقة خط السير ومعاينات المشاركة.",
+  "itineraryTitleRequired": "العنوان مطلوب",
+  "descriptionLabel": "الوصف",
+  "descriptionHelp": "اختياري. ملخّص للرحلة. استخدم شريط الأدوات لجعل النص غامقًا أو مائلًا، وإضافة عناوين، وإنشاء قوائم نقطية أو مرقّمة. انتقل إلى تبويب المعاينة لرؤية الشكل النهائي للقرّاء.",
+  "currencyLabel": "العملة",
+  "currencyHelp": "العملة الافتراضية لجميع تكاليف المحطات والتنقّل في خط السير هذا.",
+  "visibilityLabel": "الظهور",
+  "visibilityHelp": "عام: يمكن لأي شخص العرض. المتابِعون: فقط من يتابعونك. مقيّد: فقط المستخدمون في قائمة السماح أدناه. أنا فقط: خاص بك.",
+  "visibilityPublic": "عام",
+  "visibilityFollowers": "المتابِعون",
+  "visibilityRestricted": "مقيّد",
+  "visibilityOnlyMe": "أنا فقط",
+  "imageSaveButUploadFailed": "تم حفظ خط السير، لكن رفع الصورة فشل. حاول مجددًا من شاشة التعديل.",
+  "formSectionBasics": "الأساسيات",
+  "formLabelCurrency": "العملة",
+  "formLabelWhoCanSee": "من يمكنه رؤية هذا؟",
+  "formSectionDangerZone": "منطقة الخطر",
+  "formLabelDeleteItinerary": "حذف خط السير",
+  "formDeleteItineraryHint": "اكتب العنوان للتأكيد",
+  "currencySearchHint": "ابحث عن عملة…",
+  "currenciesLoadFailed": "فشل تحميل العملات: {error}",
+  "@currenciesLoadFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "deleteItineraryFormTitle": "حذف خط السير",
+  "deleteItineraryFormMessage": "سيؤدي هذا إلى حذف \"{title}\" وجميع محطاته نهائيًا. اكتب العنوان للتأكيد.",
+  "@deleteItineraryFormMessage": {
+    "placeholders": {
+      "title": { "type": "String" }
+    }
+  },
+
+  "followButton": "متابعة",
+  "followingButton": "متابَع",
+  "requestedButton": "تم الطلب",
+  "unfollowedSnackbar": "ألغيت متابعة @{username}",
+  "@unfollowedSnackbar": {
+    "placeholders": {
+      "username": { "type": "String" }
+    }
+  },
+  "cancelRequestTitle": "إلغاء الطلب؟",
+  "cancelRequestMessage": "هل تريد إلغاء طلب متابعة @{username}؟",
+  "@cancelRequestMessage": {
+    "placeholders": {
+      "username": { "type": "String" }
+    }
+  },
+  "cancelRequestConfirm": "إلغاء الطلب",
+  "cancelRequestKeep": "إبقاء",
+
+  "undoButton": "تراجع",
+  "couldNotUndo": "تعذّر التراجع: {error}",
+  "@couldNotUndo": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+
+  "errorNoInternet": "لا يوجد اتصال بالإنترنت. يرجى التحقق من الشبكة والمحاولة مجددًا.",
+  "errorGenericRetry": "حدث خطأ. يرجى المحاولة مجددًا.",
+  "errorGeneric": "حدث خطأ.",
+  "fieldHelpTooltip": "ما هذا؟",
+  "typeToConfirmInstruction": "اكتب \"{text}\" للتأكيد:",
+  "@typeToConfirmInstruction": {
+    "placeholders": {
+      "text": { "type": "String" }
+    }
+  },
+
+  "daysLabel": "ي",
+  "noneOption": "بدون",
+  "discardButton": "تجاهل",
+  "discardChangesTitle": "تجاهل التغييرات؟",
+  "discardChangesMessage": "لن يتم حفظ تغييراتك.",
+  "keepEditingButton": "مواصلة التعديل",
+  "orderSavedMessage": "تم حفظ الترتيب",
+
+  "segmentSelectBothStops": "اختر محطة الانطلاق ومحطة الوصول.",
+  "segmentStopsMustDiffer": "يجب أن تختلف محطتا الانطلاق والوصول.",
+  "segmentAddLegFirst": "أضف مرحلة واحدة على الأقل قبل الحفظ.",
+  "segmentAlreadyExistsTitle": "المقطع موجود بالفعل",
+  "segmentAlreadyExistsMessage": "يوجد مقطع يربط بين هاتين المحطتين بالفعل. ماذا تريد أن تفعل؟",
+  "segmentJoin": "دمج",
+  "segmentReplace": "استبدال",
+  "segmentFromStopLabel": "محطة الانطلاق",
+  "segmentToStopLabel": "محطة الوصول",
+
+  "visibilityScreenTitle": "من يمكنه رؤية هذا؟",
+  "visibilityAddPerson": "إضافة شخص",
+  "visibilitySearchByUsername": "ابحث باسم المستخدم…",
+
+  "couldNotLoadRatings": "تعذّر تحميل التقييمات",
+  "stopNotFound": "المحطة غير موجودة.",
+  "mapPickLocationTitle": "اختيار الموقع",
+  "mapConfirmLocation": "تأكيد الموقع",
+  "stopCostHint": "مثال: 20",
+
+  "unsavedDescriptionTitle": "وصف غير محفوظ",
+  "unsavedDescriptionMessage": "هل تريد حفظ تغييرات الوصف قبل المغادرة؟",
+  "saveDescriptionLabel": "حفظ الوصف",
+
+  "ratingsTitle": "التقييمات",
+  "noRatingsYet": "لا توجد تقييمات بعد",
+  "ratingsOverallLabel": "التقييم العام",
+  "rateThisTrip": "قيّم هذه الرحلة",
+  "deletedUser": "مستخدم محذوف",
+
+  "annotationContentHint": "ما الذي ينبغي للمسافرين معرفته؟",
+
+  "countryPickerTitle": "اختر البلد",
+  "countrySearchHint": "ابحث عن بلد…",
+  "countryNoneClear": "بدون / مسح",
+  "languageSearchHint": "ابحث عن لغة…",
+
+  "coverChangeButton": "تغيير",
+  "coverEditCropButton": "تعديل الاقتصاص",
+  "coverAdjustTitle": "ضبط صورة الغلاف",
+
+  "mdBoldTooltip": "غامق",
+  "mdItalicTooltip": "مائل",
+  "mdHeading1Tooltip": "عنوان 1",
+  "mdHeading2Tooltip": "عنوان 2",
+  "mdBulletListTooltip": "قائمة نقطية",
+  "mdNumberedListTooltip": "قائمة مرقّمة",
+  "mdEditTab": "تحرير",
+  "mdPreviewTab": "معاينة",
+
+  "legCostHint": "مثال: 12.50",
+  "addLegButton": "إضافة مرحلة",
+  "totalLabel": "الإجمالي",
+  "reorderOrphanTitle": "حفظ إعادة الترتيب؟",
+  "reorderOrphanMessage": "{count, plural, zero{لن يُحذف أي مقطع تنقّل:\n\n{segments}} one{سيُحذف مقطع تنقّل واحد لأن محطتيه لن تكونا في مسارين متجاورين:\n\n{segments}} two{سيُحذف مقطعا تنقّل لأن محطاتهما لن تكون في مسارات متجاورة:\n\n{segments}} few{ستُحذف {count} مقاطع تنقّل لأن محطاتها لن تكون في مسارات متجاورة:\n\n{segments}} many{سيُحذف {count} مقطع تنقّل لأن محطاتها لن تكون في مسارات متجاورة:\n\n{segments}} other{سيُحذف {count} مقطع تنقّل لأن محطاتها لن تكون في مسارات متجاورة:\n\n{segments}}}",
+  "@reorderOrphanMessage": {
+    "placeholders": {
+      "count": { "type": "int" },
+      "segments": { "type": "String" }
+    }
+  },
+
+  "loadingLabel": "جارٍ التحميل…",
+  "usernameRequired": "اسم المستخدم مطلوب",
+  "usernameTooShort": "يجب ألا يقل اسم المستخدم عن 4 أحرف",
+  "usernameTooLong": "لا يمكن أن يتجاوز اسم المستخدم 30 حرفًا",
+  "usernameInvalidFormat": "أحرف وأرقام ونقاط وشرطات سفلية فقط. يجب أن يبدأ بحرف وينتهي بحرف أو رقم.",
+  "usernameConsecutiveSpecial": "لا يمكن تكرار النقاط أو الشرطات السفلية على التوالي",
+  "displayNameTooLong": "لا يمكن أن يتجاوز الاسم المعروض 50 حرفًا",
+  "comingSoon": "قريبًا",
+  "verifyEmailTitle": "أكّد بريدك الإلكتروني",
+  "verifyEmailMessage": "أكّد بريدك الإلكتروني لتتمكن من إنشاء الرحلات والتقييم ومتابعة الأشخاص.",
+  "verifyEmailButton": "التأكيد عبر Google",
+  "emailVerifiedSuccess": "تم تأكيد البريد الإلكتروني — أنت جاهز!",
+  "resendVerificationButton": "إعادة إرسال رسالة التأكيد",
+  "verificationEmailSent": "أُرسلت رسالة التأكيد — تحقق من بريدك الوارد.",
+  "forgotPasswordTitle": "إعادة تعيين كلمة المرور",
+  "forgotPasswordSubtitle": "أدخل بريد حسابك الإلكتروني وسنرسل لك رابطًا لتعيين كلمة مرور جديدة.",
+  "forgotPasswordEmailLabel": "البريد الإلكتروني",
+  "forgotPasswordSubmit": "إرسال رابط إعادة التعيين",
+  "forgotPasswordSentTitle": "تحقق من بريدك الإلكتروني",
+  "forgotPasswordSentBody": "إذا كان هناك حساب بهذا البريد، فقد أرسلنا رابط إعادة تعيين كلمة المرور. تحقق من بريدك الوارد ومجلد الرسائل غير المرغوب فيها.",
+  "changePasswordTitle": "تغيير كلمة المرور",
+  "changePasswordSubtitle": "أدخل كلمة المرور الحالية ثم اختر واحدة جديدة. تغييرها يسجّل خروجك من جميع الأجهزة الأخرى.",
+  "changePasswordCurrentLabel": "كلمة المرور الحالية",
+  "changePasswordNewLabel": "كلمة المرور الجديدة",
+  "changePasswordConfirmLabel": "تأكيد كلمة المرور الجديدة",
+  "changePasswordMismatch": "كلمتا المرور غير متطابقتين.",
+  "changePasswordSameAsOld": "يجب أن تختلف كلمة المرور الجديدة عن الحالية.",
+  "changePasswordSubmit": "تغيير كلمة المرور",
+  "changePasswordConfirmMessage": "سيؤدي هذا إلى تسجيل خروجك من جميع أجهزتك الأخرى. هل تريد الاستمرار؟",
+  "changePasswordSuccess": "تم تغيير كلمة المرور. تم تسجيل الخروج من الأجهزة الأخرى.",
+  "backToSignIn": "العودة إلى تسجيل الدخول",
+  "speaksLabel": "يتحدث",
+  "removeButton": "إزالة",
+  "doneTooltip": "تم",
+  "addButton": "إضافة",
+  "deleteButton": "حذف",
+
+  "deleteAccountTitle": "حذف الحساب",
+  "deleteAccountConfirmTitle": "حذف حسابك؟",
+  "deleteAccountConfirmMessage": "سيتم إخفاء هوية حسابك وخطوط سيرك ومتابعاتك وتقييماتك أو حذفها وفقًا لسياسة الخصوصية. سيتم تسجيل خروجك فورًا. لا يمكن التراجع عن هذا.",
+  "deleteAccountRequiredText": "حذف حسابي",
+  "deleteAccountConfirmLabel": "حذف حسابي",
+  "deleteAccountPasswordError": "كلمة المرور غير صحيحة. يرجى المحاولة مجددًا.",
+  "deleteAccountGenericError": "حدث خطأ ما. يرجى المحاولة مجددًا.",
+  "deleteAccountCannotUndo": "لا يمكن التراجع عن هذا",
+  "deleteAccountWillRemove": "حذف حسابك سيزيل نهائيًا:",
+  "deleteAccountBullet1": "ملفك الشخصي وجميع بياناتك الشخصية",
+  "deleteAccountBullet2": "جميع خطوط سيرك ومحطاتك",
+  "deleteAccountBullet3": "علاقات المتابعة الخاصة بك",
+  "deleteAccountNote": "التقييمات التي منحتها لخطوط سير أخرى ستُحفظ بشكل مجهول كبيانات مجتمعية.",
+  "deleteAccountEnterPassword": "أدخل كلمة المرور للتأكيد",
+  "deleteAccountPasswordLabel": "كلمة المرور",
+  "deleteAccountPasswordHelpTitle": "تأكيد كلمة المرور",
+  "deleteAccountPasswordHelpMessage": "أعد إدخال كلمة المرور لتأكيد الحذف. حذف الحساب نهائي ولا يمكن التراجع عنه.",
+  "deleteAccountButton": "حذف حسابي",
+
+  "deleteAnnotationTitle": "حذف التنويه؟",
+  "deleteAnnotationMessage": "سيؤدي هذا إلى إزالة هذا التنويه نهائيًا من خط السير.",
+  "deleteAnnotationStopMessage": "سيُزال هذا التنويه نهائيًا.",
+  "removeTransitTitle": "إزالة التنقّل بين المحطتين؟",
+  "removeTransitMessage": "سيتم مسح الاتصال بين هاتين المحطتين. يمكنك إضافة واحد جديد لاحقًا.",
+  "reorderTracksTitle": "إعادة ترتيب المسارات",
+  "shareTooltip": "مشاركة",
+  "editDetailsTooltip": "تعديل التفاصيل والصورة",
+  "descriptionSection": "الوصف",
+  "annotationsSection": "التنويهات",
+  "addAnnotationButton": "إضافة تنويه",
+  "noAnnotationsYet": "لا توجد تنويهات بعد.",
+  "stopsList": "قائمة المحطات",
+  "editStopsButton": "تعديل المحطات",
+  "addStopTooltip": "إضافة محطة",
+  "reorderTracksTooltip": "إعادة ترتيب المسارات",
+  "mapSection": "الخريطة",
+  "openStreetMapContributors": "مساهمو OpenStreetMap",
+  "poweredByOSM": "مدعوم من OpenStreetMap",
+  "noStopsYetTapPlus": "لا توجد محطات بعد. اضغط + لإضافة واحدة.",
+  "communityRating": "المجتمع",
+  "ratingCount": "{count, plural, zero{لا تقييمات} one{تقييم واحد} two{تقييمان} few{{count} تقييمات} many{{count} تقييمًا} other{{count} تقييم}}",
+  "@ratingCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "yourRating": "تقييمك",
+  "rateIt": "قيّمه",
+  "deleteOrphanSegmentsTitle": "{count, plural, zero{حذف مقاطع التنقّل؟} one{حذف مقطع التنقّل؟} two{حذف مقطعي التنقّل؟} few{حذف مقاطع التنقّل؟} many{حذف مقاطع التنقّل؟} other{حذف مقاطع التنقّل؟}}",
+  "@deleteOrphanSegmentsTitle": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "deleteOrphanSegmentsMessage": "{count, plural, zero{لا توجد مقاطع تنقّل بين هاتين المحطتين. هل تريد الاستمرار؟} one{هناك مقطع تنقّل واحد يربط بين هاتين المحطتين. إضافة محطة بينهما ستخفيه لأن المحطتين لن تكونا متجاورتين. هل تريد حذف المقطع والاستمرار؟} two{هناك مقطعا تنقّل يربطان بين هاتين المحطتين. إضافة محطة بينهما ستخفيهما لأن المحطتين لن تكونا متجاورتين. هل تريد حذف المقطعين والاستمرار؟} few{هناك {count} مقاطع تنقّل تربط بين هاتين المحطتين. إضافة محطة بينهما ستخفيها لأن المحطتين لن تكونا متجاورتين. هل تريد حذف المقاطع والاستمرار؟} many{هناك {count} مقطع تنقّل يربط بين هاتين المحطتين. إضافة محطة بينهما ستخفيها لأن المحطتين لن تكونا متجاورتين. هل تريد حذف المقاطع والاستمرار؟} other{هناك {count} مقطع تنقّل يربط بين هاتين المحطتين. إضافة محطة بينهما ستخفيها لأن المحطتين لن تكونا متجاورتين. هل تريد حذف المقاطع والاستمرار؟}}",
+  "@deleteOrphanSegmentsMessage": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "deleteAndContinue": "الحذف والاستمرار",
+
+  "notSet": "غير محدد",
+  "stopDetailsView": "تفاصيل المحطة",
+  "editStopTitle": "تعديل المحطة",
+  "addStopTitle": "إضافة محطة",
+  "editStopTooltip": "تعديل المحطة",
+  "duplicateStopTitle": "محطة مكررة",
+  "duplicateStopMessage": "{name} موجودة بالفعل في خط السير هذا. هل تريد إضافتها مرة أخرى على أي حال؟",
+  "@duplicateStopMessage": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "addAnyway": "الإضافة على أي حال",
+  "itineraryUpdatedTitle": "تم تحديث خط السير من مكان آخر",
+  "itineraryUpdatedMessage": "تم تعديل خط السير هذا من جهاز آخر. ارجع وأعد التحميل لرؤية أحدث نسخة.",
+  "goBack": "رجوع",
+  "deleteStopTitle": "حذف هذه المحطة؟",
+  "deleteStopMessage": "سيؤدي هذا إلى إزالة المحطة وتنويهاتها وأي مقاطع تنقّل متصلة بها. لا يمكن التراجع عن هذا.",
+  "viewOnlyTitle": "عرض فقط",
+  "viewOnlyMessage": "اضغط على زر التعديل لإجراء تغييرات.",
+  "searchForPlaceLabel": "ابحث عن مكان",
+  "searchAPlaceHelpTitle": "البحث عن مكان",
+  "searchAPlaceHelpMessage": "اكتب اسم مكان أو مطعم أو معلم. اختر نتيجة لملء اسم المكان والعنوان والإحداثيات أدناه تلقائيًا.",
+  "searchPlaceHintText": "مثال: برج إيفل، باريس",
+  "stopDetailsSectionLabel": "تفاصيل المحطة",
+  "placeNameLabel": "اسم المكان",
+  "placeNameHelp": "اسم المكان أو المطعم أو المعلم أو المحطة.",
+  "placeNameRequired": "اسم المكان مطلوب",
+  "addressLabel": "العنوان",
+  "addressHelp": "عنوان الشارع أو وصف المنطقة. اختياري.",
+  "coordinatesHelp": "موقع هذه المحطة على الخريطة. اضغط على \"التحديد على الخريطة\" لتعيينه أو تعديله.",
+  "pickOnMap": "التحديد على الخريطة",
+  "placeTypeLabel": "نوع المكان",
+  "placeTypeHelp": "نوع هذا المكان (مثل مأكل ومشرب، مبيت، مَعلَم). يُستخدم للتصفية ولأيقونة الخريطة.",
+  "selectPlaceType": "اختر نوع المكان",
+  "placeTypeEatDrink": "مأكل ومشرب",
+  "placeTypeSleep": "مبيت",
+  "placeTypePray": "عبادة",
+  "placeTypeLearnSee": "تعلّم ومشاهدة",
+  "placeTypeBuy": "تسوّق",
+  "placeTypePlayWatch": "لعب ومشاهدة",
+  "placeTypeNature": "طبيعة",
+  "placeTypeTransport": "نقل",
+  "placeTypeHealBathe": "استشفاء واستحمام",
+  "placeTypeEntertainment": "ترفيه",
+  "placeTypeSight": "مَعلَم",
+  "placeTypeHintEatDrink": "مقهى، مطعم، بار، مخبز، عربة طعام",
+  "placeTypeHintSleep": "فندق، نُزل، مخيّم، بيت ضيافة",
+  "placeTypeHintPray": "كنيسة، مسجد، معبد، كنيس، مزار",
+  "placeTypeHintLearnSee": "متحف، معرض، مكتبة، أكواريوم، مرصد",
+  "placeTypeHintBuy": "متجر، سوق، مركز تسوق، بوتيك، بسطة",
+  "placeTypeHintPlayWatch": "ملعب، صالة رياضية، حلبة، ملعب تنس، بولينغ",
+  "placeTypeHintNature": "شاطئ، حديقة، غابة، جبل، شلال",
+  "placeTypeHintTransport": "مطار، محطة قطار، موقف حافلات، محطة عبّارات",
+  "placeTypeHintHealBathe": "منتجع صحي، ينبوع حار، مسبح، ساونا، حمّام",
+  "placeTypeHintEntertainment": "مسرح، سينما، قاعة حفلات، ملهى ليلي",
+  "placeTypeHintSight": "نصب تذكاري، نقطة مشاهدة، قلعة، ساحة، أطلال",
+  "recommendedTimeLabel": "مدة الزيارة الموصى بها",
+  "timeToSpendHelp": "المدة التقريبية التي تتوقع قضاءها هنا. اضغط لتعيين الأيام والساعات والدقائق.",
+  "stopIsFree": "هذه المحطة مجانية",
+  "freeHelp": "فعّل الخيار إذا كانت زيارة هذا المكان لا تكلّف شيئًا.",
+  "costLabel": "التكلفة",
+  "costHelp": "التكلفة التقريبية للشخص الواحد، بعملة خط السير.",
+  "enterValidNumber": "أدخل رقمًا صالحًا",
+  "thoughtsLabel": "انطباعات",
+  "thoughtsHelp": "رأيك الشخصي في هذه المحطة — ماذا تتوقع، وما أعجبك، وما يمكن تخطيه، ونصائح المواعيد. استخدم شريط الأدوات لإضافة نص غامق أو مائل أو عناوين أو قوائم نقطية.",
+  "annotationsLabel": "التنويهات",
+  "annotationsHelp": "ملاحظات قصيرة مصنّفة (نصيحة، احترس، تجنّب، معلومة) مرفقة بهذه المحطة. مفيدة للتحذيرات أو النصائح.",
+  "saveChangesButton": "حفظ التغييرات",
+  "addStopButton": "إضافة محطة",
+  "deleteStopButton": "حذف المحطة",
+  "timeToSpendModalTitle": "مدة الزيارة",
+
+  "editTransitTitle": "تعديل التنقّل",
+  "addTransitTitle": "إضافة تنقّل",
+  "updateTransitButton": "تحديث التنقّل",
+  "transportModeLabel": "الوسيلة",
+  "transportModeHelp": "كيف تتنقل في هذه المرحلة (سيرًا، حافلة، قطار، عبّارة، إلخ). بعض الوسائل تُظهر حقولًا إضافية للخط والاتجاه.",
+  "transitLineLabel": "الخط (اختياري)",
+  "transitLineHelp": "اختياري. رقم الخط أو اسمه (مثل \"حافلة 42\"، \"M1\").",
+  "transitDirectionLabel": "الاتجاه (اختياري)",
+  "transitDirectionHelp": "اختياري. وجهة الخط (مثل \"شمالًا\"، \"شاتليه\").",
+  "durationLabel": "المدة",
+  "durationHelp": "كم تستغرق هذه المرحلة بالساعات والدقائق.",
+  "legCostHelp": "التكلفة التقريبية بعملة خط السير. يُعطَّل عند تفعيل \"مجاني\".",
+  "hoursLabel": "س",
+  "minutesLabel": "د",
+  "freeLegLabel": "مجاني",
+  "freeLegHelp": "فعّل الخيار إذا كانت هذه المرحلة لا تكلّف شيئًا (مشي، نقل مشمول، إلخ).",
+  "legThoughtsLabel": "انطباعات (اختياري)",
+  "legThoughtsHelp": "اختياري. أي شيء مفيد معرفته عن هذه المرحلة — نصائح الحجز، تعليمات التبديل، أين تجلس، مفاجآت أسعار التذاكر.",
+
+  "annotationTypeLabel": "النوع",
+  "annotationTypeHelp": "نصيحة: معلومة مفيدة. احترس: كن حذرًا. تجنّب: لا تذهب. معلومة: ملاحظة محايدة.",
+  "annotationAdvice": "نصيحة",
+  "annotationCaution": "احترس",
+  "annotationAvoid": "تجنّب",
+  "annotationInfo": "معلومة",
+  "annotationContentLabel": "المحتوى *",
+  "annotationContentHelp": "صف نصيحتك أو تحذيرك أو ملاحظتك في جملة أو جملتين.",
+  "annotationContentRequired": "المحتوى مطلوب",
+  "editAnnotationTitle": "تعديل التنويه",
+  "addAnnotationDialogTitle": "إضافة تنويه",
+  "saveButton": "حفظ",
+
+  "moveStopTitle": "نقل المحطة",
+  "moveStopDescription": "اختر مسارًا موجودًا، أو فجوة لإنشاء مسار جديد، أو استخرجها إلى مسار خاص بها. المسارات التي بلغت الحد الأقصى ({max} محطات) معطّلة.",
+  "@moveStopDescription": {
+    "placeholders": {
+      "max": { "type": "int" }
+    }
+  },
+  "extractIntoOwnTrack": "استخراج إلى مسار جديد خاص بها",
+  "moveButton": "نقل",
+  "moveStopMoved": "نُقلت إلى {destination}",
+  "@moveStopMoved": {
+    "placeholders": {
+      "destination": { "type": "String" }
+    }
+  },
+  "itineraryChangedElsewhere": "تغيّر خط السير من مكان آخر — أغلق وأعد الفتح لرؤية أحدث ترتيب.",
+  "moveStopOrphan1": "هذه آخر محطة في مسارها — سيُزال المسار من خط السير.",
+  "moveStopOrphanSegments": "{count, plural, zero{لن يُحذف أي مقطع تنقّل.} one{سيُحذف مقطع تنقّل واحد لأن محطتيه لن تكونا في مسارين متجاورين.} two{سيُحذف مقطعا تنقّل لأن محطاتهما لن تكون في مسارات متجاورة.} few{ستُحذف {count} مقاطع تنقّل لأن محطاتها لن تكون في مسارات متجاورة.} many{سيُحذف {count} مقطع تنقّل لأن محطاتها لن تكون في مسارات متجاورة.} other{سيُحذف {count} مقطع تنقّل لأن محطاتها لن تكون في مسارات متجاورة.}}",
+  "@moveStopOrphanSegments": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "moveStopNewTrack": "مسار جديد",
+  "moveStopNewTrackBefore": "مسار جديد قبل المسار {n}",
+  "@moveStopNewTrackBefore": {
+    "placeholders": {
+      "n": { "type": "int" }
+    }
+  },
+  "moveStopNewTrackAfter": "مسار جديد بعد المسار {n}",
+  "@moveStopNewTrackAfter": {
+    "placeholders": {
+      "n": { "type": "int" }
+    }
+  },
+  "moveStopNewTrackBetween": "مسار جديد بين المسار {a} والمسار {b}",
+  "@moveStopNewTrackBetween": {
+    "placeholders": {
+      "a": { "type": "int" },
+      "b": { "type": "int" }
+    }
+  },
+  "moveStopCurrentSuffix": "  •  الحالي",
+  "moveStopFull": "ممتلئ {max}/{max}",
+  "@moveStopFull": {
+    "placeholders": {
+      "max": { "type": "int" }
+    }
+  },
+  "extractSubtitle": "يفصل هذه المحطة عن \"{trackName}\" — يُنشأ المسار الجديد بعده مباشرة.",
+  "@extractSubtitle": {
+    "placeholders": {
+      "trackName": { "type": "String" }
+    }
+  },
+
+  "removeRatingTitle": "إزالة تقييمك؟",
+  "removeRatingMessage": "سيُحذف تقييمك وسيتم تحديث المتوسط لجميع من يشاهد خط السير هذا.",
+  "rateItineraryTitle": "قيّم خط السير هذا",
+  "overallRatingLabel": "التقييم العام *",
+  "overallRatingHelp": "مطلوب. تقييمك العام لخط السير هذا، من نجمة إلى 5 نجوم.",
+  "ratingThanksMessage": "شكرًا! تقييمك يساعد الآخرين.",
+  "yourImpressionLabel": "انطباعك (اختياري)",
+  "yourImpressionHelp": "اختياري. شارك ما لفت انتباهك — أبرز اللحظات، وما ندمت عليه، ولمن توصي به. استخدم شريط الأدوات لإضافة نص غامق أو مائل أو عناوين أو قوائم نقطية.",
+  "removeMyRatingTooltip": "إزالة تقييمي",
+  "wantToShareMore": "هل تريد مشاركة المزيد؟ (اختياري)",
+  "safetyLabel": "السلامة",
+  "safetyHelp": "اختياري. مدى شعورك بالأمان خلال هذه الرحلة.",
+  "experienceLabel": "التجربة",
+  "experienceHelp": "اختياري. مدى متعة الرحلة وتميّزها.",
+  "accessibilityLabel": "سهولة الوصول",
+  "accessibilityHelp": "اختياري. مدى سهولة الوصول في خط السير (التنقل، اللغة، اللافتات).",
+  "familyFriendlyLabel": "مناسب للعائلات",
+  "familyFriendlyHelp": "اختياري. مدى ملاءمة الرحلة للعائلات ذات الأطفال.",
+  "crowdednessLabel": "غير مزدحم",
+  "crowdednessHelp": "اختياري. مدى الشعور بقلة الازدحام والرحابة — 5 = غير مزدحم على نحو مريح، 1 = مكتظ.",
+
+  "showOptionalFields": "إظهار الحقول الاختيارية",
+  "@showOptionalFields": {"description": "Toggle label to reveal hidden optional fields on the stop/itinerary creation form"},
+  "hideOptionalFields": "إخفاء الحقول الاختيارية",
+  "@hideOptionalFields": {"description": "Toggle label to hide optional fields again on the stop/itinerary creation form"},
+
+  "transportModeWalk": "سيرًا",
+  "transportModeBus": "حافلة",
+  "transportModeTram": "ترام",
+  "transportModeMetro": "مترو",
+  "transportModeTrain": "قطار",
+  "transportModeTaxi": "تاكسي",
+  "transportModeUber": "أوبر",
+  "transportModeBike": "دراجة",
+  "transportModeFerry": "عبّارة",
+  "transportModeCar": "سيارة",
+  "transportModeAirplane": "طائرة",
+
+  "dimensionOverall": "عام",
+  "dimensionOverallDesc": "الانطباع العام",
+  "dimensionSafetyDesc": "مدى شعورك بالأمان طوال الرحلة",
+  "dimensionExperienceDesc": "جودة التجربة الإجمالية",
+  "dimensionAccessibilityDesc": "سهولة الوصول لجميع القدرات",
+  "dimensionFamilyFriendlyDesc": "الملاءمة للأطفال والعائلات",
+  "dimensionCrowdednessDesc": "مدى الشعور بقلة الازدحام والرحابة",
+  "dimensionRatingTitle": "تقييم {label}",
+  "@dimensionRatingTitle": {
+    "placeholders": {
+      "label": { "type": "String" }
+    }
+  },
+  "noRatingsYetFor": "لا توجد تقييمات لـ {label} بعد",
+  "@noRatingsYetFor": {
+    "placeholders": {
+      "label": { "type": "String" }
+    }
+  },
+  "basedOnRatings": "{count, plural, zero{لا توجد تقييمات بعد} one{استنادًا إلى تقييم واحد} two{استنادًا إلى تقييمين} few{استنادًا إلى {count} تقييمات} many{استنادًا إلى {count} تقييمًا} other{استنادًا إلى {count} تقييم}}",
+  "@basedOnRatings": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "ratersLabel": "المقيّمون",
+
+  "annotationAdviceDesc": "شيء مفيد أو نصيحة من خبير.",
+  "annotationCautionDesc": "انتبه — قد تكون هناك مفاجآت.",
+  "annotationAvoidDesc": "لا تفعل هذا. وفّر وقتك.",
+  "annotationInfoDesc": "حقيقة محايدة تستحق المعرفة.",
+
+  "unknownUser": "غير معروف",
+  "timeAgoMonths": "قبل {count} شهر",
+  "@timeAgoMonths": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "timeAgoDays": "قبل {count} يوم",
+  "@timeAgoDays": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "timeAgoHours": "قبل {count} ساعة",
+  "@timeAgoHours": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "timeAgoMinutes": "قبل {count} دقيقة",
+  "@timeAgoMinutes": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "timeJustNow": "الآن",
+
+  "yearsAbbrev": "سنة",
+
+  "timeLabel": "الوقت",
+  "transitLabel": "التنقّل",
+  "noLegsYetTapAdd": "لا توجد مراحل بعد. اضغط ＋ للإضافة.",
+  "segmentNeedsOneLeg": "يحتاج المقطع إلى مرحلة واحدة على الأقل. احذف المقطع بدلاً من ذلك.",
+  "fromStopName": "من {name}",
+  "@fromStopName": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "toStopName": "إلى {name}",
+  "@toStopName": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+
+  "visibilityPublicDesc": "يمكن لأي شخص لديه الرابط العرض.",
+  "visibilityFollowersDesc": "فقط الأشخاص الذين يتابعونك.",
+  "visibilityRestrictedDesc": "فقط الأشخاص الذين تسمح لهم.",
+  "visibilityOnlyMeDesc": "أنت فقط.",
+  "saveItineraryFirstAllowlist": "احفظ خط السير أولاً، ثم أدر قائمة السماح من شاشة التعديل.",
+  "allowlistLabel": "قائمة السماح",
+  "personCount": "{count, plural, zero{لا أحد} one{شخص واحد} two{شخصان} few{{count} أشخاص} many{{count} شخصًا} other{{count} شخص}}",
+  "@personCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "removedFromAllowlist": "أُزيل {name} من قائمة السماح",
+  "@removedFromAllowlist": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "addPeople": "إضافة أشخاص",
+
+  "otherOption": "أخرى",
+  "thisItineraryFallback": "خط السير هذا",
+  "discardReorderMessage": "لن يتم حفظ إعادة الترتيب.",
+  "emptyTrackName": "(فارغ)",
+  "unnamedStop": "(بدون اسم)",
+  "unknownStop": "(غير معروف)",
+  "dragToChangeTrackOrder": "اسحب لتغيير ترتيب المسارات",
+  "transitSegmentsWillBeDeleted": "{count, plural, zero{لن يُحذف أي مقطع تنقّل} one{سيُحذف مقطع تنقّل واحد} two{سيُحذف مقطعا تنقّل} few{ستُحذف {count} مقاطع تنقّل} many{سيُحذف {count} مقطع تنقّل} other{سيُحذف {count} مقطع تنقّل}}",
+  "@transitSegmentsWillBeDeleted": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "andMoreCount": "… و{count} أخرى",
+  "@andMoreCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "altsCount": "{count, plural, zero{لا بدائل} one{بديل واحد} two{بديلان} few{{count} بدائل} many{{count} بديلًا} other{{count} بديل}}",
+  "@altsCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "segmentToWillBeDeleted": "← {name}  —  سيُحذف المقطع",
+  "@segmentToWillBeDeleted": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+
+  "reorderAlternativesTitle": "إعادة ترتيب البدائل",
+  "reorderAlternativesHint": "اسحب لتغيير الخيار الذي يظهر أولًا. اضغط حفظ للتطبيق.",
+  "emptyTrackLabel": "(مسار فارغ)",
+  "moveStopToLabel": "نقل المحطة إلى",
+  "messageLabel": "الرسالة",
+  "annotationKeepShortHint": "اجعله قصيرًا — أقل من 200 حرف يُقرأ بشكل أفضل على الشاشات الصغيرة.",
+  "transportModeSection": "وسيلة النقل",
+  "lineDirectionSection": "الخط والاتجاه",
+  "durationCostSection": "المدة والتكلفة",
+  "allRatersLabel": "جميع المقيّمين",
+  "travelersRatedThis": "{count, plural, zero{لم يقيّمه أي مسافر بعد} one{قيّمه مسافر واحد} two{قيّمه مسافران} few{قيّمه {count} مسافرين} many{قيّمه {count} مسافرًا} other{قيّمه {count} مسافر}}",
+  "@travelersRatedThis": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "byDimensionLabel": "حسب البُعد",
+  "notEnoughRatings": "لا توجد تقييمات كافية",
+  "youRatedThis": "قيّمت هذا",
+  "changeButton": "تغيير",
+  "hideReview": "إخفاء المراجعة",
+  "readReview": "قراءة المراجعة",
+
+  "notesLabel": "ملاحظات",
+  "viewLess": "عرض أقل",
+  "viewMore": "... عرض المزيد",
+  "addNoteButton": "إضافة ملاحظة",
+  "imageTooLarge": "الصورة كبيرة جدًا (الحد الأقصى 10 ميغابايت).",
+  "couldNotLoadImage": "تعذّر تحميل الصورة. يرجى تجربة أخرى.",
+  "pinchToZoomHint": "اقرص للتكبير · اسحب لتغيير الموضع",
+  "addCoverImage": "أضف صورة غلاف",
+  "coverOptionalMapFallback": "اختياري — ستُستخدم الخريطة بدلاً منها.",
+  "mapTapToPlacePin": "اضغط على الخريطة لوضع دبوس",
+  "mapTapToMovePin": "اضغط في مكان آخر لنقل الدبوس، ثم اضغط تأكيد",
+  "nothingToPreview": "لا شيء للمعاينة بعد.",
+  "rateOverallFirstHint": "قيّم انطباعك العام. بعد ذلك يمكنك مشاركة المزيد.",
+  "splashTagline": "اكتشف وشارك خطوط سير الرحلات\nالتي أعدّها مستكشفون حقيقيون",
+  "splashMotto": "استكشف العالم، رحلة تلو الأخرى",
+  "tripsPillLabel": "رحلات",
+  "stopsPillLabel": "محطات",
+  "travelledPillLabel": "مقطوعة",
+  "stopFallbackName": "محطة",
+  "undoLabel": "تراجع",
+  "updateYourRating": "حدّث تقييمك",
+  "moveActionLabel": "نقل",
+  "reorderActionLabel": "إعادة ترتيب",
+  "aStopFallback": "محطة",
+  "locationLabel": "الموقع",
+  "noLocationSet": "لم يُحدد موقع",
+  "detailsSection": "التفاصيل",
+  "addLanguageTitle": "إضافة لغة",
+  "alreadyInItinerary": "{name} موجودة بالفعل في خط السير هذا.",
+  "@alreadyInItinerary": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "stopNumberOfTotal": "المحطة {n} من {total}",
+  "@stopNumberOfTotal": {
+    "placeholders": {
+      "n": { "type": "int" },
+      "total": { "type": "int" }
+    }
+  },
+  "shareCaption": "اطّلع على \"{title}\" على Ntripi — {stops}، {duration}",
+  "@shareCaption": {
+    "placeholders": {
+      "title": { "type": "String" },
+      "stops": { "type": "String" },
+      "duration": { "type": "String" }
+    }
+  },
+
+  "apiErrorNotAuthenticated": "لم تسجّل الدخول.",
+  "apiErrorAccountDeactivated": "تم تعطيل حسابك.",
+  "apiErrorEmailUnverified": "أكّد بريدك الإلكتروني عبر Google للقيام بذلك.",
+  "apiErrorItineraryNotFound": "خط السير غير موجود.",
+  "apiErrorItineraryNotOwner": "ليست لديك صلاحية تعديل خط السير هذا.",
+  "apiErrorIfMatchRequired": "تعذّر حفظ هذا التغيير — يرجى إعادة التحميل والمحاولة مجددًا.",
+  "apiErrorItineraryStale": "تم تعديل خط السير — يرجى إعادة التحميل.",
+  "apiErrorWaitlistContactRequired": "أدخل بريدًا إلكترونيًا أو رقم واتساب على الأقل.",
+  "apiErrorGoogleTokenInvalid": "رمز Google غير صالح.",
+  "apiErrorInvalidGrant": "انتهت جلستك. يرجى تسجيل الدخول مجددًا.",
+  "apiErrorStopNotFound": "المحطة غير موجودة.",
+  "apiErrorTrackNotFound": "المسار غير موجود، أو لا ينتمي إلى خط السير هذا.",
+  "apiErrorSegmentNotFound": "مقطع التنقّل غير موجود.",
+  "apiErrorLegNotFound": "مرحلة النقل غير موجودة.",
+  "apiErrorItineraryAccessDenied": "لا يمكنك الوصول إلى خط السير هذا.",
+  "apiErrorAllowlistRestrictedOnly": "تنطبق قائمة السماح على خطوط السير المقيّدة فقط.",
+  "apiErrorUserNotFound": "المستخدم غير موجود.",
+  "apiErrorAllowlistUserExists": "هذا المستخدم لديه صلاحية الوصول بالفعل.",
+  "apiErrorAllowlistUserNotFound": "المستخدم غير موجود في قائمة السماح.",
+  "apiErrorRankCollision": "تعارض في الترتيب — يرجى المحاولة مجددًا.",
+  "apiErrorAnnotationNotFound": "التنويه غير موجود.",
+  "apiErrorRatingNotFound": "لم تقيّم خط السير هذا.",
+  "apiErrorSegmentAlreadyExists": "يوجد مقطع يربط بين هاتين المحطتين بالفعل.",
+  "apiErrorIncorrectPassword": "كلمة المرور غير صحيحة.",
+  "apiErrorLoginInvalid": "البريد الإلكتروني/اسم المستخدم أو كلمة المرور غير صحيحة.",
+  "apiErrorCannotFollowSelf": "لا يمكنك متابعة نفسك.",
+  "apiErrorNotFollowing": "أنت لا تتابع هذا المستخدم.",
+  "apiErrorFollowRequestNotFound": "طلب المتابعة غير موجود.",
+  "apiErrorFollowRequestAlreadyAccepted": "تم قبول طلب المتابعة هذا بالفعل.",
+  "apiErrorCannotRejectRequest": "لا يمكنك رفض طلب المتابعة هذا.",
+  "apiErrorAccountPrivate": "هذا الحساب خاص.",
+  "apiErrorTosRequired": "يجب قبول شروط الخدمة للتسجيل.",
+  "apiErrorUsernameTaken": "اسم المستخدم هذا مستخدم بالفعل.",
+  "apiErrorEmailTaken": "يوجد حساب بهذا البريد الإلكتروني بالفعل."
+}

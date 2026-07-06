@@ -391,7 +391,7 @@ class _OfflineBanner extends StatelessWidget {
       child: SafeArea(
         bottom: false,
         child: Padding(
-          padding: const EdgeInsets.only(left: 12, right: 12, top: 0, bottom: 2),
+          padding: const EdgeInsetsDirectional.only(start: 12, end: 12, top: 0, bottom: 2),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [

@@ -1105,7 +1105,7 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
 
                   // ── ANNOTATIONS ────────────────────────────────────────
                   Padding(
-                    padding: const EdgeInsets.fromLTRB(22, 14, 16, 6),
+                    padding: const EdgeInsetsDirectional.fromSTEB(22, 14, 16, 6),
                     child: Row(
                       children: [
                         Text(
@@ -1372,7 +1372,7 @@ class _SFDivider extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) =>
-      Container(height: 1, color: kBorder, margin: const EdgeInsets.only(left: 16));
+      Container(height: 1, color: kBorder, margin: const EdgeInsetsDirectional.only(start: 16));
 }
 
 class _SFBorderlessField extends StatefulWidget {

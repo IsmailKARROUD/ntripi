@@ -156,7 +156,7 @@ class _SearchTopBar extends StatelessWidget {
         children: [
           Expanded(
             child: Padding(
-              padding: const EdgeInsets.only(left: 16.0),
+              padding: const EdgeInsetsDirectional.only(start: 16.0),
               child: TextField(
                 controller: controller,
                 autofocus: true,
@@ -276,7 +276,7 @@ class _SearchResultRow extends StatelessWidget {
         if (!isLast)
           Container(
             height: 1,
-            margin: const EdgeInsets.only(left: 70),
+            margin: const EdgeInsetsDirectional.only(start: 70),
             color: kBorder,
           ),
       ],

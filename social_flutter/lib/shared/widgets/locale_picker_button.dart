@@ -7,6 +7,8 @@ import 'package:social_flutter/l10n/app_localizations.dart';
 const _kSupportedLocales = [
   (code: 'en', flag: '🇬🇧', label: 'English'),
   (code: 'fr', flag: '🇫🇷', label: 'Français'),
+  // globe, not a country flag — Arabic spans many countries
+  (code: 'ar', flag: '🌐', label: 'العربية'),
 ];
 
 class LocalePickerButton extends ConsumerWidget {
@@ -15,7 +17,11 @@ class LocalePickerButton extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
-    final labels = {'en': l10n.languageEnglish, 'fr': l10n.languageFrench};
+    final labels = {
+      'en': l10n.languageEnglish,
+      'fr': l10n.languageFrench,
+      'ar': l10n.languageArabic,
+    };
     final currentCode = ref.watch(localeProvider).languageCode;
     final current = _kSupportedLocales.firstWhere(
       (l) => l.code == currentCode,

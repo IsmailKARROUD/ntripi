@@ -450,6 +450,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get languageFrench => 'Français';
 
   @override
+  String get languageArabic => 'العربية';
+
+  @override
   String get followRequestsTitle => 'Follow Requests';
 
   @override

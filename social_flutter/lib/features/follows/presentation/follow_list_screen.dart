@@ -426,7 +426,7 @@ class _UserRow extends StatelessWidget {
         if (!isLast)
           Container(
               height: 1,
-              margin: const EdgeInsets.only(left: 70),
+              margin: const EdgeInsetsDirectional.only(start: 70),
               color: kBorder),
       ],
     );
@@ -551,7 +551,7 @@ class _PendingRequestRowState
         if (!widget.isLast)
           Container(
               height: 1,
-              margin: const EdgeInsets.only(left: 70),
+              margin: const EdgeInsetsDirectional.only(start: 70),
               color: kBorder),
       ],
     );

@@ -35,14 +35,14 @@
   }
 </style>
 
-<section class="legal-doc">
+<section class="legal-doc" dir="ltr">
   <h1>Terms of Service</h1>
   <p class="last-updated">Last updated: {{ last_updated }}</p>
   {% if tos_version %}
   <span class="version-badge">Version {{ tos_version }}</span>
   {% endif %}
   {% if _('legal_en_only_notice') %}
-  <div class="error-banner">{{ _('legal_en_only_notice') }}</div>
+  <div class="error-banner" dir="auto">{{ _('legal_en_only_notice') }}</div>
   {% endif %}
   <div class="prose">{{ content }}</div>
 </section>

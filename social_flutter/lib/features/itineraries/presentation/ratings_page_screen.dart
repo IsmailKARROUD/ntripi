@@ -384,7 +384,7 @@ class _DimRow extends StatelessWidget {
             ),
             // Progress bar
             Padding(
-              padding: const EdgeInsets.only(left: 36, top: 6),
+              padding: const EdgeInsetsDirectional.only(start: 36, top: 6),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(3),
                 child: SizedBox(
@@ -403,7 +403,7 @@ class _DimRow extends StatelessWidget {
               ),
             ),
             Padding(
-              padding: const EdgeInsets.only(left: 36, top: 3),
+              padding: const EdgeInsetsDirectional.only(start: 36, top: 3),
               child: Text(
                 AppLocalizations.of(context)!.ratingCount(count),
                 style: const TextStyle(fontSize: 10, color: kText3),
@@ -461,7 +461,7 @@ class _YourRatingSection extends StatelessWidget {
             border: Border.all(color: kForest.withValues(alpha: 0.18)),
           ),
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 14, 14, 14),
+            padding: const EdgeInsetsDirectional.fromSTEB(16, 14, 14, 14),
             child: myRating != null
                 ? Row(
                     children: [
@@ -612,7 +612,7 @@ class RatingDistributionBars extends StatelessWidget {
                 width: 24,
                 child: Text('$stars★',
                     style: const TextStyle(fontSize: 12),
-                    textAlign: TextAlign.right),
+                    textAlign: TextAlign.end),
               ),
               const SizedBox(width: 8),
               Expanded(
@@ -629,7 +629,7 @@ class RatingDistributionBars extends StatelessWidget {
                 width: 28,
                 child: Text('$count',
                     style: const TextStyle(fontSize: 12),
-                    textAlign: TextAlign.right),
+                    textAlign: TextAlign.end),
               ),
               const SizedBox(width: 4),
               SizedBox(
@@ -637,7 +637,7 @@ class RatingDistributionBars extends StatelessWidget {
                 child: Text(
                   '${(pct * 100).round()}%',
                   style: const TextStyle(fontSize: 11, color: kText2),
-                  textAlign: TextAlign.right,
+                  textAlign: TextAlign.end,
                 ),
               ),
             ],
@@ -718,7 +718,7 @@ class _RatingListTileState extends State<_RatingListTile> {
               tile,
               Padding(
                 padding:
-                    const EdgeInsets.only(left: 72, right: 16, bottom: 4),
+                    const EdgeInsetsDirectional.only(start: 72, end: 16, bottom: 4),
                 child: _ReviewNote(
                   note: rating.note!,
                   expanded: _noteExpanded,
@@ -782,7 +782,7 @@ class _ReviewNote extends StatelessWidget {
         AnimatedSize(
           duration: const Duration(milliseconds: 180),
           curve: Curves.easeInOut,
-          alignment: Alignment.topLeft,
+          alignment: AlignmentDirectional.topStart,
           child: expanded
               ? Padding(
                   padding: const EdgeInsets.only(top: 4),

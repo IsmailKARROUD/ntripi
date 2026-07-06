@@ -391,7 +391,7 @@ class _MoveToTrackButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Padding(
-      padding: const EdgeInsets.only(top: 6, right: 8),
+      padding: const EdgeInsetsDirectional.only(top: 6, end: 8),
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(8),
@@ -430,7 +430,7 @@ class _ReorderParallelsButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Padding(
-      padding: const EdgeInsets.only(top: 6, right: 8),
+      padding: const EdgeInsetsDirectional.only(top: 6, end: 8),
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(8),
@@ -469,7 +469,7 @@ class _AddParallelButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Padding(
-      padding: const EdgeInsets.only(top: 8, right: 8),
+      padding: const EdgeInsetsDirectional.only(top: 8, end: 8),
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(8),

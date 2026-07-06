@@ -54,9 +54,9 @@ class ItinerarySummaryCard extends ConsumerWidget {
                 fit: StackFit.expand,
                 children: [
                   _CoverSlot(url: coverUrl),
-                  Positioned(
+                  PositionedDirectional(
                     top: 10,
-                    left: 10,
+                    start: 10,
                     child: VisibilityBadge(visibility: itinerary.visibility, onDark: true),
                   ),
                 ],

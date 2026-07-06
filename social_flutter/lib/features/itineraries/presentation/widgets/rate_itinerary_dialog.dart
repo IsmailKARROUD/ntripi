@@ -422,7 +422,7 @@ class _RatingSliderRow extends StatelessWidget {
                 return GestureDetector(
                   onTap: () => onChanged(value == star ? null : star),
                   child: Padding(
-                    padding: const EdgeInsets.only(right: 4),
+                    padding: const EdgeInsetsDirectional.only(end: 4),
                     child: Icon(
                       filled ? filledIcon : emptyIcon,
                       size: 26,

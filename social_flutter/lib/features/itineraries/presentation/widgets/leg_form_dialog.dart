@@ -323,7 +323,7 @@ class _LegFormDialogState extends State<LegFormDialog> {
                     separatorBuilder: (_, __) => Container(
                       height: 1,
                       color: kBorder,
-                      margin: const EdgeInsets.only(left: 16),
+                      margin: const EdgeInsetsDirectional.only(start: 16),
                     ),
                     itemBuilder: (_, i) {
                       final mode = TransportMode.values[i];
@@ -615,7 +615,7 @@ class _LegFormDialogState extends State<LegFormDialog> {
                   FilledButton(
                     onPressed: _submit,
                     child: Padding(
-                      padding: const EdgeInsets.only(left: 8, right: 8),
+                      padding: const EdgeInsetsDirectional.only(start: 8, end: 8),
                       child: Text(isEdit
                           ? l10n.updateTransitButton
                           : l10n.addTransitTitle),
@@ -679,7 +679,7 @@ class _LFDivider extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) =>
-      Container(height: 1, color: kBorder, margin: const EdgeInsets.only(left: 16));
+      Container(height: 1, color: kBorder, margin: const EdgeInsetsDirectional.only(start: 16));
 }
 
 class _LFBorderlessField extends StatelessWidget {

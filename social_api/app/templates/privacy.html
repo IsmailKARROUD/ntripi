@@ -40,11 +40,11 @@
   }
 </style>
 
-<section class="legal-doc">
+<section class="legal-doc" dir="ltr">
   <h1>Privacy Policy</h1>
   <p class="last-updated">Last updated: {{ last_updated }}</p>
   {% if _('legal_en_only_notice') %}
-  <div class="error-banner">{{ _('legal_en_only_notice') }}</div>
+  <div class="error-banner" dir="auto">{{ _('legal_en_only_notice') }}</div>
   {% endif %}
   <div class="prose">
     {{ content | safe }}

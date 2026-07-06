@@ -32,7 +32,7 @@ class FeedCard extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.only(left: 2, top: 4, bottom: 8),
+          padding: const EdgeInsetsDirectional.only(start: 2, top: 4, bottom: 8),
           child: Row(
             children: [
               AvatarInitials(name: title, avatarUrl: owner.avatarUrl),

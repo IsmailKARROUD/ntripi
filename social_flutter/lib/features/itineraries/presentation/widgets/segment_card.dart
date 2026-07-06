@@ -164,7 +164,7 @@ class _SegmentCardState extends ConsumerState<SegmentCard> {
         children: [
           // ── Header: label + spinner / delete ──────────────────────────────
           Padding(
-            padding: const EdgeInsets.fromLTRB(12, 6, 8, 6),
+            padding: const EdgeInsetsDirectional.fromSTEB(12, 6, 8, 6),
             child: Row(
               children: [
                 Text(

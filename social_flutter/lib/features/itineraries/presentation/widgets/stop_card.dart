@@ -227,7 +227,7 @@ class _EditNotesSectionState extends State<_EditNotesSection> {
         AnimatedSize(
           duration: const Duration(milliseconds: 180),
           curve: Curves.easeInOut,
-          alignment: Alignment.topLeft,
+          alignment: AlignmentDirectional.topStart,
           child: _expanded
               ? Padding(
                   padding: const EdgeInsets.only(top: 4),
@@ -261,7 +261,8 @@ class _ReadNotesSectionState extends State<_ReadNotesSection> {
         final tp = TextPainter(
           text: TextSpan(text: widget.notes, style: _style),
           maxLines: 2,
-          textDirection: TextDirection.ltr,
+          // must match the rendered Text's direction or the overflow check lies for Arabic notes
+          textDirection: Directionality.of(context),
         )..layout(maxWidth: constraints.maxWidth);
 
         final overflows = tp.didExceedMaxLines;

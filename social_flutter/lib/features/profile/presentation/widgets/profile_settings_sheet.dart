@@ -35,6 +35,7 @@ class _SettingsSheet extends ConsumerWidget {
     final languages = [
       (code: 'en', label: l10n.languageEnglish),
       (code: 'fr', label: l10n.languageFrench),
+      (code: 'ar', label: l10n.languageArabic),
     ];
 
     showModalBottomSheet<void>(
@@ -50,7 +51,7 @@ class _SettingsSheet extends ConsumerWidget {
               Padding(
                 padding: const EdgeInsets.fromLTRB(22, 14, 22, 6),
                 child: Align(
-                  alignment: Alignment.centerLeft,
+                  alignment: AlignmentDirectional.centerStart,
                   child: Text(
                     l10n.languagePickerTitle.toUpperCase(),
                     style: const TextStyle(
@@ -78,7 +79,7 @@ class _SettingsSheet extends ConsumerWidget {
                         Container(
                           height: 1,
                           color: kBorder,
-                          margin: const EdgeInsets.only(left: 16),
+                          margin: const EdgeInsetsDirectional.only(start: 16),
                         ),
                       InkWell(
                         onTap: () {
@@ -143,9 +144,11 @@ class _SettingsSheet extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
     final currentLocale = ref.watch(localeProvider);
-    final langDetail = currentLocale.languageCode == 'fr'
-        ? l10n.languageFrench
-        : l10n.languageEnglish;
+    final langDetail = switch (currentLocale.languageCode) {
+      'fr' => l10n.languageFrench,
+      'ar' => l10n.languageArabic,
+      _ => l10n.languageEnglish,
+    };
 
     return Container(
       decoration: const BoxDecoration(
@@ -169,7 +172,7 @@ class _SettingsSheet extends ConsumerWidget {
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 4, 20, 8),
             child: Align(
-              alignment: Alignment.centerLeft,
+              alignment: AlignmentDirectional.centerStart,
               child: Text(
                 l10n.settingsTitle,
                 style: const TextStyle(
@@ -366,7 +369,7 @@ class _SheetRow extends StatelessWidget {
         if (!isLast)
           Container(
             height: 1,
-            margin: const EdgeInsets.only(left: 56),
+            margin: const EdgeInsetsDirectional.only(start: 56),
             color: kBorder,
           ),
       ],

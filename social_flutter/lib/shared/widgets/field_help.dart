@@ -250,7 +250,7 @@ class _FieldHelpCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(12),
           border: Border.all(color: cs.outlineVariant, width: 1),
         ),
-        padding: const EdgeInsets.fromLTRB(14, 12, 8, 12),
+        padding: const EdgeInsetsDirectional.fromSTEB(14, 12, 8, 12),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [

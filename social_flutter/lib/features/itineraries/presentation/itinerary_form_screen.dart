@@ -643,7 +643,7 @@ class _FieldDivider extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-        height: 1, color: kBorder, margin: const EdgeInsets.only(left: 16));
+        height: 1, color: kBorder, margin: const EdgeInsetsDirectional.only(start: 16));
   }
 }
 

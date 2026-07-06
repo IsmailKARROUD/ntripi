@@ -107,7 +107,7 @@
       color: white; letter-spacing: -1px; line-height: 1.1;
     }
     .share-badge {
-      position: absolute; top: 20px; right: 20px;
+      position: absolute; top: 20px; inset-inline-end: 20px;
       display: inline-flex; align-items: center; gap: 6px;
       background: rgba(255,255,255,.18); color: white;
       backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
@@ -139,7 +139,7 @@
     /* ── NOTE CARD ── */
     .note-card {
       background: var(--amber-light); border-radius: 16px; padding: 14px 18px;
-      border-left: 3px solid var(--amber); margin-bottom: 28px;
+      border-inline-start: 3px solid var(--amber); margin-bottom: 28px;
       display: flex; gap: 10px; align-items: flex-start;
     }
     .note-label {
@@ -184,7 +184,7 @@
     }
     .transport-icon { font-size: 18px; }
     .transport-meta { color: oklch(50% 0.12 75); font-weight: 600; }
-    .transport-time { margin-left: auto; font-size: 12px; color: var(--text2); }
+    .transport-time { margin-inline-start: auto; font-size: 12px; color: var(--text2); }
 
     /* ── CTA BAND ── */
     .cta-band {

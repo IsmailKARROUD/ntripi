@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="{{ lang or 'en' }}">
+<html lang="{{ lang or 'en' }}" dir="{{ dir or 'ltr' }}">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -220,7 +220,7 @@
     <span class="logo-text">NTripi</span>
   </a>
   <nav>
-    <a href="?lang={{ 'en' if lang == 'fr' else 'fr' }}">{{ _('lang_switch_to') }}</a>
+    {% for code in supported if code != lang %}<a href="?lang={{ code }}">{{ lang_names[code] }}</a>{% endfor %}
     <a href="/login">{{ _('nav_sign_in') }}</a>
     <a href="/register" class="btn-primary">{{ _('nav_sign_up') }}</a>
   </nav>

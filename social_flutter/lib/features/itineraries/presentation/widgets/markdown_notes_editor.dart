@@ -59,7 +59,7 @@ class _MarkdownNotesEditorState extends State<MarkdownNotesEditor> {
         mainAxisSize: MainAxisSize.min,
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(12, 8, 4, 0),
+            padding: const EdgeInsetsDirectional.fromSTEB(12, 8, 4, 0),
             child: hasHelp
                 ? Row(
                     mainAxisSize: MainAxisSize.min,

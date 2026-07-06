@@ -80,7 +80,7 @@ class _LanguagePickerSheetState extends State<_LanguagePickerSheet> {
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 14, 16, 4),
             child: Align(
-              alignment: Alignment.centerLeft,
+              alignment: AlignmentDirectional.centerStart,
               child: Text(
                 AppLocalizations.of(context)!.addLanguageTitle,
                 style: const TextStyle(
