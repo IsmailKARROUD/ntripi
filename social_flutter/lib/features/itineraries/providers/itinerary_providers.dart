@@ -7,6 +7,7 @@
 //   placeSearchProvider        — Nominatim suggestions for the stop form
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:social_flutter/core/providers/locale_provider.dart';
 import 'package:social_flutter/core/services/geocoding_service.dart';
 import 'package:social_flutter/features/itineraries/data/itinerary_repository.dart';
 import 'package:social_flutter/features/itineraries/data/share_service.dart';
@@ -427,7 +428,10 @@ class PlaceSearchNotifier extends AsyncNotifier<List<PlaceSuggestion>> {
     }
     state = const AsyncLoading();
     state = await AsyncValue.guard(
-      () => ref.read(geocodingServiceProvider).search(query),
+      () => ref.read(geocodingServiceProvider).search(
+            query,
+            languageCode: ref.read(localeProvider).languageCode,
+          ),
     );
   }
 

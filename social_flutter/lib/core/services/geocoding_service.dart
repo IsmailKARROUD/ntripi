@@ -63,10 +63,14 @@ class GeocodingService {
   /// Returns up to 5 suggestions. Called on every keystroke but the UI
   /// debounces at 400ms to respect Nominatim's 1 req/s rate limit.
   ///
+  /// [languageCode] (e.g. 'ar'/'fr'/'en') is forwarded as Nominatim's
+  /// `accept-language`, which localizes the returned `display_name`.
+  ///
   /// Nothing is stored at this point — results are displayed as suggestions
   /// only. Coordinates are only persisted when the user confirms a selection
   /// (see StopFormScreen).
-  Future<List<PlaceSuggestion>> search(String query) async {
+  Future<List<PlaceSuggestion>> search(String query,
+      {String? languageCode}) async {
     if (query.trim().isEmpty) return [];
 
     final response = await _dio.get<List<dynamic>>(
@@ -76,6 +80,8 @@ class GeocodingService {
         'format': 'json',
         'limit': 5,
         'addressdetails': 1,
+        // accept-language localizes Nominatim's display_name to the app language.
+        if (languageCode != null) 'accept-language': languageCode,
       },
     );
 
@@ -89,8 +95,10 @@ class GeocodingService {
   /// Reverse geocode a coordinate pair to a [PlaceSuggestion].
   ///
   /// Called when the user drops a pin on the MapPickerScreen.
+  /// [languageCode] localizes the resolved `display_name` (see [search]).
   /// Returns null if Nominatim cannot identify the location.
-  Future<PlaceSuggestion?> reverseGeocode(double lat, double lng) async {
+  Future<PlaceSuggestion?> reverseGeocode(double lat, double lng,
+      {String? languageCode}) async {
     try {
       final response = await _dio.get<Map<String, dynamic>>(
         '/reverse',
@@ -98,6 +106,8 @@ class GeocodingService {
           'lat': lat,
           'lon': lng,
           'format': 'json',
+          // accept-language localizes Nominatim's display_name to the app language.
+          if (languageCode != null) 'accept-language': languageCode,
         },
       );
 
