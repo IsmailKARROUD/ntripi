@@ -236,6 +236,7 @@
   "itineraryTitleRequired": "Title is required",
   "descriptionLabel": "Description",
   "descriptionHelp": "Optional. A summary of the trip. Use the toolbar to make text bold or italic, add headings, and create bullet or numbered lists. Switch to the Preview tab to see how it will look to readers.",
+  "addDescriptionLabel": "Add a description",
   "currencyLabel": "Currency",
   "currencyHelp": "Default currency for all stop costs and transport costs in this itinerary.",
   "visibilityLabel": "Visibility",
@@ -333,10 +334,6 @@
   "mapPickLocationTitle": "Pick Location",
   "mapConfirmLocation": "Confirm Location",
   "stopCostHint": "e.g. 20",
-
-  "unsavedDescriptionTitle": "Unsaved description",
-  "unsavedDescriptionMessage": "Save your description changes before leaving?",
-  "saveDescriptionLabel": "Save description",
 
   "ratingsTitle": "Ratings",
   "noRatingsYet": "No ratings yet",

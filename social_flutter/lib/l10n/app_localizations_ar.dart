@@ -615,6 +615,9 @@ class AppLocalizationsAr extends AppLocalizations {
       'اختياري. ملخّص للرحلة. استخدم شريط الأدوات لجعل النص غامقًا أو مائلًا، وإضافة عناوين، وإنشاء قوائم نقطية أو مرقّمة. انتقل إلى تبويب المعاينة لرؤية الشكل النهائي للقرّاء.';
 
   @override
+  String get addDescriptionLabel => 'إضافة وصف';
+
+  @override
   String get currencyLabel => 'العملة';
 
   @override
@@ -804,16 +807,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get stopCostHint => 'مثال: 20';
-
-  @override
-  String get unsavedDescriptionTitle => 'وصف غير محفوظ';
-
-  @override
-  String get unsavedDescriptionMessage =>
-      'هل تريد حفظ تغييرات الوصف قبل المغادرة؟';
-
-  @override
-  String get saveDescriptionLabel => 'حفظ الوصف';
 
   @override
   String get ratingsTitle => 'التقييمات';

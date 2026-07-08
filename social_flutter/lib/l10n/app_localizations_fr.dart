@@ -604,6 +604,9 @@ class AppLocalizationsFr extends AppLocalizations {
       'Optionnel. Un résumé du voyage. Utilisez la barre d\'outils pour mettre du texte en gras ou en italique, ajouter des titres et créer des listes à puces ou numérotées. Passez à l\'onglet Aperçu pour voir le rendu final.';
 
   @override
+  String get addDescriptionLabel => 'Ajouter une description';
+
+  @override
   String get currencyLabel => 'Devise';
 
   @override
@@ -798,16 +801,6 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get stopCostHint => 'ex. 20';
-
-  @override
-  String get unsavedDescriptionTitle => 'Description non enregistrée';
-
-  @override
-  String get unsavedDescriptionMessage =>
-      'Enregistrer vos modifications avant de quitter ?';
-
-  @override
-  String get saveDescriptionLabel => 'Enregistrer la description';
 
   @override
   String get ratingsTitle => 'Évaluations';

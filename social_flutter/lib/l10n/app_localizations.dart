@@ -1126,6 +1126,12 @@ abstract class AppLocalizations {
   /// **'Optional. A summary of the trip. Use the toolbar to make text bold or italic, add headings, and create bullet or numbered lists. Switch to the Preview tab to see how it will look to readers.'**
   String get descriptionHelp;
 
+  /// No description provided for @addDescriptionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a description'**
+  String get addDescriptionLabel;
+
   /// No description provided for @currencyLabel.
   ///
   /// In en, this message translates to:
@@ -1473,24 +1479,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'e.g. 20'**
   String get stopCostHint;
-
-  /// No description provided for @unsavedDescriptionTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Unsaved description'**
-  String get unsavedDescriptionTitle;
-
-  /// No description provided for @unsavedDescriptionMessage.
-  ///
-  /// In en, this message translates to:
-  /// **'Save your description changes before leaving?'**
-  String get unsavedDescriptionMessage;
-
-  /// No description provided for @saveDescriptionLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Save description'**
-  String get saveDescriptionLabel;
 
   /// No description provided for @ratingsTitle.
   ///

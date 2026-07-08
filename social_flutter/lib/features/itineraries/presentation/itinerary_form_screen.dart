@@ -32,7 +32,6 @@ import 'package:social_flutter/features/itineraries/data/itinerary_repository.da
 import 'package:social_flutter/features/itineraries/domain/itinerary.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/cover_image_field.dart';
 import 'package:social_flutter/features/itineraries/presentation/visibility_screen.dart';
-import 'package:social_flutter/features/itineraries/presentation/widgets/markdown_notes_editor.dart';
 import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
 import 'package:social_flutter/core/utils/platform_utils.dart';
 import 'package:social_flutter/l10n/app_localizations.dart';
@@ -68,7 +67,6 @@ class ItineraryFormScreen extends ConsumerStatefulWidget {
 class _ItineraryFormScreenState extends ConsumerState<ItineraryFormScreen> {
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
-  final _descriptionController = TextEditingController();
   final _titleFocusNode = FocusNode();
   List<Currency> _currencies = [];
 
@@ -140,7 +138,6 @@ class _ItineraryFormScreenState extends ConsumerState<ItineraryFormScreen> {
   // _currencies is the dropdown source list, not user input — excluded here.
   List<Object?> _snapshot() => [
         _titleController.text,
-        _descriptionController.text,
         _currency,
         _visibility,
         _pendingImageBytes != null,
@@ -177,7 +174,6 @@ class _ItineraryFormScreenState extends ConsumerState<ItineraryFormScreen> {
     if (itinerary == null || _initialized) return;
     setState(() {
       _titleController.text = itinerary.title;
-      _descriptionController.text = itinerary.description ?? '';
       _currency = _currencies.contains(itinerary.currency)
           ? itinerary.currency
           : 'Other';
@@ -192,7 +188,6 @@ class _ItineraryFormScreenState extends ConsumerState<ItineraryFormScreen> {
   @override
   void dispose() {
     _titleController.dispose();
-    _descriptionController.dispose();
     _titleFocusNode.dispose();
     super.dispose();
   }
@@ -221,8 +216,8 @@ class _ItineraryFormScreenState extends ConsumerState<ItineraryFormScreen> {
     try {
       final data = {
         'title': _titleController.text.trim(),
-        if (_descriptionController.text.trim().isNotEmpty)
-          'description': _descriptionController.text.trim(),
+        // Description is edited on its own screen (DescriptionEditScreen) — the
+        // form must not send it, or it would clobber it with a stale value.
         // 'Other' is a UI-only placeholder; fall back to EUR for the API.
         'currency': _currency == 'Other' ? 'EUR' : _currency,
         'visibility': _visibilityToString[_visibility],

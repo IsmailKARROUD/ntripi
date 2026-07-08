@@ -236,6 +236,7 @@
   "itineraryTitleRequired": "العنوان مطلوب",
   "descriptionLabel": "الوصف",
   "descriptionHelp": "اختياري. ملخّص للرحلة. استخدم شريط الأدوات لجعل النص غامقًا أو مائلًا، وإضافة عناوين، وإنشاء قوائم نقطية أو مرقّمة. انتقل إلى تبويب المعاينة لرؤية الشكل النهائي للقرّاء.",
+  "addDescriptionLabel": "إضافة وصف",
   "currencyLabel": "العملة",
   "currencyHelp": "العملة الافتراضية لجميع تكاليف المحطات والتنقّل في خط السير هذا.",
   "visibilityLabel": "الظهور",
@@ -333,10 +334,6 @@
   "mapPickLocationTitle": "اختيار الموقع",
   "mapConfirmLocation": "تأكيد الموقع",
   "stopCostHint": "مثال: 20",
-
-  "unsavedDescriptionTitle": "وصف غير محفوظ",
-  "unsavedDescriptionMessage": "هل تريد حفظ تغييرات الوصف قبل المغادرة؟",
-  "saveDescriptionLabel": "حفظ الوصف",
 
   "ratingsTitle": "التقييمات",
   "noRatingsYet": "لا توجد تقييمات بعد",

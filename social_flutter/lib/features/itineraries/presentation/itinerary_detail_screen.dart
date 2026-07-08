@@ -94,11 +94,6 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
   bool _creationHintShown = false; // one-shot guard for the just-created auto-hint
   //start with map hidden on mobile to avoid unnecessary API calls and improve performance, since the map is less likely to be used on mobile and can be accessed via a button
   bool _mapVisible = false;
-  final TextEditingController _descriptionController = TextEditingController();
-  // Snapshot of the description as last saved; null outside of edit sessions.
-  String? _savedDescription;
-  bool _descriptionDirty = false;
-  bool _descriptionSaving = false;
 
   static const _markerColors = {
     StopType.origin: kForest,
@@ -106,35 +101,7 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
     StopType.arrival: kRatingRed,
   };
 
-  @override
-  void initState() {
-    super.initState();
-    // Rebuild only when dirty state flips, not on every keystroke.
-    _descriptionController.addListener(_onDescriptionChanged);
-  }
-
-  @override
-  void dispose() {
-    _descriptionController.removeListener(_onDescriptionChanged);
-    _descriptionController.dispose();
-    super.dispose();
-  }
-
-  void _onDescriptionChanged() {
-    final dirty =
-        _descriptionController.text.trim() != (_savedDescription ?? '');
-    if (dirty != _descriptionDirty) setState(() => _descriptionDirty = dirty);
-  }
-
-  void _enterEditMode() {
-    final itinerary =
-        ref.read(itineraryDetailProvider(widget.itineraryId)).value;
-    final desc = itinerary?.description ?? '';
-    _savedDescription =
-        desc; // must be set before controller.text to avoid a false dirty signal
-    _descriptionController.text = desc;
-    setState(() => _editMode = true);
-  }
+  void _enterEditMode() => setState(() => _editMode = true);
 
   // Pops the help card out of the hero's Edit pencil, telling the owner to tap
   // Edit before they can add stops. currentContext is null unless that pencil is
@@ -151,78 +118,7 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
     );
   }
 
-  Future<void> _undoDescription() async {
-    // Undo wipes the in-progress edits back to the saved value — confirm first.
-    final l10n = AppLocalizations.of(context)!;
-    final discard = await confirmDestructiveAction(
-      context: context,
-      title: l10n.discardChangesTitle,
-      message: l10n.discardChangesMessage,
-      confirmLabel: l10n.discardButton,
-      cancelLabel: l10n.keepEditingButton,
-    );
-    if (!discard || !mounted) return;
-    _descriptionController.text = _savedDescription ?? '';
-  }
-
-  Future<void> _saveDescription() async {
-    final newDesc = _descriptionController.text.trim();
-    setState(() => _descriptionSaving = true);
-    try {
-      await ref
-          .read(itineraryDetailProvider(widget.itineraryId).notifier)
-          .updateHeader({'description': newDesc.isEmpty ? null : newDesc});
-      if (!mounted) return;
-      setState(() {
-        _savedDescription = newDesc;
-        _descriptionDirty = false;
-        _descriptionSaving = false;
-      });
-    } on Exception catch (e) {
-      if (!mounted) return;
-      setState(() => _descriptionSaving = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-            content: Text(extractErrorMessage(
-                e as dynamic, AppLocalizations.of(context)!))),
-      );
-    }
-  }
-
-  Future<void> _exitEditMode() async {
-    if (_descriptionDirty) {
-      final save = await showDialog<bool>(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          title: Text(AppLocalizations.of(context)!.unsavedDescriptionTitle),
-          content:
-              Text(AppLocalizations.of(context)!.unsavedDescriptionMessage),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(ctx).pop(false),
-              child: Text(AppLocalizations.of(context)!.discardButton),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.of(ctx).pop(true),
-              child: Text(AppLocalizations.of(context)!.save),
-            ),
-          ],
-        ),
-      );
-      if (save == null || !mounted) return; // dismissed → stay in edit mode
-      if (save) {
-        await _saveDescription();
-        if (!mounted) return;
-      }
-    }
-    if (mounted) {
-      setState(() {
-        _editMode = false;
-        _descriptionDirty = false;
-        _savedDescription = null;
-      });
-    }
-  }
+  void _exitEditMode() => setState(() => _editMode = false);
 
   /// Scrolls the outer CustomScrollView so that the track with the given ID
   /// becomes visible near the top. The post-frame callback waits for the
@@ -443,9 +339,9 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
 
     return PopScope(
       canPop: !_editMode,
-      onPopInvokedWithResult: (didPop, _) async {
+      onPopInvokedWithResult: (didPop, _) {
         if (didPop) return;
-        await _exitEditMode();
+        _exitEditMode();
       },
       child: Scaffold(
         backgroundColor: kSurface,
@@ -807,76 +703,16 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                         ),
 
                         // ── Description ────────────────────────────────────
+                        // In edit mode the description is a tappable row that
+                        // opens the dedicated editor (DescriptionEditScreen).
                         if (canEdit)
                           SliverToBoxAdapter(
                             child: Padding(
                               padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.stretch,
-                                children: [
-                                  MarkdownNotesEditor(
-                                    controller: _descriptionController,
-                                    readOnly: false,
-                                    label: l10n.descriptionLabel,
-                                    helpTitle: l10n.descriptionLabel,
-                                    helpMessage: l10n.descriptionHelp,
-                                  ),
-                                  if (_descriptionDirty)
-                                    Padding(
-                                      padding: const EdgeInsets.only(top: 8),
-                                      child: _descriptionSaving
-                                          ? const Align(
-                                              alignment:
-                                                  AlignmentGeometry.center,
-                                              child: NTripiDotsLoader(dotSize: 10,))
-                                          : Row(
-                                              mainAxisAlignment:
-                                                  MainAxisAlignment.end,
-                                              children: [
-                                                Padding(
-                                                  padding:
-                                                      const EdgeInsets.only(
-                                                          left: 16),
-                                                  child: TextButton.icon(
-                                                    onPressed: _undoDescription,
-                                                    icon: const Icon(
-                                                        Icons.undo_rounded,
-                                                        color: kRatingRed,
-                                                        size: 16),
-                                                    label: Text(
-                                                      AppLocalizations.of(
-                                                              context)!
-                                                          .undoLabel,
-                                                      style: const TextStyle(
-                                                          color: kRatingRed),
-                                                    ),
-                                                  ),
-                                                ),
-                                                const Spacer(),
-                                                Padding(
-                                                  padding:
-                                                      const EdgeInsets.only(
-                                                          right: 16),
-                                                  child: FilledButton(
-                                                    onPressed:
-                                                        _descriptionSaving
-                                                            ? null
-                                                            : _saveDescription,
-                                                    child: Padding(
-                                                      padding:
-                                                          const EdgeInsets.only(
-                                                              left: 16,
-                                                              right: 16),
-                                                      child: Text(AppLocalizations
-                                                              .of(context)!
-                                                          .saveDescriptionLabel),
-                                                    ),
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                    ),
-                                ],
+                              child: _DescriptionEditRow(
+                                description: itinerary.description,
+                                onTap: () => context.push(
+                                    '/itineraries/${widget.itineraryId}/description'),
                               ),
                             ),
                           )
@@ -1178,6 +1014,70 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                 },
               ),
             ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Description edit row ────────────────────────────────────────────────────
+// Shown only in edit mode. Mirrors MarkdownNotesEditor's bordered-header look
+// but is a tappable summary that opens the dedicated DescriptionEditScreen.
+class _DescriptionEditRow extends StatelessWidget {
+  final String? description;
+  final VoidCallback onTap;
+
+  const _DescriptionEditRow({required this.description, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final hasText = description != null && description!.trim().isNotEmpty;
+    final labelStyle = Theme.of(context).textTheme.bodySmall?.copyWith(
+          color: Theme.of(context).colorScheme.primary,
+          fontWeight: FontWeight.w500,
+        );
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(4),
+        child: Container(
+          decoration: BoxDecoration(
+            border: Border.all(color: Theme.of(context).dividerColor),
+            borderRadius: BorderRadius.circular(4),
+          ),
+          padding: const EdgeInsets.fromLTRB(12, 8, 8, 12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Text(l10n.descriptionLabel, style: labelStyle),
+                  const SizedBox(width: 2),
+                  // Stays interactive inside the InkWell — its own tap wins.
+                  FieldHelpIcon(
+                    helpTitle: l10n.descriptionLabel,
+                    helpMessage: l10n.descriptionHelp,
+                    size: 16,
+                  ),
+                  const Spacer(),
+                  const Icon(Icons.edit_outlined, size: 18, color: kForest),
+                ],
+              ),
+              const SizedBox(height: 6),
+              // IgnorePointer so the markdown's selectable text doesn't swallow
+              // the tap meant for the row's InkWell.
+              if (hasText)
+                IgnorePointer(child: InertMarkdownBody(data: description!))
+              else
+                Text(
+                  l10n.addDescriptionLabel,
+                  style: TextStyle(color: Theme.of(context).hintColor),
+                ),
+            ],
           ),
         ),
       ),

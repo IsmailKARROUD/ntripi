@@ -15,6 +15,7 @@ import 'package:social_flutter/features/auth/presentation/splash_screen.dart';
 import 'package:social_flutter/features/feed/presentation/feed_screen.dart';
 import 'package:social_flutter/features/follows/presentation/follow_list_screen.dart';
 import 'package:social_flutter/features/follows/presentation/follow_requests_screen.dart';
+import 'package:social_flutter/features/itineraries/presentation/description_edit_screen.dart';
 import 'package:social_flutter/features/itineraries/presentation/itinerary_detail_screen.dart';
 import 'package:social_flutter/features/itineraries/presentation/stop_detail_screen.dart';
 import 'package:social_flutter/features/itineraries/presentation/itinerary_form_screen.dart';
@@ -172,6 +173,12 @@ final appRouter = GoRouter(
             GoRoute(
               path: '/itineraries/:id/edit',
               builder: (_, s) => ItineraryFormScreen(
+                itineraryId: s.pathParameters['id']!,
+              ),
+            ),
+            GoRoute(
+              path: '/itineraries/:id/description',
+              builder: (_, s) => DescriptionEditScreen(
                 itineraryId: s.pathParameters['id']!,
               ),
             ),

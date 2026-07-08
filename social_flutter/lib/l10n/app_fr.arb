@@ -191,6 +191,7 @@
   "itineraryTitleRequired": "Le titre est requis",
   "descriptionLabel": "Description",
   "descriptionHelp": "Optionnel. Un résumé du voyage. Utilisez la barre d'outils pour mettre du texte en gras ou en italique, ajouter des titres et créer des listes à puces ou numérotées. Passez à l'onglet Aperçu pour voir le rendu final.",
+  "addDescriptionLabel": "Ajouter une description",
   "currencyLabel": "Devise",
   "currencyHelp": "Devise par défaut pour tous les coûts des étapes et des transports de cet itinéraire.",
   "visibilityLabel": "Visibilité",
@@ -268,10 +269,6 @@
   "mapPickLocationTitle": "Choisir un emplacement",
   "mapConfirmLocation": "Confirmer l'emplacement",
   "stopCostHint": "ex. 20",
-
-  "unsavedDescriptionTitle": "Description non enregistrée",
-  "unsavedDescriptionMessage": "Enregistrer vos modifications avant de quitter ?",
-  "saveDescriptionLabel": "Enregistrer la description",
 
   "ratingsTitle": "Évaluations",
   "noRatingsYet": "Aucune évaluation pour l'instant",

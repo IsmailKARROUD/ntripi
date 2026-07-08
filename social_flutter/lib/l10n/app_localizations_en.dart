@@ -593,6 +593,9 @@ class AppLocalizationsEn extends AppLocalizations {
       'Optional. A summary of the trip. Use the toolbar to make text bold or italic, add headings, and create bullet or numbered lists. Switch to the Preview tab to see how it will look to readers.';
 
   @override
+  String get addDescriptionLabel => 'Add a description';
+
+  @override
   String get currencyLabel => 'Currency';
 
   @override
@@ -782,16 +785,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get stopCostHint => 'e.g. 20';
-
-  @override
-  String get unsavedDescriptionTitle => 'Unsaved description';
-
-  @override
-  String get unsavedDescriptionMessage =>
-      'Save your description changes before leaving?';
-
-  @override
-  String get saveDescriptionLabel => 'Save description';
 
   @override
   String get ratingsTitle => 'Ratings';
