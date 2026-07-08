@@ -694,6 +694,12 @@ abstract class AppLocalizations {
   /// **'A short description. Supports **bold** markdown and emoji.'**
   String get bioHelpMessage;
 
+  /// No description provided for @addBioLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a bio'**
+  String get addBioLabel;
+
   /// No description provided for @avatarUrlLabel.
   ///
   /// In en, this message translates to:

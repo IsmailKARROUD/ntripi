@@ -59,6 +59,7 @@ import 'package:social_flutter/features/itineraries/presentation/widgets/segment
 import 'package:social_flutter/features/itineraries/presentation/widgets/track_reorder_view.dart';
 import 'package:social_flutter/shared/widgets/field_help.dart';
 import 'package:social_flutter/shared/widgets/loaders.dart';
+import 'package:social_flutter/shared/widgets/markdown_edit_screen.dart';
 import 'package:social_flutter/shared/widgets/shadow_divider.dart';
 import 'package:social_flutter/core/utils/platform_utils.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/leg_form_dialog.dart';
@@ -102,6 +103,33 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
   };
 
   void _enterEditMode() => setState(() => _editMode = true);
+
+  // Opens the shared markdown editor for the description, then persists the
+  // returned value. updateHeader mutates the provider in place, so the row here
+  // rebuilds with the new text — no explicit refresh needed.
+  Future<void> _editDescription(String? current) async {
+    final l10n = AppLocalizations.of(context)!;
+    final result = await editMarkdownField(
+      context,
+      initialText: current ?? '',
+      title: l10n.descriptionLabel,
+      helpTitle: l10n.descriptionLabel,
+      helpMessage: l10n.descriptionHelp,
+    );
+    if (result == null || !mounted) return;
+    try {
+      await ref
+          .read(itineraryDetailProvider(widget.itineraryId).notifier)
+          .updateHeader({'description': result.isEmpty ? null : result});
+    } on Exception catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+            content: Text(extractErrorMessage(
+                e as dynamic, AppLocalizations.of(context)!))),
+      );
+    }
+  }
 
   // Pops the help card out of the hero's Edit pencil, telling the owner to tap
   // Edit before they can add stops. currentContext is null unless that pencil is
@@ -704,15 +732,15 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
 
                         // ── Description ────────────────────────────────────
                         // In edit mode the description is a tappable row that
-                        // opens the dedicated editor (DescriptionEditScreen).
+                        // opens the shared markdown editor.
                         if (canEdit)
                           SliverToBoxAdapter(
                             child: Padding(
                               padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
                               child: _DescriptionEditRow(
                                 description: itinerary.description,
-                                onTap: () => context.push(
-                                    '/itineraries/${widget.itineraryId}/description'),
+                                onTap: () =>
+                                    _editDescription(itinerary.description),
                               ),
                             ),
                           )
@@ -1023,7 +1051,7 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
 
 // ─── Description edit row ────────────────────────────────────────────────────
 // Shown only in edit mode. Mirrors MarkdownNotesEditor's bordered-header look
-// but is a tappable summary that opens the dedicated DescriptionEditScreen.
+// but is a tappable summary that opens the shared markdown editor.
 class _DescriptionEditRow extends StatelessWidget {
   final String? description;
   final VoidCallback onTap;

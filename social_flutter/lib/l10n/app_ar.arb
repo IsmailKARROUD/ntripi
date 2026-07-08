@@ -121,6 +121,7 @@
   "usernameLabel": "اسم المستخدم",
   "bioLabel": "نبذة",
   "bioHelpMessage": "وصف قصير. يدعم ماركداون **الغامق** والرموز التعبيرية.",
+  "addBioLabel": "إضافة نبذة",
   "avatarUrlLabel": "رابط الصورة الرمزية",
   "travelIdentitySection": "هوية السفر",
   "passportLabel": "جواز السفر",

@@ -111,6 +111,7 @@
   "usernameLabel": "Identifiant",
   "bioLabel": "BIO",
   "bioHelpMessage": "Une courte description. Prend en charge le markdown **gras** et les emoji.",
+  "addBioLabel": "Ajouter une bio",
   "avatarUrlLabel": "URL de l'avatar",
   "travelIdentitySection": "Identité de voyage",
   "passportLabel": "Passeport",

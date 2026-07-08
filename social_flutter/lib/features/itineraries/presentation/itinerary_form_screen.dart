@@ -216,8 +216,8 @@ class _ItineraryFormScreenState extends ConsumerState<ItineraryFormScreen> {
     try {
       final data = {
         'title': _titleController.text.trim(),
-        // Description is edited on its own screen (DescriptionEditScreen) — the
-        // form must not send it, or it would clobber it with a stale value.
+        // Description is edited on its own screen (the shared markdown editor) —
+        // the form must not send it, or it would clobber it with a stale value.
         // 'Other' is a UI-only placeholder; fall back to EUR for the API.
         'currency': _currency == 'Other' ? 'EUR' : _currency,
         'visibility': _visibilityToString[_visibility],

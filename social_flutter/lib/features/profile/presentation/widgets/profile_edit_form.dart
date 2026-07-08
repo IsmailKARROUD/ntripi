@@ -16,6 +16,7 @@ import 'package:social_flutter/features/profile/providers/profile_provider.dart'
 import 'package:social_flutter/l10n/app_localizations.dart';
 import 'package:social_flutter/shared/data/countries.dart';
 import 'package:social_flutter/shared/models/user.dart';
+import 'package:social_flutter/shared/widgets/markdown_edit_screen.dart';
 import 'package:social_flutter/shared/widgets/user_avatar.dart';
 
 class ProfileEditForm extends ConsumerStatefulWidget {
@@ -127,6 +128,21 @@ class _ProfileEditFormState extends ConsumerState<ProfileEditForm> {
       _avatarRemoved = true;
       _avatarUrlController.clear();
     });
+  }
+
+  // Bio is edited on the shared full-screen markdown editor. It returns the new
+  // text (null if cancelled); the form persists it with the other fields on Save.
+  Future<void> _editBio() async {
+    final l10n = AppLocalizations.of(context)!;
+    final result = await editMarkdownField(
+      context,
+      initialText: _bioController.text,
+      title: l10n.bioLabel,
+      helpTitle: l10n.bioLabel,
+      helpMessage: l10n.bioHelpMessage,
+    );
+    if (result == null || !mounted) return;
+    setState(() => _bioController.text = result);
   }
 
   Future<void> _saveEdits() async {
@@ -482,12 +498,37 @@ class _ProfileEditFormState extends ConsumerState<ProfileEditForm> {
                   const _FieldDivider(),
                   _EditFieldRow(
                     icon: Icons.notes_rounded,
-                    child: MarkdownNotesEditor(
-                      controller: _bioController,
-                      readOnly: false,
-                      label: l10n.bioLabel,
-                      helpTitle: l10n.bioLabel,
-                      helpMessage: l10n.bioHelpMessage,
+                    label: l10n.bioLabel,
+                    child: InkWell(
+                      onTap: _editBio,
+                      borderRadius: BorderRadius.circular(8),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 4),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              child: _bioController.text.trim().isEmpty
+                                  ? Text(
+                                      l10n.addBioLabel,
+                                      style: const TextStyle(
+                                          fontSize: 15,
+                                          color: kText3,
+                                          fontWeight: FontWeight.w500),
+                                    )
+                                  // IgnorePointer so the selectable markdown
+                                  // doesn't swallow the row's tap.
+                                  : IgnorePointer(
+                                      child: InertMarkdownBody(
+                                          data: _bioController.text.trim()),
+                                    ),
+                            ),
+                            const SizedBox(width: 8),
+                            const Icon(Icons.edit_outlined,
+                                size: 16, color: kText3),
+                          ],
+                        ),
+                      ),
                     ),
                   ),
                   const _FieldDivider(),

@@ -333,6 +333,9 @@ class AppLocalizationsAr extends AppLocalizations {
       'وصف قصير. يدعم ماركداون **الغامق** والرموز التعبيرية.';
 
   @override
+  String get addBioLabel => 'إضافة نبذة';
+
+  @override
   String get avatarUrlLabel => 'رابط الصورة الرمزية';
 
   @override

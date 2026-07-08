@@ -121,6 +121,7 @@
   "usernameLabel": "Username",
   "bioLabel": "BIO",
   "bioHelpMessage": "A short description. Supports **bold** markdown and emoji.",
+  "addBioLabel": "Add a bio",
   "avatarUrlLabel": "Avatar URL",
   "travelIdentitySection": "Travel identity",
   "passportLabel": "Passport",

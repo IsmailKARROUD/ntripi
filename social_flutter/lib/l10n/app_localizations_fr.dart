@@ -338,6 +338,9 @@ class AppLocalizationsFr extends AppLocalizations {
       'Une courte description. Prend en charge le markdown **gras** et les emoji.';
 
   @override
+  String get addBioLabel => 'Ajouter une bio';
+
+  @override
   String get avatarUrlLabel => 'URL de l\'avatar';
 
   @override
