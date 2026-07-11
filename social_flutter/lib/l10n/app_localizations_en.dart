@@ -1947,6 +1947,9 @@ class AppLocalizationsEn extends AppLocalizations {
       'Optional — the map will be used otherwise.';
 
   @override
+  String get noCoverImage => 'No cover image';
+
+  @override
   String get mapTapToPlacePin => 'Tap the map to place a pin';
 
   @override

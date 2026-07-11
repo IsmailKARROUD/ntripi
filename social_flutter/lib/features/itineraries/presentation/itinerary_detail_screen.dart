@@ -65,6 +65,7 @@ import 'package:social_flutter/core/utils/platform_utils.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/leg_form_dialog.dart';
 import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
 import 'package:social_flutter/l10n/app_localizations.dart';
+import 'package:social_flutter/shared/widgets/itinerary_cover_placeholder.dart';
 import 'package:social_flutter/shared/widgets/visibility_badge.dart';
 
 class ItineraryDetailScreen extends ConsumerStatefulWidget {
@@ -1118,8 +1119,10 @@ class _CoverHeroState extends State<_CoverHero> {
       child: Stack(
         fit: StackFit.expand,
         children: [
-          // Cover image or gradient placeholder
-          if (widget.coverUrl != null && !_imgError)
+          // Cover image or branded trip-map placeholder
+          if (widget.coverUrl != null &&
+              widget.coverUrl!.isNotEmpty &&
+              !_imgError)
             CachedNetworkImage(
               imageUrl: widget.coverUrl!,
               cacheManager: NtripiImageCacheManager(),
@@ -1128,11 +1131,15 @@ class _CoverHeroState extends State<_CoverHero> {
                 WidgetsBinding.instance.addPostFrameCallback((_) {
                   if (mounted) setState(() => _imgError = true);
                 });
-                return const _HeroPlaceholder();
+                // pill mid-frame — clear of the glass buttons above and the
+                // title/badge overlay below
+                return const ItineraryCoverPlaceholder(
+                    labelAlignment: Alignment(0, 0.1));
               },
             )
           else
-            const _HeroPlaceholder(),
+            const ItineraryCoverPlaceholder(
+                labelAlignment: Alignment(0, 0.1)),
 
           // Gradient overlay: dark at top + bottom, transparent in middle
           const DecoratedBox(
@@ -1219,23 +1226,6 @@ class _CoverHeroState extends State<_CoverHero> {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _HeroPlaceholder extends StatelessWidget {
-  const _HeroPlaceholder();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [kForest, kCanopy],
-        ),
       ),
     );
   }

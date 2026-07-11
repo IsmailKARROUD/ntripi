@@ -706,6 +706,7 @@
   "pinchToZoomHint": "Pincez pour zoomer · Faites glisser pour repositionner",
   "addCoverImage": "Ajouter une image de couverture",
   "coverOptionalMapFallback": "Optionnel — la carte sera utilisée sinon.",
+  "noCoverImage": "Aucune image de couverture",
   "mapTapToPlacePin": "Appuyez sur la carte pour placer un repère",
   "mapTapToMovePin": "Appuyez ailleurs pour déplacer le repère, puis appuyez sur Confirmer",
   "nothingToPreview": "Rien à prévisualiser pour l'instant.",

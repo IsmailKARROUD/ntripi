@@ -3436,6 +3436,12 @@ abstract class AppLocalizations {
   /// **'Optional — the map will be used otherwise.'**
   String get coverOptionalMapFallback;
 
+  /// No description provided for @noCoverImage.
+  ///
+  /// In en, this message translates to:
+  /// **'No cover image'**
+  String get noCoverImage;
+
   /// No description provided for @mapTapToPlacePin.
   ///
   /// In en, this message translates to:

@@ -834,6 +834,7 @@
   "pinchToZoomHint": "اقرص للتكبير · اسحب لتغيير الموضع",
   "addCoverImage": "أضف صورة غلاف",
   "coverOptionalMapFallback": "اختياري — ستُستخدم الخريطة بدلاً منها.",
+  "noCoverImage": "لا توجد صورة غلاف",
   "mapTapToPlacePin": "اضغط على الخريطة لوضع دبوس",
   "mapTapToMovePin": "اضغط في مكان آخر لنقل الدبوس، ثم اضغط تأكيد",
   "nothingToPreview": "لا شيء للمعاينة بعد.",

@@ -2004,6 +2004,9 @@ class AppLocalizationsAr extends AppLocalizations {
       'اختياري — ستُستخدم الخريطة بدلاً منها.';
 
   @override
+  String get noCoverImage => 'لا توجد صورة غلاف';
+
+  @override
   String get mapTapToPlacePin => 'اضغط على الخريطة لوضع دبوس';
 
   @override

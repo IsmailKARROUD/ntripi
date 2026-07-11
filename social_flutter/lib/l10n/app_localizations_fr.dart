@@ -1986,6 +1986,9 @@ class AppLocalizationsFr extends AppLocalizations {
       'Optionnel — la carte sera utilisée sinon.';
 
   @override
+  String get noCoverImage => 'Aucune image de couverture';
+
+  @override
   String get mapTapToPlacePin => 'Appuyez sur la carte pour placer un repère';
 
   @override

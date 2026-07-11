@@ -834,6 +834,7 @@
   "pinchToZoomHint": "Pinch to zoom · Drag to reposition",
   "addCoverImage": "Add a cover image",
   "coverOptionalMapFallback": "Optional — the map will be used otherwise.",
+  "noCoverImage": "No cover image",
   "mapTapToPlacePin": "Tap the map to place a pin",
   "mapTapToMovePin": "Tap elsewhere to move the pin, then tap Confirm",
   "nothingToPreview": "Nothing to preview yet.",

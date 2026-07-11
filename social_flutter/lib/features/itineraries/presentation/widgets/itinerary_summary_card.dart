@@ -10,6 +10,7 @@ import 'package:social_flutter/core/cache/image_cache.dart';
 import 'package:social_flutter/core/ui/app_theme.dart';
 import 'package:social_flutter/features/itineraries/domain/itinerary.dart';
 import 'package:social_flutter/l10n/app_localizations.dart';
+import 'package:social_flutter/shared/widgets/itinerary_cover_placeholder.dart';
 import 'package:social_flutter/shared/widgets/visibility_badge.dart';
 
 class ItinerarySummaryCard extends ConsumerWidget {
@@ -120,8 +121,8 @@ class ItinerarySummaryCard extends ConsumerWidget {
   }
 }
 
-// Cover image: shows CachedNetworkImage when URL is available, else a gradient
-// placeholder using the brand palette.
+// Cover image: shows CachedNetworkImage when URL is available, else the
+// branded trip-map placeholder.
 class _CoverSlot extends StatefulWidget {
   final String? url;
   const _CoverSlot({this.url});
@@ -135,40 +136,21 @@ class _CoverSlotState extends State<_CoverSlot> {
 
   @override
   Widget build(BuildContext context) {
-    if (widget.url != null && !_error) {
+    final url = widget.url;
+    if (url != null && url.isNotEmpty && !_error) {
       return CachedNetworkImage(
-        imageUrl: widget.url!,
+        imageUrl: url,
         cacheManager: NtripiImageCacheManager(),
         fit: BoxFit.cover,
         errorWidget: (_, __, ___) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (mounted) setState(() => _error = true);
           });
-          return const _CoverPlaceholder();
+          return const ItineraryCoverPlaceholder();
         },
       );
     }
-    return const _CoverPlaceholder();
-  }
-}
-
-class _CoverPlaceholder extends StatelessWidget {
-  const _CoverPlaceholder();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [kMist, Color(0xFFB8D9C4)],
-        ),
-      ),
-      child: const Center(
-        child: Icon(Icons.map_rounded, size: 36, color: kCanopy),
-      ),
-    );
+    return const ItineraryCoverPlaceholder();
   }
 }
 
