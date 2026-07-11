@@ -77,11 +77,24 @@ class ItineraryCoverPlaceholder extends StatelessWidget {
   }
 }
 
-// The map artwork: land gradient, water blob, park block, white streets,
-// dotted route with three pins. Deliberately never mirrored for RTL — maps
-// don't flip.
+// The map artwork, styled after a real city map with an itinerary drawn on
+// it: a river, parks, faint building blocks, a street network, and a dotted
+// route that follows the streets through three numbered stop pins.
+// Deliberately never mirrored for RTL — maps don't flip.
 class _TripMapPainter extends CustomPainter {
   const _TripMapPainter();
+
+  // Route vertices (fractions of w/h). Each segment lies on a street drawn
+  // below, so the route visibly follows roads like a real navigation trace.
+  static const _route = [
+    Offset(0.13, 0.80), // stop 1
+    Offset(0.32, 0.78),
+    Offset(0.34, 0.57),
+    Offset(0.55, 0.54), // stop 2
+    Offset(0.57, 0.33),
+    Offset(0.74, 0.31),
+    Offset(0.88, 0.20), // stop 3
+  ];
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -91,7 +104,7 @@ class _TripMapPainter extends CustomPainter {
     // 120px card and the 240px hero.
     final k = (size.shortestSide / 160).clamp(0.9, 1.5).toDouble();
 
-    // Streets/blobs run past the frame edges — CustomPaint doesn't clip.
+    // Streets/river run past the frame edges — CustomPaint doesn't clip.
     canvas.clipRect(Offset.zero & size);
 
     // Land
@@ -105,51 +118,104 @@ class _TripMapPainter extends CustomPainter {
         ).createShader(Offset.zero & size),
     );
 
-    // Water blob, lower-left
-    final water = Path()
-      ..moveTo(-0.05 * w, 0.62 * h)
-      ..cubicTo(0.10 * w, 0.55 * h, 0.30 * w, 0.62 * h, 0.36 * w, 0.74 * h)
-      ..cubicTo(0.42 * w, 0.86 * h, 0.34 * w, 1.02 * h, 0.22 * w, 1.08 * h)
-      ..lineTo(-0.05 * w, 1.08 * h)
-      ..close();
-    canvas.drawPath(water, Paint()..color = const Color(0xE6C7D0D4));
-
-    // Park block, upper-right
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(
-        Rect.fromLTWH(0.62 * w, 0.08 * h, 0.30 * w, 0.30 * h),
-        Radius.circular(10 * k),
-      ),
-      Paint()..color = const Color(0xD9CDD6CD),
+    // River winding down the left edge (streets drawn later read as bridges).
+    final waterPaint = Paint()..color = const Color(0xE6C7D0D4);
+    final river = Path()
+      ..moveTo(0.14 * w, -0.05 * h)
+      ..cubicTo(0.10 * w, 0.10 * h, 0.01 * w, 0.16 * h, 0.03 * w, 0.28 * h)
+      ..cubicTo(0.05 * w, 0.38 * h, -0.02 * w, 0.44 * h, -0.06 * w, 0.50 * h);
+    canvas.drawPath(
+      river,
+      Paint()
+        ..color = waterPaint.color
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 15 * k
+        ..strokeCap = StrokeCap.round,
     );
 
-    // Thin street grid
-    final grid = Paint()
+    // Parks: large one upper-right (with a pond), small one lower-right.
+    final parkPaint = Paint()..color = const Color(0xD9CDD6CD);
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromLTWH(0.62 * w, 0.06 * h, 0.28 * w, 0.24 * h),
+        Radius.circular(10 * k),
+      ),
+      parkPaint,
+    );
+    canvas.drawOval(
+      Rect.fromCenter(
+          center: Offset(0.76 * w, 0.18 * h), width: 0.09 * w, height: 0.10 * h),
+      waterPaint,
+    );
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromLTWH(0.80 * w, 0.60 * h, 0.16 * w, 0.24 * h),
+        Radius.circular(8 * k),
+      ),
+      parkPaint,
+    );
+
+    // Building blocks — faint darker rects clustered inside street blocks.
+    final buildingPaint = Paint()..color = const Color(0x2E6E7B74);
+    const buildings = [
+      Offset(0.40, 0.42), Offset(0.455, 0.465), Offset(0.405, 0.50),
+      Offset(0.63, 0.415), Offset(0.685, 0.45),
+      Offset(0.46, 0.66), Offset(0.515, 0.695),
+      Offset(0.20, 0.60), Offset(0.255, 0.635),
+      Offset(0.56, 0.875), Offset(0.615, 0.845),
+      Offset(0.155, 0.17), Offset(0.21, 0.21),
+    ];
+    for (var i = 0; i < buildings.length; i++) {
+      final c = buildings[i];
+      // Alternate two footprints for a hand-placed feel.
+      final bw = (i.isEven ? 11.0 : 8.5) * k;
+      final bh = (i.isEven ? 7.5 : 9.5) * k;
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(
+          Rect.fromCenter(center: Offset(c.dx * w, c.dy * h), width: bw, height: bh),
+          Radius.circular(1.5 * k),
+        ),
+        buildingPaint,
+      );
+    }
+
+    // Street network. The first three thin streets and the three avenues run
+    // exactly through the route segments above (extended to the frame edges).
+    final thin = Paint()
       ..color = const Color(0xB3FFFFFF)
       ..strokeWidth = 2 * k
       ..strokeCap = StrokeCap.round
       ..style = PaintingStyle.stroke;
-    canvas.drawLine(Offset(0.22 * w, -0.05 * h), Offset(0.16 * w, 1.05 * h), grid);
-    canvas.drawLine(Offset(0.55 * w, -0.05 * h), Offset(0.60 * w, 1.05 * h), grid);
-    canvas.drawLine(Offset(0.80 * w, -0.05 * h), Offset(0.76 * w, 1.05 * h), grid);
-    canvas.drawLine(Offset(-0.05 * w, 0.30 * h), Offset(1.05 * w, 0.24 * h), grid);
-    canvas.drawLine(Offset(-0.05 * w, 0.72 * h), Offset(1.05 * w, 0.78 * h), grid);
+    // Carries route p0→p1
+    canvas.drawLine(Offset(-0.05 * w, 0.819 * h), Offset(1.05 * w, 0.703 * h), thin);
+    // Carries route p3→p4
+    canvas.drawLine(Offset(0.501 * w, 1.05 * h), Offset(0.606 * w, -0.05 * h), thin);
+    // Carries route p4→p5
+    canvas.drawLine(Offset(-0.05 * w, 0.403 * h), Offset(1.05 * w, 0.274 * h), thin);
+    // Filler grid
+    canvas.drawLine(Offset(0.10 * w, -0.05 * h), Offset(0.16 * w, 1.05 * h), thin);
+    canvas.drawLine(Offset(0.72 * w, -0.05 * h), Offset(0.78 * w, 1.05 * h), thin);
+    canvas.drawLine(Offset(0.88 * w, -0.05 * h), Offset(0.93 * w, 1.05 * h), thin);
+    canvas.drawLine(Offset(-0.05 * w, 0.135 * h), Offset(1.05 * w, 0.09 * h), thin);
+    canvas.drawLine(Offset(-0.05 * w, 0.95 * h), Offset(1.05 * w, 0.90 * h), thin);
 
-    // Three wide streets
-    final street = Paint()
+    final avenue = Paint()
       ..color = Colors.white
       ..strokeWidth = 6.5 * k
       ..strokeCap = StrokeCap.round
       ..style = PaintingStyle.stroke;
-    canvas.drawLine(Offset(-0.05 * w, 0.52 * h), Offset(1.05 * w, 0.44 * h), street);
-    canvas.drawLine(Offset(0.38 * w, -0.05 * h), Offset(0.44 * w, 1.05 * h), street);
-    canvas.drawLine(Offset(-0.05 * w, 0.95 * h), Offset(1.05 * w, 0.10 * h), street);
+    // Carries route p1→p2
+    canvas.drawLine(Offset(0.294 * w, 1.05 * h), Offset(0.399 * w, -0.05 * h), avenue);
+    // Carries route p2→p3
+    canvas.drawLine(Offset(-0.05 * w, 0.626 * h), Offset(1.05 * w, 0.469 * h), avenue);
+    // Diagonal avenue carrying route p5→p6
+    canvas.drawLine(Offset(-0.05 * w, 0.93 * h), Offset(1.05 * w, 0.066 * h), avenue);
 
-    // Route: winding dotted path sweeping lower-left → upper-right.
-    final route = Path()
-      ..moveTo(0.10 * w, 0.85 * h)
-      ..cubicTo(0.28 * w, 0.95 * h, 0.40 * w, 0.55 * h, 0.52 * w, 0.52 * h)
-      ..cubicTo(0.66 * w, 0.48 * h, 0.62 * w, 0.20 * h, 0.88 * w, 0.18 * h);
+    // Route: dotted navigation trace following the streets stop → stop.
+    final route = Path()..moveTo(_route.first.dx * w, _route.first.dy * h);
+    for (final p in _route.skip(1)) {
+      route.lineTo(p.dx * w, p.dy * h);
+    }
     final routePaint = Paint()
       ..color = _kRoute
       ..strokeWidth = 4 * k
@@ -158,16 +224,11 @@ class _TripMapPainter extends CustomPainter {
     // 0.5-length dashes + round caps render as dots (dash 0.5 / gap 11).
     _drawDashed(canvas, route, routePaint, 0.5 * k, 11 * k);
 
-    // Three pins anchored on the route — middle one darker.
-    final metric = route.computeMetrics().first;
-    const stopsAlongRoute = [
-      (0.10, _kPinEnds),
-      (0.50, _kInk),
-      (0.90, _kPinEnds),
-    ];
-    for (final (t, color) in stopsAlongRoute) {
-      final tip = metric.getTangentForOffset(metric.length * t)!.position;
-      _drawPin(canvas, tip, 7 * k, color);
+    // Numbered stop pins at start / middle / end — middle one darker.
+    const stops = [(0, _kPinEnds, '1'), (3, _kInk, '2'), (6, _kPinEnds, '3')];
+    for (final (i, color, label) in stops) {
+      final v = _route[i];
+      _drawPin(canvas, Offset(v.dx * w, v.dy * h), 7.5 * k, color, label);
     }
   }
 
@@ -188,8 +249,9 @@ class _TripMapPainter extends CustomPainter {
     }
   }
 
-  // Teardrop pin with its tail tip at [tip]; [r] is the head radius.
-  void _drawPin(Canvas canvas, Offset tip, double r, Color color) {
+  // Teardrop pin with its tail tip at [tip]; [r] is the head radius. The head
+  // carries the stop number — Western digits match the app's ar/fr/en copy.
+  void _drawPin(Canvas canvas, Offset tip, double r, Color color, String label) {
     final head = tip - Offset(0, r * 2.2);
     final fill = Paint()..color = color;
     canvas.drawCircle(head, r, fill);
@@ -201,7 +263,19 @@ class _TripMapPainter extends CustomPainter {
         ..close(),
       fill,
     );
-    canvas.drawCircle(head, r * 0.38, Paint()..color = Colors.white);
+    final tp = TextPainter(
+      text: TextSpan(
+        text: label,
+        style: TextStyle(
+          color: Colors.white,
+          fontSize: r * 1.3,
+          fontWeight: FontWeight.w700,
+          height: 1.0,
+        ),
+      ),
+      textDirection: TextDirection.ltr,
+    )..layout();
+    tp.paint(canvas, Offset(head.dx - tp.width / 2, head.dy - tp.height / 2));
   }
 
   @override
