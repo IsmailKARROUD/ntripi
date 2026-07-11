@@ -8,6 +8,7 @@
 // knows which stop they are annotating.
 
 import 'package:flutter/material.dart';
+import 'package:social_flutter/core/api/api_client.dart';
 import 'package:social_flutter/core/ui/app_theme.dart';
 import 'package:social_flutter/core/ui/destructive_actions.dart';
 import 'package:social_flutter/features/itineraries/domain/annotation.dart';
@@ -108,10 +109,13 @@ class _AnnotationScreenState extends State<AnnotationScreen> {
         await widget.onSaveAsync!(result);
         if (mounted) Navigator.pop(context);
       } on Exception catch (e) {
+        // Stay open with the text intact so a failed save never discards it.
         if (!mounted) return;
         setState(() => _saving = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.toString())),
+          SnackBar(
+              content:
+                  Text(extractErrorMessage(e, AppLocalizations.of(context)!))),
         );
       }
     } else {

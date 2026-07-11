@@ -156,47 +156,32 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
     });
   }
 
+  // Persist inline via onSaveAsync so the annotation screen shows its own save
+  // spinner and stays open (text intact) on failure, instead of popping first
+  // and persisting here — which used to discard the edit on a failed save.
   Future<void> _addItineraryAnnotation() async {
-    final result = await showAnnotationScreen(context);
-    if (result == null || !mounted) return;
-    try {
-      await ref
+    await showAnnotationScreen(
+      context,
+      onSaveAsync: (result) => ref
           .read(itineraryDetailProvider(widget.itineraryId).notifier)
           .addItineraryAnnotation({
         'content': result.content,
         'type': result.type.name,
-      });
-    } on Exception catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-            content: Text(extractErrorMessage(
-                e as dynamic, AppLocalizations.of(context)!))),
-      );
-    }
+      }),
+    );
   }
 
   Future<void> _editItineraryAnnotation(ItineraryAnnotation annotation) async {
-    final result = await showAnnotationScreen(
+    await showAnnotationScreen(
       context,
       isEdit: true,
       initialContent: annotation.content,
       initialType: annotation.type,
-    );
-    if (result == null || !mounted) return;
-    try {
-      await ref
+      onSaveAsync: (result) => ref
           .read(itineraryDetailProvider(widget.itineraryId).notifier)
           .updateItineraryAnnotation(annotation.id,
-              content: result.content, type: result.type);
-    } on Exception catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-            content: Text(extractErrorMessage(
-                e as dynamic, AppLocalizations.of(context)!))),
-      );
-    }
+              content: result.content, type: result.type),
+    );
   }
 
   Future<void> _deleteItineraryAnnotation(
@@ -225,32 +210,22 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
 
   // stop is passed so the screen can show the stop context card.
   Future<void> _addAnnotation(Stop stop) async {
-    final result = await showAnnotationScreen(
+    await showAnnotationScreen(
       context,
       stopName:
           stop.placeName ?? AppLocalizations.of(context)!.stopFallbackName,
       stopSubtitle: stop.placeAddress,
-    );
-    if (result == null || !mounted) return;
-    try {
-      await ref
+      onSaveAsync: (result) => ref
           .read(itineraryDetailProvider(widget.itineraryId).notifier)
           .addAnnotation(stop.id, {
         'content': result.content,
         'type': result.type.name,
-      });
-    } on Exception catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-            content: Text(extractErrorMessage(
-                e as dynamic, AppLocalizations.of(context)!))),
-      );
-    }
+      }),
+    );
   }
 
   Future<void> _editAnnotation(Stop stop, Annotation annotation) async {
-    final result = await showAnnotationScreen(
+    await showAnnotationScreen(
       context,
       isEdit: true,
       initialContent: annotation.content,
@@ -258,21 +233,11 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
       stopName:
           stop.placeName ?? AppLocalizations.of(context)!.stopFallbackName,
       stopSubtitle: stop.placeAddress,
-    );
-    if (result == null || !mounted) return;
-    try {
-      await ref
+      onSaveAsync: (result) => ref
           .read(itineraryDetailProvider(widget.itineraryId).notifier)
           .updateAnnotation(stop.id, annotation.id,
-              content: result.content, type: result.type);
-    } on Exception catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-            content: Text(extractErrorMessage(
-                e as dynamic, AppLocalizations.of(context)!))),
-      );
-    }
+              content: result.content, type: result.type),
+    );
   }
 
   Future<void> _deleteAnnotation(String stopId, Annotation annotation) async {
