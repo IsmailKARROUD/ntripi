@@ -207,6 +207,8 @@ class Itinerary {
     String? userId,
     String? title,
     String? description,
+    // Explicit clear — the `??` fallback below can't null a field, only replace it.
+    bool clearDescription = false,
     String? coverImageUrl,
     // Explicit clear — the `??` fallback below can't null a field, only replace it.
     bool clearCoverImageUrl = false,
@@ -227,7 +229,7 @@ class Itinerary {
       id: id ?? this.id,
       userId: userId ?? this.userId,
       title: title ?? this.title,
-      description: description ?? this.description,
+      description: clearDescription ? null : (description ?? this.description),
       coverImageUrl:
           clearCoverImageUrl ? null : (coverImageUrl ?? this.coverImageUrl),
       totalDurationMin: totalDurationMin ?? this.totalDurationMin,

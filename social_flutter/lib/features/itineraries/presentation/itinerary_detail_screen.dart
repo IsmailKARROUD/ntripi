@@ -104,31 +104,22 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
 
   void _enterEditMode() => setState(() => _editMode = true);
 
-  // Opens the shared markdown editor for the description, then persists the
-  // returned value. updateHeader mutates the provider in place, so the row here
-  // rebuilds with the new text — no explicit refresh needed.
+  // Opens the shared markdown editor for the description. It persists inline via
+  // onSave (showing a spinner and surfacing errors itself), so it only returns
+  // after a successful save. updateHeader mutates the provider in place, so the
+  // row here rebuilds with the new text — no explicit refresh needed.
   Future<void> _editDescription(String? current) async {
     final l10n = AppLocalizations.of(context)!;
-    final result = await editMarkdownField(
+    await editMarkdownField(
       context,
       initialText: current ?? '',
       title: l10n.descriptionLabel,
       helpTitle: l10n.descriptionLabel,
       helpMessage: l10n.descriptionHelp,
-    );
-    if (result == null || !mounted) return;
-    try {
-      await ref
+      onSave: (value) => ref
           .read(itineraryDetailProvider(widget.itineraryId).notifier)
-          .updateHeader({'description': result.isEmpty ? null : result});
-    } on Exception catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-            content: Text(extractErrorMessage(
-                e as dynamic, AppLocalizations.of(context)!))),
-      );
-    }
+          .updateHeader({'description': value.isEmpty ? null : value}),
+    );
   }
 
   // Pops the help card out of the hero's Edit pencil, telling the owner to tap

@@ -187,9 +187,17 @@ class ItineraryDetailNotifier extends AsyncNotifier<Itinerary> {
         .read(itineraryRepositoryProvider)
         .updateItinerary(arg, data);
     state.whenData((current) {
+      // The PATCH response is an ItinerarySummary, which omits `description`, so
+      // `updated.description` is always null — adopt the just-saved value from the
+      // request payload instead (the server stored it verbatim). Absent key means
+      // the caller didn't touch the description, so keep the current one.
+      final descProvided = data.containsKey('description');
+      final newDescription =
+          descProvided ? data['description'] as String? : current.description;
       state = AsyncData(current.copyWith(
         title: updated.title,
-        description: updated.description,
+        description: newDescription,
+        clearDescription: descProvided && newDescription == null,
         visibility: updated.visibility,
         currency: updated.currency,
         updatedAt: updated.updatedAt,
