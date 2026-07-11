@@ -561,7 +561,9 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
           .read(itineraryDetailProvider(widget.itineraryId).notifier)
           .deleteStop(widget.stopId!);
       if (!mounted) return;
-      context.pop();
+      // Skip past the stop detail screen below us — it would reload the
+      // just-deleted stop and show "stop not found". Go straight to itinerary.
+      context.go('/itineraries/${widget.itineraryId}');
     } on Exception catch (e) {
       if (!mounted) return;
       setState(() => _saving = false);
