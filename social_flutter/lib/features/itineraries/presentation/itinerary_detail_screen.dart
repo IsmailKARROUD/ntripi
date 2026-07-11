@@ -440,7 +440,10 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                         itineraryId: widget.itineraryId,
                         editMode: canEdit,
                         trackIndex: trackIndex,
-                        canMoveToTrack: canEdit,
+                        // Only meaningful when there's somewhere to move to:
+                        // another track exists, or this track has parallels to extract.
+                        canMoveToTrack: canEdit &&
+                            (tracks.length > 1 || trackStops.length > 1),
                         onMoveToTrack: canEdit
                             ? (activeStop) => showMoveStopToTrackSheet(
                                   context: context,
