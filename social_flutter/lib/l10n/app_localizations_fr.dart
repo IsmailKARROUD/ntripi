@@ -1968,9 +1968,6 @@ class AppLocalizationsFr extends AppLocalizations {
   String get viewMore => '… voir plus';
 
   @override
-  String get addNoteButton => 'Ajouter une note';
-
-  @override
   String get imageTooLarge => 'L\'image est trop volumineuse (max 10 Mo).';
 
   @override

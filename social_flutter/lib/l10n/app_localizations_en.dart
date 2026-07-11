@@ -1931,9 +1931,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get viewMore => '... view more';
 
   @override
-  String get addNoteButton => 'Add note';
-
-  @override
   String get imageTooLarge => 'Image is too large (max 10 MB).';
 
   @override

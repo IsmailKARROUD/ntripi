@@ -1988,9 +1988,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get viewMore => '... عرض المزيد';
 
   @override
-  String get addNoteButton => 'إضافة ملاحظة';
-
-  @override
   String get imageTooLarge => 'الصورة كبيرة جدًا (الحد الأقصى 10 ميغابايت).';
 
   @override

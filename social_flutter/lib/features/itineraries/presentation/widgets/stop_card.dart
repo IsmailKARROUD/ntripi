@@ -348,7 +348,7 @@ class _AnnotationChipsRow extends StatelessWidget {
                   const Icon(Icons.add_rounded, size: 13, color: kEditBlue),
                   const SizedBox(width: 3),
                   Text(
-                    AppLocalizations.of(context)!.addNoteButton,
+                    AppLocalizations.of(context)!.addAnnotationButton,
                     style: const TextStyle(fontSize: 12, color: kEditBlue),
                   ),
                 ],

@@ -3406,12 +3406,6 @@ abstract class AppLocalizations {
   /// **'... view more'**
   String get viewMore;
 
-  /// No description provided for @addNoteButton.
-  ///
-  /// In en, this message translates to:
-  /// **'Add note'**
-  String get addNoteButton;
-
   /// No description provided for @imageTooLarge.
   ///
   /// In en, this message translates to:

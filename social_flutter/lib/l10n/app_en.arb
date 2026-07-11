@@ -829,7 +829,6 @@
   "notesLabel": "Notes",
   "viewLess": "view less",
   "viewMore": "... view more",
-  "addNoteButton": "Add note",
   "imageTooLarge": "Image is too large (max 10 MB).",
   "couldNotLoadImage": "Could not load image. Please try another.",
   "pinchToZoomHint": "Pinch to zoom · Drag to reposition",

@@ -701,7 +701,6 @@
   "notesLabel": "Notes",
   "viewLess": "voir moins",
   "viewMore": "… voir plus",
-  "addNoteButton": "Ajouter une note",
   "imageTooLarge": "L'image est trop volumineuse (max 10 Mo).",
   "couldNotLoadImage": "Impossible de charger l'image. Veuillez en essayer une autre.",
   "pinchToZoomHint": "Pincez pour zoomer · Faites glisser pour repositionner",
