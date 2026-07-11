@@ -93,6 +93,7 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
   final Map<String, GlobalKey> _trackKeys = {};
   // Anchors the "tap Edit to add stops" popover to the hero's Edit pencil.
   final GlobalKey _editButtonKey = GlobalKey();
+  final GlobalKey _editDetailsButtonKey = GlobalKey();
   bool _creationHintShown = false; // one-shot guard for the just-created auto-hint
   //start with map hidden on mobile to avoid unnecessary API calls and improve performance, since the map is less likely to be used on mobile and can be accessed via a button
   bool _mapVisible = false;
@@ -135,6 +136,21 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
       title: l10n.addStopHintTitle,
       message: l10n.addStopHintMessage,
       pointer: true, // draw a beak pointing up at the Edit pencil
+    );
+  }
+
+  // Owner tapped the placeholder cover: point them at the Edit details button
+  // (which opens the form holding CoverImageField). Anchor is only laid out in
+  // read mode — skip silently in edit mode, same as the add-stop hint.
+  void _showAddCoverHint() {
+    final ctx = _editDetailsButtonKey.currentContext;
+    if (ctx == null) return;
+    final l10n = AppLocalizations.of(context)!;
+    showFieldHelp(
+      ctx,
+      title: l10n.addCoverImage,
+      message: l10n.addCoverHintMessage,
+      pointer: true, // draw a beak pointing up at the Edit details button
     );
   }
 
@@ -631,6 +647,8 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                             isOwner: isOwner,
                             editMode: _editMode,
                             editButtonKey: _editButtonKey,
+                            editDetailsButtonKey: _editDetailsButtonKey,
+                            onCoverTap: isOwner ? _showAddCoverHint : null,
                             onBack: () => context.pop(),
                             onShare: itinerary.visibility !=
                                     ItineraryVisibility.onlyMe
@@ -1083,11 +1101,15 @@ class _CoverHero extends StatefulWidget {
   final bool editMode;
   // Attached to the Edit pencil so the parent can anchor the add-stop hint to it.
   final GlobalKey editButtonKey;
+  // Attached to the Edit details button so the add-cover hint can point at it.
+  final GlobalKey editDetailsButtonKey;
   final VoidCallback onBack;
   final VoidCallback? onShare;
   final VoidCallback? onEditDetails;
   final VoidCallback? onEnterEdit;
   final VoidCallback? onExitEdit;
+  // Owner-only tap on the placeholder cover (null makes it inert for viewers).
+  final VoidCallback? onCoverTap;
 
   const _CoverHero({
     required this.coverUrl,
@@ -1095,11 +1117,13 @@ class _CoverHero extends StatefulWidget {
     required this.isOwner,
     required this.editMode,
     required this.editButtonKey,
+    required this.editDetailsButtonKey,
     required this.onBack,
     this.onShare,
     this.onEditDetails,
     this.onEnterEdit,
     this.onExitEdit,
+    this.onCoverTap,
   });
 
   @override
@@ -1138,22 +1162,32 @@ class _CoverHeroState extends State<_CoverHero> {
               },
             )
           else
-            const ItineraryCoverPlaceholder(
-                labelAlignment: Alignment(0, 0.1)),
+            GestureDetector(
+              // opaque: the trip-map CustomPaint doesn't hit-test, so without
+              // this only the label pill would register the tap
+              behavior: HitTestBehavior.opaque,
+              onTap: widget.onCoverTap,
+              child: const ItineraryCoverPlaceholder(
+                  labelAlignment: Alignment(0, 0.1)),
+            ),
 
-          // Gradient overlay: dark at top + bottom, transparent in middle
-          const DecoratedBox(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                stops: [0.0, 0.3, 0.6, 1.0],
-                colors: [
-                  Color(0x661A2A1E),
-                  Color(0x001A2A1E),
-                  Color(0x001A2A1E),
-                  Color(0xB31A2A1E),
-                ],
+          // Gradient overlay: dark at top + bottom, transparent in middle.
+          // IgnorePointer: a BoxDecoration hit-tests as opaque, which would
+          // swallow taps meant for the placeholder cover below.
+          const IgnorePointer(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  stops: [0.0, 0.3, 0.6, 1.0],
+                  colors: [
+                    Color(0x661A2A1E),
+                    Color(0x001A2A1E),
+                    Color(0x001A2A1E),
+                    Color(0xB31A2A1E),
+                  ],
+                ),
               ),
             ),
           ),
@@ -1186,6 +1220,7 @@ class _CoverHeroState extends State<_CoverHero> {
                   ],
                   if (widget.isOwner) ...[
                     _GlassButton(
+                      key: widget.editDetailsButtonKey,
                       icon: Icons.tune_rounded,
                       onTap: widget.onEditDetails,
                     ),
@@ -1254,7 +1289,7 @@ class _GlassButton extends StatelessWidget {
   final IconData icon;
   final VoidCallback? onTap;
 
-  const _GlassButton({required this.icon, this.onTap});
+  const _GlassButton({super.key, required this.icon, this.onTap});
 
   @override
   Widget build(BuildContext context) {

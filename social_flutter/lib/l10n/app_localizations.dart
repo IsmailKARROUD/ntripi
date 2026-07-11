@@ -538,6 +538,12 @@ abstract class AppLocalizations {
   /// **'To add stops, tap Edit ✎ at the top.'**
   String get addStopHintMessage;
 
+  /// No description provided for @addCoverHintMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'To add a cover image, tap this button at the top.'**
+  String get addCoverHintMessage;
+
   /// No description provided for @stopCount.
   ///
   /// In en, this message translates to:

@@ -237,6 +237,10 @@ class AppLocalizationsAr extends AppLocalizations {
   String get addStopHintMessage => 'لإضافة محطات، اضغط على تعديل ✎ في الأعلى.';
 
   @override
+  String get addCoverHintMessage =>
+      'لإضافة صورة غلاف، اضغط على هذا الزر في الأعلى.';
+
+  @override
   String stopCount(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,

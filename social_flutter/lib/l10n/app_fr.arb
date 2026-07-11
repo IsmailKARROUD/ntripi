@@ -79,6 +79,7 @@
   "noStopsYet": "Aucune étape",
   "addStopHintTitle": "Ajoutez vos étapes",
   "addStopHintMessage": "Pour ajouter des étapes, appuyez sur Modifier ✎ en haut.",
+  "addCoverHintMessage": "Pour ajouter une image de couverture, appuyez sur ce bouton en haut.",
   "stopCount": "{count, plural, one{{count} étape} other{{count} étapes}}",
   "expand": "Agrandir",
   "tapToSeeStops": "Toucher pour voir les étapes",

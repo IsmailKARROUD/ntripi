@@ -244,6 +244,10 @@ class AppLocalizationsFr extends AppLocalizations {
       'Pour ajouter des étapes, appuyez sur Modifier ✎ en haut.';
 
   @override
+  String get addCoverHintMessage =>
+      'Pour ajouter une image de couverture, appuyez sur ce bouton en haut.';
+
+  @override
   String stopCount(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
