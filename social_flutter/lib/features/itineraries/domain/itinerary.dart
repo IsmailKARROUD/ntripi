@@ -208,6 +208,8 @@ class Itinerary {
     String? title,
     String? description,
     String? coverImageUrl,
+    // Explicit clear — the `??` fallback below can't null a field, only replace it.
+    bool clearCoverImageUrl = false,
     int? totalDurationMin,
     double? totalCost,
     String? currency,
@@ -226,7 +228,8 @@ class Itinerary {
       userId: userId ?? this.userId,
       title: title ?? this.title,
       description: description ?? this.description,
-      coverImageUrl: coverImageUrl ?? this.coverImageUrl,
+      coverImageUrl:
+          clearCoverImageUrl ? null : (coverImageUrl ?? this.coverImageUrl),
       totalDurationMin: totalDurationMin ?? this.totalDurationMin,
       totalCost: totalCost ?? this.totalCost,
       currency: currency ?? this.currency,

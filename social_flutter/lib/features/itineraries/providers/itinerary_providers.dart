@@ -193,6 +193,11 @@ class ItineraryDetailNotifier extends AsyncNotifier<Itinerary> {
         visibility: updated.visibility,
         currency: updated.currency,
         updatedAt: updated.updatedAt,
+        // Cover image is deleted/uploaded BEFORE this PATCH, so the response
+        // carries the authoritative URL — adopt it (clearing when removed) so
+        // stale covers don't linger after a remove.
+        coverImageUrl: updated.coverImageUrl,
+        clearCoverImageUrl: updated.coverImageUrl == null,
       ));
     });
     return updated;
