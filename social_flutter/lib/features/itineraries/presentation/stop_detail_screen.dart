@@ -254,6 +254,18 @@ class _StopHero extends StatelessWidget {
     required this.onEdit,
   });
 
+  // Prefer the human address; fall back to raw coordinates so a map-picked
+  // stop (lat/lng but no address text) still shows its location.
+  String? get _locationText {
+    if (stop.placeAddress != null && stop.placeAddress!.trim().isNotEmpty) {
+      return stop.placeAddress!.trim();
+    }
+    if (stop.lat != null && stop.lng != null) {
+      return '${stop.lat!.toStringAsFixed(5)}, ${stop.lng!.toStringAsFixed(5)}';
+    }
+    return null;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -331,8 +343,7 @@ class _StopHero extends StatelessWidget {
                         height: 1.1,
                       ),
                     ),
-                    if (stop.placeAddress != null &&
-                        stop.placeAddress!.isNotEmpty)
+                    if (_locationText != null)
                       Padding(
                         padding: const EdgeInsets.only(top: 2),
                         child: Row(
@@ -342,7 +353,7 @@ class _StopHero extends StatelessWidget {
                             const SizedBox(width: 4),
                             Expanded(
                               child: Text(
-                                stop.placeAddress!,
+                                _locationText!,
                                 style: const TextStyle(
                                     fontSize: 12,
                                     color: kText2,
@@ -352,10 +363,48 @@ class _StopHero extends StatelessWidget {
                           ],
                         ),
                       ),
+                    if (stop.placeType != null)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 8),
+                        child: _PlaceTypeChip(placeType: stop.placeType!),
+                      ),
                   ],
                 ),
               ),
             ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─── Place type chip ──────────────────────────────────────────────────────────
+class _PlaceTypeChip extends StatelessWidget {
+  final PlaceType placeType;
+  const _PlaceTypeChip({required this.placeType});
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: placeType.color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(placeType.icon, size: 14, color: placeType.color),
+          const SizedBox(width: 5),
+          Text(
+            placeType.label(l10n),
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              color: placeType.color,
+            ),
           ),
         ],
       ),

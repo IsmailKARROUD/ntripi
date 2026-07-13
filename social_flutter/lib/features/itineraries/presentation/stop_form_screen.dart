@@ -72,6 +72,10 @@ class StopFormScreen extends ConsumerStatefulWidget {
   ConsumerState<StopFormScreen> createState() => _StopFormScreenState();
 }
 
+// Distinguishes an explicit "None" tap from a dismissed (tap-outside/back)
+// bottom sheet — both would otherwise pop with null.
+const Object _clearPlaceTypeSentinel = Object();
+
 class _StopFormScreenState extends ConsumerState<StopFormScreen> {
   final _formKey = GlobalKey<FormState>();
   final _searchController = TextEditingController();
@@ -422,7 +426,9 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
           'place_address': _placeAddressController.text.trim(),
         if (_lat != null) 'lat': _lat,
         if (_lng != null) 'lng': _lng,
-        if (_placeType != null) 'place_type': _placeType!.name,
+        // Always send place_type (even null) so clearing it persists — the
+        // backend's exclude_unset means an omitted key leaves the old value.
+        'place_type': _placeType?.name,
         if (_totalDurationMin != null) 'duration_min': _totalDurationMin,
         'cost': double.tryParse(_costController.text.trim()) ?? 0.0,
         'is_free': _isFree,
@@ -1181,7 +1187,7 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
 
   // ── Place type picker bottom sheet ──────────────────────────────────────
   Future<void> _showPlaceTypePicker() async {
-    final picked = await showModalBottomSheet<PlaceType>(
+    final picked = await showModalBottomSheet<Object>(
       context: context,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
@@ -1264,17 +1270,19 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                   ),
                   title: Text(AppLocalizations.of(context)!.noneOption,
                       style: const TextStyle(color: kText2)),
-                  onTap: () => Navigator.pop(ctx, null),
+                  onTap: () => Navigator.pop(ctx, _clearPlaceTypeSentinel),
                 ),
             ],
           ),
         ),
       ),
     );
-    // null means "clear" — but showModalBottomSheet returns null for dismiss too,
-    // so only update when the sheet returned a value (including the "None" tap
-    // which pops with null — we handle via a distinct sentinel return).
-    if (mounted && picked != null) setState(() => _placeType = picked);
+    if (!mounted || picked == null) return;
+    if (picked == _clearPlaceTypeSentinel) {
+      setState(() => _placeType = null);
+    } else {
+      setState(() => _placeType = picked as PlaceType);
+    }
   }
 
   // ── Annotations section content ──────────────────────────────────────────
