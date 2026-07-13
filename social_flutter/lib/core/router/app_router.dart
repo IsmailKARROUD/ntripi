@@ -397,9 +397,12 @@ class _OfflineBanner extends StatelessWidget {
             children: [
               const Icon(Icons.wifi_off_rounded, color: Colors.white, size: 16),
               const SizedBox(width: 8),
-              Text(
-                l10n.offlineBanner,
-                style: const TextStyle(color: Colors.white, fontSize: 13, height: 1.3),
+              Expanded(
+                child: Text(
+                  l10n.offlineBanner,
+                  style: const TextStyle(color: Colors.white, fontSize: 13, height: 1.3),
+                  textAlign: TextAlign.center
+                ),
               ),
             ],
           ),
