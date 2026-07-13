@@ -2,6 +2,7 @@
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:social_flutter/core/api/api_client.dart';
+import 'package:social_flutter/core/connectivity/connectivity_service.dart';
 import 'package:social_flutter/features/follows/data/follow_repository.dart';
 import 'package:social_flutter/shared/models/follow.dart';
 
@@ -18,6 +19,8 @@ class FollowRequestsNotifier extends AsyncNotifier<List<FollowRequestItem>> {
   }
 
   Future<void> refresh() async {
+    // Offline: keep cached AsyncData — a forced refresh could only degrade it.
+    if (!isOnlineNowRef(ref)) return;
     state = const AsyncLoading();
     state = await AsyncValue.guard(
       () => ref
@@ -84,6 +87,8 @@ class FollowersNotifier extends AsyncNotifier<List<FollowerListItem>> {
   /// Called by the RefreshIndicator (pull-to-refresh). Forces a fresh server
   /// fetch so a 304 with the cached body can't silently no-op the refresh.
   Future<void> refresh() async {
+    // Offline: keep cached AsyncData — a forced refresh could only degrade it.
+    if (!isOnlineNowRef(ref)) return;
     state = const AsyncLoading();
     state = await AsyncValue.guard(
       () => ref.read(followRepositoryProvider).getFollowers(
@@ -112,6 +117,8 @@ class FollowingNotifier extends AsyncNotifier<List<FollowerListItem>> {
 
   /// Re-fetches from the server and replaces the current state.
   Future<void> refresh() async {
+    // Offline: keep cached AsyncData — a forced refresh could only degrade it.
+    if (!isOnlineNowRef(ref)) return;
     state = const AsyncLoading();
     state = await AsyncValue.guard(
       () => ref.read(followRepositoryProvider).getFollowing(

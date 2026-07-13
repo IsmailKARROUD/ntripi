@@ -7,6 +7,7 @@
 //   feedProvider     — paginated list of FeedItem with infinite scroll.
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:social_flutter/core/connectivity/connectivity_service.dart';
 import 'package:social_flutter/features/feed/data/feed_repository.dart';
 import 'package:social_flutter/features/feed/domain/feed_item.dart';
 
@@ -71,6 +72,8 @@ class FeedNotifier extends AsyncNotifier<List<FeedItem>> {
 
   /// Pull-to-refresh / retry — re-fetch page 0, bypassing the HTTP cache.
   Future<void> refresh() async {
+    // Offline: keep cached AsyncData — a forced refresh could only degrade it.
+    if (!isOnlineNowRef(ref)) return;
     state = const AsyncLoading();
     state = await AsyncValue.guard(() async {
       final sort = ref.read(feedSortProvider);

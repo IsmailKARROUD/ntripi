@@ -7,6 +7,7 @@
 //   placeSearchProvider        — Nominatim suggestions for the stop form
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:social_flutter/core/connectivity/connectivity_service.dart';
 import 'package:social_flutter/core/providers/locale_provider.dart';
 import 'package:social_flutter/core/services/geocoding_service.dart';
 import 'package:social_flutter/features/itineraries/data/itinerary_repository.dart';
@@ -29,6 +30,8 @@ class MyItinerariesNotifier extends AsyncNotifier<List<Itinerary>> {
   }
 
   Future<void> refresh() async {
+    // Offline: keep cached AsyncData — a forced refresh could only degrade it.
+    if (!isOnlineNowRef(ref)) return;
     state = const AsyncLoading();
     state = await AsyncValue.guard(
       () => ref
@@ -93,6 +96,8 @@ class ItineraryDetailNotifier extends AsyncNotifier<Itinerary> {
   /// (bypasses the cache validator) so a 304 with a stale local body can't
   /// silently no-op a pull-to-refresh.
   Future<void> refresh() async {
+    // Offline: keep cached AsyncData — a forced refresh could only degrade it.
+    if (!isOnlineNowRef(ref)) return;
     state = const AsyncLoading();
     state = await AsyncValue.guard(
       () => ref
@@ -351,6 +356,8 @@ class UserItinerariesNotifier extends AsyncNotifier<List<Itinerary>> {
   }
 
   Future<void> refresh() async {
+    // Offline: keep cached AsyncData — a forced refresh could only degrade it.
+    if (!isOnlineNowRef(ref)) return;
     state = const AsyncLoading();
     state = await AsyncValue.guard(
       () => ref
@@ -412,6 +419,8 @@ class RatingsPageNotifier extends AsyncNotifier<RatingsPage> {
   }
 
   Future<void> refresh() async {
+    // Offline: keep cached AsyncData — a forced refresh could only degrade it.
+    if (!isOnlineNowRef(ref)) return;
     state = const AsyncLoading();
     state = await AsyncValue.guard(
       () => ref

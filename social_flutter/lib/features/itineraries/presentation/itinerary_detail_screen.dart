@@ -59,6 +59,7 @@ import 'package:social_flutter/features/itineraries/presentation/widgets/segment
 import 'package:social_flutter/features/itineraries/presentation/widgets/track_reorder_view.dart';
 import 'package:social_flutter/shared/widgets/field_help.dart';
 import 'package:social_flutter/shared/widgets/loaders.dart';
+import 'package:social_flutter/core/connectivity/connectivity_service.dart';
 import 'package:social_flutter/shared/widgets/markdown_edit_screen.dart';
 import 'package:social_flutter/shared/widgets/offline_gate.dart';
 import 'package:social_flutter/shared/widgets/shadow_divider.dart';
@@ -621,6 +622,9 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
 
                   return RefreshIndicator(
                     onRefresh: () async {
+                      // Offline: skip entirely — evicting the cover would
+                      // delete an image the device can't re-download.
+                      if (!isOnlineNow(ref)) return;
                       // R2 reuses the same key on cover replacement, so the
                       // URL string never changes. Evict CachedNetworkImage's
                       // disk + memory entry for the current cover URL so a

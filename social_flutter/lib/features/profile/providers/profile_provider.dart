@@ -13,6 +13,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:social_flutter/core/api/api_client.dart';
 import 'package:social_flutter/core/api/api_endpoints.dart';
 import 'package:social_flutter/core/cache/image_cache.dart';
+import 'package:social_flutter/core/connectivity/connectivity_service.dart';
 import 'package:social_flutter/features/profile/data/profile_repository.dart';
 import 'package:social_flutter/shared/models/user.dart';
 
@@ -63,6 +64,8 @@ class MyProfileNotifier extends AsyncNotifier<User> {
 
   /// Refresh from server (e.g., after editing the profile).
   Future<void> refresh() async {
+    // Offline: keep cached AsyncData — a forced refresh could only degrade it.
+    if (!isOnlineNowRef(ref)) return;
     state = const AsyncLoading();
     state = await AsyncValue.guard(
       () => ref.read(profileRepositoryProvider).getMyProfile(),
@@ -170,6 +173,8 @@ class UserProfileNotifier extends AsyncNotifier<User> {
   }
 
   Future<void> refresh() async {
+    // Offline: keep cached AsyncData — a forced refresh could only degrade it.
+    if (!isOnlineNowRef(ref)) return;
     final userId = arg;
     state = const AsyncLoading();
     state = await AsyncValue.guard(

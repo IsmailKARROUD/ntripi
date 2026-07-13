@@ -6,6 +6,7 @@
 // Cross-session caching happens at the HTTP layer via ETag/304.
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:social_flutter/core/connectivity/connectivity_service.dart';
 import 'package:social_flutter/features/profile/domain/visited_location.dart';
 import 'package:social_flutter/features/profile/providers/profile_provider.dart';
 
@@ -19,6 +20,8 @@ class UserLocationsNotifier extends AsyncNotifier<List<VisitedLocation>> {
   }
 
   Future<void> refresh() async {
+    // Offline: keep cached AsyncData — a forced refresh could only degrade it.
+    if (!isOnlineNowRef(ref)) return;
     final userId = arg;
     state = const AsyncLoading();
     state = await AsyncValue.guard(

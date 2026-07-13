@@ -89,6 +89,9 @@ class ItineraryListScreen extends ConsumerWidget {
               ),
               data: (itineraries) => RefreshIndicator(
                 onRefresh: () async {
+                  // Offline: skip entirely — evicting covers would delete
+                  // images the device can't re-download.
+                  if (!isOnlineNow(ref)) return;
                   // Evict CachedNetworkImage entries so a pull-to-refresh
                   // shows updated cover images replaced from another device.
                   await Future.wait([

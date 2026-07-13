@@ -51,6 +51,11 @@ Options forceRefreshOptions() => Options(
       extra: const CacheOptions(
         store: null,
         policy: CachePolicy.refresh,
+        // Per-request options REPLACE the interceptor's globals — restate the
+        // stale-on-error fallback or offline/captive-portal refreshes error
+        // out instead of re-serving the cached response.
+        hitCacheOnErrorExcept: [],
+        maxStale: Duration(days: 7),
       ).toExtra(),
     );
 
