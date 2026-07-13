@@ -26,6 +26,7 @@ import 'package:social_flutter/shared/models/follow.dart';
 import 'package:social_flutter/l10n/app_localizations.dart';
 import 'package:social_flutter/shared/widgets/editorial_widgets.dart';
 import 'package:social_flutter/shared/widgets/loaders.dart';
+import 'package:social_flutter/shared/widgets/offline_gate.dart';
 import 'package:social_flutter/core/utils/platform_utils.dart';
 
 enum FollowListType { followers, following }
@@ -528,22 +529,24 @@ class _PendingRequestRowState
               if (_loading)
                 const NTripiRingLoader(size: 20)
               else
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    _ActionPill(
-                        key: Key('confirmRequest_${widget.request.followId}'),
-                        label: AppLocalizations.of(context)!.confirmButton,
-                        filled: true,
-                        onTap: _accept),
-                    const SizedBox(width: 6),
-                    _ActionPill(
-                      key: Key('declineRequest_${widget.request.followId}'),
-                      icon: Icons.close_rounded,
-                      filled: false,
-                      onTap: _decline,
-                    ),
-                  ],
+                OfflineGate(
+                  builder: (_) => Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _ActionPill(
+                          key: Key('confirmRequest_${widget.request.followId}'),
+                          label: AppLocalizations.of(context)!.confirmButton,
+                          filled: true,
+                          onTap: _accept),
+                      const SizedBox(width: 6),
+                      _ActionPill(
+                        key: Key('declineRequest_${widget.request.followId}'),
+                        icon: Icons.close_rounded,
+                        filled: false,
+                        onTap: _decline,
+                      ),
+                    ],
+                  ),
                 ),
             ],
           ),

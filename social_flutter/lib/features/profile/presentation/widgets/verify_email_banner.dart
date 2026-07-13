@@ -19,6 +19,7 @@ import 'package:social_flutter/core/ui/app_theme.dart';
 import 'package:social_flutter/features/auth/providers/auth_provider.dart';
 import 'package:social_flutter/features/profile/providers/profile_provider.dart';
 import 'package:social_flutter/l10n/app_localizations.dart';
+import 'package:social_flutter/shared/widgets/offline_gate.dart';
 
 class VerifyEmailBanner extends ConsumerStatefulWidget {
   const VerifyEmailBanner({super.key});
@@ -140,17 +141,19 @@ class _VerifyEmailBannerState extends ConsumerState<VerifyEmailBanner> {
             )
           // Web can't use authenticate() — render Google's own button.
           else if (kIsWeb)
-            GoogleWebButton(onIdToken: _complete)
+            OfflineGate(builder: (_) => GoogleWebButton(onIdToken: _complete))
           else
-            FilledButton.icon(
-              onPressed: _verifyMobile,
-              icon: const Padding(
-                padding:  EdgeInsetsDirectional.only(start: 8.0),
-                child:  FaIcon(FontAwesomeIcons.google,size: 23,),
-              ), // Google logo
-              label: Padding(
-                padding: const EdgeInsetsDirectional.only(end: 8.0),
-                child: Text(l10n.verifyEmailButton),
+            OfflineGate(
+              builder: (online) => FilledButton.icon(
+                onPressed: online ? _verifyMobile : null,
+                icon: const Padding(
+                  padding: EdgeInsetsDirectional.only(start: 8.0),
+                  child: FaIcon(FontAwesomeIcons.google, size: 23),
+                ), // Google logo
+                label: Padding(
+                  padding: const EdgeInsetsDirectional.only(end: 8.0),
+                  child: Text(l10n.verifyEmailButton),
+                ),
               ),
             ),
           // Email-link alternative for users who don't want to use Google.
@@ -159,10 +162,12 @@ class _VerifyEmailBannerState extends ConsumerState<VerifyEmailBanner> {
             alignment: AlignmentDirectional.centerStart,
             child: Padding(
               padding: const EdgeInsetsDirectional.only(start: 8.0,end: 8.0),
-              child: TextButton(
-                onPressed: _resend,
-                style: TextButton.styleFrom(padding: EdgeInsets.zero),
-                child: Text(l10n.resendVerificationButton),
+              child: OfflineGate(
+                builder: (online) => TextButton(
+                  onPressed: online ? _resend : null,
+                  style: TextButton.styleFrom(padding: EdgeInsets.zero),
+                  child: Text(l10n.resendVerificationButton),
+                ),
               ),
             ),
           ),

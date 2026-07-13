@@ -17,6 +17,8 @@ import 'package:social_flutter/features/itineraries/presentation/widgets/markdow
 import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
 import 'package:social_flutter/l10n/app_localizations.dart';
 import 'package:social_flutter/shared/widgets/loaders.dart';
+import 'package:social_flutter/shared/widgets/offline_gate.dart';
+import 'package:social_flutter/shared/widgets/saving_overlay.dart';
 
 /// Opens the rating bottom sheet and returns when the user saves or dismisses.
 Future<void> showRateItineraryDialog(
@@ -145,7 +147,17 @@ class _RateItinerarySheetState extends State<_RateItinerarySheet> {
     final l10n = AppLocalizations.of(context)!;
     final canSave = _overall != null && !_saving;
 
-    return SingleChildScrollView(
+    // PopScope blocks back-button and barrier-tap dismissal mid-save; the
+    // overlay blocks in-sheet taps.
+    return PopScope(
+      canPop: !_saving,
+      child: SavingOverlay(
+        saving: _saving,
+        tint: kSurface,
+        loaderSize: 40,
+        // Match the sheet shape — content starts at the very top of the sheet.
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        child: SingleChildScrollView(
       padding: EdgeInsets.only(
         bottom: MediaQuery.of(context).viewInsets.bottom + 16,
       ),
@@ -315,11 +327,13 @@ class _RateItinerarySheetState extends State<_RateItinerarySheet> {
             child: Row(
               children: [
                 if (widget.current != null) ...[
-                  IconButton(
-                    icon: Icon(Icons.delete_outline,
-                        color: Theme.of(context).colorScheme.error),
-                    tooltip: l10n.removeMyRatingTooltip,
-                    onPressed: _saving ? null : _deleteRating,
+                  OfflineGate(
+                    builder: (online) => IconButton(
+                      icon: Icon(Icons.delete_outline,
+                          color: Theme.of(context).colorScheme.error),
+                      tooltip: l10n.removeMyRatingTooltip,
+                      onPressed: (_saving || !online) ? null : _deleteRating,
+                    ),
                   ),
                   const SizedBox(width: 4),
                 ],
@@ -332,11 +346,13 @@ class _RateItinerarySheetState extends State<_RateItinerarySheet> {
                 ),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: FilledButton(
-                    onPressed: canSave ? _save : null,
-                    child: _saving
-                        ? const NTripiRingLoader(size: 18)
-                        : Text(l10n.saveButton),
+                  child: OfflineGate(
+                    builder: (online) => FilledButton(
+                      onPressed: (canSave && online) ? _save : null,
+                      child: _saving
+                          ? const NTripiRingLoader(size: 18)
+                          : Text(l10n.saveButton),
+                    ),
                   ),
                 ),
               ],
@@ -344,6 +360,8 @@ class _RateItinerarySheetState extends State<_RateItinerarySheet> {
           ),
           const SizedBox(height: 8),
         ],
+      ),
+        ),
       ),
     );
   }

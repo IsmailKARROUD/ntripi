@@ -7,6 +7,8 @@ import 'package:social_flutter/core/ui/app_theme.dart';
 import 'package:social_flutter/features/auth/providers/auth_provider.dart';
 import 'package:social_flutter/l10n/app_localizations.dart';
 import 'package:social_flutter/shared/widgets/loaders.dart';
+import 'package:social_flutter/shared/widgets/offline_gate.dart';
+import 'package:social_flutter/shared/widgets/saving_overlay.dart';
 
 /// Requests a password-reset email. The actual reset happens on a web page
 /// (opened from the email link) — this screen only triggers the email.
@@ -55,17 +57,21 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    return Scaffold(
-      backgroundColor: kSurface,
-      appBar: AppBar(
+    return SavingOverlay(
+      saving: _isLoading,
+      tint: kSurface,
+      child: Scaffold(
         backgroundColor: kSurface,
-        elevation: 0,
-        foregroundColor: kBark,
-      ),
-      body: Center(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
-          child: _sent ? _buildSent(l10n) : _buildForm(l10n),
+        appBar: AppBar(
+          backgroundColor: kSurface,
+          elevation: 0,
+          foregroundColor: kBark,
+        ),
+        body: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
+            child: _sent ? _buildSent(l10n) : _buildForm(l10n),
+          ),
         ),
       ),
     );
@@ -108,11 +114,13 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
           const SizedBox(height: 24),
           SizedBox(
             height: 54,
-            child: ElevatedButton(
-              onPressed: _isLoading ? null : _submit,
-              child: _isLoading
-                  ? const NTripiRingLoader(size: 22)
-                  : Text(l10n.forgotPasswordSubmit),
+            child: OfflineGate(
+              builder: (online) => ElevatedButton(
+                onPressed: (_isLoading || !online) ? null : _submit,
+                child: _isLoading
+                    ? const NTripiRingLoader(size: 22)
+                    : Text(l10n.forgotPasswordSubmit),
+              ),
             ),
           ),
           const SizedBox(height: 12),

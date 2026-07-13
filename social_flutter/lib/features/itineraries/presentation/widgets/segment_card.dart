@@ -22,6 +22,7 @@ import 'package:social_flutter/features/itineraries/providers/itinerary_provider
 import 'package:social_flutter/l10n/app_localizations.dart';
 import 'package:social_flutter/shared/utils/duration_format.dart';
 import 'package:social_flutter/shared/widgets/loaders.dart';
+import 'package:social_flutter/shared/widgets/offline_gate.dart';
 
 class SegmentCard extends ConsumerStatefulWidget {
   final TransitSegment segment;
@@ -151,7 +152,10 @@ class _SegmentCardState extends ConsumerState<SegmentCard> {
         ? l10n.freeLegLabel
         : formatMoney(segment.totalCost, widget.currency);
 
-    return Container(
+    // Every interactive element below (delete, leg rows, add leg) mutates —
+    // one gate at the root blocks them all offline and explains on tap.
+    return OfflineGate(
+      builder: (_) => Container(
       margin: const EdgeInsets.fromLTRB(28, 6, 28, 6),
       decoration: BoxDecoration(
         color: kTransitBg,
@@ -310,6 +314,7 @@ class _SegmentCardState extends ConsumerState<SegmentCard> {
             ),
           ],
         ],
+      ),
       ),
     );
   }

@@ -17,6 +17,8 @@ import 'package:social_flutter/l10n/app_localizations.dart';
 import 'package:social_flutter/shared/data/countries.dart';
 import 'package:social_flutter/shared/models/user.dart';
 import 'package:social_flutter/shared/widgets/markdown_edit_screen.dart';
+import 'package:social_flutter/shared/widgets/offline_gate.dart';
+import 'package:social_flutter/shared/widgets/saving_overlay.dart';
 import 'package:social_flutter/shared/widgets/user_avatar.dart';
 
 class ProfileEditForm extends ConsumerStatefulWidget {
@@ -244,7 +246,10 @@ class _ProfileEditFormState extends ConsumerState<ProfileEditForm> {
     final l10n = AppLocalizations.of(context)!;
     final user = widget.user;
 
-    return Column(
+    return SavingOverlay(
+      saving: _saving,
+      tint: kSurface,
+      child: Column(
       children: [
         SafeArea(
           bottom: false,
@@ -273,22 +278,24 @@ class _ProfileEditFormState extends ConsumerState<ProfileEditForm> {
                     ),
                   ),
                 ),
-                TextButton(
-                  onPressed: _saving ? null : _saveEdits,
-                  child: _saving
-                      ? const SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation(kForest),
+                OfflineGate(
+                  builder: (online) => TextButton(
+                    onPressed: (_saving || !online) ? null : _saveEdits,
+                    child: _saving
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation(kForest),
+                            ),
+                          )
+                        : Text(
+                            l10n.save,
+                            style: const TextStyle(
+                                fontWeight: FontWeight.w700, fontSize: 15),
                           ),
-                        )
-                      : Text(
-                          l10n.save,
-                          style: const TextStyle(
-                              fontWeight: FontWeight.w700, fontSize: 15),
-                        ),
+                  ),
                 ),
               ],
             ),
@@ -743,6 +750,7 @@ class _ProfileEditFormState extends ConsumerState<ProfileEditForm> {
           ),
         ),
       ],
+      ),
     );
   }
 }

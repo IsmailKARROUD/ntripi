@@ -1,7 +1,10 @@
 // widgets/annotation_chip.dart — Colored chip for a stop annotation.
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:social_flutter/core/connectivity/connectivity_service.dart';
 import 'package:social_flutter/features/itineraries/domain/annotation.dart';
+import 'package:social_flutter/shared/widgets/offline_gate.dart';
 
 /// Displays an annotation as a compact colored chip.
 ///
@@ -10,7 +13,7 @@ import 'package:social_flutter/features/itineraries/domain/annotation.dart';
 ///   caution → orange  (be aware)
 ///   avoid   → red     (stay away)
 ///   info    → blue    (neutral)
-class AnnotationChip extends StatelessWidget {
+class AnnotationChip extends ConsumerWidget {
   final Annotation annotation;
   final VoidCallback? onEdit;
   final VoidCallback? onDelete;
@@ -48,8 +51,15 @@ class AnnotationChip extends StatelessWidget {
   };
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final config = _configs[annotation.type]!;
+    // Edit/delete are mutations — offline the taps explain instead of firing.
+    final online = ref.watch(isOnlineProvider).value ?? true;
+    final VoidCallback? editTap =
+        online ? onEdit : (onEdit != null ? () => showOfflineHint(context) : null);
+    final VoidCallback? deleteTap = online
+        ? onDelete
+        : (onDelete != null ? () => showOfflineHint(context) : null);
 
     final textWidget = Text(
       annotation.content,
@@ -71,7 +81,7 @@ class AnnotationChip extends StatelessWidget {
           if (onEdit != null)
             Flexible(
               child: GestureDetector(
-                onTap: onEdit,
+                onTap: editTap,
                 child: textWidget,
               ),
             )
@@ -85,13 +95,13 @@ class AnnotationChip extends StatelessWidget {
           if (onEdit != null) ...[
             const SizedBox(width: 2),
             GestureDetector(
-              onTap: onEdit,
+              onTap: editTap,
               child: Icon(Icons.edit_outlined, size: 16, color: config.fg),
             ),
           ],
           if (onDelete != null)
             GestureDetector(
-              onTap: onDelete,
+              onTap: deleteTap,
               child: Icon(Icons.close, size: 18, color: config.fg),
             ),
         ],

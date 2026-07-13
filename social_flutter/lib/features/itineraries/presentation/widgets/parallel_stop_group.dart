@@ -20,6 +20,7 @@ import 'package:social_flutter/features/itineraries/presentation/widgets/stop_ca
 import 'package:expandable_page_view/expandable_page_view.dart';
 import 'package:social_flutter/l10n/app_localizations.dart';
 import 'package:social_flutter/shared/widgets/loaders.dart';
+import 'package:social_flutter/shared/widgets/offline_gate.dart';
 
 class ParallelStopGroup extends StatefulWidget {
   /// All stops in this track, sorted by rank ascending.
@@ -136,18 +137,22 @@ class _ParallelStopGroupState extends State<ParallelStopGroup> {
       children: [
         // ── "Add stop" before first track (edit mode only) ────────────────
         if (widget.editMode && widget.onAddStopBefore != null)
-          _BottomActionRow(
-            showAddStop: true,
-            addStopLoading: _addStopBeforeLoading,
-            onAddStop: _addStopBeforeLoading
-                ? null
-                : () async {
-                    setState(() => _addStopBeforeLoading = true);
-                    await widget.onAddStopBefore!();
-                    if (mounted) setState(() => _addStopBeforeLoading = false);
-                  },
-            showAddTransit: false,
-            addTransitLoading: false,
+          OfflineGate(
+            builder: (online) => _BottomActionRow(
+              showAddStop: true,
+              addStopLoading: _addStopBeforeLoading,
+              onAddStop: (_addStopBeforeLoading || !online)
+                  ? null
+                  : () async {
+                      setState(() => _addStopBeforeLoading = true);
+                      await widget.onAddStopBefore!();
+                      if (mounted) {
+                        setState(() => _addStopBeforeLoading = false);
+                      }
+                    },
+              showAddTransit: false,
+              addTransitLoading: false,
+            ),
           ),
 
         // ── Stop card row (swipeable) + side controls ─────────────────────
@@ -172,30 +177,34 @@ class _ParallelStopGroupState extends State<ParallelStopGroup> {
             if (widget.editMode &&
                 (canAddMore || hasParallels || widget.canMoveToTrack)) ...[
               const SizedBox(width: 4),
-              Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (canAddMore)
-                    _AddParallelButton(
-                      onTap: widget.onAddParallel == null
-                          ? null
-                          : () => widget.onAddParallel!(_activeStop.trackId),
-                    ),
-                  if (hasParallels)
-                    _ReorderParallelsButton(
-                      onTap: () => showReorderParallelsSheet(
-                        context: context,
-                        itineraryId: widget.itineraryId,
-                        stops: widget.stops,
+              OfflineGate(
+                builder: (online) => Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (canAddMore)
+                      _AddParallelButton(
+                        onTap: (widget.onAddParallel == null || !online)
+                            ? null
+                            : () => widget.onAddParallel!(_activeStop.trackId),
                       ),
-                    ),
-                  if (widget.canMoveToTrack)
-                    _MoveToTrackButton(
-                      onTap: widget.onMoveToTrack == null
-                          ? null
-                          : () => widget.onMoveToTrack!(_activeStop),
-                    ),
-                ],
+                    if (hasParallels)
+                      _ReorderParallelsButton(
+                        onTap: !online
+                            ? null
+                            : () => showReorderParallelsSheet(
+                                  context: context,
+                                  itineraryId: widget.itineraryId,
+                                  stops: widget.stops,
+                                ),
+                      ),
+                    if (widget.canMoveToTrack)
+                      _MoveToTrackButton(
+                        onTap: (widget.onMoveToTrack == null || !online)
+                            ? null
+                            : () => widget.onMoveToTrack!(_activeStop),
+                      ),
+                  ],
+                ),
               ),
             ],
           ],
@@ -225,25 +234,27 @@ class _ParallelStopGroupState extends State<ParallelStopGroup> {
 
         // ── Bottom action row: "Add stop" and/or "Add transit" side by side ─
         if (widget.editMode)
-          _BottomActionRow(
-            showAddStop: widget.onAddStopAfter != null,
-            addStopLoading: _addStopLoading,
-            onAddStop: widget.onAddStopAfter == null
-                ? null
-                : () async {
-                    setState(() => _addStopLoading = true);
-                    await widget.onAddStopAfter!();
-                    if (mounted) setState(() => _addStopLoading = false);
-                  },
-            showAddTransit: segment == null && widget.onAddTransit != null,
-            addTransitLoading: _addTransitLoading,
-            onAddTransit: widget.onAddTransit == null
-                ? null
-                : () async {
-                    setState(() => _addTransitLoading = true);
-                    await widget.onAddTransit!(_activeStop.id);
-                    if (mounted) setState(() => _addTransitLoading = false);
-                  },
+          OfflineGate(
+            builder: (online) => _BottomActionRow(
+              showAddStop: widget.onAddStopAfter != null,
+              addStopLoading: _addStopLoading,
+              onAddStop: (widget.onAddStopAfter == null || !online)
+                  ? null
+                  : () async {
+                      setState(() => _addStopLoading = true);
+                      await widget.onAddStopAfter!();
+                      if (mounted) setState(() => _addStopLoading = false);
+                    },
+              showAddTransit: segment == null && widget.onAddTransit != null,
+              addTransitLoading: _addTransitLoading,
+              onAddTransit: (widget.onAddTransit == null || !online)
+                  ? null
+                  : () async {
+                      setState(() => _addTransitLoading = true);
+                      await widget.onAddTransit!(_activeStop.id);
+                      if (mounted) setState(() => _addTransitLoading = false);
+                    },
+            ),
           ),
 
         // ── Segment for the active parallel ───────────────────────────────

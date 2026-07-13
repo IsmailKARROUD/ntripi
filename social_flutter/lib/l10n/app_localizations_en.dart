@@ -64,6 +64,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'You\'re Offline! Some features may be unavailable.';
 
   @override
+  String get offlineActionTitle => 'You\'re offline';
+
+  @override
+  String get offlineActionMessage =>
+      'Changes can\'t be made without an internet connection. Reconnect and try again.';
+
+  @override
   String get downloadBanner =>
       'For a better experience, download the Ntripi app.';
 

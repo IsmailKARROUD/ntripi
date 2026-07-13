@@ -13,6 +13,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:social_flutter/core/api/api_client.dart';
 import 'package:social_flutter/core/api/api_endpoints.dart';
+import 'package:social_flutter/core/connectivity/connectivity_service.dart';
 import 'package:social_flutter/core/ui/app_theme.dart';
 import 'package:social_flutter/core/ui/destructive_actions.dart';
 import 'package:social_flutter/features/itineraries/domain/allowed_user.dart';
@@ -21,6 +22,8 @@ import 'package:social_flutter/features/itineraries/providers/itinerary_provider
 import 'package:social_flutter/l10n/app_localizations.dart';
 import 'package:social_flutter/shared/models/user.dart';
 import 'package:social_flutter/shared/widgets/loaders.dart';
+import 'package:social_flutter/shared/widgets/offline_gate.dart';
+import 'package:social_flutter/shared/widgets/saving_overlay.dart';
 
 class VisibilityScreen extends ConsumerStatefulWidget {
   /// Current visibility — used to pre-select the active card.
@@ -90,7 +93,9 @@ class _VisibilityScreenState extends ConsumerState<VisibilityScreen> {
     final isRestricted = _selected == ItineraryVisibility.restricted;
     final hasItinerary = widget.itineraryId != null;
 
-    return Scaffold(
+    return SavingOverlay(
+      saving: _submitting,
+      child: Scaffold(
       backgroundColor: kSand,
       appBar: AppBar(
         backgroundColor: kSand,
@@ -160,6 +165,7 @@ class _VisibilityScreenState extends ConsumerState<VisibilityScreen> {
               ),
             ),
         ],
+      ),
       ),
     );
   }
@@ -365,8 +371,9 @@ class _AllowlistSection extends ConsumerWidget {
         const SizedBox(height: 8),
 
         // "Add people" dashed button — shows spinner while visibility is being saved
-        InkWell(
-          onTap: submitting ? null : onAddPeople,
+        OfflineGate(
+          builder: (online) => InkWell(
+          onTap: (submitting || !online) ? null : onAddPeople,
           borderRadius: BorderRadius.circular(14),
           child: Container(
             width: double.infinity,
@@ -393,6 +400,7 @@ class _AllowlistSection extends ConsumerWidget {
                       ),
                     ],
                   ),
+          ),
           ),
         ),
       ],
@@ -468,12 +476,14 @@ class _AllowRow extends StatelessWidget {
               ],
             ),
           ),
-          IconButton(
-            icon: const Icon(Icons.remove_circle_outline_rounded,
-                size: 20, color: kText3),
-            onPressed: onRemove,
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(),
+          OfflineGate(
+            builder: (online) => IconButton(
+              icon: const Icon(Icons.remove_circle_outline_rounded,
+                  size: 20, color: kText3),
+              onPressed: online ? onRemove : null,
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
+            ),
           ),
         ],
       ),
@@ -553,6 +563,8 @@ class _AddPersonDialogState extends ConsumerState<_AddPersonDialog> {
 
   @override
   Widget build(BuildContext context) {
+    // watch (not read) so open dialogs react to connectivity changes live
+    final online = ref.watch(isOnlineProvider).value ?? true;
     return AlertDialog(
       backgroundColor: kSand,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
@@ -618,7 +630,9 @@ class _AddPersonDialogState extends ConsumerState<_AddPersonDialog> {
                           style: const TextStyle(color: kText2)),
                       trailing: const Icon(Icons.add_rounded,
                           color: kForest, size: 20),
-                      onTap: () => _addUser(user),
+                      // Adding hits the allowlist API — no-op offline; the
+                      // dialog sits above the shell banner that explains why.
+                      onTap: online ? () => _addUser(user) : null,
                     );
                   },
                 ),

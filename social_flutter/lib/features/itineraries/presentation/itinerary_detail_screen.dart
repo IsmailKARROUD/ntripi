@@ -60,6 +60,7 @@ import 'package:social_flutter/features/itineraries/presentation/widgets/track_r
 import 'package:social_flutter/shared/widgets/field_help.dart';
 import 'package:social_flutter/shared/widgets/loaders.dart';
 import 'package:social_flutter/shared/widgets/markdown_edit_screen.dart';
+import 'package:social_flutter/shared/widgets/offline_gate.dart';
 import 'package:social_flutter/shared/widgets/shadow_divider.dart';
 import 'package:social_flutter/core/utils/platform_utils.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/leg_form_dialog.dart';
@@ -754,8 +755,11 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                                       if (canEdit) ...[
                                         const Spacer(),
                                         // Tinted pill matching the stop-card "Add note" affordance.
-                                        GestureDetector(
-                                          onTap: _addItineraryAnnotation,
+                                        OfflineGate(
+                                          builder: (online) => GestureDetector(
+                                          onTap: online
+                                              ? _addItineraryAnnotation
+                                              : null,
                                           child: Container(
                                             padding: const EdgeInsets.symmetric(
                                                 horizontal: 8, vertical: 4),
@@ -781,6 +785,7 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                                                 ),
                                               ],
                                             ),
+                                          ),
                                           ),
                                         ),
                                       ],
@@ -1383,13 +1388,16 @@ class _OwnerRow extends ConsumerWidget {
           ),
 
           // ── Viewer's personal rating ────────────────────────────────────
-          GestureDetector(
-            onTap: () => showRateItineraryDialog(
-              context,
-              ref,
-              itineraryId: itineraryId,
-              current: myRating,
-            ),
+          OfflineGate(
+            builder: (online) => GestureDetector(
+            onTap: !online
+                ? null
+                : () => showRateItineraryDialog(
+                      context,
+                      ref,
+                      itineraryId: itineraryId,
+                      current: myRating,
+                    ),
             child: myRating != null
                 ? Row(
                     mainAxisSize: MainAxisSize.min,
@@ -1433,6 +1441,7 @@ class _OwnerRow extends ConsumerWidget {
                       ],
                     ),
                   ),
+            ),
           ),
 
           const SizedBox(width: 10),
@@ -1600,21 +1609,25 @@ class _RateCta extends ConsumerWidget {
     final myRating = ref.watch(myRatingProvider(itineraryId)).value;
     return SizedBox(
       width: double.infinity,
-      child: FilledButton.icon(
-        onPressed: () => showRateItineraryDialog(
-          context,
-          ref,
-          itineraryId: itineraryId,
-          current: myRating,
-        ),
-        icon: const Icon(Icons.star_rounded, size: 18),
-        label: Text(myRating != null
-            ? AppLocalizations.of(context)!.updateYourRating
-            : AppLocalizations.of(context)!.rateThisTrip),
-        style: FilledButton.styleFrom(
-          backgroundColor: kForest,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      child: OfflineGate(
+        builder: (online) => FilledButton.icon(
+          onPressed: !online
+              ? null
+              : () => showRateItineraryDialog(
+                    context,
+                    ref,
+                    itineraryId: itineraryId,
+                    current: myRating,
+                  ),
+          icon: const Icon(Icons.star_rounded, size: 18),
+          label: Text(myRating != null
+              ? AppLocalizations.of(context)!.updateYourRating
+              : AppLocalizations.of(context)!.rateThisTrip),
+          style: FilledButton.styleFrom(
+            backgroundColor: kForest,
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          ),
         ),
       ),
     );

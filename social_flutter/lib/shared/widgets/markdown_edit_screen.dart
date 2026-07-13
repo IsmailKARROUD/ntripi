@@ -13,6 +13,8 @@ import 'package:social_flutter/core/ui/destructive_actions.dart';
 import 'package:social_flutter/core/utils/platform_utils.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/markdown_notes_editor.dart';
 import 'package:social_flutter/l10n/app_localizations.dart';
+import 'package:social_flutter/shared/widgets/offline_gate.dart';
+import 'package:social_flutter/shared/widgets/saving_overlay.dart';
 
 /// Opens [MarkdownEditScreen] and resolves to the edited text, or null if the
 /// user left without saving. An empty string means the field was cleared.
@@ -142,7 +144,9 @@ class _MarkdownEditScreenState extends State<MarkdownEditScreen> {
         if (!discard || !context.mounted) return;
         Navigator.of(context).pop();
       },
-      child: Scaffold(
+      child: SavingOverlay(
+        saving: _saving,
+        child: Scaffold(
         resizeToAvoidBottomInset: false,
         backgroundColor: kSand,
         appBar: AppBar(
@@ -164,14 +168,16 @@ class _MarkdownEditScreenState extends State<MarkdownEditScreen> {
                 ),
               )
             else
-              TextButton(
-                onPressed: _save,
-                child: Text(
-                  l10n.save,
-                  style: const TextStyle(
-                    color: kForest,
-                    fontWeight: FontWeight.w700,
-                    fontSize: 15,
+              OfflineGate(
+                builder: (online) => TextButton(
+                  onPressed: online ? _save : null,
+                  child: Text(
+                    l10n.save,
+                    style: TextStyle(
+                      color: online ? kForest : kText3,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 15,
+                    ),
                   ),
                 ),
               ),
@@ -193,6 +199,7 @@ class _MarkdownEditScreenState extends State<MarkdownEditScreen> {
               ),
             ),
           ),
+        ),
         ),
       ),
     );

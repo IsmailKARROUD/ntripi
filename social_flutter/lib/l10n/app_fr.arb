@@ -21,6 +21,8 @@
   "feedTopEmpty": "Pas assez de voyages évalués — voir Récents.",
 
   "offlineBanner": "Vous êtes hors ligne ! Certaines fonctionnalités peuvent être indisponibles.",
+  "offlineActionTitle": "Vous êtes hors ligne",
+  "offlineActionMessage": "Impossible de faire des modifications sans connexion internet. Rétablissez la connexion et réessayez.",
   "downloadBanner": "Pour une meilleure expérience, téléchargez l'application Ntripi.",
   "downloadBannerButton": "Télécharger",
 

@@ -31,6 +31,8 @@ import 'package:social_flutter/core/utils/platform_utils.dart';
 import 'package:social_flutter/l10n/app_localizations.dart';
 import 'package:social_flutter/shared/widgets/field_help.dart';
 import 'package:social_flutter/shared/widgets/loaders.dart';
+import 'package:social_flutter/shared/widgets/offline_gate.dart';
+import 'package:social_flutter/shared/widgets/saving_overlay.dart';
 
 class StopFormScreen extends ConsumerStatefulWidget {
   final String itineraryId;
@@ -659,7 +661,9 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
         if (didPop) return;
         if (await _confirmDiscard() && context.mounted) context.pop();
       },
-      child: Scaffold(
+      child: SavingOverlay(
+        saving: _saving,
+        child: Scaffold(
       backgroundColor: kSand,
       resizeToAvoidBottomInset: false,
       appBar: AppBar(
@@ -685,14 +689,16 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                     padding: EdgeInsets.all(16),
                     child: NTripiRingLoader(size: 20),
                   )
-                : TextButton(
-                    onPressed: _save,
-                    child: Text(
-                     l10n.save,
-                      style: const TextStyle(
-                        color: kForest,
-                        fontWeight: FontWeight.w700,
-                        fontSize: 15,
+                : OfflineGate(
+                    builder: (online) => TextButton(
+                      onPressed: online ? _save : null,
+                      child: Text(
+                        l10n.save,
+                        style: TextStyle(
+                          color: online ? kForest : kText3,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 15,
+                        ),
                       ),
                     ),
                   ),
@@ -1127,23 +1133,27 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                         ),
                         const Spacer(),
                         if (!readOnly)
-                          GestureDetector(
-                            onTap: () => _showAnnotationDialog(),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const Icon(Icons.add_rounded,
-                                    size: 14, color: kForest),
-                                const SizedBox(width: 4),
-                                Text(
-                                  l10n.addButton,
-                                  style: const TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w700,
-                                    color: kForest,
+                          OfflineGate(
+                            builder: (online) => GestureDetector(
+                              onTap:
+                                  online ? () => _showAnnotationDialog() : null,
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.add_rounded,
+                                      size: 14,
+                                      color: online ? kForest : kText3),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    l10n.addButton,
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w700,
+                                      color: online ? kForest : kText3,
+                                    ),
                                   ),
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
                           ),
                       ],
@@ -1161,16 +1171,19 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                     const SizedBox(height: 16),
                     Padding(
                       padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
-                      child: OutlinedButton.icon(
-                        onPressed: _saving ? null : _confirmDelete,
-                        icon: const Icon(Icons.delete_outline,
-                            color: kRatingRed),
-                        label: Text(
-                          l10n.deleteStopButton,
-                          style: const TextStyle(color: kRatingRed),
-                        ),
-                        style: OutlinedButton.styleFrom(
-                          side: const BorderSide(color: kRatingRed),
+                      child: OfflineGate(
+                        builder: (online) => OutlinedButton.icon(
+                          onPressed:
+                              (_saving || !online) ? null : _confirmDelete,
+                          icon: const Icon(Icons.delete_outline,
+                              color: kRatingRed),
+                          label: Text(
+                            l10n.deleteStopButton,
+                            style: const TextStyle(color: kRatingRed),
+                          ),
+                          style: OutlinedButton.styleFrom(
+                            side: const BorderSide(color: kRatingRed),
+                          ),
                         ),
                       ),
                     ),
@@ -1181,6 +1194,7 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
           ),
         ),
       ),
+        ),
       ),
     );
   }

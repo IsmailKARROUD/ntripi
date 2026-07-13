@@ -21,6 +21,8 @@
   "feedTopEmpty": "Not enough rated trips yet — check Recent.",
 
   "offlineBanner": "You're Offline! Some features may be unavailable.",
+  "offlineActionTitle": "You're offline",
+  "offlineActionMessage": "Changes can't be made without an internet connection. Reconnect and try again.",
   "downloadBanner": "For a better experience, download the Ntripi app.",
   "downloadBannerButton": "Download",
 

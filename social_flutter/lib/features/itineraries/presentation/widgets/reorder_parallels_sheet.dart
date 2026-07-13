@@ -28,6 +28,8 @@ import 'package:social_flutter/features/itineraries/data/itinerary_repository.da
 import 'package:social_flutter/features/itineraries/domain/stop.dart';
 import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
 import 'package:social_flutter/l10n/app_localizations.dart';
+import 'package:social_flutter/shared/widgets/offline_gate.dart';
+import 'package:social_flutter/shared/widgets/saving_overlay.dart';
 
 Future<void> showReorderParallelsSheet({
   required BuildContext context,
@@ -157,7 +159,10 @@ class _ReorderParallelsSheetState
         final ok = await _confirmDiscardIfDirty();
         if (ok && context.mounted) Navigator.of(context).pop();
       },
-      child: Container(
+      child: SavingOverlay(
+        saving: _busy,
+        loaderSize: 40,
+        child: Container(
         color: kSand,
         child: SafeArea(
           child: Padding(
@@ -287,16 +292,7 @@ class _ReorderParallelsSheetState
                   ),
                 ),
 
-                // ── Progress + buttons ────────────────────────────────────
-                if (_busy)
-                  const Padding(
-                    padding: EdgeInsets.only(top: 10),
-                    child: LinearProgressIndicator(
-                      minHeight: 2,
-                      color: kForest,
-                      backgroundColor: kMist,
-                    ),
-                  ),
+                // ── Buttons ──────────────────────────────────────────────
                 const SizedBox(height: 12),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.end,
@@ -307,15 +303,19 @@ class _ReorderParallelsSheetState
                       child: Text(AppLocalizations.of(context)!.cancel),
                     ),
                     const SizedBox(width: 8),
-                    FilledButton(
-                      onPressed: (_busy || !_dirty) ? null : _onSave,
-                      child: Text(AppLocalizations.of(context)!.save),
+                    OfflineGate(
+                      builder: (online) => FilledButton(
+                        onPressed:
+                            (_busy || !_dirty || !online) ? null : _onSave,
+                        child: Text(AppLocalizations.of(context)!.save),
+                      ),
                     ),
                   ],
                 ),
               ],
             ),
           ),
+        ),
         ),
       ),
     );

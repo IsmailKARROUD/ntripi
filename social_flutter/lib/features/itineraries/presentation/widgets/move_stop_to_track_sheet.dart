@@ -34,6 +34,8 @@ import 'package:social_flutter/features/itineraries/domain/track.dart';
 import 'package:social_flutter/features/itineraries/domain/transit_segment.dart';
 import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
 import 'package:social_flutter/l10n/app_localizations.dart';
+import 'package:social_flutter/shared/widgets/offline_gate.dart';
+import 'package:social_flutter/shared/widgets/saving_overlay.dart';
 
 /// Launches the sheet. [onMoved] is invoked with the destination track ID
 /// after a successful move so the caller can scroll the destination into
@@ -411,7 +413,14 @@ class _MoveStopToTrackSheetState extends ConsumerState<_MoveStopToTrackSheet> {
       rows.add(_buildGapRow(context, after: widget.tracks.last, before: null));
     }
 
-    return Container(
+    // PopScope blocks back-button and barrier-tap dismissal mid-move; the
+    // overlay blocks in-sheet taps.
+    return PopScope(
+      canPop: !_busy,
+      child: SavingOverlay(
+        saving: _busy,
+        loaderSize: 40,
+        child: Container(
       color: kSand,
       child: SafeArea(
         child: Padding(
@@ -435,41 +444,38 @@ class _MoveStopToTrackSheetState extends ConsumerState<_MoveStopToTrackSheet> {
               ),
               // Rows in a white card — capped at 65 % screen height so the
               // sheet never overflows when the itinerary has many tracks.
-              ConstrainedBox(
-                constraints: BoxConstraints(
-                  maxHeight: MediaQuery.of(context).size.height * 0.65,
-                ),
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: kSurface,
-                    borderRadius: BorderRadius.circular(18),
-                    border: Border.all(color: kBorder),
+              // Every row fires a move mutation, so the whole card is gated:
+              // offline taps show the popover instead of firing.
+              OfflineGate(
+                builder: (_) => ConstrainedBox(
+                  constraints: BoxConstraints(
+                    maxHeight: MediaQuery.of(context).size.height * 0.65,
                   ),
-                  clipBehavior: Clip.antiAlias,
-                  child: ListView(
-                    padding: const EdgeInsets.fromLTRB(14, 0, 14, 0),
-                    shrinkWrap: true,
-                    children: [
-                      for (var i = 0; i < rows.length; i++) ...[
-                        rows[i],
-                        if (i < rows.length - 1)
-                          Container(height: 1, color: kBorder),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: kSurface,
+                      borderRadius: BorderRadius.circular(18),
+                      border: Border.all(color: kBorder),
+                    ),
+                    clipBehavior: Clip.antiAlias,
+                    child: ListView(
+                      padding: const EdgeInsets.fromLTRB(14, 0, 14, 0),
+                      shrinkWrap: true,
+                      children: [
+                        for (var i = 0; i < rows.length; i++) ...[
+                          rows[i],
+                          if (i < rows.length - 1)
+                            Container(height: 1, color: kBorder),
+                        ],
                       ],
-                    ],
+                    ),
                   ),
                 ),
               ),
-              if (_busy)
-                const Padding(
-                  padding: EdgeInsets.only(top: 10),
-                  child: LinearProgressIndicator(
-                    minHeight: 2,
-                    color: kForest,
-                    backgroundColor: kMist,
-                  ),
-                ),
             ],
           ),
+        ),
+      ),
         ),
       ),
     );

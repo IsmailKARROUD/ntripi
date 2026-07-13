@@ -13,6 +13,7 @@ import 'package:social_flutter/shared/models/follow.dart';
 import 'package:social_flutter/l10n/app_localizations.dart';
 import 'package:social_flutter/shared/widgets/editorial_widgets.dart';
 import 'package:social_flutter/shared/widgets/loaders.dart';
+import 'package:social_flutter/shared/widgets/offline_gate.dart';
 import 'package:social_flutter/core/utils/platform_utils.dart';
 
 class FollowRequestsScreen extends ConsumerWidget {
@@ -202,32 +203,40 @@ class _FollowRequestTileState extends ConsumerState<_FollowRequestTile> {
               ),
               if (_isLoading)
                 const NTripiRingLoader(size: 24)
-              else ...[
-                FilledButton(
-                  onPressed: _accept,
-                  style: FilledButton.styleFrom(
-                    backgroundColor: kForest,
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                    minimumSize: Size.zero,
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              else
+                OfflineGate(
+                  builder: (online) => Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      FilledButton(
+                        onPressed: online ? _accept : null,
+                        style: FilledButton.styleFrom(
+                          backgroundColor: kForest,
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 8),
+                          minimumSize: Size.zero,
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        ),
+                        child: Text(AppLocalizations.of(context)!.acceptButton,
+                            style: const TextStyle(fontSize: 13)),
+                      ),
+                      const SizedBox(width: 8),
+                      OutlinedButton(
+                        onPressed: online ? _reject : null,
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: const Color(0xFFBA1A1A),
+                          side: const BorderSide(color: Color(0xFFBA1A1A)),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 8),
+                          minimumSize: Size.zero,
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        ),
+                        child: Text(AppLocalizations.of(context)!.rejectButton,
+                            style: const TextStyle(fontSize: 13)),
+                      ),
+                    ],
                   ),
-                  child: Text(AppLocalizations.of(context)!.acceptButton, style: const TextStyle(fontSize: 13)),
                 ),
-                const SizedBox(width: 8),
-                OutlinedButton(
-                  onPressed: _reject,
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: const Color(0xFFBA1A1A),
-                    side: const BorderSide(color: Color(0xFFBA1A1A)),
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                    minimumSize: Size.zero,
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  ),
-                  child: Text(AppLocalizations.of(context)!.rejectButton, style: const TextStyle(fontSize: 13)),
-                ),
-              ],
             ],
           ),
         ),

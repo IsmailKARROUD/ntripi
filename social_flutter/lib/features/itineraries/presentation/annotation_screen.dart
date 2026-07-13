@@ -16,6 +16,8 @@ import 'package:social_flutter/features/itineraries/presentation/widgets/annotat
     show AnnotationFormResult;
 import 'package:social_flutter/l10n/app_localizations.dart';
 import 'package:social_flutter/shared/widgets/loaders.dart';
+import 'package:social_flutter/shared/widgets/offline_gate.dart';
+import 'package:social_flutter/shared/widgets/saving_overlay.dart';
 
 class AnnotationScreen extends StatefulWidget {
   final bool isEdit;
@@ -137,7 +139,9 @@ class _AnnotationScreenState extends State<AnnotationScreen> {
         if (didPop) return;
         if (await _confirmDiscard() && context.mounted) Navigator.pop(context);
       },
-      child: Scaffold(
+      child: SavingOverlay(
+        saving: _saving,
+        child: Scaffold(
       resizeToAvoidBottomInset: false,
       backgroundColor: kSand,
       appBar: AppBar(
@@ -150,17 +154,19 @@ class _AnnotationScreenState extends State<AnnotationScreen> {
               child: NTripiRingLoader(size: 20),
             )
           else
-            TextButton(
-            onPressed: canSave ? _save : null,
-            child: Text(
-              widget.isEdit ? l10n.saveButton : l10n.addButton,
-              style: TextStyle(
-                color: canSave ? kForest : kText3,
-                fontWeight: FontWeight.w700,
-                fontSize: 15,
+            OfflineGate(
+              builder: (online) => TextButton(
+                onPressed: (canSave && online) ? _save : null,
+                child: Text(
+                  widget.isEdit ? l10n.saveButton : l10n.addButton,
+                  style: TextStyle(
+                    color: (canSave && online) ? kForest : kText3,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 15,
+                  ),
+                ),
               ),
             ),
-          ),
         ],
       ),
       body: ListView(
@@ -348,6 +354,7 @@ class _AnnotationScreenState extends State<AnnotationScreen> {
           ),
         ],
       ),
+        ),
       ),
     );
   }

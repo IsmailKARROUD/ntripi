@@ -17,6 +17,8 @@ import 'package:social_flutter/l10n/app_localizations.dart';
 import 'package:social_flutter/shared/widgets/field_help.dart';
 import 'package:social_flutter/shared/widgets/loaders.dart';
 import 'package:social_flutter/shared/widgets/locale_picker_button.dart';
+import 'package:social_flutter/shared/widgets/offline_gate.dart';
+import 'package:social_flutter/shared/widgets/saving_overlay.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -124,7 +126,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    return Scaffold(
+    return SavingOverlay(
+      saving: _isLoading,
+      tint: kSurface,
+      child: Scaffold(
       backgroundColor: kSurface,
       body: Center(
         child: ConstrainedBox(
@@ -242,11 +247,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 // Sign In button
                 SizedBox(
                   height: 54,
-                  child: ElevatedButton(
-                    onPressed: _isLoading ? null : _login,
-                    child: _isLoading
-                        ? const NTripiRingLoader(size: 22)
-                        : Text(l10n.loginSignIn),
+                  child: OfflineGate(
+                    builder: (online) => ElevatedButton(
+                      onPressed: (_isLoading || !online) ? null : _login,
+                      child: _isLoading
+                          ? const NTripiRingLoader(size: 22)
+                          : Text(l10n.loginSignIn),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 20),
@@ -260,23 +267,27 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   children: [
                     Expanded(
                       // Web can't use authenticate() — render Google's own button.
-                      child: kIsWeb
-                          ? GoogleWebButton(
-                              onIdToken: _onWebGoogleIdToken,
-                              onError: _onWebGoogleError,
-                            )
-                          : _SocialButton(
-                              label: 'Google',
-                              icon: const Text(
-                                'G',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w700,
-                                  color: kBark,
+                      child: OfflineGate(
+                        builder: (online) => kIsWeb
+                            ? GoogleWebButton(
+                                onIdToken: _onWebGoogleIdToken,
+                                onError: _onWebGoogleError,
+                              )
+                            : _SocialButton(
+                                label: 'Google',
+                                icon: const Text(
+                                  'G',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w700,
+                                    color: kBark,
+                                  ),
                                 ),
+                                onPressed: (_isLoading || !online)
+                                    ? null
+                                    : _loginWithGoogle,
                               ),
-                              onPressed: _isLoading ? null : _loginWithGoogle,
-                            ),
+                      ),
                     ),
                     const SizedBox(width: 12),
                    isApplePlatform() ? const Expanded(
@@ -318,7 +329,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           ),
         ),
       ),
-    ),),);
+    ),),),);
   }
 }
 

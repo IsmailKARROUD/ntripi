@@ -17,6 +17,8 @@ import 'package:social_flutter/l10n/app_localizations.dart';
 import 'package:social_flutter/shared/widgets/field_help.dart';
 import 'package:social_flutter/shared/widgets/loaders.dart';
 import 'package:social_flutter/shared/widgets/locale_picker_button.dart';
+import 'package:social_flutter/shared/widgets/offline_gate.dart';
+import 'package:social_flutter/shared/widgets/saving_overlay.dart';
 
 class RegisterScreen extends ConsumerStatefulWidget {
   const RegisterScreen({super.key});
@@ -149,7 +151,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    return Scaffold(
+    return SavingOverlay(
+      saving: _isLoading,
+      tint: kSurface,
+      child: Scaffold(
       backgroundColor: kSurface,
       body: Center(
         child: ConstrainedBox(
@@ -430,11 +435,15 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 // Create Account button
                 SizedBox(
                   height: 54,
-                  child: ElevatedButton(
-                    onPressed: (_isLoading || !_tosAccepted) ? null : () => _register(l10n),
-                    child: _isLoading
-                        ? const NTripiRingLoader(size: 22)
-                        : Text(l10n.registerCreateAccount),
+                  child: OfflineGate(
+                    builder: (online) => ElevatedButton(
+                      onPressed: (_isLoading || !_tosAccepted || !online)
+                          ? null
+                          : () => _register(l10n),
+                      child: _isLoading
+                          ? const NTripiRingLoader(size: 22)
+                          : Text(l10n.registerCreateAccount),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 28),
@@ -465,7 +474,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           ),
         ),
       ),
-    ),),);
+    ),),),);
   }
 }
 

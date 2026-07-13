@@ -64,6 +64,13 @@ class AppLocalizationsAr extends AppLocalizations {
       'أنت غير متصل بالإنترنت! قد لا تتوفر بعض الميزات.';
 
   @override
+  String get offlineActionTitle => 'أنت غير متصل بالإنترنت';
+
+  @override
+  String get offlineActionMessage =>
+      'لا يمكن إجراء تعديلات دون اتصال بالإنترنت. يرجى إعادة الاتصال والمحاولة مجددًا.';
+
+  @override
   String get downloadBanner => 'لتجربة أفضل، نزّل تطبيق Ntripi.';
 
   @override

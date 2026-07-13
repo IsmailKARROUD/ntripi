@@ -65,6 +65,13 @@ class AppLocalizationsFr extends AppLocalizations {
       'Vous êtes hors ligne ! Certaines fonctionnalités peuvent être indisponibles.';
 
   @override
+  String get offlineActionTitle => 'Vous êtes hors ligne';
+
+  @override
+  String get offlineActionMessage =>
+      'Impossible de faire des modifications sans connexion internet. Rétablissez la connexion et réessayez.';
+
+  @override
   String get downloadBanner =>
       'Pour une meilleure expérience, téléchargez l\'application Ntripi.';
 

@@ -17,6 +17,8 @@ import 'package:social_flutter/l10n/app_localizations.dart';
 import 'package:social_flutter/shared/widgets/editorial_widgets.dart';
 import 'package:social_flutter/shared/widgets/field_help.dart';
 import 'package:social_flutter/shared/widgets/loaders.dart';
+import 'package:social_flutter/shared/widgets/offline_gate.dart';
+import 'package:social_flutter/shared/widgets/saving_overlay.dart';
 
 const _kError = Color(0xFFBA1A1A);
 const _kErrorContainer = Color(0xFFFFDAD6);
@@ -77,7 +79,10 @@ class _DeleteAccountScreenState extends ConsumerState<DeleteAccountScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    return Scaffold(
+    return SavingOverlay(
+      saving: _isLoading,
+      tint: kSurface,
+      child: Scaffold(
       backgroundColor: kSurface,
       resizeToAvoidBottomInset: false,
       body: Center(
@@ -204,8 +209,10 @@ class _DeleteAccountScreenState extends ConsumerState<DeleteAccountScreen> {
 
                       const SizedBox(height: 32),
 
-                      ElevatedButton(
-                        onPressed: _isLoading ? null : _confirmAndDelete,
+                      OfflineGate(
+                        builder: (online) => ElevatedButton(
+                        onPressed:
+                            (_isLoading || !online) ? null : _confirmAndDelete,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: _kError,
                           foregroundColor: kSurface,
@@ -215,6 +222,7 @@ class _DeleteAccountScreenState extends ConsumerState<DeleteAccountScreen> {
                             ? const NTripiRingLoader(size: 20)
                             : Text(l10n.deleteAccountButton,
                                 style: const TextStyle(fontSize: 16)),
+                        ),
                       ),
                       const SizedBox(height: 12),
 
@@ -232,6 +240,7 @@ class _DeleteAccountScreenState extends ConsumerState<DeleteAccountScreen> {
             ],
           ),
         ),
+      ),
       ),
     );
   }

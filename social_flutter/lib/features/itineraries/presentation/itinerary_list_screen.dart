@@ -15,6 +15,8 @@ import 'package:social_flutter/features/itineraries/providers/itinerary_provider
 import 'package:social_flutter/core/utils/platform_utils.dart';
 import 'package:social_flutter/l10n/app_localizations.dart';
 import 'package:social_flutter/shared/widgets/loaders.dart';
+import 'package:social_flutter/core/connectivity/connectivity_service.dart';
+import 'package:social_flutter/shared/widgets/offline_gate.dart';
 
 class ItineraryListScreen extends ConsumerWidget {
   const ItineraryListScreen({super.key});
@@ -52,6 +54,9 @@ class ItineraryListScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
     final itinerariesAsync = ref.watch(myItinerariesProvider);
+    // Long-press delete is a hidden gesture with no visual to grey out —
+    // offline it just no-ops; the shell's offline banner explains why.
+    final online = ref.watch(isOnlineProvider).value ?? true;
 
     return Scaffold(
       backgroundColor: kSand,
@@ -156,8 +161,9 @@ class ItineraryListScreen extends ConsumerWidget {
                       ItinerarySummaryCard(
                         key: ValueKey(itinerary.id),
                         itinerary: itinerary,
-                        onLongPress: () =>
-                            _confirmDelete(context, ref, itinerary),
+                        onLongPress: online
+                            ? () => _confirmDelete(context, ref, itinerary)
+                            : null,
                       ),
                   ],
                 ),
@@ -166,13 +172,21 @@ class ItineraryListScreen extends ConsumerWidget {
           ),
         ),
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => context.push('/itineraries/new'),
-        icon: const Icon(Icons.add_rounded),
-        label: Text(l10n.newItinerary),
-        backgroundColor: kForest,
-        foregroundColor: Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      floatingActionButton: OfflineGate(
+        // FABs have no native disabled style — dim explicitly when offline.
+        builder: (online) => Opacity(
+          opacity: online ? 1 : 0.55,
+          child: FloatingActionButton.extended(
+            onPressed:
+                online ? () => context.push('/itineraries/new') : null,
+            icon: const Icon(Icons.add_rounded),
+            label: Text(l10n.newItinerary),
+            backgroundColor: kForest,
+            foregroundColor: Colors.white,
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          ),
+        ),
       ),
     );
   }

@@ -17,6 +17,7 @@ import 'package:social_flutter/core/ui/destructive_actions.dart';
 import 'package:social_flutter/features/follows/data/follow_repository.dart';
 import 'package:social_flutter/l10n/app_localizations.dart';
 import 'package:social_flutter/shared/widgets/loaders.dart';
+import 'package:social_flutter/shared/widgets/offline_gate.dart';
 
 /// Callback invoked after a follow state change.
 /// The calling screen uses this to refresh its data.
@@ -140,30 +141,35 @@ class _FollowButtonState extends ConsumerState<FollowButton> {
       );
     }
 
-    if (widget.isFollowing) {
-      // State 1: Currently following.
-      return FilledButton(
-        onPressed: _handleUnfollow,
-        style: FilledButton.styleFrom(
-          backgroundColor: Colors.grey.shade200,
-          foregroundColor: Colors.black87,
-        ),
-        child: Text(AppLocalizations.of(context)!.followingButton),
-      );
-    }
+    // Follow actions are mutations — offline they disable and explain on tap.
+    return OfflineGate(
+      builder: (online) {
+        if (widget.isFollowing) {
+          // State 1: Currently following.
+          return FilledButton(
+            onPressed: online ? _handleUnfollow : null,
+            style: FilledButton.styleFrom(
+              backgroundColor: Colors.grey.shade200,
+              foregroundColor: Colors.black87,
+            ),
+            child: Text(AppLocalizations.of(context)!.followingButton),
+          );
+        }
 
-    if (widget.followIsPending) {
-      // State 2: Pending follow request.
-      return OutlinedButton(
-        onPressed: _handleCancelRequest,
-        child: Text(AppLocalizations.of(context)!.requestedButton),
-      );
-    }
+        if (widget.followIsPending) {
+          // State 2: Pending follow request.
+          return OutlinedButton(
+            onPressed: online ? _handleCancelRequest : null,
+            child: Text(AppLocalizations.of(context)!.requestedButton),
+          );
+        }
 
-    // State 3: Not following.
-    return FilledButton(
-      onPressed: _handleFollow,
-      child: Text(AppLocalizations.of(context)!.followButton),
+        // State 3: Not following.
+        return FilledButton(
+          onPressed: online ? _handleFollow : null,
+          child: Text(AppLocalizations.of(context)!.followButton),
+        );
+      },
     );
   }
 }

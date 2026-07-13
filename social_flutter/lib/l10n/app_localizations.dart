@@ -208,6 +208,18 @@ abstract class AppLocalizations {
   /// **'You\'re Offline! Some features may be unavailable.'**
   String get offlineBanner;
 
+  /// No description provided for @offlineActionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'re offline'**
+  String get offlineActionTitle;
+
+  /// No description provided for @offlineActionMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Changes can\'t be made without an internet connection. Reconnect and try again.'**
+  String get offlineActionMessage;
+
   /// No description provided for @downloadBanner.
   ///
   /// In en, this message translates to:

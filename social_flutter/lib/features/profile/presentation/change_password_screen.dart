@@ -18,6 +18,8 @@ import 'package:social_flutter/features/auth/providers/auth_provider.dart';
 import 'package:social_flutter/l10n/app_localizations.dart';
 import 'package:social_flutter/shared/widgets/editorial_widgets.dart';
 import 'package:social_flutter/shared/widgets/loaders.dart';
+import 'package:social_flutter/shared/widgets/offline_gate.dart';
+import 'package:social_flutter/shared/widgets/saving_overlay.dart';
 
 class ChangePasswordScreen extends ConsumerStatefulWidget {
   const ChangePasswordScreen({super.key});
@@ -97,7 +99,10 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    return Scaffold(
+    return SavingOverlay(
+      saving: _isLoading,
+      tint: kSurface,
+      child: Scaffold(
       backgroundColor: kSurface,
       resizeToAvoidBottomInset: false,
       body: Center(
@@ -205,8 +210,9 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
 
                         const SizedBox(height: 32),
 
-                        ElevatedButton(
-                          onPressed: _isLoading ? null : _submit,
+                        OfflineGate(
+                          builder: (online) => ElevatedButton(
+                          onPressed: (_isLoading || !online) ? null : _submit,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: kForest,
                             foregroundColor: kSurface,
@@ -216,6 +222,7 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
                               ? const NTripiRingLoader(size: 20)
                               : Text(l10n.changePasswordSubmit,
                                   style: const TextStyle(fontSize: 16)),
+                          ),
                         ),
                         const SizedBox(height: 12),
 
@@ -235,6 +242,7 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
             ],
           ),
         ),
+      ),
       ),
     );
   }

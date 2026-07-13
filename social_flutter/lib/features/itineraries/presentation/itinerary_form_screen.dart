@@ -36,6 +36,8 @@ import 'package:social_flutter/features/itineraries/providers/itinerary_provider
 import 'package:social_flutter/core/utils/platform_utils.dart';
 import 'package:social_flutter/l10n/app_localizations.dart';
 import 'package:social_flutter/shared/widgets/loaders.dart';
+import 'package:social_flutter/shared/widgets/offline_gate.dart';
+import 'package:social_flutter/shared/widgets/saving_overlay.dart';
 import 'package:flutter/services.dart';
 import 'dart:convert';
 
@@ -377,7 +379,9 @@ class _ItineraryFormScreenState extends ConsumerState<ItineraryFormScreen> {
         if (didPop) return;
         if (await _confirmDiscard() && context.mounted) context.pop();
       },
-      child: Scaffold(
+      child: SavingOverlay(
+        saving: _saving,
+        child: Scaffold(
       resizeToAvoidBottomInset: false,
       backgroundColor: kSand,
       appBar: AppBar(
@@ -392,14 +396,16 @@ class _ItineraryFormScreenState extends ConsumerState<ItineraryFormScreen> {
               child: NTripiRingLoader(size: 20),
             )
           else
-            TextButton(
-              onPressed: _save,
-              child: Text(
-                l10n.save,
-                style: const TextStyle(
-                  color: kForest,
-                  fontWeight: FontWeight.w700,
-                  fontSize: 15,
+            OfflineGate(
+              builder: (online) => TextButton(
+                onPressed: online ? _save : null,
+                child: Text(
+                  l10n.save,
+                  style: TextStyle(
+                    color: online ? kForest : kText3,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 15,
+                  ),
                 ),
               ),
             ),
@@ -564,12 +570,14 @@ class _ItineraryFormScreenState extends ConsumerState<ItineraryFormScreen> {
                 _SectionLabel(text: l10n.formSectionDangerZone, tone: kRatingRed),
                 _SectionCard(
                   children: [
-                    _PickerRow(
-                      icon: Icons.delete_outline_rounded,
-                      label: l10n.formLabelDeleteItinerary,
-                      value: l10n.formDeleteItineraryHint,
-                      iconColor: kRatingRed,
-                      onTap: _saving ? null : _deleteItinerary,
+                    OfflineGate(
+                      builder: (online) => _PickerRow(
+                        icon: Icons.delete_outline_rounded,
+                        label: l10n.formLabelDeleteItinerary,
+                        value: l10n.formDeleteItineraryHint,
+                        iconColor: kRatingRed,
+                        onTap: (_saving || !online) ? null : _deleteItinerary,
+                      ),
                     ),
                   ],
                 ),
@@ -580,6 +588,7 @@ class _ItineraryFormScreenState extends ConsumerState<ItineraryFormScreen> {
           ),
         ),
       ),
+        ),
       ),
     );
   }
