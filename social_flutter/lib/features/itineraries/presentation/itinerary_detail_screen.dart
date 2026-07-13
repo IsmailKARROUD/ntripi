@@ -1600,7 +1600,6 @@ class _RateCta extends ConsumerWidget {
     final myRating = ref.watch(myRatingProvider(itineraryId)).value;
     return SizedBox(
       width: double.infinity,
-      height: 48,
       child: FilledButton.icon(
         onPressed: () => showRateItineraryDialog(
           context,
