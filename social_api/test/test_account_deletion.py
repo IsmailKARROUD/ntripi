@@ -291,3 +291,103 @@ class TestDeleteCascades:
             headers=auth_headers(bob["access_token"]),
         )
         assert r.status_code == 404
+
+
+# ---------------------------------------------------------------------------
+# Class: TestGoogleAccountDeletion — passwordless (SSO) accounts re-auth with
+# their provider instead of a password. Google is the only provider today.
+# ---------------------------------------------------------------------------
+
+def _patch_google_verifier(monkeypatch, *, sub, email="gina@x.com"):
+    """Patch verify_google_id_token on BOTH router modules — each imported it
+    via `from ... import`, so the name must be patched on each importing module
+    (auth for /auth/google sign-in, users for DELETE re-auth)."""
+    import app.routers.auth as auth_router
+    import app.routers.users as users_router
+
+    def _claims(token):
+        return {"sub": sub, "email": email, "email_verified": True,
+                "name": None, "picture": None}
+
+    monkeypatch.setattr(auth_router, "verify_google_id_token", _claims)
+    monkeypatch.setattr(users_router, "verify_google_id_token", _claims)
+
+
+def google_signin(client, sub="g-1", email="gina@x.com"):
+    r = client.post(
+        "/auth/google", json={"id_token": "fake", "tos_accepted": True}
+    )
+    assert r.status_code == 200, r.json()
+    return r.json()
+
+
+def delete_account_google(client, token, id_token="fake"):
+    return client.request(
+        "DELETE", "/users/me",
+        json={"google_id_token": id_token},
+        headers=auth_headers(token),
+    )
+
+
+class TestGoogleAccountDeletion:
+    def test_google_user_deletes_with_matching_token(self, client, monkeypatch):
+        _patch_google_verifier(monkeypatch, sub="g-1")
+        gina = google_signin(client, sub="g-1")
+        token = gina["access_token"]
+
+        r = delete_account_google(client, token)
+        assert r.status_code == 204, r.text
+
+        # Token is now invalid — the user row is gone.
+        assert client.get("/users/me", headers=auth_headers(token)).status_code == 401
+
+    def test_google_delete_rejects_mismatched_sub(self, client, monkeypatch):
+        _patch_google_verifier(monkeypatch, sub="g-1")
+        token = google_signin(client, sub="g-1")["access_token"]
+
+        # The re-auth token belongs to a DIFFERENT Google account.
+        import app.routers.users as users_router
+        monkeypatch.setattr(
+            users_router, "verify_google_id_token",
+            lambda t: {"sub": "someone-else"},
+        )
+        r = delete_account_google(client, token)
+        assert r.status_code == 401
+        assert r.json()["code"] == "google_account_mismatch"
+
+    def test_google_delete_requires_a_token(self, client, monkeypatch):
+        _patch_google_verifier(monkeypatch, sub="g-1")
+        token = google_signin(client, sub="g-1")["access_token"]
+
+        r = client.request("DELETE", "/users/me", json={},
+                           headers=auth_headers(token))
+        assert r.status_code == 401
+        assert r.json()["code"] == "google_reauth_required"
+
+    def test_google_delete_rejects_invalid_token(self, client, monkeypatch):
+        _patch_google_verifier(monkeypatch, sub="g-1")
+        token = google_signin(client, sub="g-1")["access_token"]
+
+        # Verifier raises → any verification failure is a clean 401 (not a 500).
+        import app.routers.users as users_router
+
+        def _raise(t):
+            raise ValueError("bad signature")
+
+        monkeypatch.setattr(users_router, "verify_google_id_token", _raise)
+        r = delete_account_google(client, token)
+        assert r.status_code == 401
+        assert r.json()["code"] == "google_token_invalid"
+
+    def test_google_user_sending_password_gets_401_not_500(self, client, monkeypatch):
+        # Regression for the original bug: a passwordless account hitting the
+        # password branch used to crash with 500 (verify_password(None)).
+        # It must now fail cleanly, asking for Google re-auth instead.
+        _patch_google_verifier(monkeypatch, sub="g-1")
+        token = google_signin(client, sub="g-1")["access_token"]
+
+        r = client.request("DELETE", "/users/me",
+                           json={"password": "anything"},
+                           headers=auth_headers(token))
+        assert r.status_code == 401
+        assert r.json()["code"] == "google_reauth_required"

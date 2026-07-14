@@ -133,8 +133,14 @@ class UserUpdateRequest(BaseModel):
 
 
 class DeleteAccountRequest(BaseModel):
-    """Input for DELETE /users/me — requires password re-confirmation."""
-    password: str
+    """Input for DELETE /users/me — re-confirmation credential.
+
+    Password accounts send `password`; passwordless (SSO) accounts send their
+    provider credential (`google_id_token` today; add `apple_*`/`facebook_*`
+    when those providers ship). The endpoint picks the branch by account type.
+    """
+    password: str | None = None
+    google_id_token: str | None = None
 
 
 class UserSearchResult(BaseModel):

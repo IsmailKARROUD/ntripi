@@ -367,6 +367,8 @@
   "deleteAccountPasswordHelpTitle": "Confirmer le mot de passe",
   "deleteAccountPasswordHelpMessage": "Saisissez à nouveau votre mot de passe pour confirmer la suppression. La suppression du compte est permanente et irréversible.",
   "deleteAccountButton": "Supprimer mon compte",
+  "deleteAccountGoogleExplain": "Ce compte utilise la connexion avec Google. Ré-authentifiez-vous avec Google pour confirmer la suppression.",
+  "deleteAccountGoogleButton": "Continuer avec Google",
 
   "deleteAnnotationTitle": "Supprimer l'annotation ?",
   "deleteAnnotationMessage": "Cela supprimera définitivement cette annotation de l'itinéraire.",

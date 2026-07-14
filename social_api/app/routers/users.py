@@ -38,7 +38,7 @@ from app.schemas.user import (
     VisitedLocationItem,
     VisitedLocationsResponse,
 )
-from app.services.auth import verify_password
+from app.services.auth import verify_google_id_token, verify_password
 from app.services.image_service import (
     ImageProcessingError,
     process_avatar_image,
@@ -134,7 +134,10 @@ def delete_my_account(
 
     Steps (order is critical):
 
-    1. Re-verify password — prevents accidental or unauthorized deletion.
+    1. Re-authenticate — prevents accidental or unauthorized deletion.
+       Password accounts re-verify their password; passwordless (SSO) accounts
+       re-verify with their provider (Google today) — a fresh ID token whose
+       `sub` must match the account.
 
     2. Decrement denormalized follow counters on other users BEFORE the
        cascade delete removes the follow rows and we lose the information.
@@ -153,11 +156,48 @@ def delete_my_account(
     every request. With the user row gone, it returns None and raises 401.
     No token blacklist is needed.
     """
-    # Step 1 — re-verify password.
-    if not verify_password(payload.password, current_user.password_hash):
+    # Step 1 — re-authenticate before an irreversible delete.
+    if current_user.has_password:
+        # Password account. has_password guarantees password_hash is not None —
+        # keeps verify_password None-safe (it can't hash a None).
+        if not payload.password or not verify_password(
+            payload.password, current_user.password_hash
+        ):
+            raise ApiError(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                code="incorrect_password", detail="Incorrect password.",
+            )
+    elif current_user.google_sub:
+        # Passwordless Google account: verify a fresh Google ID token whose
+        # `sub` matches this account (mirrors the /auth/google re-auth path).
+        if not payload.google_id_token:
+            raise ApiError(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                code="google_reauth_required",
+                detail="Google re-authentication required.",
+            )
+        try:
+            claims = verify_google_id_token(payload.google_id_token)
+        except Exception:
+            # Any verification failure is an auth failure — never leak details.
+            raise ApiError(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                code="google_token_invalid", detail="Invalid Google token.",
+            )
+        if claims.get("sub") != current_user.google_sub:
+            raise ApiError(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                code="google_account_mismatch",
+                detail="Google account does not match.",
+            )
+    # Future providers (Apple/Facebook) add an `elif current_user.apple_sub:` /
+    # `elif current_user.facebook_id:` branch here, verifying that provider's
+    # credential from a new optional field on DeleteAccountRequest.
+    else:
+        # No password and no known provider — should be unreachable; fail closed.
         raise ApiError(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            code="incorrect_password", detail="Incorrect password.",
+            code="reauth_required", detail="Re-authentication required.",
         )
 
     # Step 2 — fix denormalized follow counters on other users.

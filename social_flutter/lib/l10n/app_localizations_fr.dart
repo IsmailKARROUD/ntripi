@@ -1089,6 +1089,13 @@ class AppLocalizationsFr extends AppLocalizations {
   String get deleteAccountButton => 'Supprimer mon compte';
 
   @override
+  String get deleteAccountGoogleExplain =>
+      'Ce compte utilise la connexion avec Google. Ré-authentifiez-vous avec Google pour confirmer la suppression.';
+
+  @override
+  String get deleteAccountGoogleButton => 'Continuer avec Google';
+
+  @override
   String get deleteAnnotationTitle => 'Supprimer l\'annotation ?';
 
   @override

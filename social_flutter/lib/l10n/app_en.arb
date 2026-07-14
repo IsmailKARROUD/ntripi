@@ -432,6 +432,8 @@
   "deleteAccountPasswordHelpTitle": "Confirm password",
   "deleteAccountPasswordHelpMessage": "Re-enter your password to confirm deletion. Account deletion is permanent and cannot be undone.",
   "deleteAccountButton": "Delete My Account",
+  "deleteAccountGoogleExplain": "This account uses Google Sign-In. Re-authenticate with Google to confirm deletion.",
+  "deleteAccountGoogleButton": "Continue with Google",
 
   "deleteAnnotationTitle": "Delete annotation?",
   "deleteAnnotationMessage": "This will permanently remove this annotation from the itinerary.",

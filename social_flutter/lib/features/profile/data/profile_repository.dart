@@ -32,13 +32,19 @@ class ProfileRepository {
 
   /// DELETE /users/me — permanently delete the account.
   ///
-  /// Throws [PasswordIncorrectException] on 401.
-  /// Clears the stored token on success.
-  Future<void> deleteAccount(String password) async {
+  /// Re-auth credential depends on account type: password accounts pass
+  /// [password]; passwordless (SSO) accounts pass their provider token
+  /// ([googleIdToken] today). Throws [PasswordIncorrectException] only on the
+  /// password path's 401 — a 401 on the Google path is a token error surfaced
+  /// generically by the caller. Clears the stored token on success.
+  Future<void> deleteAccount({String? password, String? googleIdToken}) async {
+    final data = <String, dynamic>{};
+    if (password != null) data['password'] = password;
+    if (googleIdToken != null) data['google_id_token'] = googleIdToken;
     try {
-      await _dio.delete(kMyProfileEndpoint, data: {'password': password});
+      await _dio.delete(kMyProfileEndpoint, data: data);
     } on DioException catch (e) {
-      if (e.response?.statusCode == 401) {
+      if (e.response?.statusCode == 401 && password != null) {
         throw const PasswordIncorrectException();
       }
       rethrow;

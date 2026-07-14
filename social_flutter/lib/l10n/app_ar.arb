@@ -432,6 +432,8 @@
   "deleteAccountPasswordHelpTitle": "تأكيد كلمة المرور",
   "deleteAccountPasswordHelpMessage": "أعد إدخال كلمة المرور لتأكيد الحذف. حذف الحساب نهائي ولا يمكن التراجع عنه.",
   "deleteAccountButton": "حذف حسابي",
+  "deleteAccountGoogleExplain": "يستخدم هذا الحساب تسجيل الدخول عبر Google. أعد المصادقة عبر Google لتأكيد الحذف.",
+  "deleteAccountGoogleButton": "المصادقة عبر Google",
 
   "deleteAnnotationTitle": "حذف التنويه؟",
   "deleteAnnotationMessage": "سيؤدي هذا إلى إزالة هذا التنويه نهائيًا من خط السير.",

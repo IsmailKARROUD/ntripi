@@ -1094,6 +1094,13 @@ class AppLocalizationsAr extends AppLocalizations {
   String get deleteAccountButton => 'حذف حسابي';
 
   @override
+  String get deleteAccountGoogleExplain =>
+      'يستخدم هذا الحساب تسجيل الدخول عبر Google. أعد المصادقة عبر Google لتأكيد الحذف.';
+
+  @override
+  String get deleteAccountGoogleButton => 'المصادقة عبر Google';
+
+  @override
   String get deleteAnnotationTitle => 'حذف التنويه؟';
 
   @override

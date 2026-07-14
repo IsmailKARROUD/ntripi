@@ -1984,6 +1984,18 @@ abstract class AppLocalizations {
   /// **'Delete My Account'**
   String get deleteAccountButton;
 
+  /// No description provided for @deleteAccountGoogleExplain.
+  ///
+  /// In en, this message translates to:
+  /// **'This account uses Google Sign-In. Re-authenticate with Google to confirm deletion.'**
+  String get deleteAccountGoogleExplain;
+
+  /// No description provided for @deleteAccountGoogleButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue with Google'**
+  String get deleteAccountGoogleButton;
+
   /// No description provided for @deleteAnnotationTitle.
   ///
   /// In en, this message translates to:
