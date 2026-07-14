@@ -15,6 +15,7 @@ import 'package:social_flutter/features/itineraries/domain/stop.dart';
 import 'package:social_flutter/features/itineraries/domain/transit_segment.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/edit_pencil_button.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/markdown_notes_editor.dart';
+import 'package:social_flutter/features/itineraries/presentation/widgets/open_in_maps_sheet.dart';
 import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
 import 'package:social_flutter/l10n/app_localizations.dart';
 import 'package:social_flutter/shared/utils/duration_format.dart';
@@ -130,6 +131,14 @@ class _StopDetailView extends ConsumerWidget {
               onEdit: () => context.push(
                 '/itineraries/$itineraryId/stops/${stop.id}/edit',
               ),
+              onOpenInMaps: stop.lat != null && stop.lng != null
+                  ? () => showOpenInMapsSheet(
+                        context: context,
+                        lat: stop.lat!,
+                        lng: stop.lng!,
+                        label: stop.placeName,
+                      )
+                  : null,
             ),
           ),
 
@@ -245,6 +254,7 @@ class _StopHero extends StatelessWidget {
   final int totalStops;
   final VoidCallback onBack;
   final VoidCallback onEdit;
+  final VoidCallback? onOpenInMaps; // null when the stop has no coordinates
 
   const _StopHero({
     required this.stop,
@@ -252,6 +262,7 @@ class _StopHero extends StatelessWidget {
     required this.totalStops,
     required this.onBack,
     required this.onEdit,
+    this.onOpenInMaps,
   });
 
   // Prefer the human address; fall back to raw coordinates so a map-picked
@@ -285,6 +296,10 @@ class _StopHero extends StatelessWidget {
                 color: kBark,
               ),
               const Spacer(),
+              if (onOpenInMaps != null) ...[
+                _OpenInMapsButton(onTap: onOpenInMaps!),
+                const SizedBox(width: 8),
+              ],
               EditPencilButton(onTap: onEdit, iconSize: 20),
             ],
           ),
@@ -333,36 +348,48 @@ class _StopHero extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 1),
-                    Text(
-                      stop.placeName ?? 'Stop $stopNumber',
-                      style: const TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.w700,
-                        color: kBark,
-                        letterSpacing: -0.3,
-                        height: 1.1,
-                      ),
-                    ),
-                    if (_locationText != null)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 2),
-                        child: Row(
-                          children: [
-                            const Icon(Icons.location_on_rounded,
-                                size: 13, color: kText2),
-                            const SizedBox(width: 4),
-                            Expanded(
-                              child: Text(
-                                _locationText!,
-                                style: const TextStyle(
-                                    fontSize: 12,
-                                    color: kText2,
-                                    fontWeight: FontWeight.w500),
+                    // Tapping the name or location also opens the map app;
+                    // onTap is null (inert) when the stop has no coordinates.
+                    InkWell(
+                      onTap: onOpenInMaps,
+                      borderRadius: BorderRadius.circular(8),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            stop.placeName ?? 'Stop $stopNumber',
+                            style: const TextStyle(
+                              fontSize: 22,
+                              fontWeight: FontWeight.w700,
+                              color: kBark,
+                              letterSpacing: -0.3,
+                              height: 1.1,
+                            ),
+                          ),
+                          if (_locationText != null)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 2),
+                              child: Row(
+                                children: [
+                                  const Icon(Icons.location_on_rounded,
+                                      size: 13, color: kText2),
+                                  const SizedBox(width: 4),
+                                  Expanded(
+                                    child: Text(
+                                      _locationText!,
+                                      style: const TextStyle(
+                                          fontSize: 12,
+                                          color: kText2,
+                                          fontWeight: FontWeight.w500),
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
-                          ],
-                        ),
+                        ],
                       ),
+                    ),
                     if (stop.placeType != null)
                       Padding(
                         padding: const EdgeInsets.only(top: 8),
@@ -374,6 +401,40 @@ class _StopHero extends StatelessWidget {
             ],
           ),
         ],
+      ),
+    );
+  }
+}
+
+// ─── Open-in-maps button ──────────────────────────────────────────────────────
+// Forest-tinted pill matching the itinerary route button — opens this stop's
+// location in an external map app. Not offline-gated: handing off to another
+// app doesn't require a connection here (kEditBlue stays reserved for Edit).
+class _OpenInMapsButton extends StatelessWidget {
+  final VoidCallback onTap;
+
+  const _OpenInMapsButton({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: AppLocalizations.of(context)!.openInMaps,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(10),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: kMist,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: kForest.withValues(alpha: 0.13)),
+            ),
+            child:
+                const Icon(Icons.directions_rounded, size: 20, color: kForest),
+          ),
+        ),
       ),
     );
   }

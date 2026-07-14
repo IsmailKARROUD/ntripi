@@ -35,3 +35,11 @@ bool isOnlineNow(WidgetRef ref) {
       .read(isOnlineProvider)
       .maybeWhen(data: (online) => online, orElse: () => true);
 }
+
+/// [isOnlineNow] for providers/notifiers — WidgetRef and Ref are unrelated
+/// types in Riverpod 2, so notifiers need this variant.
+bool isOnlineNowRef(Ref ref) {
+  return ref
+      .read(isOnlineProvider)
+      .maybeWhen(data: (online) => online, orElse: () => true);
+}

@@ -11,6 +11,7 @@ import 'package:social_flutter/core/connectivity/connectivity_service.dart';
 import 'package:social_flutter/core/providers/locale_provider.dart';
 import 'package:social_flutter/core/services/geocoding_service.dart';
 import 'package:social_flutter/features/itineraries/data/itinerary_repository.dart';
+import 'package:social_flutter/features/itineraries/data/maps_launcher_service.dart';
 import 'package:social_flutter/features/itineraries/data/share_service.dart';
 import 'package:social_flutter/features/itineraries/domain/allowed_user.dart';
 import 'package:social_flutter/features/itineraries/domain/annotation.dart';
@@ -472,3 +473,10 @@ final placeSearchProvider =
 // ---------------------------------------------------------------------------
 
 final shareServiceProvider = Provider<ShareService>((ref) => ShareService());
+
+// ---------------------------------------------------------------------------
+// MapsLauncherService provider
+// ---------------------------------------------------------------------------
+
+final mapsLauncherServiceProvider =
+    Provider<MapsLauncherService>((ref) => MapsLauncherService());

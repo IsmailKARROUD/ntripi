@@ -1143,6 +1143,20 @@ class AppLocalizationsFr extends AppLocalizations {
   String get mapSection => 'Carte';
 
   @override
+  String get openInMaps => 'Ouvrir dans une app de cartes';
+
+  @override
+  String get otherMapsApp => 'Autre app de cartes';
+
+  @override
+  String get openRouteInMaps => 'Ouvrir le trajet dans Google Maps';
+
+  @override
+  String routeTruncated(int count) {
+    return 'Google Maps ne peut afficher que les $count premières étapes';
+  }
+
+  @override
   String get openStreetMapContributors => 'Contributeurs OpenStreetMap';
 
   @override

@@ -1147,6 +1147,20 @@ class AppLocalizationsAr extends AppLocalizations {
   String get mapSection => 'الخريطة';
 
   @override
+  String get openInMaps => 'فتح في تطبيق الخرائط';
+
+  @override
+  String get otherMapsApp => 'تطبيق خرائط آخر';
+
+  @override
+  String get openRouteInMaps => 'فتح الاتجاهات في خرائط Google';
+
+  @override
+  String routeTruncated(int count) {
+    return 'يمكن لخرائط Google عرض أول $count محطة فقط';
+  }
+
+  @override
   String get openStreetMapContributors => 'مساهمو OpenStreetMap';
 
   @override

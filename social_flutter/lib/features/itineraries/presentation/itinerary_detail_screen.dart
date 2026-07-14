@@ -41,8 +41,10 @@ import 'package:social_flutter/core/api/api_client.dart';
 import 'package:social_flutter/core/cache/image_cache.dart';
 import 'package:social_flutter/core/ui/app_theme.dart';
 import 'package:social_flutter/core/ui/destructive_actions.dart';
+import 'package:social_flutter/features/itineraries/data/maps_launcher_service.dart';
 import 'package:social_flutter/features/itineraries/domain/annotation.dart';
 import 'package:social_flutter/features/itineraries/domain/itinerary.dart';
+import 'package:social_flutter/features/itineraries/domain/track.dart';
 import 'package:social_flutter/features/itineraries/domain/itinerary_annotation.dart';
 import 'package:social_flutter/features/itineraries/domain/transit_segment.dart';
 import 'package:social_flutter/features/itineraries/presentation/annotation_screen.dart';
@@ -329,6 +331,35 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
     }
   }
 
+  // One point per track: stops within a track are parallel ALTERNATIVES, so
+  // the route takes the user's active selection (fallback: first stop).
+  List<LatLng> _routePoints(List<Track> tracks) {
+    final points = <LatLng>[];
+    for (final track in tracks) {
+      if (track.stops.isEmpty) continue;
+      final idx = (_activeParallelByTrack[track.id] ?? 0)
+          .clamp(0, track.stops.length - 1);
+      final stop = track.stops[idx];
+      if (stop.lat != null && stop.lng != null) {
+        points.add(LatLng(stop.lat!, stop.lng!));
+      }
+    }
+    return points;
+  }
+
+  Future<void> _openRouteInGoogleMaps(List<LatLng> points) async {
+    final l10n = AppLocalizations.of(context)!;
+    final messenger = ScaffoldMessenger.of(context);
+    final truncated =
+        await ref.read(mapsLauncherServiceProvider).openRoute(points);
+    if (truncated && mounted) {
+      messenger.showSnackBar(SnackBar(
+        content: Text(l10n
+            .routeTruncated(MapsLauncherService.maxGoogleWaypoints + 2)),
+      ));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -412,6 +443,8 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                       ? LatLng(
                           mappableStops.first.lat!, mappableStops.first.lng!)
                       : const LatLng(48.8566, 2.3522);
+                  // Not mappableStops — that flattens parallel alternatives.
+                  final routePoints = _routePoints(tracks);
 
                   // Build interleaved list from tracks (server already sorted by rank).
                   List<Widget> buildInterleavedList() {
@@ -879,6 +912,16 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                                       segments:
                                           itineraryAsync.value!.segments,
                                     ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                ],
+                                // Open the full trajet in Google Maps — the
+                                // only map app with multi-stop deep links.
+                                if (routePoints.length >= 2) ...[
+                                  _RoutePillButton(
+                                    tooltip: l10n.openRouteInMaps,
+                                    onTap: () =>
+                                        _openRouteInGoogleMaps(routePoints),
                                   ),
                                   const SizedBox(width: 8),
                                 ],
@@ -1525,6 +1568,40 @@ class _DetailMetaChip extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+// ─── Route pill button ────────────────────────────────────────────────────────
+// Forest-tinted sibling of EditPencilButton — kEditBlue is reserved for Edit
+// affordances, and opening an external map app must stay usable offline.
+class _RoutePillButton extends StatelessWidget {
+  final VoidCallback onTap;
+  final String tooltip;
+
+  const _RoutePillButton({required this.onTap, required this.tooltip});
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: tooltip,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(10),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: kMist,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: kForest.withValues(alpha: 0.13)),
+            ),
+            child:
+                const Icon(Icons.directions_rounded, size: 20, color: kForest),
+          ),
+        ),
       ),
     );
   }

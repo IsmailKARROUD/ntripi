@@ -2086,6 +2086,30 @@ abstract class AppLocalizations {
   /// **'Map'**
   String get mapSection;
 
+  /// No description provided for @openInMaps.
+  ///
+  /// In en, this message translates to:
+  /// **'Open in maps'**
+  String get openInMaps;
+
+  /// No description provided for @otherMapsApp.
+  ///
+  /// In en, this message translates to:
+  /// **'Other maps app'**
+  String get otherMapsApp;
+
+  /// No description provided for @openRouteInMaps.
+  ///
+  /// In en, this message translates to:
+  /// **'Open route in Google Maps'**
+  String get openRouteInMaps;
+
+  /// No description provided for @routeTruncated.
+  ///
+  /// In en, this message translates to:
+  /// **'Google Maps can only show the first {count} stops'**
+  String routeTruncated(int count);
+
   /// No description provided for @openStreetMapContributors.
   ///
   /// In en, this message translates to:

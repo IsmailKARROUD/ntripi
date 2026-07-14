@@ -450,6 +450,15 @@
   "addStopTooltip": "Add stop",
   "reorderTracksTooltip": "Reorder tracks",
   "mapSection": "Map",
+  "openInMaps": "Open in maps",
+  "otherMapsApp": "Other maps app",
+  "openRouteInMaps": "Open route in Google Maps",
+  "routeTruncated": "Google Maps can only show the first {count} stops",
+  "@routeTruncated": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
   "openStreetMapContributors": "OpenStreetMap contributors",
   "poweredByOSM": "Powered by OpenStreetMap",
   "noStopsYetTapPlus": "No stops yet. Tap + to add one.",

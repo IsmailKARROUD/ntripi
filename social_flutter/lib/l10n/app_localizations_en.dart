@@ -1121,6 +1121,20 @@ class AppLocalizationsEn extends AppLocalizations {
   String get mapSection => 'Map';
 
   @override
+  String get openInMaps => 'Open in maps';
+
+  @override
+  String get otherMapsApp => 'Other maps app';
+
+  @override
+  String get openRouteInMaps => 'Open route in Google Maps';
+
+  @override
+  String routeTruncated(int count) {
+    return 'Google Maps can only show the first $count stops';
+  }
+
+  @override
   String get openStreetMapContributors => 'OpenStreetMap contributors';
 
   @override
