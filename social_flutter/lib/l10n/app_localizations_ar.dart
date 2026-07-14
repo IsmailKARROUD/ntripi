@@ -2064,6 +2064,11 @@ class AppLocalizationsAr extends AppLocalizations {
   String get stopFallbackName => 'محطة';
 
   @override
+  String stopWithNumber(int n) {
+    return 'محطة $n';
+  }
+
+  @override
   String get undoLabel => 'تراجع';
 
   @override

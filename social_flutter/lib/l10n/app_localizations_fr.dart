@@ -2047,6 +2047,11 @@ class AppLocalizationsFr extends AppLocalizations {
   String get stopFallbackName => 'Étape';
 
   @override
+  String stopWithNumber(int n) {
+    return 'Étape $n';
+  }
+
+  @override
   String get undoLabel => 'Annuler';
 
   @override

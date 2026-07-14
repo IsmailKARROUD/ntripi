@@ -3544,6 +3544,12 @@ abstract class AppLocalizations {
   /// **'Stop'**
   String get stopFallbackName;
 
+  /// No description provided for @stopWithNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop {n}'**
+  String stopWithNumber(int n);
+
   /// No description provided for @undoLabel.
   ///
   /// In en, this message translates to:

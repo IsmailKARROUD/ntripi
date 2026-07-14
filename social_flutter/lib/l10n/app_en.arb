@@ -857,6 +857,12 @@
   "stopsPillLabel": "stops",
   "travelledPillLabel": "travelled",
   "stopFallbackName": "Stop",
+  "stopWithNumber": "Stop {n}",
+  "@stopWithNumber": {
+    "placeholders": {
+      "n": { "type": "int" }
+    }
+  },
   "undoLabel": "Undo",
   "updateYourRating": "Update your rating",
   "moveActionLabel": "move",

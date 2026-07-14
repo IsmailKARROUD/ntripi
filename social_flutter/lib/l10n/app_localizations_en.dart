@@ -2008,6 +2008,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get stopFallbackName => 'Stop';
 
   @override
+  String stopWithNumber(int n) {
+    return 'Stop $n';
+  }
+
+  @override
   String get undoLabel => 'Undo';
 
   @override

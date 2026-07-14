@@ -358,7 +358,9 @@ class _StopHero extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            stop.placeName ?? 'Stop $stopNumber',
+                            stop.placeName ??
+                                AppLocalizations.of(context)!
+                                    .stopWithNumber(stopNumber),
                             style: const TextStyle(
                               fontSize: 22,
                               fontWeight: FontWeight.w700,

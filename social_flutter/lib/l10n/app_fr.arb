@@ -724,6 +724,7 @@
   "stopsPillLabel": "étapes",
   "travelledPillLabel": "de voyage",
   "stopFallbackName": "Étape",
+  "stopWithNumber": "Étape {n}",
   "undoLabel": "Annuler",
   "updateYourRating": "Modifier votre évaluation",
   "moveActionLabel": "déplacer",

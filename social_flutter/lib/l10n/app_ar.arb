@@ -852,6 +852,7 @@
   "stopsPillLabel": "محطات",
   "travelledPillLabel": "مقطوعة",
   "stopFallbackName": "محطة",
+  "stopWithNumber": "محطة {n}",
   "undoLabel": "تراجع",
   "updateYourRating": "حدّث تقييمك",
   "moveActionLabel": "نقل",
