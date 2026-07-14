@@ -58,6 +58,7 @@
   "registerPasswordRequired": "Le mot de passe est requis.",
   "registerPasswordTooShort": "Doit contenir au moins 8 caractères.",
   "registerPasswordNoDigit": "Doit contenir au moins un chiffre.",
+  "passwordTooLong": "Mot de passe trop long — 72 caractères maximum (moins avec des lettres non latines).",
   "registerConfirmPassword": "Confirmer le mot de passe *",
   "registerConfirmPasswordHelp": "Saisissez à nouveau votre mot de passe pour vérifier qu'il correspond.",
   "registerConfirmRequired": "Veuillez confirmer votre mot de passe.",

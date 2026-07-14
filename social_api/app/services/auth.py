@@ -21,6 +21,7 @@ Why JWT?
     happen in this same service.
 """
 
+import unicodedata
 from datetime import datetime, timedelta
 from typing import Optional
 
@@ -41,7 +42,10 @@ def hash_password(plain_password: str) -> str:
     directly into the resulting hash string — so we never need to store
     the salt separately. It's all in the hash.
     """
-    password_bytes = plain_password.encode("utf-8")
+    # NFKC-normalize so the same password typed on different platforms/IMEs
+    # (NFC vs NFD, presentation forms) always produces the same hash.
+    normalized = unicodedata.normalize("NFKC", plain_password)
+    password_bytes = normalized.encode("utf-8")
     salt = bcrypt.gensalt()
     hashed = bcrypt.hashpw(password_bytes, salt)
     # Decode back to a string for storage in PostgreSQL VARCHAR column
@@ -57,7 +61,13 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
     matches or not. This prevents timing attacks where an attacker could
     measure response time to guess how many characters they got right.
     """
-    password_bytes = plain_password.encode("utf-8")
+    # must mirror hash_password's normalization or valid logins fail
+    normalized = unicodedata.normalize("NFKC", plain_password)
+    password_bytes = normalized.encode("utf-8")
+    # bcrypt 5.x raises ValueError above 72 bytes; no stored hash could match
+    # such an input anyway, so treat it as a plain mismatch instead of a 500.
+    if len(password_bytes) > 72:
+        return False
     hashed_bytes = hashed_password.encode("utf-8")
     return bcrypt.checkpw(password_bytes, hashed_bytes)
 

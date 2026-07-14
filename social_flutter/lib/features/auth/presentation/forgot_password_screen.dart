@@ -1,5 +1,7 @@
 import 'package:dio/dio.dart';
+import 'package:email_validator/email_validator.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:social_flutter/core/api/api_client.dart';
@@ -104,8 +106,18 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
             autofillHints: const [AutofillHints.email],
             textInputAction: TextInputAction.done,
             onFieldSubmitted: (_) => _submit(),
-            validator: (v) =>
-                (v == null || v.trim().isEmpty) ? l10n.required : null,
+            // server rejects internationalized emails (SMTPUTF8 delivery unreliable)
+            inputFormatters: [
+              FilteringTextInputFormatter.deny(RegExp(r'[^\x00-\x7F]')),
+            ],
+            validator: (v) {
+              if (v == null || v.trim().isEmpty) return l10n.required;
+              // same ASCII-only email rule as the register screen
+              if (!EmailValidator.validate(v.trim(), false, false)) {
+                return l10n.registerEmailInvalid;
+              }
+              return null;
+            },
           ),
           if (_errorMessage != null) ...[
             const SizedBox(height: 16),

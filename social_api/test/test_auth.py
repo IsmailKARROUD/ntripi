@@ -358,6 +358,94 @@ class TestUsernameValidation:
         assert r.status_code == 422
 
 
+class TestPasswordCharsetAndLength:
+    """
+    Passwords accept Unicode (NIST 800-63B) but are capped at 72 UTF-8 bytes —
+    bcrypt 5.x raises ValueError above that, which used to surface as a 500.
+    The digit rule counts ASCII digits only, matching the Flutter client's [0-9].
+    """
+
+    def _register(self, client: TestClient, password: str):
+        return client.post("/auth/register", json={
+            "username": "alice1",
+            "email": "alice@test.com",
+            "password": password,
+            "tos_accepted": True,
+        })
+
+    def test_register_73_char_ascii_password_rejected(self, client: TestClient):
+        # 73 chars = 73 bytes — over the bcrypt cap but under max_length=128,
+        # so this used to blow up inside hashpw instead of validating.
+        response = self._register(client, "a" * 72 + "1")
+        assert response.status_code == 422
+
+    def test_register_72_char_ascii_password_succeeds(self, client: TestClient):
+        response = self._register(client, "a" * 71 + "1")
+        assert response.status_code == 201
+
+    def test_register_long_arabic_password_rejected(self, client: TestClient):
+        # 39 Arabic chars (2 bytes each) + digit = 79 bytes from only 40 chars
+        response = self._register(client, "م" * 39 + "1")
+        assert response.status_code == 422
+
+    def test_register_short_arabic_password_succeeds_and_logs_in(self, client: TestClient):
+        password = "مرحبا" * 3 + "1"  # 31 UTF-8 bytes — comfortably under 72
+        assert self._register(client, password).status_code == 201
+
+        login = client.post("/auth/login", json={
+            "identifier": "alice@test.com",
+            "password": password,
+        })
+        assert login.status_code == 200
+
+    def test_register_nfkc_expanding_password_rejected(self, client: TestClient):
+        # ﷺ expands to 18 chars under NFKC — the byte cap must count the
+        # normalized form that actually gets hashed, not the raw input.
+        response = self._register(client, "ﷺ" * 7 + "1")
+        assert response.status_code == 422
+
+    def test_arabic_indic_digit_does_not_satisfy_digit_rule(self, client: TestClient):
+        # '٣'.isdigit() is True in Python, but the client requires [0-9] —
+        # server must agree so the API doesn't accept what the app rejects.
+        response = self._register(client, "abcdefgh٣")
+        assert response.status_code == 422
+
+    def test_login_overlong_password_returns_401_not_500(self, client: TestClient):
+        register_user(client, "alice1", "alice@test.com")
+        response = client.post("/auth/login", json={
+            "identifier": "alice@test.com",
+            "password": "x" * 100,
+        })
+        assert response.status_code == 401
+
+    def test_login_overlong_password_unknown_user_returns_401(self, client: TestClient):
+        # exercises the timing-safe dummy-hash path for missing users
+        response = client.post("/auth/login", json={
+            "identifier": "nobody@test.com",
+            "password": "x" * 100,
+        })
+        assert response.status_code == 401
+
+
+class TestEmailAsciiOnly:
+    """
+    Internationalized addresses pass Pydantic's EmailStr, but reset/verification
+    mail delivery to them (SMTPUTF8) is unreliable — the API rejects them.
+    """
+
+    def test_register_arabic_local_part_rejected(self, client: TestClient):
+        r = client.post("/auth/register", json={"username": "alice1", "email": "مثال@example.com", "password": "test1234", "tos_accepted": True})
+        assert r.status_code == 422
+
+    def test_register_arabic_domain_rejected(self, client: TestClient):
+        r = client.post("/auth/register", json={"username": "alice1", "email": "user@مثال.com", "password": "test1234", "tos_accepted": True})
+        assert r.status_code == 422
+
+    def test_forgot_password_arabic_email_rejected(self, client: TestClient):
+        r = client.post("/auth/forgot-password", json={"email": "مثال@example.com"})
+        assert r.status_code == 422
+
+
 class TestCaseInsensitiveUsername:
 
     def test_register_uppercase_then_lowercase_rejected(self, client: TestClient):

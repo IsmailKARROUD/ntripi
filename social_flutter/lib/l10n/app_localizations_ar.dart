@@ -176,6 +176,10 @@ class AppLocalizationsAr extends AppLocalizations {
   String get registerPasswordNoDigit => 'يجب أن تحتوي على رقم واحد على الأقل.';
 
   @override
+  String get passwordTooLong =>
+      'كلمة المرور طويلة جدًا — الحد الأقصى 72 حرفًا (أقل عند استخدام حروف غير لاتينية).';
+
+  @override
   String get registerConfirmPassword => 'تأكيد كلمة المرور *';
 
   @override

@@ -1,6 +1,9 @@
+import 'dart:convert';
+
 import 'package:dio/dio.dart';
 import 'package:email_validator/email_validator.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:social_flutter/core/api/api_client.dart';
@@ -233,6 +236,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   textInputAction: TextInputAction.next,
                   autocorrect: false,
                   autovalidateMode: AutovalidateMode.onUserInteraction,
+                  // keyboards can't be forced to Latin — drop disallowed chars as typed
+                  inputFormatters: [
+                    FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z0-9._]')),
+                  ],
                   decoration: InputDecoration(
                     hintText: l10n.registerUsernameHint,
                     prefixText: '@',
@@ -266,12 +273,16 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   keyboardType: TextInputType.emailAddress,
                   textInputAction: TextInputAction.next,
                   autovalidateMode: AutovalidateMode.onUserInteraction,
+                  // server rejects internationalized emails (SMTPUTF8 delivery unreliable)
+                  inputFormatters: [
+                    FilteringTextInputFormatter.deny(RegExp(r'[^\x00-\x7F]')),
+                  ],
                   decoration: InputDecoration(hintText: l10n.registerEmailHint),
                   validator: (v) {
                     if (v == null || v.trim().isEmpty) return l10n.registerEmailRequired;
-                    // EmailValidator does RFC-syntax checking; default allowTopLevelDomains=false
-                    // keeps single-label hosts (e.g. user@localhost) rejected, matching prior behavior.
-                    if (!EmailValidator.validate(v.trim())) {
+                    // allowTopLevelDomains=false rejects single-label hosts (user@localhost);
+                    // allowInternational=false matches the server's ASCII-only email policy.
+                    if (!EmailValidator.validate(v.trim(), false, false)) {
                       return l10n.registerEmailInvalid;
                     }
                     return null;
@@ -314,6 +325,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   validator: (v) {
                     if (v == null || v.isEmpty) return l10n.registerPasswordRequired;
                     if (v.length < 8) return l10n.registerPasswordTooShort;
+                    // bcrypt caps input at 72 bytes — non-Latin chars use 2+ bytes each
+                    if (utf8.encode(v).length > 72) return l10n.passwordTooLong;
                     if (!v.contains(RegExp(r'[0-9]'))) {
                       return l10n.registerPasswordNoDigit;
                     }

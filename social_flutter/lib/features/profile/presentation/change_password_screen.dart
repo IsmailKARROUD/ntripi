@@ -7,6 +7,8 @@
 // Only reachable for accounts with a password (see the Security section gate
 // in profile_edit_form.dart).
 
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -157,6 +159,10 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
                             }
                             if (v.length < 8) {
                               return l10n.registerPasswordTooShort;
+                            }
+                            // bcrypt caps input at 72 bytes — non-Latin chars use 2+ bytes each
+                            if (utf8.encode(v).length > 72) {
+                              return l10n.passwordTooLong;
                             }
                             if (!v.contains(RegExp(r'[0-9]'))) {
                               return l10n.registerPasswordNoDigit;

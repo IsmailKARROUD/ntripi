@@ -2,7 +2,16 @@ from datetime import datetime
 
 from pydantic import BaseModel, EmailStr, Field, field_validator
 
+from app.validators.password import validate_password_strength
 from app.validators.username import validate_username, validate_display_name
+
+
+def _email_must_be_ascii(v: str) -> str:
+    # Internationalized addresses pass EmailStr, but reset/verification mail
+    # delivery to them (SMTPUTF8) is unreliable — reject at the door.
+    if not v.isascii():
+        raise ValueError("Email must contain only Latin (ASCII) characters.")
+    return v
 
 
 class RegisterRequest(BaseModel):
@@ -22,12 +31,15 @@ class RegisterRequest(BaseModel):
     def _check_display_name(cls, v: str | None) -> str | None:
         return validate_display_name(v)
 
+    @field_validator("email")
+    @classmethod
+    def _check_email_ascii(cls, v: str) -> str:
+        return _email_must_be_ascii(v)
+
     @field_validator("password")
     @classmethod
-    def password_must_contain_digit(cls, v: str) -> str:
-        if not any(c.isdigit() for c in v):
-            raise ValueError("Password must contain at least one digit.")
-        return v
+    def _check_password(cls, v: str) -> str:
+        return validate_password_strength(v)
 
 
 class LoginRequest(BaseModel):
@@ -74,6 +86,11 @@ class ForgotPasswordRequest(BaseModel):
     """Body for POST /auth/forgot-password."""
     email: EmailStr
 
+    @field_validator("email")
+    @classmethod
+    def _check_email_ascii(cls, v: str) -> str:
+        return _email_must_be_ascii(v)
+
 
 class ResetPasswordRequest(BaseModel):
     """Body for the web reset form / API reset. Same password policy as register."""
@@ -82,10 +99,8 @@ class ResetPasswordRequest(BaseModel):
 
     @field_validator("new_password")
     @classmethod
-    def password_must_contain_digit(cls, v: str) -> str:
-        if not any(c.isdigit() for c in v):
-            raise ValueError("Password must contain at least one digit.")
-        return v
+    def _check_password(cls, v: str) -> str:
+        return validate_password_strength(v)
 
 
 class ChangePasswordRequest(BaseModel):
@@ -96,7 +111,5 @@ class ChangePasswordRequest(BaseModel):
 
     @field_validator("new_password")
     @classmethod
-    def password_must_contain_digit(cls, v: str) -> str:
-        if not any(c.isdigit() for c in v):
-            raise ValueError("Password must contain at least one digit.")
-        return v
+    def _check_password(cls, v: str) -> str:
+        return validate_password_strength(v)

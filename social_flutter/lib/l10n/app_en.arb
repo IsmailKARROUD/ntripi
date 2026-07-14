@@ -58,6 +58,7 @@
   "registerPasswordRequired": "Password is required.",
   "registerPasswordTooShort": "Must be at least 8 characters.",
   "registerPasswordNoDigit": "Must contain at least one digit.",
+  "passwordTooLong": "Password is too long — up to 72 characters (fewer with non-Latin letters).",
   "registerConfirmPassword": "Confirm Password *",
   "registerConfirmPasswordHelp": "Type your password again to make sure it matches.",
   "registerConfirmRequired": "Please confirm your password.",

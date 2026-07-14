@@ -418,6 +418,12 @@ abstract class AppLocalizations {
   /// **'Must contain at least one digit.'**
   String get registerPasswordNoDigit;
 
+  /// No description provided for @passwordTooLong.
+  ///
+  /// In en, this message translates to:
+  /// **'Password is too long — up to 72 characters (fewer with non-Latin letters).'**
+  String get passwordTooLong;
+
   /// No description provided for @registerConfirmPassword.
   ///
   /// In en, this message translates to:

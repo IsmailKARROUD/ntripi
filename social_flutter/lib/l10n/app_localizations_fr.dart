@@ -179,6 +179,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get registerPasswordNoDigit => 'Doit contenir au moins un chiffre.';
 
   @override
+  String get passwordTooLong =>
+      'Mot de passe trop long — 72 caractères maximum (moins avec des lettres non latines).';
+
+  @override
   String get registerConfirmPassword => 'Confirmer le mot de passe *';
 
   @override

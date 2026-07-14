@@ -58,6 +58,7 @@
   "registerPasswordRequired": "كلمة المرور مطلوبة.",
   "registerPasswordTooShort": "يجب ألا تقل عن 8 أحرف.",
   "registerPasswordNoDigit": "يجب أن تحتوي على رقم واحد على الأقل.",
+  "passwordTooLong": "كلمة المرور طويلة جدًا — الحد الأقصى 72 حرفًا (أقل عند استخدام حروف غير لاتينية).",
   "registerConfirmPassword": "تأكيد كلمة المرور *",
   "registerConfirmPasswordHelp": "اكتب كلمة المرور مرة أخرى للتأكد من تطابقها.",
   "registerConfirmRequired": "يرجى تأكيد كلمة المرور.",
