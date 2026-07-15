@@ -267,8 +267,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     ),
                   ),
 
-                // Other-only follow action row.
-                if (!widget.isSelf && !isContentHidden)
+                // Other-only follow action row — shown even when locked so a
+                // private profile can be followed (request sent) from here.
+                if (!widget.isSelf)
                   Padding(
                     padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
                     child: FollowActionRow(

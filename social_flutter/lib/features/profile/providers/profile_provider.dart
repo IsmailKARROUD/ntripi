@@ -185,12 +185,18 @@ class UserProfileNotifier extends AsyncNotifier<User> {
   /// Update follow state locally without a full reload (optimistic update).
   void updateFollowState({required bool isFollowing, required bool followIsPending}) {
     state.whenData((user) {
+      // Only accepted-follow transitions move the count — a pending request or
+      // its cancellation must leave the target's followers count untouched.
+      final delta = (isFollowing && !user.isFollowing)
+          ? 1
+          : (!isFollowing && user.isFollowing)
+              ? -1
+              : 0;
       state = AsyncData(user.copyWith(
         isFollowing: isFollowing,
         followIsPending: followIsPending,
-        followersCount: isFollowing
-            ? user.followersCount + 1
-            : (user.followersCount > 0 ? user.followersCount - 1 : 0),
+        followersCount:
+            (user.followersCount + delta).clamp(0, 1 << 31).toInt(),
       ));
     });
   }
