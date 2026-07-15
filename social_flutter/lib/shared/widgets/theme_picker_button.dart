@@ -18,9 +18,6 @@ class ThemePickerButton extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final nt = context.nt;
-    // Inverse of the page surface so the pill stands out on the plain auth
-    // background: a dark pill in light mode, a light pill in dark mode.
-    final scheme = Theme.of(context).colorScheme;
     final l10n = AppLocalizations.of(context)!;
     final labels = {
       ThemeMode.system: l10n.themeSystem,
@@ -57,19 +54,21 @@ class ThemePickerButton extends ConsumerWidget {
           )
           .toList(),
       child: Container(
+        // inverse of the page surface so the pill stands out on the plain
+        // auth background: dark pill in light mode, light pill in dark mode
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         decoration: BoxDecoration(
-          color: scheme.inverseSurface,
+          color: nt.inverseSurface,
           borderRadius: BorderRadius.circular(20),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(_icons[current], size: 18, color: scheme.onInverseSurface),
+            Icon(_icons[current], size: 18, color: nt.onInverseSurface),
             const SizedBox(width: 5),
             Icon(Icons.keyboard_arrow_down_rounded,
                 size: 14,
-                color: scheme.onInverseSurface.withValues(alpha: 0.7)),
+                color: nt.onInverseSurface.withValues(alpha: 0.7)),
           ],
         ),
       ),

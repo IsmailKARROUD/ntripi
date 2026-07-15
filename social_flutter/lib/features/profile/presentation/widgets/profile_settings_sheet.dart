@@ -330,9 +330,11 @@ class _SettingsSheet extends ConsumerWidget {
                 onTap: () => _showLanguagePicker(context, ref),
               ),
               _SheetRow(
+                // inverse badge so the theme control stands apart from the
+                // green-tinted rows around it
                 icon: Icons.dark_mode_outlined,
-                iconBg: nt.mist,
-                iconColor: nt.forest,
+                iconBg: nt.inverseSurface,
+                iconColor: nt.onInverseSurface,
                 label: l10n.settingsTheme,
                 detail: themeDetail,
                 isLast: true,
@@ -376,9 +378,10 @@ class _SettingsSheet extends ConsumerWidget {
                 border: Border.all(color: nt.border),
               ),
               child: _SheetRow(
+                // red badge — logout ends the session, not a brand action
                 icon: Icons.logout_rounded,
-                iconBg: nt.mist,
-                iconColor: nt.forest,
+                iconBg: nt.dangerTint,
+                iconColor: nt.danger,
                 label: l10n.settingsLogout,
                 showChevron: false,
                 isLast: true,

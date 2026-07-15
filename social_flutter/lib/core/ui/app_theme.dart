@@ -44,6 +44,11 @@ class NtripiColors extends ThemeExtension<NtripiColors> {
   final Color text2;   // secondary text
   final Color text3;   // tertiary text / hints
 
+  // Inverse of the page surface — a dark chip in light mode, light in dark.
+  // Used to make an element stand out against the plain surface.
+  final Color inverseSurface;
+  final Color onInverseSurface;
+
   // Danger — destructive-action affordances
   final Color danger;
   final Color dangerTint;
@@ -124,6 +129,8 @@ class NtripiColors extends ThemeExtension<NtripiColors> {
     required this.border,
     required this.text2,
     required this.text3,
+    required this.inverseSurface,
+    required this.onInverseSurface,
     required this.danger,
     required this.dangerTint,
     required this.transitBg,
@@ -187,6 +194,8 @@ class NtripiColors extends ThemeExtension<NtripiColors> {
     border: Color(0xFFE4EDE6),
     text2: Color(0xFF5A7562),
     text3: Color(0xFF93A898),
+    inverseSurface: Color(0xFF1A2A1E),
+    onInverseSurface: Color(0xFFEFF1EB),
     danger: Color(0xFFBA1A1A),
     dangerTint: Color(0xFFFCECEC),
     transitBg: Color(0xFFFFF8EC),
@@ -258,6 +267,8 @@ class NtripiColors extends ThemeExtension<NtripiColors> {
     border: Color(0xFF2A342C),
     text2: Color(0xFFA8BCAE),
     text3: Color(0xFF75897B),
+    inverseSurface: Color(0xFFE2E9E2),
+    onInverseSurface: Color(0xFF2B322C),
     danger: Color(0xFFFFB4AB), // M3 dark-error convention
     dangerTint: Color(0xFF3B211F),
     transitBg: Color(0xFF262014),
@@ -342,6 +353,8 @@ class NtripiColors extends ThemeExtension<NtripiColors> {
       bark: c(bark, other.bark),
       surface: c(surface, other.surface),
       border: c(border, other.border),
+      inverseSurface: c(inverseSurface, other.inverseSurface),
+      onInverseSurface: c(onInverseSurface, other.onInverseSurface),
       text2: c(text2, other.text2),
       text3: c(text3, other.text3),
       danger: c(danger, other.danger),
