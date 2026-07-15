@@ -326,10 +326,14 @@ class _AppShellState extends ConsumerState<_AppShell> {
           // status-bar inset. MediaQuery still reports that inset to the
           // child Scaffold's AppBar, which would re-add it and leave a gap
           // below the status bar. Strip the top inset when a banner shows.
+          // removeBottom: the BottomNavigationBar already reserves the home-
+          // indicator inset; without this the child SafeArea re-adds it and
+          // leaves an empty strip of surface above the bar.
           Expanded(
             child: MediaQuery.removePadding(
               context: context,
               removeTop: _showDownloadBanner || isOffline,
+              removeBottom: true,
               child: widget.navigationShell,
             ),
           ),
