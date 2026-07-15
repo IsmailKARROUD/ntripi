@@ -45,6 +45,28 @@ class AppLocalizationsAr extends AppLocalizations {
   String get navFeed => 'اكتشف';
 
   @override
+  String get navSaved => 'المحفوظات';
+
+  @override
+  String get saveItineraryTooltip => 'حفظ خط السير';
+
+  @override
+  String get unsaveItineraryTooltip => 'إزالة من المحفوظات';
+
+  @override
+  String get savedItinerariesTitle => 'المحفوظات';
+
+  @override
+  String get noSavedItinerariesYet =>
+      'لا توجد خطوط سير محفوظة بعد. المس علامة الحفظ على أي خط سير لتحتفظ به هنا.';
+
+  @override
+  String get searchSavedHint => 'ابحث في المحفوظات…';
+
+  @override
+  String get savedSearchNoResults => 'لا يوجد خط سير محفوظ يطابق بحثك.';
+
+  @override
   String get feedTitle => 'اكتشف';
 
   @override

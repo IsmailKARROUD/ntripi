@@ -45,6 +45,29 @@ class AppLocalizationsFr extends AppLocalizations {
   String get navFeed => 'Fil';
 
   @override
+  String get navSaved => 'Enregistrés';
+
+  @override
+  String get saveItineraryTooltip => 'Enregistrer l\'itinéraire';
+
+  @override
+  String get unsaveItineraryTooltip => 'Retirer des enregistrements';
+
+  @override
+  String get savedItinerariesTitle => 'Enregistrés';
+
+  @override
+  String get noSavedItinerariesYet =>
+      'Aucun itinéraire enregistré pour l\'instant. Touchez le marque-page d\'un itinéraire pour le retrouver ici.';
+
+  @override
+  String get searchSavedHint => 'Rechercher dans les enregistrements…';
+
+  @override
+  String get savedSearchNoResults =>
+      'Aucun itinéraire enregistré ne correspond à votre recherche.';
+
+  @override
   String get feedTitle => 'Découvrir';
 
   @override

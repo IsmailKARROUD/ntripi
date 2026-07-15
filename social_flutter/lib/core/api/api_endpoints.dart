@@ -85,6 +85,12 @@ const kItinerariesEndpoint = '/itineraries/';
 String feedEndpoint({required String sort, int limit = 20, int offset = 0}) =>
     '/itineraries/feed?sort=$sort&limit=$limit&offset=$offset';
 
+/// List the authenticated user's saved (bookmarked) itineraries, newest first.
+const kSavedItinerariesEndpoint = '/itineraries/saved';
+
+/// Save (POST) or unsave (DELETE) an itinerary for the current user.
+String itinerarySaveEndpoint(String id) => '/itineraries/$id/save';
+
 /// CRUD for a single itinerary.
 String itineraryEndpoint(String id) => '/itineraries/$id';
 

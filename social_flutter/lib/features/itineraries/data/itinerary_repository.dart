@@ -110,6 +110,29 @@ class ItineraryRepository {
     return itinerary;
   }
 
+  // ---------------------------------------------------------------------------
+  // Saved (bookmarked) itineraries — user-scoped state, no If-Match.
+  // ---------------------------------------------------------------------------
+
+  Future<List<Itinerary>> getSavedItineraries({bool forceRefresh = false}) async {
+    final response = await _dio.get<List<dynamic>>(
+      kSavedItinerariesEndpoint,
+      options: forceRefresh ? forceRefreshOptions() : null,
+    );
+    return (response.data ?? [])
+        .cast<Map<String, dynamic>>()
+        .map(Itinerary.fromJson)
+        .toList();
+  }
+
+  Future<void> saveItinerary(String id) async {
+    await _dio.post(itinerarySaveEndpoint(id));
+  }
+
+  Future<void> unsaveItinerary(String id) async {
+    await _dio.delete(itinerarySaveEndpoint(id));
+  }
+
   Future<Itinerary> createItinerary(Map<String, dynamic> data) async {
     final response =
         await _dio.post<Map<String, dynamic>>(kItinerariesEndpoint, data: data);

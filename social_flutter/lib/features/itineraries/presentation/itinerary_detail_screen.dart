@@ -44,6 +44,7 @@ import 'package:social_flutter/core/ui/destructive_actions.dart';
 import 'package:social_flutter/features/itineraries/data/maps_launcher_service.dart';
 import 'package:social_flutter/features/itineraries/domain/annotation.dart';
 import 'package:social_flutter/features/itineraries/domain/itinerary.dart';
+import 'package:social_flutter/features/itineraries/providers/saved_itineraries_provider.dart';
 import 'package:social_flutter/features/itineraries/domain/track.dart';
 import 'package:social_flutter/features/itineraries/domain/itinerary_annotation.dart';
 import 'package:social_flutter/features/itineraries/domain/transit_segment.dart';
@@ -345,6 +346,27 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
       }
     }
     return points;
+  }
+
+  Future<void> _toggleSaved(Itinerary itinerary) async {
+    final l10n = AppLocalizations.of(context)!;
+    final messenger = ScaffoldMessenger.of(context);
+    final notifier = ref.read(savedItinerariesProvider.notifier);
+    final wasSaved = ref.read(isItinerarySavedProvider(itinerary.id));
+    try {
+      if (wasSaved) {
+        await notifier.unsave(itinerary.id);
+      } else {
+        await notifier.save(itinerary);
+      }
+    } catch (e) {
+      // Notifier already reverted the optimistic state — just surface the error.
+      if (mounted) {
+        messenger.showSnackBar(
+          SnackBar(content: Text(extractErrorMessage(e, l10n))),
+        );
+      }
+    }
   }
 
   Future<void> _openRouteInGoogleMaps(List<LatLng> points) async {
@@ -917,9 +939,23 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                                   ),
                                   const SizedBox(width: 8),
                                 ],
+                                // Save (bookmark) — non-owners only, hidden in
+                                // edit mode. currentUserId guard avoids the owner
+                                // briefly seeing it while their profile loads.
+                                if (!_editMode &&
+                                    currentUserId != null &&
+                                    !isOwner) ...[
+                                  _BookmarkPillButton(
+                                    saved: ref.watch(isItinerarySavedProvider(
+                                        widget.itineraryId)),
+                                    onTap: () => _toggleSaved(itinerary),
+                                  ),
+                                  const SizedBox(width: 8),
+                                ],
                                 // Open the full trajet in Google Maps — the
                                 // only map app with multi-stop deep links.
-                                if (routePoints.length >= 2) ...[
+                                // Hidden in edit mode alongside the bookmark.
+                                if (!_editMode && routePoints.length >= 2) ...[
                                   _RoutePillButton(
                                     tooltip: l10n.openRouteInMaps,
                                     onTap: () =>
@@ -1612,6 +1648,48 @@ class _RoutePillButton extends StatelessWidget {
             ),
             child:
                 Icon(Icons.directions_rounded, size: 20, color: nt.forest),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Bookmark pill button ─────────────────────────────────────────────────────
+// Sibling of _RoutePillButton — forest/mist so the two adjacent buttons match.
+// Gated by OfflineGate because saving is a mutation; filled ⇔ outlined tracks
+// the saved state read from isItinerarySavedProvider.
+class _BookmarkPillButton extends StatelessWidget {
+  final bool saved;
+  final VoidCallback onTap;
+
+  const _BookmarkPillButton({required this.saved, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final nt = context.nt;
+    final l10n = AppLocalizations.of(context)!;
+    return OfflineGate(
+      builder: (online) => Tooltip(
+        message: saved ? l10n.unsaveItineraryTooltip : l10n.saveItineraryTooltip,
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: online ? onTap : null,
+            borderRadius: BorderRadius.circular(10),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: nt.mist,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: nt.forest.withValues(alpha: 0.13)),
+              ),
+              child: Icon(
+                saved ? Icons.bookmark : Icons.bookmark_border,
+                size: 20,
+                color: nt.forest,
+              ),
+            ),
           ),
         ),
       ),

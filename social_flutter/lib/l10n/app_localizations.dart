@@ -172,6 +172,48 @@ abstract class AppLocalizations {
   /// **'Feed'**
   String get navFeed;
 
+  /// No description provided for @navSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved'**
+  String get navSaved;
+
+  /// No description provided for @saveItineraryTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Save itinerary'**
+  String get saveItineraryTooltip;
+
+  /// No description provided for @unsaveItineraryTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove from saved'**
+  String get unsaveItineraryTooltip;
+
+  /// No description provided for @savedItinerariesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved'**
+  String get savedItinerariesTitle;
+
+  /// No description provided for @noSavedItinerariesYet.
+  ///
+  /// In en, this message translates to:
+  /// **'No saved itineraries yet. Tap the bookmark on any itinerary to keep it here.'**
+  String get noSavedItinerariesYet;
+
+  /// No description provided for @searchSavedHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search saved…'**
+  String get searchSavedHint;
+
+  /// No description provided for @savedSearchNoResults.
+  ///
+  /// In en, this message translates to:
+  /// **'No saved itineraries match your search.'**
+  String get savedSearchNoResults;
+
   /// No description provided for @feedTitle.
   ///
   /// In en, this message translates to:

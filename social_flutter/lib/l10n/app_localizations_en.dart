@@ -45,6 +45,28 @@ class AppLocalizationsEn extends AppLocalizations {
   String get navFeed => 'Feed';
 
   @override
+  String get navSaved => 'Saved';
+
+  @override
+  String get saveItineraryTooltip => 'Save itinerary';
+
+  @override
+  String get unsaveItineraryTooltip => 'Remove from saved';
+
+  @override
+  String get savedItinerariesTitle => 'Saved';
+
+  @override
+  String get noSavedItinerariesYet =>
+      'No saved itineraries yet. Tap the bookmark on any itinerary to keep it here.';
+
+  @override
+  String get searchSavedHint => 'Search saved…';
+
+  @override
+  String get savedSearchNoResults => 'No saved itineraries match your search.';
+
+  @override
   String get feedTitle => 'Discover';
 
   @override

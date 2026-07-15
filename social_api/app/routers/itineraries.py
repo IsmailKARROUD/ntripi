@@ -44,6 +44,7 @@ from app.models.annotation import Annotation
 from app.models.itinerary import Itinerary
 from app.models.itinerary_annotation import ItineraryAnnotation
 from app.models.itinerary_allowed_user import ItineraryAllowedUser
+from app.models.saved_itinerary import SavedItinerary
 from app.models.stop import Stop
 from app.models.track import Track
 from app.models.transit_segment import TransitSegment
@@ -547,6 +548,37 @@ def list_feed(
 
     rows = db.execute(query.limit(limit).offset(offset)).all()
     return [_to_feed_item(itinerary, owner) for itinerary, owner in rows]
+
+
+# ---------------------------------------------------------------------------
+# GET /itineraries/saved — The current user's saved (bookmarked) itineraries
+# Declared before /{itinerary_id} so FastAPI matches the literal "saved" path
+# instead of treating it as a {itinerary_id} UUID.
+# ---------------------------------------------------------------------------
+
+@router.get("/saved", response_model=list[ItinerarySummary],
+            summary="List the current user's saved itineraries")
+def list_saved_itineraries(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> list[ItinerarySummary]:
+    itineraries = db.execute(
+        select(Itinerary)
+        .join(SavedItinerary, SavedItinerary.itinerary_id == Itinerary.id)
+        .where(SavedItinerary.user_id == current_user.id)
+        # Eager-load tracks→stops so the stops_count property is cheap (no N+1);
+        # same selectinload pattern as the feed.
+        .options(selectinload(Itinerary.tracks).selectinload(Track.stops))
+        # saved_at can collide (server now()), so id is the stable tie-breaker.
+        .order_by(SavedItinerary.saved_at.desc(), Itinerary.id.desc())
+    ).scalars().all()
+
+    # Filter through the single source of truth — a saved itinerary whose
+    # visibility later dropped (e.g. to only_me) must not leak here.
+    return [
+        i for i in itineraries
+        if can_view_itinerary(i, current_user.id, db)
+    ]  # type: ignore[return-value]
 
 
 # ---------------------------------------------------------------------------
@@ -1351,6 +1383,51 @@ def get_my_rating(
                             code="rating_not_found", detail="You have not rated this itinerary.")
 
     return rating  # type: ignore[return-value]
+
+
+# ---------------------------------------------------------------------------
+# POST/DELETE /itineraries/{itinerary_id}/save — Save / unsave (bookmark)
+# User-scoped state (like ratings) — no If-Match; itinerary body is untouched.
+# ---------------------------------------------------------------------------
+
+@router.post("/{itinerary_id}/save", status_code=status.HTTP_204_NO_CONTENT,
+             summary="Save (bookmark) an itinerary for the current user")
+def save_itinerary(
+    itinerary_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> None:
+    itinerary = _get_itinerary_or_404(itinerary_id, db)
+
+    if itinerary.user_id == current_user.id:
+        raise ApiError(status_code=status.HTTP_400_BAD_REQUEST,
+                            code="cannot_save_own_itinerary", detail="You cannot save your own itinerary.")
+
+    if not can_view_itinerary(itinerary, current_user.id, db):
+        raise ApiError(status_code=status.HTTP_403_FORBIDDEN,
+                            code="itinerary_access_denied", detail="You do not have access to this itinerary.")
+
+    existing = db.get(SavedItinerary, (itinerary_id, current_user.id))
+    if existing:
+        return  # idempotent — re-saving is a no-op so an optimistic UI never errors
+
+    db.add(SavedItinerary(itinerary_id=itinerary_id, user_id=current_user.id))
+    db.commit()
+
+
+@router.delete("/{itinerary_id}/save", status_code=status.HTTP_204_NO_CONTENT,
+               summary="Unsave (remove bookmark) an itinerary for the current user")
+def unsave_itinerary(
+    itinerary_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> None:
+    # No existence/visibility check — users must be able to unsave itineraries
+    # that were since deleted or made invisible to them.
+    saved = db.get(SavedItinerary, (itinerary_id, current_user.id))
+    if saved:
+        db.delete(saved)
+        db.commit()
 
 
 @router.get("/{itinerary_id}/ratings", response_model=RatingsPageResponse,

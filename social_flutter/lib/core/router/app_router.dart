@@ -20,6 +20,7 @@ import 'package:social_flutter/features/itineraries/presentation/stop_detail_scr
 import 'package:social_flutter/features/itineraries/presentation/itinerary_form_screen.dart';
 import 'package:social_flutter/features/itineraries/presentation/itinerary_list_screen.dart';
 import 'package:social_flutter/features/itineraries/presentation/map_picker_screen.dart';
+import 'package:social_flutter/features/itineraries/presentation/saved_itineraries_screen.dart';
 import 'package:social_flutter/features/itineraries/presentation/stop_form_screen.dart';
 import 'package:social_flutter/features/itineraries/domain/dimension_key.dart';
 import 'package:social_flutter/features/itineraries/presentation/dimension_ratings_screen.dart';
@@ -247,7 +248,17 @@ final appRouter = GoRouter(
           ],
         ),
 
-        // Branch 3 — Feed (public discovery feed)
+        // Branch 3 — Saved (bookmarked itineraries)
+        StatefulShellBranch(
+          routes: [
+            GoRoute(
+              path: '/saved',
+              builder: (_, __) => const SavedItinerariesScreen(),
+            ),
+          ],
+        ),
+
+        // Branch 4 — Feed (public discovery feed)
         StatefulShellBranch(
           routes: [
             GoRoute(
@@ -372,6 +383,11 @@ class _AppShellState extends ConsumerState<_AppShell> {
               icon: const Icon(Icons.article_outlined),
               activeIcon: const Icon(Icons.article),
               label: AppLocalizations.of(context)!.navItineraries,
+            ),
+            BottomNavigationBarItem(
+              icon: const Icon(Icons.bookmark_border),
+              activeIcon: const Icon(Icons.bookmark),
+              label: AppLocalizations.of(context)!.navSaved,
             ),
             BottomNavigationBarItem(
               icon: const Icon(Icons.dynamic_feed_outlined),

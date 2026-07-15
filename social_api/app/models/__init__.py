@@ -9,6 +9,7 @@ from app.models.security_audit_log import SecurityAuditLog
 from app.models.follow import Follow, FollowStatus
 from app.models.itinerary import Itinerary
 from app.models.itinerary_allowed_user import ItineraryAllowedUser
+from app.models.saved_itinerary import SavedItinerary
 from app.models.track import Track
 from app.models.stop import Stop
 from app.models.annotation import Annotation
@@ -21,7 +22,7 @@ from app.models.waitlist import WaitlistEntry
 __all__ = [
     "User", "RefreshToken", "EmailToken", "PasswordHistory", "SecurityAuditLog",
     "Follow", "FollowStatus",
-    "Itinerary", "ItineraryAllowedUser", "Track",
+    "Itinerary", "ItineraryAllowedUser", "SavedItinerary", "Track",
     "Stop", "Annotation", "ItineraryRating", "ItineraryAnnotation",
     "TransitSegment", "TransportLeg", "WaitlistEntry",
 ]

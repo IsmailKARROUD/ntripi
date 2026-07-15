@@ -13,6 +13,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:social_flutter/core/api/api_client.dart';
 import 'package:social_flutter/features/auth/data/auth_repository.dart';
 import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
+import 'package:social_flutter/features/itineraries/providers/saved_itineraries_provider.dart';
 import 'package:social_flutter/features/profile/providers/profile_provider.dart';
 import 'package:social_flutter/features/search/providers/search_provider.dart';
 
@@ -48,6 +49,7 @@ class AuthNotifier extends Notifier<String?> {
     // point, so a refetch would immediately 401.
     ref.invalidate(myProfileProvider);
     ref.invalidate(myItinerariesProvider);
+    ref.invalidate(savedItinerariesProvider);
     ref.invalidate(searchQueryProvider);
     state = null;
   }

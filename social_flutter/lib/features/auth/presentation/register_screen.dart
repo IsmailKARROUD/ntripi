@@ -14,6 +14,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:social_flutter/features/auth/domain/username_validator.dart';
 import 'package:social_flutter/features/auth/providers/auth_provider.dart';
 import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
+import 'package:social_flutter/features/itineraries/providers/saved_itineraries_provider.dart';
 import 'package:social_flutter/features/profile/providers/profile_provider.dart';
 import 'package:social_flutter/core/utils/platform_utils.dart';
 import 'package:social_flutter/l10n/app_localizations.dart';
@@ -135,6 +136,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       ref.read(authNotifierProvider.notifier).setAuthenticated(result.userId);
       ref.invalidate(myProfileProvider);
       ref.invalidate(myItinerariesProvider);
+      ref.invalidate(savedItinerariesProvider);
       if (mounted) context.go('/profile/me');
     } on DioException catch (e) {
       setState(() => _errorMessage = extractErrorMessage(e, AppLocalizations.of(context)!));
