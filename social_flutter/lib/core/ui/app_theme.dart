@@ -263,7 +263,7 @@ class NtripiColors extends ThemeExtension<NtripiColors> {
     amber: Color(0xFFDFAE55),
     sand: Color(0xFF1C231D),
     bark: Color(0xFFE2E9E2),
-    surface: Color(0xFF010908),
+    surface: Colors.black,
     border: Color(0xFF2A342C),
     text2: Color(0xFFB8CFC9),
     text3: Color(0xFF75897B),

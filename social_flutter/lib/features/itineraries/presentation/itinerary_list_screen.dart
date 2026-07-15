@@ -60,7 +60,7 @@ class ItineraryListScreen extends ConsumerWidget {
     final online = ref.watch(isOnlineProvider).value ?? true;
 
     return Scaffold(
-      backgroundColor: nt.sand,
+      backgroundColor: nt.surface,
       resizeToAvoidBottomInset: false,
       body: SafeArea(
         child: Center(

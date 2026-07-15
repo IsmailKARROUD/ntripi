@@ -56,7 +56,7 @@ class _FeedScreenState extends ConsumerState<FeedScreen> {
     final hasMore = ref.read(feedProvider.notifier).hasMore;
 
     return Scaffold(
-      backgroundColor: nt.sand,
+      backgroundColor: nt.surface,
       resizeToAvoidBottomInset: false,
       body: SafeArea(
         child: Center(
