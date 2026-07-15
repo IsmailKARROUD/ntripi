@@ -243,12 +243,13 @@ class _ProfileEditFormState extends ConsumerState<ProfileEditForm> {
 
   @override
   Widget build(BuildContext context) {
+    final nt = context.nt;
     final l10n = AppLocalizations.of(context)!;
     final user = widget.user;
 
     return SavingOverlay(
       saving: _saving,
-      tint: kSurface,
+      tint: nt.surface,
       child: Column(
       children: [
         SafeArea(
@@ -259,7 +260,7 @@ class _ProfileEditFormState extends ConsumerState<ProfileEditForm> {
               children: [
                 TextButton(
                   onPressed: _saving ? null : widget.onCancel,
-                  style: TextButton.styleFrom(foregroundColor: kText2),
+                  style: TextButton.styleFrom(foregroundColor: nt.text2),
                   child: Text(
                     l10n.cancel,
                     style: const TextStyle(
@@ -270,10 +271,10 @@ class _ProfileEditFormState extends ConsumerState<ProfileEditForm> {
                   child: Text(
                     l10n.editProfileTitle,
                     textAlign: TextAlign.center,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w700,
-                      color: kBark,
+                      color: nt.bark,
                       letterSpacing: -0.2,
                     ),
                   ),
@@ -282,12 +283,12 @@ class _ProfileEditFormState extends ConsumerState<ProfileEditForm> {
                   builder: (online) => TextButton(
                     onPressed: (_saving || !online) ? null : _saveEdits,
                     child: _saving
-                        ? const SizedBox(
+                        ? SizedBox(
                             width: 18,
                             height: 18,
                             child: CircularProgressIndicator(
                               strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation(kForest),
+                              valueColor: AlwaysStoppedAnimation(nt.forest),
                             ),
                           )
                         : Text(
@@ -320,9 +321,9 @@ class _ProfileEditFormState extends ConsumerState<ProfileEditForm> {
                             children: [
                               Container(
                                 padding: const EdgeInsets.all(4),
-                                decoration: const BoxDecoration(
+                                decoration: BoxDecoration(
                                   shape: BoxShape.circle,
-                                  color: kSand,
+                                  color: nt.sand,
                                 ),
                                 child: _pickedAvatarBytes != null
                                     ? ClipOval(
@@ -356,21 +357,21 @@ class _ProfileEditFormState extends ConsumerState<ProfileEditForm> {
                                       width: 28,
                                       height: 28,
                                       decoration: BoxDecoration(
-                                        color: Colors.white,
+                                        color: nt.surface,
                                         shape: BoxShape.circle,
                                         border: Border.all(
-                                            color: kSand, width: 2),
+                                            color: nt.sand, width: 2),
                                         boxShadow: [
                                           BoxShadow(
-                                            color: Colors.black
+                                            color: nt.shadow
                                                 .withValues(alpha: 0.15),
                                             blurRadius: 6,
                                           ),
                                         ],
                                       ),
-                                      child: const Icon(
+                                      child: Icon(
                                         Icons.close_rounded,
-                                        color: kBark,
+                                        color: nt.bark,
                                         size: 16,
                                       ),
                                     ),
@@ -383,21 +384,22 @@ class _ProfileEditFormState extends ConsumerState<ProfileEditForm> {
                                   width: 32,
                                   height: 32,
                                   decoration: BoxDecoration(
-                                    color: kForest,
+                                    color: nt.forest,
                                     shape: BoxShape.circle,
                                     border:
-                                        Border.all(color: kSand, width: 3),
+                                        Border.all(color: nt.sand, width: 3),
                                     boxShadow: [
                                       BoxShadow(
-                                        color: Colors.black
+                                        color: nt.shadow
                                             .withValues(alpha: 0.15),
                                         blurRadius: 8,
                                       ),
                                     ],
                                   ),
-                                  child: const Icon(
+                                  child: Icon(
                                     Icons.photo_camera,
-                                    color: Colors.white,
+                                    color:
+                                        Theme.of(context).colorScheme.onPrimary,
                                     size: 15,
                                   ),
                                 ),
@@ -407,10 +409,10 @@ class _ProfileEditFormState extends ConsumerState<ProfileEditForm> {
                           const SizedBox(height: 8),
                           Text(
                             l10n.uploadPhoto,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 13,
                               fontWeight: FontWeight.w600,
-                              color: kForest,
+                              color: nt.forest,
                             ),
                           ),
                         ],
@@ -453,13 +455,13 @@ class _ProfileEditFormState extends ConsumerState<ProfileEditForm> {
                     label: l10n.coverImageUrlLabel,
                     child: TextField(
                       controller: _coverImageUrlController,
-                      style: const TextStyle(
+                      style: TextStyle(
                           fontSize: 15,
-                          color: kBark,
+                          color: nt.bark,
                           fontWeight: FontWeight.w500),
-                      decoration: const InputDecoration(
+                      decoration: InputDecoration(
                         hintText: 'https://…',
-                        hintStyle: TextStyle(color: kText3, fontSize: 14),
+                        hintStyle: TextStyle(color: nt.text3, fontSize: 14),
                         border: InputBorder.none,
                         contentPadding:
                             EdgeInsetsDirectional.only(start: 8, top: 8, bottom: 8),
@@ -478,9 +480,9 @@ class _ProfileEditFormState extends ConsumerState<ProfileEditForm> {
                     label: l10n.displayNameLabel,
                     child: TextField(
                       controller: _displayNameController,
-                      style: const TextStyle(
+                      style: TextStyle(
                           fontSize: 15,
-                          color: kBark,
+                          color: nt.bark,
                           fontWeight: FontWeight.w500),
                       decoration: const InputDecoration(
                         border: InputBorder.none,
@@ -496,9 +498,9 @@ class _ProfileEditFormState extends ConsumerState<ProfileEditForm> {
                     label: l10n.usernameLabel,
                     child: Text(
                       user.handle,
-                      style: const TextStyle(
+                      style: TextStyle(
                           fontSize: 15,
-                          color: kText2,
+                          color: nt.text2,
                           fontWeight: FontWeight.w500),
                     ),
                   ),
@@ -518,9 +520,9 @@ class _ProfileEditFormState extends ConsumerState<ProfileEditForm> {
                               child: _bioController.text.trim().isEmpty
                                   ? Text(
                                       l10n.addBioLabel,
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                           fontSize: 15,
-                                          color: kText3,
+                                          color: nt.text3,
                                           fontWeight: FontWeight.w500),
                                     )
                                   // IgnorePointer so the selectable markdown
@@ -531,8 +533,8 @@ class _ProfileEditFormState extends ConsumerState<ProfileEditForm> {
                                     ),
                             ),
                             const SizedBox(width: 8),
-                            const Icon(Icons.edit_outlined,
-                                size: 16, color: kText3),
+                            Icon(Icons.edit_outlined,
+                                size: 16, color: nt.text3),
                           ],
                         ),
                       ),
@@ -544,13 +546,13 @@ class _ProfileEditFormState extends ConsumerState<ProfileEditForm> {
                     label: l10n.avatarUrlLabel,
                     child: TextField(
                       controller: _avatarUrlController,
-                      style: const TextStyle(
+                      style: TextStyle(
                           fontSize: 15,
-                          color: kBark,
+                          color: nt.bark,
                           fontWeight: FontWeight.w500),
-                      decoration: const InputDecoration(
+                      decoration: InputDecoration(
                         hintText: 'https://…',
-                        hintStyle: TextStyle(color: kText3, fontSize: 14),
+                        hintStyle: TextStyle(color: nt.text3, fontSize: 14),
                         border: InputBorder.none,
                         contentPadding:
                             EdgeInsetsDirectional.only(start: 8, top: 8, bottom: 8),
@@ -677,25 +679,25 @@ class _ProfileEditFormState extends ConsumerState<ProfileEditForm> {
                               width: 32,
                               height: 32,
                               decoration: BoxDecoration(
-                                color: const Color(0xFFD0EBDA),
+                                color: nt.mist,
                                 borderRadius: BorderRadius.circular(10),
                               ),
-                              child: const Icon(Icons.password_rounded,
-                                  size: 16, color: kForest),
+                              child: Icon(Icons.password_rounded,
+                                  size: 16, color: nt.forest),
                             ),
                             const SizedBox(width: 12),
                             Expanded(
                               child: Text(
                                 l10n.changePasswordTitle,
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 15,
                                   fontWeight: FontWeight.w600,
-                                  color: kBark,
+                                  color: nt.bark,
                                 ),
                               ),
                             ),
-                            const Icon(Icons.chevron_right,
-                                size: 20, color: kText3),
+                            Icon(Icons.chevron_right,
+                                size: 20, color: nt.text3),
                           ],
                         ),
                       ),
@@ -706,7 +708,7 @@ class _ProfileEditFormState extends ConsumerState<ProfileEditForm> {
                 _SectionLabel(
                   icon: Icons.warning_amber_rounded,
                   label: l10n.dangerZoneSection,
-                  color: kDanger,
+                  color: nt.danger,
                 ),
                 _SectionCard(children: [
                   InkWell(
@@ -721,25 +723,25 @@ class _ProfileEditFormState extends ConsumerState<ProfileEditForm> {
                             width: 32,
                             height: 32,
                             decoration: BoxDecoration(
-                              color: const Color(0xFFFFDAD6),
+                              color: nt.dangerTint,
                               borderRadius: BorderRadius.circular(10),
                             ),
-                            child: const Icon(Icons.delete_outline_rounded,
-                                size: 16, color: Color(0xFFBA1A1A)),
+                            child: Icon(Icons.delete_outline_rounded,
+                                size: 16, color: nt.danger),
                           ),
                           const SizedBox(width: 12),
                           Expanded(
                             child: Text(
                               l10n.settingsDeleteAccount,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 15,
                                 fontWeight: FontWeight.w600,
-                                color: Color(0xFFBA1A1A),
+                                color: nt.danger,
                               ),
                             ),
                           ),
-                          const Icon(Icons.chevron_right,
-                              size: 20, color: Color(0xFFBA1A1A)),
+                          Icon(Icons.chevron_right,
+                              size: 20, color: nt.danger),
                         ],
                       ),
                     ),
@@ -758,11 +760,13 @@ class _ProfileEditFormState extends ConsumerState<ProfileEditForm> {
 class _SectionLabel extends StatelessWidget {
   final IconData icon;
   final String label;
-  final Color color;
-  const _SectionLabel({required this.icon, required this.label, this.color = kText2});
+  // Nullable: theme lookups aren't const, so the default resolves in build.
+  final Color? color;
+  const _SectionLabel({required this.icon, required this.label, this.color});
 
   @override
   Widget build(BuildContext context) {
+    final color = this.color ?? context.nt.text2;
     return Padding(
       padding: const EdgeInsets.fromLTRB(22, 14, 22, 8),
       child: Row(
@@ -790,12 +794,13 @@ class _SectionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final nt = context.nt;
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
-        color: kSurface,
+        color: nt.surface,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: kBorder),
+        border: Border.all(color: nt.border),
       ),
       child: Column(children: children),
     );
@@ -807,10 +812,11 @@ class _FieldDivider extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final nt = context.nt;
     return Container(
       height: 1,
       margin: const EdgeInsetsDirectional.only(start: 16),
-      color: kBorder,
+      color: nt.border,
     );
   }
 }
@@ -828,6 +834,7 @@ class _EditFieldRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final nt = context.nt;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       child: Row(
@@ -837,10 +844,10 @@ class _EditFieldRow extends StatelessWidget {
             width: 32,
             height: 32,
             decoration: BoxDecoration(
-              color: const Color(0xFFD0EBDA),
+              color: nt.mist,
               borderRadius: BorderRadius.circular(10),
             ),
-            child: Icon(icon, size: 16, color: kForest),
+            child: Icon(icon, size: 16, color: nt.forest),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -850,10 +857,10 @@ class _EditFieldRow extends StatelessWidget {
                     children: [
                       Text(
                         label!.toUpperCase(),
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.w700,
-                          color: kText2,
+                          color: nt.text2,
                           letterSpacing: 0.5,
                         ),
                       ),
@@ -886,6 +893,7 @@ class _ToggleRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final nt = context.nt;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       child: Row(
@@ -895,13 +903,11 @@ class _ToggleRow extends StatelessWidget {
             width: 32,
             height: 32,
             decoration: BoxDecoration(
-              color: value
-                  ? const Color(0xFFD0EBDA)
-                  : const Color(0xFFF5F2EC),
+              color: value ? nt.mist : nt.sand,
               borderRadius: BorderRadius.circular(10),
             ),
             child: Icon(icon,
-                size: 16, color: value ? kForest : kText2),
+                size: 16, color: value ? nt.forest : nt.text2),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -910,17 +916,17 @@ class _ToggleRow extends StatelessWidget {
               children: [
                 Text(
                   label,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w600,
-                    color: kBark,
+                    color: nt.bark,
                   ),
                 ),
                 if (subtitle != null)
                   Text(
                     subtitle!,
-                    style: const TextStyle(
-                        fontSize: 12, color: kText2, height: 1.4),
+                    style: TextStyle(
+                        fontSize: 12, color: nt.text2, height: 1.4),
                   ),
               ],
             ),
@@ -929,7 +935,7 @@ class _ToggleRow extends StatelessWidget {
           Switch(
             value: value,
             onChanged: onChanged,
-            activeThumbColor: kForest,
+            activeThumbColor: nt.forest,
           ),
         ],
       ),
@@ -952,6 +958,7 @@ class _PickerRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final nt = context.nt;
     final country = countryCode != null ? countryByCode(countryCode!) : null;
     return InkWell(
       onTap: onTap,
@@ -963,10 +970,10 @@ class _PickerRow extends StatelessWidget {
               width: 32,
               height: 32,
               decoration: BoxDecoration(
-                color: const Color(0xFFD0EBDA),
+                color: nt.mist,
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: Icon(icon, size: 16, color: kForest),
+              child: Icon(icon, size: 16, color: nt.forest),
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -975,10 +982,10 @@ class _PickerRow extends StatelessWidget {
                 children: [
                   Text(
                     label.toUpperCase(),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 10,
                       fontWeight: FontWeight.w700,
-                      color: kText2,
+                      color: nt.text2,
                       letterSpacing: 0.5,
                     ),
                   ),
@@ -990,13 +997,13 @@ class _PickerRow extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w500,
-                      color: country != null ? kBark : kText3,
+                      color: country != null ? nt.bark : nt.text3,
                     ),
                   ),
                 ],
               ),
             ),
-            const Icon(Icons.chevron_right, size: 20, color: kText3),
+            Icon(Icons.chevron_right, size: 20, color: nt.text3),
           ],
         ),
       ),
@@ -1023,6 +1030,7 @@ class _CodeChipsRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final nt = context.nt;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
       child: Row(
@@ -1032,10 +1040,10 @@ class _CodeChipsRow extends StatelessWidget {
             width: 32,
             height: 32,
             decoration: BoxDecoration(
-              color: const Color(0xFFD0EBDA),
+              color: nt.mist,
               borderRadius: BorderRadius.circular(10),
             ),
-            child: Icon(icon, size: 16, color: kForest),
+            child: Icon(icon, size: 16, color: nt.forest),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -1044,10 +1052,10 @@ class _CodeChipsRow extends StatelessWidget {
               children: [
                 Text(
                   label.toUpperCase(),
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 10,
                     fontWeight: FontWeight.w700,
-                    color: kText2,
+                    color: nt.text2,
                     letterSpacing: 0.5,
                   ),
                 ),
@@ -1080,11 +1088,12 @@ class _Chip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final nt = context.nt;
     return Container(
       padding:
           const EdgeInsetsDirectional.only(start: 10, end: 4, top: 5, bottom: 5),
       decoration: BoxDecoration(
-        color: const Color(0xFFD0EBDA),
+        color: nt.mist,
         borderRadius: BorderRadius.circular(999),
       ),
       child: Row(
@@ -1092,17 +1101,17 @@ class _Chip extends StatelessWidget {
         children: [
           Text(
             label,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w700,
-              color: kForest,
+              color: nt.forest,
             ),
           ),
           const SizedBox(width: 2),
           GestureDetector(
             onTap: onRemove,
-            child: const Icon(Icons.close_rounded,
-                size: 14, color: kForest),
+            child: Icon(Icons.close_rounded,
+                size: 14, color: nt.forest),
           ),
         ],
       ),
@@ -1116,6 +1125,7 @@ class _AddChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final nt = context.nt;
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -1123,19 +1133,19 @@ class _AddChip extends StatelessWidget {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(999),
           border:
-              Border.all(color: kText3, style: BorderStyle.solid, width: 1.5),
+              Border.all(color: nt.text3, style: BorderStyle.solid, width: 1.5),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.add_rounded, size: 13, color: kText2),
+            Icon(Icons.add_rounded, size: 13, color: nt.text2),
             const SizedBox(width: 3),
             Text(
               AppLocalizations.of(context)!.addButton,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w700,
-                color: kText2,
+                color: nt.text2,
               ),
             ),
           ],

@@ -432,6 +432,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsLanguage => 'Language';
 
   @override
+  String get settingsTheme => 'Theme';
+
+  @override
   String get settingsSupport => 'Support';
 
   @override
@@ -469,6 +472,18 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get languageArabic => 'العربية';
+
+  @override
+  String get themePickerTitle => 'Theme';
+
+  @override
+  String get themeSystem => 'System';
+
+  @override
+  String get themeLight => 'Light';
+
+  @override
+  String get themeDark => 'Dark';
 
   @override
   String get followRequestsTitle => 'Follow Requests';

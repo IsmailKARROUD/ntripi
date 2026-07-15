@@ -5,6 +5,7 @@
 // are provided (omit them for read-only contexts).
 
 import 'package:flutter/material.dart';
+import 'package:social_flutter/core/ui/app_theme.dart';
 import 'package:social_flutter/features/itineraries/domain/transport_leg.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/edit_pencil_button.dart';
 import 'package:social_flutter/l10n/app_localizations.dart';
@@ -23,12 +24,14 @@ class LegTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final nt = context.nt;
     return ListTile(
       dense: true,
       leading: CircleAvatar(
         radius: 14,
-        backgroundColor: Colors.blue.shade50,
-        child: Icon(leg.mode.icon, size: 14, color: Colors.blue.shade700),
+        // transit palette — matches SegmentCard's leg rows
+        backgroundColor: nt.transitBg,
+        child: Icon(leg.mode.icon, size: 14, color: nt.transitIcon),
       ),
       title: Text(
         leg.summary(AppLocalizations.of(context)!),
@@ -49,7 +52,7 @@ class LegTile extends StatelessWidget {
               icon: const Icon(Icons.delete_outline, size: 18),
               onPressed: onDelete,
               visualDensity: VisualDensity.compact,
-              color: Colors.red.shade400,
+              color: context.nt.danger,
             ),
         ],
       ),
@@ -73,7 +76,7 @@ class LegTile extends StatelessWidget {
       style: Theme.of(context)
           .textTheme
           .bodySmall
-          ?.copyWith(color: Colors.grey.shade600),
+          ?.copyWith(color: context.nt.text2),
     );
   }
 }

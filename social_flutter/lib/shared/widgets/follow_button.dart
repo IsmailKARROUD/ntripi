@@ -10,6 +10,7 @@
 //   Centralising the logic here ensures consistent behaviour everywhere.
 
 import 'package:dio/dio.dart';
+import 'package:social_flutter/core/ui/app_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:social_flutter/core/api/api_client.dart';
@@ -149,8 +150,9 @@ class _FollowButtonState extends ConsumerState<FollowButton> {
           return FilledButton(
             onPressed: online ? _handleUnfollow : null,
             style: FilledButton.styleFrom(
-              backgroundColor: Colors.grey.shade200,
-              foregroundColor: Colors.black87,
+              // neutral "already following" fill — flips with the theme
+              backgroundColor: context.nt.sand,
+              foregroundColor: context.nt.bark,
             ),
             child: Text(AppLocalizations.of(context)!.followingButton),
           );

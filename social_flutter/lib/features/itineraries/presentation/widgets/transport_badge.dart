@@ -25,6 +25,7 @@ class TransportBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final nt = context.nt;
     final l10n = AppLocalizations.of(context)!;
     final costLabel = _costLabel(l10n);
     String _legString = leg.summary(l10n);
@@ -38,19 +39,19 @@ class TransportBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: kSand,
+        color: nt.sand,
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(leg.mode.icon, size: 13, color: kCanopy),
+          Icon(leg.mode.icon, size: 13, color: nt.canopy),
           const SizedBox(width: 4),
           Flexible(
             child: Text(
               _legString,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: kCanopy,
+                    color: nt.canopy,
                   ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
@@ -69,23 +70,24 @@ class AddTransportBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final nt = context.nt;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: kSand,
+        color: nt.sand,
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.add, size: 13, color: kCanopy),
+          Icon(Icons.add, size: 13, color: nt.canopy),
           const SizedBox(width: 4),
           Text(
             label ?? AppLocalizations.of(context)!.addTransitTitle,
             style: Theme.of(context)
                 .textTheme
                 .bodySmall
-                ?.copyWith(color: kCanopy),
+                ?.copyWith(color: nt.canopy),
           ),
         ],
       ),

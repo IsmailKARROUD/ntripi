@@ -1,7 +1,7 @@
 // features/search/presentation/search_screen.dart — User search screen.
 //
 // Editorial redesign — matches the visual language of follow_list_screen:
-//   · kSand background, custom top bar (no AppBar).
+//   · nt.sand background, custom top bar (no AppBar).
 //   · Inline search TextField with back button and clear button.
 //   · Results grouped in SectionCard rows with AvatarInitials fallback.
 //   · Editorial empty / no-results / error placeholders.
@@ -55,10 +55,11 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final nt = context.nt;
     final resultsAsync = ref.watch(searchResultsProvider);
 
     return Scaffold(
-      backgroundColor: kSurface,
+      backgroundColor: nt.surface,
       resizeToAvoidBottomInset: false,
       body: Center(
         child: ConstrainedBox(
@@ -75,7 +76,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                   onClear: _clearSearch,
                 ),
               ),
-              Container(height: 1, color: kBorder),
+              Container(height: 1, color: nt.border),
               Expanded(
                 child: resultsAsync.when(
                   loading: () =>
@@ -86,7 +87,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                       child: Text(
                         extractErrorMessage(error, AppLocalizations.of(context)!),
                         textAlign: TextAlign.center,
-                        style: const TextStyle(color: kText2),
+                        style: TextStyle(color: nt.text2),
                       ),
                     ),
                   ),
@@ -150,6 +151,7 @@ class _SearchTopBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final nt = context.nt;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
       child: Row(
@@ -162,18 +164,18 @@ class _SearchTopBar extends StatelessWidget {
                 autofocus: true,
                 decoration: InputDecoration(
                   hintText: AppLocalizations.of(context)!.searchPeoplePlaceholder,
-                  hintStyle: const TextStyle(
-                    color: kText3,
+                  hintStyle: TextStyle(
+                    color: nt.text3,
                     fontWeight: FontWeight.w500,
                   ),
                   border: InputBorder.none,
                   filled: false,
                   contentPadding: EdgeInsets.zero,
                 ),
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 17,
                   fontWeight: FontWeight.w600,
-                  color: kBark,
+                  color: nt.bark,
                   letterSpacing: -0.2,
                 ),
                 onChanged: onChanged,
@@ -183,12 +185,12 @@ class _SearchTopBar extends StatelessWidget {
           if (controller.text.isNotEmpty)
             IconButton(
               icon: const Icon(Icons.playlist_remove_outlined),
-              color: kBark,
+              color: nt.bark,
               onPressed: onClear,
             ),
           FieldHelpIcon(
             helpTitle: AppLocalizations.of(context)!.navSearch,
-            color: kBark,
+            color: nt.bark,
             helpMessage: AppLocalizations.of(context)!.searchUsersHelp,
             size: 22,
           ),
@@ -213,6 +215,7 @@ class _SearchResultRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final nt = context.nt;
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -237,38 +240,38 @@ class _SearchResultRow extends StatelessWidget {
                             child: Text(
                               user.nameForDisplay,
                               overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.w700,
-                                color: kBark,
+                                color: nt.bark,
                                 letterSpacing: -0.1,
                               ),
                             ),
                           ),
                           if (user.isPrivate) ...[
                             const SizedBox(width: 4),
-                            const Icon(Icons.lock_rounded,
-                                size: 13, color: kText3),
+                            Icon(Icons.lock_rounded,
+                                size: 13, color: nt.text3),
                           ],
                         ],
                       ),
                       Text(
                         user.handle,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 12,
-                          color: kText2,
+                          color: nt.text2,
                           fontWeight: FontWeight.w500,
                         ),
                       ),
                       if (user.followersCount > 0)
                         Text(
                           AppLocalizations.of(context)!.followerCountLabel(user.followersCount),
-                          style: const TextStyle(fontSize: 11, color: kText3),
+                          style: TextStyle(fontSize: 11, color: nt.text3),
                         ),
                     ],
                   ),
                 ),
-                const Icon(Icons.chevron_right, size: 18, color: kText3),
+                Icon(Icons.chevron_right, size: 18, color: nt.text3),
               ],
             ),
           ),
@@ -277,7 +280,7 @@ class _SearchResultRow extends StatelessWidget {
           Container(
             height: 1,
             margin: const EdgeInsetsDirectional.only(start: 70),
-            color: kBorder,
+            color: nt.border,
           ),
       ],
     );
@@ -294,13 +297,14 @@ class _EmptyStatePlaceholder extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final nt = context.nt;
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 56, color: kText3),
+          Icon(icon, size: 56, color: nt.text3),
           const SizedBox(height: 10),
-          Text(message, style: const TextStyle(color: kText2)),
+          Text(message, style: TextStyle(color: nt.text2)),
         ],
       ),
     );

@@ -52,6 +52,7 @@ class ItineraryListScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final nt = context.nt;
     final l10n = AppLocalizations.of(context)!;
     final itinerariesAsync = ref.watch(myItinerariesProvider);
     // Long-press delete is a hidden gesture with no visual to grey out —
@@ -59,7 +60,7 @@ class ItineraryListScreen extends ConsumerWidget {
     final online = ref.watch(isOnlineProvider).value ?? true;
 
     return Scaffold(
-      backgroundColor: kSand,
+      backgroundColor: nt.sand,
       resizeToAvoidBottomInset: false,
       body: SafeArea(
         child: Center(
@@ -120,10 +121,10 @@ class ItineraryListScreen extends ConsumerWidget {
                           Expanded(
                             child: Text(
                               l10n.myItineraries,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 22,
                                 fontWeight: FontWeight.w700,
-                                color: kBark,
+                                color: nt.bark,
                                 letterSpacing: -0.3,
                               ),
                             ),
@@ -145,8 +146,8 @@ class ItineraryListScreen extends ConsumerWidget {
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            const Icon(Icons.map_outlined,
-                                size: 64, color: kText3),
+                            Icon(Icons.map_outlined,
+                                size: 64, color: nt.text3),
                             const SizedBox(height: 16),
                             Text(
                               l10n.noItinerariesYet,
@@ -154,7 +155,7 @@ class ItineraryListScreen extends ConsumerWidget {
                             ),
                             const SizedBox(height: 8),
                             Text(l10n.tapToCreateFirst,
-                                style: const TextStyle(color: kText2)),
+                                style: TextStyle(color: nt.text2)),
                           ],
                         ),
                       ),
@@ -184,8 +185,9 @@ class ItineraryListScreen extends ConsumerWidget {
                 online ? () => context.push('/itineraries/new') : null,
             icon: const Icon(Icons.add_rounded),
             label: Text(l10n.newItinerary),
-            backgroundColor: kForest,
-            foregroundColor: Colors.white,
+            backgroundColor: nt.forest,
+            // onPrimary, not white — dark mode lightens the green fill
+            foregroundColor: Theme.of(context).colorScheme.onPrimary,
             shape:
                 RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           ),
@@ -252,37 +254,38 @@ class _SummaryPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final nt = context.nt;
     return Expanded(
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         decoration: BoxDecoration(
-          color: kSurface,
+          color: nt.surface,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: kBorder),
+          border: Border.all(color: nt.border),
         ),
         child: Row(
           children: [
-            Icon(icon, size: 16, color: kForest),
+            Icon(icon, size: 16, color: nt.forest),
             const SizedBox(width: 8),
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   value,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w700,
-                    color: kBark,
+                    color: nt.bark,
                     height: 1,
                   ),
                 ),
                 const SizedBox(height: 2),
                 Text(
                   label,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 10,
                     fontWeight: FontWeight.w600,
-                    color: kText2,
+                    color: nt.text2,
                   ),
                 ),
               ],

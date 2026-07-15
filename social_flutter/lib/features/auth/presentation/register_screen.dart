@@ -59,10 +59,11 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   }
 
   void _showTosSheet(AppLocalizations l10n) {
+    final nt = context.nt;
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: kSurface,
+      backgroundColor: nt.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -78,7 +79,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
               width: 36,
               height: 4,
               decoration: BoxDecoration(
-                color: kBorder,
+                color: nt.border,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -86,10 +87,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
               padding: const EdgeInsets.all(16),
               child: Text(
                 l10n.registerTosTitle,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w700,
-                  color: kBark,
+                  color: nt.bark,
                 ),
               ),
             ),
@@ -99,7 +100,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
                 child: Text(
                   _tosSummary ?? l10n.registerTosLoading,
-                  style: const TextStyle(fontSize: 14, color: kText2, height: 1.6),
+                  style: TextStyle(fontSize: 14, color: nt.text2, height: 1.6),
                 ),
               ),
             ),
@@ -153,12 +154,13 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final nt = context.nt;
     final l10n = AppLocalizations.of(context)!;
     return SavingOverlay(
       saving: _isLoading,
-      tint: kSurface,
+      tint: nt.surface,
       child: Scaffold(
-      backgroundColor: kSurface,
+      backgroundColor: nt.surface,
       body: Center(
         child: ConstrainedBox(
           constraints: BoxConstraints(maxWidth: isDesktopWeb() ? kDesktopMaxWidth : double.infinity),
@@ -190,17 +192,17 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 // Heading
                 Text(
                   l10n.registerTitle,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 26,
                     fontWeight: FontWeight.w800,
-                    color: kBark,
+                    color: nt.bark,
                     letterSpacing: -0.5,
                   ),
                 ),
                 const SizedBox(height: 6),
                 Text(
                   l10n.registerSubtitle,
-                  style: const TextStyle(fontSize: 14, color: kText2),
+                  style: TextStyle(fontSize: 14, color: nt.text2),
                 ),
                 const SizedBox(height: 24),
 
@@ -243,9 +245,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   decoration: InputDecoration(
                     hintText: l10n.registerUsernameHint,
                     prefixText: '@',
-                    prefixStyle: const TextStyle(
+                    prefixStyle: TextStyle(
                       fontSize: 15,
-                      color: kText3,
+                      color: nt.text3,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -315,7 +317,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                         _obscurePassword
                             ? Icons.visibility_outlined
                             : Icons.visibility_off_outlined,
-                        color: kText3,
+                        color: nt.text3,
                         size: 20,
                       ),
                       onPressed: () =>
@@ -355,7 +357,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                         _obscureConfirm
                             ? Icons.visibility_outlined
                             : Icons.visibility_off_outlined,
-                        color: kText3,
+                        color: nt.text3,
                         size: 20,
                       ),
                       onPressed: () =>
@@ -389,27 +391,27 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                           children: [
                             Text(
                               l10n.registerTosAgree,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 13,
-                                color: kText2,
+                                color: nt.text2,
                               ),
                             ),
                             GestureDetector(
                               onTap: () => _showTosSheet(l10n),
                               child: Text(
                                 l10n.registerTos,
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 13,
                                   fontWeight: FontWeight.w600,
-                                  color: kForest,
+                                  color: nt.forest,
                                 ),
                               ),
                             ),
                             Text(
                               l10n.registerTosAnd,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 13,
-                                color: kText2,
+                                color: nt.text2,
                               ),
                             ),
                             GestureDetector(
@@ -419,10 +421,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                               ),
                               child: Text(
                                 l10n.registerPrivacyPolicy,
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 13,
                                   fontWeight: FontWeight.w600,
-                                  color: kForest,
+                                  color: nt.forest,
                                 ),
                               ),
                             ),
@@ -432,7 +434,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       FieldHelpIcon(
                         helpTitle: l10n.registerTos,
                         helpMessage: l10n.registerTosHelp,
-                        color: kText2,
+                        color: nt.text2,
                       ),
                     ],
                   ),
@@ -467,16 +469,16 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   children: [
                     Text(
                       l10n.registerAlreadyHaveAccount,
-                      style: const TextStyle(fontSize: 14, color: kText2),
+                      style: TextStyle(fontSize: 14, color: nt.text2),
                     ),
                     GestureDetector(
                       onTap: () => context.go('/login'),
                       child: Text(
                         l10n.registerSignIn,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w700,
-                          color: kForest,
+                          color: nt.forest,
                         ),
                       ),
                     ),
@@ -501,10 +503,11 @@ class _FieldLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const labelStyle = TextStyle(
+    final nt = context.nt;
+    final labelStyle = TextStyle(
       fontSize: 12,
       fontWeight: FontWeight.w600,
-      color: kText2,
+      color: nt.text2,
     );
     if (helpTitle == null || helpMessage == null) {
       return Text(text, style: labelStyle);
@@ -519,7 +522,7 @@ class _FieldLabel extends StatelessWidget {
           helpTitle: helpTitle!,
           helpMessage: helpMessage!,
           size: 16,
-          color: kText2,
+          color: nt.text2,
         ),
       ],
     );
@@ -532,16 +535,17 @@ class _ErrorBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: const Color(0xFFFFDAD6),
+        color: cs.errorContainer,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFFFB4AB)),
+        border: Border.all(color: cs.error.withValues(alpha: 0.4)),
       ),
       child: Text(
         message,
-        style: const TextStyle(color: Color(0xFF410002), fontSize: 13),
+        style: TextStyle(color: cs.onErrorContainer, fontSize: 13),
         textAlign: TextAlign.center,
       ),
     );
@@ -555,24 +559,25 @@ class _CircleIconButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final nt = context.nt;
     return GestureDetector(
       onTap: onTap,
       child: Container(
         width: 36,
         height: 36,
         decoration: BoxDecoration(
-          color: kSurface,
+          color: nt.surface,
           shape: BoxShape.circle,
-          border: Border.all(color: kBorder),
-          boxShadow: const [
+          border: Border.all(color: nt.border),
+          boxShadow: [
             BoxShadow(
-              color: Color(0x0D001408),
+              color: nt.shadow.withValues(alpha: 0.05),
               blurRadius: 8,
-              offset: Offset(0, 2),
+              offset: const Offset(0, 2),
             ),
           ],
         ),
-        child: Icon(icon, size: 14, color: kBark),
+        child: Icon(icon, size: 14, color: nt.bark),
       ),
     );
   }

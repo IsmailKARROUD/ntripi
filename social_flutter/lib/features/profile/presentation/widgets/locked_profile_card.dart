@@ -14,6 +14,7 @@ class LockedProfileCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final nt = context.nt;
     final l10n = AppLocalizations.of(context)!;
     return Padding(
       padding: const EdgeInsets.fromLTRB(24, 36, 24, 24),
@@ -24,8 +25,8 @@ class LockedProfileCard extends StatelessWidget {
             height: 64,
             decoration: BoxDecoration(
               color: isPending
-                  ? const Color(0xFFFFF0CC)
-                  : const Color(0xFFD0EBDA),
+                  ? Theme.of(context).colorScheme.secondaryContainer
+                  : nt.mist,
               shape: BoxShape.circle,
             ),
             child: Icon(
@@ -33,7 +34,9 @@ class LockedProfileCard extends StatelessWidget {
                   ? Icons.hourglass_empty_rounded
                   : Icons.lock_rounded,
               size: 28,
-              color: isPending ? const Color(0xFFA06800) : kForest,
+              color: isPending
+                  ? Theme.of(context).colorScheme.onSecondaryContainer
+                  : nt.forest,
             ),
           ),
           const SizedBox(height: 12),
@@ -41,10 +44,10 @@ class LockedProfileCard extends StatelessWidget {
             isPending
                 ? l10n.followRequestSentTitle
                 : l10n.accountIsPrivateTitle,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 17,
               fontWeight: FontWeight.w700,
-              color: kBark,
+              color: nt.bark,
               letterSpacing: -0.2,
             ),
           ),
@@ -54,9 +57,9 @@ class LockedProfileCard extends StatelessWidget {
                 ? l10n.followRequestPendingMessage
                 : l10n.followToSeeMessage(handle),
             textAlign: TextAlign.center,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 13,
-              color: kText2,
+              color: nt.text2,
               height: 1.5,
             ),
           ),

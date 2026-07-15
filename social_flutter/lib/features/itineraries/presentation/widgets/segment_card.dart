@@ -129,6 +129,7 @@ class _SegmentCardState extends ConsumerState<SegmentCard> {
 
   @override
   Widget build(BuildContext context) {
+    final nt = context.nt;
     final l10n = AppLocalizations.of(context)!;
     final segment = widget.segment;
 
@@ -158,8 +159,8 @@ class _SegmentCardState extends ConsumerState<SegmentCard> {
       builder: (_) => Container(
       margin: const EdgeInsets.fromLTRB(28, 6, 28, 6),
       decoration: BoxDecoration(
-        color: kTransitBg,
-        border: Border.all(color: kTransitBorder),
+        color: nt.transitBg,
+        border: Border.all(color: nt.transitBorder),
         borderRadius: BorderRadius.circular(12),
       ),
       clipBehavior: Clip.antiAlias,
@@ -173,10 +174,10 @@ class _SegmentCardState extends ConsumerState<SegmentCard> {
               children: [
                 Text(
                   l10n.transitLabel.toUpperCase(),
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 10,
                     fontWeight: FontWeight.w700,
-                    color: kTransitIcon,
+                    color: nt.transitIcon,
                     letterSpacing: 0.5,
                   ),
                 ),
@@ -186,13 +187,13 @@ class _SegmentCardState extends ConsumerState<SegmentCard> {
                 else if (widget.onDelete != null)
                   GestureDetector(
                     onTap: widget.onDelete,
-                    child: const Icon(Icons.delete_outline_rounded,
-                        size: 16, color: kRatingRed),
+                    child: Icon(Icons.delete_outline_rounded,
+                        size: 16, color: nt.ratingRed),
                   ),
               ],
             ),
           ),
-          const Divider(height: 1, color: kTransitBorder),
+          Divider(height: 1, color: nt.transitBorder),
 
           // ── Leg rows (tappable to edit) ────────────────────────────────────
           if (legs.isEmpty)
@@ -202,58 +203,58 @@ class _SegmentCardState extends ConsumerState<SegmentCard> {
                 padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
                 child: Text(
                   l10n.noLegsYetTapAdd,
-                  style: const TextStyle(
+                  style: TextStyle(
                       fontSize: 12,
-                      color: kTransitText,
+                      color: nt.transitText,
                       fontStyle: FontStyle.italic),
                 ),
               ),
             )
           else
             for (var i = 0; i < legs.length; i++) ...[
-              if (i > 0) const Divider(height: 1, color: kTransitBorder),
+              if (i > 0) Divider(height: 1, color: nt.transitBorder),
               InkWell(
                 onTap: _saving ? null : () => _editLeg(i),
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(12, 9, 12, 9),
                   child: Row(
                     children: [
-                      Icon(legs[i].mode.icon, size: 16, color: kTransitIcon),
+                      Icon(legs[i].mode.icon, size: 16, color: nt.transitIcon),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(legs[i].mode.label(l10n),
-                                style: const TextStyle(
+                                style: TextStyle(
                                     fontSize: 12,
                                     fontWeight: FontWeight.w700,
-                                    color: kTransitText)),
+                                    color: nt.transitText)),
                             if (legs[i].line != null &&
                                 legs[i].line!.isNotEmpty)
                               Text(legs[i].line!,
-                                  style: const TextStyle(
-                                      fontSize: 11, color: kTransitIcon)),
+                                  style: TextStyle(
+                                      fontSize: 11, color: nt.transitIcon)),
                           ],
                         ),
                       ),
                       if (fmtMin(legs[i].durationMin).isNotEmpty) ...[
                         Text(fmtMin(legs[i].durationMin),
-                            style: const TextStyle(
-                                fontSize: 12, color: kTransitText)),
-                        const Padding(
+                            style: TextStyle(
+                                fontSize: 12, color: nt.transitText)),
+                        Padding(
                           padding: EdgeInsets.symmetric(horizontal: 4),
                           child: Text('·',
                               style: TextStyle(
-                                  fontSize: 12, color: kTransitText)),
+                                  fontSize: 12, color: nt.transitText)),
                         ),
                       ],
                       Text(fmtCost(legs[i].cost, legs[i].isFree),
-                          style: const TextStyle(
-                              fontSize: 12, color: kTransitText)),
+                          style: TextStyle(
+                              fontSize: 12, color: nt.transitText)),
                       const SizedBox(width: 6),
-                      const Icon(Icons.chevron_right_rounded,
-                          size: 14, color: kTransitIcon),
+                      Icon(Icons.chevron_right_rounded,
+                          size: 14, color: nt.transitIcon),
                     ],
                   ),
                 ),
@@ -261,20 +262,20 @@ class _SegmentCardState extends ConsumerState<SegmentCard> {
             ],
 
           // ── Add leg ────────────────────────────────────────────────────────
-          const Divider(height: 1, color: kTransitBorder),
+          Divider(height: 1, color: nt.transitBorder),
           InkWell(
             onTap: _saving ? null : _addLeg,
             child: Padding(
               padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
               child: Row(
                 children: [
-                  const Icon(Icons.add_rounded, size: 14, color: kEditBlue),
+                  Icon(Icons.add_rounded, size: 14, color: nt.editBlue),
                   const SizedBox(width: 6),
                   Text(AppLocalizations.of(context)!.addLegButton,
-                      style: const TextStyle(
+                      style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
-                          color: kEditBlue)),
+                          color: nt.editBlue)),
                 ],
               ),
             ),
@@ -282,33 +283,33 @@ class _SegmentCardState extends ConsumerState<SegmentCard> {
 
           // ── Total row (multi-leg) ──────────────────────────────────────────
           if (multiLeg) ...[
-            const Divider(height: 1, color: kTransitBorder),
+            Divider(height: 1, color: nt.transitBorder),
             Padding(
               padding: const EdgeInsets.fromLTRB(12, 6, 12, 6),
               child: Row(
                 children: [
-                  const Icon(Icons.summarize_rounded,
-                      size: 12, color: kTransitIcon),
+                  Icon(Icons.summarize_rounded,
+                      size: 12, color: nt.transitIcon),
                   const SizedBox(width: 5),
                   Text(AppLocalizations.of(context)!.totalLabel,
-                      style: const TextStyle(
+                      style: TextStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.w700,
-                          color: kTransitIcon)),
+                          color: nt.transitIcon)),
                   const Spacer(),
                   if (totalDur.isNotEmpty) ...[
                     Text(totalDur,
-                        style: const TextStyle(
-                            fontSize: 10, color: kTransitIcon)),
-                    const Padding(
+                        style: TextStyle(
+                            fontSize: 10, color: nt.transitIcon)),
+                    Padding(
                       padding: EdgeInsets.symmetric(horizontal: 4),
                       child: Text('·',
-                          style: TextStyle(fontSize: 10, color: kTransitIcon)),
+                          style: TextStyle(fontSize: 10, color: nt.transitIcon)),
                     ),
                   ],
                   Text(totalCost,
                       style:
-                          const TextStyle(fontSize: 10, color: kTransitIcon)),
+                          TextStyle(fontSize: 10, color: nt.transitIcon)),
                 ],
               ),
             ),
@@ -328,11 +329,6 @@ class _TransitRow extends StatelessWidget {
 
   const _TransitRow({required this.segment, required this.currency});
 
-  static const _kTransitBg = Color(0xFFFFF8EC);
-  static const _kTransitBorder = Color(0xFFF0E2C2);
-  static const _kTransitIcon = Color(0xFFA06D1F);
-  static const _kTransitText = Color(0xFF8A5A18);
-
   String _fmtCost(double cost, bool isFree, AppLocalizations l10n) {
     if (isFree || cost <= 0) return l10n.freeLegLabel;
     return formatMoney(cost, currency);
@@ -351,6 +347,7 @@ class _TransitRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final nt = context.nt;
     final l10n = AppLocalizations.of(context)!;
     final legs = segment.legs;
     final multiLeg = legs.length > 1;
@@ -358,8 +355,8 @@ class _TransitRow extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.fromLTRB(28, 6, 28, 6),
       decoration: BoxDecoration(
-        color: _kTransitBg,
-        border: Border.all(color: _kTransitBorder),
+        color: nt.transitBg,
+        border: Border.all(color: nt.transitBorder),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
@@ -368,19 +365,19 @@ class _TransitRow extends StatelessWidget {
           // ── One row per leg ──────────────────────────────────────────────
           for (var i = 0; i < legs.length; i++) ...[
             if (i > 0)
-              const Divider(height: 1, color: _kTransitBorder, indent: 12),
+              Divider(height: 1, color: nt.transitBorder, indent: 12),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               child: Row(
                 children: [
-                  Icon(legs[i].mode.icon, size: 16, color: _kTransitIcon),
+                  Icon(legs[i].mode.icon, size: 16, color: nt.transitIcon),
                   const SizedBox(width: 8),
                   Text(
                     legs[i].mode.label(l10n),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w700,
-                      color: _kTransitText,
+                      color: nt.transitText,
                     ),
                   ),
                   // line / direction if present
@@ -388,7 +385,7 @@ class _TransitRow extends StatelessWidget {
                     const SizedBox(width: 4),
                     Text(
                       legs[i].line!,
-                      style: const TextStyle(fontSize: 12, color: _kTransitText),
+                      style: TextStyle(fontSize: 12, color: nt.transitText),
                     ),
                   ],
                   const Spacer(),
@@ -396,18 +393,18 @@ class _TransitRow extends StatelessWidget {
                   if (_fmtMin(legs[i].durationMin, l10n).isNotEmpty) ...[
                     Text(
                       _fmtMin(legs[i].durationMin, l10n),
-                      style: const TextStyle(fontSize: 12, color: _kTransitText),
+                      style: TextStyle(fontSize: 12, color: nt.transitText),
                     ),
-                    const Padding(
+                    Padding(
                       padding: EdgeInsets.symmetric(horizontal: 5),
                       child: Text('·',
-                          style: TextStyle(fontSize: 12, color: _kTransitText)),
+                          style: TextStyle(fontSize: 12, color: nt.transitText)),
                     ),
                   ],
                   // per-leg cost
                   Text(
                     _fmtCost(legs[i].cost, legs[i].isFree, l10n),
-                    style: const TextStyle(fontSize: 12, color: _kTransitText),
+                    style: TextStyle(fontSize: 12, color: nt.transitText),
                   ),
                 ],
               ),
@@ -416,41 +413,41 @@ class _TransitRow extends StatelessWidget {
 
           // ── Total row (multi-leg only) ────────────────────────────────────
           if (multiLeg) ...[
-            const Divider(height: 1, color: _kTransitBorder),
+            Divider(height: 1, color: nt.transitBorder),
             Padding(
               padding:
                   const EdgeInsets.fromLTRB(12, 6, 12, 8),
               child: Row(
                 children: [
-                  const Icon(Icons.summarize_rounded,
-                      size: 13, color: _kTransitIcon),
+                  Icon(Icons.summarize_rounded,
+                      size: 13, color: nt.transitIcon),
                   const SizedBox(width: 6),
                   Text(
                     AppLocalizations.of(context)!.totalLabel,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w700,
-                      color: _kTransitIcon,
+                      color: nt.transitIcon,
                     ),
                   ),
                   const Spacer(),
                   if (_totalDuration(l10n).isNotEmpty) ...[
                     Text(
                       _totalDuration(l10n),
-                      style: const TextStyle(
-                          fontSize: 11, color: _kTransitIcon),
+                      style: TextStyle(
+                          fontSize: 11, color: nt.transitIcon),
                     ),
-                    const Padding(
+                    Padding(
                       padding: EdgeInsets.symmetric(horizontal: 5),
                       child: Text('·',
                           style: TextStyle(
-                              fontSize: 11, color: _kTransitIcon)),
+                              fontSize: 11, color: nt.transitIcon)),
                     ),
                   ],
                   Text(
                     _totalCost(l10n),
-                    style: const TextStyle(
-                        fontSize: 11, color: _kTransitIcon),
+                    style: TextStyle(
+                        fontSize: 11, color: nt.transitIcon),
                   ),
                 ],
               ),

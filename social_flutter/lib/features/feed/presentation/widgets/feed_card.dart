@@ -16,6 +16,7 @@ class FeedCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final nt = context.nt;
     final l10n = AppLocalizations.of(context)!;
     final owner = item.owner;
     final hasDisplay =
@@ -46,10 +47,10 @@ class FeedCard extends ConsumerWidget {
                       title,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w700,
-                        color: kBark,
+                        color: nt.bark,
                       ),
                     ),
                     if (subtitle != null)
@@ -57,14 +58,14 @@ class FeedCard extends ConsumerWidget {
                         subtitle,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(fontSize: 12, color: kText2),
+                        style: TextStyle(fontSize: 12, color: nt.text2),
                       ),
                   ],
                 ),
               ),
               // Share the itinerary via the OS share sheet (reuses ShareService).
               IconButton(
-                icon: const Icon(Icons.share_rounded, size: 20, color: kText2),
+                icon: Icon(Icons.share_rounded, size: 20, color: nt.text2),
                 visualDensity: VisualDensity.compact,
                 tooltip: l10n.shareTooltip,
                 onPressed: () => ref

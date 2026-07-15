@@ -71,6 +71,7 @@ class _FollowListScreenState extends ConsumerState<FollowListScreen>
 
   @override
   Widget build(BuildContext context) {
+    final nt = context.nt;
     final followersAsync =
         ref.watch(followersProvider(widget.userId));
     final followingAsync =
@@ -101,7 +102,7 @@ class _FollowListScreenState extends ConsumerState<FollowListScreen>
             '';
 
     return Scaffold(
-      backgroundColor: kSurface,
+      backgroundColor: nt.surface,
       resizeToAvoidBottomInset: false,
       body: Center(
         child: ConstrainedBox(
@@ -119,18 +120,18 @@ class _FollowListScreenState extends ConsumerState<FollowListScreen>
 
               // ── Tab bar ───────────────────────────────────────────
               Container(
-                color: kSand,
+                color: nt.sand,
                 child: TabBar(
                   controller: _tabController,
-                  indicatorColor: kForest,
+                  indicatorColor: nt.forest,
                   indicatorWeight: 2.5,
-                  labelColor: kForest,
-                  unselectedLabelColor: kText2,
+                  labelColor: nt.forest,
+                  unselectedLabelColor: nt.text2,
                   labelStyle: const TextStyle(
                       fontSize: 14, fontWeight: FontWeight.w700),
                   unselectedLabelStyle: const TextStyle(
                       fontSize: 14, fontWeight: FontWeight.w600),
-                  dividerColor: kBorder,
+                  dividerColor: nt.border,
                   tabs: [
                     Tab(text: AppLocalizations.of(context)!.followersTabLabel(followerCount)),
                     Tab(text: AppLocalizations.of(context)!.followingTabLabel(followingCount)),
@@ -197,29 +198,30 @@ class _TopBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final nt = context.nt;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
       child: Row(
         children: [
           IconButton(
             icon: const Icon(Icons.arrow_back),
-            color: kBark,
+            color: nt.bark,
             onPressed: () => Navigator.of(context).maybePop(),
           ),
           Expanded(
             child: Text(
               handle.isNotEmpty ? handle : '',
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 17,
                 fontWeight: FontWeight.w700,
-                color: kBark,
+                color: nt.bark,
                 letterSpacing: -0.2,
               ),
             ),
           ),
-          const IconButton(
+          IconButton(
             icon: Icon(Icons.search_rounded),
-            color: kBark,
+            color: nt.bark,
             onPressed: null,
           ),
         ],
@@ -247,6 +249,7 @@ class _FollowersTab extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final nt = context.nt;
     return followersAsync.when(
       loading: () =>
           const Center(child: NTripiSkeleton()),
@@ -261,7 +264,7 @@ class _FollowersTab extends ConsumerWidget {
             SectionLabel(
               icon: Icons.hourglass_empty_rounded,
               label: AppLocalizations.of(context)!.followRequestsSectionLabel(pendingRequests.length),
-              color: kAmber,
+              color: nt.amber,
             ),
             SectionCard(
               children: [
@@ -369,6 +372,7 @@ class _UserRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final nt = context.nt;
     final displayName = user.displayName ?? '@${user.username}';
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -393,33 +397,33 @@ class _UserRow extends StatelessWidget {
                             child: Text(
                               displayName,
                               overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.w700,
-                                color: kBark,
+                                color: nt.bark,
                                 letterSpacing: -0.1,
                               ),
                             ),
                           ),
                           if (user.isPrivate) ...[
                             const SizedBox(width: 4),
-                            const Icon(Icons.lock_rounded,
-                                size: 13, color: kText3),
+                            Icon(Icons.lock_rounded,
+                                size: 13, color: nt.text3),
                           ],
                         ],
                       ),
                       Text(
                         '@${user.username}',
-                        style: const TextStyle(
+                        style: TextStyle(
                             fontSize: 12,
-                            color: kText2,
+                            color: nt.text2,
                             fontWeight: FontWeight.w500),
                       ),
                     ],
                   ),
                 ),
-                const Icon(Icons.chevron_right,
-                    size: 18, color: kText3),
+                Icon(Icons.chevron_right,
+                    size: 18, color: nt.text3),
               ],
             ),
           ),
@@ -428,7 +432,7 @@ class _UserRow extends StatelessWidget {
           Container(
               height: 1,
               margin: const EdgeInsetsDirectional.only(start: 70),
-              color: kBorder),
+              color: nt.border),
       ],
     );
   }
@@ -487,6 +491,7 @@ class _PendingRequestRowState
 
   @override
   Widget build(BuildContext context) {
+    final nt = context.nt;
     final r = widget.request;
     final displayName = r.displayName ?? '@${r.username}';
 
@@ -508,18 +513,18 @@ class _PendingRequestRowState
                     Text(
                       displayName,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w700,
-                        color: kBark,
+                        color: nt.bark,
                         letterSpacing: -0.1,
                       ),
                     ),
                     Text(
                       '@${r.username}',
-                      style: const TextStyle(
+                      style: TextStyle(
                           fontSize: 12,
-                          color: kText2,
+                          color: nt.text2,
                           fontWeight: FontWeight.w500),
                     ),
                   ],
@@ -555,7 +560,7 @@ class _PendingRequestRowState
           Container(
               height: 1,
               margin: const EdgeInsetsDirectional.only(start: 70),
-              color: kBorder),
+              color: nt.border),
       ],
     );
   }
@@ -581,17 +586,20 @@ class _ActionPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final nt = context.nt;
+    // onPrimary, not white — the filled chip lightens in dark mode
+    final onFill = Theme.of(context).colorScheme.onPrimary;
     return GestureDetector(
       onTap: onTap,
       child: Container(
         height: 32,
         padding: const EdgeInsets.symmetric(horizontal: 12),
         decoration: BoxDecoration(
-          color: filled ? kForest : Colors.transparent,
+          color: filled ? nt.forest : Colors.transparent,
           borderRadius: BorderRadius.circular(10),
           border: filled
               ? null
-              : Border.all(color: kBorder, width: 1.5),
+              : Border.all(color: nt.border, width: 1.5),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -599,14 +607,14 @@ class _ActionPill extends StatelessWidget {
             if (icon != null)
               Icon(icon,
                   size: 16,
-                  color: filled ? Colors.white : kBark),
+                  color: filled ? onFill : nt.bark),
             if (label != null)
               Text(
                 label!,
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
-                  color: filled ? Colors.white : kBark,
+                  color: filled ? onFill : nt.bark,
                 ),
               ),
           ],
@@ -623,15 +631,16 @@ class _PrivateListPlaceholder extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final nt = context.nt;
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.lock_outline_rounded,
-              size: 48, color: kText3),
+          Icon(Icons.lock_outline_rounded,
+              size: 48, color: nt.text3),
           const SizedBox(height: 8),
           Text(message,
-              style: const TextStyle(color: kText2),
+              style: TextStyle(color: nt.text2),
               textAlign: TextAlign.center),
         ],
       ),
@@ -648,14 +657,15 @@ class _EmptyListPlaceholder extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final nt = context.nt;
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 48, color: kText3),
+          Icon(icon, size: 48, color: nt.text3),
           const SizedBox(height: 8),
           Text(message,
-              style: const TextStyle(color: kText2)),
+              style: TextStyle(color: nt.text2)),
         ],
       ),
     );

@@ -48,7 +48,7 @@ class ConfirmDialog extends StatelessWidget {
       barrierDismissible: true,
       barrierLabel:
           MaterialLocalizations.of(context).modalBarrierDismissLabel,
-      barrierColor: const Color(0x75142018), // ≈ rgba(20,32,24,0.46)
+      barrierColor: context.nt.scrim,
       transitionDuration: const Duration(milliseconds: 220),
       pageBuilder: (_, __, ___) => ConfirmDialog(
         title: title,
@@ -78,10 +78,11 @@ class ConfirmDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final nt = context.nt;
     final l10n = AppLocalizations.of(context)!;
     final isDanger = tone == ConfirmTone.danger;
-    final accent = isDanger ? kDanger : kForest;
-    final badgeBg = isDanger ? kDangerTint : kMist;
+    final accent = isDanger ? nt.danger : nt.forest;
+    final badgeBg = isDanger ? nt.dangerTint : nt.mist;
 
     return Center(
       child: Material(
@@ -90,11 +91,11 @@ class ConfirmDialog extends StatelessWidget {
           width: 296,
           padding: const EdgeInsets.fromLTRB(26, 26, 26, 18),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: nt.surface,
             borderRadius: BorderRadius.circular(26),
             boxShadow: [
               BoxShadow(
-                color: kBark.withValues(alpha: 0.18),
+                color: nt.bark.withValues(alpha: 0.18),
                 blurRadius: 32,
                 offset: const Offset(0, 12),
               ),
@@ -120,7 +121,7 @@ class ConfirmDialog extends StatelessWidget {
                 style: GoogleFonts.dmSans(
                   fontSize: 18,
                   fontWeight: FontWeight.w700,
-                  color: kBark,
+                  color: nt.bark,
                 ),
               ),
               if (message != null) ...[
@@ -131,7 +132,7 @@ class ConfirmDialog extends StatelessWidget {
                   style: GoogleFonts.dmSans(
                     fontSize: 13.5,
                     height: 1.5,
-                    color: kText2,
+                    color: nt.text2,
                   ),
                 ),
               ],
@@ -142,9 +143,9 @@ class ConfirmDialog extends StatelessWidget {
                     child: _ConfirmButton(
                       label: cancelLabel ?? l10n.cancel,
                       // calm/safe action: sand fill, bordered, dark text
-                      background: kSand,
-                      foreground: kBark,
-                      borderColor: kBorder,
+                      background: nt.sand,
+                      foreground: nt.bark,
+                      borderColor: nt.border,
                       fontWeight: FontWeight.w600,
                       onTap: () => Navigator.of(context).pop(false),
                     ),
@@ -153,9 +154,12 @@ class ConfirmDialog extends StatelessWidget {
                   Expanded(
                     child: _ConfirmButton(
                       label: confirmLabel ?? l10n.confirmButton,
-                      // committing action: filled with tone accent, white text
+                      // committing action: tone-accent fill; on-colors keep
+                      // contrast when dark mode lightens the accents
                       background: accent,
-                      foreground: Colors.white,
+                      foreground: isDanger
+                          ? Theme.of(context).colorScheme.onError
+                          : Theme.of(context).colorScheme.onPrimary,
                       fontWeight: FontWeight.w700,
                       shadowColor: accent.withValues(alpha: 0.30),
                       onTap: () => Navigator.of(context).pop(true),

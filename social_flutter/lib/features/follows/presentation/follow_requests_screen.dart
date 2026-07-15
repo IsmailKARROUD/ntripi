@@ -21,10 +21,11 @@ class FollowRequestsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final nt = context.nt;
     final requestsAsync = ref.watch(followRequestsProvider);
 
     return Scaffold(
-      backgroundColor: kSurface,
+      backgroundColor: nt.surface,
       resizeToAvoidBottomInset: false,
       body: Center(
         child: ConstrainedBox(
@@ -37,7 +38,7 @@ class FollowRequestsScreen extends ConsumerWidget {
                 bottom: false,
                 child: EditorialTopBar(title: AppLocalizations.of(context)!.followRequestsTitle),
               ),
-              Container(height: 1, color: kBorder),
+              Container(height: 1, color: nt.border),
               Expanded(
                 child: requestsAsync.when(
                   loading: () =>
@@ -51,7 +52,7 @@ class FollowRequestsScreen extends ConsumerWidget {
                           Text(
                             extractErrorMessage(error, AppLocalizations.of(context)!),
                             textAlign: TextAlign.center,
-                            style: const TextStyle(color: kText2),
+                            style: TextStyle(color: nt.text2),
                           ),
                           const SizedBox(height: 16),
                           FilledButton(
@@ -70,12 +71,12 @@ class FollowRequestsScreen extends ConsumerWidget {
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Icon(Icons.check_circle_outline,
-                                size: 56, color: kText3),
+                            Icon(Icons.check_circle_outline,
+                                size: 56, color: nt.text3),
                             const SizedBox(height: 10),
                             Text(
                               AppLocalizations.of(context)!.noRequests,
-                              style: const TextStyle(color: kText2),
+                              style: TextStyle(color: nt.text2),
                             ),
                           ],
                         ),
@@ -164,6 +165,7 @@ class _FollowRequestTileState extends ConsumerState<_FollowRequestTile> {
 
   @override
   Widget build(BuildContext context) {
+    final nt = context.nt;
     final r = widget.request;
     final name = r.displayName ?? '@${r.username}';
 
@@ -183,18 +185,18 @@ class _FollowRequestTileState extends ConsumerState<_FollowRequestTile> {
                     Text(
                       name,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w700,
-                        color: kBark,
+                        color: nt.bark,
                         letterSpacing: -0.1,
                       ),
                     ),
                     Text(
                       '@${r.username}',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 12,
-                        color: kText2,
+                        color: nt.text2,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -211,7 +213,7 @@ class _FollowRequestTileState extends ConsumerState<_FollowRequestTile> {
                       FilledButton(
                         onPressed: online ? _accept : null,
                         style: FilledButton.styleFrom(
-                          backgroundColor: kForest,
+                          backgroundColor: nt.forest,
                           padding: const EdgeInsets.symmetric(
                               horizontal: 12, vertical: 8),
                           minimumSize: Size.zero,
@@ -224,8 +226,8 @@ class _FollowRequestTileState extends ConsumerState<_FollowRequestTile> {
                       OutlinedButton(
                         onPressed: online ? _reject : null,
                         style: OutlinedButton.styleFrom(
-                          foregroundColor: const Color(0xFFBA1A1A),
-                          side: const BorderSide(color: Color(0xFFBA1A1A)),
+                          foregroundColor: nt.danger,
+                          side: BorderSide(color: nt.danger),
                           padding: const EdgeInsets.symmetric(
                               horizontal: 12, vertical: 8),
                           minimumSize: Size.zero,
@@ -244,7 +246,7 @@ class _FollowRequestTileState extends ConsumerState<_FollowRequestTile> {
           Container(
             height: 1,
             margin: const EdgeInsetsDirectional.only(start: 70),
-            color: kBorder,
+            color: nt.border,
           ),
       ],
     );

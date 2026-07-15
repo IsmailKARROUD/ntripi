@@ -56,11 +56,12 @@ class LegFormDialog extends StatefulWidget {
     BuildContext context, {
     TransportLeg? existing,
   }) {
+    final nt = context.nt;
     return showModalBottomSheet<Map<String, dynamic>>(
       context: context,
       isScrollControlled: true,
       showDragHandle: true,
-      backgroundColor: kSand,
+      backgroundColor: nt.sand,
       builder: (_) => LegFormDialog(existing: existing),
     );
   }
@@ -290,12 +291,13 @@ class _LegFormDialogState extends State<LegFormDialog> {
       Navigator.of(context).pop(const {'__action': 'delete'});
 
   Future<void> _showModePicker() async {
+    final nt = context.nt;
     if (!mounted) return;
     final currentMode = _mode;
     final picked = await showModalBottomSheet<TransportMode>(
       context: context,
       showDragHandle: true,
-      backgroundColor: kSand,
+      backgroundColor: nt.sand,
       builder: (ctx) => SafeArea(
         child: Padding(
           padding: const EdgeInsets.only(bottom: 16),
@@ -311,9 +313,9 @@ class _LegFormDialogState extends State<LegFormDialog> {
                 child: Container(
                   margin: const EdgeInsets.fromLTRB(16, 0, 16, 0),
                   decoration: BoxDecoration(
-                    color: kSurface,
+                    color: nt.surface,
                     borderRadius: BorderRadius.circular(18),
-                    border: Border.all(color: kBorder),
+                    border: Border.all(color: nt.border),
                   ),
                   clipBehavior: Clip.antiAlias,
                   child: ListView.separated(
@@ -322,7 +324,7 @@ class _LegFormDialogState extends State<LegFormDialog> {
                     itemCount: TransportMode.values.length,
                     separatorBuilder: (_, __) => Container(
                       height: 1,
-                      color: kBorder,
+                      color: nt.border,
                       margin: const EdgeInsetsDirectional.only(start: 16),
                     ),
                     itemBuilder: (_, i) {
@@ -337,26 +339,26 @@ class _LegFormDialogState extends State<LegFormDialog> {
                                 width: 32,
                                 height: 32,
                                 decoration: BoxDecoration(
-                                  color: kMist,
+                                  color: nt.mist,
                                   borderRadius: BorderRadius.circular(10),
                                 ),
                                 alignment: Alignment.center,
-                                child: Icon(mode.icon, size: 16, color: kForest),
+                                child: Icon(mode.icon, size: 16, color: nt.forest),
                               ),
                               const SizedBox(width: 12),
                               Expanded(
                                 child: Text(
                                   mode.label(AppLocalizations.of(ctx)!),
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 15,
                                     fontWeight: FontWeight.w600,
-                                    color: kBark,
+                                    color: nt.bark,
                                   ),
                                 ),
                               ),
                               if (currentMode == mode)
-                                const Icon(Icons.check_rounded,
-                                    size: 18, color: kForest),
+                                Icon(Icons.check_rounded,
+                                    size: 18, color: nt.forest),
                             ],
                           ),
                         ),
@@ -375,6 +377,7 @@ class _LegFormDialogState extends State<LegFormDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final nt = context.nt;
     final isEdit = widget.existing != null;
     final l10n = AppLocalizations.of(context)!;
 
@@ -432,10 +435,10 @@ class _LegFormDialogState extends State<LegFormDialog> {
                         contentPadding: EdgeInsets.zero,
                         hintText: '—',
                       ),
-                      style: const TextStyle(
+                      style: TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w600,
-                          color: kBark),
+                          color: nt.bark),
                     ),
                   ),
                   const _LFDivider(),
@@ -451,10 +454,10 @@ class _LegFormDialogState extends State<LegFormDialog> {
                         contentPadding: EdgeInsets.zero,
                         hintText: '—',
                       ),
-                      style: const TextStyle(
+                      style: TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w600,
-                          color: kBark),
+                          color: nt.bark),
                     ),
                   ),
                 ],
@@ -482,12 +485,12 @@ class _LegFormDialogState extends State<LegFormDialog> {
                         width: 32,
                         height: 32,
                         decoration: BoxDecoration(
-                          color: kMist,
+                          color: nt.mist,
                           borderRadius: BorderRadius.circular(10),
                         ),
                         alignment: Alignment.center,
-                        child: const Icon(Icons.payments_rounded,
-                            size: 16, color: kForest),
+                        child: Icon(Icons.payments_rounded,
+                            size: 16, color: nt.forest),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
@@ -496,19 +499,19 @@ class _LegFormDialogState extends State<LegFormDialog> {
                           children: [
                             Text(
                               l10n.costLabel.toUpperCase(),
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 11,
                                 fontWeight: FontWeight.w700,
-                                color: kText2,
+                                color: nt.text2,
                                 letterSpacing: 0.4,
                               ),
                             ),
                             Text(
                               l10n.freeLegLabel,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w500,
-                                color: kBark,
+                                color: nt.bark,
                               ),
                             ),
                           ],
@@ -520,8 +523,8 @@ class _LegFormDialogState extends State<LegFormDialog> {
                           _isFree = v;
                           if (v) _costCtrl.clear();
                         }),
-                        activeThumbColor: kForest,
-                        activeTrackColor: kMist,
+                        activeThumbColor: nt.forest,
+                        activeTrackColor: nt.mist,
                       ),
                     ],
                   ),
@@ -548,10 +551,10 @@ class _LegFormDialogState extends State<LegFormDialog> {
                         contentPadding: EdgeInsets.zero,
                         hintText: AppLocalizations.of(context)!.legCostHint,
                       ),
-                      style: const TextStyle(
+                      style: TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w600,
-                          color: kBark),
+                          color: nt.bark),
                     ),
                   ),
                 ],
@@ -574,12 +577,12 @@ class _LegFormDialogState extends State<LegFormDialog> {
                       isDense: true,
                       contentPadding: EdgeInsets.zero,
                       hintText: l10n.legThoughtsLabel,
-                      hintStyle: const TextStyle(color: kText3),
+                      hintStyle: TextStyle(color: nt.text3),
                     ),
-                    style: const TextStyle(
+                    style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w600,
-                        color: kBark),
+                        color: nt.bark),
                   ),
                 ),
               ],
@@ -596,7 +599,7 @@ class _LegFormDialogState extends State<LegFormDialog> {
                     TextButton(
                       onPressed: _deleteLeg,
                       style: TextButton.styleFrom(
-                          foregroundColor: Colors.red.shade400),
+                          foregroundColor: nt.danger),
                       child: Text(l10n.deleteButton),
                     ),
                   const Spacer(),
@@ -608,7 +611,7 @@ class _LegFormDialogState extends State<LegFormDialog> {
                         Navigator.of(context).pop();
                       }
                     },
-                    style: TextButton.styleFrom(foregroundColor: kForest),
+                    style: TextButton.styleFrom(foregroundColor: nt.forest),
                     child: Text(l10n.cancel),
                   ),
                   const SizedBox(width: 8),
@@ -640,18 +643,21 @@ class _LFSectionLabel extends StatelessWidget {
   const _LFSectionLabel({required this.text});
 
   @override
-  Widget build(BuildContext context) => Padding(
+  Widget build(BuildContext context) {
+    final nt = context.nt;
+    return Padding(
         padding: const EdgeInsets.fromLTRB(22, 14, 22, 6),
         child: Text(
           text,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 11,
             fontWeight: FontWeight.w700,
-            color: kText2,
+            color: nt.text2,
             letterSpacing: 0.6,
           ),
         ),
       );
+  }
 }
 
 class _LFSectionCard extends StatelessWidget {
@@ -659,12 +665,14 @@ class _LFSectionCard extends StatelessWidget {
   const _LFSectionCard({required this.children});
 
   @override
-  Widget build(BuildContext context) => Container(
+  Widget build(BuildContext context) {
+    final nt = context.nt;
+    return Container(
         margin: const EdgeInsets.fromLTRB(16, 0, 16, 0),
         decoration: BoxDecoration(
-          color: kSurface,
+          color: nt.surface,
           borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: kBorder),
+          border: Border.all(color: nt.border),
         ),
         clipBehavior: Clip.antiAlias,
         child: Column(
@@ -672,14 +680,17 @@ class _LFSectionCard extends StatelessWidget {
           children: children,
         ),
       );
+  }
 }
 
 class _LFDivider extends StatelessWidget {
   const _LFDivider();
 
   @override
-  Widget build(BuildContext context) =>
-      Container(height: 1, color: kBorder, margin: const EdgeInsetsDirectional.only(start: 16));
+  Widget build(BuildContext context) {
+    final nt = context.nt;
+    return Container(height: 1, color: nt.border, margin: const EdgeInsetsDirectional.only(start: 16));
+  }
 }
 
 class _LFBorderlessField extends StatelessWidget {
@@ -688,17 +699,19 @@ class _LFBorderlessField extends StatelessWidget {
   const _LFBorderlessField({required this.label, required this.child});
 
   @override
-  Widget build(BuildContext context) => Padding(
+  Widget build(BuildContext context) {
+    final nt = context.nt;
+    return Padding(
         padding: const EdgeInsets.fromLTRB(16, 13, 16, 12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               label,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.w700,
-                color: kText2,
+                color: nt.text2,
                 letterSpacing: 0.4,
               ),
             ),
@@ -707,6 +720,7 @@ class _LFBorderlessField extends StatelessWidget {
           ],
         ),
       );
+  }
 }
 
 class _LFPickerRow extends StatelessWidget {
@@ -723,7 +737,9 @@ class _LFPickerRow extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) => InkWell(
+  Widget build(BuildContext context) {
+    final nt = context.nt;
+    return InkWell(
         onTap: onTap,
         child: Padding(
           padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
@@ -733,11 +749,11 @@ class _LFPickerRow extends StatelessWidget {
                 width: 32,
                 height: 32,
                 decoration: BoxDecoration(
-                  color: kMist,
+                  color: nt.mist,
                   borderRadius: BorderRadius.circular(10),
                 ),
                 alignment: Alignment.center,
-                child: Icon(icon, size: 16, color: kForest),
+                child: Icon(icon, size: 16, color: nt.forest),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -746,29 +762,30 @@ class _LFPickerRow extends StatelessWidget {
                   children: [
                     Text(
                       label,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w700,
-                        color: kText2,
+                        color: nt.text2,
                         letterSpacing: 0.4,
                       ),
                     ),
                     const SizedBox(height: 2),
                     Text(
                       value,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w600,
-                        color: kBark,
+                        color: nt.bark,
                       ),
                     ),
                   ],
                 ),
               ),
               if (onTap != null)
-                const Icon(Icons.chevron_right_rounded, size: 20, color: kText3),
+                Icon(Icons.chevron_right_rounded, size: 20, color: nt.text3),
             ],
           ),
         ),
       );
+  }
 }

@@ -157,6 +157,7 @@
   "settingsNotificationsOn": "On",
   "settingsNotificationsOff": "Off",
   "settingsLanguage": "Language",
+  "settingsTheme": "Theme",
   "settingsSupport": "Support",
   "settingsHelpCenter": "Help center",
   "settingsAbout": "About Ntripi",
@@ -171,6 +172,11 @@
   "languageEnglish": "English",
   "languageFrench": "Français",
   "languageArabic": "العربية",
+
+  "themePickerTitle": "Theme",
+  "themeSystem": "System",
+  "themeLight": "Light",
+  "themeDark": "Dark",
 
   "followRequestsTitle": "Follow Requests",
   "noRequests": "No pending requests",

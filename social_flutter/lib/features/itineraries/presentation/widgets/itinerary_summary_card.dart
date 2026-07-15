@@ -27,6 +27,7 @@ class ItinerarySummaryCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final nt = context.nt;
     final l10n = AppLocalizations.of(context)!;
     final coverUrl = itinerary.coverImageUrl != null
         ? (itinerary.coverImageUrl!.startsWith('/')
@@ -40,9 +41,9 @@ class ItinerarySummaryCard extends ConsumerWidget {
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
         decoration: BoxDecoration(
-          color: kSurface,
+          color: nt.surface,
           borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: kBorder),
+          border: Border.all(color: nt.border),
         ),
         clipBehavior: Clip.antiAlias,
         child: Column(
@@ -74,10 +75,10 @@ class ItinerarySummaryCard extends ConsumerWidget {
                       Expanded(
                         child: Text(
                           itinerary.title,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w700,
-                            color: kBark,
+                            color: nt.bark,
                             letterSpacing: -0.2,
                           ),
                           overflow: TextOverflow.ellipsis,
@@ -163,23 +164,24 @@ class _MetaChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final nt = context.nt;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
-        color: const Color(0x0A000000), // rgba(0,0,0,0.04)
+        color: nt.shadow.withValues(alpha: 0.04),
         borderRadius: BorderRadius.circular(999),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 14, color: kBark),
+          Icon(icon, size: 14, color: nt.bark),
           const SizedBox(width: 6),
           Text(
             label,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w500,
-              color: kBark,
+              color: nt.bark,
             ),
           ),
         ],
@@ -197,7 +199,8 @@ class _StarRating extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = ratingColor(score);
+    final nt = context.nt;
+    final color = nt.rating(score);
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -213,9 +216,9 @@ class _StarRating extends StatelessWidget {
         ),
         Text(
           ' ($count)',
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 11,
-            color: kText3,
+            color: nt.text3,
             fontWeight: FontWeight.w500,
           ),
         ),

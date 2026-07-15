@@ -619,6 +619,7 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final nt = context.nt;
     final bool readOnly = widget.viewOnly && !_isEditing;
     // Edit mode shows every field at once so users can jump straight to what
     // they need to change. Only collapse for first-time creation.
@@ -664,10 +665,10 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
       child: SavingOverlay(
         saving: _saving,
         child: Scaffold(
-      backgroundColor: kSand,
+      backgroundColor: nt.sand,
       resizeToAvoidBottomInset: false,
       appBar: AppBar(
-        backgroundColor: kSand,
+        backgroundColor: nt.sand,
         title: Text(appBarTitle),
         actions: [
           if (readOnly && isOwner)
@@ -695,7 +696,7 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                       child: Text(
                         l10n.save,
                         style: TextStyle(
-                          color: online ? kForest : kText3,
+                          color: online ? nt.forest : nt.text3,
                           fontWeight: FontWeight.w700,
                           fontSize: 15,
                         ),
@@ -737,9 +738,9 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                       decoration: InputDecoration(
                         hintText: l10n.searchPlaceHintText,
                         filled: true,
-                        fillColor: kSurface,
+                        fillColor: nt.surface,
                         prefixIcon:
-                            const Icon(Icons.search_rounded, color: kForest),
+                            Icon(Icons.search_rounded, color: nt.forest),
                         suffixIcon: _searchController.text.isNotEmpty
                             ? IconButton(
                                 icon: const Icon(Icons.close_rounded,
@@ -753,17 +754,17 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(14),
                           borderSide:
-                              const BorderSide(color: kBorder),
+                              BorderSide(color: nt.border),
                         ),
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(14),
                           borderSide:
-                              const BorderSide(color: kBorder),
+                              BorderSide(color: nt.border),
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(14),
-                          borderSide: const BorderSide(
-                              color: kForest, width: 1.5),
+                          borderSide: BorderSide(
+                              color: nt.forest, width: 1.5),
                         ),
                       ),
                       onChanged: _onSearchChanged,
@@ -784,9 +785,9 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                         return Container(
                           margin: const EdgeInsets.only(top: 4),
                           decoration: BoxDecoration(
-                            color: kSurface,
+                            color: nt.surface,
                             borderRadius: BorderRadius.circular(14),
-                            border: Border.all(color: kBorder),
+                            border: Border.all(color: nt.border),
                           ),
                           clipBehavior: Clip.antiAlias,
                           child: Column(
@@ -800,28 +801,28 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                                     width: 36,
                                     height: 36,
                                     decoration: BoxDecoration(
-                                      color: kSand,
+                                      color: nt.sand,
                                       borderRadius: BorderRadius.circular(10),
                                     ),
                                     alignment: Alignment.center,
-                                    child: const Icon(Icons.location_on_rounded,
-                                        size: 18, color: kForest),
+                                    child: Icon(Icons.location_on_rounded,
+                                        size: 18, color: nt.forest),
                                   ),
                                   title: Text(suggestions[i].displayName,
                                       maxLines: 1,
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                           fontSize: 14,
                                           fontWeight: FontWeight.w700,
-                                          color: kBark)),
+                                          color: nt.bark)),
                                   subtitle: Text(
                                     suggestions[i].address,
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(
-                                        fontSize: 11, color: kText2),
+                                    style: TextStyle(
+                                        fontSize: 11, color: nt.text2),
                                   ),
-                                  trailing: const Icon(Icons.add_rounded,
-                                      size: 20, color: kForest),
+                                  trailing: Icon(Icons.add_rounded,
+                                      size: 20, color: nt.forest),
                                   onTap: () =>
                                       _applySuggestion(suggestions[i]),
                                 ),
@@ -853,10 +854,10 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                             contentPadding: EdgeInsets.zero,
                             hintText: '—',
                           ),
-                          style: const TextStyle(
+                          style: TextStyle(
                               fontSize: 15,
                               fontWeight: FontWeight.w600,
-                              color: kBark),
+                              color: nt.bark),
                           validator: (v) => (v == null || v.trim().isEmpty)
                               ? l10n.placeNameRequired
                               : null,
@@ -878,10 +879,10 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                             contentPadding: EdgeInsets.zero,
                             hintText: '—',
                           ),
-                          style: const TextStyle(
+                          style: TextStyle(
                               fontSize: 15,
                               fontWeight: FontWeight.w600,
-                              color: kBark),
+                              color: nt.bark),
                         ),
                       ),
                     ],
@@ -908,21 +909,21 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                       margin: const EdgeInsets.only(top: 8),
                       padding: const EdgeInsets.fromLTRB(14, 10, 14, 10),
                       decoration: BoxDecoration(
-                        color: kTransitBg,
+                        color: nt.transitBg,
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: kTransitBorder),
+                        border: Border.all(color: nt.transitBorder),
                       ),
                       child: Row(
                         children: [
-                          const Icon(Icons.warning_amber_rounded,
-                              size: 16, color: kTransitIcon),
+                          Icon(Icons.warning_amber_rounded,
+                              size: 16, color: nt.transitIcon),
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
                               l10n.alreadyInItinerary(
                                   duplicate.placeName ?? l10n.aStopFallback),
-                              style: const TextStyle(
-                                  fontSize: 12, color: kTransitText),
+                              style: TextStyle(
+                                  fontSize: 12, color: nt.transitText),
                             ),
                           ),
                         ],
@@ -950,17 +951,17 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                                       ? Icons.expand_less
                                       : Icons.expand_more,
                                   size: 16,
-                                  color: kForest,
+                                  color: nt.forest,
                                 ),
                                 const SizedBox(width: 4),
                                 Text(
                                   _showOptional
                                       ? l10n.hideOptionalFields
                                       : l10n.showOptionalFields,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 13,
                                     fontWeight: FontWeight.w700,
-                                    color: kForest,
+                                    color: nt.forest,
                                   ),
                                 ),
                               ],
@@ -978,7 +979,7 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                       // Place type
                       _SFPickerRow(
                         icon: _placeType?.icon ?? Icons.category_rounded,
-                        iconColor: _placeType?.color ?? kForest,
+                        iconColor: _placeType?.color(nt) ?? nt.forest,
                         label: l10n.placeTypeLabel.toUpperCase(),
                         value: _placeType?.label(l10n) ?? '—',
                         onTap: readOnly ? null : _showPlaceTypePicker,
@@ -1001,12 +1002,12 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                               width: 32,
                               height: 32,
                               decoration: BoxDecoration(
-                                color: kMist,
+                                color: nt.mist,
                                 borderRadius: BorderRadius.circular(10),
                               ),
                               alignment: Alignment.center,
-                              child: const Icon(Icons.payments_rounded,
-                                  size: 16, color: kForest),
+                              child: Icon(Icons.payments_rounded,
+                                  size: 16, color: nt.forest),
                             ),
                             const SizedBox(width: 12),
                             Expanded(
@@ -1015,19 +1016,19 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                                 children: [
                                   Text(
                                     l10n.costLabel.toUpperCase(),
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontSize: 11,
                                       fontWeight: FontWeight.w700,
-                                      color: kText2,
+                                      color: nt.text2,
                                       letterSpacing: 0.4,
                                     ),
                                   ),
                                   Text(
                                     l10n.stopIsFree,
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontSize: 13,
                                       fontWeight: FontWeight.w500,
-                                      color: kBark,
+                                      color: nt.bark,
                                     ),
                                   ),
                                 ],
@@ -1042,22 +1043,22 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                                 if (states.contains(WidgetState.disabled)) {
                                   // disabled-on: muted forest; disabled-off: grey
                                   return states.contains(WidgetState.selected)
-                                      ? kForest.withAlpha(160)
-                                      : const Color(0xFFABBAAF);
+                                      ? nt.forest.withAlpha(160)
+                                      : nt.text3;
                                 }
                                 return states.contains(WidgetState.selected)
-                                    ? kForest
-                                    : Colors.white;
+                                    ? nt.forest
+                                    : nt.surface;
                               }),
                               trackColor: WidgetStateProperty.resolveWith((states) {
                                 if (states.contains(WidgetState.disabled)) {
                                   return states.contains(WidgetState.selected)
-                                      ? kMist.withAlpha(200)
-                                      : const Color(0xFFD4DAD6);
+                                      ? nt.mist.withAlpha(200)
+                                      : nt.border;
                                 }
                                 return states.contains(WidgetState.selected)
-                                    ? kMist
-                                    : const Color(0xFFD4DAD6);
+                                    ? nt.mist
+                                    : nt.border;
                               }),
                             ),
                           ],
@@ -1083,10 +1084,10 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                             ),
                             keyboardType: const TextInputType.numberWithOptions(
                                 decimal: true),
-                            style: const TextStyle(
+                            style: TextStyle(
                                 fontSize: 15,
                                 fontWeight: FontWeight.w600,
-                                color: kBark),
+                                color: nt.bark),
                             validator: (v) {
                               if (v == null || v.isEmpty) return null;
                               if (double.tryParse(v) == null) {
@@ -1124,10 +1125,10 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                       children: [
                         Text(
                           l10n.annotationsSection.toUpperCase(),
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w700,
-                            color: kText2,
+                            color: nt.text2,
                             letterSpacing: 0.6,
                           ),
                         ),
@@ -1142,14 +1143,14 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                                 children: [
                                   Icon(Icons.add_rounded,
                                       size: 14,
-                                      color: online ? kForest : kText3),
+                                      color: online ? nt.forest : nt.text3),
                                   const SizedBox(width: 4),
                                   Text(
                                     l10n.addButton,
                                     style: TextStyle(
                                       fontSize: 12,
                                       fontWeight: FontWeight.w700,
-                                      color: online ? kForest : kText3,
+                                      color: online ? nt.forest : nt.text3,
                                     ),
                                   ),
                                 ],
@@ -1175,14 +1176,14 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                         builder: (online) => OutlinedButton.icon(
                           onPressed:
                               (_saving || !online) ? null : _confirmDelete,
-                          icon: const Icon(Icons.delete_outline,
-                              color: kRatingRed),
+                          icon: Icon(Icons.delete_outline,
+                              color: nt.ratingRed),
                           label: Text(
                             l10n.deleteStopButton,
-                            style: const TextStyle(color: kRatingRed),
+                            style: TextStyle(color: nt.ratingRed),
                           ),
                           style: OutlinedButton.styleFrom(
-                            side: const BorderSide(color: kRatingRed),
+                            side: BorderSide(color: nt.ratingRed),
                           ),
                         ),
                       ),
@@ -1201,6 +1202,7 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
 
   // ── Place type picker bottom sheet ──────────────────────────────────────
   Future<void> _showPlaceTypePicker() async {
+    final nt = context.nt;
     final picked = await showModalBottomSheet<Object>(
       context: context,
       shape: const RoundedRectangleBorder(
@@ -1220,7 +1222,7 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                   width: 36,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: kText3.withValues(alpha: 0.5),
+                    color: nt.text3.withValues(alpha: 0.5),
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -1229,10 +1231,10 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                 padding: const EdgeInsets.only(bottom: 8),
                 child: Text(
                   AppLocalizations.of(context)!.placeTypeLabel.toUpperCase(),
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
-                    color: kText2,
+                    color: nt.text2,
                     letterSpacing: 0.6,
                   ),
                 ),
@@ -1248,21 +1250,21 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                         width: 36,
                         height: 36,
                         decoration: BoxDecoration(
-                          color: t.color.withValues(alpha: 0.12),
+                          color: t.color(nt).withValues(alpha: 0.12),
                           borderRadius: BorderRadius.circular(10),
                         ),
                         alignment: Alignment.center,
-                        child: Icon(t.icon, size: 18, color: t.color),
+                        child: Icon(t.icon, size: 18, color: t.color(nt)),
                       ),
                       title: Text(t.label(l10n),
-                          style: const TextStyle(
-                              fontWeight: FontWeight.w700, color: kBark)),
+                          style: TextStyle(
+                              fontWeight: FontWeight.w700, color: nt.bark)),
                       subtitle: Text(t.hint(l10n),
-                          style: const TextStyle(
-                              fontSize: 11, color: kText2)),
+                          style: TextStyle(
+                              fontSize: 11, color: nt.text2)),
                       trailing: selected
-                          ? const Icon(Icons.check_rounded,
-                              color: kForest, size: 18)
+                          ? Icon(Icons.check_rounded,
+                              color: nt.forest, size: 18)
                           : null,
                       onTap: () => Navigator.pop(ctx, t),
                     );
@@ -1275,15 +1277,15 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                     width: 36,
                     height: 36,
                     decoration: BoxDecoration(
-                      color: kBorder,
+                      color: nt.border,
                       borderRadius: BorderRadius.circular(10),
                     ),
                     alignment: Alignment.center,
-                    child: const Icon(Icons.clear_rounded,
-                        size: 18, color: kText3),
+                    child: Icon(Icons.clear_rounded,
+                        size: 18, color: nt.text3),
                   ),
                   title: Text(AppLocalizations.of(context)!.noneOption,
-                      style: const TextStyle(color: kText2)),
+                      style: TextStyle(color: nt.text2)),
                   onTap: () => Navigator.pop(ctx, _clearPlaceTypeSentinel),
                 ),
             ],
@@ -1305,8 +1307,9 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
     if (widget.isEditMode) {
       final annos = _existingStop?.annotations ?? [];
       if (annos.isEmpty) {
+    final nt = context.nt;
         return Text(l10n.noAnnotationsYet,
-            style: const TextStyle(color: kText3, fontSize: 13));
+            style: TextStyle(color: nt.text3, fontSize: 13));
       }
       return Wrap(
         spacing: 8,
@@ -1325,8 +1328,9 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
       );
     } else {
       if (_pendingAnnotations.isEmpty) {
+    final nt = context.nt;
         return Text(l10n.noAnnotationsYet,
-            style: const TextStyle(color: kText3, fontSize: 13));
+            style: TextStyle(color: nt.text3, fontSize: 13));
       }
       return Wrap(
         spacing: 8,
@@ -1361,10 +1365,10 @@ class _SFSectionLabel extends StatelessWidget {
         padding: const EdgeInsets.fromLTRB(22, 14, 22, 6),
         child: Text(
           text,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 11,
             fontWeight: FontWeight.w700,
-            color: kText2,
+            color: context.nt.text2,
             letterSpacing: 0.6,
           ),
         ),
@@ -1379,9 +1383,9 @@ class _SFSectionCard extends StatelessWidget {
   Widget build(BuildContext context) => Container(
         margin: const EdgeInsets.fromLTRB(16, 0, 16, 0),
         decoration: BoxDecoration(
-          color: kSurface,
+          color: context.nt.surface,
           borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: kBorder),
+          border: Border.all(color: context.nt.border),
         ),
         clipBehavior: Clip.antiAlias,
         child: Column(
@@ -1396,7 +1400,7 @@ class _SFDivider extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) =>
-      Container(height: 1, color: kBorder, margin: const EdgeInsetsDirectional.only(start: 16));
+      Container(height: 1, color: context.nt.border, margin: const EdgeInsetsDirectional.only(start: 16));
 }
 
 class _SFBorderlessField extends StatefulWidget {
@@ -1430,10 +1434,10 @@ class _SFBorderlessFieldState extends State<_SFBorderlessField> {
             children: [
               Text(
                 widget.label,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w700,
-                  color: kText2,
+                  color: context.nt.text2,
                   letterSpacing: 0.4,
                 ),
               ),
@@ -1462,7 +1466,8 @@ class _SFPickerRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tint = iconColor ?? kForest;
+    final nt = context.nt;
+    final tint = iconColor ?? nt.forest;
     return InkWell(
       onTap: onTap,
       child: Padding(
@@ -1473,7 +1478,7 @@ class _SFPickerRow extends StatelessWidget {
               width: 32,
               height: 32,
               decoration: BoxDecoration(
-                color: kMist,
+                color: nt.mist,
                 borderRadius: BorderRadius.circular(10),
               ),
               alignment: Alignment.center,
@@ -1486,28 +1491,28 @@ class _SFPickerRow extends StatelessWidget {
                 children: [
                   Text(
                     label,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w700,
-                      color: kText2,
+                      color: nt.text2,
                       letterSpacing: 0.4,
                     ),
                   ),
                   const SizedBox(height: 2),
                   Text(
                     value,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w600,
-                      color: kBark,
+                      color: nt.bark,
                     ),
                   ),
                 ],
               ),
             ),
             if (onTap != null)
-              const Icon(Icons.chevron_right_rounded,
-                  size: 20, color: kText3),
+              Icon(Icons.chevron_right_rounded,
+                  size: 20, color: nt.text3),
           ],
         ),
       ),

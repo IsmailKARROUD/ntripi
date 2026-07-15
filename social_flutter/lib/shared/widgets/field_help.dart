@@ -244,7 +244,7 @@ class _FieldHelpCard extends StatelessWidget {
       elevation: 8,
       borderRadius: BorderRadius.circular(12),
       color: cs.surface,
-      shadowColor: Colors.black.withValues(alpha: 0.25),
+      shadowColor: cs.shadow.withValues(alpha: 0.25),
       child: Container(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(12),

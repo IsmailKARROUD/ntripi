@@ -48,6 +48,7 @@ class ProfileHeroAndIdentity extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final nt = context.nt;
     const heroH = 260.0;
     // Avatar total display height inside the row = 92 px (88 radius×2 + ring 4)
     // Identity row height ≈ 92 px. Overlap = 36 px.
@@ -99,20 +100,20 @@ class ProfileHeroAndIdentity extends StatelessWidget {
                     children: [
                       Text(
                         user.nameForDisplay,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 22,
                           fontWeight: FontWeight.w700,
-                          color: kBark,
+                          color: nt.bark,
                           letterSpacing: -0.3,
                           height: 1.15,
                         ),
                       ),
                       Text(
                         user.handle,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w500,
-                          color: kText2,
+                          color: nt.text2,
                         ),
                       ),
                     ],
@@ -165,6 +166,7 @@ class ProfileMapHero extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final nt = context.nt;
     final l10n = AppLocalizations.of(context)!;
     final label = headerLabel ?? l10n.whereIveBeen;
     final resolvedCover = _resolveCoverUrl();
@@ -183,7 +185,7 @@ class ProfileMapHero extends StatelessWidget {
               imageUrl: resolvedCover,
               cacheManager: NtripiImageCacheManager(),
               fit: BoxFit.cover,
-              errorWidget: (_, __, ___) => Container(color: kSand),
+              errorWidget: (_, __, ___) => Container(color: nt.sand),
             )
           else
             IgnorePointer(
@@ -231,10 +233,11 @@ class ProfileMapHero extends StatelessWidget {
                                 height: 14,
                                 child: Container(
                                   decoration: BoxDecoration(
-                                    color: kForest,
+                                    color: nt.forest,
                                     shape: BoxShape.circle,
                                     border: Border.all(
-                                      color: Colors.white,
+                                      // over OSM tiles — always light
+                                      color: NtripiBrand.chrome,
                                       width: 1.5,
                                     ),
                                   ),
@@ -246,7 +249,7 @@ class ProfileMapHero extends StatelessWidget {
               ),
             ),
 
-          if (!hasCover) Container(color: const Color(0x30F5F2EC)),
+          if (!hasCover) Container(color: NtripiColors.light.sand.withValues(alpha: 0.19)),
 
           // Privacy/aesthetic blur veil over the map fallback only.
           // Cover image stays clear; isContentHidden has its own stronger veil.
@@ -255,7 +258,7 @@ class ProfileMapHero extends StatelessWidget {
               child: BackdropFilter(
                 filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
                 child: Container(
-                  color: Colors.black.withValues(alpha: 0.08),
+                  color: NtripiBrand.backdrop.withValues(alpha: 0.08),
                 ),
               ),
             ),
@@ -264,38 +267,39 @@ class ProfileMapHero extends StatelessWidget {
             BackdropFilter(
               filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
               child: Container(
-                color: const Color(0x8DF5F2EC),
+                color: NtripiColors.light.sand.withValues(alpha: 0.55),
                 alignment: Alignment.center,
                 child: Container(
                   width: 60,
                   height: 60,
                   decoration: BoxDecoration(
-                    color: const Color(0xA61A2A1E),
+                    color: NtripiBrand.scrimInk.withValues(alpha: 0.65),
                     shape: BoxShape.circle,
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.2),
+                        color: NtripiBrand.backdrop.withValues(alpha: 0.2),
                         blurRadius: 20,
                       )
                     ],
                   ),
                   child: const Icon(Icons.lock_rounded,
-                      color: Colors.white, size: 28),
+                      color: NtripiBrand.chrome, size: 28),
                 ),
               ),
             ),
 
           Container(
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 stops: [0.0, 0.35, 0.55, 1.0],
                 colors: [
-                  Color(0x801A2A1E),
-                  Color(0x001A2A1E),
-                  Color(0x001A2A1E),
-                  Color(0xC71A2A1E),
+                  // constant ink scrim — always sits over the hero imagery
+                  NtripiBrand.scrimInk.withValues(alpha: 0.5),
+                  NtripiBrand.scrimInk.withValues(alpha: 0),
+                  NtripiBrand.scrimInk.withValues(alpha: 0),
+                  NtripiBrand.scrimInk.withValues(alpha: 0.78),
                 ],
               ),
             ),
@@ -369,7 +373,7 @@ class ProfileMapHero extends StatelessWidget {
                         style: const TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w600,
-                          color: Colors.white,
+                          color: NtripiBrand.chrome,
                           letterSpacing: 1.0,
                         ),
                       ),
@@ -381,7 +385,7 @@ class ProfileMapHero extends StatelessWidget {
                         style: const TextStyle(
                           fontSize: 22,
                           fontWeight: FontWeight.w700,
-                          color: Colors.white,
+                          color: NtripiBrand.chrome,
                           letterSpacing: -0.3,
                           height: 1.15,
                         ),
@@ -402,23 +406,23 @@ class ProfileMapHero extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(
                       horizontal: 14, vertical: 8),
                   decoration: BoxDecoration(
-                    color: kButtonTransparent,
+                    color: nt.buttonTransparent,
                     borderRadius: BorderRadius.circular(999),
                     border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.3)),
+                        color: NtripiBrand.chrome.withValues(alpha: 0.3)),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       const Icon(Icons.map_outlined,
-                          size: 14, color: Colors.white),
+                          size: 14, color: NtripiBrand.chrome),
                       const SizedBox(width: 6),
                       Text(
                         l10n.tapToSeeStops,
                         style: const TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
-                          color: Colors.white,
+                          color: NtripiBrand.chrome,
                         ),
                       ),
                     ],
@@ -444,6 +448,7 @@ class AvatarWithBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final nt = context.nt;
     return Stack(
       clipBehavior: Clip.none,
       children: [
@@ -453,7 +458,8 @@ class AvatarWithBadge extends StatelessWidget {
           padding: const EdgeInsets.all(4),
           decoration: const BoxDecoration(
             shape: BoxShape.circle,
-            color: Colors.white,
+            // constant white ring — always sits over the hero imagery
+            color: NtripiBrand.chrome,
           ),
           child: ClipOval(
             child: UserAvatar(avatarUrl: avatarUrl, radius: 44),
@@ -466,11 +472,11 @@ class AvatarWithBadge extends StatelessWidget {
             width: 24,
             height: 24,
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: NtripiBrand.chrome,
               shape: BoxShape.circle,
               boxShadow: [
                 BoxShadow(
-                  color: Colors.white.withValues(alpha: 0.9),
+                  color: NtripiBrand.chrome.withValues(alpha: 0.9),
                   spreadRadius: 2,
                 )
               ],
@@ -478,7 +484,7 @@ class AvatarWithBadge extends StatelessWidget {
             child: Icon(
               isPrivate ? Icons.lock_rounded : Icons.public_rounded,
               size: 14,
-              color: kForest,
+              color: nt.forest,
             ),
           ),
         ),
@@ -501,6 +507,7 @@ class GlassIconButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final nt = context.nt;
     return Tooltip(
       message: tooltip,
       child: GestureDetector(
@@ -513,12 +520,12 @@ class GlassIconButton extends StatelessWidget {
               width: 40,
               height: 40,
               decoration: BoxDecoration(
-                color: kButtonTransparent,
+                color: nt.buttonTransparent,
                 borderRadius: BorderRadius.circular(12),
                 border:
-                    Border.all(color: Colors.white.withValues(alpha: 0.22)),
+                    Border.all(color: NtripiBrand.chrome.withValues(alpha: 0.22)),
               ),
-              child: Icon(icon, color: Colors.white, size: 22),
+              child: Icon(icon, color: NtripiBrand.chrome, size: 22),
             ),
           ),
         ),
@@ -536,6 +543,7 @@ class Tally extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final nt = context.nt;
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: onTap,
@@ -546,10 +554,10 @@ class Tally extends StatelessWidget {
           children: [
             Text(
               n.toString(),
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w700,
-                color: kBark,
+                color: nt.bark,
                 letterSpacing: -0.3,
                 height: 1,
               ),
@@ -557,10 +565,10 @@ class Tally extends StatelessWidget {
             const SizedBox(height: 2),
             Text(
               label,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.w600,
-                color: kText2,
+                color: nt.text2,
               ),
             ),
           ],

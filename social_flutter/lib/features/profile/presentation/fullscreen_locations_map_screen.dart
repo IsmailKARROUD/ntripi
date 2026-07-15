@@ -25,14 +25,15 @@ class FullscreenLocationsMapScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final nt = context.nt;
     final l10n = AppLocalizations.of(context)!;
     final locationsAsync = ref.watch(userLocationsProvider(userId));
 
     return Scaffold(
       appBar: AppBar(
         title: Text(userName),
-        backgroundColor: kSurface,
-        foregroundColor: kBark,
+        backgroundColor: nt.surface,
+        foregroundColor: nt.bark,
         elevation: 0,
       ),
       body: locationsAsync.when(
@@ -43,19 +44,20 @@ class FullscreenLocationsMapScreen extends ConsumerWidget {
             child: Text(
               l10n.couldNotLoadItineraries,
               textAlign: TextAlign.center,
-              style: const TextStyle(color: kText2),
+              style: TextStyle(color: nt.text2),
             ),
           ),
         ),
         data: (locations) {
           if (locations.isEmpty) {
+    final nt = context.nt;
             return Center(
               child: Text(
                 l10n.noStopsYet,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
-                  color: kText2,
+                  color: nt.text2,
                 ),
               ),
             );
@@ -88,15 +90,15 @@ class FullscreenLocationsMapScreen extends ConsumerWidget {
                           height: 20,
                           child: Container(
                             decoration: BoxDecoration(
-                              color: kForest,
+                              color: nt.forest,
                               shape: BoxShape.circle,
                               border: Border.all(
-                                color: Colors.white,
+                                color: NtripiBrand.chrome,
                                 width: 2,
                               ),
                             ),
                             child: const Icon(Icons.place,
-                                color: Colors.white, size: 9),
+                                color: NtripiBrand.chrome, size: 9),
                           ),
                         ))
                     .toList(),

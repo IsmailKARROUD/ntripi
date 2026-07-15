@@ -152,6 +152,7 @@ class _ReorderParallelsSheetState
 
   @override
   Widget build(BuildContext context) {
+    final nt = context.nt;
     return PopScope(
       canPop: !_dirty && !_busy,
       onPopInvokedWithResult: (didPop, _) async {
@@ -163,7 +164,7 @@ class _ReorderParallelsSheetState
         saving: _busy,
         loaderSize: 40,
         child: Container(
-        color: kSand,
+        color: nt.sand,
         child: SafeArea(
           child: Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
@@ -178,10 +179,10 @@ class _ReorderParallelsSheetState
                     AppLocalizations.of(context)!
                         .reorderAlternativesTitle
                         .toUpperCase(),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w700,
-                      color: kText2,
+                      color: nt.text2,
                       letterSpacing: 0.6,
                     ),
                   ),
@@ -190,7 +191,7 @@ class _ReorderParallelsSheetState
                   padding: const EdgeInsets.fromLTRB(6, 0, 6, 10),
                   child: Text(
                     AppLocalizations.of(context)!.reorderAlternativesHint,
-                    style: const TextStyle(fontSize: 12, color: kText2),
+                    style: TextStyle(fontSize: 12, color: nt.text2),
                   ),
                 ),
 
@@ -201,9 +202,9 @@ class _ReorderParallelsSheetState
                   ),
                   child: Container(
                     decoration: BoxDecoration(
-                      color: kSurface,
+                      color: nt.surface,
                       borderRadius: BorderRadius.circular(18),
-                      border: Border.all(color: kBorder),
+                      border: Border.all(color: nt.border),
                     ),
                     clipBehavior: Clip.antiAlias,
                     child: ReorderableListView.builder(
@@ -219,7 +220,7 @@ class _ReorderParallelsSheetState
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             if (i > 0)
-                              Container(height: 1, color: kBorder),
+                              Container(height: 1, color: nt.border),
                             Padding(
                               padding:
                                   const EdgeInsets.fromLTRB(14, 10, 14, 10),
@@ -227,30 +228,30 @@ class _ReorderParallelsSheetState
                                 children: [
                                   ReorderableDragStartListener(
                                     index: i,
-                                    child: const Padding(
+                                    child: Padding(
                                       padding: EdgeInsets.symmetric(
                                           horizontal: 4),
                                       child: Icon(
                                           Icons.drag_indicator_rounded,
                                           size: 20,
-                                          color: kText3),
+                                          color: nt.text3),
                                     ),
                                   ),
                                   const SizedBox(width: 10),
                                   Container(
                                     width: 32,
                                     height: 32,
-                                    decoration: const BoxDecoration(
-                                      color: kMist,
+                                    decoration: BoxDecoration(
+                                      color: nt.mist,
                                       shape: BoxShape.circle,
                                     ),
                                     alignment: Alignment.center,
                                     child: Text(
                                       '${i + 1}',
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         fontSize: 13,
                                         fontWeight: FontWeight.w800,
-                                        color: kForest,
+                                        color: nt.forest,
                                       ),
                                     ),
                                   ),
@@ -264,10 +265,10 @@ class _ReorderParallelsSheetState
                                           stop.placeName ?? '(unnamed)',
                                           maxLines: 1,
                                           overflow: TextOverflow.ellipsis,
-                                          style: const TextStyle(
+                                          style: TextStyle(
                                             fontSize: 15,
                                             fontWeight: FontWeight.w700,
-                                            color: kBark,
+                                            color: nt.bark,
                                           ),
                                         ),
                                         if (stop.placeAddress != null &&
@@ -276,8 +277,8 @@ class _ReorderParallelsSheetState
                                             stop.placeAddress!,
                                             maxLines: 1,
                                             overflow: TextOverflow.ellipsis,
-                                            style: const TextStyle(
-                                                fontSize: 11, color: kText2),
+                                            style: TextStyle(
+                                                fontSize: 11, color: nt.text2),
                                           ),
                                       ],
                                     ),
@@ -299,7 +300,7 @@ class _ReorderParallelsSheetState
                   children: [
                     TextButton(
                       onPressed: _busy ? null : _onCancel,
-                      style: TextButton.styleFrom(foregroundColor: kForest),
+                      style: TextButton.styleFrom(foregroundColor: nt.forest),
                       child: Text(AppLocalizations.of(context)!.cancel),
                     ),
                     const SizedBox(width: 8),

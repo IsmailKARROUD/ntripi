@@ -144,6 +144,7 @@ class _RateItinerarySheetState extends State<_RateItinerarySheet> {
 
   @override
   Widget build(BuildContext context) {
+    final nt = context.nt;
     final l10n = AppLocalizations.of(context)!;
     final canSave = _overall != null && !_saving;
 
@@ -153,7 +154,7 @@ class _RateItinerarySheetState extends State<_RateItinerarySheet> {
       canPop: !_saving,
       child: SavingOverlay(
         saving: _saving,
-        tint: kSurface,
+        tint: nt.surface,
         loaderSize: 40,
         // Match the sheet shape — content starts at the very top of the sheet.
         borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
@@ -172,7 +173,7 @@ class _RateItinerarySheetState extends State<_RateItinerarySheet> {
               width: 36,
               height: 4,
               decoration: BoxDecoration(
-                color: kText3.withValues(alpha: 0.5),
+                color: nt.text3.withValues(alpha: 0.5),
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -183,7 +184,7 @@ class _RateItinerarySheetState extends State<_RateItinerarySheet> {
             padding: const EdgeInsets.fromLTRB(22, 4, 22, 12),
             child: Text(
               l10n.rateOverallFirstHint,
-              style: const TextStyle(fontSize: 12, color: kText2),
+              style: TextStyle(fontSize: 12, color: nt.text2),
             ),
           ),
 
@@ -191,9 +192,9 @@ class _RateItinerarySheetState extends State<_RateItinerarySheet> {
           Container(
             margin: const EdgeInsets.fromLTRB(16, 0, 16, 0),
             decoration: BoxDecoration(
-              color: kSurface,
+              color: nt.surface,
               borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: kBorder),
+              border: Border.all(color: nt.border),
             ),
             clipBehavior: Clip.antiAlias,
             child: _RatingSliderRow(
@@ -210,10 +211,10 @@ class _RateItinerarySheetState extends State<_RateItinerarySheet> {
             padding: const EdgeInsets.fromLTRB(16, 14, 16, 6),
             child: Text(
               l10n.yourImpressionLabel.toUpperCase(),
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.w700,
-                color: kText2,
+                color: nt.text2,
                 letterSpacing: 0.6,
               ),
             ),
@@ -221,9 +222,9 @@ class _RateItinerarySheetState extends State<_RateItinerarySheet> {
           Container(
             margin: const EdgeInsets.fromLTRB(16, 0, 16, 0),
             decoration: BoxDecoration(
-              color: kSurface,
+              color: nt.surface,
               borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: kBorder),
+              border: Border.all(color: nt.border),
             ),
             clipBehavior: Clip.antiAlias,
             child: Padding(
@@ -252,10 +253,10 @@ class _RateItinerarySheetState extends State<_RateItinerarySheet> {
                         padding: const EdgeInsets.fromLTRB(16, 14, 16, 6),
                         child: Text(
                           l10n.wantToShareMore.toUpperCase(),
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w700,
-                            color: kText2,
+                            color: nt.text2,
                             letterSpacing: 0.6,
                           ),
                         ),
@@ -263,9 +264,9 @@ class _RateItinerarySheetState extends State<_RateItinerarySheet> {
                       Container(
                         margin: const EdgeInsets.fromLTRB(16, 0, 16, 0),
                         decoration: BoxDecoration(
-                          color: kSurface,
+                          color: nt.surface,
                           borderRadius: BorderRadius.circular(18),
-                          border: Border.all(color: kBorder),
+                          border: Border.all(color: nt.border),
                         ),
                         clipBehavior: Clip.antiAlias,
                         child: Column(
@@ -399,6 +400,7 @@ class _RatingSliderRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final nt = context.nt;
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
       child: Column(
@@ -406,14 +408,14 @@ class _RatingSliderRow extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(icon, size: 16, color: kForest),
+              Icon(icon, size: 16, color: nt.forest),
               const SizedBox(width: 8),
               Text(
                 isRequired ? '$label *' : label,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w700,
-                  color: kBark,
+                  color: nt.bark,
                 ),
               ),
             ],
@@ -428,14 +430,14 @@ class _RatingSliderRow extends StatelessWidget {
                     (inverted ? star > value! : star <= value!);
                 final Color color;
                 if (value == null) {
-                  color = const Color(0xFFE4E4E4);
+                  color = nt.border;
                 } else if (inverted) {
                   // Tint every glyph (including empties) by the value.
-                  color = ratingColor(value!.toDouble());
+                  color = nt.rating(value!.toDouble());
                 } else {
                   color = filled
-                      ? ratingColor(value!.toDouble())
-                      : const Color(0xFFE4E4E4);
+                      ? nt.rating(value!.toDouble())
+                      : nt.border;
                 }
                 return GestureDetector(
                   onTap: () => onChanged(value == star ? null : star),
@@ -456,9 +458,9 @@ class _RatingSliderRow extends StatelessWidget {
                     ? TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w800,
-                        color: ratingColor(value!.toDouble()),
+                        color: nt.rating(value!.toDouble()),
                       )
-                    : const TextStyle(fontSize: 16, color: kText3),
+                    : TextStyle(fontSize: 16, color: nt.text3),
               ),
             ],
           ),

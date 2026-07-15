@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:social_flutter/core/ui/app_theme.dart';
 
 // A themed horizontal divider with a subtle downward shadow to visually
 // separate content sections. Drop-in replacement for Flutter's Divider.
@@ -23,7 +24,7 @@ class ShadowDivider extends StatelessWidget {
         color: Theme.of(context).dividerColor.withValues(alpha: 0.6),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.125),
+            color: context.nt.shadow.withValues(alpha: 0.125),
             blurRadius: 4,
             spreadRadius: 0,
             offset: const Offset(0, 2),

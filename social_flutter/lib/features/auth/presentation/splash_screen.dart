@@ -62,7 +62,8 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
     final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       resizeToAvoidBottomInset: false,
-      backgroundColor: kForest,
+      // Brand splash — deliberately identical in light and dark mode.
+      backgroundColor: NtripiBrand.forest,
       body: Stack(
         children: [
           const _RouteTexture(),
@@ -81,7 +82,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
                           fontFamily: 'DM Sans',
                           fontSize: 38,
                           fontWeight: FontWeight.w800,
-                          color: Colors.white,
+                          color: NtripiBrand.chrome,
                           letterSpacing: -1,
                         ),
                       ),
@@ -90,7 +91,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
                         l10n.splashTagline,
                         textAlign: TextAlign.center,
                         style: const TextStyle(
-                          color: Color(0xA8FFFFFF),
+                          color: NtripiBrand.chrome66,
                           fontSize: 15,
                           height: 1.5,
                         ),
@@ -105,7 +106,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
                       l10n.splashMotto,
                       style: const TextStyle(
                         fontSize: 12,
-                        color: Color(0x66FFFFFF),
+                        color: NtripiBrand.chrome40,
                         letterSpacing: 0.2,
                       ),
                     ),
@@ -131,7 +132,7 @@ class _Dot extends StatelessWidget {
       height: 8,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: Colors.white.withValues(alpha: opacity),
+        color: NtripiBrand.chrome.withValues(alpha: opacity),
       ),
     );
   }
@@ -156,7 +157,7 @@ class _RouteTexturePainter extends CustomPainter {
     final h = size.height;
 
     final paint = Paint()
-      ..color = Colors.white.withValues(alpha: 0.07)
+      ..color = NtripiBrand.chrome.withValues(alpha: 0.07)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.5
       ..strokeCap = StrokeCap.round
@@ -180,12 +181,12 @@ class _RouteTexturePainter extends CustomPainter {
     canvas.drawCircle(
       Offset(w * 0.907, h * 0.123),
       6,
-      Paint()..color = Colors.white.withValues(alpha: 0.7),
+      Paint()..color = NtripiBrand.chrome.withValues(alpha: 0.7),
     );
     canvas.drawCircle(
       Offset(w * 0.107, h * 0.985),
       4,
-      Paint()..color = Colors.white.withValues(alpha: 0.35),
+      Paint()..color = NtripiBrand.chrome.withValues(alpha: 0.35),
     );
   }
 

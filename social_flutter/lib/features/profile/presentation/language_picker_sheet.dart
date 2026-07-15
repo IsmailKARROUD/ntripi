@@ -55,13 +55,14 @@ class _LanguagePickerSheetState extends State<_LanguagePickerSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final nt = context.nt;
     final langCode = Localizations.localeOf(context).languageCode;
     final filtered = _filtered(langCode);
     final maxHeight = MediaQuery.of(context).size.height * 0.85;
     return Container(
       constraints: BoxConstraints(maxHeight: maxHeight),
-      decoration: const BoxDecoration(
-        color: kSand,
+      decoration: BoxDecoration(
+        color: nt.sand,
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       child: Column(
@@ -73,7 +74,7 @@ class _LanguagePickerSheetState extends State<_LanguagePickerSheet> {
             width: 36,
             height: 4,
             decoration: BoxDecoration(
-              color: kBorder,
+              color: nt.border,
               borderRadius: BorderRadius.circular(2),
             ),
           ),
@@ -83,10 +84,10 @@ class _LanguagePickerSheetState extends State<_LanguagePickerSheet> {
               alignment: AlignmentDirectional.centerStart,
               child: Text(
                 AppLocalizations.of(context)!.addLanguageTitle,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 17,
                   fontWeight: FontWeight.w700,
-                  color: kBark,
+                  color: nt.bark,
                   letterSpacing: -0.2,
                 ),
               ),
@@ -100,11 +101,11 @@ class _LanguagePickerSheetState extends State<_LanguagePickerSheet> {
               onChanged: (v) => setState(() => _query = v),
               decoration: InputDecoration(
                 hintText: AppLocalizations.of(context)!.languageSearchHint,
-                hintStyle: const TextStyle(color: kText3, fontSize: 15),
-                prefixIcon: const Icon(Icons.search_rounded, color: kText2, size: 20),
+                hintStyle: TextStyle(color: nt.text3, fontSize: 15),
+                prefixIcon: Icon(Icons.search_rounded, color: nt.text2, size: 20),
                 suffixIcon: _query.isNotEmpty
                     ? IconButton(
-                        icon: const Icon(Icons.close_rounded, size: 18, color: kText2),
+                        icon: Icon(Icons.close_rounded, size: 18, color: nt.text2),
                         onPressed: () {
                           _searchCtrl.clear();
                           setState(() => _query = '');
@@ -112,19 +113,19 @@ class _LanguagePickerSheetState extends State<_LanguagePickerSheet> {
                       )
                     : null,
                 filled: true,
-                fillColor: kSurface,
+                fillColor: nt.surface,
                 contentPadding: const EdgeInsets.symmetric(vertical: 12),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(14),
-                  borderSide: const BorderSide(color: kBorder),
+                  borderSide: BorderSide(color: nt.border),
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(14),
-                  borderSide: const BorderSide(color: kBorder),
+                  borderSide: BorderSide(color: nt.border),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(14),
-                  borderSide: const BorderSide(color: kForest, width: 1.5),
+                  borderSide: BorderSide(color: nt.forest, width: 1.5),
                 ),
               ),
             ),
@@ -138,18 +139,18 @@ class _LanguagePickerSheetState extends State<_LanguagePickerSheet> {
                 return ListTile(
                   title: Text(
                     lang.localizedName(langCode),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w500,
-                      color: kBark,
+                      color: nt.bark,
                     ),
                   ),
                   trailing: Text(
                     lang.code,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w700,
-                      color: kText2,
+                      color: nt.text2,
                     ),
                   ),
                   onTap: () => Navigator.of(context).pop(lang.code),

@@ -127,6 +127,7 @@ class _ParallelStopGroupState extends State<ParallelStopGroup> {
 
   @override
   Widget build(BuildContext context) {
+    final nt = context.nt;
     final hasParallels = widget.stops.length > 1;
     final canAddMore = widget.stops.length < Track.maxParallelStops;
     final segment = widget.getSegment(_activeStop.id);
@@ -225,7 +226,7 @@ class _ParallelStopGroupState extends State<ParallelStopGroup> {
                   height: active ? 8 : 5,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: active ? kForest : kText3,
+                    color: active ? nt.forest : nt.text3,
                   ),
                 );
               }),
@@ -319,13 +320,14 @@ class _BottomActionRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final nt = context.nt;
     if (!showAddStop && !showAddTransit) return const SizedBox.shrink();
     final l10n = AppLocalizations.of(context)!;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 36, vertical: 2),
       child: Row(
         children: [
-          const Expanded(child: Divider(color: kBorder, height: 1)),
+          Expanded(child: Divider(color: nt.border, height: 1)),
           const SizedBox(width: 8),
           if (showAddStop)
             _ActionChip(
@@ -333,12 +335,12 @@ class _BottomActionRow extends StatelessWidget {
               label: l10n.addStopTooltip,
               loading: addStopLoading,
               onTap: addStopLoading ? null : onAddStop,
-              color: kEditBlue,
+              color: nt.editBlue,
             ),
           if (showAddStop && showAddTransit)
-            const Padding(
+            Padding(
               padding: EdgeInsets.symmetric(horizontal: 6),
-              child: Text('·', style: TextStyle(color: kText3, fontSize: 12)),
+              child: Text('·', style: TextStyle(color: nt.text3, fontSize: 12)),
             ),
           if (showAddTransit)
             _ActionChip(
@@ -346,10 +348,10 @@ class _BottomActionRow extends StatelessWidget {
               label: l10n.addTransitTitle,
               loading: addTransitLoading,
               onTap: addTransitLoading ? null : onAddTransit,
-              color: kEditBlue,
+              color: nt.editBlue,
             ),
           const SizedBox(width: 8),
-          const Expanded(child: Divider(color: kBorder, height: 1)),
+          Expanded(child: Divider(color: nt.border, height: 1)),
         ],
       ),
     );
@@ -361,18 +363,20 @@ class _ActionChip extends StatelessWidget {
   final String label;
   final bool loading;
   final VoidCallback? onTap;
-  final Color color;
+  // Nullable: theme lookups aren't const, so the default resolves in build.
+  final Color? color;
 
   const _ActionChip({
     required this.icon,
     required this.label,
     required this.loading,
     this.onTap,
-    this.color = kText2,
+    this.color,
   });
 
   @override
   Widget build(BuildContext context) {
+    final color = this.color ?? context.nt.text2;
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(6),
@@ -400,6 +404,7 @@ class _MoveToTrackButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final nt = context.nt;
     final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsetsDirectional.only(top: 6, end: 8),
@@ -409,19 +414,19 @@ class _MoveToTrackButton extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
           decoration: BoxDecoration(
-            color: kEditBlueTint,
-            border: Border.all(color: kEditBlue.withValues(alpha: 0.13)),
+            color: nt.editBlueTint,
+            border: Border.all(color: nt.editBlue.withValues(alpha: 0.13)),
             borderRadius: BorderRadius.circular(8),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.swap_vert, size: 16, color: kEditBlue),
+              Icon(Icons.swap_vert, size: 16, color: nt.editBlue),
               const SizedBox(height: 2),
               Text(
                 AppLocalizations.of(context)!.moveActionLabel,
                 style: theme.textTheme.labelSmall?.copyWith(
-                  color: kEditBlue,
+                  color: nt.editBlue,
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -439,6 +444,7 @@ class _ReorderParallelsButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final nt = context.nt;
     final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsetsDirectional.only(top: 6, end: 8),
@@ -448,19 +454,19 @@ class _ReorderParallelsButton extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
           decoration: BoxDecoration(
-            color: kEditBlueTint,
-            border: Border.all(color: kEditBlue.withValues(alpha: 0.13)),
+            color: nt.editBlueTint,
+            border: Border.all(color: nt.editBlue.withValues(alpha: 0.13)),
             borderRadius: BorderRadius.circular(8),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.swap_horiz, size: 16, color: kEditBlue),
+              Icon(Icons.swap_horiz, size: 16, color: nt.editBlue),
               const SizedBox(height: 2),
               Text(
                 AppLocalizations.of(context)!.reorderActionLabel,
                 style: theme.textTheme.labelSmall?.copyWith(
-                  color: kEditBlue,
+                  color: nt.editBlue,
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -478,6 +484,7 @@ class _AddParallelButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final nt = context.nt;
     final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsetsDirectional.only(top: 8, end: 8),
@@ -487,19 +494,19 @@ class _AddParallelButton extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
           decoration: BoxDecoration(
-            color: kEditBlueTint,
-            border: Border.all(color: kEditBlue.withValues(alpha: 0.13)),
+            color: nt.editBlueTint,
+            border: Border.all(color: nt.editBlue.withValues(alpha: 0.13)),
             borderRadius: BorderRadius.circular(8),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.call_split, size: 16, color: kEditBlue),
+              Icon(Icons.call_split, size: 16, color: nt.editBlue),
               const SizedBox(height: 2),
               Text(
                 '// stop',
                 style: theme.textTheme.labelSmall?.copyWith(
-                  color: kEditBlue,
+                  color: nt.editBlue,
                   fontWeight: FontWeight.w600,
                 ),
               ),

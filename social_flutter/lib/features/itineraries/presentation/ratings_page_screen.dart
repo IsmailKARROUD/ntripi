@@ -32,14 +32,15 @@ class RatingsHubScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final nt = context.nt;
     final ratingsAsync = ref.watch(ratingsPageProvider(itineraryId));
     final myRating = ref.watch(myRatingProvider(itineraryId)).value;
     final page = ratingsAsync.value;
 
     return Scaffold(
-      backgroundColor: kSand,
+      backgroundColor: nt.sand,
       resizeToAvoidBottomInset: false,
-      appBar: AppBar(backgroundColor: kSand, title: Text(AppLocalizations.of(context)!.ratingsTitle)),
+      appBar: AppBar(backgroundColor: nt.sand, title: Text(AppLocalizations.of(context)!.ratingsTitle)),
       body: Center(
         child: ConstrainedBox(
           constraints: BoxConstraints(
@@ -60,8 +61,8 @@ class RatingsHubScreen extends ConsumerWidget {
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(Icons.error_outline,
-                              size: 48, color: Color(0xFFBA1A1A)),
+                          Icon(Icons.error_outline,
+                              size: 48, color: nt.danger),
                           const SizedBox(height: 12),
                           Text(AppLocalizations.of(context)!.couldNotLoadRatings),
                           const SizedBox(height: 8),
@@ -105,10 +106,10 @@ class RatingsHubScreen extends ConsumerWidget {
                         AppLocalizations.of(context)!
                             .allRatersLabel
                             .toUpperCase(),
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w700,
-                          color: kText2,
+                          color: nt.text2,
                           letterSpacing: 0.6,
                         ),
                       ),
@@ -123,13 +124,13 @@ class RatingsHubScreen extends ConsumerWidget {
                         child: Center(
                           child: Column(
                             children: [
-                              const Icon(Icons.star_border, size: 56, color: kText3),
+                              Icon(Icons.star_border, size: 56, color: nt.text3),
                               const SizedBox(height: 12),
                               Text(AppLocalizations.of(context)!.noRatingsYet,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                       fontSize: 16,
                                       fontWeight: FontWeight.w600,
-                                      color: kBark)),
+                                      color: nt.bark)),
                             ],
                           ),
                         ),
@@ -162,55 +163,57 @@ class _OverallHero extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final nt = context.nt;
     final score = page.ratingAvg;
     final count = page.ratingCount;
 
     if (count == 0) {
+    final nt = context.nt;
       return Container(
         margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
         padding: const EdgeInsets.fromLTRB(18, 18, 18, 20),
         decoration: BoxDecoration(
-          color: kSurface,
+          color: nt.surface,
           borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: kBorder),
+          border: Border.all(color: nt.border),
         ),
         child: Center(
           child: Column(
             children: [
               Text(AppLocalizations.of(context)!.ratingsOverallLabel,
-                  style: const TextStyle(
+                  style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w700,
-                      color: kText2,
+                      color: nt.text2,
                       letterSpacing: 0.6)),
               const SizedBox(height: 12),
-              const Icon(Icons.star_border_rounded, size: 44, color: kText3),
+              Icon(Icons.star_border_rounded, size: 44, color: nt.text3),
               const SizedBox(height: 8),
               Text(AppLocalizations.of(context)!.noRatingsYet,
-                  style: const TextStyle(fontSize: 13, color: kText2)),
+                  style: TextStyle(fontSize: 13, color: nt.text2)),
             ],
           ),
         ),
       );
     }
 
-    final color = ratingColor(score!);
+    final color = nt.rating(score!);
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
       padding: const EdgeInsets.fromLTRB(18, 18, 18, 20),
       decoration: BoxDecoration(
-        color: kSurface,
+        color: nt.surface,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: kBorder),
+        border: Border.all(color: nt.border),
       ),
       child: Column(
         children: [
           Text(
             AppLocalizations.of(context)!.ratingsOverallLabel,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w700,
-              color: kText2,
+              color: nt.text2,
               letterSpacing: 0.6,
             ),
           ),
@@ -235,14 +238,14 @@ class _OverallHero extends StatelessWidget {
                     ? Icons.star_rounded
                     : Icons.star_outline_rounded,
                 size: 18,
-                color: star <= score.round() ? color : const Color(0xFFE4E4E4),
+                color: star <= score.round() ? color : nt.border,
               );
             }),
           ),
           const SizedBox(height: 6),
           Text(
             AppLocalizations.of(context)!.travelersRatedThis(count),
-            style: const TextStyle(fontSize: 12, color: kText2),
+            style: TextStyle(fontSize: 12, color: nt.text2),
           ),
         ],
       ),
@@ -269,6 +272,7 @@ class _DimensionSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final nt = context.nt;
     final dims = DimensionKey.values
         .where((d) => d != DimensionKey.overall)
         .toList();
@@ -280,10 +284,10 @@ class _DimensionSection extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(16, 14, 16, 6),
           child: Text(
             AppLocalizations.of(context)!.byDimensionLabel.toUpperCase(),
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w700,
-              color: kText2,
+              color: nt.text2,
               letterSpacing: 0.6,
             ),
           ),
@@ -291,9 +295,9 @@ class _DimensionSection extends StatelessWidget {
         Container(
           margin: const EdgeInsets.fromLTRB(16, 0, 16, 0),
           decoration: BoxDecoration(
-            color: kSurface,
+            color: nt.surface,
             borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: kBorder),
+            border: Border.all(color: nt.border),
           ),
           clipBehavior: Clip.antiAlias,
           child: Column(
@@ -329,6 +333,7 @@ class _DimRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final nt = context.nt;
     final (avg, count) = stats;
     final insufficient = count < 3;
 
@@ -345,29 +350,29 @@ class _DimRow extends StatelessWidget {
                   width: 28,
                   height: 28,
                   decoration: BoxDecoration(
-                    color: kMist,
+                    color: nt.mist,
                     borderRadius: BorderRadius.circular(8),
                   ),
                   alignment: Alignment.center,
-                  child: Icon(dim.icon, size: 15, color: kForest),
+                  child: Icon(dim.icon, size: 15, color: nt.forest),
                 ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     dim.label(AppLocalizations.of(context)!),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
-                      color: kBark,
+                      color: nt.bark,
                     ),
                   ),
                 ),
                 if (avg == null || insufficient)
                   Text(
                     AppLocalizations.of(context)!.notEnoughRatings,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 11,
-                      color: kText3,
+                      color: nt.text3,
                       fontStyle: FontStyle.italic,
                     ),
                   )
@@ -377,7 +382,7 @@ class _DimRow extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w800,
-                      color: ratingColor(avg),
+                      color: nt.rating(avg),
                     ),
                   ),
               ],
@@ -391,11 +396,11 @@ class _DimRow extends StatelessWidget {
                   height: 6,
                   child: LinearProgressIndicator(
                     value: (avg != null && !insufficient) ? avg / 5 : 0,
-                    backgroundColor: const Color(0xFFEFECE5),
+                    backgroundColor: nt.sand,
                     valueColor: AlwaysStoppedAnimation<Color>(
                       (avg != null && !insufficient)
-                          ? ratingColor(avg)
-                          : kText3,
+                          ? nt.rating(avg)
+                          : nt.text3,
                     ),
                     minHeight: 6,
                   ),
@@ -406,7 +411,7 @@ class _DimRow extends StatelessWidget {
               padding: const EdgeInsetsDirectional.only(start: 36, top: 3),
               child: Text(
                 AppLocalizations.of(context)!.ratingCount(count),
-                style: const TextStyle(fontSize: 10, color: kText3),
+                style: TextStyle(fontSize: 10, color: nt.text3),
               ),
             ),
           ],
@@ -430,6 +435,7 @@ class _YourRatingSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final nt = context.nt;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -437,14 +443,14 @@ class _YourRatingSection extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(16, 14, 16, 6),
           child: Row(
             children: [
-              const Icon(Icons.person_rounded, size: 13, color: kForest),
+              Icon(Icons.person_rounded, size: 13, color: nt.forest),
               const SizedBox(width: 6),
               Text(
                 AppLocalizations.of(context)!.yourRating.toUpperCase(),
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w700,
-                  color: kForest,
+                  color: nt.forest,
                   letterSpacing: 0.6,
                 ),
               ),
@@ -454,11 +460,11 @@ class _YourRatingSection extends StatelessWidget {
         Container(
           margin: const EdgeInsets.fromLTRB(16, 0, 16, 0),
           decoration: BoxDecoration(
-            // kMist tint makes the viewer's own rating visually distinct
-            // from the community stats above (which use plain kSurface).
-            color: kMist.withValues(alpha: 0.35),
+            // nt.mist tint makes the viewer's own rating visually distinct
+            // from the community stats above (which use plain nt.surface).
+            color: nt.mist.withValues(alpha: 0.35),
             borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: kForest.withValues(alpha: 0.18)),
+            border: Border.all(color: nt.forest.withValues(alpha: 0.18)),
           ),
           child: Padding(
             padding: const EdgeInsetsDirectional.fromSTEB(16, 14, 14, 14),
@@ -473,25 +479,25 @@ class _YourRatingSection extends StatelessWidget {
                                   : Icons.star_outline_rounded,
                               size: 22,
                               color: i < myRating.stars
-                                  ? ratingColor(myRating.stars.toDouble())
-                                  : const Color(0xFFE4E4E4),
+                                  ? nt.rating(myRating.stars.toDouble())
+                                  : nt.border,
                             )),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
                         child: RichText(
                           text: TextSpan(
-                            style: const TextStyle(
-                                fontSize: 13, color: kText2),
+                            style: TextStyle(
+                                fontSize: 13, color: nt.text2),
                             children: [
                               TextSpan(
                                   text:
                                       '${AppLocalizations.of(context)!.youRatedThis} '),
                               TextSpan(
                                 text: '${myRating.stars}/5',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontWeight: FontWeight.w700,
-                                  color: kBark,
+                                  color: nt.bark,
                                 ),
                               ),
                             ],
@@ -510,14 +516,14 @@ class _YourRatingSection extends StatelessWidget {
                               horizontal: 12, vertical: 7),
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(10),
-                            border: Border.all(color: kBorder, width: 1.5),
+                            border: Border.all(color: nt.border, width: 1.5),
                           ),
                           child: Text(
                             AppLocalizations.of(context)!.changeButton,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w700,
-                              color: kBark,
+                              color: nt.bark,
                             ),
                           ),
                         ),
@@ -562,6 +568,7 @@ class RatingStarRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final nt = context.nt;
     final glyphs = dimension.ratingGlyphs;
     final inverted = dimension.invertedRating;
     return Row(
@@ -585,7 +592,7 @@ class RatingStarRow extends StatelessWidget {
         } else {
           icon = glyphs.empty;
         }
-        return Icon(icon, color: ratingColor(avg), size: size);
+        return Icon(icon, color: nt.rating(avg), size: size);
       }),
     );
   }
@@ -599,6 +606,7 @@ class RatingDistributionBars extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final nt = context.nt;
     final total = dist.values.fold(0, (a, b) => a + b);
     return Column(
       children: [5, 4, 3, 2, 1].map((stars) {
@@ -619,8 +627,8 @@ class RatingDistributionBars extends StatelessWidget {
                 child: LinearProgressIndicator(
                   value: pct,
                   minHeight: 8,
-                  backgroundColor: kBorder,
-                  color: ratingColor(stars.toDouble()),
+                  backgroundColor: nt.border,
+                  color: nt.rating(stars.toDouble()),
                   borderRadius: BorderRadius.circular(4),
                 ),
               ),
@@ -636,7 +644,7 @@ class RatingDistributionBars extends StatelessWidget {
                 width: 36,
                 child: Text(
                   '${(pct * 100).round()}%',
-                  style: const TextStyle(fontSize: 11, color: kText2),
+                  style: TextStyle(fontSize: 11, color: nt.text2),
                   textAlign: TextAlign.end,
                 ),
               ),
@@ -667,6 +675,7 @@ class _RatingListTileState extends State<_RatingListTile> {
 
   @override
   Widget build(BuildContext context) {
+    final nt = context.nt;
     final l10n = AppLocalizations.of(context)!;
     final rating = widget.rating;
     final user = rating.user;
@@ -675,17 +684,17 @@ class _RatingListTileState extends State<_RatingListTile> {
 
     final Widget tile = ListTile(
       leading: user.isDeleted
-          ? const Opacity(
+          ? Opacity(
               opacity: 0.5,
               child: CircleAvatar(
-                backgroundColor: kMist,
-                child: Icon(Icons.person_off, color: kText3, size: 20),
+                backgroundColor: nt.mist,
+                child: Icon(Icons.person_off, color: nt.text3, size: 20),
               ),
             )
           : UserAvatar(avatarUrl: user.avatarUrl, radius: 20),
       title: user.isDeleted
           ? Text(l10n.deletedUser,
-              style: const TextStyle(fontStyle: FontStyle.italic, color: kText3))
+              style: TextStyle(fontStyle: FontStyle.italic, color: nt.text3))
           : Text(user.displayNameOrFallback(l10n),
               style: const TextStyle(fontWeight: FontWeight.w600)),
       subtitle: Text(rating.timeAgo(l10n)),
@@ -700,8 +709,8 @@ class _RatingListTileState extends State<_RatingListTile> {
             filled ? glyphs.filled : glyphs.empty,
             size: 16,
             color: inverted
-                ? ratingColor(score.toDouble())
-                : (filled ? ratingColor(score.toDouble()) : kText3),
+                ? nt.rating(score.toDouble())
+                : (filled ? nt.rating(score.toDouble()) : nt.text3),
           );
         }),
       ),
@@ -747,6 +756,7 @@ class _ReviewNote extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final nt = context.nt;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
@@ -759,21 +769,21 @@ class _ReviewNote extends StatelessWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.format_quote, size: 14, color: kText2),
+                Icon(Icons.format_quote, size: 14, color: nt.text2),
                 const SizedBox(width: 4),
                 Text(
                   expanded
                       ? AppLocalizations.of(context)!.hideReview
                       : AppLocalizations.of(context)!.readReview,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: kText2,
+                        color: nt.text2,
                         fontWeight: FontWeight.w500,
                       ),
                 ),
                 Icon(
                   expanded ? Icons.expand_less : Icons.expand_more,
                   size: 18,
-                  color: kText2,
+                  color: nt.text2,
                 ),
               ],
             ),

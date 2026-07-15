@@ -361,10 +361,11 @@ class _ItineraryFormScreenState extends ConsumerState<ItineraryFormScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final nt = context.nt;
     final l10n = AppLocalizations.of(context)!;
     final visLabel = _visibility.label(l10n);
     final visIcon = _visibilityIcon(_visibility);
-    final visColor = _visibilityColor(_visibility);
+    final visColor = _visibilityColor(_visibility, nt);
     // Only the title is mandatory at creation — hide the rest behind a toggle
     // so first-time users can save fast. Edit mode always shows everything.
     final bool collapseOptional =
@@ -383,9 +384,9 @@ class _ItineraryFormScreenState extends ConsumerState<ItineraryFormScreen> {
         saving: _saving,
         child: Scaffold(
       resizeToAvoidBottomInset: false,
-      backgroundColor: kSand,
+      backgroundColor: nt.sand,
       appBar: AppBar(
-        backgroundColor: kSand,
+        backgroundColor: nt.sand,
         title: Text(widget.mode == ItineraryFormMode.create
             ? l10n.newItinerary
             : l10n.editItinerary),
@@ -402,7 +403,7 @@ class _ItineraryFormScreenState extends ConsumerState<ItineraryFormScreen> {
                 child: Text(
                   l10n.save,
                   style: TextStyle(
-                    color: online ? kForest : kText3,
+                    color: online ? nt.forest : nt.text3,
                     fontWeight: FontWeight.w700,
                     fontSize: 15,
                   ),
@@ -436,10 +437,10 @@ class _ItineraryFormScreenState extends ConsumerState<ItineraryFormScreen> {
                         children: [
                           Text(
                             l10n.itineraryTitleLabel,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 11,
                               fontWeight: FontWeight.w700,
-                              color: kText2,
+                              color: nt.text2,
                               letterSpacing: 0.4,
                             ),
                           ),
@@ -456,13 +457,13 @@ class _ItineraryFormScreenState extends ConsumerState<ItineraryFormScreen> {
                               isDense: true,
                               contentPadding: EdgeInsets.zero,
                               hintText: l10n.itineraryTitleHint,
-                              hintStyle: const TextStyle(
-                                  color: kText3, fontWeight: FontWeight.w500),
+                              hintStyle: TextStyle(
+                                  color: nt.text3, fontWeight: FontWeight.w500),
                             ),
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 15,
                               fontWeight: FontWeight.w600,
-                              color: kBark,
+                              color: nt.bark,
                             ),
                             validator: (v) => (v == null || v.trim().isEmpty)
                                 ? l10n.itineraryTitleRequired
@@ -497,17 +498,17 @@ class _ItineraryFormScreenState extends ConsumerState<ItineraryFormScreen> {
                                   ? Icons.expand_less
                                   : Icons.expand_more,
                               size: 16,
-                              color: kForest,
+                              color: nt.forest,
                             ),
                             const SizedBox(width: 4),
                             Text(
                               _showOptional
                                   ? l10n.hideOptionalFields
                                   : l10n.showOptionalFields,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w700,
-                                color: kForest,
+                                color: nt.forest,
                               ),
                             ),
                           ],
@@ -567,7 +568,7 @@ class _ItineraryFormScreenState extends ConsumerState<ItineraryFormScreen> {
               const SizedBox(height: 48),
               // ── Danger zone (edit mode) ───────────────────────────────────
               if (widget.mode == ItineraryFormMode.edit) ...[
-                _SectionLabel(text: l10n.formSectionDangerZone, tone: kRatingRed),
+                _SectionLabel(text: l10n.formSectionDangerZone, tone: nt.ratingRed),
                 _SectionCard(
                   children: [
                     OfflineGate(
@@ -575,7 +576,7 @@ class _ItineraryFormScreenState extends ConsumerState<ItineraryFormScreen> {
                         icon: Icons.delete_outline_rounded,
                         label: l10n.formLabelDeleteItinerary,
                         value: l10n.formDeleteItineraryHint,
-                        iconColor: kRatingRed,
+                        iconColor: nt.ratingRed,
                         onTap: (_saving || !online) ? null : _deleteItinerary,
                       ),
                     ),
@@ -598,9 +599,10 @@ class _ItineraryFormScreenState extends ConsumerState<ItineraryFormScreen> {
 
 class _SectionLabel extends StatelessWidget {
   final String text;
-  final Color tone;
+  // Nullable: theme lookups aren't const, so the default resolves in build.
+  final Color? tone;
 
-  const _SectionLabel({required this.text, this.tone = kText2});
+  const _SectionLabel({required this.text, this.tone});
 
   @override
   Widget build(BuildContext context) {
@@ -625,12 +627,13 @@ class _SectionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final nt = context.nt;
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 0, 16, 0),
       decoration: BoxDecoration(
-        color: kSurface,
+        color: nt.surface,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: kBorder),
+        border: Border.all(color: nt.border),
       ),
       clipBehavior: Clip.antiAlias,
       child: Column(
@@ -646,8 +649,9 @@ class _FieldDivider extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final nt = context.nt;
     return Container(
-        height: 1, color: kBorder, margin: const EdgeInsetsDirectional.only(start: 16));
+        height: 1, color: nt.border, margin: const EdgeInsetsDirectional.only(start: 16));
   }
 }
 
@@ -668,7 +672,8 @@ class _PickerRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tint = iconColor ?? kForest;
+    final nt = context.nt;
+    final tint = iconColor ?? nt.forest;
     return InkWell(
       onTap: onTap,
       child: Padding(
@@ -679,7 +684,7 @@ class _PickerRow extends StatelessWidget {
               width: 32,
               height: 32,
               decoration: BoxDecoration(
-                color: kMist,
+                color: nt.mist,
                 borderRadius: BorderRadius.circular(10),
               ),
               alignment: Alignment.center,
@@ -692,26 +697,26 @@ class _PickerRow extends StatelessWidget {
                 children: [
                   Text(
                     label,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w700,
-                      color: kText2,
+                      color: nt.text2,
                       letterSpacing: 0.4,
                     ),
                   ),
                   const SizedBox(height: 2),
                   Text(
                     value,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w600,
-                      color: kBark,
+                      color: nt.bark,
                     ),
                   ),
                 ],
               ),
             ),
-            const Icon(Icons.chevron_right_rounded, size: 20, color: kText3),
+            Icon(Icons.chevron_right_rounded, size: 20, color: nt.text3),
           ],
         ),
       ),
@@ -736,6 +741,7 @@ class _CurrencyPickerSheetState extends State<_CurrencyPickerSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final nt = context.nt;
     final filtered = widget.currencies
         .where((c) =>
             c.code.toLowerCase().contains(_query.toLowerCase()) ||
@@ -756,7 +762,7 @@ class _CurrencyPickerSheetState extends State<_CurrencyPickerSheet> {
               width: 36,
               height: 4,
               decoration: BoxDecoration(
-                color: kText3.withValues(alpha: 0.5),
+                color: nt.text3.withValues(alpha: 0.5),
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -767,20 +773,20 @@ class _CurrencyPickerSheetState extends State<_CurrencyPickerSheet> {
               autofocus: true,
               decoration: InputDecoration(
                 hintText: AppLocalizations.of(context)!.currencySearchHint,
-                prefixIcon: const Icon(Icons.search_rounded, color: kForest),
+                prefixIcon: Icon(Icons.search_rounded, color: nt.forest),
                 filled: true,
-                fillColor: kSand,
+                fillColor: nt.sand,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(14),
-                  borderSide: const BorderSide(color: kBorder),
+                  borderSide: BorderSide(color: nt.border),
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(14),
-                  borderSide: const BorderSide(color: kBorder),
+                  borderSide: BorderSide(color: nt.border),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(14),
-                  borderSide: const BorderSide(color: kForest, width: 1.5),
+                  borderSide: BorderSide(color: nt.forest, width: 1.5),
                 ),
               ),
               onChanged: (v) => setState(() => _query = v),
@@ -798,14 +804,14 @@ class _CurrencyPickerSheetState extends State<_CurrencyPickerSheet> {
                     c.code,
                     style: TextStyle(
                       fontWeight: FontWeight.w700,
-                      color: selected ? kForest : kBark,
+                      color: selected ? nt.forest : nt.bark,
                     ),
                   ),
                   subtitle: Text(c.name,
-                      style: const TextStyle(color: kText2, fontSize: 12)),
+                      style: TextStyle(color: nt.text2, fontSize: 12)),
                   trailing: selected
-                      ? const Icon(Icons.check_rounded,
-                          color: kForest, size: 18)
+                      ? Icon(Icons.check_rounded,
+                          color: nt.forest, size: 18)
                       : null,
                   onTap: () => Navigator.pop(context, c.code),
                 );
@@ -829,9 +835,9 @@ IconData _visibilityIcon(ItineraryVisibility v) => switch (v) {
       ItineraryVisibility.onlyMe => Icons.lock_rounded,
     };
 
-Color _visibilityColor(ItineraryVisibility v) => switch (v) {
-      ItineraryVisibility.public => kCanopy,
-      ItineraryVisibility.followers => kText2,
-      ItineraryVisibility.restricted => kRatingOrange,
-      ItineraryVisibility.onlyMe => kText3,
+Color _visibilityColor(ItineraryVisibility v, NtripiColors nt) => switch (v) {
+      ItineraryVisibility.public => nt.canopy,
+      ItineraryVisibility.followers => nt.text2,
+      ItineraryVisibility.restricted => nt.ratingOrange,
+      ItineraryVisibility.onlyMe => nt.text3,
     };

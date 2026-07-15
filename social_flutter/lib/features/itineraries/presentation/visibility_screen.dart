@@ -90,15 +90,16 @@ class _VisibilityScreenState extends ConsumerState<VisibilityScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final nt = context.nt;
     final isRestricted = _selected == ItineraryVisibility.restricted;
     final hasItinerary = widget.itineraryId != null;
 
     return SavingOverlay(
       saving: _submitting,
       child: Scaffold(
-      backgroundColor: kSand,
+      backgroundColor: nt.sand,
       appBar: AppBar(
-        backgroundColor: kSand,
+        backgroundColor: nt.sand,
         title: Text(AppLocalizations.of(context)!.visibilityScreenTitle),
         actions: [
           TextButton(
@@ -106,7 +107,7 @@ class _VisibilityScreenState extends ConsumerState<VisibilityScreen> {
             child: Text(
               AppLocalizations.of(context)!.doneTooltip,
               style: TextStyle(
-                color: kForest,
+                color: nt.forest,
                 fontWeight: FontWeight.w700,
                 fontSize: 15,
               ),
@@ -144,20 +145,20 @@ class _VisibilityScreenState extends ConsumerState<VisibilityScreen> {
               child: Container(
                 padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFFFF8EC),
+                  color: nt.transitBg,
                   borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: const Color(0xFFF0E2C2)),
+                  border: Border.all(color: nt.transitBorder),
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.info_rounded,
-                        size: 16, color: Color(0xFFA06D1F)),
+                    Icon(Icons.info_rounded,
+                        size: 16, color: nt.transitIcon),
                     const SizedBox(width: 10),
                     Expanded(
                       child: Text(
                         AppLocalizations.of(context)!.saveItineraryFirstAllowlist,
-                        style: const TextStyle(
-                            fontSize: 12, color: Color(0xFF8A5A18)),
+                        style: TextStyle(
+                            fontSize: 12, color: nt.transitText),
                       ),
                     ),
                   ],
@@ -199,6 +200,7 @@ class _VisCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final nt = context.nt;
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(14),
@@ -206,10 +208,10 @@ class _VisCard extends StatelessWidget {
         duration: const Duration(milliseconds: 150),
         padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
         decoration: BoxDecoration(
-          color: active ? kMist : kSurface,
+          color: active ? nt.mist : nt.surface,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
-            color: active ? kForest : kBorder,
+            color: active ? nt.forest : nt.border,
             width: active ? 2 : 1,
           ),
         ),
@@ -220,11 +222,11 @@ class _VisCard extends StatelessWidget {
               width: 36,
               height: 36,
               decoration: BoxDecoration(
-                color: active ? kSurface : kMist,
+                color: active ? nt.surface : nt.mist,
                 borderRadius: BorderRadius.circular(12),
               ),
               alignment: Alignment.center,
-              child: Icon(opt.icon, size: 18, color: kForest),
+              child: Icon(opt.icon, size: 18, color: nt.forest),
             ),
             const SizedBox(width: 12),
             // Label + description
@@ -234,16 +236,16 @@ class _VisCard extends StatelessWidget {
                 children: [
                   Text(
                     opt.value.label(AppLocalizations.of(context)!),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w700,
-                      color: kBark,
+                      color: nt.bark,
                     ),
                   ),
                   Text(
                     opt.value.description(AppLocalizations.of(context)!),
                     style:
-                        const TextStyle(fontSize: 11, color: kText2),
+                        TextStyle(fontSize: 11, color: nt.text2),
                   ),
                 ],
               ),
@@ -254,16 +256,17 @@ class _VisCard extends StatelessWidget {
               width: 22,
               height: 22,
               decoration: BoxDecoration(
-                color: active ? kForest : Colors.transparent,
+                color: active ? nt.forest : Colors.transparent,
                 shape: BoxShape.circle,
                 border: active
                     ? null
-                    : Border.all(color: kText3, width: 1.5),
+                    : Border.all(color: nt.text3, width: 1.5),
               ),
               alignment: Alignment.center,
               child: active
-                  ? const Icon(Icons.check_rounded,
-                      size: 14, color: Colors.white)
+                  ? Icon(Icons.check_rounded,
+                      size: 14,
+                      color: Theme.of(context).colorScheme.onPrimary)
                   : null,
             ),
           ],
@@ -288,6 +291,7 @@ class _AllowlistSection extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final nt = context.nt;
     final allowedAsync = ref.watch(allowedUsersProvider(itineraryId));
     final allowed = allowedAsync.value ?? [];
 
@@ -299,14 +303,14 @@ class _AllowlistSection extends ConsumerWidget {
           padding: const EdgeInsets.fromLTRB(6, 6, 6, 6),
           child: Row(
             children: [
-              const Icon(Icons.group_add_rounded, size: 13, color: kText2),
+              Icon(Icons.group_add_rounded, size: 13, color: nt.text2),
               const SizedBox(width: 6),
               Text(
                 '${AppLocalizations.of(context)!.allowlistLabel.toUpperCase()}${allowed.isNotEmpty ? ' · ${AppLocalizations.of(context)!.personCount(allowed.length)}' : ''}',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w700,
-                  color: kText2,
+                  color: nt.text2,
                   letterSpacing: 0.6,
                 ),
               ),
@@ -318,9 +322,9 @@ class _AllowlistSection extends ConsumerWidget {
         if (allowed.isNotEmpty)
           Container(
             decoration: BoxDecoration(
-              color: kSurface,
+              color: nt.surface,
               borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: kBorder),
+              border: Border.all(color: nt.border),
             ),
             clipBehavior: Clip.antiAlias,
             child: Column(
@@ -380,22 +384,22 @@ class _AllowlistSection extends ConsumerWidget {
             padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: kText3, style: BorderStyle.solid),
+              border: Border.all(color: nt.text3, style: BorderStyle.solid),
             ),
             child: submitting
                 ? const Center(child: NTripiRingLoader(size: 20))
                 : Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(Icons.person_add_rounded,
-                          size: 18, color: kForest),
+                      Icon(Icons.person_add_rounded,
+                          size: 18, color: nt.forest),
                       const SizedBox(width: 6),
                       Text(
                         AppLocalizations.of(context)!.addPeople,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w700,
-                          color: kBark,
+                          color: nt.bark,
                         ),
                       ),
                     ],
@@ -418,17 +422,13 @@ class _AllowRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final nt = context.nt;
     final initials = ((user.displayName ?? user.username).isNotEmpty)
         ? (user.displayName ?? user.username)[0].toUpperCase()
         : '?';
 
     // Deterministic pastel bg from the username hash.
-    const palettes = [
-      (bg: Color(0xFFD0EBDA), fg: kForest),
-      (bg: Color(0xFFFFE3CC), fg: Color(0xFFA05D1F)),
-      (bg: Color(0xFFE0DAF0), fg: Color(0xFF5A3F8F)),
-      (bg: Color(0xFFCDE0D6), fg: Color(0xFF3B6EA5)),
-    ];
+    final palettes = nt.avatarPairs;
     int h = 0;
     for (final c in user.username.codeUnits) {
       h = (h * 31 + c) & 0xFFFFFFFF;
@@ -443,7 +443,7 @@ class _AllowRow extends StatelessWidget {
             width: 36,
             height: 36,
             decoration: BoxDecoration(
-              color: palette.bg,
+              color: palette.$1,
               shape: BoxShape.circle,
             ),
             alignment: Alignment.center,
@@ -452,7 +452,7 @@ class _AllowRow extends StatelessWidget {
               style: TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.w700,
-                color: palette.fg,
+                color: palette.$2,
               ),
             ),
           ),
@@ -463,23 +463,23 @@ class _AllowRow extends StatelessWidget {
               children: [
                 Text(
                   user.displayName ?? user.username,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w700,
-                    color: kBark,
+                    color: nt.bark,
                   ),
                 ),
                 Text(
                   '@${user.username}',
-                  style: const TextStyle(fontSize: 11, color: kText2),
+                  style: TextStyle(fontSize: 11, color: nt.text2),
                 ),
               ],
             ),
           ),
           OfflineGate(
             builder: (online) => IconButton(
-              icon: const Icon(Icons.remove_circle_outline_rounded,
-                  size: 20, color: kText3),
+              icon: Icon(Icons.remove_circle_outline_rounded,
+                  size: 20, color: nt.text3),
               onPressed: online ? onRemove : null,
               padding: EdgeInsets.zero,
               constraints: const BoxConstraints(),
@@ -563,10 +563,11 @@ class _AddPersonDialogState extends ConsumerState<_AddPersonDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final nt = context.nt;
     // watch (not read) so open dialogs react to connectivity changes live
     final online = ref.watch(isOnlineProvider).value ?? true;
     return AlertDialog(
-      backgroundColor: kSand,
+      backgroundColor: nt.sand,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       title: Text(AppLocalizations.of(context)!.visibilityAddPerson,
           style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700)),
@@ -581,21 +582,21 @@ class _AddPersonDialogState extends ConsumerState<_AddPersonDialog> {
               decoration: InputDecoration(
                 hintText: AppLocalizations.of(context)!.visibilitySearchByUsername,
                 prefixIcon:
-                    const Icon(Icons.search_rounded, color: kForest),
+                    Icon(Icons.search_rounded, color: nt.forest),
                 filled: true,
-                fillColor: kSurface,
+                fillColor: nt.surface,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(14),
-                  borderSide: const BorderSide(color: kBorder),
+                  borderSide: BorderSide(color: nt.border),
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(14),
-                  borderSide: const BorderSide(color: kBorder),
+                  borderSide: BorderSide(color: nt.border),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(14),
                   borderSide:
-                      const BorderSide(color: kForest, width: 1.5),
+                      BorderSide(color: nt.forest, width: 1.5),
                 ),
               ),
               onChanged: _onSearchChanged,
@@ -614,22 +615,22 @@ class _AddPersonDialogState extends ConsumerState<_AddPersonDialog> {
                     final user = _results[index];
                     return ListTile(
                       leading: CircleAvatar(
-                        backgroundColor: kMist,
+                        backgroundColor: nt.mist,
                         child: Text(
                           (user.displayName ?? user.username)
                               .substring(0, 1)
                               .toUpperCase(),
-                          style: const TextStyle(
-                              color: kForest, fontWeight: FontWeight.w700),
+                          style: TextStyle(
+                              color: nt.forest, fontWeight: FontWeight.w700),
                         ),
                       ),
                       title: Text(user.displayName ?? user.username,
-                          style: const TextStyle(
-                              fontWeight: FontWeight.w700, color: kBark)),
+                          style: TextStyle(
+                              fontWeight: FontWeight.w700, color: nt.bark)),
                       subtitle: Text('@${user.username}',
-                          style: const TextStyle(color: kText2)),
-                      trailing: const Icon(Icons.add_rounded,
-                          color: kForest, size: 20),
+                          style: TextStyle(color: nt.text2)),
+                      trailing: Icon(Icons.add_rounded,
+                          color: nt.forest, size: 20),
                       // Adding hits the allowlist API — no-op offline; the
                       // dialog sits above the shell banner that explains why.
                       onTap: online ? () => _addUser(user) : null,

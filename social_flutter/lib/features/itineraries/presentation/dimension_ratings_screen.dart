@@ -50,6 +50,7 @@ class DimensionRatingsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final nt = context.nt;
     final l10n = AppLocalizations.of(context)!;
     final ratingsAsync = ref.watch(ratingsPageProvider(itineraryId));
     final page = ratingsAsync.value;
@@ -59,7 +60,7 @@ class DimensionRatingsScreen extends ConsumerWidget {
     final dist = _distribution(filtered);
 
     return Scaffold(
-      backgroundColor: kSurface,
+      backgroundColor: nt.surface,
       resizeToAvoidBottomInset: false,
       body: Column(
         children: [
@@ -68,7 +69,7 @@ class DimensionRatingsScreen extends ConsumerWidget {
             child: EditorialTopBar(
                 title: l10n.dimensionRatingTitle(dimension.label(l10n))),
           ),
-          Container(height: 1, color: kBorder),
+          Container(height: 1, color: nt.border),
           Expanded(
             child: Center(
         child: ConstrainedBox(
@@ -89,8 +90,8 @@ class DimensionRatingsScreen extends ConsumerWidget {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(Icons.error_outline,
-                          size: 48, color:  Color(0xFFBA1A1A)),
+                      Icon(Icons.error_outline,
+                          size: 48, color: nt.danger),
                       const SizedBox(height: 12),
                       Text(AppLocalizations.of(context)!.couldNotLoadRatings),
                       const SizedBox(height: 8),
@@ -110,7 +111,7 @@ class DimensionRatingsScreen extends ConsumerWidget {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(dimension.icon, size: 56, color: kText3),
+                      Icon(dimension.icon, size: 56, color: nt.text3),
                       const SizedBox(height: 12),
                       Text(
                         l10n.noRatingsYetFor(
@@ -138,14 +139,14 @@ class DimensionRatingsScreen extends ConsumerWidget {
                         children: [
                           Icon(dimension.icon,
                               size: 36,
-                              color: kBark),
+                              color: nt.bark),
                           const SizedBox(width: 10),
                           Text(
                             avg!.toStringAsFixed(1),
                             style:  TextStyle(
                               fontSize: 56,
                               fontWeight: FontWeight.bold,
-                              color: ratingColor(avg),
+                              color: nt.rating(avg),
                             ),
                           ),
                         ],
@@ -155,7 +156,7 @@ class DimensionRatingsScreen extends ConsumerWidget {
                       const SizedBox(height: 6),
                       Text(
                         l10n.basedOnRatings(filtered.length),
-                        style: const TextStyle(color: kText2),
+                        style: TextStyle(color: nt.text2),
                       ),
                     ],
                   ),
@@ -182,7 +183,7 @@ class DimensionRatingsScreen extends ConsumerWidget {
                   child: Text(
                     l10n.ratersLabel,
                     style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                          color: kText2,
+                          color: nt.text2,
                           letterSpacing: 0.5,
                         ),
                   ),

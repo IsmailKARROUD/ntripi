@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:social_flutter/core/connectivity/connectivity_service.dart';
+import 'package:social_flutter/core/ui/app_theme.dart';
 import 'package:social_flutter/features/itineraries/domain/annotation.dart';
 import 'package:social_flutter/shared/widgets/offline_gate.dart';
 
@@ -25,34 +26,23 @@ class AnnotationChip extends ConsumerWidget {
     this.onDelete,
   });
 
-  // Compact outline-icon variant — intentionally lighter than the editorial
-  // palette on AnnotationType itself; type names come from type.label(l10n).
-  static const _configs = {
-    AnnotationType.advice: (
-      icon: Icons.lightbulb_outline,
-      bg: Color(0xFFE8F5E9),
-      fg: Color(0xFF2E7D32),
-    ),
-    AnnotationType.caution: (
-      icon: Icons.warning_amber_outlined,
-      bg: Color(0xFFFFF3E0),
-      fg: Color(0xFFE65100),
-    ),
-    AnnotationType.avoid: (
-      icon: Icons.block,
-      bg: Color(0xFFFFEBEE),
-      fg: Color(0xFFC62828),
-    ),
-    AnnotationType.info: (
-      icon: Icons.info_outline,
-      bg: Color(0xFFE3F2FD),
-      fg: Color(0xFF1565C0),
-    ),
+  // Compact outline-icon variant; colors come from the shared editorial
+  // pairs on NtripiColors so the chip follows the theme.
+  static const _icons = {
+    AnnotationType.advice: Icons.lightbulb_outline,
+    AnnotationType.caution: Icons.warning_amber_outlined,
+    AnnotationType.avoid: Icons.block,
+    AnnotationType.info: Icons.info_outline,
   };
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final config = _configs[annotation.type]!;
+    final nt = context.nt;
+    final config = (
+      icon: _icons[annotation.type]!,
+      bg: annotation.type.bg(nt),
+      fg: annotation.type.fg(nt),
+    );
     // Edit/delete are mutations — offline the taps explain instead of firing.
     final online = ref.watch(isOnlineProvider).value ?? true;
     final VoidCallback? editTap =

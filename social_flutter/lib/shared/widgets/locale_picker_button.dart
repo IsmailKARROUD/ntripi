@@ -16,6 +16,7 @@ class LocalePickerButton extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final nt = context.nt;
     final l10n = AppLocalizations.of(context)!;
     final labels = {
       'en': l10n.languageEnglish,
@@ -31,7 +32,7 @@ class LocalePickerButton extends ConsumerWidget {
     return PopupMenuButton<String>(
       onSelected: (code) =>
           ref.read(localeProvider.notifier).setLocale(Locale(code)),
-      color: kSurface,
+      color: nt.surface,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       itemBuilder: (_) => _kSupportedLocales
           .map(
@@ -45,7 +46,7 @@ class LocalePickerButton extends ConsumerWidget {
                     labels[l.code] ?? l.label,
                     style: TextStyle(
                       fontSize: 14,
-                      color: kBark,
+                      color: nt.bark,
                       fontWeight: l.code == currentCode
                           ? FontWeight.w700
                           : FontWeight.w400,
@@ -59,8 +60,8 @@ class LocalePickerButton extends ConsumerWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         decoration: BoxDecoration(
-          color: kSurface,
-          border: Border.all(color: kBorder),
+          color: nt.surface,
+          border: Border.all(color: nt.border),
           borderRadius: BorderRadius.circular(20),
         ),
         child: Row(
@@ -70,15 +71,15 @@ class LocalePickerButton extends ConsumerWidget {
             const SizedBox(width: 5),
             Text(
               current.code.toUpperCase(),
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
-                color: kText2,
+                color: nt.text2,
               ),
             ),
             const SizedBox(width: 2),
-            const Icon(Icons.keyboard_arrow_down_rounded,
-                size: 14, color: kText3),
+            Icon(Icons.keyboard_arrow_down_rounded,
+                size: 14, color: nt.text3),
           ],
         ),
       ),

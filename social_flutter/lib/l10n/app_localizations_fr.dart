@@ -441,6 +441,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get settingsLanguage => 'Langue';
 
   @override
+  String get settingsTheme => 'Thème';
+
+  @override
   String get settingsSupport => 'Assistance';
 
   @override
@@ -479,6 +482,18 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get languageArabic => 'العربية';
+
+  @override
+  String get themePickerTitle => 'Thème';
+
+  @override
+  String get themeSystem => 'Système';
+
+  @override
+  String get themeLight => 'Clair';
+
+  @override
+  String get themeDark => 'Sombre';
 
   @override
   String get followRequestsTitle => 'Demandes d\'abonnement';

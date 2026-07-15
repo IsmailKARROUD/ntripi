@@ -157,6 +157,7 @@
   "settingsNotificationsOn": "مفعّلة",
   "settingsNotificationsOff": "متوقفة",
   "settingsLanguage": "اللغة",
+  "settingsTheme": "المظهر",
   "settingsSupport": "الدعم",
   "settingsHelpCenter": "مركز المساعدة",
   "settingsAbout": "حول Ntripi",
@@ -171,6 +172,11 @@
   "languageEnglish": "English",
   "languageFrench": "Français",
   "languageArabic": "العربية",
+
+  "themePickerTitle": "المظهر",
+  "themeSystem": "النظام",
+  "themeLight": "فاتح",
+  "themeDark": "داكن",
 
   "followRequestsTitle": "طلبات المتابعة",
   "noRequests": "لا توجد طلبات معلّقة",

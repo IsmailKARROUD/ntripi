@@ -442,19 +442,20 @@ class _CropScreenState extends State<_CropScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final nt = context.nt;
     return Scaffold(
       resizeToAvoidBottomInset: false,
-      backgroundColor: Colors.black,
+      backgroundColor: NtripiBrand.backdrop,
       appBar: AppBar(
-        backgroundColor: kSand,
-        foregroundColor: Colors.white,
+        backgroundColor: nt.sand,
+        foregroundColor: NtripiBrand.chrome,
         leading: IconButton(
           icon: const Icon(Icons.close),
           onPressed: widget.onCancel,
         ),
         title: Text(
           AppLocalizations.of(context)!.coverAdjustTitle,
-          style: const TextStyle(color: kBark),
+          style: TextStyle(color: nt.bark),
         ),
         actions: [
           if (_processing)
@@ -467,8 +468,8 @@ class _CropScreenState extends State<_CropScreen> {
               onPressed: _imageSize == null ? null : _done,
               child: Text(
                 AppLocalizations.of(context)!.doneTooltip,
-                style: const TextStyle(
-                  color: kForest,
+                style: TextStyle(
+                  color: nt.forest,
                   fontWeight: FontWeight.w600,
                   fontSize: 16,
                 ),
@@ -482,7 +483,7 @@ class _CropScreenState extends State<_CropScreen> {
           Container(
             foregroundDecoration: BoxDecoration(
               border: Border.all(
-                color: kSand,
+                color: nt.sand,
                 width: 2,
               ),
               borderRadius: BorderRadius.circular(12),
@@ -533,7 +534,7 @@ class _CropScreenState extends State<_CropScreen> {
           const SizedBox(height: 20),
           Text(
             AppLocalizations.of(context)!.pinchToZoomHint,
-            style: const TextStyle(color: kSand, fontSize: 13),
+            style: TextStyle(color: nt.sand, fontSize: 13),
           ),
         ],
       ),
@@ -570,7 +571,7 @@ class _ImagePreview extends StatelessWidget {
               imageUrl: _absoluteUrl(networkUrl!),
               cacheManager: NtripiImageCacheManager(),
               fit: BoxFit.cover,
-              errorWidget: (_, __, ___) => _broken(),
+              errorWidget: (ctx, __, ___) => _broken(ctx),
             ),
           // Subtle darkening hint that the image is tappable
           Positioned(
@@ -579,7 +580,7 @@ class _ImagePreview extends StatelessWidget {
             right: 0,
             child: Container(
               height: 40,
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
@@ -593,9 +594,9 @@ class _ImagePreview extends StatelessWidget {
     );
   }
 
-  Widget _broken() => Container(
-        color: Colors.grey.shade200,
-        child: const Icon(Icons.broken_image_outlined, color: Colors.grey),
+  Widget _broken(BuildContext context) => Container(
+        color: context.nt.sand,
+        child: Icon(Icons.broken_image_outlined, color: context.nt.text3),
       );
 }
 
@@ -607,13 +608,14 @@ class _ImagePlaceholder extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final nt = context.nt;
     return GestureDetector(
       onTap: onTap,
       child: Container(
         height: 130,
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.5),
-          border: Border.all(color: kText3, style: BorderStyle.solid),
+          color: nt.overlayChrome.withValues(alpha: 0.5),
+          border: Border.all(color: nt.text3, style: BorderStyle.solid),
           borderRadius: BorderRadius.circular(16),
         ),
         child: picking
@@ -621,21 +623,21 @@ class _ImagePlaceholder extends StatelessWidget {
             : Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(Icons.add_photo_alternate_rounded,
-                      size: 28, color: kForest),
+                  Icon(Icons.add_photo_alternate_rounded,
+                      size: 28, color: nt.forest),
                   const SizedBox(height: 6),
                   Text(
                     AppLocalizations.of(context)!.addCoverImage,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w700,
-                      color: kBark,
+                      color: nt.bark,
                     ),
                   ),
                   const SizedBox(height: 2),
                   Text(
                     AppLocalizations.of(context)!.coverOptionalMapFallback,
-                    style: const TextStyle(fontSize: 11, color: kText2),
+                    style: TextStyle(fontSize: 11, color: nt.text2),
                   ),
                 ],
               ),

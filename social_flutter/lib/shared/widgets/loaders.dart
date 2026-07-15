@@ -35,14 +35,15 @@ class _NTripiPeakLoaderState extends State<NTripiPeakLoader>
         animation: _ctrl,
         builder: (_, __) => CustomPaint(
           size: Size(widget.size, widget.size),
-          painter: _PeakPainter(_ctrl.value),
+          painter: _PeakPainter(_ctrl.value, context.nt),
         ),
       );
 }
 
 class _PeakPainter extends CustomPainter {
   final double t;
-  _PeakPainter(this.t);
+  final NtripiColors nt;
+  _PeakPainter(this.t, this.nt);
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -51,7 +52,7 @@ class _PeakPainter extends CustomPainter {
     canvas.drawRRect(
       RRect.fromRectAndRadius(
           Rect.fromLTWH(0, 0, size.width, size.height), Radius.circular(22 * s)),
-      Paint()..color = kForest,
+      Paint()..color = nt.forest,
     );
 
     // Mountain path: bottom-left → top-left → mid-dip → top-right
@@ -76,7 +77,8 @@ class _PeakPainter extends CustomPainter {
     canvas.drawPath(
       metric.extractPath(0, metric.length * drawP),
       Paint()
-        ..color = Colors.white
+        // surface, not white — keeps the path visible on dark's light-green tile
+        ..color = nt.surface
         ..style = PaintingStyle.stroke
         ..strokeWidth = 6 * s
         ..strokeCap = StrokeCap.round
@@ -107,9 +109,9 @@ class _PeakPainter extends CustomPainter {
       canvas.translate(74 * s, 30 * s);
       canvas.scale(sunScale);
       canvas.drawCircle(
-          Offset.zero, 8 * s, Paint()..color = kAmber.withValues(alpha: sunOpacity));
+          Offset.zero, 8 * s, Paint()..color = nt.amber.withValues(alpha: sunOpacity));
       canvas.drawCircle(
-          Offset.zero, 3.5 * s, Paint()..color = Colors.white.withValues(alpha: sunOpacity));
+          Offset.zero, 3.5 * s, Paint()..color = nt.surface.withValues(alpha: sunOpacity));
       canvas.restore();
     }
   }
@@ -150,14 +152,15 @@ class _NTripiRouteLoaderState extends State<NTripiRouteLoader>
         animation: _ctrl,
         builder: (_, __) => CustomPaint(
           size: const Size(160, 120),
-          painter: _RoutePathPainter(_ctrl.value),
+          painter: _RoutePathPainter(_ctrl.value, context.nt),
         ),
       );
 }
 
 class _RoutePathPainter extends CustomPainter {
   final double t;
-  _RoutePathPainter(this.t);
+  final NtripiColors nt;
+  _RoutePathPainter(this.t, this.nt);
 
   Path _buildPath(Size size) {
     final s = size.width / 160.0;
@@ -180,7 +183,7 @@ class _RoutePathPainter extends CustomPainter {
     _drawDashed(
       canvas, path,
       Paint()
-        ..color = kMist
+        ..color = nt.mist
         ..style = PaintingStyle.stroke
         ..strokeWidth = 4 * s
         ..strokeCap = StrokeCap.round,
@@ -188,12 +191,12 @@ class _RoutePathPainter extends CustomPainter {
     );
 
     // Start pin (forest)
-    canvas.drawCircle(Offset(16 * s, 96 * h), 6 * s, Paint()..color = kForest);
-    canvas.drawCircle(Offset(16 * s, 96 * h), 2 * s, Paint()..color = Colors.white);
+    canvas.drawCircle(Offset(16 * s, 96 * h), 6 * s, Paint()..color = nt.forest);
+    canvas.drawCircle(Offset(16 * s, 96 * h), 2 * s, Paint()..color = nt.surface);
 
     // End pin (amber)
-    canvas.drawCircle(Offset(144 * s, 24 * h), 7 * s, Paint()..color = kAmber);
-    canvas.drawCircle(Offset(144 * s, 24 * h), 2.5 * s, Paint()..color = Colors.white);
+    canvas.drawCircle(Offset(144 * s, 24 * h), 7 * s, Paint()..color = nt.amber);
+    canvas.drawCircle(Offset(144 * s, 24 * h), 2.5 * s, Paint()..color = nt.surface);
 
     // Traveler dot: 8% fade-in → travel → 92% fade-out
     double dotProgress;
@@ -216,7 +219,7 @@ class _RoutePathPainter extends CustomPainter {
       canvas.drawCircle(
         tangent.position,
         6 * s,
-        Paint()..color = kForest.withValues(alpha: dotOpacity.clamp(0, 1)),
+        Paint()..color = nt.forest.withValues(alpha: dotOpacity.clamp(0, 1)),
       );
     }
   }
@@ -274,14 +277,15 @@ class _NTripiPinLoaderState extends State<NTripiPinLoader>
         animation: _ctrl,
         builder: (_, __) => CustomPaint(
           size: const Size(80, 110),
-          painter: _PinPainter(_ctrl.value),
+          painter: _PinPainter(_ctrl.value, context.nt),
         ),
       );
 }
 
 class _PinPainter extends CustomPainter {
   final double t;
-  _PinPainter(this.t);
+  final NtripiColors nt;
+  _PinPainter(this.t, this.nt);
 
   static const double _cx = 40;
   static const double _headR = 13.0;
@@ -300,7 +304,7 @@ class _PinPainter extends CustomPainter {
     canvas.drawOval(
       Rect.fromCenter(center: const Offset(_cx, 104), width: shadowW, height: 7),
       Paint()
-        ..color = const Color(0xFF002814).withValues(alpha: shadowA)
+        ..color = nt.shadow.withValues(alpha: shadowA)
         ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3),
     );
 
@@ -315,7 +319,7 @@ class _PinPainter extends CustomPainter {
           const Offset(_cx, 98),
           ringR,
           Paint()
-            ..color = kAmber.withValues(alpha: ringA)
+            ..color = nt.amber.withValues(alpha: ringA)
             ..style = PaintingStyle.stroke
             ..strokeWidth = 2,
         );
@@ -323,7 +327,7 @@ class _PinPainter extends CustomPainter {
     }
 
     // Pin head
-    canvas.drawCircle(Offset(_cx, headY), _headR, Paint()..color = kForest);
+    canvas.drawCircle(Offset(_cx, headY), _headR, Paint()..color = nt.forest);
 
     // Pin tail (triangle below head)
     canvas.drawPath(
@@ -332,11 +336,11 @@ class _PinPainter extends CustomPainter {
         ..lineTo(_cx + _tailW, headY + _headR - 4)
         ..lineTo(_cx, headY + _headR + _tailH)
         ..close(),
-      Paint()..color = kForest,
+      Paint()..color = nt.forest,
     );
 
     // Amber inner dot
-    canvas.drawCircle(Offset(_cx, headY), 5.0, Paint()..color = kAmber);
+    canvas.drawCircle(Offset(_cx, headY), 5.0, Paint()..color = nt.amber);
   }
 
   @override
@@ -384,14 +388,15 @@ class _NTripiCompassLoaderState extends State<NTripiCompassLoader>
         animation: _angle,
         builder: (_, __) => CustomPaint(
           size: Size(widget.size, widget.size),
-          painter: _CompassPainter(_angle.value),
+          painter: _CompassPainter(_angle.value, context.nt),
         ),
       );
 }
 
 class _CompassPainter extends CustomPainter {
   final double angleDeg;
-  _CompassPainter(this.angleDeg);
+  final NtripiColors nt;
+  _CompassPainter(this.angleDeg, this.nt);
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -404,7 +409,7 @@ class _CompassPainter extends CustomPainter {
     canvas.drawCircle(
       Offset(cx, cy), r,
       Paint()
-        ..color = kMist
+        ..color = nt.mist
         ..style = PaintingStyle.stroke
         ..strokeWidth = 3 * s,
     );
@@ -418,7 +423,7 @@ class _CompassPainter extends CustomPainter {
         Offset(cx + (r - (isMajor ? 8 : 5) * s) * math.cos(a),
             cy + (r - (isMajor ? 8 : 5) * s) * math.sin(a)),
         Paint()
-          ..color = kForest.withValues(alpha: isMajor ? 1.0 : 0.35)
+          ..color = nt.forest.withValues(alpha: isMajor ? 1.0 : 0.35)
           ..strokeWidth = 2 * s
           ..strokeCap = StrokeCap.round,
       );
@@ -431,7 +436,7 @@ class _CompassPainter extends CustomPainter {
         style: TextStyle(
             fontSize: 9 * s,
             fontWeight: FontWeight.w700,
-            color: kForest,
+            color: nt.forest,
             height: 1),
       ),
       textDirection: TextDirection.ltr,
@@ -451,7 +456,7 @@ class _CompassPainter extends CustomPainter {
         ..lineTo(0, 38 * s)
         ..lineTo(-5 * s, 0)
         ..close(),
-      Paint()..color = kForest,
+      Paint()..color = nt.forest,
     );
     // Amber overlay on north-right quarter
     canvas.drawPath(
@@ -460,14 +465,14 @@ class _CompassPainter extends CustomPainter {
         ..lineTo(5 * s, 0)
         ..lineTo(0, 0)
         ..close(),
-      Paint()..color = kAmber,
+      Paint()..color = nt.amber,
     );
 
     canvas.restore();
 
     // Pivot
-    canvas.drawCircle(Offset(cx, cy), 5 * s, Paint()..color = kBark);
-    canvas.drawCircle(Offset(cx, cy), 2 * s, Paint()..color = Colors.white);
+    canvas.drawCircle(Offset(cx, cy), 5 * s, Paint()..color = nt.bark);
+    canvas.drawCircle(Offset(cx, cy), 2 * s, Paint()..color = nt.surface);
   }
 
   @override
@@ -503,6 +508,7 @@ class _NTripiTicketLoaderState extends State<NTripiTicketLoader>
 
   @override
   Widget build(BuildContext context) {
+    final nt = context.nt;
     return AnimatedBuilder(
       animation: _ctrl,
       builder: (_, __) {
@@ -516,11 +522,11 @@ class _NTripiTicketLoaderState extends State<NTripiTicketLoader>
             width: 200,
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: nt.surface,
               borderRadius: BorderRadius.circular(12),
               boxShadow: [
                 BoxShadow(
-                  color: const Color(0xFF002814).withValues(alpha: 0.10),
+                  color: nt.shadow.withValues(alpha: 0.10),
                   blurRadius: 14,
                   offset: const Offset(0, 4),
                 ),
@@ -530,7 +536,7 @@ class _NTripiTicketLoaderState extends State<NTripiTicketLoader>
               children: [
                 Row(
                   children: [
-                    const Column(
+                    Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       mainAxisSize: MainAxisSize.min,
                       children: [
@@ -538,12 +544,12 @@ class _NTripiTicketLoaderState extends State<NTripiTicketLoader>
                             style: TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.w800,
-                                color: kBark,
+                                color: nt.bark,
                                 letterSpacing: -0.5)),
                         Text('Marrakech',
                             style: TextStyle(
                                 fontSize: 10,
-                                color: kForest,
+                                color: nt.forest,
                                 fontWeight: FontWeight.w600)),
                       ],
                     ),
@@ -552,15 +558,15 @@ class _NTripiTicketLoaderState extends State<NTripiTicketLoader>
                         padding: const EdgeInsets.symmetric(horizontal: 8),
                         child: Row(
                           children: [
-                            Expanded(child: Container(height: 1.5, color: kMist)),
+                            Expanded(child: Container(height: 1.5, color: nt.mist)),
                             const SizedBox(width: 4),
-                            const Icon(Icons.airplanemode_active,
-                                color: kForest, size: 18),
+                            Icon(Icons.airplanemode_active,
+                                color: nt.forest, size: 18),
                           ],
                         ),
                       ),
                     ),
-                    const Column(
+                    Column(
                       crossAxisAlignment: CrossAxisAlignment.end,
                       mainAxisSize: MainAxisSize.min,
                       children: [
@@ -568,12 +574,12 @@ class _NTripiTicketLoaderState extends State<NTripiTicketLoader>
                             style: TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.w800,
-                                color: kBark,
+                                color: nt.bark,
                                 letterSpacing: -0.5)),
                         Text('Safi',
                             style: TextStyle(
                                 fontSize: 10,
-                                color: kForest,
+                                color: nt.forest,
                                 fontWeight: FontWeight.w600)),
                       ],
                     ),
@@ -584,16 +590,16 @@ class _NTripiTicketLoaderState extends State<NTripiTicketLoader>
                   child: Transform.translate(
                     offset: Offset(shimmerX * 200, 0),
                     child: Container(
-                      decoration: const BoxDecoration(
+                      decoration: BoxDecoration(
                         gradient: LinearGradient(
                           begin: Alignment.centerLeft,
                           end: Alignment.centerRight,
                           colors: [
                             Colors.transparent,
-                            Color(0xD9FFFFFF), // white 85%
+                            nt.shimmerHighlight.withValues(alpha: 0.85),
                             Colors.transparent,
                           ],
-                          stops: [0.3, 0.5, 0.7],
+                          stops: const [0.3, 0.5, 0.7],
                         ),
                       ),
                     ),
@@ -637,7 +643,8 @@ class _NTripiItineraryLoaderState extends State<NTripiItineraryLoader>
 
   @override
   Widget build(BuildContext context) {
-    const colors = [kForest, kCanopy, kAmber];
+    final nt = context.nt;
+    final colors = [nt.forest, nt.canopy, nt.amber];
     const barWidths = [88.0, 64.0, 76.0];
     // Stagger: 0 ms, 250 ms, 500 ms out of 1600 ms total
     const delays = [0.0, 250 / 1600, 500 / 1600];
@@ -682,11 +689,11 @@ class _NTripiItineraryLoaderState extends State<NTripiItineraryLoader>
                 padding:
                     const EdgeInsets.symmetric(horizontal: 9, vertical: 7),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: nt.surface,
                   borderRadius: BorderRadius.circular(9),
                   boxShadow: [
                     BoxShadow(
-                      color: const Color(0xFF002814).withValues(alpha: 0.08),
+                      color: nt.shadow.withValues(alpha: 0.08),
                       blurRadius: 3,
                       offset: const Offset(0, 1),
                     ),
@@ -706,7 +713,7 @@ class _NTripiItineraryLoaderState extends State<NTripiItineraryLoader>
                       width: barWidths[i],
                       height: 5,
                       decoration: BoxDecoration(
-                          color: kMist,
+                          color: nt.mist,
                           borderRadius: BorderRadius.circular(3)),
                     ),
                   ],
@@ -755,14 +762,15 @@ class _NTripiRingLoaderState extends State<NTripiRingLoader>
         animation: _t,
         builder: (_, __) => CustomPaint(
           size: Size(widget.size, widget.size),
-          painter: _RingPainter(_t.value),
+          painter: _RingPainter(_t.value, context.nt),
         ),
       );
 }
 
 class _RingPainter extends CustomPainter {
   final double t;
-  _RingPainter(this.t);
+  final NtripiColors nt;
+  _RingPainter(this.t, this.nt);
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -775,7 +783,7 @@ class _RingPainter extends CustomPainter {
     canvas.drawCircle(
       Offset(cx, cy), r,
       Paint()
-        ..color = kMist
+        ..color = nt.mist
         ..style = PaintingStyle.stroke
         ..strokeWidth = strokeW,
     );
@@ -789,7 +797,7 @@ class _RingPainter extends CustomPainter {
       sweepAngle,
       false,
       Paint()
-        ..color = kForest
+        ..color = nt.forest
         ..style = PaintingStyle.stroke
         ..strokeWidth = strokeW
         ..strokeCap = StrokeCap.round,
@@ -799,7 +807,7 @@ class _RingPainter extends CustomPainter {
     final beadX = cx + r * math.cos(startAngle);
     final beadY = cy + r * math.sin(startAngle);
     canvas.drawCircle(
-        Offset(beadX, beadY), strokeW * 0.9, Paint()..color = kAmber);
+        Offset(beadX, beadY), strokeW * 0.9, Paint()..color = nt.amber);
   }
 
   @override
@@ -836,6 +844,7 @@ class _NTripiDotsLoaderState extends State<NTripiDotsLoader>
 
   @override
   Widget build(BuildContext context) {
+    final nt = context.nt;
     return AnimatedBuilder(
       animation: _ctrl,
       builder: (_, __) {
@@ -848,11 +857,11 @@ class _NTripiDotsLoaderState extends State<NTripiDotsLoader>
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              _PeakDot(color: kForest, t: _ctrl.value, delay: 0.0, size: s, bounce: bounce),
+              _PeakDot(color: nt.forest, t: _ctrl.value, delay: 0.0, size: s, bounce: bounce),
               SizedBox(width: spacing),
-              _PeakDot(color: kCanopy, t: _ctrl.value, delay: 0.15 / 1.1, size: s, bounce: bounce),
+              _PeakDot(color: nt.canopy, t: _ctrl.value, delay: 0.15 / 1.1, size: s, bounce: bounce),
               SizedBox(width: spacing),
-              _PeakDot(color: kAmber, t: _ctrl.value, delay: 0.30 / 1.1, size: s, bounce: bounce),
+              _PeakDot(color: nt.amber, t: _ctrl.value, delay: 0.30 / 1.1, size: s, bounce: bounce),
             ],
           ),
         );
@@ -924,6 +933,7 @@ class _NTripiSkeletonState extends State<NTripiSkeleton>
 
   @override
   Widget build(BuildContext context) {
+    final nt = context.nt;
     return AnimatedBuilder(
       animation: _ctrl,
       builder: (_, __) {
@@ -939,7 +949,7 @@ class _NTripiSkeletonState extends State<NTripiSkeleton>
                 gradient: LinearGradient(
                   begin: Alignment(shimX, 0),
                   end: Alignment(shimX + 1, 0),
-                  colors: const [kMist, Colors.white, kMist],
+                  colors: [nt.mist, nt.shimmerHighlight, nt.mist],
                 ),
               ),
             );
@@ -1009,6 +1019,7 @@ class _OwnerRowSkeletonState extends State<OwnerRowSkeleton>
 
   @override
   Widget build(BuildContext context) {
+    final nt = context.nt;
     return AnimatedBuilder(
       animation: _ctrl,
       builder: (_, __) {
@@ -1023,7 +1034,7 @@ class _OwnerRowSkeletonState extends State<OwnerRowSkeleton>
                 gradient: LinearGradient(
                   begin: Alignment(shimX, 0),
                   end: Alignment(shimX + 1, 0),
-                  colors: const [kMist, Colors.white, kMist],
+                  colors: [nt.mist, nt.shimmerHighlight, nt.mist],
                 ),
               ),
             );

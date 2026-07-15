@@ -7,6 +7,7 @@
 // OSM attribution is displayed as required by the ODbL license.
 
 import 'package:flutter/material.dart';
+import 'package:social_flutter/core/ui/app_theme.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -111,11 +112,12 @@ class _MapPickerScreenState extends ConsumerState<MapPickerScreen> {
                   markers: [
                     Marker(
                       point: _selectedLocation!,
-                      child: const Icon(
+                      child: Icon(
                         Icons.location_pin,
-                        color: Colors.red,
+                        // light-palette red — OSM tiles stay light in dark mode
+                        color: NtripiColors.light.danger,
                         size: 40,
-                        shadows: [Shadow(blurRadius: 4, color: Colors.black26)],
+                        shadows: [Shadow(blurRadius: 4, color: NtripiBrand.backdrop.withValues(alpha: 0.26))],
                       ),
                     ),
                   ],

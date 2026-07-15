@@ -99,25 +99,26 @@ class _VerifyEmailBannerState extends ConsumerState<VerifyEmailBanner> {
 
   @override
   Widget build(BuildContext context) {
+    final nt = context.nt;
     final l10n = AppLocalizations.of(context)!;
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: kSurface,
+        color: nt.surface,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: kBorder),
+        border: Border.all(color: nt.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              const Icon(Icons.mark_email_unread_outlined, size: 20, color: kBark),
+              Icon(Icons.mark_email_unread_outlined, size: 20, color: nt.bark),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
                   l10n.verifyEmailTitle,
-                  style: const TextStyle(fontWeight: FontWeight.w700, color: kBark),
+                  style: TextStyle(fontWeight: FontWeight.w700, color: nt.bark),
                 ),
               ),
             ],
@@ -125,7 +126,7 @@ class _VerifyEmailBannerState extends ConsumerState<VerifyEmailBanner> {
           const SizedBox(height: 6),
           Text(
             l10n.verifyEmailMessage,
-            style: const TextStyle(fontSize: 13, color: kText2),
+            style: TextStyle(fontSize: 13, color: nt.text2),
           ),
           const SizedBox(height: 12),
           if (_busy)

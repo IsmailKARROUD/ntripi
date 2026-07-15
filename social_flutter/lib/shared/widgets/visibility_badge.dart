@@ -21,6 +21,7 @@ class VisibilityBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final nt = context.nt;
     final l10n = AppLocalizations.of(context)!;
 
     final icon = switch (visibility) {
@@ -40,14 +41,14 @@ class VisibilityBadge extends StatelessWidget {
     final Color background;
 
     if (onDark) {
-      foreground = Colors.white;
-      background = kButtonTransparent; // frosted black overlay
+      foreground = nt.overlayChrome; // over the cover photo — never flips
+      background = nt.buttonTransparent; // frosted black overlay
     } else {
       foreground = switch (visibility) {
-        ItineraryVisibility.public => kCanopy,
-        ItineraryVisibility.followers => kText2,
-        ItineraryVisibility.restricted => kRatingOrange,
-        ItineraryVisibility.onlyMe => kText3,
+        ItineraryVisibility.public => nt.canopy,
+        ItineraryVisibility.followers => nt.text2,
+        ItineraryVisibility.restricted => nt.ratingOrange,
+        ItineraryVisibility.onlyMe => nt.text3,
       };
       background = foreground.withValues(alpha: 0.12);
     }

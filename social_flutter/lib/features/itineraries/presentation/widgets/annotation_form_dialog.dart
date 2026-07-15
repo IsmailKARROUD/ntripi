@@ -48,13 +48,14 @@ class _AnnotationFormDialogState extends State<AnnotationFormDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final nt = context.nt;
     final l10n = AppLocalizations.of(context)!;
     return AlertDialog(
-      backgroundColor: kSand,
+      backgroundColor: nt.sand,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       title: Text(widget.title,
-          style: const TextStyle(
-              fontSize: 17, fontWeight: FontWeight.w700, color: kBark)),
+          style: TextStyle(
+              fontSize: 17, fontWeight: FontWeight.w700, color: nt.bark)),
       contentPadding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
       content: Form(
         key: _formKey,
@@ -67,10 +68,10 @@ class _AnnotationFormDialogState extends State<AnnotationFormDialog> {
               padding: const EdgeInsets.only(bottom: 8),
               child: Text(
                 l10n.annotationTypeLabel.toUpperCase(),
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w700,
-                  color: kText2,
+                  color: nt.text2,
                   letterSpacing: 0.6,
                 ),
               ),
@@ -90,10 +91,10 @@ class _AnnotationFormDialogState extends State<AnnotationFormDialog> {
                     duration: const Duration(milliseconds: 150),
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: active ? t.bg : kSurface,
+                      color: active ? t.bg(nt) : nt.surface,
                       borderRadius: BorderRadius.circular(14),
                       border: Border.all(
-                        color: active ? t.fg : kBorder,
+                        color: active ? t.fg(nt) : nt.border,
                         width: active ? 2 : 1,
                       ),
                     ),
@@ -105,12 +106,12 @@ class _AnnotationFormDialogState extends State<AnnotationFormDialog> {
                           height: 26,
                           decoration: BoxDecoration(
                             color: active
-                                ? t.fg.withValues(alpha: 0.2)
-                                : t.bg,
+                                ? t.fg(nt).withValues(alpha: 0.2)
+                                : t.bg(nt),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           alignment: Alignment.center,
-                          child: Icon(t.icon, size: 14, color: t.fg),
+                          child: Icon(t.icon, size: 14, color: t.fg(nt)),
                         ),
                         const SizedBox(height: 4),
                         Text(
@@ -118,7 +119,7 @@ class _AnnotationFormDialogState extends State<AnnotationFormDialog> {
                           style: TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.w700,
-                            color: t.fg,
+                            color: t.fg(nt),
                           ),
                         ),
                       ],
@@ -134,10 +135,10 @@ class _AnnotationFormDialogState extends State<AnnotationFormDialog> {
               padding: const EdgeInsets.only(bottom: 8),
               child: Text(
                 l10n.messageLabel.toUpperCase(),
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w700,
-                  color: kText2,
+                  color: nt.text2,
                   letterSpacing: 0.6,
                 ),
               ),
@@ -148,19 +149,19 @@ class _AnnotationFormDialogState extends State<AnnotationFormDialog> {
               autofocus: true,
               decoration: InputDecoration(
                 hintText: l10n.annotationContentLabel,
-                fillColor: kSurface,
+                fillColor: nt.surface,
                 filled: true,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(14),
-                  borderSide: const BorderSide(color: kBorder),
+                  borderSide: BorderSide(color: nt.border),
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(14),
-                  borderSide: const BorderSide(color: kBorder),
+                  borderSide: BorderSide(color: nt.border),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(14),
-                  borderSide: const BorderSide(color: kForest, width: 1.5),
+                  borderSide: BorderSide(color: nt.forest, width: 1.5),
                 ),
                 alignLabelWithHint: true,
               ),

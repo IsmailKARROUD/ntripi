@@ -1,6 +1,6 @@
 // widgets/edit_pencil_button.dart — Soft action-blue tinted Edit affordance.
 //
-// kEditBlue / kEditBlueTint are RESERVED exclusively for this widget — the blue
+// nt.editBlue / nt.editBlueTint are RESERVED exclusively for this widget — the blue
 // hue must not appear anywhere else in the app. Used for every itinerary Edit
 // pencil so the Edit action reads consistently across stop cards, the stop form,
 // the stop detail header, the hero overlay, and transit legs.
@@ -27,6 +27,7 @@ class EditPencilButton extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final nt = context.nt;
     // Edits can't be saved offline, so every Edit pencil self-disables (grey)
     // and explains itself on tap instead of opening a dead-end edit flow.
     final online = ref.watch(isOnlineProvider).value ?? true;
@@ -38,12 +39,12 @@ class EditPencilButton extends ConsumerWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           decoration: BoxDecoration(
-            color: online ? kEditBlueTint : kBorder.withValues(alpha: 0.45),
+            color: online ? nt.editBlueTint : nt.border.withValues(alpha: 0.45),
             borderRadius: BorderRadius.circular(10),
             border: Border.all(
-                color: (online ? kEditBlue : kText3).withValues(alpha: 0.13)),
+                color: (online ? nt.editBlue : nt.text3).withValues(alpha: 0.13)),
           ),
-          child: Icon(icon, size: iconSize, color: online ? kEditBlue : kText3),
+          child: Icon(icon, size: iconSize, color: online ? nt.editBlue : nt.text3),
         ),
       ),
     );

@@ -28,10 +28,7 @@ import 'package:social_flutter/shared/widgets/loaders.dart';
 import 'package:social_flutter/shared/widgets/offline_gate.dart';
 import 'package:social_flutter/shared/widgets/saving_overlay.dart';
 
-const _kError = Color(0xFFBA1A1A);
-const _kErrorContainer = Color(0xFFFFDAD6);
-const _kErrorBorder = Color(0xFFFFB4AB);
-const _kErrorText = Color(0xFF410002);
+
 
 class DeleteAccountScreen extends ConsumerStatefulWidget {
   const DeleteAccountScreen({super.key});
@@ -154,13 +151,14 @@ class _DeleteAccountScreenState extends ConsumerState<DeleteAccountScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final nt = context.nt;
     final l10n = AppLocalizations.of(context)!;
     final profileAsync = ref.watch(myProfileProvider);
     return SavingOverlay(
       saving: _isLoading,
-      tint: kSurface,
+      tint: nt.surface,
       child: Scaffold(
-        backgroundColor: kSurface,
+        backgroundColor: nt.surface,
         resizeToAvoidBottomInset: false,
         body: Center(
           child: ConstrainedBox(
@@ -173,7 +171,7 @@ class _DeleteAccountScreenState extends ConsumerState<DeleteAccountScreen> {
                   bottom: false,
                   child: EditorialTopBar(title: l10n.deleteAccountTitle),
                 ),
-                Container(height: 1, color: kBorder),
+                Container(height: 1, color: nt.border),
                 Expanded(
                   child: profileAsync.when(
                     loading: () => const Center(child: NTripiRingLoader(size: 28)),
@@ -182,7 +180,7 @@ class _DeleteAccountScreenState extends ConsumerState<DeleteAccountScreen> {
                         padding: const EdgeInsets.all(24),
                         child: Text(
                           l10n.deleteAccountGenericError,
-                          style: const TextStyle(color: _kError),
+                          style: TextStyle(color: nt.danger),
                           textAlign: TextAlign.center,
                         ),
                       ),
@@ -199,6 +197,7 @@ class _DeleteAccountScreenState extends ConsumerState<DeleteAccountScreen> {
   }
 
   Widget _buildBody(BuildContext context, AppLocalizations l10n, User user) {
+    final nt = context.nt;
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
       child: Column(
@@ -217,7 +216,7 @@ class _DeleteAccountScreenState extends ConsumerState<DeleteAccountScreen> {
             const SizedBox(height: 12),
             Text(
               _errorMessage!,
-              style: const TextStyle(color: _kError),
+              style: TextStyle(color: nt.danger),
               textAlign: TextAlign.center,
             ),
           ],
@@ -243,24 +242,25 @@ class _DeleteAccountScreenState extends ConsumerState<DeleteAccountScreen> {
   }
 
   Widget _warningCard(AppLocalizations l10n) {
+    final nt = context.nt;
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: _kErrorContainer,
+        color: nt.dangerTint,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: _kErrorBorder),
+        border: Border.all(color: nt.danger.withValues(alpha: 0.4)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              const Icon(Icons.warning_amber_rounded, color: _kError),
+              Icon(Icons.warning_amber_rounded, color: nt.danger),
               const SizedBox(width: 8),
               Text(
                 l10n.deleteAccountCannotUndo,
-                style: const TextStyle(
-                  color: _kError,
+                style: TextStyle(
+                  color: nt.danger,
                   fontWeight: FontWeight.w700,
                   fontSize: 15,
                 ),
@@ -270,7 +270,7 @@ class _DeleteAccountScreenState extends ConsumerState<DeleteAccountScreen> {
           const SizedBox(height: 12),
           Text(
             l10n.deleteAccountWillRemove,
-            style: const TextStyle(color: _kErrorText, fontSize: 13),
+            style: TextStyle(color: nt.text2, fontSize: 13),
           ),
           const SizedBox(height: 8),
           ...[
@@ -283,11 +283,11 @@ class _DeleteAccountScreenState extends ConsumerState<DeleteAccountScreen> {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('• ', style: TextStyle(color: _kErrorText)),
+                  Text('• ', style: TextStyle(color: nt.text2)),
                   Expanded(
                     child: Text(
                       item,
-                      style: const TextStyle(color: _kErrorText, fontSize: 13),
+                      style: TextStyle(color: nt.text2, fontSize: 13),
                     ),
                   ),
                 ],
@@ -297,8 +297,8 @@ class _DeleteAccountScreenState extends ConsumerState<DeleteAccountScreen> {
           const SizedBox(height: 8),
           Text(
             l10n.deleteAccountNote,
-            style: const TextStyle(
-              color: _kError,
+            style: TextStyle(
+              color: nt.danger,
               fontSize: 12,
               fontStyle: FontStyle.italic,
             ),
@@ -341,12 +341,13 @@ class _DeleteAccountScreenState extends ConsumerState<DeleteAccountScreen> {
   }
 
   Widget _passwordDeleteButton(AppLocalizations l10n) {
+    final nt = context.nt;
     return OfflineGate(
       builder: (online) => ElevatedButton(
         onPressed: (_isLoading || !online) ? null : _confirmAndDeleteWithPassword,
         style: ElevatedButton.styleFrom(
-          backgroundColor: _kError,
-          foregroundColor: kSurface,
+          backgroundColor: nt.danger,
+          foregroundColor: nt.surface,
           padding: const EdgeInsets.symmetric(vertical: 16),
         ),
         child: _isLoading
@@ -357,22 +358,23 @@ class _DeleteAccountScreenState extends ConsumerState<DeleteAccountScreen> {
   }
 
   Widget _googleExplain(AppLocalizations l10n) {
+    final nt = context.nt;
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: kSurface,
+        color: nt.surface,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: kBorder),
+        border: Border.all(color: nt.border),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(Icons.info_outline_rounded, size: 20, color: kText2),
+          Icon(Icons.info_outline_rounded, size: 20, color: nt.text2),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
               l10n.deleteAccountGoogleExplain,
-              style: const TextStyle(fontSize: 13, color: kText2),
+              style: TextStyle(fontSize: 13, color: nt.text2),
             ),
           ),
         ],
@@ -381,16 +383,19 @@ class _DeleteAccountScreenState extends ConsumerState<DeleteAccountScreen> {
   }
 
   Widget _googleActionArea(AppLocalizations l10n) {
+    final nt = context.nt;
     if (kIsWeb) {
+    final nt = context.nt;
       // Web: the ID token arrives via the rendered button's callback, so gate
       // the button behind the type-to-confirm step (see [_webConfirmed]).
       if (!_webConfirmed) {
+    final nt = context.nt;
         return OfflineGate(
           builder: (online) => ElevatedButton(
             onPressed: (_isLoading || !online) ? null : _confirmGoogleWeb,
             style: ElevatedButton.styleFrom(
-              backgroundColor: _kError,
-              foregroundColor: kSurface,
+              backgroundColor: nt.danger,
+              foregroundColor: nt.surface,
               padding: const EdgeInsets.symmetric(vertical: 16),
             ),
             child: Text(l10n.deleteAccountButton, style: const TextStyle(fontSize: 16)),
@@ -403,7 +408,7 @@ class _DeleteAccountScreenState extends ConsumerState<DeleteAccountScreen> {
           Text(
             l10n.deleteAccountGoogleButton,
             textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 13, color: kText2),
+            style: TextStyle(fontSize: 13, color: nt.text2),
           ),
           const SizedBox(height: 8),
           OfflineGate(
@@ -422,8 +427,8 @@ class _DeleteAccountScreenState extends ConsumerState<DeleteAccountScreen> {
         onPressed:
             (_isLoading || !online) ? null : _confirmAndReauthGoogleMobile,
         style: ElevatedButton.styleFrom(
-          backgroundColor: _kError,
-          foregroundColor: kSurface,
+          backgroundColor: nt.danger,
+          foregroundColor: nt.surface,
           padding: const EdgeInsets.symmetric(vertical: 16),
         ),
         child: _isLoading

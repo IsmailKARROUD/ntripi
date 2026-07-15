@@ -63,26 +63,27 @@ class _OpenInMapsSheetState extends ConsumerState<_OpenInMapsSheet> {
 
   // Brand marks come from FontAwesome; the rest fall back to Material glyphs.
   Widget _appIcon(ExternalMapApp app) {
+    final nt = context.nt;
     switch (app) {
       case ExternalMapApp.googleMaps:
-        return const FaIcon(FontAwesomeIcons.google, size: 18, color: kForest);
+        return FaIcon(FontAwesomeIcons.google, size: 18, color: nt.forest);
       case ExternalMapApp.appleMaps:
-        return const FaIcon(FontAwesomeIcons.apple, size: 18, color: kForest);
+        return FaIcon(FontAwesomeIcons.apple, size: 18, color: nt.forest);
       case ExternalMapApp.waze:
-        return const FaIcon(FontAwesomeIcons.waze, size: 18, color: kForest);
+        return FaIcon(FontAwesomeIcons.waze, size: 18, color: nt.forest);
       case ExternalMapApp.yandexMaps:
-        return const FaIcon(FontAwesomeIcons.yandex, size: 18, color: kForest);
+        return FaIcon(FontAwesomeIcons.yandex, size: 18, color: nt.forest);
       case ExternalMapApp.hereWeGo:
-        return const Icon(Icons.explore_rounded, size: 20, color: kForest);
+        return Icon(Icons.explore_rounded, size: 20, color: nt.forest);
       case ExternalMapApp.citymapper:
-        return const Icon(Icons.directions_transit_rounded,
-            size: 20, color: kForest);
+        return Icon(Icons.directions_transit_rounded,
+            size: 20, color: nt.forest);
       case ExternalMapApp.osmAnd:
-        return const Icon(Icons.terrain_rounded, size: 20, color: kForest);
+        return Icon(Icons.terrain_rounded, size: 20, color: nt.forest);
       case ExternalMapApp.openStreetMap:
-        return const Icon(Icons.public_rounded, size: 20, color: kForest);
+        return Icon(Icons.public_rounded, size: 20, color: nt.forest);
       case ExternalMapApp.otherApps:
-        return const Icon(Icons.pin_drop_rounded, size: 20, color: kForest);
+        return Icon(Icons.pin_drop_rounded, size: 20, color: nt.forest);
     }
   }
 
@@ -97,6 +98,7 @@ class _OpenInMapsSheetState extends ConsumerState<_OpenInMapsSheet> {
   }
 
   Widget _buildAppRow(AppLocalizations l10n, ExternalMapApp app) {
+    final nt = context.nt;
     return InkWell(
       onTap: () => _open(app),
       borderRadius: BorderRadius.circular(12),
@@ -108,7 +110,7 @@ class _OpenInMapsSheetState extends ConsumerState<_OpenInMapsSheet> {
               width: 36,
               height: 36,
               decoration: BoxDecoration(
-                color: kMist,
+                color: nt.mist,
                 borderRadius: BorderRadius.circular(12),
               ),
               alignment: Alignment.center,
@@ -118,14 +120,14 @@ class _OpenInMapsSheetState extends ConsumerState<_OpenInMapsSheet> {
             Expanded(
               child: Text(
                 _appName(l10n, app),
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w700,
-                  color: kBark,
+                  color: nt.bark,
                 ),
               ),
             ),
-            const Icon(Icons.chevron_right_rounded, size: 18, color: kText3),
+            Icon(Icons.chevron_right_rounded, size: 18, color: nt.text3),
           ],
         ),
       ),
@@ -134,9 +136,10 @@ class _OpenInMapsSheetState extends ConsumerState<_OpenInMapsSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final nt = context.nt;
     final l10n = AppLocalizations.of(context)!;
     return Container(
-      color: kSand,
+      color: nt.sand,
       child: SafeArea(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
@@ -149,10 +152,10 @@ class _OpenInMapsSheetState extends ConsumerState<_OpenInMapsSheet> {
                 padding: const EdgeInsets.fromLTRB(6, 6, 6, 6),
                 child: Text(
                   l10n.openInMaps.toUpperCase(),
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
-                    color: kText2,
+                    color: nt.text2,
                     letterSpacing: 0.6,
                   ),
                 ),
@@ -160,9 +163,9 @@ class _OpenInMapsSheetState extends ConsumerState<_OpenInMapsSheet> {
               // App rows in a white card
               Container(
                 decoration: BoxDecoration(
-                  color: kSurface,
+                  color: nt.surface,
                   borderRadius: BorderRadius.circular(18),
-                  border: Border.all(color: kBorder),
+                  border: Border.all(color: nt.border),
                 ),
                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
                 child: FutureBuilder<List<ExternalMapApp>>(
@@ -170,14 +173,15 @@ class _OpenInMapsSheetState extends ConsumerState<_OpenInMapsSheet> {
                   builder: (context, snap) {
                     final apps = snap.data;
                     if (apps == null) {
-                      return const Padding(
+    final nt = context.nt;
+                      return Padding(
                         padding: EdgeInsets.symmetric(vertical: 24),
                         child: Center(
                           child: SizedBox(
                             width: 22,
                             height: 22,
                             child: CircularProgressIndicator(
-                                strokeWidth: 2.4, color: kForest),
+                                strokeWidth: 2.4, color: nt.forest),
                           ),
                         ),
                       );

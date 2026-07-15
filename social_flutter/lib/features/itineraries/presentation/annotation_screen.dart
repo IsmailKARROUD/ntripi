@@ -127,6 +127,7 @@ class _AnnotationScreenState extends State<AnnotationScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final nt = context.nt;
     final l10n = AppLocalizations.of(context)!;
     final title = widget.isEdit ? l10n.editAnnotationTitle : l10n.addAnnotationDialogTitle;
     final canSave = !_saving && _contentController.text.trim().isNotEmpty;
@@ -143,9 +144,9 @@ class _AnnotationScreenState extends State<AnnotationScreen> {
         saving: _saving,
         child: Scaffold(
       resizeToAvoidBottomInset: false,
-      backgroundColor: kSand,
+      backgroundColor: nt.sand,
       appBar: AppBar(
-        backgroundColor: kSand,
+        backgroundColor: nt.sand,
         title: Text(title),
         actions: [
           if (_saving)
@@ -160,7 +161,7 @@ class _AnnotationScreenState extends State<AnnotationScreen> {
                 child: Text(
                   widget.isEdit ? l10n.saveButton : l10n.addButton,
                   style: TextStyle(
-                    color: (canSave && online) ? kForest : kText3,
+                    color: (canSave && online) ? nt.forest : nt.text3,
                     fontWeight: FontWeight.w700,
                     fontSize: 15,
                   ),
@@ -180,22 +181,22 @@ class _AnnotationScreenState extends State<AnnotationScreen> {
               child: Container(
                 padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
                 decoration: BoxDecoration(
-                  color: kSurface,
+                  color: nt.surface,
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: kBorder),
+                  border: Border.all(color: nt.border),
                 ),
                 child: Row(
                   children: [
                     Container(
                       width: 32,
                       height: 32,
-                      decoration: const BoxDecoration(
-                        color: kMist,
+                      decoration: BoxDecoration(
+                        color: nt.mist,
                         shape: BoxShape.circle,
                       ),
                       alignment: Alignment.center,
-                      child: const Icon(Icons.location_on_rounded,
-                          size: 16, color: kForest),
+                      child: Icon(Icons.location_on_rounded,
+                          size: 16, color: nt.forest),
                     ),
                     const SizedBox(width: 10),
                     Expanded(
@@ -204,17 +205,17 @@ class _AnnotationScreenState extends State<AnnotationScreen> {
                         children: [
                           Text(
                             widget.stopName!,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 13,
                               fontWeight: FontWeight.w700,
-                              color: kBark,
+                              color: nt.bark,
                             ),
                           ),
                           if (widget.stopSubtitle != null)
                             Text(
                               widget.stopSubtitle!,
-                              style: const TextStyle(
-                                  fontSize: 11, color: kText2),
+                              style: TextStyle(
+                                  fontSize: 11, color: nt.text2),
                             ),
                         ],
                       ),
@@ -229,10 +230,10 @@ class _AnnotationScreenState extends State<AnnotationScreen> {
             padding: const EdgeInsets.fromLTRB(22, 14, 22, 6),
             child: Text(
               l10n.annotationTypeLabel.toUpperCase(),
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.w700,
-                color: kText2,
+                color: nt.text2,
                 letterSpacing: 0.6,
               ),
             ),
@@ -254,10 +255,10 @@ class _AnnotationScreenState extends State<AnnotationScreen> {
                     duration: const Duration(milliseconds: 150),
                     padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
-                      color: active ? t.bg : kSurface,
+                      color: active ? t.bg(nt) : nt.surface,
                       borderRadius: BorderRadius.circular(14),
                       border: Border.all(
-                        color: active ? t.fg : kBorder,
+                        color: active ? t.fg(nt) : nt.border,
                         width: active ? 2 : 1,
                       ),
                     ),
@@ -269,12 +270,12 @@ class _AnnotationScreenState extends State<AnnotationScreen> {
                           height: 30,
                           decoration: BoxDecoration(
                             color: active
-                                ? t.fg.withValues(alpha: 0.2)
-                                : t.bg,
+                                ? t.fg(nt).withValues(alpha: 0.2)
+                                : t.bg(nt),
                             borderRadius: BorderRadius.circular(10),
                           ),
                           alignment: Alignment.center,
-                          child: Icon(t.icon, size: 16, color: t.fg),
+                          child: Icon(t.icon, size: 16, color: t.fg(nt)),
                         ),
                         const SizedBox(height: 4),
                         Text(
@@ -282,15 +283,15 @@ class _AnnotationScreenState extends State<AnnotationScreen> {
                           style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w700,
-                            color: t.fg,
+                            color: t.fg(nt),
                           ),
                         ),
                         const SizedBox(height: 2),
                         Text(
                           t.description(l10n),
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 11,
-                            color: kText2,
+                            color: nt.text2,
                             height: 1.35,
                           ),
                         ),
@@ -307,10 +308,10 @@ class _AnnotationScreenState extends State<AnnotationScreen> {
             padding: const EdgeInsets.fromLTRB(22, 14, 22, 6),
             child: Text(
               l10n.messageLabel.toUpperCase(),
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.w700,
-                color: kText2,
+                color: nt.text2,
                 letterSpacing: 0.6,
               ),
             ),
@@ -318,9 +319,9 @@ class _AnnotationScreenState extends State<AnnotationScreen> {
           Container(
             margin: const EdgeInsets.fromLTRB(16, 0, 16, 0),
             decoration: BoxDecoration(
-              color: kSurface,
+              color: nt.surface,
               borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: kBorder),
+              border: Border.all(color: nt.border),
             ),
             child: TextField(
               controller: _contentController,
@@ -330,15 +331,15 @@ class _AnnotationScreenState extends State<AnnotationScreen> {
               onChanged: (_) => setState(() {}), // rebuild for Save enable
               decoration: InputDecoration(
                 hintText: AppLocalizations.of(context)!.annotationContentHint,
-                hintStyle:  TextStyle(color: kText3),
+                hintStyle:  TextStyle(color: nt.text3),
                 border: InputBorder.none,
                 enabledBorder: InputBorder.none,
                 focusedBorder: InputBorder.none,
                 contentPadding:  EdgeInsets.fromLTRB(16, 14, 16, 14),
               ),
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 14,
-                color: kBark,
+                color: nt.bark,
                 height: 1.5,
               ),
             ),
@@ -349,7 +350,7 @@ class _AnnotationScreenState extends State<AnnotationScreen> {
             padding: const EdgeInsets.fromLTRB(22, 6, 22, 0),
             child: Text(
               l10n.annotationKeepShortHint,
-              style: const TextStyle(fontSize: 11, color: kText2),
+              style: TextStyle(fontSize: 11, color: nt.text2),
             ),
           ),
         ],

@@ -7,6 +7,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:social_flutter/core/api/api_client.dart';
 import 'package:social_flutter/core/auth/token_manager.dart';
 import 'package:social_flutter/core/providers/locale_provider.dart';
+import 'package:social_flutter/core/providers/theme_mode_provider.dart';
 import 'package:social_flutter/core/router/app_router.dart';
 import 'package:social_flutter/core/ui/app_theme.dart';
 import 'package:social_flutter/l10n/app_localizations.dart';
@@ -61,6 +62,7 @@ class NtripiApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final locale = ref.watch(localeProvider);
+    final themeMode = ref.watch(themeModeProvider);
     return GestureDetector(
       onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
       child: MaterialApp.router(
@@ -68,9 +70,18 @@ class NtripiApp extends ConsumerWidget {
         debugShowCheckedModeBanner: false,
         routerConfig: appRouter,
         theme: buildNtripiTheme(),
+        darkTheme: buildNtripiDarkTheme(),
+        themeMode: themeMode,
         locale: locale,
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
+        // AppBar-less screens still need correct status/nav bar icon
+        // brightness — reuse the style the theme sets on AppBars.
+        builder: (context, child) => AnnotatedRegion<SystemUiOverlayStyle>(
+          value: Theme.of(context).appBarTheme.systemOverlayStyle ??
+              SystemUiOverlayStyle.dark,
+          child: child!,
+        ),
       ),
     );
   }

@@ -191,6 +191,7 @@ class _TrackReorderSheetState extends ConsumerState<_TrackReorderSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final nt = context.nt;
     final orphans = computeOrphansForTrackReorder(
         newTrackOrder: _local, segments: widget.segments);
     final orphansByTrack = _orphansByFromTrack(orphans);
@@ -206,7 +207,7 @@ class _TrackReorderSheetState extends ConsumerState<_TrackReorderSheet> {
         saving: _busy,
         loaderSize: 40,
         child: Container(
-        color: kSand,
+        color: nt.sand,
         child: SafeArea(
           child: Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
@@ -233,10 +234,10 @@ class _TrackReorderSheetState extends ConsumerState<_TrackReorderSheet> {
                     AppLocalizations.of(context)!
                         .dragToChangeTrackOrder
                         .toUpperCase(),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w700,
-                      color: kText2,
+                      color: nt.text2,
                       letterSpacing: 0.5,
                     ),
                   ),
@@ -249,9 +250,9 @@ class _TrackReorderSheetState extends ConsumerState<_TrackReorderSheet> {
                   ),
                   child: Container(
                     decoration: BoxDecoration(
-                      color: kSurface,
+                      color: nt.surface,
                       borderRadius: BorderRadius.circular(18),
-                      border: Border.all(color: kBorder),
+                      border: Border.all(color: nt.border),
                     ),
                     clipBehavior: Clip.antiAlias,
                     child: ReorderableListView.builder(
@@ -264,8 +265,8 @@ class _TrackReorderSheetState extends ConsumerState<_TrackReorderSheet> {
                         animation: animation,
                         builder: (_, child) => Material(
                           elevation: 4 * animation.value,
-                          shadowColor: Colors.black26,
-                          color: kSand,
+                          shadowColor: nt.shadow.withValues(alpha: 0.26),
+                          color: nt.sand,
                           borderRadius: BorderRadius.circular(12),
                           child: child,
                         ),
@@ -298,7 +299,7 @@ class _TrackReorderSheetState extends ConsumerState<_TrackReorderSheet> {
                   children: [
                     TextButton(
                       onPressed: _busy ? null : _onCancel,
-                      style: TextButton.styleFrom(foregroundColor: kForest),
+                      style: TextButton.styleFrom(foregroundColor: nt.forest),
                       child: Text(AppLocalizations.of(context)!.cancel),
                     ),
                     const SizedBox(width: 8),
@@ -334,30 +335,31 @@ class _OrphanSummaryBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final nt = context.nt;
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
       decoration: BoxDecoration(
-        color: kTransitBg,
+        color: nt.transitBg,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: kTransitBorder),
+        border: Border.all(color: nt.transitBorder),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              const Icon(Icons.warning_amber_rounded,
-                  size: 16, color: kTransitIcon),
+              Icon(Icons.warning_amber_rounded,
+                  size: 16, color: nt.transitIcon),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
                   AppLocalizations.of(context)!
                       .transitSegmentsWillBeDeleted(count),
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
-                    color: kTransitText,
+                    color: nt.transitText,
                   ),
                 ),
               ),
@@ -368,7 +370,7 @@ class _OrphanSummaryBanner extends StatelessWidget {
               padding: const EdgeInsetsDirectional.only(start: 24, top: 3),
               child: Text(
                 '• $e',
-                style: const TextStyle(fontSize: 12, color: kTransitText),
+                style: TextStyle(fontSize: 12, color: nt.transitText),
               ),
             ),
           ),
@@ -377,9 +379,9 @@ class _OrphanSummaryBanner extends StatelessWidget {
               padding: const EdgeInsetsDirectional.only(start: 24, top: 3),
               child: Text(
                 AppLocalizations.of(context)!.andMoreCount(moreCount),
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 12,
-                  color: kTransitText,
+                  color: nt.transitText,
                   fontStyle: FontStyle.italic,
                 ),
               ),
@@ -396,7 +398,7 @@ class _TrackRow extends StatelessWidget {
   final int parallelCount;
   final List<String> affected;
   final int index;
-  // When true a kBorder divider is drawn at the bottom of the row so adjacent
+  // When true a nt.border divider is drawn at the bottom of the row so adjacent
   // rows inside the shared SectionCard are visually separated.
   final bool showDivider;
 
@@ -412,6 +414,7 @@ class _TrackRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final nt = context.nt;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
@@ -423,27 +426,27 @@ class _TrackRow extends StatelessWidget {
             children: [
               ReorderableDragStartListener(
                 index: index,
-                child: const Padding(
+                child: Padding(
                   padding: EdgeInsets.symmetric(horizontal: 4),
                   child: Icon(Icons.drag_indicator_rounded,
-                      size: 20, color: kText3),
+                      size: 20, color: nt.text3),
                 ),
               ),
               const SizedBox(width: 8),
               Container(
                 width: 32,
                 height: 32,
-                decoration: const BoxDecoration(
-                  color: kMist,
+                decoration: BoxDecoration(
+                  color: nt.mist,
                   shape: BoxShape.circle,
                 ),
                 alignment: Alignment.center,
                 child: Text(
                   '$trackNumber',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w800,
-                    color: kForest,
+                    color: nt.forest,
                   ),
                 ),
               ),
@@ -453,10 +456,10 @@ class _TrackRow extends StatelessWidget {
                   primaryName,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w700,
-                    color: kBark,
+                    color: nt.bark,
                   ),
                 ),
               ),
@@ -466,15 +469,15 @@ class _TrackRow extends StatelessWidget {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
-                    color: kMist,
+                    color: nt.mist,
                     borderRadius: BorderRadius.circular(999),
                   ),
                   child: Text(
                     AppLocalizations.of(context)!.altsCount(parallelCount),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w600,
-                      color: kForest,
+                      color: nt.forest,
                     ),
                   ),
                 ),
@@ -489,13 +492,13 @@ class _TrackRow extends StatelessWidget {
             padding: const EdgeInsetsDirectional.fromSTEB(56, 0, 14, 4),
             child: Row(
               children: [
-                const Icon(Icons.cancel_outlined, size: 13, color: kRatingRed),
+                Icon(Icons.cancel_outlined, size: 13, color: nt.ratingRed),
                 const SizedBox(width: 4),
                 Expanded(
                   child: Text(
                     AppLocalizations.of(context)!
                         .segmentToWillBeDeleted(destName),
-                    style: const TextStyle(fontSize: 11, color: kRatingRed),
+                    style: TextStyle(fontSize: 11, color: nt.ratingRed),
                   ),
                 ),
               ],
@@ -503,7 +506,7 @@ class _TrackRow extends StatelessWidget {
           ),
 
         // ── Row divider ────────────────────────────────────────────────
-        if (showDivider) Container(height: 1, color: kBorder),
+        if (showDivider) Container(height: 1, color: nt.border),
       ],
     );
   }

@@ -173,6 +173,7 @@ class _SegmentFormScreenState extends ConsumerState<SegmentFormScreen> {
   }
 
   Future<_DuplicateAction?> _showDuplicateDialog() {
+    final nt = context.nt;
     return showDialog<_DuplicateAction>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -187,9 +188,9 @@ class _SegmentFormScreenState extends ConsumerState<SegmentFormScreen> {
           ),
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(_DuplicateAction.discard),
-            child: const Text(
+            child: Text(
               'Discard new',
-              style: const TextStyle(color: kRatingRed),
+              style: TextStyle(color: nt.ratingRed),
             ),
           ),
           OutlinedButton(
@@ -243,6 +244,7 @@ class _SegmentFormScreenState extends ConsumerState<SegmentFormScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final nt = context.nt;
     final itineraryAsync =
         ref.watch(itineraryDetailProvider(widget.itineraryId));
 
@@ -308,18 +310,18 @@ class _SegmentFormScreenState extends ConsumerState<SegmentFormScreen> {
                     padding:
                         const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                     decoration: BoxDecoration(
-                      color: kAmber.withValues(alpha: 0.1),
+                      color: nt.amber.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: kAmber.withValues(alpha: 0.5)),
+                      border: Border.all(color: nt.amber.withValues(alpha: 0.5)),
                     ),
-                    child: const Row(
+                    child: Row(
                       children: [
-                        Icon(Icons.merge_outlined, size: 18, color: kAmber),
+                        Icon(Icons.merge_outlined, size: 18, color: nt.amber),
                         SizedBox(width: 8),
                         Expanded(
                           child: Text(
                             'Merged result — review and save when ready.',
-                            style: TextStyle(color: kAmber, fontSize: 13),
+                            style: TextStyle(color: nt.amber, fontSize: 13),
                           ),
                         ),
                       ],
@@ -406,12 +408,12 @@ class _SegmentFormScreenState extends ConsumerState<SegmentFormScreen> {
                 ),
             
                 if (_legs.isEmpty)
-                  const Padding(
+                  Padding(
                     padding: EdgeInsets.symmetric(vertical: 24),
                     child: Center(
                       child: Text(
                         'No legs yet. Add at least one.',
-                        style: TextStyle(color: kText3, fontSize: 13),
+                        style: TextStyle(color: nt.text3, fontSize: 13),
                       ),
                     ),
                   )

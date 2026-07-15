@@ -72,18 +72,19 @@ class _PassportRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final nt = context.nt;
     return Container(
       padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
-        color: kSurface,
+        color: nt.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: kBorder),
+        border: Border.all(color: nt.border),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.badge_rounded, size: 18, color: kForest),
+          Icon(Icons.badge_rounded, size: 18, color: nt.forest),
           const SizedBox(width: 6),
           IntrinsicWidth(
             child: Column(
@@ -92,10 +93,10 @@ class _PassportRow extends StatelessWidget {
               children: [
                 Text(
                   AppLocalizations.of(context)!.passportLabel.toUpperCase(),
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 9,
                     fontWeight: FontWeight.w700,
-                    color: kText2,
+                    color: nt.text2,
                     letterSpacing: 0.5,
                   ),
                 ),
@@ -112,10 +113,10 @@ class _PassportRow extends StatelessWidget {
                       padding: const EdgeInsetsDirectional.only(end: 12),
                       child: Text(
                         '$flag $name',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w700,
-                          color: kBark,
+                          color: nt.bark,
                           height: 1.2,
                         ),
                       ),
@@ -146,18 +147,19 @@ class _IdentityFactChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final nt = context.nt;
     return Container(
       padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
-        color: kSurface,
+        color: nt.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: kBorder),
+        border: Border.all(color: nt.border),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 18, color: kForest),
+          Icon(icon, size: 18, color: nt.forest),
           const SizedBox(width: 6),
           IntrinsicWidth(
             child: Column(
@@ -166,20 +168,20 @@ class _IdentityFactChip extends StatelessWidget {
               children: [
                 Text(
                   subLabel.toUpperCase(),
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 9,
                     fontWeight: FontWeight.w700,
-                    color: kText2,
+                    color: nt.text2,
                     letterSpacing: 0.5,
                   ),
                 ),
                 const SizedBox(height: 2),
                 Text(
                   prefix != null ? '$prefix $value' : value,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w700,
-                    color: kBark,
+                    color: nt.bark,
                     height: 1.2,
                   ),
                 ),

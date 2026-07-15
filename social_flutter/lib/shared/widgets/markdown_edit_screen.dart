@@ -133,6 +133,7 @@ class _MarkdownEditScreenState extends State<MarkdownEditScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final nt = context.nt;
     final l10n = AppLocalizations.of(context)!;
     return PopScope(
       // Block back-out while a save is in flight — the value is being persisted.
@@ -148,22 +149,22 @@ class _MarkdownEditScreenState extends State<MarkdownEditScreen> {
         saving: _saving,
         child: Scaffold(
         resizeToAvoidBottomInset: false,
-        backgroundColor: kSand,
+        backgroundColor: nt.sand,
         appBar: AppBar(
-          backgroundColor: kSand,
+          backgroundColor: nt.sand,
           // Hide the back arrow mid-save so the only way out is a finished save.
           automaticallyImplyLeading: !_saving,
           title: Text(widget.title),
           actions: [
             if (_saving)
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 20),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: Center(
                   child: SizedBox(
                     width: 18,
                     height: 18,
                     child: CircularProgressIndicator(
-                        strokeWidth: 2, color: kForest),
+                        strokeWidth: 2, color: nt.forest),
                   ),
                 ),
               )
@@ -174,7 +175,7 @@ class _MarkdownEditScreenState extends State<MarkdownEditScreen> {
                   child: Text(
                     l10n.save,
                     style: TextStyle(
-                      color: online ? kForest : kText3,
+                      color: online ? nt.forest : nt.text3,
                       fontWeight: FontWeight.w700,
                       fontSize: 15,
                     ),

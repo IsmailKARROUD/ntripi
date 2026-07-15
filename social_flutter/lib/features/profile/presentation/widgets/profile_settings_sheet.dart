@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:social_flutter/core/providers/locale_provider.dart';
+import 'package:social_flutter/core/providers/theme_mode_provider.dart';
 import 'package:social_flutter/core/ui/app_theme.dart';
 import 'package:social_flutter/l10n/app_localizations.dart';
 
@@ -30,6 +31,7 @@ class _SettingsSheet extends ConsumerWidget {
 
   void _showLanguagePicker(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
+    final nt = context.nt;
     final currentCode = ref.read(localeProvider).languageCode;
 
     final languages = [
@@ -41,7 +43,7 @@ class _SettingsSheet extends ConsumerWidget {
     showModalBottomSheet<void>(
       context: context,
       showDragHandle: true,
-      backgroundColor: kSand,
+      backgroundColor: nt.sand,
       builder: (ctx) => SafeArea(
         child: Padding(
           padding: const EdgeInsets.only(bottom: 16),
@@ -54,10 +56,10 @@ class _SettingsSheet extends ConsumerWidget {
                   alignment: AlignmentDirectional.centerStart,
                   child: Text(
                     l10n.languagePickerTitle.toUpperCase(),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w700,
-                      color: kText2,
+                      color: nt.text2,
                       letterSpacing: 0.6,
                     ),
                   ),
@@ -66,9 +68,9 @@ class _SettingsSheet extends ConsumerWidget {
               Container(
                 margin: const EdgeInsets.symmetric(horizontal: 16),
                 decoration: BoxDecoration(
-                  color: kSurface,
+                  color: nt.surface,
                   borderRadius: BorderRadius.circular(18),
-                  border: Border.all(color: kBorder),
+                  border: Border.all(color: nt.border),
                 ),
                 clipBehavior: Clip.antiAlias,
                 child: Column(
@@ -78,7 +80,7 @@ class _SettingsSheet extends ConsumerWidget {
                       if (i > 0)
                         Container(
                           height: 1,
-                          color: kBorder,
+                          color: nt.border,
                           margin: const EdgeInsetsDirectional.only(start: 16),
                         ),
                       InkWell(
@@ -97,16 +99,16 @@ class _SettingsSheet extends ConsumerWidget {
                                 width: 32,
                                 height: 32,
                                 decoration: BoxDecoration(
-                                  color: kMist,
+                                  color: nt.mist,
                                   borderRadius: BorderRadius.circular(10),
                                 ),
                                 alignment: Alignment.center,
                                 child: Text(
                                   languages[i].code.toUpperCase(),
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 11,
                                     fontWeight: FontWeight.w800,
-                                    color: kForest,
+                                    color: nt.forest,
                                     letterSpacing: 0.5,
                                   ),
                                 ),
@@ -115,16 +117,134 @@ class _SettingsSheet extends ConsumerWidget {
                               Expanded(
                                 child: Text(
                                   languages[i].label,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 15,
                                     fontWeight: FontWeight.w600,
-                                    color: kBark,
+                                    color: nt.bark,
                                   ),
                                 ),
                               ),
                               if (currentCode == languages[i].code)
-                                const Icon(Icons.check_rounded,
-                                    size: 18, color: kForest),
+                                Icon(Icons.check_rounded,
+                                    size: 18, color: nt.forest),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showThemePicker(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
+    final nt = context.nt;
+    final currentMode = ref.read(themeModeProvider);
+
+    final modes = [
+      (
+        mode: ThemeMode.system,
+        icon: Icons.brightness_auto_rounded,
+        label: l10n.themeSystem,
+      ),
+      (
+        mode: ThemeMode.light,
+        icon: Icons.light_mode_rounded,
+        label: l10n.themeLight,
+      ),
+      (
+        mode: ThemeMode.dark,
+        icon: Icons.dark_mode_rounded,
+        label: l10n.themeDark,
+      ),
+    ];
+
+    showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      backgroundColor: nt.sand,
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.only(bottom: 16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(22, 14, 22, 6),
+                child: Align(
+                  alignment: AlignmentDirectional.centerStart,
+                  child: Text(
+                    l10n.themePickerTitle.toUpperCase(),
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: nt.text2,
+                      letterSpacing: 0.6,
+                    ),
+                  ),
+                ),
+              ),
+              Container(
+                margin: const EdgeInsets.symmetric(horizontal: 16),
+                decoration: BoxDecoration(
+                  color: nt.surface,
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(color: nt.border),
+                ),
+                clipBehavior: Clip.antiAlias,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    for (var i = 0; i < modes.length; i++) ...[
+                      if (i > 0)
+                        Container(
+                          height: 1,
+                          color: nt.border,
+                          margin: const EdgeInsetsDirectional.only(start: 16),
+                        ),
+                      InkWell(
+                        onTap: () {
+                          ref
+                              .read(themeModeProvider.notifier)
+                              .setMode(modes[i].mode);
+                          Navigator.pop(ctx);
+                        },
+                        child: Padding(
+                          padding:
+                              const EdgeInsets.fromLTRB(14, 12, 14, 12),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 32,
+                                height: 32,
+                                decoration: BoxDecoration(
+                                  color: nt.mist,
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                alignment: Alignment.center,
+                                child: Icon(modes[i].icon,
+                                    size: 16, color: nt.forest),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Text(
+                                  modes[i].label,
+                                  style: TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w600,
+                                    color: nt.bark,
+                                  ),
+                                ),
+                              ),
+                              if (currentMode == modes[i].mode)
+                                Icon(Icons.check_rounded,
+                                    size: 18, color: nt.forest),
                             ],
                           ),
                         ),
@@ -143,17 +263,23 @@ class _SettingsSheet extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
+    final nt = context.nt;
     final currentLocale = ref.watch(localeProvider);
     final langDetail = switch (currentLocale.languageCode) {
       'fr' => l10n.languageFrench,
       'ar' => l10n.languageArabic,
       _ => l10n.languageEnglish,
     };
+    final themeDetail = switch (ref.watch(themeModeProvider)) {
+      ThemeMode.light => l10n.themeLight,
+      ThemeMode.dark => l10n.themeDark,
+      ThemeMode.system => l10n.themeSystem,
+    };
 
     return Container(
-      decoration: const BoxDecoration(
-        color: kSurface,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      decoration: BoxDecoration(
+        color: nt.surface,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
       ),
       padding: EdgeInsets.only(
           bottom: MediaQuery.of(context).padding.bottom + 16),
@@ -165,7 +291,7 @@ class _SettingsSheet extends ConsumerWidget {
             width: 36,
             height: 4,
             decoration: BoxDecoration(
-              color: kText3.withValues(alpha: 0.55),
+              color: nt.text3.withValues(alpha: 0.55),
               borderRadius: BorderRadius.circular(2),
             ),
           ),
@@ -175,10 +301,10 @@ class _SettingsSheet extends ConsumerWidget {
               alignment: AlignmentDirectional.centerStart,
               child: Text(
                 l10n.settingsTitle,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w700,
-                  color: kBark,
+                  color: nt.bark,
                   letterSpacing: -0.2,
                 ),
               ),
@@ -189,20 +315,28 @@ class _SettingsSheet extends ConsumerWidget {
             children: [
               _SheetRow(
                 icon: Icons.notifications_outlined,
-                iconBg: const Color(0xFFD0EBDA),
-                iconColor: kForest,
+                iconBg: nt.mist,
+                iconColor: nt.forest,
                 label: l10n.settingsNotifications,
                 detail: l10n.settingsNotificationsOff,
                 onTap: () => _comingSoon(context),
               ),
               _SheetRow(
                 icon: Icons.language_rounded,
-                iconBg: const Color(0xFFD0EBDA),
-                iconColor: kForest,
+                iconBg: nt.mist,
+                iconColor: nt.forest,
                 label: l10n.settingsLanguage,
                 detail: langDetail,
-                isLast: true,
                 onTap: () => _showLanguagePicker(context, ref),
+              ),
+              _SheetRow(
+                icon: Icons.dark_mode_outlined,
+                iconBg: nt.mist,
+                iconColor: nt.forest,
+                label: l10n.settingsTheme,
+                detail: themeDetail,
+                isLast: true,
+                onTap: () => _showThemePicker(context, ref),
               ),
             ],
           ),
@@ -211,22 +345,22 @@ class _SettingsSheet extends ConsumerWidget {
             children: [
               _SheetRow(
                 icon: Icons.help_outline_rounded,
-                iconBg: const Color(0xFFD0EBDA),
-                iconColor: kForest,
+                iconBg: nt.mist,
+                iconColor: nt.forest,
                 label: l10n.settingsHelpCenter,
                 onTap: () => _comingSoon(context),
               ),
               _SheetRow(
                 icon: Icons.info_outline_rounded,
-                iconBg: const Color(0xFFD0EBDA),
-                iconColor: kForest,
+                iconBg: nt.mist,
+                iconColor: nt.forest,
                 label: l10n.settingsAbout,
                 onTap: () => _comingSoon(context),
               ),
               _SheetRow(
                 icon: Icons.gavel_rounded,
-                iconBg: const Color(0xFFD0EBDA),
-                iconColor: kForest,
+                iconBg: nt.mist,
+                iconColor: nt.forest,
                 label: l10n.settingsTerms,
                 isLast: true,
                 onTap: () => _comingSoon(context),
@@ -237,14 +371,14 @@ class _SettingsSheet extends ConsumerWidget {
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
             child: Container(
               decoration: BoxDecoration(
-                color: kSurface,
+                color: nt.surface,
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: kBorder),
+                border: Border.all(color: nt.border),
               ),
               child: _SheetRow(
                 icon: Icons.logout_rounded,
-                iconBg: const Color(0xFFD0EBDA),
-                iconColor: kForest,
+                iconBg: nt.mist,
+                iconColor: nt.forest,
                 label: l10n.settingsLogout,
                 showChevron: false,
                 isLast: true,
@@ -271,6 +405,7 @@ class _SheetSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final nt = context.nt;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -278,10 +413,10 @@ class _SheetSection extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(22, 10, 22, 6),
           child: Text(
             label.toUpperCase(),
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w700,
-              color: kText2,
+              color: nt.text2,
               letterSpacing: 0.6,
             ),
           ),
@@ -289,9 +424,9 @@ class _SheetSection extends StatelessWidget {
         Container(
           margin: const EdgeInsets.symmetric(horizontal: 16),
           decoration: BoxDecoration(
-            color: kSurface,
+            color: nt.surface,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: kBorder),
+            border: Border.all(color: nt.border),
           ),
           child: Column(children: children),
         ),
@@ -323,6 +458,7 @@ class _SheetRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final nt = context.nt;
     return Column(
       children: [
         InkWell(
@@ -348,20 +484,20 @@ class _SheetRow extends StatelessWidget {
                 Expanded(
                   child: Text(
                     label,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w600,
-                      color: kBark,
+                      color: nt.bark,
                     ),
                   ),
                 ),
                 if (detail != null) ...[
                   Text(detail!,
-                      style: const TextStyle(fontSize: 13, color: kText2)),
+                      style: TextStyle(fontSize: 13, color: nt.text2)),
                   const SizedBox(width: 4),
                 ],
                 if (showChevron)
-                  const Icon(Icons.chevron_right, size: 20, color: kText3),
+                  Icon(Icons.chevron_right, size: 20, color: nt.text3),
               ],
             ),
           ),
@@ -370,7 +506,7 @@ class _SheetRow extends StatelessWidget {
           Container(
             height: 1,
             margin: const EdgeInsetsDirectional.only(start: 56),
-            color: kBorder,
+            color: nt.border,
           ),
       ],
     );

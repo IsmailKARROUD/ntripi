@@ -58,22 +58,23 @@ class _CountryPickerScreenState extends State<CountryPickerScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final nt = context.nt;
     final langCode = Localizations.localeOf(context).languageCode;
     final filtered = _filtered(langCode);
     return Scaffold(
       resizeToAvoidBottomInset: false,
-      backgroundColor: kSand,
+      backgroundColor: nt.sand,
       appBar: AppBar(
-        backgroundColor: kSand,
+        backgroundColor: nt.sand,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_rounded, color: kBark),
+          icon: Icon(Icons.arrow_back_rounded, color: nt.bark),
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(
           AppLocalizations.of(context)!.countryPickerTitle,
-          style: const TextStyle(
-            color: kBark,
+          style: TextStyle(
+            color: nt.bark,
             fontWeight: FontWeight.w700,
             fontSize: 17,
           ),
@@ -89,11 +90,11 @@ class _CountryPickerScreenState extends State<CountryPickerScreen> {
               onChanged: (v) => setState(() => _query = v),
               decoration: InputDecoration(
                 hintText: AppLocalizations.of(context)!.countrySearchHint,
-                hintStyle: const TextStyle(color: kText3, fontSize: 15),
-                prefixIcon: const Icon(Icons.search_rounded, color: kText2, size: 20),
+                hintStyle: TextStyle(color: nt.text3, fontSize: 15),
+                prefixIcon: Icon(Icons.search_rounded, color: nt.text2, size: 20),
                 suffixIcon: _query.isNotEmpty
                     ? IconButton(
-                        icon: const Icon(Icons.close_rounded, size: 18, color: kText2),
+                        icon: Icon(Icons.close_rounded, size: 18, color: nt.text2),
                         onPressed: () {
                           _searchCtrl.clear();
                           setState(() => _query = '');
@@ -101,19 +102,19 @@ class _CountryPickerScreenState extends State<CountryPickerScreen> {
                       )
                     : null,
                 filled: true,
-                fillColor: kSurface,
+                fillColor: nt.surface,
                 contentPadding: const EdgeInsets.symmetric(vertical: 12),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(14),
-                  borderSide: const BorderSide(color: kBorder),
+                  borderSide: BorderSide(color: nt.border),
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(14),
-                  borderSide: const BorderSide(color: kBorder),
+                  borderSide: BorderSide(color: nt.border),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(14),
-                  borderSide: const BorderSide(color: kForest, width: 1.5),
+                  borderSide: BorderSide(color: nt.forest, width: 1.5),
                 ),
               ),
             ),
@@ -123,11 +124,12 @@ class _CountryPickerScreenState extends State<CountryPickerScreen> {
               itemCount: filtered.length + (widget.allowClear ? 1 : 0),
               itemBuilder: (context, index) {
                 if (widget.allowClear && index == 0) {
+    final nt = context.nt;
                   return ListTile(
-                    leading: const Icon(Icons.block_rounded, color: kText2, size: 20),
+                    leading: Icon(Icons.block_rounded, color: nt.text2, size: 20),
                     title: Text(
                       AppLocalizations.of(context)!.countryNoneClear,
-                      style: const TextStyle(color: kText2, fontWeight: FontWeight.w500),
+                      style: TextStyle(color: nt.text2, fontWeight: FontWeight.w500),
                     ),
                     onTap: () => Navigator.of(context).pop(''),
                   );
@@ -140,18 +142,18 @@ class _CountryPickerScreenState extends State<CountryPickerScreen> {
                   ),
                   title: Text(
                     country.localizedName(langCode),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w500,
-                      color: kBark,
+                      color: nt.bark,
                     ),
                   ),
                   trailing: Text(
                     country.code,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
-                      color: kText2,
+                      color: nt.text2,
                     ),
                   ),
                   onTap: () => Navigator.of(context).pop(country.code),

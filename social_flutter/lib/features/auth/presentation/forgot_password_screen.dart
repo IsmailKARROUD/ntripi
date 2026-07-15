@@ -58,16 +58,17 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final nt = context.nt;
     final l10n = AppLocalizations.of(context)!;
     return SavingOverlay(
       saving: _isLoading,
-      tint: kSurface,
+      tint: nt.surface,
       child: Scaffold(
-        backgroundColor: kSurface,
+        backgroundColor: nt.surface,
         appBar: AppBar(
-          backgroundColor: kSurface,
+          backgroundColor: nt.surface,
           elevation: 0,
-          foregroundColor: kBark,
+          foregroundColor: nt.bark,
         ),
         body: Center(
           child: SingleChildScrollView(
@@ -80,6 +81,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
   }
 
   Widget _buildForm(AppLocalizations l10n) {
+    final nt = context.nt;
     return Form(
       key: _formKey,
       child: Column(
@@ -87,17 +89,17 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
         children: [
           Text(
             l10n.forgotPasswordTitle,
-            style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w800, color: kBark),
+            style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800, color: nt.bark),
           ),
           const SizedBox(height: 8),
           Text(
             l10n.forgotPasswordSubtitle,
-            style: const TextStyle(fontSize: 14, color: kText2),
+            style: TextStyle(fontSize: 14, color: nt.text2),
           ),
           const SizedBox(height: 24),
           Text(
             l10n.forgotPasswordEmailLabel,
-            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: kText2),
+            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: nt.text2),
           ),
           const SizedBox(height: 6),
           TextFormField(
@@ -146,22 +148,23 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
   }
 
   Widget _buildSent(AppLocalizations l10n) {
+    final nt = context.nt;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         const SizedBox(height: 12),
-        const Icon(Icons.mark_email_read_outlined, size: 56, color: kForest),
+        Icon(Icons.mark_email_read_outlined, size: 56, color: nt.forest),
         const SizedBox(height: 16),
         Text(
           l10n.forgotPasswordSentTitle,
           textAlign: TextAlign.center,
-          style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: kBark),
+          style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: nt.bark),
         ),
         const SizedBox(height: 10),
         Text(
           l10n.forgotPasswordSentBody,
           textAlign: TextAlign.center,
-          style: const TextStyle(fontSize: 14, color: kText2),
+          style: TextStyle(fontSize: 14, color: nt.text2),
         ),
         const SizedBox(height: 28),
         SizedBox(
@@ -182,16 +185,17 @@ class _ErrorBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: const Color(0xFFFFEDAD),
-        border: Border.all(color: const Color(0xFFFFB4AB)),
+        color: cs.errorContainer,
+        border: Border.all(color: cs.error.withValues(alpha: 0.4)),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Text(
         message,
-        style: const TextStyle(fontSize: 13, color: Color(0xFF410002)),
+        style: TextStyle(fontSize: 13, color: cs.onErrorContainer),
       ),
     );
   }

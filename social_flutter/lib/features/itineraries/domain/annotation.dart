@@ -35,18 +35,19 @@ enum AnnotationType {
       };
 
   /// Editorial background/foreground pair shared by the annotation screens.
-  Color get bg => switch (this) {
-        advice => const Color(0xFFE0EBE4),
-        caution => const Color(0xFFFFE3CC),
-        avoid => const Color(0xFFFFD6D2),
-        info => const Color(0xFFDCEAF6),
+  /// Takes the palette (not a BuildContext) — domain code stays widget-free.
+  Color bg(NtripiColors nt) => switch (this) {
+        advice => nt.adviceBg,
+        caution => nt.cautionBg,
+        avoid => nt.avoidBg,
+        info => nt.infoBg,
       };
 
-  Color get fg => switch (this) {
-        advice => kForest,
-        caution => const Color(0xFFA05D1F),
-        avoid => const Color(0xFFA02828),
-        info => const Color(0xFF3B6EA5),
+  Color fg(NtripiColors nt) => switch (this) {
+        advice => nt.adviceFg,
+        caution => nt.cautionFg,
+        avoid => nt.avoidFg,
+        info => nt.infoFg,
       };
 }
 

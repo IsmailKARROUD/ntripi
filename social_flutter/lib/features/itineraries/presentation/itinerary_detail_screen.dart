@@ -102,11 +102,11 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
   //start with map hidden on mobile to avoid unnecessary API calls and improve performance, since the map is less likely to be used on mobile and can be accessed via a button
   bool _mapVisible = false;
 
-  static const _markerColors = {
-    StopType.origin: kForest,
-    StopType.waypoint: kCanopy,
-    StopType.arrival: kRatingRed,
-  };
+  static Map<StopType, Color> _markerColors(NtripiColors nt) => {
+        StopType.origin: nt.forest,
+        StopType.waypoint: nt.canopy,
+        StopType.arrival: nt.ratingRed,
+      };
 
   void _enterEditMode() => setState(() => _editMode = true);
 
@@ -362,6 +362,7 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final nt = context.nt;
     final l10n = AppLocalizations.of(context)!;
     final itineraryAsync =
         ref.watch(itineraryDetailProvider(widget.itineraryId));
@@ -378,7 +379,7 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
         _exitEditMode();
       },
       child: Scaffold(
-        backgroundColor: kSurface,
+        backgroundColor: nt.surface,
         resizeToAvoidBottomInset: false,
         body: SafeArea(
           top: false, // cover hero extends behind status bar
@@ -591,6 +592,7 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                                       .toList();
 
                                   if (orphaned.isNotEmpty) {
+    final nt = context.nt;
                                     final n = orphaned.length;
                                     final confirmed = await showDialog<bool>(
                                       context: context,
@@ -609,7 +611,7 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                                             onPressed: () =>
                                                 Navigator.of(ctx).pop(true),
                                             style: FilledButton.styleFrom(
-                                              backgroundColor: kRatingRed,
+                                              backgroundColor: nt.ratingRed,
                                             ),
                                             child: Text(l10n.deleteAndContinue),
                                           ),
@@ -782,10 +784,10 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                                     children: [
                                       Text(
                                         l10n.annotationsSection,
-                                        style: const TextStyle(
+                                        style: TextStyle(
                                           fontSize: 14,
                                           fontWeight: FontWeight.w700,
-                                          color: kText2,
+                                          color: nt.text2,
                                           letterSpacing: 0.6,
                                         ),
                                       ),
@@ -801,24 +803,24 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                                             padding: const EdgeInsets.symmetric(
                                                 horizontal: 8, vertical: 4),
                                             decoration: BoxDecoration(
-                                              color: kEditBlueTint,
+                                              color: nt.editBlueTint,
                                               borderRadius:
                                                   BorderRadius.circular(999),
                                               border: Border.all(
-                                                  color: kEditBlue.withValues(
+                                                  color: nt.editBlue.withValues(
                                                       alpha: 0.13)),
                                             ),
                                             child: Row(
                                               mainAxisSize: MainAxisSize.min,
                                               children: [
-                                                const Icon(Icons.add_rounded,
-                                                    size: 13, color: kEditBlue),
+                                                Icon(Icons.add_rounded,
+                                                    size: 13, color: nt.editBlue),
                                                 const SizedBox(width: 3),
                                                 Text(
                                                   l10n.addAnnotationButton,
-                                                  style: const TextStyle(
+                                                  style: TextStyle(
                                                       fontSize: 12,
-                                                      color: kEditBlue),
+                                                      color: nt.editBlue),
                                                 ),
                                               ],
                                             ),
@@ -834,8 +836,8 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                                           top: 4, bottom: 4),
                                       child: Text(
                                         l10n.noAnnotationsYet,
-                                        style: const TextStyle(
-                                            color: kText3, fontSize: 13),
+                                        style: TextStyle(
+                                            color: nt.text3, fontSize: 13),
                                       ),
                                     )
                                   else
@@ -887,10 +889,10 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                                       : canEdit
                                           ? l10n.editStopsButton
                                           : l10n.stopsList,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 14,
                                     fontWeight: FontWeight.w700,
-                                    color: kText2,
+                                    color: nt.text2,
                                     letterSpacing: 0.6,
                                   ),
                                 ),
@@ -965,7 +967,7 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                                               polylines: [
                                                 Polyline(
                                                   points: polylinePoints,
-                                                  color: kCanopy.withValues(
+                                                  color: nt.canopy.withValues(
                                                       alpha: 0.6),
                                                   strokeWidth: 3,
                                                 ),
@@ -974,8 +976,9 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                                           MarkerLayer(
                                             markers: mappableStops.map((stop) {
                                               final color =
-                                                  _markerColors[stop.type] ??
-                                                      kText2;
+                                                  _markerColors(nt)[
+                                                          stop.type] ??
+                                                      nt.text2;
                                               return Marker(
                                                 point: LatLng(
                                                     stop.lat!, stop.lng!),
@@ -986,11 +989,11 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                                                     color: color,
                                                     shape: BoxShape.circle,
                                                     border: Border.all(
-                                                        color: Colors.white,
+                                                        color: nt.overlayChrome,
                                                         width: 2),
                                                   ),
-                                                  child: const Icon(Icons.place,
-                                                      color: Colors.white,
+                                                  child: Icon(Icons.place,
+                                                      color: nt.overlayChrome,
                                                       size: 10),
                                                 ),
                                               );
@@ -1042,9 +1045,9 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                             child: Container(
                               margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
                               decoration: BoxDecoration(
-                                color: kSurface,
+                                color: nt.surface,
                                 borderRadius: BorderRadius.circular(18),
-                                border: Border.all(color: kBorder),
+                                border: Border.all(color: nt.border),
                               ),
                               clipBehavior: Clip.antiAlias,
                               child: Column(
@@ -1090,6 +1093,7 @@ class _DescriptionEditRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final nt = context.nt;
     final l10n = AppLocalizations.of(context)!;
     final hasText = description != null && description!.trim().isNotEmpty;
     final labelStyle = Theme.of(context).textTheme.bodySmall?.copyWith(
@@ -1122,7 +1126,7 @@ class _DescriptionEditRow extends StatelessWidget {
                     size: 16,
                   ),
                   const Spacer(),
-                  const Icon(Icons.edit_outlined, size: 18, color: kForest),
+                  Icon(Icons.edit_outlined, size: 18, color: nt.forest),
                 ],
               ),
               const SizedBox(height: 6),
@@ -1226,7 +1230,7 @@ class _CoverHeroState extends State<_CoverHero> {
           // Gradient overlay: dark at top + bottom, transparent in middle.
           // IgnorePointer: a BoxDecoration hit-tests as opaque, which would
           // swallow taps meant for the placeholder cover below.
-          const IgnorePointer(
+          IgnorePointer(
             child: DecoratedBox(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
@@ -1234,10 +1238,11 @@ class _CoverHeroState extends State<_CoverHero> {
                   end: Alignment.bottomCenter,
                   stops: [0.0, 0.3, 0.6, 1.0],
                   colors: [
-                    Color(0x661A2A1E),
-                    Color(0x001A2A1E),
-                    Color(0x001A2A1E),
-                    Color(0xB31A2A1E),
+                    // constant ink scrim — always sits over the cover image
+                    NtripiBrand.scrimInk.withValues(alpha: 0.4),
+                    NtripiBrand.scrimInk.withValues(alpha: 0),
+                    NtripiBrand.scrimInk.withValues(alpha: 0),
+                    NtripiBrand.scrimInk.withValues(alpha: 0.7),
                   ],
                 ),
               ),
@@ -1304,7 +1309,7 @@ class _CoverHeroState extends State<_CoverHero> {
                   style: const TextStyle(
                     fontSize: 22,
                     fontWeight: FontWeight.w700,
-                    color: Colors.white,
+                    color: NtripiBrand.chrome,
                     letterSpacing: -0.3,
                     height: 1.1,
                   ),
@@ -1326,9 +1331,10 @@ class _EmptyStopsPlaceholder extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final nt = context.nt;
     return Column(
       children: [
-        const Icon(Icons.place_outlined, size: 48, color: kText3),
+        Icon(Icons.place_outlined, size: 48, color: nt.text3),
         const SizedBox(height: 12),
         Text(text),
       ],
@@ -1345,6 +1351,7 @@ class _GlassButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final nt = context.nt;
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -1352,12 +1359,12 @@ class _GlassButton extends StatelessWidget {
         height: 40,
         decoration: BoxDecoration(
           // dark tint ensures visibility against any cover image, incl. white
-          color: kButtonTransparent,
+          color: nt.buttonTransparent,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: const Color(0x33FFFFFF)),
+          border: Border.all(color: NtripiBrand.chrome.withValues(alpha: 0.2)),
         ),
         alignment: Alignment.center,
-        child: Icon(icon, color: Colors.white, size: 22),
+        child: Icon(icon, color: NtripiBrand.chrome, size: 22),
       ),
     );
   }
@@ -1381,6 +1388,7 @@ class _OwnerRow extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final nt = context.nt;
     final avatarUrl = owner.avatarUrl != null
         ? (owner.avatarUrl!.startsWith('/')
             ? '$kApiBaseUrl${owner.avatarUrl}'
@@ -1396,7 +1404,7 @@ class _OwnerRow extends ConsumerWidget {
           // Owner avatar
           CircleAvatar(
             radius: 18,
-            backgroundColor: kMist,
+            backgroundColor: nt.mist,
             backgroundImage: avatarUrl != null
                 ? CachedNetworkImageProvider(
                     avatarUrl,
@@ -1408,8 +1416,8 @@ class _OwnerRow extends ConsumerWidget {
                     owner.nameForDisplay.isNotEmpty
                         ? owner.nameForDisplay[0].toUpperCase()
                         : '?',
-                    style: const TextStyle(
-                        color: kForest, fontWeight: FontWeight.w700),
+                    style: TextStyle(
+                        color: nt.forest, fontWeight: FontWeight.w700),
                   )
                 : null,
           ),
@@ -1420,15 +1428,15 @@ class _OwnerRow extends ConsumerWidget {
               children: [
                 Text(
                   owner.nameForDisplay,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w700,
-                    color: kBark,
+                    color: nt.bark,
                   ),
                 ),
                 Text(
                   owner.handle,
-                  style: const TextStyle(fontSize: 11, color: kText2),
+                  style: TextStyle(fontSize: 11, color: nt.text2),
                 ),
               ],
             ),
@@ -1457,12 +1465,12 @@ class _OwnerRow extends ConsumerWidget {
                                     : Icons.star_outline_rounded,
                                 size: 14,
                                 color: i < myRating.stars
-                                    ? ratingColor(myRating.stars.toDouble())
-                                    : kText3,
+                                    ? nt.rating(myRating.stars.toDouble())
+                                    : nt.text3,
                               )),
                       const SizedBox(width: 4),
-                      const Icon(Icons.person_rounded,
-                          size: 11, color: kForest),
+                      Icon(Icons.person_rounded,
+                          size: 11, color: nt.forest),
                     ],
                   )
                 : Container(
@@ -1470,20 +1478,20 @@ class _OwnerRow extends ConsumerWidget {
                         const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(999),
-                      border: Border.all(color: kForest),
+                      border: Border.all(color: nt.forest),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(Icons.star_rounded,
-                            size: 13, color: kForest),
+                        Icon(Icons.star_rounded,
+                            size: 13, color: nt.forest),
                         const SizedBox(width: 4),
                         Text(
                           AppLocalizations.of(context)!.rateIt,
-                          style: const TextStyle(
+                          style: TextStyle(
                               fontSize: 11,
                               fontWeight: FontWeight.w700,
-                              color: kForest),
+                              color: nt.forest),
                         ),
                       ],
                     ),
@@ -1492,7 +1500,7 @@ class _OwnerRow extends ConsumerWidget {
           ),
 
           const SizedBox(width: 10),
-          Container(width: 1.1, height: 8, color: kBark),
+          Container(width: 1.1, height: 8, color: nt.bark),
           const SizedBox(width: 10),
           // ── Community rating ────────────────────────────────────────────
           GestureDetector(
@@ -1501,35 +1509,35 @@ class _OwnerRow extends ConsumerWidget {
                 ? Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(Icons.people_rounded,
-                          size: 11, color: kForest),
+                      Icon(Icons.people_rounded,
+                          size: 11, color: nt.forest),
                       const SizedBox(width: 4),
                       Icon(Icons.star_rounded,
-                          size: 13, color: ratingColor(ratingAvg)),
+                          size: 13, color: nt.rating(ratingAvg)),
                       const SizedBox(width: 4),
                       Text(
                         ratingAvg.toStringAsFixed(1),
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w700,
-                          color: ratingColor(ratingAvg),
+                          color: nt.rating(ratingAvg),
                         ),
                       ),
                       Text(
                         ' (${itinerary.ratingCount})',
-                        style: const TextStyle(
+                        style: TextStyle(
                             fontSize: 11,
-                            color: kText3,
+                            color: nt.text3,
                             fontWeight: FontWeight.w500),
                       ),
                     ],
                   )
-                : const Row(
+                : Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.star_outline_rounded, size: 14, color: kText3),
+                      Icon(Icons.star_outline_rounded, size: 14, color: nt.text3),
                       SizedBox(width: 4),
-                      Text('—', style: TextStyle(fontSize: 12, color: kText3)),
+                      Text('—', style: TextStyle(fontSize: 12, color: nt.text3)),
                     ],
                   ),
           ),
@@ -1548,23 +1556,24 @@ class _DetailMetaChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final nt = context.nt;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
-        color: const Color(0x0A000000),
+        color: nt.shadow.withValues(alpha: 0.04),
         borderRadius: BorderRadius.circular(999),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 14, color: kBark),
+          Icon(icon, size: 14, color: nt.bark),
           const SizedBox(width: 6),
           Text(
             label,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w500,
-              color: kBark,
+              color: nt.bark,
             ),
           ),
         ],
@@ -1574,7 +1583,7 @@ class _DetailMetaChip extends StatelessWidget {
 }
 
 // ─── Route pill button ────────────────────────────────────────────────────────
-// Forest-tinted sibling of EditPencilButton — kEditBlue is reserved for Edit
+// Forest-tinted sibling of EditPencilButton — nt.editBlue is reserved for Edit
 // affordances, and opening an external map app must stay usable offline.
 class _RoutePillButton extends StatelessWidget {
   final VoidCallback onTap;
@@ -1584,6 +1593,7 @@ class _RoutePillButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final nt = context.nt;
     return Tooltip(
       message: tooltip,
       child: Material(
@@ -1594,12 +1604,12 @@ class _RoutePillButton extends StatelessWidget {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
-              color: kMist,
+              color: nt.mist,
               borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: kForest.withValues(alpha: 0.13)),
+              border: Border.all(color: nt.forest.withValues(alpha: 0.13)),
             ),
             child:
-                const Icon(Icons.directions_rounded, size: 20, color: kForest),
+                Icon(Icons.directions_rounded, size: 20, color: nt.forest),
           ),
         ),
       ),
@@ -1616,10 +1626,11 @@ class _SegmentToggle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final nt = context.nt;
     return Container(
       padding: const EdgeInsets.all(3),
       decoration: BoxDecoration(
-        color: kMist,
+        color: nt.mist,
         borderRadius: BorderRadius.circular(10),
       ),
       child: Row(
@@ -1648,6 +1659,7 @@ class _Tab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final nt = context.nt;
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
@@ -1655,12 +1667,12 @@ class _Tab extends StatelessWidget {
         width: 36,
         height: 28,
         decoration: BoxDecoration(
-          color: active ? kSurface : Colors.transparent,
+          color: active ? nt.surface : Colors.transparent,
           borderRadius: BorderRadius.circular(8),
           boxShadow: active
               ? [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.08),
+                    color: nt.shadow.withValues(alpha: 0.08),
                     blurRadius: 2,
                     offset: const Offset(0, 1),
                   )
@@ -1671,7 +1683,7 @@ class _Tab extends StatelessWidget {
         child: Icon(
           icon,
           size: 16,
-          color: active ? kForest : kText2,
+          color: active ? nt.forest : nt.text2,
         ),
       ),
     );
@@ -1687,6 +1699,7 @@ class _RateCta extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final nt = context.nt;
     final myRating = ref.watch(myRatingProvider(itineraryId)).value;
     return SizedBox(
       width: double.infinity,
@@ -1705,7 +1718,7 @@ class _RateCta extends ConsumerWidget {
               ? AppLocalizations.of(context)!.updateYourRating
               : AppLocalizations.of(context)!.rateThisTrip),
           style: FilledButton.styleFrom(
-            backgroundColor: kForest,
+            backgroundColor: nt.forest,
             shape:
                 RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
           ),

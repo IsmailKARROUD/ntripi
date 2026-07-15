@@ -190,6 +190,7 @@ class _MoveStopToTrackSheetState extends ConsumerState<_MoveStopToTrackSheet> {
   // ───── Row builders ────────────────────────────────────────────────────
 
   Widget _buildExtractRow(BuildContext context) {
+    final nt = context.nt;
     return InkWell(
       onTap: _busy
           ? null
@@ -206,12 +207,12 @@ class _MoveStopToTrackSheetState extends ConsumerState<_MoveStopToTrackSheet> {
               width: 36,
               height: 36,
               decoration: BoxDecoration(
-                color: kMist,
+                color: nt.mist,
                 borderRadius: BorderRadius.circular(12),
               ),
               alignment: Alignment.center,
-              child: const Icon(Icons.call_split_rounded,
-                  size: 18, color: kForest),
+              child: Icon(Icons.call_split_rounded,
+                  size: 18, color: nt.forest),
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -220,21 +221,21 @@ class _MoveStopToTrackSheetState extends ConsumerState<_MoveStopToTrackSheet> {
                 children: [
                   Text(
                     AppLocalizations.of(context)!.extractIntoOwnTrack,
-                    style: const TextStyle(
+                    style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w700,
-                        color: kBark),
+                        color: nt.bark),
                   ),
                   Text(
                     AppLocalizations.of(context)!
                         .extractSubtitle(_primaryName(_sourceTrack)),
-                    style: const TextStyle(fontSize: 11, color: kText2),
+                    style: TextStyle(fontSize: 11, color: nt.text2),
                   ),
                 ],
               ),
             ),
-            const Icon(Icons.chevron_right_rounded,
-                size: 18, color: kText3),
+            Icon(Icons.chevron_right_rounded,
+                size: 18, color: nt.text3),
           ],
         ),
       ),
@@ -250,6 +251,7 @@ class _MoveStopToTrackSheetState extends ConsumerState<_MoveStopToTrackSheet> {
 
   Widget _buildGapRow(BuildContext context,
       {required Track? after, required Track? before}) {
+    final nt = context.nt;
     final label = _gapLabel(context, after, before);
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 3),
@@ -264,19 +266,19 @@ class _MoveStopToTrackSheetState extends ConsumerState<_MoveStopToTrackSheet> {
           padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: kText3, style: BorderStyle.solid),
+            border: Border.all(color: nt.text3, style: BorderStyle.solid),
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.add_rounded, size: 14, color: kForest),
+              Icon(Icons.add_rounded, size: 14, color: nt.forest),
               const SizedBox(width: 6),
               Text(
                 label,
-                style: const TextStyle(
+                style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
-                    color: kBark),
+                    color: nt.bark),
               ),
             ],
           ),
@@ -308,6 +310,7 @@ class _MoveStopToTrackSheetState extends ConsumerState<_MoveStopToTrackSheet> {
     required Track t,
     required int displayedNumber,
   }) {
+    final nt = context.nt;
     final l10n = AppLocalizations.of(context)!;
     final isSource = t.id == widget.stop.trackId;
     final full = _isAtCapacity(t);
@@ -328,7 +331,7 @@ class _MoveStopToTrackSheetState extends ConsumerState<_MoveStopToTrackSheet> {
                 width: 32,
                 height: 32,
                 decoration: BoxDecoration(
-                  color: disabled ? kBorder : kMist,
+                  color: disabled ? nt.border : nt.mist,
                   shape: BoxShape.circle,
                 ),
                 alignment: Alignment.center,
@@ -337,7 +340,7 @@ class _MoveStopToTrackSheetState extends ConsumerState<_MoveStopToTrackSheet> {
                   style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w800,
-                    color: disabled ? kText3 : kForest,
+                    color: disabled ? nt.text3 : nt.forest,
                   ),
                 ),
               ),
@@ -353,14 +356,14 @@ class _MoveStopToTrackSheetState extends ConsumerState<_MoveStopToTrackSheet> {
                       style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w700,
-                        color: disabled ? kText3 : kBark,
+                        color: disabled ? nt.text3 : nt.bark,
                       ),
                     ),
                     Text(
                       l10n.stopCount(t.stops.length) +
                           (isSource ? l10n.moveStopCurrentSuffix : ''),
-                      style: const TextStyle(
-                          fontSize: 11, color: kText2),
+                      style: TextStyle(
+                          fontSize: 11, color: nt.text2),
                     ),
                   ],
                 ),
@@ -370,15 +373,15 @@ class _MoveStopToTrackSheetState extends ConsumerState<_MoveStopToTrackSheet> {
                   padding: const EdgeInsets.symmetric(
                       horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
-                    color: kBorder,
+                    color: nt.border,
                     borderRadius: BorderRadius.circular(999),
                   ),
                   child: Text(
                     l10n.moveStopFull(Track.maxParallelStops),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 10,
                       fontWeight: FontWeight.w700,
-                      color: kText3,
+                      color: nt.text3,
                     ),
                   ),
                 ),
@@ -393,6 +396,7 @@ class _MoveStopToTrackSheetState extends ConsumerState<_MoveStopToTrackSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final nt = context.nt;
     final rows = <Widget>[];
 
     // 1. Extract row — only when source has parallels.
@@ -421,7 +425,7 @@ class _MoveStopToTrackSheetState extends ConsumerState<_MoveStopToTrackSheet> {
         saving: _busy,
         loaderSize: 40,
         child: Container(
-      color: kSand,
+      color: nt.sand,
       child: SafeArea(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
@@ -434,10 +438,10 @@ class _MoveStopToTrackSheetState extends ConsumerState<_MoveStopToTrackSheet> {
                 padding: const EdgeInsets.fromLTRB(6, 6, 6, 6),
                 child: Text(
                   AppLocalizations.of(context)!.moveStopToLabel.toUpperCase(),
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
-                    color: kText2,
+                    color: nt.text2,
                     letterSpacing: 0.6,
                   ),
                 ),
@@ -453,9 +457,9 @@ class _MoveStopToTrackSheetState extends ConsumerState<_MoveStopToTrackSheet> {
                   ),
                   child: Container(
                     decoration: BoxDecoration(
-                      color: kSurface,
+                      color: nt.surface,
                       borderRadius: BorderRadius.circular(18),
-                      border: Border.all(color: kBorder),
+                      border: Border.all(color: nt.border),
                     ),
                     clipBehavior: Clip.antiAlias,
                     child: ListView(
@@ -465,7 +469,7 @@ class _MoveStopToTrackSheetState extends ConsumerState<_MoveStopToTrackSheet> {
                         for (var i = 0; i < rows.length; i++) ...[
                           rows[i],
                           if (i < rows.length - 1)
-                            Container(height: 1, color: kBorder),
+                            Container(height: 1, color: nt.border),
                         ],
                       ],
                     ),

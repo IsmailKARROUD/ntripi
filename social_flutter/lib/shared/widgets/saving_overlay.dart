@@ -12,7 +12,7 @@ class SavingOverlay extends StatelessWidget {
     super.key,
     required this.saving,
     required this.child,
-    this.tint = kSand,
+    this.tint,
     this.loaderSize = 56,
     this.borderRadius,
   });
@@ -20,8 +20,9 @@ class SavingOverlay extends StatelessWidget {
   final bool saving;
   final Widget child;
 
-  /// Scrim color over the blur — pass [kSurface] on white-background screens.
-  final Color tint;
+  /// Scrim color over the blur — pass `nt.surface` on plain-background
+  /// screens. Defaults to `nt.sand` (theme lookups aren't const).
+  final Color? tint;
 
   /// 56 for full screens, 40 for bottom sheets.
   final double loaderSize;
@@ -31,6 +32,7 @@ class SavingOverlay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final nt = context.nt;
     return Stack(
       children: [
         child,
@@ -46,7 +48,7 @@ class SavingOverlay extends StatelessWidget {
                 child: BackdropFilter(
                   filter: ImageFilter.blur(sigmaX: 6, sigmaY: 6),
                   child: Container(
-                    color: tint.withValues(alpha: 0.35),
+                    color: (tint ?? nt.sand).withValues(alpha: 0.35),
                     alignment: Alignment.center,
                     child: NTripiRingLoader(size: loaderSize),
                   ),

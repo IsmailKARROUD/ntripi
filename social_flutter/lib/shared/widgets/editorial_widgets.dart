@@ -21,11 +21,12 @@ class AvatarInitials extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final nt = context.nt;
     if (avatarUrl != null && avatarUrl!.isNotEmpty) {
       return UserAvatar(avatarUrl: avatarUrl, radius: _size / 2);
     }
     final initials = _initials(name);
-    final palette = _palette(name);
+    final palette = _palette(nt, name);
     return Container(
       width: _size,
       height: _size,
@@ -49,14 +50,8 @@ class AvatarInitials extends StatelessWidget {
     return name.isNotEmpty ? name[0].toUpperCase() : '?';
   }
 
-  static (Color, Color) _palette(String name) {
-    const palettes = [
-      (Color(0xFFD0EBDA), Color(0xFF1F5E3A)),
-      (Color(0xFFFFE3CC), Color(0xFFA05D1F)),
-      (Color(0xFFE0DAF0), Color(0xFF5A3F8F)),
-      (Color(0xFFF4D4A8), Color(0xFF8A3A1F)),
-      (Color(0xFFCDE0D6), Color(0xFF3B6EA5)),
-    ];
+  static (Color, Color) _palette(NtripiColors nt, String name) {
+    final palettes = nt.avatarPairs;
     int h = 0;
     for (final c in name.codeUnits) {
       h = (h * 31 + c) & 0xFFFFFFFF;
@@ -81,22 +76,23 @@ class EditorialTopBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final nt = context.nt;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
       child: Row(
         children: [
           IconButton(
             icon: const Icon(Icons.arrow_back),
-            color: kBark,
+            color: nt.bark,
             onPressed: () => Navigator.of(context).maybePop(),
           ),
           Expanded(
             child: Text(
               title,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 17,
                 fontWeight: FontWeight.w700,
-                color: kBark,
+                color: nt.bark,
                 letterSpacing: -0.2,
               ),
             ),
@@ -115,17 +111,19 @@ class EditorialTopBar extends StatelessWidget {
 class SectionLabel extends StatelessWidget {
   final IconData icon;
   final String label;
-  final Color color;
+  // Nullable: theme lookups aren't const, so the default resolves in build.
+  final Color? color;
 
   const SectionLabel({
     super.key,
     required this.icon,
     required this.label,
-    this.color = kText2,
+    this.color,
   });
 
   @override
   Widget build(BuildContext context) {
+    final color = this.color ?? context.nt.text2;
     return Padding(
       padding: const EdgeInsets.fromLTRB(22, 16, 22, 6),
       child: Row(
@@ -156,12 +154,13 @@ class SectionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final nt = context.nt;
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
-        color: kSurface,
+        color: nt.surface,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: kBorder),
+        border: Border.all(color: nt.border),
       ),
       child: Column(mainAxisSize: MainAxisSize.min, children: children),
     );

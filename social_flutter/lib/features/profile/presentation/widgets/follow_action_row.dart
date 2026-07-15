@@ -20,6 +20,7 @@ class FollowActionRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final nt = context.nt;
     return Row(
       children: [
         Expanded(
@@ -40,11 +41,11 @@ class FollowActionRow extends StatelessWidget {
           width: 46,
           height: 46,
           decoration: BoxDecoration(
-            border: Border.all(color: kBorder, width: 1.5),
+            border: Border.all(color: nt.border, width: 1.5),
             borderRadius: BorderRadius.circular(14),
           ),
-          child: const Icon(Icons.mail_outline_rounded,
-              size: 20, color: kBark),
+          child: Icon(Icons.mail_outline_rounded,
+              size: 20, color: nt.bark),
         ),
       ],
     );

@@ -85,12 +85,13 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final nt = context.nt;
     final profileAsync = widget.isSelf
         ? ref.watch(myProfileProvider)
         : ref.watch(userProfileProvider(widget.userId!));
 
     return Scaffold(
-      backgroundColor: kSurface,
+      backgroundColor: nt.surface,
       resizeToAvoidBottomInset: false,
       body: Center(
         child: ConstrainedBox(
@@ -316,6 +317,7 @@ class _SectionHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final nt = context.nt;
     final l10n = AppLocalizations.of(context)!;
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 20, 16, 0),
@@ -324,10 +326,10 @@ class _SectionHeader extends StatelessWidget {
         children: [
           Text(
             isSelf ? l10n.latestTrip : l10n.itinerariesSectionHeader,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 10,
               fontWeight: FontWeight.w700,
-              color: kText2,
+              color: nt.text2,
               letterSpacing: 0.8,
             ),
           ),
@@ -339,13 +341,13 @@ class _SectionHeader extends StatelessWidget {
                 children: [
                   Text(
                     l10n.seeAll,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
-                      color: kForest,
+                      color: nt.forest,
                     ),
                   ),
-                  const Icon(Icons.chevron_right, size: 16, color: kForest),
+                  Icon(Icons.chevron_right, size: 16, color: nt.forest),
                 ],
               ),
             ),
@@ -382,6 +384,7 @@ class _ItinerariesSliver extends StatelessWidget {
       ),
       data: (itineraries) {
         if (itineraries.isEmpty) {
+    final nt = context.nt;
           if (isSelf) {
             return SliverToBoxAdapter(
               child: Padding(
@@ -402,7 +405,7 @@ class _ItinerariesSliver extends StatelessWidget {
                 style: Theme.of(context)
                     .textTheme
                     .bodyMedium
-                    ?.copyWith(color: kText2),
+                    ?.copyWith(color: nt.text2),
               ),
             ),
           );

@@ -45,6 +45,7 @@ class StopCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final nt = context.nt;
     final hasNotes = stop.notes != null && stop.notes!.trim().isNotEmpty;
     final hasAnnotations = stop.annotations.isNotEmpty;
 
@@ -59,15 +60,15 @@ class StopCard extends StatelessWidget {
             Container(
               width: 32,
               height: 32,
-              decoration: const BoxDecoration(
-                color: kMist,
+              decoration: BoxDecoration(
+                color: nt.mist,
                 shape: BoxShape.circle,
               ),
               alignment: Alignment.center,
               child: Text(
                 '$trackIndex',
-                style: const TextStyle(
-                  color: kForest,
+                style: TextStyle(
+                  color: nt.forest,
                   fontWeight: FontWeight.w800,
                   fontSize: 14,
                 ),
@@ -84,10 +85,10 @@ class StopCard extends StatelessWidget {
                   // Place name
                   Text(
                     stop.placeName ?? 'Stop $trackIndex',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w700,
-                      color: kBark,
+                      color: nt.bark,
                       letterSpacing: -0.1,
                     ),
                   ),
@@ -99,15 +100,15 @@ class StopCard extends StatelessWidget {
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
-                          const Icon(Icons.location_on_rounded,
-                              size: 12, color: kText3),
+                          Icon(Icons.location_on_rounded,
+                              size: 12, color: nt.text3),
                           const SizedBox(width: 2),
                           Expanded(
                             child: Text(
                               stop.placeAddress!,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 12,
-                                color: kText2,
+                                color: nt.text2,
                                 fontWeight: FontWeight.w500,
                               ),
                               maxLines: 1,
@@ -126,14 +127,14 @@ class StopCard extends StatelessWidget {
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
-                          const Icon(Icons.payments_rounded,
-                              size: 12, color: kText3),
+                          Icon(Icons.payments_rounded,
+                              size: 12, color: nt.text3),
                           const SizedBox(width: 2),
                           Text(
                             formatMoney(stop.cost, currency),
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 12,
-                              color: kText2,
+                              color: nt.text2,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
@@ -193,6 +194,7 @@ class _EditNotesSectionState extends State<_EditNotesSection> {
 
   @override
   Widget build(BuildContext context) {
+    final nt = context.nt;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
@@ -205,20 +207,20 @@ class _EditNotesSectionState extends State<_EditNotesSection> {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.notes_rounded, size: 14, color: kText3),
+                Icon(Icons.notes_rounded, size: 14, color: nt.text3),
                 const SizedBox(width: 4),
                 Text(
                   AppLocalizations.of(context)!.notesLabel,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 12,
-                    color: kText2,
+                    color: nt.text2,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
                 Icon(
                   _expanded ? Icons.expand_less : Icons.expand_more,
                   size: 16,
-                  color: kText3,
+                  color: nt.text3,
                 ),
               ],
             ),
@@ -252,14 +254,14 @@ class _ReadNotesSection extends StatefulWidget {
 class _ReadNotesSectionState extends State<_ReadNotesSection> {
   bool _expanded = false;
 
-  static const _style = TextStyle(fontSize: 13, height: 1.4, color: kText2);
-
   @override
   Widget build(BuildContext context) {
+    final nt = context.nt;
+    final style = TextStyle(fontSize: 13, height: 1.4, color: nt.text2);
     return LayoutBuilder(
       builder: (context, constraints) {
         final tp = TextPainter(
-          text: TextSpan(text: widget.notes, style: _style),
+          text: TextSpan(text: widget.notes, style: style),
           maxLines: 2,
           // must match the rendered Text's direction or the overflow check lies for Arabic notes
           textDirection: Directionality.of(context),
@@ -276,7 +278,7 @@ class _ReadNotesSectionState extends State<_ReadNotesSection> {
             else
               Text(
                 widget.notes,
-                style: _style,
+                style: style,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -289,9 +291,9 @@ class _ReadNotesSectionState extends State<_ReadNotesSection> {
                     _expanded
                         ? AppLocalizations.of(context)!.viewLess
                         : AppLocalizations.of(context)!.viewMore,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 12,
-                      color: kForest,
+                      color: nt.forest,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -320,6 +322,7 @@ class _AnnotationChipsRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final nt = context.nt;
     return Wrap(
       spacing: 6,
       runSpacing: 4,
@@ -338,18 +341,18 @@ class _AnnotationChipsRow extends StatelessWidget {
               padding:
                   const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
-                color: kEditBlueTint,
+                color: nt.editBlueTint,
                 borderRadius: BorderRadius.circular(999),
-                border: Border.all(color: kEditBlue.withValues(alpha: 0.13)),
+                border: Border.all(color: nt.editBlue.withValues(alpha: 0.13)),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.add_rounded, size: 13, color: kEditBlue),
+                  Icon(Icons.add_rounded, size: 13, color: nt.editBlue),
                   const SizedBox(width: 3),
                   Text(
                     AppLocalizations.of(context)!.addAnnotationButton,
-                    style: const TextStyle(fontSize: 12, color: kEditBlue),
+                    style: TextStyle(fontSize: 12, color: nt.editBlue),
                   ),
                 ],
               ),
@@ -365,38 +368,23 @@ class _AnnoMiniRow extends StatelessWidget {
   final List<Annotation> annotations;
   const _AnnoMiniRow({required this.annotations});
 
-  static const _colors = {
-    AnnotationType.advice: (bg: Color(0xFFE0EBE4), fg: kForest),
-    AnnotationType.caution: (bg: Color(0xFFFFE3CC), fg: Color(0xFFA05D1F)),
-    AnnotationType.avoid: (bg: Color(0xFFFFD6D2), fg: Color(0xFFA02828)),
-    AnnotationType.info: (bg: Color(0xFFDCEAF6), fg: Color(0xFF3B6EA5)),
-  };
-
-  static const _icons = {
-    AnnotationType.advice: Icons.lightbulb_rounded,
-    AnnotationType.caution: Icons.warning_rounded,
-    AnnotationType.avoid: Icons.block_rounded,
-    AnnotationType.info: Icons.info_rounded,
-  };
-
   @override
   Widget build(BuildContext context) {
+    final nt = context.nt;
     return Wrap(
       spacing: 4,
       runSpacing: 4,
       children: annotations.map((a) {
-        final c = _colors[a.type];
-        final icon = _icons[a.type] ?? Icons.info_rounded;
-        if (c == null) return const SizedBox.shrink();
+        // colors/icons come from the domain enum — single source of truth
         return Container(
           width: 18,
           height: 18,
           decoration: BoxDecoration(
-            color: c.bg,
+            color: a.type.bg(nt),
             shape: BoxShape.circle,
           ),
           alignment: Alignment.center,
-          child: Icon(icon, size: 11, color: c.fg),
+          child: Icon(a.type.icon, size: 11, color: a.type.fg(nt)),
         );
       }).toList(),
     );

@@ -47,6 +47,7 @@ class _FeedScreenState extends ConsumerState<FeedScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final nt = context.nt;
     final l10n = AppLocalizations.of(context)!;
     final sort = ref.watch(feedSortProvider);
     final feedAsync = ref.watch(feedProvider);
@@ -55,7 +56,7 @@ class _FeedScreenState extends ConsumerState<FeedScreen> {
     final hasMore = ref.read(feedProvider.notifier).hasMore;
 
     return Scaffold(
-      backgroundColor: kSand,
+      backgroundColor: nt.sand,
       resizeToAvoidBottomInset: false,
       body: SafeArea(
         child: Center(
@@ -133,6 +134,7 @@ class _FeedScreenState extends ConsumerState<FeedScreen> {
 
   Widget _buildHeader(
       BuildContext context, AppLocalizations l10n, FeedSort sort) {
+    final nt = context.nt;
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
       child: Row(
@@ -142,10 +144,10 @@ class _FeedScreenState extends ConsumerState<FeedScreen> {
               l10n.feedTitle,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 22,
                 fontWeight: FontWeight.w700,
-                color: kBark,
+                color: nt.bark,
                 letterSpacing: -0.3,
               ),
             ),
@@ -179,18 +181,19 @@ class _FeedScreenState extends ConsumerState<FeedScreen> {
   }
 
   Widget _emptyState(String message) {
+    final nt = context.nt;
     return Center(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 32),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.explore_outlined, size: 64, color: kText3),
+            Icon(Icons.explore_outlined, size: 64, color: nt.text3),
             const SizedBox(height: 16),
             Text(
               message,
               textAlign: TextAlign.center,
-              style: const TextStyle(color: kText2),
+              style: TextStyle(color: nt.text2),
             ),
           ],
         ),

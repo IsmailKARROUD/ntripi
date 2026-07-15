@@ -125,12 +125,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final nt = context.nt;
     final l10n = AppLocalizations.of(context)!;
     return SavingOverlay(
       saving: _isLoading,
-      tint: kSurface,
+      tint: nt.surface,
       child: Scaffold(
-      backgroundColor: kSurface,
+      backgroundColor: nt.surface,
       body: Center(
         child: ConstrainedBox(
           constraints: BoxConstraints(maxWidth: isDesktopWeb() ? kDesktopMaxWidth : double.infinity),
@@ -162,17 +163,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 // Heading
                 Text(
                   l10n.loginTitle,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 26,
                     fontWeight: FontWeight.w800,
-                    color: kBark,
+                    color: nt.bark,
                     letterSpacing: -0.5,
                   ),
                 ),
                 const SizedBox(height: 6),
                 Text(
                   l10n.loginSubtitle,
-                  style: const TextStyle(fontSize: 14, color: kText2),
+                  style: TextStyle(fontSize: 14, color: nt.text2),
                 ),
                 const SizedBox(height: 28),
 
@@ -217,7 +218,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         _obscurePassword
                             ? Icons.visibility_outlined
                             : Icons.visibility_off_outlined,
-                        color: kText3,
+                        color: nt.text3,
                         size: 20,
                       ),
                       onPressed: () =>
@@ -275,12 +276,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               )
                             : _SocialButton(
                                 label: 'Google',
-                                icon: const Text(
+                                icon: Text(
                                   'G',
                                   style: TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.w700,
-                                    color: kBark,
+                                    color: nt.bark,
                                   ),
                                 ),
                                 onPressed: (_isLoading || !online)
@@ -290,10 +291,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       ),
                     ),
                     const SizedBox(width: 12),
-                   isApplePlatform() ? const Expanded(
+                   isApplePlatform() ? Expanded(
                       child: _SocialButton(
                         label: 'Apple',
-                        icon: Icon(Icons.apple, size: 20, color: kBark),
+                        icon: Icon(Icons.apple, size: 20, color: nt.bark),
                       ),
                     ) : const SizedBox.shrink(),
                   ],
@@ -306,19 +307,19 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   children: [
                     Text(
                       l10n.loginNoAccount,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 14,
-                        color: kText2,
+                        color: nt.text2,
                       ),
                     ),
                     GestureDetector(
                       onTap: () => context.go('/register'),
                       child: Text(
                         l10n.loginSignUp,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w700,
-                          color: kForest,
+                          color: nt.forest,
                         ),
                       ),
                     ),
@@ -343,10 +344,11 @@ class _FieldLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const labelStyle = TextStyle(
+    final nt = context.nt;
+    final labelStyle = TextStyle(
       fontSize: 12,
       fontWeight: FontWeight.w600,
-      color: kText2,
+      color: nt.text2,
     );
     if (helpTitle == null || helpMessage == null) {
       return Text(text, style: labelStyle);
@@ -361,7 +363,7 @@ class _FieldLabel extends StatelessWidget {
           helpTitle: helpTitle!,
           helpMessage: helpMessage!,
           size: 16,
-          color: kText2,
+          color: nt.text2,
         ),
       ],
     );
@@ -374,17 +376,18 @@ class _ErrorBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: const Color(0xFFFFDAD6),
+        color: cs.errorContainer,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFFFB4AB)),
+        border: Border.all(color: cs.error.withValues(alpha: 0.4)),
       ),
       child: Text(
         message,
-        style: const TextStyle(
-          color: Color(0xFF410002),
+        style: TextStyle(
+          color: cs.onErrorContainer,
           fontSize: 13,
         ),
         textAlign: TextAlign.center,
@@ -399,6 +402,7 @@ class _OrDivider extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final nt = context.nt;
     return Row(
       children: [
         const Expanded(child: Divider()),
@@ -406,7 +410,7 @@ class _OrDivider extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 12),
           child: Text(
             label,
-            style: const TextStyle(fontSize: 12, color: kText3),
+            style: TextStyle(fontSize: 12, color: nt.text3),
           ),
         ),
         const Expanded(child: Divider()),
@@ -423,6 +427,7 @@ class _SocialButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final nt = context.nt;
     return OutlinedButton(
       // Default (no onPressed, e.g. the Apple placeholder): "coming soon".
       onPressed: onPressed ??
@@ -431,8 +436,8 @@ class _SocialButton extends StatelessWidget {
               ),
       style: OutlinedButton.styleFrom(
         padding: const EdgeInsets.symmetric(vertical: 14),
-        backgroundColor: kSurface,
-        side: const BorderSide(color: kBorder),
+        backgroundColor: nt.surface,
+        side: BorderSide(color: nt.border),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
       ),
       child: Row(
@@ -442,10 +447,10 @@ class _SocialButton extends StatelessWidget {
           const SizedBox(width: 8),
           Text(
             label,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w600,
-              color: kBark,
+              color: nt.bark,
             ),
           ),
         ],

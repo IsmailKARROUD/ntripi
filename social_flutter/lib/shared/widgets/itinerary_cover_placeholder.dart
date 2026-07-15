@@ -5,11 +5,8 @@
 // profile grid) and the detail-screen hero.
 
 import 'package:flutter/material.dart';
+import 'package:social_flutter/core/ui/app_theme.dart';
 import 'package:social_flutter/l10n/app_localizations.dart';
-
-const _kInk = Color(0xFF4B554F); // darkest map grey — pill text + middle pin
-const _kPinEnds = Color(0xFF6E7B74);
-const _kRoute = Color(0xFF5E6B64);
 
 class ItineraryCoverPlaceholder extends StatelessWidget {
   /// Where the "No cover image" pill sits. Default: centered-lower.
@@ -22,26 +19,28 @@ class ItineraryCoverPlaceholder extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // RepaintBoundary + static const painters → raster-cached in scroll lists.
+    final nt = context.nt;
+    // RepaintBoundary → raster-cached in scroll lists; painters only repaint
+    // when the theme palette instance changes.
     return RepaintBoundary(
       child: Stack(
         fit: StackFit.expand,
         children: [
-          const CustomPaint(
-            painter: _TripMapPainter(),
+          CustomPaint(
+            painter: _TripMapPainter(nt),
             isComplex: true,
             willChange: false,
           ),
           // top-end (not top-start) — the cards put a VisibilityBadge at
           // top-start; directional positioning keeps them apart in RTL too.
-          const PositionedDirectional(
+          PositionedDirectional(
             top: 8,
             end: 8,
             child: Opacity(
               opacity: 0.5,
               child: CustomPaint(
-                size: Size(22, 22),
-                painter: _NtripiMarkPainter(),
+                size: const Size(22, 22),
+                painter: _NtripiMarkPainter(nt),
               ),
             ),
           ),
@@ -50,21 +49,21 @@ class ItineraryCoverPlaceholder extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
-                color: const Color(0xD1FFFFFF),
+                color: nt.mapLabelBg,
                 borderRadius: BorderRadius.circular(999),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.image_not_supported_outlined,
-                      size: 14, color: _kInk),
+                  Icon(Icons.image_not_supported_outlined,
+                      size: 14, color: nt.mapInk),
                   const SizedBox(width: 6),
                   Text(
                     AppLocalizations.of(context)!.noCoverImage,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
-                      color: _kInk,
+                      color: nt.mapInk,
                     ),
                   ),
                 ],
@@ -82,7 +81,8 @@ class ItineraryCoverPlaceholder extends StatelessWidget {
 // route that follows the streets through three numbered stop pins.
 // Deliberately never mirrored for RTL — maps don't flip.
 class _TripMapPainter extends CustomPainter {
-  const _TripMapPainter();
+  final NtripiColors nt;
+  const _TripMapPainter(this.nt);
 
   // Route vertices (fractions of w/h). Each segment lies on a street drawn
   // below, so the route visibly follows roads like a real navigation trace.
@@ -111,15 +111,15 @@ class _TripMapPainter extends CustomPainter {
     canvas.drawRect(
       Offset.zero & size,
       Paint()
-        ..shader = const LinearGradient(
+        ..shader = LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Color(0xFFEAEBEC), Color(0xFFD9DBDE)],
+          colors: [nt.mapLandStart, nt.mapLandEnd],
         ).createShader(Offset.zero & size),
     );
 
     // River winding down the left edge (streets drawn later read as bridges).
-    final waterPaint = Paint()..color = const Color(0xE6C7D0D4);
+    final waterPaint = Paint()..color = nt.mapWater;
     final river = Path()
       ..moveTo(0.14 * w, -0.05 * h)
       ..cubicTo(0.10 * w, 0.10 * h, 0.01 * w, 0.16 * h, 0.03 * w, 0.28 * h)
@@ -134,7 +134,7 @@ class _TripMapPainter extends CustomPainter {
     );
 
     // Parks: large one upper-right (with a pond), small one lower-right.
-    final parkPaint = Paint()..color = const Color(0xD9CDD6CD);
+    final parkPaint = Paint()..color = nt.mapPark;
     canvas.drawRRect(
       RRect.fromRectAndRadius(
         Rect.fromLTWH(0.62 * w, 0.06 * h, 0.28 * w, 0.24 * h),
@@ -156,7 +156,7 @@ class _TripMapPainter extends CustomPainter {
     );
 
     // Building blocks — faint darker rects clustered inside street blocks.
-    final buildingPaint = Paint()..color = const Color(0x2E6E7B74);
+    final buildingPaint = Paint()..color = nt.mapBuilding;
     const buildings = [
       Offset(0.40, 0.42), Offset(0.455, 0.465), Offset(0.405, 0.50),
       Offset(0.63, 0.415), Offset(0.685, 0.45),
@@ -182,7 +182,7 @@ class _TripMapPainter extends CustomPainter {
     // Street network. The first three thin streets and the three avenues run
     // exactly through the route segments above (extended to the frame edges).
     final thin = Paint()
-      ..color = const Color(0xB3FFFFFF)
+      ..color = nt.mapStreetThin
       ..strokeWidth = 2 * k
       ..strokeCap = StrokeCap.round
       ..style = PaintingStyle.stroke;
@@ -200,7 +200,7 @@ class _TripMapPainter extends CustomPainter {
     canvas.drawLine(Offset(-0.05 * w, 0.95 * h), Offset(1.05 * w, 0.90 * h), thin);
 
     final avenue = Paint()
-      ..color = Colors.white
+      ..color = nt.mapAvenue
       ..strokeWidth = 6.5 * k
       ..strokeCap = StrokeCap.round
       ..style = PaintingStyle.stroke;
@@ -217,7 +217,7 @@ class _TripMapPainter extends CustomPainter {
       route.lineTo(p.dx * w, p.dy * h);
     }
     final routePaint = Paint()
-      ..color = _kRoute
+      ..color = nt.mapRoute
       ..strokeWidth = 4 * k
       ..strokeCap = StrokeCap.round
       ..style = PaintingStyle.stroke;
@@ -225,7 +225,7 @@ class _TripMapPainter extends CustomPainter {
     _drawDashed(canvas, route, routePaint, 0.5 * k, 11 * k);
 
     // Numbered stop pins at start / middle / end — middle one darker.
-    const stops = [(0, _kPinEnds, '1'), (3, _kInk, '2'), (6, _kPinEnds, '3')];
+    final stops = [(0, nt.mapPinEnds, '1'), (3, nt.mapInk, '2'), (6, nt.mapPinEnds, '3')];
     for (final (i, color, label) in stops) {
       final v = _route[i];
       _drawPin(canvas, Offset(v.dx * w, v.dy * h), 7.5 * k, color, label);
@@ -267,7 +267,7 @@ class _TripMapPainter extends CustomPainter {
       text: TextSpan(
         text: label,
         style: TextStyle(
-          color: Colors.white,
+          color: nt.mapPinLabel,
           fontSize: r * 1.3,
           fontWeight: FontWeight.w700,
           height: 1.0,
@@ -279,13 +279,14 @@ class _TripMapPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(_TripMapPainter oldDelegate) => false;
+  bool shouldRepaint(_TripMapPainter oldDelegate) => oldDelegate.nt != nt;
 }
 
 // Small NTripi mark: grey rounded square + white route polyline with end
 // dots, in a 24-unit viewbox (matches the brand mark geometry).
 class _NtripiMarkPainter extends CustomPainter {
-  const _NtripiMarkPainter();
+  final NtripiColors nt;
+  const _NtripiMarkPainter(this.nt);
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -296,7 +297,7 @@ class _NtripiMarkPainter extends CustomPainter {
         Offset.zero & size,
         Radius.circular(6 * s),
       ),
-      Paint()..color = const Color(0xFF8C9891),
+      Paint()..color = nt.mapMark,
     );
 
     canvas.drawPath(
@@ -306,18 +307,18 @@ class _NtripiMarkPainter extends CustomPainter {
         ..lineTo(12 * s, 15 * s)
         ..lineTo(18 * s, 8 * s),
       Paint()
-        ..color = Colors.white
+        ..color = nt.mapPinLabel
         ..strokeWidth = 2.2 * s
         ..strokeCap = StrokeCap.round
         ..strokeJoin = StrokeJoin.round
         ..style = PaintingStyle.stroke,
     );
 
-    final dot = Paint()..color = Colors.white;
+    final dot = Paint()..color = nt.mapPinLabel;
     canvas.drawCircle(Offset(6 * s, 18 * s), 2 * s, dot);
     canvas.drawCircle(Offset(18 * s, 8 * s), 2 * s, dot);
   }
 
   @override
-  bool shouldRepaint(_NtripiMarkPainter oldDelegate) => false;
+  bool shouldRepaint(_NtripiMarkPainter oldDelegate) => oldDelegate.nt != nt;
 }

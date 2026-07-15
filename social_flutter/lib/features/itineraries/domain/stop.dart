@@ -17,6 +17,7 @@
 //   overwrites it with the correct value after deserialization.
 
 import 'package:flutter/material.dart';
+import 'package:social_flutter/core/ui/app_theme.dart';
 import 'package:social_flutter/features/itineraries/domain/annotation.dart';
 import 'package:social_flutter/l10n/app_localizations.dart';
 import 'package:social_flutter/shared/utils/duration_format.dart';
@@ -100,18 +101,19 @@ enum PlaceType {
         PlaceType.sight => l10n.placeTypeHintSight,
       };
 
-  Color get color => switch (this) {
-        PlaceType.eatDrink => const Color(0xFFE65100),
-        PlaceType.sleep => const Color(0xFF5E35B1),
-        PlaceType.pray => const Color(0xFF00897B),
-        PlaceType.learnSee => const Color(0xFF1E88E5),
-        PlaceType.buy => const Color(0xFFD81B60),
-        PlaceType.playWatch => const Color(0xFF43A047),
-        PlaceType.nature => const Color(0xFF2E7D32),
-        PlaceType.transport => const Color(0xFF546E7A),
-        PlaceType.healBathe => const Color(0xFF0097A7),
-        PlaceType.entertainment => const Color(0xFF6A1B9A),
-        PlaceType.sight => const Color(0xFFF57F17),
+  /// Takes the palette (not a BuildContext) — domain code stays widget-free.
+  Color color(NtripiColors nt) => switch (this) {
+        PlaceType.eatDrink => nt.placeEatDrink,
+        PlaceType.sleep => nt.placeSleep,
+        PlaceType.pray => nt.placePray,
+        PlaceType.learnSee => nt.placeLearnSee,
+        PlaceType.buy => nt.placeBuy,
+        PlaceType.playWatch => nt.placePlayWatch,
+        PlaceType.nature => nt.placeNature,
+        PlaceType.transport => nt.placeTransport,
+        PlaceType.healBathe => nt.placeHealBathe,
+        PlaceType.entertainment => nt.placeEntertainment,
+        PlaceType.sight => nt.placeSight,
       };
 
   IconData get icon => switch (this) {

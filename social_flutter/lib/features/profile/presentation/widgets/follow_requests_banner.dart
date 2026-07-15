@@ -11,18 +11,19 @@ class FollowRequestsBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final nt = context.nt;
     final l10n = AppLocalizations.of(context)!;
     return GestureDetector(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         decoration: BoxDecoration(
-          color: const Color(0xFFD0EBDA),
+          color: nt.mist,
           borderRadius: BorderRadius.circular(16),
         ),
         child: Row(
           children: [
-            const Icon(Icons.person_add_rounded, size: 20, color: kForest),
+            Icon(Icons.person_add_rounded, size: 20, color: nt.forest),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
@@ -30,24 +31,24 @@ class FollowRequestsBanner extends StatelessWidget {
                 children: [
                   Text(
                     l10n.followRequestsBannerTitle(count),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w700,
-                      color: kForest,
+                      color: nt.forest,
                     ),
                   ),
                   Text(
                     l10n.tapToReview,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 12,
-                      color: kForest,
+                      color: nt.forest,
                       fontWeight: FontWeight.w400,
                     ),
                   ),
                 ],
               ),
             ),
-            const Icon(Icons.chevron_right, color: kForest, size: 20),
+            Icon(Icons.chevron_right, color: nt.forest, size: 20),
           ],
         ),
       ),

@@ -100,12 +100,13 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final nt = context.nt;
     final l10n = AppLocalizations.of(context)!;
     return SavingOverlay(
       saving: _isLoading,
-      tint: kSurface,
+      tint: nt.surface,
       child: Scaffold(
-      backgroundColor: kSurface,
+      backgroundColor: nt.surface,
       resizeToAvoidBottomInset: false,
       body: Center(
         child: ConstrainedBox(
@@ -118,7 +119,7 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
                 bottom: false,
                 child: EditorialTopBar(title: l10n.changePasswordTitle),
               ),
-              Container(height: 1, color: kBorder),
+              Container(height: 1, color: nt.border),
               Expanded(
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.all(24),
@@ -129,7 +130,7 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
                       children: [
                         Text(
                           l10n.changePasswordSubtitle,
-                          style: const TextStyle(color: kText2, fontSize: 14),
+                          style: TextStyle(color: nt.text2, fontSize: 14),
                         ),
                         const SizedBox(height: 24),
 
@@ -193,20 +194,20 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
                           Container(
                             padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
-                              color: kSand,
+                              color: nt.sand,
                               borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: kBorder),
+                              border: Border.all(color: nt.border),
                             ),
                             child: Row(
                               children: [
-                                const Icon(Icons.error_outline_rounded,
-                                    color: kDanger, size: 20),
+                                Icon(Icons.error_outline_rounded,
+                                    color: nt.danger, size: 20),
                                 const SizedBox(width: 8),
                                 Expanded(
                                   child: Text(
                                     _errorMessage!,
-                                    style: const TextStyle(
-                                        color: kDanger, fontSize: 13),
+                                    style: TextStyle(
+                                        color: nt.danger, fontSize: 13),
                                   ),
                                 ),
                               ],
@@ -220,8 +221,8 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
                           builder: (online) => ElevatedButton(
                           onPressed: (_isLoading || !online) ? null : _submit,
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: kForest,
-                            foregroundColor: kSurface,
+                            backgroundColor: nt.forest,
+                            foregroundColor: nt.surface,
                             padding: const EdgeInsets.symmetric(vertical: 16),
                           ),
                           child: _isLoading
@@ -276,6 +277,7 @@ class _PasswordField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final nt = context.nt;
     return TextFormField(
       controller: controller,
       obscureText: obscure,
@@ -291,7 +293,7 @@ class _PasswordField extends StatelessWidget {
             obscure
                 ? Icons.visibility_outlined
                 : Icons.visibility_off_outlined,
-            color: kText3,
+            color: nt.text3,
             size: 20,
           ),
           onPressed: onToggle,

@@ -306,6 +306,7 @@ class _AppShellState extends ConsumerState<_AppShell> {
 
   @override
   Widget build(BuildContext context) {
+    final nt = context.nt;
     // Single source of truth for connectivity — see ConnectivityService.
     // Default to "online" while the stream is still seeding (optimistic).
     final isOffline = !ref
@@ -335,16 +336,16 @@ class _AppShellState extends ConsumerState<_AppShell> {
         ],
       ),
       bottomNavigationBar: Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          border: Border(top: BorderSide(color: Color(0xFFE4EDE6))),
+        decoration: BoxDecoration(
+          color: nt.surface,
+          border: Border(top: BorderSide(color: nt.border)),
         ),
         child: BottomNavigationBar(
           currentIndex: widget.navigationShell.currentIndex,
           elevation: 0,
-          backgroundColor: Colors.white,
-          selectedItemColor: kForest,
-          unselectedItemColor: const Color(0xFF93A898),
+          backgroundColor: nt.surface,
+          selectedItemColor: nt.forest,
+          unselectedItemColor: nt.text3,
           onTap: (i) {
             widget.navigationShell.goBranch(
               i,
@@ -385,9 +386,12 @@ class _OfflineBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final nt = context.nt;
     final l10n = AppLocalizations.of(context)!;
+    // onError, not white — dark mode lightens the red, so the fg must darken
+    final onError = Theme.of(context).colorScheme.onError;
     return ColoredBox(
-      color: kRatingRed,
+      color: nt.ratingRed,
       child: SafeArea(
         bottom: false,
         child: Padding(
@@ -395,12 +399,12 @@ class _OfflineBanner extends StatelessWidget {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.wifi_off_rounded, color: Colors.white, size: 16),
+              Icon(Icons.wifi_off_rounded, color: onError, size: 16),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
                   l10n.offlineBanner,
-                  style: const TextStyle(color: Colors.white, fontSize: 13, height: 1.3),
+                  style: TextStyle(color: onError, fontSize: 13, height: 1.3),
                   textAlign: TextAlign.center
                 ),
               ),
@@ -418,20 +422,23 @@ class _DownloadBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final nt = context.nt;
+    // onPrimary, not white — dark mode lightens the green fill
+    final onPrimary = Theme.of(context).colorScheme.onPrimary;
     return ColoredBox(
-      color: kForest,
+      color: nt.forest,
       child: SafeArea(
         bottom: false,
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           child: Row(
             children: [
-              const Icon(Icons.smartphone, color: Colors.white, size: 18),
+              Icon(Icons.smartphone, color: onPrimary, size: 18),
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
                   AppLocalizations.of(context)!.downloadBanner,
-                  style: const TextStyle(color: Colors.white, fontSize: 13, height: 1.4),
+                  style: TextStyle(color: onPrimary, fontSize: 13, height: 1.4),
                 ),
               ),
               if (kAndroidDownloadUrl.isNotEmpty)
@@ -439,7 +446,7 @@ class _DownloadBanner extends StatelessWidget {
                   onPressed: () => launchUrl(Uri.parse(kAndroidDownloadUrl),
                       mode: LaunchMode.externalApplication),
                   style: TextButton.styleFrom(
-                    foregroundColor: Colors.white,
+                    foregroundColor: onPrimary,
                     padding:
                         const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     textStyle: const TextStyle(
@@ -448,7 +455,7 @@ class _DownloadBanner extends StatelessWidget {
                   child: Text(AppLocalizations.of(context)!.downloadBannerButton),
                 ),
               IconButton(
-                icon: const Icon(Icons.close, color: Colors.white, size: 18),
+                icon: Icon(Icons.close, color: onPrimary, size: 18),
                 onPressed: onDismiss,
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(),

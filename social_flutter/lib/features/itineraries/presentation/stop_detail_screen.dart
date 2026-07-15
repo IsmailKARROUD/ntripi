@@ -112,13 +112,14 @@ class _StopDetailView extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final nt = context.nt;
     final l10n = AppLocalizations.of(context)!;
     final hasNotes = stop.notes != null && stop.notes!.trim().isNotEmpty;
     final hasAnnotations = stop.annotations.isNotEmpty;
     final hasTransit = inboundSegment != null || outboundSegment != null;
 
     return Scaffold(
-      backgroundColor: kSurface,
+      backgroundColor: nt.surface,
       body: CustomScrollView(
         slivers: [
           // ── Stop hero ──────────────────────────────────────────────────────
@@ -279,8 +280,9 @@ class _StopHero extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final nt = context.nt;
     return Container(
-      color: kMist,
+      color: nt.mist,
       padding: EdgeInsets.fromLTRB(
           16, MediaQuery.of(context).padding.top + 12, 16, 20),
       child: Column(
@@ -293,7 +295,7 @@ class _StopHero extends StatelessWidget {
                 onPressed: onBack,
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(),
-                color: kBark,
+                color: nt.bark,
               ),
               const Spacer(),
               if (onOpenInMaps != null) ...[
@@ -312,11 +314,11 @@ class _StopHero extends StatelessWidget {
                 width: 56,
                 height: 56,
                 decoration: BoxDecoration(
-                  color: kSurface,
+                  color: nt.surface,
                   borderRadius: BorderRadius.circular(18),
                   boxShadow: [
                     BoxShadow(
-                      color: kForest.withValues(alpha: 0.18),
+                      color: nt.forest.withValues(alpha: 0.18),
                       blurRadius: 12,
                       offset: const Offset(0, 4),
                     ),
@@ -325,10 +327,10 @@ class _StopHero extends StatelessWidget {
                 alignment: Alignment.center,
                 child: Text(
                   '$stopNumber',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 26,
                     fontWeight: FontWeight.w800,
-                    color: kForest,
+                    color: nt.forest,
                   ),
                 ),
               ),
@@ -340,10 +342,10 @@ class _StopHero extends StatelessWidget {
                     Text(
                       AppLocalizations.of(context)!
                           .stopNumberOfTotal(stopNumber, totalStops),
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 10,
                         fontWeight: FontWeight.w700,
-                        color: kForest,
+                        color: nt.forest,
                         letterSpacing: 0.8,
                       ),
                     ),
@@ -361,10 +363,10 @@ class _StopHero extends StatelessWidget {
                             stop.placeName ??
                                 AppLocalizations.of(context)!
                                     .stopWithNumber(stopNumber),
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 22,
                               fontWeight: FontWeight.w700,
-                              color: kBark,
+                              color: nt.bark,
                               letterSpacing: -0.3,
                               height: 1.1,
                             ),
@@ -374,15 +376,15 @@ class _StopHero extends StatelessWidget {
                               padding: const EdgeInsets.only(top: 2),
                               child: Row(
                                 children: [
-                                  const Icon(Icons.location_on_rounded,
-                                      size: 13, color: kText2),
+                                  Icon(Icons.location_on_rounded,
+                                      size: 13, color: nt.text2),
                                   const SizedBox(width: 4),
                                   Expanded(
                                     child: Text(
                                       _locationText!,
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                           fontSize: 12,
-                                          color: kText2,
+                                          color: nt.text2,
                                           fontWeight: FontWeight.w500),
                                     ),
                                   ),
@@ -411,7 +413,7 @@ class _StopHero extends StatelessWidget {
 // ─── Open-in-maps button ──────────────────────────────────────────────────────
 // Forest-tinted pill matching the itinerary route button — opens this stop's
 // location in an external map app. Not offline-gated: handing off to another
-// app doesn't require a connection here (kEditBlue stays reserved for Edit).
+// app doesn't require a connection here (nt.editBlue stays reserved for Edit).
 class _OpenInMapsButton extends StatelessWidget {
   final VoidCallback onTap;
 
@@ -419,6 +421,7 @@ class _OpenInMapsButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final nt = context.nt;
     return Tooltip(
       message: AppLocalizations.of(context)!.openInMaps,
       child: Material(
@@ -429,12 +432,12 @@ class _OpenInMapsButton extends StatelessWidget {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
-              color: kMist,
+              color: nt.mist,
               borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: kForest.withValues(alpha: 0.13)),
+              border: Border.all(color: nt.forest.withValues(alpha: 0.13)),
             ),
             child:
-                const Icon(Icons.directions_rounded, size: 20, color: kForest),
+                Icon(Icons.directions_rounded, size: 20, color: nt.forest),
           ),
         ),
       ),
@@ -449,24 +452,25 @@ class _PlaceTypeChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final nt = context.nt;
     final l10n = AppLocalizations.of(context)!;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
-        color: placeType.color.withValues(alpha: 0.12),
+        color: placeType.color(nt).withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(999),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(placeType.icon, size: 14, color: placeType.color),
+          Icon(placeType.icon, size: 14, color: placeType.color(nt)),
           const SizedBox(width: 5),
           Text(
             placeType.label(l10n),
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w700,
-              color: placeType.color,
+              color: placeType.color(nt),
             ),
           ),
         ],
@@ -486,27 +490,28 @@ class _StopStat extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final nt = context.nt;
     return Expanded(
       child: Container(
         padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
         decoration: BoxDecoration(
-          color: kSurface,
+          color: nt.surface,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: kBorder),
+          border: Border.all(color: nt.border),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
-                Icon(icon, size: 14, color: kForest),
+                Icon(icon, size: 14, color: nt.forest),
                 const SizedBox(width: 6),
                 Text(
                   label.toUpperCase(),
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 10,
                     fontWeight: FontWeight.w700,
-                    color: kText2,
+                    color: nt.text2,
                     letterSpacing: 0.4,
                   ),
                 ),
@@ -515,10 +520,10 @@ class _StopStat extends StatelessWidget {
             const SizedBox(height: 4),
             Text(
               value,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 17,
                 fontWeight: FontWeight.w800,
-                color: kBark,
+                color: nt.bark,
                 letterSpacing: -0.2,
               ),
             ),
@@ -536,14 +541,15 @@ class _AnnotationFullRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final nt = context.nt;
     final t = annotation.type;
 
     return Container(
       padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
       decoration: BoxDecoration(
-        color: t.bg,
+        color: t.bg(nt),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: t.fg.withValues(alpha: 0.13)),
+        border: Border.all(color: t.fg(nt).withValues(alpha: 0.13)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -552,11 +558,11 @@ class _AnnotationFullRow extends StatelessWidget {
             width: 28,
             height: 28,
             decoration: BoxDecoration(
-              color: t.fg.withValues(alpha: 0.2),
+              color: t.fg(nt).withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(10),
             ),
             alignment: Alignment.center,
-            child: Icon(t.icon, size: 15, color: t.fg),
+            child: Icon(t.icon, size: 15, color: t.fg(nt)),
           ),
           const SizedBox(width: 10),
           Expanded(
@@ -568,16 +574,16 @@ class _AnnotationFullRow extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
-                    color: t.fg,
+                    color: t.fg(nt),
                     letterSpacing: 0.5,
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   annotation.content,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 13.5,
-                    color: kBark,
+                    color: nt.bark,
                     height: 1.5,
                   ),
                 ),
@@ -624,6 +630,7 @@ class _TransitFullRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final nt = context.nt;
     final l10n = AppLocalizations.of(context)!;
     final isInbound = direction == _TransitDirection.inbound;
     final otherName = isInbound
@@ -645,7 +652,7 @@ class _TransitFullRow extends StatelessWidget {
                     ? Icons.south_east_rounded
                     : Icons.north_east_rounded,
                 size: 12,
-                color: kText3,
+                color: nt.text3,
               ),
               const SizedBox(width: 4),
               Expanded(
@@ -653,9 +660,9 @@ class _TransitFullRow extends StatelessWidget {
                   isInbound
                       ? l10n.fromStopName(otherName)
                       : l10n.toStopName(otherName),
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 11,
-                    color: kText2,
+                    color: nt.text2,
                     fontWeight: FontWeight.w500,
                   ),
                   overflow: TextOverflow.ellipsis,
@@ -668,16 +675,16 @@ class _TransitFullRow extends StatelessWidget {
           // ── One row per leg ────────────────────────────────────────────
           Container(
             decoration: BoxDecoration(
-              color: kTransitBg,
+              color: nt.transitBg,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: kTransitBorder),
+              border: Border.all(color: nt.transitBorder),
             ),
             child: Column(
               children: [
                 for (var i = 0; i < legs.length; i++) ...[
                   if (i > 0)
-                    const Divider(
-                        height: 1, color: kTransitBorder, indent: 12),
+                    Divider(
+                        height: 1, color: nt.transitBorder, indent: 12),
                   Padding(
                     padding: const EdgeInsets.symmetric(
                         horizontal: 12, vertical: 10),
@@ -688,12 +695,12 @@ class _TransitFullRow extends StatelessWidget {
                           width: 32,
                           height: 32,
                           decoration: BoxDecoration(
-                            color: kTransitIcon.withValues(alpha: 0.12),
+                            color: nt.transitIcon.withValues(alpha: 0.12),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           alignment: Alignment.center,
                           child: Icon(legs[i].mode.icon,
-                              size: 16, color: kTransitIcon),
+                              size: 16, color: nt.transitIcon),
                         ),
                         const SizedBox(width: 10),
                         // Mode label + optional line
@@ -703,18 +710,18 @@ class _TransitFullRow extends StatelessWidget {
                             children: [
                               Text(
                                 legs[i].mode.label(l10n),
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 13,
                                   fontWeight: FontWeight.w700,
-                                  color: kBark,
+                                  color: nt.bark,
                                 ),
                               ),
                               if (legs[i].line != null &&
                                   legs[i].line!.isNotEmpty)
                                 Text(
                                   legs[i].line!,
-                                  style: const TextStyle(
-                                      fontSize: 11, color: kText2),
+                                  style: TextStyle(
+                                      fontSize: 11, color: nt.text2),
                                 ),
                             ],
                           ),
@@ -727,16 +734,16 @@ class _TransitFullRow extends StatelessWidget {
                                 legs[i].durationMin! > 0)
                               Text(
                                 formatDuration(legs[i].durationMin, l10n),
-                                style: const TextStyle(
+                                style: TextStyle(
                                     fontSize: 12,
                                     fontWeight: FontWeight.w600,
-                                    color: kBark),
+                                    color: nt.bark),
                               ),
                             Text(
                               _fmtLegCost(
                                   legs[i].cost, legs[i].isFree, l10n),
-                              style: const TextStyle(
-                                  fontSize: 11, color: kText2),
+                              style: TextStyle(
+                                  fontSize: 11, color: nt.text2),
                             ),
                           ],
                         ),
@@ -747,41 +754,41 @@ class _TransitFullRow extends StatelessWidget {
 
                 // ── Total row (multi-leg only) ──────────────────────────
                 if (multiLeg) ...[
-                  const Divider(height: 1, color: kTransitBorder),
+                  Divider(height: 1, color: nt.transitBorder),
                   Padding(
                     padding: const EdgeInsets.fromLTRB(12, 7, 12, 7),
                     child: Row(
                       children: [
-                        const Icon(Icons.summarize_rounded,
-                            size: 13, color: kTransitIcon),
+                        Icon(Icons.summarize_rounded,
+                            size: 13, color: nt.transitIcon),
                         const SizedBox(width: 6),
                         Text(
                           l10n.totalLabel,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w700,
-                            color: kTransitIcon,
+                            color: nt.transitIcon,
                           ),
                         ),
                         const Spacer(),
                         if (segment.totalDurationMin > 0) ...[
                           Text(
                             formatDuration(segment.totalDurationMin, l10n),
-                            style: const TextStyle(
-                                fontSize: 11, color: kTransitIcon),
+                            style: TextStyle(
+                                fontSize: 11, color: nt.transitIcon),
                           ),
-                          const Padding(
+                          Padding(
                             padding:
                                 EdgeInsets.symmetric(horizontal: 5),
                             child: Text('·',
                                 style: TextStyle(
-                                    fontSize: 11, color: kTransitIcon)),
+                                    fontSize: 11, color: nt.transitIcon)),
                           ),
                         ],
                         Text(
                           _totalCost(l10n),
-                          style: const TextStyle(
-                              fontSize: 11, color: kTransitIcon),
+                          style: TextStyle(
+                              fontSize: 11, color: nt.transitIcon),
                         ),
                       ],
                     ),
@@ -805,18 +812,19 @@ class _SectionLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final nt = context.nt;
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 6),
       child: Row(
         children: [
-          Icon(icon, size: 13, color: kText2),
+          Icon(icon, size: 13, color: nt.text2),
           const SizedBox(width: 6),
           Text(
             label.toUpperCase(),
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w700,
-              color: kText2,
+              color: nt.text2,
               letterSpacing: 0.6,
             ),
           ),
@@ -832,12 +840,13 @@ class _SectionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final nt = context.nt;
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 0, 16, 0),
       decoration: BoxDecoration(
-        color: kSurface,
+        color: nt.surface,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: kBorder),
+        border: Border.all(color: nt.border),
       ),
       clipBehavior: Clip.antiAlias,
       child: child,

@@ -40,7 +40,9 @@ class NtripiLogo extends StatelessWidget {
               fontFamily: 'DM Sans',
               fontSize: size * 0.75,
               fontWeight: FontWeight.w800,
-              color: onDark ? const Color(0xFF94D4A8) : kForest,
+              // nt.forest flips to a light green in dark mode, keeping the
+              // wordmark readable on dark surfaces.
+              color: onDark ? NtripiBrand.mint : context.nt.forest,
               letterSpacing: -0.5,
               height: 1,
             ),
@@ -66,7 +68,8 @@ class _LogoMarkPainter extends CustomPainter {
         Rect.fromLTWH(0, 0, size.width, size.height),
         Radius.circular(8 * s),
       ),
-      Paint()..color = onDark ? kCanopy : kForest,
+      // Brand constants — the logo mark never flips with the theme.
+      Paint()..color = onDark ? NtripiBrand.canopy : NtripiBrand.forest,
     );
 
     // N route path: bottom-left → top-left → mid-bottom → top-right
@@ -79,7 +82,7 @@ class _LogoMarkPainter extends CustomPainter {
     canvas.drawPath(
       path,
       Paint()
-        ..color = Colors.white
+        ..color = NtripiBrand.chrome
         ..style = PaintingStyle.stroke
         ..strokeWidth = 2.5 * s
         ..strokeCap = StrokeCap.round
@@ -90,14 +93,14 @@ class _LogoMarkPainter extends CustomPainter {
     canvas.drawCircle(
       Offset(24 * s, 10 * s),
       3 * s,
-      Paint()..color = kAmber,
+      Paint()..color = NtripiBrand.amber,
     );
 
     // White inner dot
     canvas.drawCircle(
       Offset(24 * s, 10 * s),
       1.5 * s,
-      Paint()..color = Colors.white,
+      Paint()..color = NtripiBrand.chrome,
     );
   }
 

@@ -14,15 +14,16 @@ class EmptyItinerariesCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final nt = context.nt;
     final l10n = AppLocalizations.of(context)!;
     return Column(
       children: [
         Container(
           padding: const EdgeInsets.all(18),
           decoration: BoxDecoration(
-            color: const Color(0xFFD0EBDA),
+            color: nt.mist,
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: kBorder),
+            border: Border.all(color: nt.border),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -31,34 +32,34 @@ class EmptyItinerariesCard extends StatelessWidget {
                 width: 38,
                 height: 38,
                 decoration: BoxDecoration(
-                  color: kForest,
+                  color: nt.forest,
                   borderRadius: BorderRadius.circular(12),
                   boxShadow: [
                     BoxShadow(
-                      color: kForest.withValues(alpha: 0.25),
+                      color: nt.forest.withValues(alpha: 0.25),
                       blurRadius: 12,
                       offset: const Offset(0, 4),
                     ),
                   ],
                 ),
-                child: const Icon(Icons.map_rounded,
-                    color: Colors.white, size: 20),
+                child: Icon(Icons.map_rounded,
+                    color: Theme.of(context).colorScheme.onPrimary, size: 20),
               ),
               const SizedBox(height: 12),
               Text(
                 l10n.planFirstJourney,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 17,
                   fontWeight: FontWeight.w700,
-                  color: kBark,
+                  color: nt.bark,
                   letterSpacing: -0.2,
                 ),
               ),
               const SizedBox(height: 4),
               Text(
                 l10n.planFirstJourneyHint,
-                style: const TextStyle(
-                    fontSize: 13, color: kText2, height: 1.5),
+                style: TextStyle(
+                    fontSize: 13, color: nt.text2, height: 1.5),
               ),
               const SizedBox(height: 14),
               GestureDetector(
@@ -67,11 +68,11 @@ class EmptyItinerariesCard extends StatelessWidget {
                   height: 42,
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   decoration: BoxDecoration(
-                    color: kForest,
+                    color: nt.forest,
                     borderRadius: BorderRadius.circular(14),
                     boxShadow: [
                       BoxShadow(
-                        color: kForest.withValues(alpha: 0.25),
+                        color: nt.forest.withValues(alpha: 0.25),
                         blurRadius: 12,
                         offset: const Offset(0, 4),
                       ),
@@ -80,15 +81,16 @@ class EmptyItinerariesCard extends StatelessWidget {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(Icons.add_rounded,
-                          color: Colors.white, size: 18),
+                      Icon(Icons.add_rounded,
+                          color: Theme.of(context).colorScheme.onPrimary,
+                          size: 18),
                       const SizedBox(width: 6),
                       Text(
                         l10n.createItinerary,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w700,
-                          color: Colors.white,
+                          color: Theme.of(context).colorScheme.onPrimary,
                         ),
                       ),
                     ],
@@ -104,9 +106,9 @@ class EmptyItinerariesCard extends StatelessWidget {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
             decoration: BoxDecoration(
-              color: kSurface,
+              color: nt.surface,
               borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: kBorder),
+              border: Border.all(color: nt.border),
             ),
             child: Row(
               children: [
@@ -118,21 +120,21 @@ class EmptyItinerariesCard extends StatelessWidget {
                     children: [
                       Text(
                         l10n.needInspiration,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w700,
-                          color: kBark,
+                          color: nt.bark,
                         ),
                       ),
                       Text(
                         l10n.browseForIdeas,
                         style:
-                            const TextStyle(fontSize: 11, color: kText2),
+                            TextStyle(fontSize: 11, color: nt.text2),
                       ),
                     ],
                   ),
                 ),
-                const Icon(Icons.chevron_right, size: 20, color: kText3),
+                Icon(Icons.chevron_right, size: 20, color: nt.text3),
               ],
             ),
           ),
@@ -148,14 +150,15 @@ class _SmallIconBox extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final nt = context.nt;
     return Container(
       width: 34,
       height: 34,
       decoration: BoxDecoration(
-        color: kSand,
+        color: nt.sand,
         borderRadius: BorderRadius.circular(10),
       ),
-      child: Icon(icon, size: 18, color: kForest),
+      child: Icon(icon, size: 18, color: nt.forest),
     );
   }
 }
