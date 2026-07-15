@@ -20,6 +20,7 @@ import 'package:social_flutter/l10n/app_localizations.dart';
 import 'package:social_flutter/shared/widgets/field_help.dart';
 import 'package:social_flutter/shared/widgets/loaders.dart';
 import 'package:social_flutter/shared/widgets/locale_picker_button.dart';
+import 'package:social_flutter/shared/widgets/theme_picker_button.dart';
 import 'package:social_flutter/shared/widgets/offline_gate.dart';
 import 'package:social_flutter/shared/widgets/saving_overlay.dart';
 
@@ -184,6 +185,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       const SizedBox(width: 12),
                       const NtripiLogo(size: 28, showWordmark: true),
                       const Spacer(),
+                      const ThemePickerButton(),
+                      const SizedBox(width: 8),
                       const LocalePickerButton(),
                     ],
                   ),

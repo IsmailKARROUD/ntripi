@@ -17,6 +17,7 @@ import 'package:social_flutter/l10n/app_localizations.dart';
 import 'package:social_flutter/shared/widgets/field_help.dart';
 import 'package:social_flutter/shared/widgets/loaders.dart';
 import 'package:social_flutter/shared/widgets/locale_picker_button.dart';
+import 'package:social_flutter/shared/widgets/theme_picker_button.dart';
 import 'package:social_flutter/shared/widgets/offline_gate.dart';
 import 'package:social_flutter/shared/widgets/saving_overlay.dart';
 
@@ -143,12 +144,19 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // Language picker — top-right, before logo
+                // Theme + language pickers — top-right, before logo
                 const Align(
                   alignment: AlignmentDirectional.centerEnd,
                   child: Padding(
                     padding: EdgeInsets.only(top: 12),
-                    child: LocalePickerButton(),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        ThemePickerButton(),
+                        Spacer(),
+                        LocalePickerButton(),
+                      ],
+                    ),
                   ),
                 ),
 

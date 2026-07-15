@@ -11,6 +11,7 @@ import 'package:social_flutter/core/providers/theme_mode_provider.dart';
 import 'package:social_flutter/core/ui/app_theme.dart';
 import 'package:social_flutter/features/profile/presentation/widgets/profile_settings_sheet.dart';
 import 'package:social_flutter/l10n/app_localizations.dart';
+import 'package:social_flutter/shared/widgets/theme_picker_button.dart';
 
 Widget _host(ProviderContainer container) {
   return UncontrolledProviderScope(
@@ -98,6 +99,44 @@ void main() {
       // …and the settings row now shows the new mode as its detail
       expect(find.text('Dark'), findsOneWidget);
 
+      const storage = FlutterSecureStorage();
+      expect(await storage.read(key: 'ntripi_theme_mode'), 'dark');
+    });
+  });
+
+  group('ThemePickerButton (pre-auth screens)', () {
+    testWidgets(
+        'Given the pill is tapped, '
+        'When Dark is selected from the menu, '
+        'Then the provider switches to dark and persists it', (tester) async {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: MaterialApp(
+            theme: buildNtripiTheme(),
+            darkTheme: buildNtripiDarkTheme(),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: const Scaffold(
+              body: Center(child: ThemePickerButton()),
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.byType(ThemePickerButton));
+      await tester.pumpAndSettle();
+
+      expect(find.text('System'), findsOneWidget);
+      expect(find.text('Light'), findsOneWidget);
+      expect(find.text('Dark'), findsOneWidget);
+
+      await tester.tap(find.text('Dark'));
+      await tester.pumpAndSettle();
+
+      expect(container.read(themeModeProvider), ThemeMode.dark);
       const storage = FlutterSecureStorage();
       expect(await storage.read(key: 'ntripi_theme_mode'), 'dark');
     });
