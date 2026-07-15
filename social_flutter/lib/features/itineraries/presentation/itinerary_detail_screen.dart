@@ -1560,7 +1560,9 @@ class _DetailMetaChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
-        color: nt.shadow.withValues(alpha: 0.04),
+        // bark (ink), not shadow: a translucent fill must flip per theme, else
+        // black-on-dark makes the pill vanish against the dark surface.
+        color: nt.bark.withValues(alpha: 0.04),
         borderRadius: BorderRadius.circular(999),
       ),
       child: Row(

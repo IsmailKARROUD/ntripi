@@ -257,15 +257,15 @@ class NtripiColors extends ThemeExtension<NtripiColors> {
   // luminance relationship inverts (elevated layers get lighter).
   static const dark = NtripiColors(
     brightness: Brightness.dark,
-    forest: Color(0xFF74D098),
+    forest: Color(0xFF089000),
     canopy: Color(0xFF57BB83),
     mist: Color(0xFF1F3A2A),
     amber: Color(0xFFDFAE55),
     sand: Color(0xFF1C231D),
     bark: Color(0xFFE2E9E2),
-    surface: Color(0xFF121813),
+    surface: Color(0xFF010908),
     border: Color(0xFF2A342C),
-    text2: Color(0xFFA8BCAE),
+    text2: Color(0xFFB8CFC9),
     text3: Color(0xFF75897B),
     inverseSurface: Color(0xFFE2E9E2),
     onInverseSurface: Color(0xFF2B322C),
