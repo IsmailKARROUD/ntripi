@@ -7,7 +7,7 @@ deploy, not an app-store submission.
 """
 
 PRIVACY_VERSION = "1.0"
-PRIVACY_DATE = "2026-01-01"
+PRIVACY_DATE = "2026-07-16"
 
 PRIVACY_CONTENT = """
 <h2>1. Information We Collect</h2>
@@ -37,9 +37,13 @@ user link) to preserve the integrity of community scores. You consent to this
 when you create your account, as described in our Terms of Service.</p>
 
 <h2>5. Cookies</h2>
-<p>When you sign in through the Ntripi website we set a single HTTP-only session
-cookie (<code>ntripi_session</code>) containing a signed JWT. This cookie is
-used only to keep you signed in and is never shared with third parties.</p>
+<p>Signing in does not use cookies — your session tokens are stored on your
+device and sent only in request headers.</p>
+<p>Website pages set a single preference cookie (<code>ntripi_lang</code>) to
+remember your language choice. It contains no personal data and is never
+shared with anyone.</p>
+<p>If you sign in with Google, Google may set its own cookies as part of its
+sign-in service; those are governed by Google's privacy policy.</p>
 <p>We do not use analytics cookies, advertising cookies, or any third-party
 tracking scripts.</p>
 

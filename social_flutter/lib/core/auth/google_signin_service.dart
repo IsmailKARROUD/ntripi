@@ -5,6 +5,7 @@
 // a singleton (GoogleSignIn.instance), a one-time initialize(), synchronous
 // supportsAuthenticate()/authentication, and authenticate() replacing signIn().
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:google_sign_in/google_sign_in.dart';
 
 import 'package:social_flutter/core/api/api_endpoints.dart';
@@ -21,8 +22,12 @@ class GoogleSignInService {
     return _initFuture ??= GoogleSignIn.instance.initialize(
       // serverClientId = the web/server OAuth client id; makes the issued ID
       // token's `aud` equal the backend audience. Null when not configured.
-      serverClientId:
-          kGoogleServerClientId.isEmpty ? null : kGoogleServerClientId,
+      // Must be null on web — the plugin asserts serverClientId == null there
+      // (web reads its client id from index.html's google-signin-client_id
+      // meta tag, and the issued credential is already aud=web-client-id).
+      serverClientId: kIsWeb || kGoogleServerClientId.isEmpty
+          ? null
+          : kGoogleServerClientId,
     );
   }
 
