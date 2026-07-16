@@ -176,8 +176,6 @@
   </a>
   <div class="nav-links">
     {% for code in supported if code != lang %}<a class="btn-ghost" href="?lang={{ code }}">{{ lang_names[code] }}</a>{% endfor %}
-    <a class="btn-ghost" href="/login">{{ _('nav_sign_in') }}</a>
-    <a class="btn-primary" href="/register">{{ _('nav_sign_up') }}</a>
   </div>
 </nav>
 
@@ -219,7 +217,6 @@
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="8" cy="8" r="6.5"/><path d="M8 1.5c2 2.5 2 8.5 0 11M1.5 8h13M2 5h12M2 11h12" stroke-width="1.2"/></svg>
         {{ _('home_cta_continue_web') }}
       </a>
-      <p class="hero-signin">{{ _('home_hero_have_account') }} <a href="/login">{{ _('nav_sign_in') }}</a></p>
     </div>
   </div>
 
