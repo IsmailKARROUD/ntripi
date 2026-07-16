@@ -114,9 +114,11 @@
     .phone-notch { position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 80px; height: 18px; background: var(--bark); border-radius: 0 0 14px 14px; z-index: 10; }
 
     /* Phone mockup — ~0.55-scale replica of the app's itinerary detail screen */
-    .pm-cover { position: relative; height: 122px; flex-shrink: 0; background: linear-gradient(135deg, var(--nt-forest), var(--nt-canopy)); }
+    /* Cover = the app's grey trip-map placeholder (mapLandStart → mapLandEnd) */
+    .pm-cover { position: relative; height: 122px; flex-shrink: 0; background: linear-gradient(135deg, #EAEBEC, #D9DBDE); }
     .pm-cover-art { position: absolute; inset: 0; width: 100%; height: 100%; }
-    .pm-cover::after { content: ''; position: absolute; inset: 0; background: linear-gradient(rgba(26,42,30,.38), transparent 32%, transparent 55%, rgba(26,42,30,.62)); }
+    /* Same ink scrim the app draws over the hero: .4 top / .7 bottom, stops 0/30/60/100 */
+    .pm-cover::after { content: ''; position: absolute; inset: 0; background: linear-gradient(rgba(26,42,30,.4), transparent 30%, transparent 60%, rgba(26,42,30,.7)); }
     .pm-chrome { position: absolute; top: 25px; inset-inline: 9px; display: flex; justify-content: space-between; z-index: 2; }
     .pm-glass { width: 18px; height: 18px; border-radius: 6px; background: rgba(0,0,0,.33); border: 1px solid rgba(255,255,255,.2); display: flex; align-items: center; justify-content: center; color: #fff; }
     .pm-cover-bottom { position: absolute; bottom: 8px; inset-inline: 10px; z-index: 2; display: flex; flex-direction: column; align-items: flex-start; gap: 4px; }
@@ -129,8 +131,13 @@
     .pm-owner-handle { font-size: 7px; color: var(--nt-text2); line-height: 1.25; }
     .pm-rating { display: flex; align-items: center; gap: 2px; font-size: 9px; font-weight: 700; color: var(--nt-canopy); }
     .pm-rating small { font-size: 7px; font-weight: 500; color: var(--nt-text3); }
-    .pm-chips { display: flex; gap: 4px; padding: 2px 10px 7px; }
+    .pm-chips { display: flex; gap: 4px; padding: 2px 10px 6px; }
     .pm-chip { display: inline-flex; align-items: center; gap: 3px; padding: 3px 7px; border-radius: 50px; background: rgba(26,42,30,.04); font-size: 8px; font-weight: 500; color: var(--nt-bark); }
+    .pm-desc { padding: 0 10px 6px; font-size: 8px; line-height: 1.45; color: var(--nt-bark); }
+    /* Advice annotation chip — app editorial pair adviceBg/adviceFg */
+    .pm-annot { display: flex; align-items: center; gap: 3px; align-self: flex-start; max-width: calc(100% - 20px); margin: 0 10px 7px; padding: 3px 7px; border-radius: 9px; background: #E0EBE4; color: #1F5E3A; font-size: 8px; font-weight: 500; }
+    .pm-annot svg { flex-shrink: 0; }
+    .pm-annot span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .pm-stops { margin: 0 9px; background: #fff; border: 1px solid var(--nt-border); border-radius: 12px; overflow: hidden; }
     .pm-stop { display: flex; align-items: flex-start; gap: 7px; padding: 8px 9px; }
     .pm-stop-num { width: 18px; height: 18px; border-radius: 50%; background: var(--nt-mist); color: var(--nt-forest); font-size: 9px; font-weight: 800; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
@@ -171,8 +178,9 @@
     .ratings-text h2 span { color: var(--forest); }
     .ratings-text p { font-size: 15px; color: var(--text2); line-height: 1.7; margin-bottom: 24px; }
     .rating-pills { display: flex; flex-wrap: wrap; gap: 10px; }
-    /* App chip recipe: mist bg, forest label, stadium, flat */
-    .rating-pill { display: flex; align-items: center; background: var(--nt-mist); border-radius: 50px; padding: 7px 15px; font-size: 13px; font-weight: 600; color: var(--nt-forest); }
+    /* App chip recipe: mist bg, forest label, stadium, flat; icon = DimensionKey.icon */
+    .rating-pill { display: flex; align-items: center; gap: 7px; background: var(--nt-mist); border-radius: 50px; padding: 7px 15px; font-size: 13px; font-weight: 600; color: var(--nt-forest); }
+    .rating-pill svg { flex-shrink: 0; }
     /* App card recipe: flat, 1px border, radius 18, no shadow */
     .ratings-visual { background: var(--surface); border-radius: 18px; padding: 26px; border: 1px solid var(--nt-border); }
     .ratings-header { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
@@ -301,14 +309,39 @@
       <div class="phone-notch"></div>
       <div class="phone-screen">
         <div class="pm-cover">
+          <!-- Mini replica of the app's _TripMapPainter: river, parks, buildings, streets, dotted route, numbered pins -->
           <svg class="pm-cover-art" viewBox="0 0 214 122" preserveAspectRatio="xMidYMid slice" fill="none">
-            <polyline points="18,96 55,58 95,74 138,36 176,50" stroke="rgba(255,255,255,.5)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="1 6"/>
-            <circle cx="18" cy="96" r="3" fill="#fff" opacity=".9"/>
-            <circle cx="55" cy="58" r="2" fill="#fff" opacity=".55"/>
-            <circle cx="95" cy="74" r="2" fill="#fff" opacity=".55"/>
-            <circle cx="138" cy="36" r="2" fill="#fff" opacity=".55"/>
-            <circle cx="176" cy="50" r="4.5" fill="#C89030"/>
-            <circle cx="176" cy="50" r="2" fill="#fff"/>
+            <path d="M30,-6 C21,12 2,20 6,34 C10,46 -4,54 -13,61" stroke="rgba(199,208,212,.9)" stroke-width="10" stroke-linecap="round"/>
+            <rect x="133" y="7" width="60" height="29" rx="7" fill="rgba(205,214,205,.85)"/>
+            <ellipse cx="163" cy="22" rx="10" ry="6" fill="rgba(199,208,212,.9)"/>
+            <rect x="171" y="73" width="34" height="29" rx="6" fill="rgba(205,214,205,.85)"/>
+            <g fill="rgba(110,123,116,.18)">
+              <rect x="82" y="48.5" width="7.5" height="5" rx="1"/><rect x="94" y="54" width="6" height="6.5" rx="1"/>
+              <rect x="83" y="58.5" width="7.5" height="5" rx="1"/><rect x="132" y="48" width="6" height="6.5" rx="1"/>
+              <rect x="143" y="52.5" width="7.5" height="5" rx="1"/><rect x="95" y="78" width="6" height="6.5" rx="1"/>
+              <rect x="106" y="82.5" width="7.5" height="5" rx="1"/><rect x="40" y="70" width="6" height="6.5" rx="1"/>
+              <rect x="51" y="74.5" width="7.5" height="5" rx="1"/><rect x="117" y="104" width="6" height="6.5" rx="1"/>
+              <rect x="29" y="18.5" width="7.5" height="5" rx="1"/><rect x="42" y="23" width="6" height="6.5" rx="1"/>
+            </g>
+            <g stroke="rgba(255,255,255,.7)" stroke-width="1.4" stroke-linecap="round">
+              <line x1="-11" y1="100" x2="225" y2="86"/><line x1="107" y1="128" x2="130" y2="-6"/>
+              <line x1="-11" y1="49" x2="225" y2="33"/><line x1="21" y1="-6" x2="34" y2="128"/>
+              <line x1="154" y1="-6" x2="167" y2="128"/><line x1="188" y1="-6" x2="199" y2="128"/>
+              <line x1="-11" y1="16" x2="225" y2="11"/><line x1="-11" y1="116" x2="225" y2="110"/>
+            </g>
+            <g stroke="#fff" stroke-width="4.5" stroke-linecap="round">
+              <line x1="63" y1="128" x2="85" y2="-6"/><line x1="-11" y1="76" x2="225" y2="57"/>
+              <line x1="-11" y1="113" x2="225" y2="8"/>
+            </g>
+            <polyline points="28,98 68,95 73,70 118,66 122,40 158,38 188,24" stroke="#5E6B64" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="0.5 7.5"/>
+            <g font-size="6.5" font-weight="700" text-anchor="middle" fill="#fff">
+              <g fill="#6E7B74"><circle cx="28" cy="87" r="5"/><path d="M25.2,90.2 L30.8,90.2 L28,98 Z"/></g>
+              <text x="28" y="89.3" fill="#fff">1</text>
+              <g fill="#4B554F"><circle cx="118" cy="55" r="5"/><path d="M115.2,58.2 L120.8,58.2 L118,66 Z"/></g>
+              <text x="118" y="57.3" fill="#fff">2</text>
+              <g fill="#6E7B74"><circle cx="188" cy="13" r="5"/><path d="M185.2,16.2 L190.8,16.2 L188,24 Z"/></g>
+              <text x="188" y="15.3" fill="#fff">3</text>
+            </g>
           </svg>
           <div class="pm-chrome">
             <div class="pm-glass"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg></div>
@@ -335,6 +368,11 @@
           <span class="pm-chip"><svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="2.5" y="6" width="19" height="12" rx="2.5"/><circle cx="12" cy="12" r="2.6"/></svg>40 €</span>
           <span class="pm-chip"><svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 2.8C8.7 2.8 6 5.4 6 8.7c0 4.5 6 12 6 12s6-7.5 6-12c0-3.3-2.7-5.9-6-5.9z"/><circle cx="12" cy="8.7" r="2.2"/></svg>5 {{ _('share_stops') }}</span>
         </div>
+        <p class="pm-desc">{{ _('home_mock_desc') }}</p>
+        <div class="pm-annot">
+          <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0-4 10.5c.8.7 1.3 1.5 1.5 2.5h5c.2-1 .7-1.8 1.5-2.5A6 6 0 0 0 12 3z"/><path d="M9.5 19h5M10.5 21.5h3"/></svg>
+          <span>{{ _('home_mock_advice') }}</span>
+        </div>
         <div class="pm-stops">
           <div class="pm-stop">
             <div class="pm-stop-num">1</div>
@@ -347,7 +385,7 @@
           <div class="pm-transit">
             <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 11l1.5-4.5A2 2 0 0 1 8.4 5h7.2a2 2 0 0 1 1.9 1.5L19 11"/><rect x="3" y="11" width="18" height="6" rx="2"/><circle cx="7.5" cy="17" r="1.8"/><circle cx="16.5" cy="17" r="1.8"/></svg>
             {{ _('home_mock_taxi') }}
-            <span class="pm-transit-meta">15 min · 20 MAD</span>
+            <span class="pm-transit-meta" dir="ltr">15 min · 20 MAD</span>
           </div>
           <div class="pm-stop">
             <div class="pm-stop-num">2</div>
@@ -467,10 +505,12 @@
     <h2>{{ _('home_ratings_title_pre') }} <span>{{ _('home_ratings_title_em') }}</span></h2>
     <p>{{ _('home_ratings_p') }}</p>
     <div class="rating-pills">
-      <div class="rating-pill">{{ _('home_rating_overall') }}</div>
-      <div class="rating-pill">{{ _('home_rating_safety') }}</div>
-      <div class="rating-pill">{{ _('home_rating_accessibility') }}</div>
-      <div class="rating-pill">{{ _('home_rating_family') }}</div>
+      <div class="rating-pill"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 17.27l4.15 2.51c.76.46 1.69-.22 1.49-1.08l-1.1-4.72 3.67-3.18c.67-.58.31-1.68-.57-1.75l-4.83-.41-1.89-4.46c-.34-.81-1.5-.81-1.84 0L9.19 8.63l-4.83.41c-.88.07-1.24 1.17-.57 1.75l3.67 3.18-1.1 4.72c-.2.86.73 1.54 1.49 1.08z"/></svg>{{ _('home_rating_overall') }}</div>
+      <div class="rating-pill"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5.5c0 4.6-3 8.9-7 10-4-1.1-7-5.4-7-10V6l7-3z"/></svg>{{ _('home_rating_safety') }}</div>
+      <div class="rating-pill"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M8.5 14a4.5 4.5 0 0 0 7 0"/><circle cx="9" cy="9.5" r="1" fill="currentColor" stroke="none"/><circle cx="15" cy="9.5" r="1" fill="currentColor" stroke="none"/></svg>{{ _('home_rating_experience') }}</div>
+      <div class="rating-pill"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="4.5" r="2"/><path d="M12 7v5h4.5l2.5 5.5"/><circle cx="10.5" cy="16.5" r="4"/></svg>{{ _('home_rating_accessibility') }}</div>
+      <div class="rating-pill"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="4.5" r="2"/><path d="M9 7v6.5M9 13.5l-2.2 5.5M9 13.5l2.2 5.5"/><circle cx="16.5" cy="8.5" r="1.6"/><path d="M16.5 10.5v4.5M16.5 15l-1.6 4M16.5 15l1.6 4"/></svg>{{ _('home_rating_family') }}</div>
+      <div class="rating-pill"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="2.5"/><path d="M7 18c0-2.8 2.2-5 5-5s5 2.2 5 5"/><circle cx="4.8" cy="9.5" r="1.8"/><path d="M1.5 17c.3-1.9 1.7-3.3 3.5-3.5"/><circle cx="19.2" cy="9.5" r="1.8"/><path d="M22.5 17c-.3-1.9-1.7-3.3-3.5-3.5"/></svg>{{ _('home_rating_uncrowded') }}</div>
     </div>
   </div>
   <div class="ratings-visual">

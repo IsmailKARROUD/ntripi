@@ -207,10 +207,13 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "fr": "Nous allons au-delà d'une simple étoile. Chaque itinéraire est évalué sur plusieurs dimensions pour que vous sachiez toujours à quoi vous attendre.",
         "ar": "نذهب أبعد من نجمة واحدة. يُقيَّم كل خط سير عبر أبعاد متعددة لتعرف دائمًا ما ينتظرك قبل أن تنطلق.",
     },
-    "home_rating_overall": {"en": "Overall experience", "fr": "Expérience globale", "ar": "التجربة العامة"},
+    # Dimension pills mirror the app's DimensionKey labels (Flutter l10n) verbatim.
+    "home_rating_overall": {"en": "Overall", "fr": "Globale", "ar": "عام"},
     "home_rating_safety": {"en": "Safety", "fr": "Sécurité", "ar": "السلامة"},
+    "home_rating_experience": {"en": "Experience", "fr": "Expérience", "ar": "التجربة"},
     "home_rating_accessibility": {"en": "Accessibility", "fr": "Accessibilité", "ar": "سهولة الوصول"},
     "home_rating_family": {"en": "Family-friendly", "fr": "Adapté aux familles", "ar": "مناسب للعائلات"},
+    "home_rating_uncrowded": {"en": "Uncrowded", "fr": "Tranquillité", "ar": "غير مزدحم"},
     "home_cta_title": {"en": "Ready to explore?", "fr": "Prêt à explorer ?", "ar": "مستعد للاستكشاف؟"},
     "home_cta_sub": {
         "en": "Download the app or jump straight into the web experience.",
@@ -223,6 +226,16 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
     "home_mock_public": {"en": "Public", "fr": "Public", "ar": "عام"},
     "home_mock_taxi": {"en": "Taxi", "fr": "Taxi", "ar": "تاكسي"},
     "home_mock_trip_title": {"en": "Marrakech in a Day", "fr": "Marrakech en un jour", "ar": "مراكش في يوم واحد"},
+    "home_mock_desc": {
+        "en": "One perfect day in the Red City — souks, palaces and gardens. Every stop is worth it!",
+        "fr": "Une journée parfaite dans la ville rouge — souks, palais et jardins. Chaque étape en vaut la peine !",
+        "ar": "يوم مثالي في المدينة الحمراء — أسواق وقصور وحدائق. كل محطة تستحق الزيارة!",
+    },
+    "home_mock_advice": {
+        "en": "Go early — the souks are calm at sunrise",
+        "fr": "Partez tôt — les souks sont calmes au lever du soleil",
+        "ar": "انطلق باكرًا — الأسواق هادئة عند الشروق",
+    },
     # ── Waitlist modal ────────────────────────────────────────────────────
     "wl_title": {"en": "Be first to know", "fr": "Soyez informé en premier", "ar": "كن أول من يعلم"},
     "wl_sub": {
