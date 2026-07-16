@@ -25,8 +25,6 @@ RTL_LANGS = ("ar",)
 # privacy / ToS legal bodies stay English (see legal_en_only_notice).
 TRANSLATIONS: dict[str, dict[str, str]] = {
     # ── Nav / footer chrome (_base.html) ──────────────────────────────────
-    "nav_sign_in": {"en": "Sign in", "fr": "Se connecter", "ar": "تسجيل الدخول"},
-    "nav_sign_up": {"en": "Sign up", "fr": "S'inscrire", "ar": "إنشاء حساب"},
     "footer_privacy": {"en": "Privacy", "fr": "Confidentialité", "ar": "الخصوصية"},
     "footer_terms": {"en": "Terms", "fr": "Conditions", "ar": "الشروط"},
     "meta_default_desc": {
@@ -34,60 +32,8 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "fr": "Des itinéraires de voyage, partagés.",
         "ar": "خطوط سير للرحلات، تتم مشاركتها.",
     },
-    # ── Login ─────────────────────────────────────────────────────────────
-    "login_title": {"en": "Sign in — Ntripi", "fr": "Connexion — Ntripi", "ar": "تسجيل الدخول — Ntripi"},
-    "login_heading": {"en": "Sign in to Ntripi", "fr": "Connectez-vous à Ntripi", "ar": "سجّل الدخول إلى Ntripi"},
-    "login_email_or_username": {
-        "en": "Email or username",
-        "fr": "E-mail ou nom d'utilisateur",
-        "ar": "البريد الإلكتروني أو اسم المستخدم",
-    },
-    "login_password": {"en": "Password", "fr": "Mot de passe", "ar": "كلمة المرور"},
+    # login_submit is kept: reset_password_done.html labels its /app/ CTA with it.
     "login_submit": {"en": "Sign in", "fr": "Se connecter", "ar": "تسجيل الدخول"},
-    "login_new_prompt": {"en": "New to Ntripi?", "fr": "Nouveau sur Ntripi ?", "ar": "جديد على Ntripi؟"},
-    "login_create_account": {"en": "Create an account", "fr": "Créer un compte", "ar": "إنشاء حساب"},
-    # ── Register ──────────────────────────────────────────────────────────
-    "register_title": {"en": "Create account — Ntripi", "fr": "Créer un compte — Ntripi", "ar": "إنشاء حساب — Ntripi"},
-    "register_heading": {
-        "en": "Create your Ntripi account",
-        "fr": "Créez votre compte Ntripi",
-        "ar": "أنشئ حسابك على Ntripi",
-    },
-    "register_email": {"en": "Email", "fr": "E-mail", "ar": "البريد الإلكتروني"},
-    "register_username": {"en": "Username", "fr": "Identifiant", "ar": "اسم المستخدم"},
-    "register_username_help": {
-        "en": "4–30 chars: letters, numbers, periods, or underscores. Must start with a letter. Hyphens not allowed.",
-        "fr": "4 à 30 caractères : lettres, chiffres, points ou tirets bas. Doit commencer par une lettre. Les tirets ne sont pas autorisés.",
-        "ar": "من 4 إلى 30 حرفًا: أحرف أو أرقام أو نقاط أو شرطات سفلية. يجب أن يبدأ بحرف. الشرطات غير مسموح بها.",
-    },
-    "register_display_name": {"en": "Display name", "fr": "Nom affiché", "ar": "الاسم المعروض"},
-    "register_optional": {"en": "(optional)", "fr": "(optionnel)", "ar": "(اختياري)"},
-    "register_display_name_help": {
-        "en": "How others see you. Any language, emoji. Defaults to your @username.",
-        "fr": "Comment les autres vous voient. Toute langue, emoji. Par défaut, votre @identifiant.",
-        "ar": "كيف يراك الآخرون. بأي لغة ومع الرموز التعبيرية. الافتراضي هو @اسم المستخدم.",
-    },
-    "register_password": {"en": "Password", "fr": "Mot de passe", "ar": "كلمة المرور"},
-    "register_password_help": {
-        "en": "At least 8 characters, must include a digit.",
-        "fr": "Au moins 8 caractères, avec au moins un chiffre.",
-        "ar": "8 أحرف على الأقل، ويجب أن تتضمن رقمًا.",
-    },
-    "register_confirm_password": {
-        "en": "Confirm password",
-        "fr": "Confirmer le mot de passe",
-        "ar": "تأكيد كلمة المرور",
-    },
-    "register_agree_pre": {"en": "I agree to the", "fr": "J'accepte les", "ar": "أوافق على"},
-    "register_tos": {"en": "Terms of Service", "fr": "Conditions d'utilisation", "ar": "شروط الخدمة"},
-    "register_agree_and": {"en": "and", "fr": "et la", "ar": "و"},
-    "register_privacy": {"en": "Privacy Policy", "fr": "Politique de confidentialité", "ar": "سياسة الخصوصية"},
-    "register_submit": {"en": "Create account", "fr": "Créer un compte", "ar": "إنشاء الحساب"},
-    "register_have_account": {
-        "en": "Already have an account?",
-        "fr": "Vous avez déjà un compte ?",
-        "ar": "لديك حساب بالفعل؟",
-    },
     # ── Password reset ────────────────────────────────────────────────────
     "reset_title": {"en": "Reset password — Ntripi", "fr": "Réinitialiser — Ntripi", "ar": "إعادة تعيين كلمة المرور — Ntripi"},
     "reset_heading": {"en": "Set a new password", "fr": "Définir un nouveau mot de passe", "ar": "عيّن كلمة مرور جديدة"},

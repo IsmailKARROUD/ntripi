@@ -1,28 +1,24 @@
 """
-routers/web.py — Server-rendered marketing pages and web auth flow.
+routers/web.py — Server-rendered marketing pages and emailed-link landing pages.
 
 Routes:
   GET  /          → Homepage (hero + download CTAs)
-  GET  /login     → Login form (redirects if already logged in)
-  GET  /register  → Register form (redirects if already logged in)
+  GET  /login     → 302 → /app/ (auth lives in the Flutter app only)
+  GET  /register  → 302 → /app/ (auth lives in the Flutter app only)
   GET  /privacy   → Privacy Policy
   GET  /terms     → Terms of Service
-  POST /web/login     → Validates credentials, sets cookie, redirects to /app/
-  POST /web/register  → Creates account, sets cookie, redirects to /app/
+  GET  /reset-password       → Password-reset form (link from email)
+  POST /web/reset-password
+  GET  /verify-email         → Email-verification landing (link from email)
 
 /app/ is served by the StaticFiles mount in main.py (Flutter web build).
-
-Cookie strategy:
-  - Name: ntripi_session
-  - HTTP-only, Secure (production only), SameSite=Lax
-  - Max-Age matches the JWT expiry configured in settings
+All sign-in/sign-up happens inside the Flutter app — the server renders no
+auth forms and sets no session cookie.
 """
 
 from __future__ import annotations
 
-from datetime import timedelta
-
-from fastapi import APIRouter, Cookie, Depends, Form, Request
+from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy.orm import Session
 
@@ -32,7 +28,6 @@ from app.constants.tos import TOS_DATE, TOS_SUMMARY, TOS_VERSION
 from app.database import get_db
 from app.i18n import resolve_lang
 from app.services import auth_service
-from app.services.auth import create_access_token, decode_access_token
 from app.templating import templates
 
 router = APIRouter(tags=["web"])
@@ -42,43 +37,11 @@ router = APIRouter(tags=["web"])
 # Internal helpers
 # ---------------------------------------------------------------------------
 
-def _is_logged_in(session_token: str | None) -> bool:
-    if not session_token:
-        return False
-    return decode_access_token(session_token) is not None
-
-
 def _t(request: Request):
     """Translator bound to the request's resolved language (for page titles)."""
     from app.i18n import translator
 
     return translator(resolve_lang(request))
-
-
-def _issue_web_token(user_id: str, settings: Settings) -> str:
-    """Web sessions have their own (longer) lifetime than the mobile access
-    token — see WEB_SESSION_EXPIRE_MINUTES. The web flow has no refresh
-    mechanism, so shortening this would force re-login every 15 min."""
-    return create_access_token(
-        subject=user_id,
-        expires_delta=timedelta(minutes=settings.WEB_SESSION_EXPIRE_MINUTES),
-    )
-
-
-def _set_session_cookie(
-    response: RedirectResponse | HTMLResponse,
-    token: str,
-    settings: Settings,
-) -> None:
-    response.set_cookie(
-        key="ntripi_session",
-        value=token,
-        max_age=settings.WEB_SESSION_EXPIRE_MINUTES * 60,
-        path="/",
-        secure=not settings.DEBUG,
-        httponly=True,
-        samesite="lax",
-    )
 
 
 # ---------------------------------------------------------------------------
@@ -98,28 +61,16 @@ def homepage(
     })
 
 
-@router.get("/login", response_class=HTMLResponse)
-def login_page(
-    request: Request,
-    ntripi_session: str | None = Cookie(None),
-) -> HTMLResponse:
-    if _is_logged_in(ntripi_session):
-        return RedirectResponse("/app/", status_code=302)
-    return templates.TemplateResponse(request, "login.html", {
-        "page_title": _t(request)("login_title"),
-    })
+# Auth lives in the Flutter app — keep redirects so stale bookmarks/old links
+# land on the app, which shows its own login when unauthenticated.
+@router.get("/login")
+def login_page() -> RedirectResponse:
+    return RedirectResponse("/app/", status_code=302)
 
 
-@router.get("/register", response_class=HTMLResponse)
-def register_page(
-    request: Request,
-    ntripi_session: str | None = Cookie(None),
-) -> HTMLResponse:
-    if _is_logged_in(ntripi_session):
-        return RedirectResponse("/app/", status_code=302)
-    return templates.TemplateResponse(request, "register.html", {
-        "page_title": _t(request)("register_title"),
-    })
+@router.get("/register")
+def register_page() -> RedirectResponse:
+    return RedirectResponse("/app/", status_code=302)
 
 
 @router.get("/privacy", response_class=HTMLResponse)
@@ -139,40 +90,6 @@ def terms_page(request: Request) -> HTMLResponse:
         "last_updated": TOS_DATE,
         "tos_version": TOS_VERSION,
     })
-
-
-# ---------------------------------------------------------------------------
-# Web auth POST handlers
-# ---------------------------------------------------------------------------
-
-@router.post("/web/login", response_class=HTMLResponse)
-def web_login(
-    request: Request,
-    identifier: str = Form(...),
-    password: str = Form(...),
-    db: Session = Depends(get_db),
-    settings: Settings = Depends(get_settings),
-) -> HTMLResponse:
-    try:
-        user, _ = auth_service.authenticate_user(identifier, password, db)
-    except auth_service.AuthError as e:
-        return templates.TemplateResponse(
-            request,
-            "login.html",
-            {
-                "page_title": "Sign in — Ntripi",
-                "error_message": e.message,
-                "identifier": identifier,
-            },
-            status_code=200,
-        )
-
-    # Mint a separate longer-lived JWT for the web cookie — don't reuse
-    # the 15-minute mobile access token returned by authenticate_user.
-    web_token = _issue_web_token(str(user.id), settings)
-    response = RedirectResponse("/app/", status_code=302)
-    _set_session_cookie(response, web_token, settings)
-    return response
 
 
 # ---------------------------------------------------------------------------
@@ -239,64 +156,3 @@ def verify_email_page(
     return templates.TemplateResponse(request, "email_verified.html", {
         "page_title": "Email verified — Ntripi",
     })
-
-
-@router.post("/web/register", response_class=HTMLResponse)
-def web_register(
-    request: Request,
-    email: str = Form(...),
-    username: str = Form(...),
-    password: str = Form(...),
-    password_confirm: str = Form(...),
-    display_name: str = Form(""),
-    tos_accepted: str | None = Form(None),
-    db: Session = Depends(get_db),
-    settings: Settings = Depends(get_settings),
-) -> HTMLResponse:
-    def _error(msg: str) -> HTMLResponse:
-        return templates.TemplateResponse(
-            request,
-            "register.html",
-            {
-                "page_title": "Create account — Ntripi",
-                "error_message": msg,
-                "email": email,
-                "username": username,
-                "display_name": display_name,
-            },
-            status_code=200,
-        )
-
-    if password != password_confirm:
-        return _error("Passwords do not match.")
-
-    if not tos_accepted:
-        return _error("You must accept the Terms of Service to register.")
-
-    if len(password) < 8:
-        return _error("Password must be at least 8 characters.")
-
-    if not any(c.isdigit() for c in password):
-        return _error("Password must contain at least one digit.")
-
-    try:
-        user, _ = auth_service.create_user(
-            username=username,
-            email=email,
-            password=password,
-            display_name=display_name or None,
-            tos_accepted=True,
-            db=db,
-        )
-    except auth_service.AuthError as e:
-        return _error(e.message)
-
-    try:
-        auth_service.send_email_verification(db, user)  # best-effort
-    except Exception:
-        pass
-
-    web_token = _issue_web_token(str(user.id), settings)
-    response = RedirectResponse("/app/", status_code=302)
-    _set_session_cookie(response, web_token, settings)
-    return response

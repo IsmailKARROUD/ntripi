@@ -221,8 +221,6 @@
   </a>
   <nav>
     {% for code in supported if code != lang %}<a href="?lang={{ code }}">{{ lang_names[code] }}</a>{% endfor %}
-    <a href="/login">{{ _('nav_sign_in') }}</a>
-    <a href="/register" class="btn-primary">{{ _('nav_sign_up') }}</a>
   </nav>
 </header>
 

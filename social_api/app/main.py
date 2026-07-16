@@ -16,6 +16,7 @@ Why a separate main.py?
 
 import asyncio
 import logging
+import re
 from pathlib import Path
 
 from fastapi import FastAPI
@@ -48,20 +49,57 @@ settings = get_settings()
 # ---------------------------------------------------------------------------
 # SPA static files helper
 # ---------------------------------------------------------------------------
+# The google_sign_in_web plugin reads its OAuth client id from this meta tag —
+# the backend injects the deployed value at serve time (see _SPAStaticFiles).
+_GSI_META_RE = re.compile(r'(<meta name="google-signin-client_id" content=")[^"]*(")')
+
+
 class _SPAStaticFiles(StaticFiles):
     """StaticFiles with SPA fallback: returns index.html for any unmatched path.
 
     Starlette ≥0.52 removed the automatic index.html fallback from html=True.
     Flutter's client-side router requires the server to return index.html for
     every path under /app/ so deep links and page refreshes work correctly.
+
+    index.html is served from an in-memory copy with GOOGLE_WEB_CLIENT_ID
+    injected into the google-signin-client_id meta tag — the same env var the
+    backend uses as the Google ID-token audience, keeping one source of truth.
     """
+
+    _index_html: bytes | None = None
+
+    def _index_response(self) -> Response:
+        if self._index_html is None:
+            html = (Path(self.directory) / "index.html").read_text(encoding="utf-8")
+            client_id = get_settings().GOOGLE_WEB_CLIENT_ID
+            if client_id:
+                # lambda, not a template string — keeps any regex metachars in the id inert
+                html = _GSI_META_RE.sub(
+                    lambda m: m.group(1) + client_id + m.group(2), html
+                )
+            # cached in memory — the image can be read-only for appuser, so never write back
+            self._index_html = html.encode("utf-8")
+        return Response(
+            self._index_html,
+            media_type="text/html",
+            # no-cache: index.html references content-hashed assets and carries the
+            # injected client id — clients must revalidate after every redeploy.
+            headers={"Cache-Control": "no-cache"},
+        )
+
     async def get_response(self, path: str, scope):  # type: ignore[override]
         try:
-            return await super().get_response(path, scope)
+            response = await super().get_response(path, scope)
         except HTTPException as exc:
             if exc.status_code == 404:
-                return await super().get_response("index.html", scope)
+                return self._index_response()
             raise
+        # html=True resolves "/" (and explicit index.html) to the file on disk —
+        # swap in the injected in-memory copy instead.
+        actual_path = getattr(response, "path", None)
+        if actual_path and Path(actual_path).name == "index.html":
+            return self._index_response()
+        return response
 
 
 # ---------------------------------------------------------------------------

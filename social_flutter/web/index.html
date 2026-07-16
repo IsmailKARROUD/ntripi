@@ -20,9 +20,12 @@
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
   <meta name="description" content="Plan, share, and discover travel itineraries.">
 
-  <!-- Google Sign-In (web): replace with your Web OAuth client id. This client
-       id is public (not a secret); google_sign_in_web reads it from this tag. -->
-  <meta name="google-signin-client_id" content="YOUR_WEB_CLIENT_ID.apps.googleusercontent.com">
+  <!-- Google Sign-In (web): google_sign_in_web reads the OAuth client id from
+       this tag (the client id is public, not a secret). In production the
+       backend overwrites the content with its GOOGLE_WEB_CLIENT_ID env var at
+       serve time (_SPAStaticFiles in social_api/app/main.py); the committed
+       value below only serves local `flutter run -d chrome` development. -->
+  <meta name="google-signin-client_id" content="29126714665-9pgodn1nt1ikf6goo71a6b7634sknna4.apps.googleusercontent.com">
 
   <!-- iOS meta tags & icons -->
   <meta name="mobile-web-app-capable" content="yes">
