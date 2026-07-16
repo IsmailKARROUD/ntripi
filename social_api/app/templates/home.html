@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="{{ lang or 'en' }}">
+<html lang="{{ lang or 'en' }}" dir="{{ dir or 'ltr' }}">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -40,6 +40,19 @@
       --surface:     #fff;
       --shadow-sm:   0 1px 3px rgba(0,40,20,.07), 0 4px 12px rgba(0,40,20,.06);
       --shadow-md:   0 4px 16px rgba(0,40,20,.10), 0 12px 40px rgba(0,40,20,.08);
+
+      /* Exact Flutter light-theme tokens (app_theme.dart) — app-replica mockups only */
+      --nt-forest:         #1F5E3A;
+      --nt-canopy:         #2D7D52;
+      --nt-mist:           #D0EBDA;
+      --nt-amber:          #C89030;
+      --nt-bark:           #1A2A1E;
+      --nt-border:         #E4EDE6;
+      --nt-text2:          #5A7562;
+      --nt-text3:          #93A898;
+      --nt-transit-bg:     #FFF8EC;
+      --nt-transit-border: #F0E2C2;
+      --nt-transit-text:   #8A5A18;
     }
 
     html { scroll-behavior: smooth; }
@@ -61,6 +74,19 @@
     .btn-ghost:hover { color: var(--forest); }
     .btn-primary { padding: 10px 22px; border-radius: 50px; border: none; background: var(--forest); color: white; font-weight: 700; font-size: 14px; cursor: pointer; font-family: inherit; box-shadow: 0 2px 8px rgba(20,80,40,.25); transition: background .15s, transform .1s; text-decoration: none; display: inline-block; }
     .btn-primary:hover { background: var(--canopy); transform: translateY(-1px); }
+
+    /* Language dropdown */
+    .lang-menu { position: relative; }
+    .lang-menu summary { list-style: none; }
+    .lang-menu summary::-webkit-details-marker { display: none; }
+    .lang-btn { display: inline-flex; align-items: center; gap: 7px; padding: 9px 15px; border-radius: 50px; border: 1px solid var(--border); background: var(--surface); color: var(--text2); font-weight: 600; font-size: 14px; cursor: pointer; font-family: inherit; user-select: none; transition: color .15s, border-color .15s; }
+    .lang-btn:hover, .lang-menu[open] .lang-btn { color: var(--forest); border-color: var(--forest); }
+    .lang-btn .lang-chev { transition: transform .15s; }
+    .lang-menu[open] .lang-chev { transform: rotate(180deg); }
+    .lang-list { position: absolute; top: calc(100% + 8px); inset-inline-end: 0; min-width: 170px; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; box-shadow: var(--shadow-md); padding: 6px; z-index: 300; }
+    .lang-item { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 9px 12px; border-radius: 9px; text-decoration: none; font-size: 14px; font-weight: 500; color: var(--bark); transition: background .1s; }
+    .lang-item:hover { background: var(--mist); }
+    .lang-item.is-active { color: var(--forest); font-weight: 700; }
 
     /* ── HERO ── */
     .hero { min-height: calc(100vh - 64px); display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 80px 24px 60px; text-align: center; position: relative; overflow: hidden; }
@@ -84,11 +110,36 @@
     .hero-signin a:hover { text-decoration: underline; }
     .hero-phone { position: relative; margin-top: 56px; z-index: 1; }
     .phone-shell { width: 220px; height: 476px; border-radius: 36px; background: var(--bark); box-shadow: 0 0 0 1.5px rgba(255,255,255,.08), 0 24px 80px rgba(0,40,20,.3), 0 4px 16px rgba(0,40,20,.2); position: relative; overflow: hidden; margin: 0 auto; }
-    .phone-screen { position: absolute; inset: 3px; border-radius: 33px; background: var(--forest); overflow: hidden; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; }
+    .phone-screen { position: absolute; inset: 3px; border-radius: 33px; background: #fff; overflow: hidden; display: flex; flex-direction: column; text-align: start; /* .hero centers text — the app UI is start-aligned */ }
     .phone-notch { position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 80px; height: 18px; background: var(--bark); border-radius: 0 0 14px 14px; z-index: 10; }
-    .phone-card { width: 80%; background: rgba(255,255,255,0.12); border-radius: 10px; padding: 10px 12px; text-align: center; }
-    .phone-card-title { color: white; font-size: 11px; font-weight: 700; }
-    .phone-card-sub { color: rgba(255,255,255,0.55); font-size: 9px; margin-top: 2px; }
+
+    /* Phone mockup — ~0.55-scale replica of the app's itinerary detail screen */
+    .pm-cover { position: relative; height: 122px; flex-shrink: 0; background: linear-gradient(135deg, var(--nt-forest), var(--nt-canopy)); }
+    .pm-cover-art { position: absolute; inset: 0; width: 100%; height: 100%; }
+    .pm-cover::after { content: ''; position: absolute; inset: 0; background: linear-gradient(rgba(26,42,30,.38), transparent 32%, transparent 55%, rgba(26,42,30,.62)); }
+    .pm-chrome { position: absolute; top: 25px; inset-inline: 9px; display: flex; justify-content: space-between; z-index: 2; }
+    .pm-glass { width: 18px; height: 18px; border-radius: 6px; background: rgba(0,0,0,.33); border: 1px solid rgba(255,255,255,.2); display: flex; align-items: center; justify-content: center; color: #fff; }
+    .pm-cover-bottom { position: absolute; bottom: 8px; inset-inline: 10px; z-index: 2; display: flex; flex-direction: column; align-items: flex-start; gap: 4px; }
+    .pm-vis-pill { display: inline-flex; align-items: center; gap: 3px; padding: 2.5px 7px; border-radius: 50px; background: rgba(0,0,0,.33); color: #fff; font-size: 7px; font-weight: 600; }
+    .pm-title { color: #fff; font-size: 13px; font-weight: 700; letter-spacing: -.3px; line-height: 1.1; }
+    .pm-owner { display: flex; align-items: center; gap: 6px; padding: 7px 10px 5px; }
+    .pm-avatar { width: 20px; height: 20px; border-radius: 50%; background: var(--nt-mist); color: var(--nt-forest); font-size: 7px; font-weight: 700; letter-spacing: -.2px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .pm-owner-names { flex: 1; min-width: 0; }
+    .pm-owner-name { font-size: 9px; font-weight: 700; color: var(--nt-bark); line-height: 1.25; }
+    .pm-owner-handle { font-size: 7px; color: var(--nt-text2); line-height: 1.25; }
+    .pm-rating { display: flex; align-items: center; gap: 2px; font-size: 9px; font-weight: 700; color: var(--nt-canopy); }
+    .pm-rating small { font-size: 7px; font-weight: 500; color: var(--nt-text3); }
+    .pm-chips { display: flex; gap: 4px; padding: 2px 10px 7px; }
+    .pm-chip { display: inline-flex; align-items: center; gap: 3px; padding: 3px 7px; border-radius: 50px; background: rgba(26,42,30,.04); font-size: 8px; font-weight: 500; color: var(--nt-bark); }
+    .pm-stops { margin: 0 9px; background: #fff; border: 1px solid var(--nt-border); border-radius: 12px; overflow: hidden; }
+    .pm-stop { display: flex; align-items: flex-start; gap: 7px; padding: 8px 9px; }
+    .pm-stop-num { width: 18px; height: 18px; border-radius: 50%; background: var(--nt-mist); color: var(--nt-forest); font-size: 9px; font-weight: 800; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .pm-stop-name { font-size: 10px; font-weight: 700; color: var(--nt-bark); letter-spacing: -.1px; line-height: 1.3; }
+    .pm-stop-addr { display: flex; align-items: center; gap: 2px; font-size: 8px; font-weight: 500; color: var(--nt-text2); margin-top: 1px; }
+    .pm-stop-addr svg { color: var(--nt-text3); flex-shrink: 0; }
+    .pm-divider { height: 1px; background: rgba(228,237,230,.7); margin: 0 8px; }
+    .pm-transit { display: flex; align-items: center; gap: 4px; margin: 3px 15px; padding: 4px 7px; background: var(--nt-transit-bg); border: 1px solid var(--nt-transit-border); border-radius: 8px; font-size: 8px; font-weight: 700; color: var(--nt-transit-text); }
+    .pm-transit-meta { margin-inline-start: auto; font-weight: 500; }
 
     /* ── FEATURES ── */
     .features { padding: 80px 40px; max-width: 1100px; margin: 0 auto; }
@@ -120,16 +171,19 @@
     .ratings-text h2 span { color: var(--forest); }
     .ratings-text p { font-size: 15px; color: var(--text2); line-height: 1.7; margin-bottom: 24px; }
     .rating-pills { display: flex; flex-wrap: wrap; gap: 10px; }
-    .rating-pill { display: flex; align-items: center; gap: 8px; background: var(--surface); border-radius: 50px; padding: 8px 16px; border: 1px solid var(--border); box-shadow: var(--shadow-sm); font-size: 13px; font-weight: 600; color: var(--bark); }
-    .rating-pill-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--amber); }
-    .ratings-visual { background: var(--surface); border-radius: 24px; padding: 28px; border: 1px solid var(--border); box-shadow: var(--shadow-md); }
+    /* App chip recipe: mist bg, forest label, stadium, flat */
+    .rating-pill { display: flex; align-items: center; background: var(--nt-mist); border-radius: 50px; padding: 7px 15px; font-size: 13px; font-weight: 600; color: var(--nt-forest); }
+    /* App card recipe: flat, 1px border, radius 18, no shadow */
+    .ratings-visual { background: var(--surface); border-radius: 18px; padding: 26px; border: 1px solid var(--nt-border); }
     .ratings-header { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
-    .ratings-big-num { font-size: 48px; font-weight: 800; color: var(--bark); line-height: 1; }
-    .stars-row { display: flex; gap: 4px; }
+    .ratings-score-row { display: flex; align-items: center; gap: 8px; }
+    .ratings-big-num { font-size: 44px; font-weight: 800; color: var(--nt-canopy); line-height: 1; letter-spacing: -1px; }
+    .ratings-count { font-size: 12px; font-weight: 500; color: var(--nt-text3); margin-inline-start: 8px; }
+    .stars-row { display: flex; gap: 2px; margin-top: 7px; }
     .bar-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
-    .bar-label { font-size: 12px; color: var(--text2); width: 14px; text-align: end; }
-    .bar-track { flex: 1; height: 8px; border-radius: 4px; background: var(--mist); overflow: hidden; }
-    .bar-fill { height: 100%; border-radius: 4px; background: var(--amber); }
+    .bar-label { font-size: 12px; color: var(--nt-text2); width: 14px; text-align: end; }
+    .bar-track { flex: 1; height: 8px; border-radius: 4px; background: var(--nt-mist); overflow: hidden; }
+    .bar-fill { height: 100%; border-radius: 4px; background: var(--nt-canopy); }
 
     /* ── CTA BAND ── */
     .cta-band { margin: 0 40px 80px; background: var(--bark); border-radius: 28px; padding: 60px 48px; display: flex; align-items: center; justify-content: space-between; gap: 40px; flex-wrap: wrap; box-shadow: var(--shadow-md); position: relative; overflow: hidden; }
@@ -151,13 +205,19 @@
     .footer-copy { font-size: 13px; color: var(--text3); }
 
     @media (max-width: 700px) {
-      nav { padding: 0 20px; }
+      nav { padding: 0 16px; }
+      .nav-links { gap: 8px; }
       .features, .cta-band { padding-left: 20px; padding-right: 20px; }
       .cta-band { margin-left: 16px; margin-right: 16px; }
       .ratings-section { grid-template-columns: 1fr; gap: 32px; padding: 48px 20px; }
       footer { padding: 24px 20px; }
       .how-connector { display: none; }
       .how { padding: 60px 20px; }
+    }
+    @media (max-width: 480px) {
+      .lang-btn-name { display: none; }
+      .lang-btn { padding: 9px 11px; }
+      .nav-cta { padding: 9px 14px; font-size: 13px; }
     }
   </style>
 </head>
@@ -175,7 +235,22 @@
     <span class="nav-logo-text">NTripi</span>
   </a>
   <div class="nav-links">
-    {% for code in supported if code != lang %}<a class="btn-ghost" href="?lang={{ code }}">{{ lang_names[code] }}</a>{% endfor %}
+    <details class="lang-menu">
+      <summary class="lang-btn">
+        <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="8" cy="8" r="6.5"/><path d="M8 1.5c2 2.5 2 8.5 0 11M1.5 8h13M2 5h12M2 11h12" stroke-width="1.1"/></svg>
+        <span class="lang-btn-name">{{ lang_names[lang] }}</span>
+        <svg class="lang-chev" width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3.5l3 3 3-3"/></svg>
+      </summary>
+      <div class="lang-list">
+        {% for code in supported %}
+        <a class="lang-item{% if code == lang %} is-active{% endif %}" href="?lang={{ code }}"{% if code == lang %} aria-current="true"{% endif %}>
+          {{ lang_names[code] }}
+          {% if code == lang %}<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>{% endif %}
+        </a>
+        {% endfor %}
+      </div>
+    </details>
+    <a class="btn-primary nav-cta" href="/app/">{{ _('home_cta_continue_web') }}</a>
   </div>
 </nav>
 
@@ -225,21 +300,85 @@
     <div class="phone-shell">
       <div class="phone-notch"></div>
       <div class="phone-screen">
-        <svg width="28" height="28" viewBox="0 0 32 32" fill="none">
-          <rect width="32" height="32" rx="8" fill="rgba(255,255,255,0.15)"/>
-          <polyline points="8,24 8,10 16,20 24,10" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-          <circle cx="24" cy="10" r="3" fill="oklch(66% 0.17 75)"/>
-          <circle cx="24" cy="10" r="1.5" fill="white"/>
-        </svg>
-        <div style="color:white;font-size:18px;font-weight:800;letter-spacing:-.5px;text-align:center">NTripi</div>
-        <div style="width:80%;display:flex;flex-direction:column;align-items:center;gap:6px;margin-top:8px">
-          <div class="phone-card">
-            <div class="phone-card-title">Marrakech → Safi</div>
-            <div class="phone-card-sub">3h · Train · 10 EUR</div>
+        <div class="pm-cover">
+          <svg class="pm-cover-art" viewBox="0 0 214 122" preserveAspectRatio="xMidYMid slice" fill="none">
+            <polyline points="18,96 55,58 95,74 138,36 176,50" stroke="rgba(255,255,255,.5)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="1 6"/>
+            <circle cx="18" cy="96" r="3" fill="#fff" opacity=".9"/>
+            <circle cx="55" cy="58" r="2" fill="#fff" opacity=".55"/>
+            <circle cx="95" cy="74" r="2" fill="#fff" opacity=".55"/>
+            <circle cx="138" cy="36" r="2" fill="#fff" opacity=".55"/>
+            <circle cx="176" cy="50" r="4.5" fill="#C89030"/>
+            <circle cx="176" cy="50" r="2" fill="#fff"/>
+          </svg>
+          <div class="pm-chrome">
+            <div class="pm-glass"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg></div>
+            <div class="pm-glass"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="18" cy="5" r="2.6"/><circle cx="6" cy="12" r="2.6"/><circle cx="18" cy="19" r="2.6"/><path d="M8.3 10.7l7.4-4.4M8.3 13.3l7.4 4.4"/></svg></div>
           </div>
-          <div class="phone-card">
-            <div class="phone-card-title">Atlas Hike</div>
-            <div class="phone-card-sub">6h · 5 stops · Free</div>
+          <div class="pm-cover-bottom">
+            <span class="pm-vis-pill"><svg width="7" height="7" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="8" cy="8" r="6.5"/><path d="M8 1.5c2 2.5 2 8.5 0 11M1.5 8h13M2 5h12M2 11h12" stroke-width="1.2"/></svg>{{ _('home_mock_public') }}</span>
+            <div class="pm-title">{{ _('home_mock_trip_title') }}</div>
+          </div>
+        </div>
+        <div class="pm-owner">
+          <div class="pm-avatar">YA</div>
+          <div class="pm-owner-names">
+            <div class="pm-owner-name">Yassine</div>
+            <div class="pm-owner-handle">@yassine</div>
+          </div>
+          <div class="pm-rating">
+            <svg width="9" height="9" viewBox="0 0 24 24" fill="currentColor"><path d="M12 17.27l4.15 2.51c.76.46 1.69-.22 1.49-1.08l-1.1-4.72 3.67-3.18c.67-.58.31-1.68-.57-1.75l-4.83-.41-1.89-4.46c-.34-.81-1.5-.81-1.84 0L9.19 8.63l-4.83.41c-.88.07-1.24 1.17-.57 1.75l3.67 3.18-1.1 4.72c-.2.86.73 1.54 1.49 1.08z"/></svg>
+            4.8&nbsp;<small>(24)</small>
+          </div>
+        </div>
+        <div class="pm-chips">
+          <span class="pm-chip"><svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>8h</span>
+          <span class="pm-chip"><svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="2.5" y="6" width="19" height="12" rx="2.5"/><circle cx="12" cy="12" r="2.6"/></svg>40 €</span>
+          <span class="pm-chip"><svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 2.8C8.7 2.8 6 5.4 6 8.7c0 4.5 6 12 6 12s6-7.5 6-12c0-3.3-2.7-5.9-6-5.9z"/><circle cx="12" cy="8.7" r="2.2"/></svg>5 {{ _('share_stops') }}</span>
+        </div>
+        <div class="pm-stops">
+          <div class="pm-stop">
+            <div class="pm-stop-num">1</div>
+            <div>
+              <div class="pm-stop-name">Jemaa el-Fna</div>
+              <div class="pm-stop-addr"><svg width="7" height="7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 2.8C8.7 2.8 6 5.4 6 8.7c0 4.5 6 12 6 12s6-7.5 6-12c0-3.3-2.7-5.9-6-5.9z"/><circle cx="12" cy="8.7" r="2.2"/></svg>Old Medina, Marrakech</div>
+            </div>
+          </div>
+          <div class="pm-divider"></div>
+          <div class="pm-transit">
+            <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 11l1.5-4.5A2 2 0 0 1 8.4 5h7.2a2 2 0 0 1 1.9 1.5L19 11"/><rect x="3" y="11" width="18" height="6" rx="2"/><circle cx="7.5" cy="17" r="1.8"/><circle cx="16.5" cy="17" r="1.8"/></svg>
+            {{ _('home_mock_taxi') }}
+            <span class="pm-transit-meta">15 min · 20 MAD</span>
+          </div>
+          <div class="pm-stop">
+            <div class="pm-stop-num">2</div>
+            <div>
+              <div class="pm-stop-name">Bahia Palace</div>
+              <div class="pm-stop-addr"><svg width="7" height="7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 2.8C8.7 2.8 6 5.4 6 8.7c0 4.5 6 12 6 12s6-7.5 6-12c0-3.3-2.7-5.9-6-5.9z"/><circle cx="12" cy="8.7" r="2.2"/></svg>Riad Zitoun el Jdid</div>
+            </div>
+          </div>
+          <div class="pm-divider"></div>
+          <div class="pm-stop">
+            <div class="pm-stop-num">3</div>
+            <div>
+              <div class="pm-stop-name">Jardin Majorelle</div>
+              <div class="pm-stop-addr"><svg width="7" height="7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 2.8C8.7 2.8 6 5.4 6 8.7c0 4.5 6 12 6 12s6-7.5 6-12c0-3.3-2.7-5.9-6-5.9z"/><circle cx="12" cy="8.7" r="2.2"/></svg>Rue Yves St Laurent</div>
+            </div>
+          </div>
+          <div class="pm-divider"></div>
+          <div class="pm-stop">
+            <div class="pm-stop-num">4</div>
+            <div>
+              <div class="pm-stop-name">Le Jardin Secret</div>
+              <div class="pm-stop-addr"><svg width="7" height="7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 2.8C8.7 2.8 6 5.4 6 8.7c0 4.5 6 12 6 12s6-7.5 6-12c0-3.3-2.7-5.9-6-5.9z"/><circle cx="12" cy="8.7" r="2.2"/></svg>Rue Mouassine</div>
+            </div>
+          </div>
+          <div class="pm-divider"></div>
+          <div class="pm-stop">
+            <div class="pm-stop-num">5</div>
+            <div>
+              <div class="pm-stop-name">Koutoubia Mosque</div>
+              <div class="pm-stop-addr"><svg width="7" height="7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 2.8C8.7 2.8 6 5.4 6 8.7c0 4.5 6 12 6 12s6-7.5 6-12c0-3.3-2.7-5.9-6-5.9z"/><circle cx="12" cy="8.7" r="2.2"/></svg>Avenue Mohammed V</div>
+            </div>
           </div>
         </div>
       </div>
@@ -328,30 +467,32 @@
     <h2>{{ _('home_ratings_title_pre') }} <span>{{ _('home_ratings_title_em') }}</span></h2>
     <p>{{ _('home_ratings_p') }}</p>
     <div class="rating-pills">
-      <div class="rating-pill"><div class="rating-pill-dot"></div>{{ _('home_rating_overall') }}</div>
-      <div class="rating-pill"><div class="rating-pill-dot" style="background:oklch(34% 0.11 150)"></div>{{ _('home_rating_safety') }}</div>
-      <div class="rating-pill"><div class="rating-pill-dot" style="background:oklch(48% 0.13 150)"></div>{{ _('home_rating_accessibility') }}</div>
-      <div class="rating-pill"><div class="rating-pill-dot" style="background:oklch(55% 0.13 120)"></div>{{ _('home_rating_family') }}</div>
+      <div class="rating-pill">{{ _('home_rating_overall') }}</div>
+      <div class="rating-pill">{{ _('home_rating_safety') }}</div>
+      <div class="rating-pill">{{ _('home_rating_accessibility') }}</div>
+      <div class="rating-pill">{{ _('home_rating_family') }}</div>
     </div>
   </div>
   <div class="ratings-visual">
     <div class="ratings-header">
       <div>
-        <div class="ratings-big-num">4.8</div>
+        <div class="ratings-score-row">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="#2D7D52"><path d="M12 17.27l4.15 2.51c.76.46 1.69-.22 1.49-1.08l-1.1-4.72 3.67-3.18c.67-.58.31-1.68-.57-1.75l-4.83-.41-1.89-4.46c-.34-.81-1.5-.81-1.84 0L9.19 8.63l-4.83.41c-.88.07-1.24 1.17-.57 1.75l3.67 3.18-1.1 4.72c-.2.86.73 1.54 1.49 1.08z"/></svg>
+          <span class="ratings-big-num">4.8</span>
+        </div>
         <div class="stars-row">
-          {% for _ in range(4) %}
-          <svg width="16" height="16" viewBox="0 0 14 14" fill="oklch(66% 0.17 75)"><path d="M7 1.5l1.5 3 3.3.5-2.4 2.3.6 3.2L7 9l-3 1.5.6-3.2L2.2 5l3.3-.5z"/></svg>
+          {% for star_i in range(5) %}
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="#2D7D52"{% if star_i == 4 %} opacity=".35"{% endif %}><path d="M12 17.27l4.15 2.51c.76.46 1.69-.22 1.49-1.08l-1.1-4.72 3.67-3.18c.67-.58.31-1.68-.57-1.75l-4.83-.41-1.89-4.46c-.34-.81-1.5-.81-1.84 0L9.19 8.63l-4.83.41c-.88.07-1.24 1.17-.57 1.75l3.67 3.18-1.1 4.72c-.2.86.73 1.54 1.49 1.08z"/></svg>
           {% endfor %}
-          <svg width="16" height="16" viewBox="0 0 14 14" fill="oklch(66% 0.17 75)" opacity=".4"><path d="M7 1.5l1.5 3 3.3.5-2.4 2.3.6 3.2L7 9l-3 1.5.6-3.2L2.2 5l3.3-.5z"/></svg>
         </div>
       </div>
-      <div style="font-size:13px;color:var(--text2);margin-inline-start:8px">Based on<br>2,400+ ratings</div>
+      <div class="ratings-count">Based on<br>2,400+ ratings</div>
     </div>
     {% for stars, pct in [(5,72),(4,18),(3,6),(2,2),(1,2)] %}
     <div class="bar-row">
       <span class="bar-label">{{ stars }}</span>
       <div class="bar-track"><div class="bar-fill" style="width:{{ pct }}%"></div></div>
-      <span style="font-size:12px;color:var(--text3);width:32px">{{ pct }}%</span>
+      <span style="font-size:12px;color:var(--nt-text3);width:32px">{{ pct }}%</span>
     </div>
     {% endfor %}
   </div>
@@ -458,8 +599,19 @@
     document.body.style.overflow = '';
   }
 
+  function closeLangMenu() {
+    document.querySelectorAll('details.lang-menu[open]').forEach(function(menu) {
+      menu.removeAttribute('open');
+    });
+  }
+
+  // <details> has no light-dismiss — close the language menu on outside click
+  document.addEventListener('click', function(e) {
+    if (!e.target.closest('details.lang-menu')) closeLangMenu();
+  });
+
   document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape') closeWaitlist();
+    if (e.key === 'Escape') { closeWaitlist(); closeLangMenu(); }
   });
 
   async function submitWaitlist(e) {

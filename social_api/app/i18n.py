@@ -219,6 +219,10 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
     },
     "home_cta_download": {"en": "Download the App", "fr": "Télécharger l'application", "ar": "نزّل التطبيق"},
     "home_cta_continue_web": {"en": "Continue on web", "fr": "Continuer sur le web", "ar": "المتابعة على الويب"},
+    # Phone-mockup labels (share_public_badge is too long for the tiny pill).
+    "home_mock_public": {"en": "Public", "fr": "Public", "ar": "عام"},
+    "home_mock_taxi": {"en": "Taxi", "fr": "Taxi", "ar": "تاكسي"},
+    "home_mock_trip_title": {"en": "Marrakech in a Day", "fr": "Marrakech en un jour", "ar": "مراكش في يوم واحد"},
     # ── Waitlist modal ────────────────────────────────────────────────────
     "wl_title": {"en": "Be first to know", "fr": "Soyez informé en premier", "ar": "كن أول من يعلم"},
     "wl_sub": {
