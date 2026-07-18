@@ -868,6 +868,7 @@
   "mapMyLocation": "My location",
   "mapUseMyLocation": "Use my location",
   "mapSearchNoResults": "No places found.",
+  "mapSearchThisArea": "Search this area",
   "locationPermissionDenied": "Location permission denied",
   "locationServiceDisabled": "Location services are disabled",
   "locationUnavailable": "Couldn't get your location",

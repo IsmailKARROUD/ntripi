@@ -863,6 +863,7 @@
   "mapMyLocation": "موقعي",
   "mapUseMyLocation": "استخدام موقعي",
   "mapSearchNoResults": "لم يُعثر على أماكن.",
+  "mapSearchThisArea": "البحث في هذه المنطقة",
   "locationPermissionDenied": "تم رفض إذن الوصول إلى الموقع",
   "locationServiceDisabled": "خدمات تحديد الموقع معطّلة",
   "locationUnavailable": "تعذّر الحصول على موقعك",

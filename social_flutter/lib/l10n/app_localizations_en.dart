@@ -2039,6 +2039,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get mapSearchNoResults => 'No places found.';
 
   @override
+  String get mapSearchThisArea => 'Search this area';
+
+  @override
   String get locationPermissionDenied => 'Location permission denied';
 
   @override

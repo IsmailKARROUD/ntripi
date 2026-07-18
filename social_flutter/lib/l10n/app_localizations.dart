@@ -3604,6 +3604,12 @@ abstract class AppLocalizations {
   /// **'No places found.'**
   String get mapSearchNoResults;
 
+  /// No description provided for @mapSearchThisArea.
+  ///
+  /// In en, this message translates to:
+  /// **'Search this area'**
+  String get mapSearchThisArea;
+
   /// No description provided for @locationPermissionDenied.
   ///
   /// In en, this message translates to:

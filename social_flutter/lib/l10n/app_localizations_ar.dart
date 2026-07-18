@@ -2095,6 +2095,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get mapSearchNoResults => 'لم يُعثر على أماكن.';
 
   @override
+  String get mapSearchThisArea => 'البحث في هذه المنطقة';
+
+  @override
   String get locationPermissionDenied => 'تم رفض إذن الوصول إلى الموقع';
 
   @override

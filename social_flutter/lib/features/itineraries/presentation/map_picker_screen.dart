@@ -60,13 +60,23 @@ class _MapPickerScreenState extends ConsumerState<MapPickerScreen> {
   bool _isGeocoding = false;
   bool _isLocating = false;
   bool _isCapturing = false;
+  // Suggestion list collapses after a selection or a map pan; the numbered
+  // result markers stay on the map (they live in the provider until cleared).
+  bool _listVisible = true;
+  // "Search this area" pill — offered after a user gesture moves the map
+  // while a search session is active.
+  bool _showSearchArea = false;
 
   // Default center: Paris, France — a reasonable fallback for a travel app.
   static const _defaultCenter = LatLng(48.8566, 2.3522);
 
+  // Captured in initState — using ref inside dispose throws in Riverpod 3.
+  late final PlaceSearchNotifier _searchNotifier;
+
   @override
   void initState() {
     super.initState();
+    _searchNotifier = ref.read(mapPlaceSearchProvider.notifier);
     if (widget.deviceLat != null && widget.deviceLng != null) {
       _deviceLocation = LatLng(widget.deviceLat!, widget.deviceLng!);
     }
@@ -76,8 +86,10 @@ class _MapPickerScreenState extends ConsumerState<MapPickerScreen> {
   void dispose() {
     _debounce?.cancel();
     _searchController.dispose();
-    // Reset the shared notifier so a reopened picker doesn't show stale results.
-    ref.read(mapPlaceSearchProvider.notifier).clear();
+    // Reset so a reopened picker doesn't show stale results — deferred to a
+    // microtask because this screen's provider subscriptions are still open
+    // during dispose; a synchronous state change would notify a defunct element.
+    Future.microtask(_searchNotifier.clear);
     _mapController.dispose();
     super.dispose();
   }
@@ -94,15 +106,16 @@ class _MapPickerScreenState extends ConsumerState<MapPickerScreen> {
   }
 
   void _onSearchChanged(String value) {
-    // setState only refreshes the clear-button visibility.
-    setState(() {});
+    // setState refreshes the clear-button visibility and reopens the list.
+    setState(() => _listVisible = true);
     _debounce?.cancel();
     // 400ms debounce respects Nominatim's 1 req/s rate-limit policy.
     _debounce = Timer(const Duration(milliseconds: 400), () {
       _submittedQuery = value.trim();
-      ref
-          .read(mapPlaceSearchProvider.notifier)
-          .search(value, near: _searchBias);
+      if (_submittedQuery.isEmpty && _showSearchArea) {
+        setState(() => _showSearchArea = false);
+      }
+      _runAreaSearch();
     });
   }
 
@@ -110,8 +123,70 @@ class _MapPickerScreenState extends ConsumerState<MapPickerScreen> {
     _debounce?.cancel();
     _searchController.clear();
     _submittedQuery = '';
-    ref.read(mapPlaceSearchProvider.notifier).clear();
+    _searchNotifier.clear();
+    _showSearchArea = false;
+    _listVisible = true;
     setState(() {});
+  }
+
+  /// Searches [_submittedQuery] within the displayed map area (the widening +
+  /// nearest-anywhere fallback live in the notifier), then zooms out just
+  /// enough to reveal results that landed beyond the current view.
+  Future<void> _runAreaSearch() async {
+    final query = _submittedQuery;
+    if (query.isEmpty) {
+      _searchNotifier.clear();
+      return;
+    }
+
+    final MapCamera camera;
+    try {
+      camera = _mapController.camera;
+    } catch (_) {
+      // Before the map's first frame there is no viewport to bound — fall
+      // back to the plain near-biased search.
+      await _searchNotifier.search(query, near: _searchBias);
+      return;
+    }
+
+    final bounds = camera.visibleBounds;
+    await _searchNotifier.searchArea(
+      query,
+      sw: bounds.southWest,
+      ne: bounds.northEast,
+      center: camera.center,
+    );
+
+    // A newer query/clear owns the state now — don't move the camera for it.
+    if (!mounted || _submittedQuery != query) return;
+    final results = ref.read(mapPlaceSearchProvider).value ?? [];
+    if (results.isEmpty) return;
+
+    final visible = _mapController.camera.visibleBounds;
+    final points = [for (final s in results) LatLng(s.lat, s.lng)];
+    if (points.any((p) => !visible.contains(p))) {
+      _mapController.fitCamera(
+        CameraFit.bounds(
+          bounds: LatLngBounds.fromPoints(points),
+          // top inset clears the search overlay; maxZoom stops a lone nearby
+          // result from slamming the camera down to street level
+          padding: const EdgeInsets.fromLTRB(48, 140, 48, 120),
+          maxZoom: 16,
+        ),
+      );
+    }
+  }
+
+  /// "Search this area" pill — re-runs the active query in the new viewport.
+  void _searchThisArea() {
+    _debounce?.cancel();
+    setState(() {
+      _showSearchArea = false;
+      _listVisible = true;
+      // The field may hold newer text than the last debounce fire — trust it.
+      _submittedQuery = _searchController.text.trim();
+    });
+    _runAreaSearch();
   }
 
   /// Jumps the map to a search result and drops the pin on it.
@@ -120,9 +195,11 @@ class _MapPickerScreenState extends ConsumerState<MapPickerScreen> {
     setState(() {
       _selectedLocation = position;
       _searchedSuggestion = suggestion;
+      // Keep the query + result markers (Google-Maps-like session) — only
+      // the list collapses; tapping the field reopens it.
+      _listVisible = false;
     });
     _mapController.move(position, 16);
-    _clearSearch();
     FocusScope.of(context).unfocus();
   }
 
@@ -283,8 +360,15 @@ class _MapPickerScreenState extends ConsumerState<MapPickerScreen> {
             ),
           ),
           onChanged: _onSearchChanged,
+          onTap: () {
+            // Reopen a collapsed list when the user returns to the field.
+            if (!_listVisible) setState(() => _listVisible = true);
+          },
         ),
         suggestionsAsync.when(
+          // Refreshes ("search this area", widening loop) must show progress,
+          // not the stale list — Riverpod's default would skip loading.
+          skipLoadingOnRefresh: false,
           loading:
               () => const Padding(
                 padding: EdgeInsets.symmetric(vertical: 8),
@@ -293,7 +377,9 @@ class _MapPickerScreenState extends ConsumerState<MapPickerScreen> {
           error: (_, _) => _buildInstructionBanner(context),
           data: (suggestions) {
             if (suggestions.isNotEmpty) {
-              return _buildSuggestionsCard(suggestions, nt);
+              return _listVisible
+                  ? _buildSuggestionsCard(suggestions, nt)
+                  : const SizedBox.shrink();
             }
             // Only claim "no results" for the query we actually searched —
             // while a newer keystroke's debounce is pending, stay quiet.
@@ -313,9 +399,47 @@ class _MapPickerScreenState extends ConsumerState<MapPickerScreen> {
                 ),
               );
             }
-            return _buildInstructionBanner(context);
+            if (_searchController.text.trim().isEmpty) {
+              return _buildInstructionBanner(context);
+            }
+            return const SizedBox.shrink();
           },
         ),
+        if (_showSearchArea)
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Material(
+              color: nt.surface,
+              elevation: 2,
+              shadowColor: NtripiBrand.backdrop.withValues(alpha: 0.26),
+              shape: StadiumBorder(side: BorderSide(color: nt.border)),
+              child: InkWell(
+                customBorder: const StadiumBorder(),
+                onTap: _searchThisArea,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 8,
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.refresh_rounded, size: 16, color: nt.forest),
+                      const SizedBox(width: 6),
+                      Text(
+                        l10n.mapSearchThisArea,
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: nt.bark,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
       ],
     );
   }
@@ -398,6 +522,10 @@ class _MapPickerScreenState extends ConsumerState<MapPickerScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Riverpod keeps the previous value during a refresh, so the numbered
+    // markers persist while a "search this area" round trip is in flight.
+    final searchResults =
+        ref.watch(mapPlaceSearchProvider).value ?? const <PlaceSuggestion>[];
     return Scaffold(
       resizeToAvoidBottomInset: false,
       appBar: AppBar(
@@ -420,10 +548,21 @@ class _MapPickerScreenState extends ConsumerState<MapPickerScreen> {
             options: MapOptions(
               initialCenter: _initialCenter,
               initialZoom: 13,
+              // Fires every gesture frame — only setState on an actual change.
+              // hasGesture excludes our own move/fitCamera calls.
+              onPositionChanged: (_, hasGesture) {
+                if (!hasGesture || _submittedQuery.isEmpty) return;
+                if (_showSearchArea && !_listVisible) return;
+                setState(() {
+                  _showSearchArea = true;
+                  _listVisible = false;
+                });
+              },
               onTap: (_, latLng) {
                 setState(() {
                   _selectedLocation = latLng;
                   _searchedSuggestion = null; // manual pick overrides search
+                  _listVisible = false;
                 });
                 FocusScope.of(context).unfocus();
               },
@@ -445,6 +584,54 @@ class _MapPickerScreenState extends ConsumerState<MapPickerScreen> {
                       height: 18,
                       child: const DeviceLocationDot(),
                     ),
+                  ],
+                ),
+
+              // Numbered search-result badges — tapping one selects it
+              // exactly like tapping its list row.
+              if (searchResults.isNotEmpty)
+                MarkerLayer(
+                  markers: [
+                    for (var i = 0; i < searchResults.length; i++)
+                      Marker(
+                        point: LatLng(
+                          searchResults[i].lat,
+                          searchResults[i].lng,
+                        ),
+                        width: 28,
+                        height: 28,
+                        child: GestureDetector(
+                          onTap: () => _selectSuggestion(searchResults[i]),
+                          child: Container(
+                            decoration: BoxDecoration(
+                              // light palette — OSM tiles stay light in dark mode
+                              color: NtripiColors.light.forest,
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: NtripiBrand.chrome,
+                                width: 2,
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  blurRadius: 4,
+                                  color: NtripiBrand.backdrop.withValues(
+                                    alpha: 0.26,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            alignment: Alignment.center,
+                            child: Text(
+                              '${i + 1}',
+                              style: const TextStyle(
+                                color: NtripiBrand.chrome,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
                   ],
                 ),
 

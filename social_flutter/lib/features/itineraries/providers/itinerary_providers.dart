@@ -457,12 +457,17 @@ final ratingsPageProvider =
 // ---------------------------------------------------------------------------
 
 class PlaceSearchNotifier extends AsyncNotifier<List<PlaceSuggestion>> {
+  // Bumped by every search/searchArea/clear — a stale searchArea widening loop
+  // compares its captured value and abandons instead of overwriting new state.
+  int _epoch = 0;
+
   @override
   Future<List<PlaceSuggestion>> build() async => [];
 
   /// [near] biases results toward that point and sorts them nearest-first
   /// (see GeocodingService.search).
   Future<void> search(String query, {LatLng? near}) async {
+    _epoch++;
     if (query.trim().isEmpty) {
       state = const AsyncData([]);
       return;
@@ -479,7 +484,77 @@ class PlaceSearchNotifier extends AsyncNotifier<List<PlaceSuggestion>> {
     );
   }
 
+  /// Searches inside the box [sw]–[ne] (the map's visible bounds). If the box
+  /// has no matches, widens it ×4 around [center] up to twice (viewport → ×4 →
+  /// ×16 span), then falls back to an unbounded search — so the nearest
+  /// matches are always found even when far outside the displayed area.
+  /// Results are sorted nearest-to-[center] first.
+  Future<void> searchArea(
+    String query, {
+    required LatLng sw,
+    required LatLng ne,
+    required LatLng center,
+  }) async {
+    final epoch = ++_epoch;
+    if (query.trim().isEmpty) {
+      state = const AsyncData([]);
+      return;
+    }
+    state = const AsyncLoading();
+
+    final service = ref.read(geocodingServiceProvider);
+    final languageCode = ref.read(localeProvider).languageCode;
+    final halfLat = (ne.latitude - sw.latitude) / 2;
+    final halfLng = (ne.longitude - sw.longitude) / 2;
+
+    try {
+      List<PlaceSuggestion> results = [];
+      // factor 1 = the visible box; 4/16 = zero-result widenings around center.
+      for (final factor in const [1, 4, 16]) {
+        if (factor > 1) {
+          // Space attempts ≥1s apart — Nominatim ToS caps at 1 request/second.
+          await Future.delayed(const Duration(seconds: 1));
+          if (epoch != _epoch) return; // superseded by a newer query
+        }
+        results = await service.search(
+          query,
+          languageCode: languageCode,
+          near: center,
+          boxSw: LatLng(
+            center.latitude - halfLat * factor,
+            center.longitude - halfLng * factor,
+          ),
+          boxNe: LatLng(
+            center.latitude + halfLat * factor,
+            center.longitude + halfLng * factor,
+          ),
+          bounded: true,
+        );
+        if (epoch != _epoch) return;
+        if (results.isNotEmpty) break;
+      }
+
+      if (results.isEmpty) {
+        await Future.delayed(const Duration(seconds: 1));
+        if (epoch != _epoch) return;
+        // Unbounded fallback: soft bias + distance sort = nearest 5 anywhere.
+        results = await service.search(
+          query,
+          languageCode: languageCode,
+          near: center,
+        );
+        if (epoch != _epoch) return;
+      }
+
+      state = AsyncData(results);
+    } catch (error, stackTrace) {
+      if (epoch != _epoch) return;
+      state = AsyncError(error, stackTrace);
+    }
+  }
+
   void clear() {
+    _epoch++;
     state = const AsyncData([]);
   }
 }

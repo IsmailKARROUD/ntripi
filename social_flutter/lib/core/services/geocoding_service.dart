@@ -71,6 +71,10 @@ class GeocodingService {
   /// Nominatim prefers matches inside a ~50 km viewbox around it, and the
   /// returned suggestions are sorted nearest-first.
   ///
+  /// [boxSw]/[boxNe] override the near-derived viewbox with explicit corners
+  /// (the map picker passes its visible bounds). With [bounded] true the box
+  /// becomes a hard filter — only places inside it are returned.
+  ///
   /// Nothing is stored at this point — results are displayed as suggestions
   /// only. Coordinates are only persisted when the user confirms a selection
   /// (see StopFormScreen).
@@ -78,6 +82,9 @@ class GeocodingService {
     String query, {
     String? languageCode,
     LatLng? near,
+    LatLng? boxSw,
+    LatLng? boxNe,
+    bool bounded = false,
   }) async {
     if (query.trim().isEmpty) return [];
 
@@ -90,12 +97,19 @@ class GeocodingService {
         'addressdetails': 1,
         // accept-language localizes Nominatim's display_name to the app language.
         if (languageCode != null) 'accept-language': languageCode,
+        // Nominatim viewbox order is lon1,lat1,lon2,lat2.
+        if (boxSw != null && boxNe != null)
+          'viewbox':
+              '${boxSw.longitude},${boxSw.latitude},'
+              '${boxNe.longitude},${boxNe.latitude}'
         // viewbox without bounded=1 is a soft preference, not a filter —
         // nearby matches rank higher but famous far-away ones still appear.
-        if (near != null)
+        else if (near != null)
           'viewbox':
               '${near.longitude - 0.5},${near.latitude - 0.5},'
               '${near.longitude + 0.5},${near.latitude + 0.5}',
+        // bounded=1 turns the viewbox into a hard filter (area-only search).
+        if (bounded) 'bounded': 1,
       },
     );
 
