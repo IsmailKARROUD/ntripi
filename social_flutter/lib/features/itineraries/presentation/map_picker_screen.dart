@@ -14,18 +14,30 @@ import 'package:go_router/go_router.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:social_flutter/core/providers/locale_provider.dart';
 import 'package:social_flutter/core/services/geocoding_service.dart';
+import 'package:social_flutter/core/services/location_service.dart';
 import 'package:social_flutter/l10n/app_localizations.dart';
+import 'package:social_flutter/shared/widgets/device_location_dot.dart';
 import 'package:social_flutter/shared/widgets/loaders.dart';
+
+/// Shared-element tag: the stop-form preview map flies into this screen's map.
+const stopMapHeroTag = 'stop-map-hero';
 
 class MapPickerScreen extends ConsumerStatefulWidget {
   /// Optional initial coordinates to center the map on.
   final double? initialLat;
   final double? initialLng;
 
+  /// Device position already fetched by the stop form, if any — shown as a
+  /// blue dot immediately and used as center fallback.
+  final double? deviceLat;
+  final double? deviceLng;
+
   const MapPickerScreen({
     super.key,
     this.initialLat,
     this.initialLng,
+    this.deviceLat,
+    this.deviceLng,
   });
 
   @override
@@ -33,17 +45,61 @@ class MapPickerScreen extends ConsumerStatefulWidget {
 }
 
 class _MapPickerScreenState extends ConsumerState<MapPickerScreen> {
+  final _mapController = MapController();
   LatLng? _selectedLocation;
+  LatLng? _deviceLocation;
   bool _isGeocoding = false;
+  bool _isLocating = false;
 
   // Default center: Paris, France — a reasonable fallback for a travel app.
   static const _defaultCenter = LatLng(48.8566, 2.3522);
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.deviceLat != null && widget.deviceLng != null) {
+      _deviceLocation = LatLng(widget.deviceLat!, widget.deviceLng!);
+    }
+  }
+
+  @override
+  void dispose() {
+    _mapController.dispose();
+    super.dispose();
+  }
 
   LatLng get _initialCenter {
     if (widget.initialLat != null && widget.initialLng != null) {
       return LatLng(widget.initialLat!, widget.initialLng!);
     }
-    return _defaultCenter;
+    return _deviceLocation ?? _defaultCenter;
+  }
+
+  /// Centers the camera on the device position — never places the pin.
+  Future<void> _goToMyLocation() async {
+    setState(() => _isLocating = true);
+    final outcome = await ref.read(locationServiceProvider).getCurrentLatLng();
+    if (!mounted) return;
+    setState(() => _isLocating = false);
+
+    final l10n = AppLocalizations.of(context)!;
+    switch (outcome) {
+      case LocationSuccess(:final position):
+        setState(() => _deviceLocation = position);
+        _mapController.move(position, 16);
+      case LocationServiceDisabled():
+        _showLocationError(l10n.locationServiceDisabled);
+      case LocationPermissionDenied():
+        _showLocationError(l10n.locationPermissionDenied);
+      case LocationUnavailable():
+        _showLocationError(l10n.locationUnavailable);
+    }
+  }
+
+  void _showLocationError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
+    );
   }
 
   Future<void> _confirmLocation() async {
@@ -91,45 +147,74 @@ class _MapPickerScreenState extends ConsumerState<MapPickerScreen> {
       ),
       body: Stack(
         children: [
-          FlutterMap(
-            options: MapOptions(
-              initialCenter: _initialCenter,
-              initialZoom: 13,
-              onTap: (_, latLng) {
-                setState(() => _selectedLocation = latLng);
-              },
-            ),
-            children: [
-              // OSM tile layer — no API key required.
-              TileLayer(
-                urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                userAgentPackageName: 'com.ntripi.app',
-              ),
-
-              // Pin marker at the selected location.
-              if (_selectedLocation != null)
-                MarkerLayer(
-                  markers: [
-                    Marker(
-                      point: _selectedLocation!,
-                      child: Icon(
-                        Icons.location_pin,
-                        // light-palette red — OSM tiles stay light in dark mode
-                        color: NtripiColors.light.danger,
-                        size: 40,
-                        shadows: [Shadow(blurRadius: 4, color: NtripiBrand.backdrop.withValues(alpha: 0.26))],
-                      ),
-                    ),
-                  ],
+          // Hero pairs with the stop-form preview map so the small preview
+          // visually expands into this full-screen map. Material keeps text
+          // and icons styled during the flight (the overlay has no Material).
+          Hero(
+            tag: stopMapHeroTag,
+            child: Material(
+              type: MaterialType.transparency,
+              child: FlutterMap(
+                mapController: _mapController,
+                options: MapOptions(
+                  initialCenter: _initialCenter,
+                  initialZoom: 13,
+                  onTap: (_, latLng) {
+                    setState(() => _selectedLocation = latLng);
+                  },
                 ),
+                children: [
+                  // OSM tile layer — no API key required.
+                  TileLayer(
+                    urlTemplate:
+                        'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                    userAgentPackageName: 'com.ntripi.app',
+                  ),
 
-              // Required OSM attribution (ODbL license requirement).
-              RichAttributionWidget(
-                attributions: [
-                  TextSourceAttribution('OpenStreetMap contributors'),
+                  // Blue "you are here" dot — display-only, below the pin.
+                  if (_deviceLocation != null)
+                    MarkerLayer(
+                      markers: [
+                        Marker(
+                          point: _deviceLocation!,
+                          width: 18,
+                          height: 18,
+                          child: const DeviceLocationDot(),
+                        ),
+                      ],
+                    ),
+
+                  // Pin marker at the selected location.
+                  if (_selectedLocation != null)
+                    MarkerLayer(
+                      markers: [
+                        Marker(
+                          point: _selectedLocation!,
+                          child: Icon(
+                            Icons.location_pin,
+                            // light-palette red — OSM tiles stay light in dark mode
+                            color: NtripiColors.light.danger,
+                            size: 40,
+                            shadows: [
+                              Shadow(
+                                  blurRadius: 4,
+                                  color: NtripiBrand.backdrop
+                                      .withValues(alpha: 0.26)),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+
+                  // Required OSM attribution (ODbL license requirement).
+                  RichAttributionWidget(
+                    attributions: [
+                      TextSourceAttribution('OpenStreetMap contributors'),
+                    ],
+                  ),
                 ],
               ),
-            ],
+            ),
           ),
 
           // Instruction banner
@@ -148,6 +233,22 @@ class _MapPickerScreenState extends ConsumerState<MapPickerScreen> {
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
               ),
+            ),
+          ),
+
+          // My-location button — camera only, never places the pin.
+          PositionedDirectional(
+            end: 16,
+            bottom: 100,
+            child: FloatingActionButton.small(
+              // opt out of the default FAB hero tag — this screen already
+              // participates in the stopMapHeroTag flight
+              heroTag: null,
+              tooltip: AppLocalizations.of(context)!.mapMyLocation,
+              onPressed: _isLocating ? null : _goToMyLocation,
+              child: _isLocating
+                  ? const NTripiRingLoader(size: 18)
+                  : const Icon(Icons.my_location),
             ),
           ),
 

@@ -18,6 +18,9 @@ import 'package:go_router/go_router.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:social_flutter/core/api/api_client.dart';
 import 'package:social_flutter/core/services/geocoding_service.dart';
+import 'package:social_flutter/core/services/location_service.dart';
+import 'package:social_flutter/features/itineraries/presentation/map_picker_screen.dart'
+    show stopMapHeroTag;
 import 'package:social_flutter/features/itineraries/domain/annotation.dart';
 import 'package:social_flutter/features/itineraries/domain/stop.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/annotation_chip.dart';
@@ -31,6 +34,7 @@ import 'package:social_flutter/features/profile/providers/profile_provider.dart'
 import 'package:social_flutter/core/ui/app_theme.dart';
 import 'package:social_flutter/core/utils/platform_utils.dart';
 import 'package:social_flutter/l10n/app_localizations.dart';
+import 'package:social_flutter/shared/widgets/device_location_dot.dart';
 import 'package:social_flutter/shared/widgets/field_help.dart';
 import 'package:social_flutter/shared/widgets/loaders.dart';
 import 'package:social_flutter/shared/widgets/offline_gate.dart';
@@ -103,6 +107,10 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
   double? _lng;
   bool _isFree = false;
 
+  // Device position — preview-map centering + "you are here" dot only.
+  // Never copied into _lat/_lng without an explicit user pick.
+  LatLng? _deviceLocation;
+
   // Current stop (in edit mode)
   Stop? _existingStop;
 
@@ -134,6 +142,25 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
     } else {
       _initialSnapshot = _snapshot();
     }
+    // Skip in read-only view — don't fire a permission prompt for spectators;
+    // the edit-pencil tap fetches instead when the owner starts editing.
+    if (_isEditing) _fetchDeviceLocation();
+  }
+
+  /// Best-effort device fix for the preview map. Silent on failure — the map
+  /// picker's my-location button is where errors surface as snackbars.
+  Future<void> _fetchDeviceLocation() async {
+    final outcome = await ref.read(locationServiceProvider).getCurrentLatLng();
+    if (!mounted || outcome is! LocationSuccess) return;
+    setState(() => _deviceLocation = outcome.position);
+    // Center on the device only while nothing is picked — never fight a
+    // user-chosen location.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || _lat != null || _lng != null) return;
+      try {
+        _previewMapController.move(outcome.position, 14);
+      } catch (_) {}
+    });
   }
 
   // _searchController is intentionally excluded — the Nominatim search box is
@@ -537,7 +564,12 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
   Future<void> _pickOnMap() async {
     final result = await context.push<PlaceSuggestion>(
       '/map-picker',
-      extra: {'lat': _lat, 'lng': _lng},
+      extra: {
+        'lat': _lat,
+        'lng': _lng,
+        'deviceLat': _deviceLocation?.latitude,
+        'deviceLng': _deviceLocation?.longitude,
+      },
     );
     if (result != null) {
       _applySuggestion(result);
@@ -887,7 +919,11 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                       icon: Icons.edit_outlined,
                       iconSize: 22,
                       tooltip: l10n.editStopTooltip,
-                      onTap: () => setState(() => _isEditing = true),
+                      onTap: () {
+                        setState(() => _isEditing = true);
+                        // deferred from initState for view-only openers
+                        if (_deviceLocation == null) _fetchDeviceLocation();
+                      },
                     ),
                   ),
                 ),
@@ -1192,63 +1228,134 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                               onTap: _pickOnMap,
                             ),
                           ],
-                          if (_lat != null && _lng != null)
-                            GestureDetector(
-                              onTap: readOnly ? null : _pickOnMap,
-                              child: SizedBox(
-                                height: 160,
-                                child: FlutterMap(
-                                  mapController: _previewMapController,
-                                  options: MapOptions(
-                                    initialCenter: LatLng(_lat!, _lng!),
-                                    initialZoom: 14,
-                                    interactionOptions:
-                                        const InteractionOptions(
-                                          flags: InteractiveFlag.none,
-                                        ),
-                                  ),
-                                  children: [
-                                    TileLayer(
-                                      urlTemplate:
-                                          'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                                      userAgentPackageName: 'com.ntripi.app',
-                                      // silently discard tile errors (offline / test mode)
-                                      errorTileCallback: (_, _, _) {},
-                                    ),
-                                    MarkerLayer(
-                                      markers: [
-                                        Marker(
-                                          point: LatLng(_lat!, _lng!),
-                                          width: 36,
-                                          height: 36,
-                                          // pin tip (glyph bottom) sits on the point
-                                          alignment: Alignment.topCenter,
-                                          child: Icon(
-                                            Icons.location_pin,
-                                            // light-palette red — OSM tiles stay light in dark mode
-                                            color: NtripiColors.light.danger,
-                                            size: 36,
-                                            shadows: [
-                                              Shadow(
-                                                blurRadius: 4,
-                                                color: NtripiBrand.backdrop
-                                                    .withValues(alpha: 0.26),
+                          if ((_lat != null && _lng != null) ||
+                              _deviceLocation != null)
+                            SizedBox(
+                              height: 160,
+                              child: Stack(
+                                children: [
+                                  Positioned.fill(
+                                    child: GestureDetector(
+                                      onTap: readOnly ? null : _pickOnMap,
+                                      // Hero pairs with the map picker screen —
+                                      // the preview expands into the full map.
+                                      child: Hero(
+                                        tag: stopMapHeroTag,
+                                        child: Material(
+                                          type: MaterialType.transparency,
+                                          child: FlutterMap(
+                                            mapController:
+                                                _previewMapController,
+                                            options: MapOptions(
+                                              // device fix stands in until a location is picked
+                                              initialCenter:
+                                                  _lat != null && _lng != null
+                                                      ? LatLng(_lat!, _lng!)
+                                                      : _deviceLocation!,
+                                              initialZoom: 14,
+                                              interactionOptions:
+                                                  const InteractionOptions(
+                                                    flags: InteractiveFlag.none,
+                                                  ),
+                                            ),
+                                            children: [
+                                              TileLayer(
+                                                urlTemplate:
+                                                    'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                                                userAgentPackageName:
+                                                    'com.ntripi.app',
+                                                // silently discard tile errors (offline / test mode)
+                                                errorTileCallback: (_, _, _) {},
+                                              ),
+                                              // Blue "you are here" dot — display-only.
+                                              if (_deviceLocation != null)
+                                                MarkerLayer(
+                                                  markers: [
+                                                    Marker(
+                                                      point: _deviceLocation!,
+                                                      width: 18,
+                                                      height: 18,
+                                                      child:
+                                                          const DeviceLocationDot(),
+                                                    ),
+                                                  ],
+                                                ),
+                                              if (_lat != null && _lng != null)
+                                                MarkerLayer(
+                                                  markers: [
+                                                    Marker(
+                                                      point: LatLng(
+                                                        _lat!,
+                                                        _lng!,
+                                                      ),
+                                                      width: 36,
+                                                      height: 36,
+                                                      // pin tip (glyph bottom) sits on the point
+                                                      alignment:
+                                                          Alignment.topCenter,
+                                                      child: Icon(
+                                                        Icons.location_pin,
+                                                        // light-palette red — OSM tiles stay light in dark mode
+                                                        color:
+                                                            NtripiColors
+                                                                .light
+                                                                .danger,
+                                                        size: 36,
+                                                        shadows: [
+                                                          Shadow(
+                                                            blurRadius: 4,
+                                                            color: NtripiBrand
+                                                                .backdrop
+                                                                .withValues(
+                                                                  alpha: 0.26,
+                                                                ),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              // Required OSM attribution (ODbL license requirement).
+                                              RichAttributionWidget(
+                                                attributions: [
+                                                  TextSourceAttribution(
+                                                    'OpenStreetMap contributors',
+                                                  ),
+                                                ],
                                               ),
                                             ],
                                           ),
                                         ),
-                                      ],
+                                      ),
                                     ),
-                                    // Required OSM attribution (ODbL license requirement).
-                                    RichAttributionWidget(
-                                      attributions: [
-                                        TextSourceAttribution(
-                                          'OpenStreetMap contributors',
+                                  ),
+                                  // Expand icon — explicit affordance that the
+                                  // preview opens the full map picker.
+                                  if (!readOnly)
+                                    PositionedDirectional(
+                                      top: 8,
+                                      end: 8,
+                                      child: Tooltip(
+                                        message: l10n.mapPickLocationTitle,
+                                        child: Material(
+                                          color: nt.buttonTransparent,
+                                          shape: const CircleBorder(),
+                                          child: InkWell(
+                                            customBorder: const CircleBorder(),
+                                            onTap: _pickOnMap,
+                                            child: Padding(
+                                              padding: const EdgeInsets.all(8),
+                                              child: Icon(
+                                                Icons.open_in_full,
+                                                size: 18,
+                                                color: nt.overlayChrome,
+                                              ),
+                                            ),
+                                          ),
                                         ),
-                                      ],
+                                      ),
                                     ),
-                                  ],
-                                ),
+                                ],
                               ),
                             ),
                         ],

@@ -2030,6 +2030,18 @@ class AppLocalizationsEn extends AppLocalizations {
       'Tap elsewhere to move the pin, then tap Confirm';
 
   @override
+  String get mapMyLocation => 'My location';
+
+  @override
+  String get locationPermissionDenied => 'Location permission denied';
+
+  @override
+  String get locationServiceDisabled => 'Location services are disabled';
+
+  @override
+  String get locationUnavailable => 'Couldn\'t get your location';
+
+  @override
   String get nothingToPreview => 'Nothing to preview yet.';
 
   @override

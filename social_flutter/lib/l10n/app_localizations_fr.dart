@@ -2070,6 +2070,19 @@ class AppLocalizationsFr extends AppLocalizations {
       'Appuyez ailleurs pour déplacer le repère, puis appuyez sur Confirmer';
 
   @override
+  String get mapMyLocation => 'Ma position';
+
+  @override
+  String get locationPermissionDenied => 'Autorisation de localisation refusée';
+
+  @override
+  String get locationServiceDisabled =>
+      'Les services de localisation sont désactivés';
+
+  @override
+  String get locationUnavailable => 'Impossible d\'obtenir votre position';
+
+  @override
   String get nothingToPreview => 'Rien à prévisualiser pour l\'instant.';
 
   @override

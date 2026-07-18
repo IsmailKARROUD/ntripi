@@ -242,6 +242,8 @@ final appRouter = GoRouter(
                 return MapPickerScreen(
                   initialLat: extra?['lat'] as double?,
                   initialLng: extra?['lng'] as double?,
+                  deviceLat: extra?['deviceLat'] as double?,
+                  deviceLng: extra?['deviceLng'] as double?,
                 );
               },
             ),

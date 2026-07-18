@@ -2086,6 +2086,18 @@ class AppLocalizationsAr extends AppLocalizations {
   String get mapTapToMovePin => 'اضغط في مكان آخر لنقل الدبوس، ثم اضغط تأكيد';
 
   @override
+  String get mapMyLocation => 'موقعي';
+
+  @override
+  String get locationPermissionDenied => 'تم رفض إذن الوصول إلى الموقع';
+
+  @override
+  String get locationServiceDisabled => 'خدمات تحديد الموقع معطّلة';
+
+  @override
+  String get locationUnavailable => 'تعذّر الحصول على موقعك';
+
+  @override
   String get nothingToPreview => 'لا شيء للمعاينة بعد.';
 
   @override

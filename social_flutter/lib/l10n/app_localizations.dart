@@ -3586,6 +3586,30 @@ abstract class AppLocalizations {
   /// **'Tap elsewhere to move the pin, then tap Confirm'**
   String get mapTapToMovePin;
 
+  /// No description provided for @mapMyLocation.
+  ///
+  /// In en, this message translates to:
+  /// **'My location'**
+  String get mapMyLocation;
+
+  /// No description provided for @locationPermissionDenied.
+  ///
+  /// In en, this message translates to:
+  /// **'Location permission denied'**
+  String get locationPermissionDenied;
+
+  /// No description provided for @locationServiceDisabled.
+  ///
+  /// In en, this message translates to:
+  /// **'Location services are disabled'**
+  String get locationServiceDisabled;
+
+  /// No description provided for @locationUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t get your location'**
+  String get locationUnavailable;
+
   /// No description provided for @nothingToPreview.
   ///
   /// In en, this message translates to:

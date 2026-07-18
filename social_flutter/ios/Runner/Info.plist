@@ -37,6 +37,8 @@
 		<string>citymapper</string>
 		<string>osmandmaps</string>
 	</array>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Ntripi uses your location to center the map when you add a stop.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
