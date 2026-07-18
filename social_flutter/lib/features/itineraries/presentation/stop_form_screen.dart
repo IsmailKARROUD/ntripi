@@ -19,8 +19,6 @@ import 'package:latlong2/latlong.dart';
 import 'package:social_flutter/core/api/api_client.dart';
 import 'package:social_flutter/core/services/geocoding_service.dart';
 import 'package:social_flutter/core/services/location_service.dart';
-import 'package:social_flutter/features/itineraries/presentation/map_picker_screen.dart'
-    show stopMapHeroTag;
 import 'package:social_flutter/features/itineraries/domain/annotation.dart';
 import 'package:social_flutter/features/itineraries/domain/stop.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/annotation_chip.dart';
@@ -1237,95 +1235,83 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                                   Positioned.fill(
                                     child: GestureDetector(
                                       onTap: readOnly ? null : _pickOnMap,
-                                      // Hero pairs with the map picker screen —
-                                      // the preview expands into the full map.
-                                      child: Hero(
-                                        tag: stopMapHeroTag,
-                                        child: Material(
-                                          type: MaterialType.transparency,
-                                          child: FlutterMap(
-                                            mapController:
-                                                _previewMapController,
-                                            options: MapOptions(
-                                              // device fix stands in until a location is picked
-                                              initialCenter:
-                                                  _lat != null && _lng != null
-                                                      ? LatLng(_lat!, _lng!)
-                                                      : _deviceLocation!,
-                                              initialZoom: 14,
-                                              interactionOptions:
-                                                  const InteractionOptions(
-                                                    flags: InteractiveFlag.none,
-                                                  ),
-                                            ),
-                                            children: [
-                                              TileLayer(
-                                                urlTemplate:
-                                                    'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                                                userAgentPackageName:
-                                                    'com.ntripi.app',
-                                                // silently discard tile errors (offline / test mode)
-                                                errorTileCallback: (_, _, _) {},
+                                      child: FlutterMap(
+                                        mapController: _previewMapController,
+                                        options: MapOptions(
+                                          // device fix stands in until a location is picked
+                                          initialCenter:
+                                              _lat != null && _lng != null
+                                                  ? LatLng(_lat!, _lng!)
+                                                  : _deviceLocation!,
+                                          initialZoom: 14,
+                                          interactionOptions:
+                                              const InteractionOptions(
+                                                flags: InteractiveFlag.none,
                                               ),
-                                              // Blue "you are here" dot — display-only.
-                                              if (_deviceLocation != null)
-                                                MarkerLayer(
-                                                  markers: [
-                                                    Marker(
-                                                      point: _deviceLocation!,
-                                                      width: 18,
-                                                      height: 18,
-                                                      child:
-                                                          const DeviceLocationDot(),
-                                                    ),
-                                                  ],
+                                        ),
+                                        children: [
+                                          TileLayer(
+                                            urlTemplate:
+                                                'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                                            userAgentPackageName:
+                                                'com.ntripi.app',
+                                            // silently discard tile errors (offline / test mode)
+                                            errorTileCallback: (_, _, _) {},
+                                          ),
+                                          // Blue "you are here" dot — display-only.
+                                          if (_deviceLocation != null)
+                                            MarkerLayer(
+                                              markers: [
+                                                Marker(
+                                                  point: _deviceLocation!,
+                                                  width: 18,
+                                                  height: 18,
+                                                  child:
+                                                      const DeviceLocationDot(),
                                                 ),
-                                              if (_lat != null && _lng != null)
-                                                MarkerLayer(
-                                                  markers: [
-                                                    Marker(
-                                                      point: LatLng(
-                                                        _lat!,
-                                                        _lng!,
+                                              ],
+                                            ),
+                                          if (_lat != null && _lng != null)
+                                            MarkerLayer(
+                                              markers: [
+                                                Marker(
+                                                  point: LatLng(_lat!, _lng!),
+                                                  width: 36,
+                                                  height: 36,
+                                                  // pin tip (glyph bottom) sits on the point
+                                                  alignment:
+                                                      Alignment.topCenter,
+                                                  child: Icon(
+                                                    Icons.location_pin,
+                                                    // light-palette red — OSM tiles stay light in dark mode
+                                                    color:
+                                                        NtripiColors
+                                                            .light
+                                                            .danger,
+                                                    size: 36,
+                                                    shadows: [
+                                                      Shadow(
+                                                        blurRadius: 4,
+                                                        color: NtripiBrand
+                                                            .backdrop
+                                                            .withValues(
+                                                              alpha: 0.26,
+                                                            ),
                                                       ),
-                                                      width: 36,
-                                                      height: 36,
-                                                      // pin tip (glyph bottom) sits on the point
-                                                      alignment:
-                                                          Alignment.topCenter,
-                                                      child: Icon(
-                                                        Icons.location_pin,
-                                                        // light-palette red — OSM tiles stay light in dark mode
-                                                        color:
-                                                            NtripiColors
-                                                                .light
-                                                                .danger,
-                                                        size: 36,
-                                                        shadows: [
-                                                          Shadow(
-                                                            blurRadius: 4,
-                                                            color: NtripiBrand
-                                                                .backdrop
-                                                                .withValues(
-                                                                  alpha: 0.26,
-                                                                ),
-                                                          ),
-                                                        ],
-                                                      ),
-                                                    ),
-                                                  ],
-                                                ),
-                                              // Required OSM attribution (ODbL license requirement).
-                                              RichAttributionWidget(
-                                                attributions: [
-                                                  TextSourceAttribution(
-                                                    'OpenStreetMap contributors',
+                                                    ],
                                                   ),
-                                                ],
+                                                ),
+                                              ],
+                                            ),
+                                          // Required OSM attribution (ODbL license requirement).
+                                          RichAttributionWidget(
+                                            attributions: [
+                                              TextSourceAttribution(
+                                                'OpenStreetMap contributors',
                                               ),
                                             ],
                                           ),
-                                        ),
+                                        ],
                                       ),
                                     ),
                                   ),

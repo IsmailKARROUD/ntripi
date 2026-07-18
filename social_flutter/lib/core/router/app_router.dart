@@ -42,7 +42,8 @@ final appRouter = GoRouter(
     // first API call.
     final refresh = await readRefreshToken();
     final refreshExp = await readRefreshExpiresAt();
-    final hasAuth = refresh != null &&
+    final hasAuth =
+        refresh != null &&
         refresh.isNotEmpty &&
         (refreshExp == null || refreshExp.isAfter(DateTime.now()));
 
@@ -61,16 +62,10 @@ final appRouter = GoRouter(
   },
   routes: [
     // Splash — shown on cold launch, navigates to login or home
-    GoRoute(
-      path: '/splash',
-      builder: (context, state) => const SplashScreen(),
-    ),
+    GoRoute(path: '/splash', builder: (context, state) => const SplashScreen()),
 
     // Public auth routes
-    GoRoute(
-      path: '/login',
-      builder: (context, state) => const LoginScreen(),
-    ),
+    GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
     GoRoute(
       path: '/register',
       builder: (context, state) => const RegisterScreen(),
@@ -85,8 +80,9 @@ final appRouter = GoRouter(
     // Navigator — switching tabs shows/hides rather than destroy/rebuild,
     // preserving search text, scroll positions, and loaded results.
     StatefulShellRoute.indexedStack(
-      builder: (context, state, navigationShell) =>
-          _AppShell(navigationShell: navigationShell),
+      builder:
+          (context, state, navigationShell) =>
+              _AppShell(navigationShell: navigationShell),
       branches: [
         // Branch 0 — Search
         StatefulShellBranch(
@@ -99,26 +95,29 @@ final appRouter = GoRouter(
                 // navigator, keeping the bottom bar visible.
                 GoRoute(
                   path: 'profile/:userId',
-                  builder: (_, s) => ProfileScreen(
-                    userId: s.pathParameters['userId']!,
-                    profileBaseRoute: '/search/profile',
-                  ),
+                  builder:
+                      (_, s) => ProfileScreen(
+                        userId: s.pathParameters['userId']!,
+                        profileBaseRoute: '/search/profile',
+                      ),
                   routes: [
                     GoRoute(
                       path: 'followers',
-                      builder: (_, s) => FollowListScreen(
-                        userId: s.pathParameters['userId']!,
-                        type: FollowListType.followers,
-                        profileBaseRoute: '/search/profile',
-                      ),
+                      builder:
+                          (_, s) => FollowListScreen(
+                            userId: s.pathParameters['userId']!,
+                            type: FollowListType.followers,
+                            profileBaseRoute: '/search/profile',
+                          ),
                     ),
                     GoRoute(
                       path: 'following',
-                      builder: (_, s) => FollowListScreen(
-                        userId: s.pathParameters['userId']!,
-                        type: FollowListType.following,
-                        profileBaseRoute: '/search/profile',
-                      ),
+                      builder:
+                          (_, s) => FollowListScreen(
+                            userId: s.pathParameters['userId']!,
+                            type: FollowListType.following,
+                            profileBaseRoute: '/search/profile',
+                          ),
                     ),
                   ],
                 ),
@@ -172,23 +171,25 @@ final appRouter = GoRouter(
             ),
             GoRoute(
               path: '/itineraries/:id/edit',
-              builder: (_, s) => ItineraryFormScreen(
-                itineraryId: s.pathParameters['id']!,
-              ),
+              builder:
+                  (_, s) =>
+                      ItineraryFormScreen(itineraryId: s.pathParameters['id']!),
             ),
             GoRoute(
               path: '/itineraries/:id/ratings',
-              builder: (_, s) => RatingsHubScreen(
-                itineraryId: s.pathParameters['id']!,
-              ),
+              builder:
+                  (_, s) =>
+                      RatingsHubScreen(itineraryId: s.pathParameters['id']!),
             ),
             GoRoute(
               path: '/itineraries/:id/ratings/:dimension',
-              builder: (_, s) => DimensionRatingsScreen(
-                itineraryId: s.pathParameters['id']!,
-                dimension:
-                    DimensionKey.fromPath(s.pathParameters['dimension']!),
-              ),
+              builder:
+                  (_, s) => DimensionRatingsScreen(
+                    itineraryId: s.pathParameters['id']!,
+                    dimension: DimensionKey.fromPath(
+                      s.pathParameters['dimension']!,
+                    ),
+                  ),
             ),
             GoRoute(
               path: '/itineraries/:id/stops/new',
@@ -205,17 +206,19 @@ final appRouter = GoRouter(
             ),
             GoRoute(
               path: '/itineraries/:id/stops/:stopId',
-              builder: (_, s) => StopDetailScreen(
-                itineraryId: s.pathParameters['id']!,
-                stopId: s.pathParameters['stopId']!,
-              ),
+              builder:
+                  (_, s) => StopDetailScreen(
+                    itineraryId: s.pathParameters['id']!,
+                    stopId: s.pathParameters['stopId']!,
+                  ),
             ),
             GoRoute(
               path: '/itineraries/:id/stops/:stopId/edit',
-              builder: (_, s) => StopFormScreen(
-                itineraryId: s.pathParameters['id']!,
-                stopId: s.pathParameters['stopId']!,
-              ),
+              builder:
+                  (_, s) => StopFormScreen(
+                    itineraryId: s.pathParameters['id']!,
+                    stopId: s.pathParameters['stopId']!,
+                  ),
             ),
             /* GoRoute(
               path: '/itineraries/:id/segments/new',
@@ -237,13 +240,36 @@ final appRouter = GoRouter(
             ), */
             GoRoute(
               path: '/map-picker',
-              builder: (_, s) {
+              // Fade+scale instead of a Hero: transforms only repaint, while a
+              // Hero flight relayouts the live map every frame (froze on device).
+              pageBuilder: (_, s) {
                 final extra = s.extra as Map<String, dynamic>?;
-                return MapPickerScreen(
-                  initialLat: extra?['lat'] as double?,
-                  initialLng: extra?['lng'] as double?,
-                  deviceLat: extra?['deviceLat'] as double?,
-                  deviceLng: extra?['deviceLng'] as double?,
+                return CustomTransitionPage(
+                  key: s.pageKey,
+                  child: MapPickerScreen(
+                    initialLat: extra?['lat'] as double?,
+                    initialLng: extra?['lng'] as double?,
+                    deviceLat: extra?['deviceLat'] as double?,
+                    deviceLng: extra?['deviceLng'] as double?,
+                  ),
+                  transitionDuration: const Duration(milliseconds: 250),
+                  transitionsBuilder: (_, animation, _, child) {
+                    final curved = CurvedAnimation(
+                      parent: animation,
+                      curve: Curves.easeOutCubic,
+                      reverseCurve: Curves.easeInCubic,
+                    );
+                    return FadeTransition(
+                      opacity: curved,
+                      child: ScaleTransition(
+                        scale: Tween<double>(
+                          begin: 0.92,
+                          end: 1,
+                        ).animate(curved),
+                        child: child,
+                      ),
+                    );
+                  },
                 );
               },
             ),
@@ -263,10 +289,7 @@ final appRouter = GoRouter(
         // Branch 4 — Feed (public discovery feed)
         StatefulShellBranch(
           routes: [
-            GoRoute(
-              path: '/feed',
-              builder: (_, __) => const FeedScreen(),
-            ),
+            GoRoute(path: '/feed', builder: (_, __) => const FeedScreen()),
           ],
         ),
       ],
@@ -279,24 +302,25 @@ final appRouter = GoRouter(
     GoRoute(
       path: '/profile/:userId',
       parentNavigatorKey: navigatorKey,
-      builder: (_, s) =>
-          ProfileScreen(userId: s.pathParameters['userId']!),
+      builder: (_, s) => ProfileScreen(userId: s.pathParameters['userId']!),
     ),
     GoRoute(
       path: '/profile/:userId/followers',
       parentNavigatorKey: navigatorKey,
-      builder: (_, s) => FollowListScreen(
-        userId: s.pathParameters['userId']!,
-        type: FollowListType.followers,
-      ),
+      builder:
+          (_, s) => FollowListScreen(
+            userId: s.pathParameters['userId']!,
+            type: FollowListType.followers,
+          ),
     ),
     GoRoute(
       path: '/profile/:userId/following',
       parentNavigatorKey: navigatorKey,
-      builder: (_, s) => FollowListScreen(
-        userId: s.pathParameters['userId']!,
-        type: FollowListType.following,
-      ),
+      builder:
+          (_, s) => FollowListScreen(
+            userId: s.pathParameters['userId']!,
+            type: FollowListType.following,
+          ),
     ),
   ],
 );
@@ -322,9 +346,10 @@ class _AppShellState extends ConsumerState<_AppShell> {
     final nt = context.nt;
     // Single source of truth for connectivity — see ConnectivityService.
     // Default to "online" while the stream is still seeding (optimistic).
-    final isOffline = !ref
-        .watch(isOnlineProvider)
-        .maybeWhen(data: (online) => online, orElse: () => true);
+    final isOffline =
+        !ref
+            .watch(isOnlineProvider)
+            .maybeWhen(data: (online) => online, orElse: () => true);
     return Scaffold(
       // resizeToAvoidBottomInset: true (default) — the outer scaffold shrinks its
       // body to exactly the space above the keyboard. Inner screens use false so
@@ -333,7 +358,8 @@ class _AppShellState extends ConsumerState<_AppShell> {
         children: [
           if (_showDownloadBanner)
             _DownloadBanner(
-                onDismiss: () => setState(() => _showDownloadBanner = false)),
+              onDismiss: () => setState(() => _showDownloadBanner = false),
+            ),
           if (isOffline) const _OfflineBanner(),
           // Banners above use SafeArea(bottom: false) and consume the top
           // status-bar inset. MediaQuery still reports that inset to the
@@ -417,7 +443,12 @@ class _OfflineBanner extends StatelessWidget {
       child: SafeArea(
         bottom: false,
         child: Padding(
-          padding: const EdgeInsetsDirectional.only(start: 12, end: 12, top: 0, bottom: 2),
+          padding: const EdgeInsetsDirectional.only(
+            start: 12,
+            end: 12,
+            top: 0,
+            bottom: 2,
+          ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -427,7 +458,7 @@ class _OfflineBanner extends StatelessWidget {
                 child: Text(
                   l10n.offlineBanner,
                   style: TextStyle(color: onError, fontSize: 13, height: 1.3),
-                  textAlign: TextAlign.center
+                  textAlign: TextAlign.center,
                 ),
               ),
             ],
@@ -465,16 +496,25 @@ class _DownloadBanner extends StatelessWidget {
               ),
               if (kAndroidDownloadUrl.isNotEmpty)
                 TextButton(
-                  onPressed: () => launchUrl(Uri.parse(kAndroidDownloadUrl),
-                      mode: LaunchMode.externalApplication),
+                  onPressed:
+                      () => launchUrl(
+                        Uri.parse(kAndroidDownloadUrl),
+                        mode: LaunchMode.externalApplication,
+                      ),
                   style: TextButton.styleFrom(
                     foregroundColor: onPrimary,
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
                     textStyle: const TextStyle(
-                        fontSize: 13, fontWeight: FontWeight.w700),
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
-                  child: Text(AppLocalizations.of(context)!.downloadBannerButton),
+                  child: Text(
+                    AppLocalizations.of(context)!.downloadBannerButton,
+                  ),
                 ),
               IconButton(
                 icon: Icon(Icons.close, color: onPrimary, size: 18),

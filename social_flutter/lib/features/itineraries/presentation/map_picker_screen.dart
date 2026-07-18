@@ -19,9 +19,6 @@ import 'package:social_flutter/l10n/app_localizations.dart';
 import 'package:social_flutter/shared/widgets/device_location_dot.dart';
 import 'package:social_flutter/shared/widgets/loaders.dart';
 
-/// Shared-element tag: the stop-form preview map flies into this screen's map.
-const stopMapHeroTag = 'stop-map-hero';
-
 class MapPickerScreen extends ConsumerStatefulWidget {
   /// Optional initial coordinates to center the map on.
   final double? initialLat;
@@ -97,9 +94,9 @@ class _MapPickerScreenState extends ConsumerState<MapPickerScreen> {
   }
 
   void _showLocationError(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message)),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 
   Future<void> _confirmLocation() async {
@@ -107,7 +104,9 @@ class _MapPickerScreenState extends ConsumerState<MapPickerScreen> {
 
     setState(() => _isGeocoding = true);
     try {
-      final suggestion = await ref.read(geocodingServiceProvider).reverseGeocode(
+      final suggestion = await ref
+          .read(geocodingServiceProvider)
+          .reverseGeocode(
             _selectedLocation!.latitude,
             _selectedLocation!.longitude,
             languageCode: ref.read(localeProvider).languageCode,
@@ -116,7 +115,8 @@ class _MapPickerScreenState extends ConsumerState<MapPickerScreen> {
       if (!mounted) return;
       // If Nominatim couldn't identify the location, still return coordinates
       // with an empty name so the user can fill it in manually.
-      final result = suggestion ??
+      final result =
+          suggestion ??
           PlaceSuggestion(
             displayName: '',
             address: '',
@@ -139,82 +139,73 @@ class _MapPickerScreenState extends ConsumerState<MapPickerScreen> {
           if (_selectedLocation != null)
             TextButton(
               onPressed: _isGeocoding ? null : _confirmLocation,
-              child: _isGeocoding
-                  ? const NTripiRingLoader(size: 20)
-                  : Text(AppLocalizations.of(context)!.confirmButton),
+              child:
+                  _isGeocoding
+                      ? const NTripiRingLoader(size: 20)
+                      : Text(AppLocalizations.of(context)!.confirmButton),
             ),
         ],
       ),
       body: Stack(
         children: [
-          // Hero pairs with the stop-form preview map so the small preview
-          // visually expands into this full-screen map. Material keeps text
-          // and icons styled during the flight (the overlay has no Material).
-          Hero(
-            tag: stopMapHeroTag,
-            child: Material(
-              type: MaterialType.transparency,
-              child: FlutterMap(
-                mapController: _mapController,
-                options: MapOptions(
-                  initialCenter: _initialCenter,
-                  initialZoom: 13,
-                  onTap: (_, latLng) {
-                    setState(() => _selectedLocation = latLng);
-                  },
+          FlutterMap(
+            mapController: _mapController,
+            options: MapOptions(
+              initialCenter: _initialCenter,
+              initialZoom: 13,
+              onTap: (_, latLng) {
+                setState(() => _selectedLocation = latLng);
+              },
+            ),
+            children: [
+              // OSM tile layer — no API key required.
+              TileLayer(
+                urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                userAgentPackageName: 'com.ntripi.app',
+              ),
+
+              // Blue "you are here" dot — display-only, below the pin.
+              if (_deviceLocation != null)
+                MarkerLayer(
+                  markers: [
+                    Marker(
+                      point: _deviceLocation!,
+                      width: 18,
+                      height: 18,
+                      child: const DeviceLocationDot(),
+                    ),
+                  ],
                 ),
-                children: [
-                  // OSM tile layer — no API key required.
-                  TileLayer(
-                    urlTemplate:
-                        'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                    userAgentPackageName: 'com.ntripi.app',
-                  ),
 
-                  // Blue "you are here" dot — display-only, below the pin.
-                  if (_deviceLocation != null)
-                    MarkerLayer(
-                      markers: [
-                        Marker(
-                          point: _deviceLocation!,
-                          width: 18,
-                          height: 18,
-                          child: const DeviceLocationDot(),
-                        ),
-                      ],
-                    ),
-
-                  // Pin marker at the selected location.
-                  if (_selectedLocation != null)
-                    MarkerLayer(
-                      markers: [
-                        Marker(
-                          point: _selectedLocation!,
-                          child: Icon(
-                            Icons.location_pin,
-                            // light-palette red — OSM tiles stay light in dark mode
-                            color: NtripiColors.light.danger,
-                            size: 40,
-                            shadows: [
-                              Shadow(
-                                  blurRadius: 4,
-                                  color: NtripiBrand.backdrop
-                                      .withValues(alpha: 0.26)),
-                            ],
+              // Pin marker at the selected location.
+              if (_selectedLocation != null)
+                MarkerLayer(
+                  markers: [
+                    Marker(
+                      point: _selectedLocation!,
+                      child: Icon(
+                        Icons.location_pin,
+                        // light-palette red — OSM tiles stay light in dark mode
+                        color: NtripiColors.light.danger,
+                        size: 40,
+                        shadows: [
+                          Shadow(
+                            blurRadius: 4,
+                            color: NtripiBrand.backdrop.withValues(alpha: 0.26),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
+                  ],
+                ),
 
-                  // Required OSM attribution (ODbL license requirement).
-                  RichAttributionWidget(
-                    attributions: [
-                      TextSourceAttribution('OpenStreetMap contributors'),
-                    ],
-                  ),
+              // Required OSM attribution (ODbL license requirement).
+              RichAttributionWidget(
+                attributions: [
+                  TextSourceAttribution('OpenStreetMap contributors'),
                 ],
               ),
-            ),
+            ],
           ),
 
           // Instruction banner
@@ -241,14 +232,14 @@ class _MapPickerScreenState extends ConsumerState<MapPickerScreen> {
             end: 16,
             bottom: 100,
             child: FloatingActionButton.small(
-              // opt out of the default FAB hero tag — this screen already
-              // participates in the stopMapHeroTag flight
+              // no default FAB hero tag — avoids flights against other FABs
               heroTag: null,
               tooltip: AppLocalizations.of(context)!.mapMyLocation,
               onPressed: _isLocating ? null : _goToMyLocation,
-              child: _isLocating
-                  ? const NTripiRingLoader(size: 18)
-                  : const Icon(Icons.my_location),
+              child:
+                  _isLocating
+                      ? const NTripiRingLoader(size: 18)
+                      : const Icon(Icons.my_location),
             ),
           ),
 
@@ -260,9 +251,10 @@ class _MapPickerScreenState extends ConsumerState<MapPickerScreen> {
               right: 24,
               child: FilledButton.icon(
                 onPressed: _isGeocoding ? null : _confirmLocation,
-                icon: _isGeocoding
-                    ? const NTripiRingLoader(size: 18)
-                    : const Icon(Icons.check),
+                icon:
+                    _isGeocoding
+                        ? const NTripiRingLoader(size: 18)
+                        : const Icon(Icons.check),
                 label: Text(AppLocalizations.of(context)!.mapConfirmLocation),
               ),
             ),
