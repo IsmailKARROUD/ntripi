@@ -35,11 +35,22 @@ class LocationUnavailable extends LocationOutcome {
 }
 
 class LocationService {
+  // A single shared in-flight fix. Rapid double-taps — or the recenter and
+  // capture buttons firing in the same frame, before their disable-guard
+  // rebuilds — would otherwise start overlapping platform requests, which
+  // geolocator rejects, surfacing a spurious "couldn't get your location".
+  Future<LocationOutcome>? _inFlight;
+
   /// Returns the current device position, requesting permission if needed.
   ///
   /// Never throws — all failures map to a [LocationOutcome] subtype so the
   /// UI can stay silent (stop form) or show a snackbar (map picker button).
-  Future<LocationOutcome> getCurrentLatLng() async {
+  /// Concurrent callers share the one platform request held in [_inFlight].
+  Future<LocationOutcome> getCurrentLatLng() {
+    return _inFlight ??= _fetchPosition().whenComplete(() => _inFlight = null);
+  }
+
+  Future<LocationOutcome> _fetchPosition() async {
     try {
       if (!await Geolocator.isLocationServiceEnabled()) {
         return const LocationServiceDisabled();
@@ -64,7 +75,22 @@ class LocationService {
       );
       return LocationSuccess(LatLng(position.latitude, position.longitude));
     } on Exception {
-      return const LocationUnavailable();
+      // A fresh fix can still fail transiently (timeout, or an overlapping
+      // request the OS rejected on a rapid re-tap) — fall back to the last
+      // cached fix so a quick second tap resolves instead of erroring out.
+      final cached = await _lastKnown();
+      return cached != null
+          ? LocationSuccess(cached)
+          : const LocationUnavailable();
+    }
+  }
+
+  Future<LatLng?> _lastKnown() async {
+    try {
+      final p = await Geolocator.getLastKnownPosition();
+      return p == null ? null : LatLng(p.latitude, p.longitude);
+    } catch (_) {
+      return null; // getLastKnownPosition is unsupported on web
     }
   }
 
