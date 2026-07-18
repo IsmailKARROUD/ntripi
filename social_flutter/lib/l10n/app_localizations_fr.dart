@@ -2122,6 +2122,24 @@ class AppLocalizationsFr extends AppLocalizations {
   String get noLocationSet => 'Aucune localisation définie';
 
   @override
+  String get latitudeLabel => 'Latitude';
+
+  @override
+  String get longitudeLabel => 'Longitude';
+
+  @override
+  String get invalidLatitudeError =>
+      'La latitude doit être un nombre entre -90 et 90';
+
+  @override
+  String get invalidLongitudeError =>
+      'La longitude doit être un nombre entre -180 et 180';
+
+  @override
+  String get coordinatesPairRequiredError =>
+      'Saisissez à la fois la latitude et la longitude';
+
+  @override
   String get detailsSection => 'Détails';
 
   @override

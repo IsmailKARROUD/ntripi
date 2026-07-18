@@ -2138,6 +2138,22 @@ class AppLocalizationsAr extends AppLocalizations {
   String get noLocationSet => 'لم يُحدد موقع';
 
   @override
+  String get latitudeLabel => 'خط العرض';
+
+  @override
+  String get longitudeLabel => 'خط الطول';
+
+  @override
+  String get invalidLatitudeError => 'يجب أن يكون خط العرض رقمًا بين -90 و90';
+
+  @override
+  String get invalidLongitudeError =>
+      'يجب أن يكون خط الطول رقمًا بين -180 و180';
+
+  @override
+  String get coordinatesPairRequiredError => 'أدخل خط العرض وخط الطول معًا';
+
+  @override
   String get detailsSection => 'التفاصيل';
 
   @override

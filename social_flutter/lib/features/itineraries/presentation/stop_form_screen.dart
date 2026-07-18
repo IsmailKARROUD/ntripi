@@ -12,8 +12,10 @@ import 'dart:async';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:social_flutter/core/api/api_client.dart';
 import 'package:social_flutter/core/services/geocoding_service.dart';
 import 'package:social_flutter/features/itineraries/domain/annotation.dart';
@@ -83,6 +85,9 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
   final _searchController = TextEditingController();
   final _placeNameController = TextEditingController();
   final _placeAddressController = TextEditingController();
+  final _latController = TextEditingController();
+  final _lngController = TextEditingController();
+  final _previewMapController = MapController();
   int _durationDays = 0;
   int _durationHours = 0;
   int _durationMinutes = 0;
@@ -123,8 +128,9 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
     super.initState();
     _isEditing = !widget.viewOnly;
     if (widget.isEditMode) {
-      WidgetsBinding.instance
-          .addPostFrameCallback((_) => _initFromExistingStop());
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) => _initFromExistingStop(),
+      );
     } else {
       _initialSnapshot = _snapshot();
     }
@@ -132,20 +138,22 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
 
   // _searchController is intentionally excluded — the Nominatim search box is
   // transient and not part of the saved stop.
+  // Coordinate controllers stand in for _lat/_lng so invalid text also counts
+  // as an unsaved edit.
   List<Object?> _snapshot() => [
-        _placeNameController.text,
-        _placeAddressController.text,
-        _lat,
-        _lng,
-        _placeType,
-        _durationDays,
-        _durationHours,
-        _durationMinutes,
-        _costController.text,
-        _isFree,
-        _notesController.text,
-        _pendingAnnotations.length,
-      ];
+    _placeNameController.text,
+    _placeAddressController.text,
+    _latController.text,
+    _lngController.text,
+    _placeType,
+    _durationDays,
+    _durationHours,
+    _durationMinutes,
+    _costController.text,
+    _isFree,
+    _notesController.text,
+    _pendingAnnotations.length,
+  ];
 
   bool get _isDirty {
     final base = _initialSnapshot;
@@ -198,84 +206,99 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
 
     await showModalBottomSheet<void>(
       context: context,
-      builder: (ctx) => SafeArea(
-        child: SizedBox(
-          height: 300,
-          child: Column(
-            children: [
-              Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    TextButton(
-                      onPressed: () => Navigator.of(ctx).pop(),
-                      child: Text(AppLocalizations.of(context)!.cancel),
+      builder:
+          (ctx) => SafeArea(
+            child: SizedBox(
+              height: 300,
+              child: Column(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 4,
+                      vertical: 4,
                     ),
-                    Text(
-                      AppLocalizations.of(context)!.timeToSpendModalTitle,
-                      style: Theme.of(ctx).textTheme.titleSmall,
-                    ),
-                    TextButton(
-                      onPressed: () {
-                        setState(() {
-                          _durationDays = tempDays;
-                          _durationHours = tempHours;
-                          _durationMinutes = tempMinutes;
-                        });
-                        Navigator.of(ctx).pop();
-                      },
-                      child: Text(AppLocalizations.of(context)!.doneTooltip),
-                    ),
-                  ],
-                ),
-              ),
-              Expanded(
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: CupertinoPicker(
-                        scrollController: daysCtrl,
-                        itemExtent: 44,
-                        onSelectedItemChanged: (i) => tempDays = i,
-                        children: List.generate(
-                          366,
-                          (i) => Center(child: Text('$i ${AppLocalizations.of(context)!.daysLabel}')),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        TextButton(
+                          onPressed: () => Navigator.of(ctx).pop(),
+                          child: Text(AppLocalizations.of(context)!.cancel),
                         ),
-                      ),
-                    ),
-                    Expanded(
-                      child: CupertinoPicker(
-                        scrollController: hoursCtrl,
-                        itemExtent: 44,
-                        onSelectedItemChanged: (i) => tempHours = i,
-                        children: List.generate(
-                          24,
-                          (i) => Center(child: Text('$i ${AppLocalizations.of(context)!.hoursLabel}')),
+                        Text(
+                          AppLocalizations.of(context)!.timeToSpendModalTitle,
+                          style: Theme.of(ctx).textTheme.titleSmall,
                         ),
-                      ),
-                    ),
-                    Expanded(
-                      child: CupertinoPicker(
-                        scrollController: minsCtrl,
-                        itemExtent: 44,
-                        onSelectedItemChanged: (i) => tempMinutes = i,
-                        children: List.generate(
-                          60,
-                          (i) => Center(
-                            child: Text('${i.toString().padLeft(2, '0')} ${AppLocalizations.of(context)!.minutesLabel}'),
+                        TextButton(
+                          onPressed: () {
+                            setState(() {
+                              _durationDays = tempDays;
+                              _durationHours = tempHours;
+                              _durationMinutes = tempMinutes;
+                            });
+                            Navigator.of(ctx).pop();
+                          },
+                          child: Text(
+                            AppLocalizations.of(context)!.doneTooltip,
                           ),
                         ),
-                      ),
+                      ],
                     ),
-                  ],
-                ),
+                  ),
+                  Expanded(
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: CupertinoPicker(
+                            scrollController: daysCtrl,
+                            itemExtent: 44,
+                            onSelectedItemChanged: (i) => tempDays = i,
+                            children: List.generate(
+                              366,
+                              (i) => Center(
+                                child: Text(
+                                  '$i ${AppLocalizations.of(context)!.daysLabel}',
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        Expanded(
+                          child: CupertinoPicker(
+                            scrollController: hoursCtrl,
+                            itemExtent: 44,
+                            onSelectedItemChanged: (i) => tempHours = i,
+                            children: List.generate(
+                              24,
+                              (i) => Center(
+                                child: Text(
+                                  '$i ${AppLocalizations.of(context)!.hoursLabel}',
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        Expanded(
+                          child: CupertinoPicker(
+                            scrollController: minsCtrl,
+                            itemExtent: 44,
+                            onSelectedItemChanged: (i) => tempMinutes = i,
+                            children: List.generate(
+                              60,
+                              (i) => Center(
+                                child: Text(
+                                  '${i.toString().padLeft(2, '0')} ${AppLocalizations.of(context)!.minutesLabel}',
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
-        ),
-      ),
     );
 
     daysCtrl.dispose();
@@ -302,6 +325,8 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
       _placeAddressController.text = found.placeAddress ?? '';
       _lat = found.lat;
       _lng = found.lng;
+      _latController.text = _formatCoord(found.lat);
+      _lngController.text = _formatCoord(found.lng);
       _placeType = found.placeType;
       if (found.durationMin != null) {
         final total = found.durationMin!;
@@ -325,6 +350,9 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
     _searchController.dispose();
     _placeNameController.dispose();
     _placeAddressController.dispose();
+    _latController.dispose();
+    _lngController.dispose();
+    _previewMapController.dispose();
     _costController.dispose();
     _notesController.dispose();
     super.dispose();
@@ -344,10 +372,166 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
       _placeAddressController.text = suggestion.address;
       _lat = suggestion.lat;
       _lng = suggestion.lng;
+      _latController.text = _formatCoord(suggestion.lat);
+      _lngController.text = _formatCoord(suggestion.lng);
     });
+    _recenterPreview();
     _searchController.clear();
     ref.read(placeSearchProvider.notifier).clear();
     FocusScope.of(context).unfocus();
+  }
+
+  /// ~0.1m precision is plenty for a stop; trailing zeros are noise in a form.
+  String _formatCoord(double? v) {
+    if (v == null) return '';
+    var s = v.toStringAsFixed(6);
+    s = s.replaceFirst(RegExp(r'0+$'), '').replaceFirst(RegExp(r'\.$'), '');
+    return s;
+  }
+
+  /// Mirrors the coordinate text fields into _lat/_lng so the preview map,
+  /// duplicate check, and save payload stay live; partial or invalid input
+  /// keeps them null until both fields parse and are in range.
+  ///
+  /// A pasted "lat, lng" pair (Google Maps' "copy coordinates" format) landing
+  /// in one field is split across both — a comma or interior whitespace never
+  /// occurs in normal single-value entry, so it marks a pasted pair.
+  void _onCoordChanged(String value) {
+    final pair = _extractCoordPair(value);
+    if (pair != null) {
+      _setCoordText(_latController, pair.$1);
+      _setCoordText(_lngController, pair.$2);
+    }
+    final lat = double.tryParse(_latController.text.trim());
+    final lng = double.tryParse(_lngController.text.trim());
+    final valid =
+        lat != null &&
+        lng != null &&
+        !lat.isNaN &&
+        !lng.isNaN &&
+        lat >= -90 &&
+        lat <= 90 &&
+        lng >= -180 &&
+        lng <= 180;
+    setState(() {
+      _lat = valid ? lat : null;
+      _lng = valid ? lng : null;
+    });
+    if (valid) _recenterPreview();
+  }
+
+  /// Extracts a "lat, lng" pair from pasted text; null when it isn't a pair.
+  ///
+  /// The app's copy formats all separate the two coordinates with a space,
+  /// optionally fused to a comma or dot: "50.85, 4.45" · "50.85. 4.45". The
+  /// decimal separator inside a coordinate may itself be a comma (European
+  /// locale, "50,85"). So a comma/dot delimits the pair only when a space
+  /// follows it; any comma left inside a token is a decimal and becomes a dot.
+  (String, String)? _extractCoordPair(String value) {
+    final trimmed = value.trim();
+    // Split on the inter-coordinate whitespace, swallowing a comma/dot fused to
+    // it. The mandatory \s+ never occurs inside a single number, so plain
+    // single-value typing is left untouched (no split).
+    final parts = trimmed.split(RegExp(r'\s*[,.]?\s+'));
+    if (parts.length == 2) {
+      final lat = _asCoordText(parts[0]);
+      final lng = _asCoordText(parts[1]);
+      return (lat != null && lng != null) ? (lat, lng) : null;
+    }
+    // No whitespace: fall back to a comma between two dot-decimal numbers,
+    // e.g. "50.857808,4.452149".
+    final m = RegExp(r'^(-?\d+\.\d+)\s*,\s*(-?\d+\.\d+)$').firstMatch(trimmed);
+    return m != null ? (m.group(1)!, m.group(2)!) : null;
+  }
+
+  /// Normalizes one split coordinate token to a parseable dot-decimal string,
+  /// or null when it isn't a number. A remaining comma is a European decimal.
+  String? _asCoordText(String token) {
+    final s = token.trim().replaceAll(',', '.');
+    return double.tryParse(s) != null ? s : null;
+  }
+
+  // Programmatic set (not user input) — does not re-trigger onChanged.
+  void _setCoordText(TextEditingController controller, String text) {
+    controller.value = TextEditingValue(
+      text: text,
+      selection: TextSelection.collapsed(offset: text.length),
+    );
+  }
+
+  void _recenterPreview() {
+    // Post-frame: the preview map may only mount this frame, and moving an
+    // unattached MapController throws. initialCenter covers the first frame.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || _lat == null || _lng == null) return;
+      try {
+        _previewMapController.move(LatLng(_lat!, _lng!), 14);
+      } catch (_) {}
+    });
+  }
+
+  Widget _buildCoordField(
+    FocusNode focusNode, {
+    required TextEditingController controller,
+    required bool isLat,
+    required bool readOnly,
+    required bool showEditHint,
+    required AppLocalizations l10n,
+    required NtripiColors nt,
+  }) {
+    return TextFormField(
+      controller: controller,
+      focusNode: focusNode,
+      readOnly: readOnly,
+      onTap: showEditHint ? _showEditModeHint : null,
+      // signed decimals ("-7.62") render garbled in RTL locales
+      textDirection: TextDirection.ltr,
+      keyboardType: const TextInputType.numberWithOptions(
+        decimal: true,
+        signed: true,
+      ),
+      autovalidateMode: AutovalidateMode.onUserInteraction,
+      decoration: const InputDecoration(
+        border: InputBorder.none,
+        enabledBorder: InputBorder.none,
+        focusedBorder: InputBorder.none,
+        isDense: true,
+        contentPadding: EdgeInsets.zero,
+        hintText: '—',
+      ),
+      style: TextStyle(
+        fontSize: 15,
+        fontWeight: FontWeight.w600,
+        color: nt.bark,
+      ),
+      onChanged: _onCoordChanged,
+      validator:
+          (v) => _validateCoord(
+            v,
+            isLat: isLat,
+            other: (isLat ? _lngController : _latController).text,
+            l10n: l10n,
+          ),
+    );
+  }
+
+  String? _validateCoord(
+    String? value, {
+    required bool isLat,
+    required String other,
+    required AppLocalizations l10n,
+  }) {
+    final text = value?.trim() ?? '';
+    if (text.isEmpty) {
+      // A lone coordinate is meaningless — require the pair or nothing.
+      return other.trim().isEmpty ? null : l10n.coordinatesPairRequiredError;
+    }
+    final parsed = double.tryParse(text);
+    final limit = isLat ? 90 : 180;
+    if (parsed == null || parsed.isNaN || parsed < -limit || parsed > limit) {
+      return isLat ? l10n.invalidLatitudeError : l10n.invalidLongitudeError;
+    }
+    return null;
   }
 
   Future<void> _pickOnMap() async {
@@ -362,10 +546,8 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
 
   Stop? _findDuplicate() {
     if (widget.isEditMode) return null;
-    final stops = ref
-            .read(itineraryDetailProvider(widget.itineraryId))
-            .value
-            ?.stops ??
+    final stops =
+        ref.read(itineraryDetailProvider(widget.itineraryId)).value?.stops ??
         [];
     for (final s in stops) {
       if (_lat != null && _lng != null && s.lat != null && s.lng != null) {
@@ -377,7 +559,8 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
       } else {
         final newName = _placeNameController.text.trim().toLowerCase();
         if (newName.isNotEmpty &&
-            (s.placeName?.trim().toLowerCase() ?? '') == newName) return s;
+            (s.placeName?.trim().toLowerCase() ?? '') == newName)
+          return s;
       }
     }
     return null;
@@ -393,20 +576,21 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
         final stopLabel = duplicate.placeName ?? l10n.aStopFallback;
         final confirmed = await showDialog<bool>(
           context: context,
-          builder: (ctx) => AlertDialog(
-            title: Text(l10n.duplicateStopTitle),
-            content: Text(l10n.duplicateStopMessage(stopLabel)),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(ctx).pop(false),
-                child: Text(l10n.cancel),
+          builder:
+              (ctx) => AlertDialog(
+                title: Text(l10n.duplicateStopTitle),
+                content: Text(l10n.duplicateStopMessage(stopLabel)),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.of(ctx).pop(false),
+                    child: Text(l10n.cancel),
+                  ),
+                  FilledButton(
+                    onPressed: () => Navigator.of(ctx).pop(true),
+                    child: Text(l10n.addAnyway),
+                  ),
+                ],
               ),
-              FilledButton(
-                onPressed: () => Navigator.of(ctx).pop(true),
-                child: Text(l10n.addAnyway),
-              ),
-            ],
-          ),
         );
         if (confirmed != true || !mounted) return;
       }
@@ -426,8 +610,10 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
           'place_name': _placeNameController.text.trim(),
         if (_placeAddressController.text.trim().isNotEmpty)
           'place_address': _placeAddressController.text.trim(),
-        if (_lat != null) 'lat': _lat,
-        if (_lng != null) 'lng': _lng,
+        // Always send lat/lng (even null) so clearing the coordinates
+        // persists — the backend's exclude_unset keeps omitted keys unchanged.
+        'lat': _lat,
+        'lng': _lng,
         // Always send place_type (even null) so clearing it persists — the
         // backend's exclude_unset means an omitted key leaves the old value.
         'place_type': _placeType?.name,
@@ -438,8 +624,9 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
           'notes': _notesController.text.trim(),
       };
 
-      final notifier =
-          ref.read(itineraryDetailProvider(widget.itineraryId).notifier);
+      final notifier = ref.read(
+        itineraryDetailProvider(widget.itineraryId).notifier,
+      );
 
       if (widget.isEditMode) {
         await notifier.updateStop(widget.stopId!, data);
@@ -487,7 +674,9 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
     } on Exception catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(extractErrorMessage(e, AppLocalizations.of(context)!))),
+        SnackBar(
+          content: Text(extractErrorMessage(e, AppLocalizations.of(context)!)),
+        ),
       );
     } finally {
       if (mounted) setState(() => _saving = false);
@@ -500,8 +689,9 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
 
   Future<void> _showAnnotationDialog({Annotation? existing}) async {
     if (!mounted) return;
-    final notifier =
-        ref.read(itineraryDetailProvider(widget.itineraryId).notifier);
+    final notifier = ref.read(
+      itineraryDetailProvider(widget.itineraryId).notifier,
+    );
 
     // API path (edit mode or stop already exists):
     // Pass onSaveAsync so the annotation screen shows a spinner and pops itself
@@ -512,9 +702,10 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
         isEdit: existing != null,
         initialContent: existing?.content,
         initialType: existing?.type,
-        stopName: _placeNameController.text.trim().isNotEmpty
-            ? _placeNameController.text.trim()
-            : null,
+        stopName:
+            _placeNameController.text.trim().isNotEmpty
+                ? _placeNameController.text.trim()
+                : null,
         onSaveAsync: (result) async {
           if (existing != null) {
             final contentChanged = result.content != existing.content;
@@ -544,13 +735,17 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
     final result = await showAnnotationScreen(
       context,
       isEdit: false,
-      stopName: _placeNameController.text.trim().isNotEmpty
-          ? _placeNameController.text.trim()
-          : null,
+      stopName:
+          _placeNameController.text.trim().isNotEmpty
+              ? _placeNameController.text.trim()
+              : null,
     );
     if (result == null || !mounted) return;
-    setState(() =>
-        _pendingAnnotations.add(_PendingAnnotation(result.type, result.content)));
+    setState(
+      () => _pendingAnnotations.add(
+        _PendingAnnotation(result.type, result.content),
+      ),
+    );
   }
 
   Future<void> _confirmDelete() async {
@@ -576,7 +771,11 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
       if (!mounted) return;
       setState(() => _saving = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(extractErrorMessage(e as dynamic, AppLocalizations.of(context)!))),
+        SnackBar(
+          content: Text(
+            extractErrorMessage(e as dynamic, AppLocalizations.of(context)!),
+          ),
+        ),
       );
     }
   }
@@ -608,7 +807,11 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
     } on Exception catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(extractErrorMessage(e as dynamic, AppLocalizations.of(context)!))),
+        SnackBar(
+          content: Text(
+            extractErrorMessage(e as dynamic, AppLocalizations.of(context)!),
+          ),
+        ),
       );
     }
   }
@@ -629,9 +832,11 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
     final duplicate = _findDuplicate();
 
     final currentUserId = ref.watch(myProfileProvider).value?.id;
-    final itineraryAsync = ref.watch(itineraryDetailProvider(widget.itineraryId));
-    final isOwner = currentUserId != null &&
-        itineraryAsync.value?.userId == currentUserId;
+    final itineraryAsync = ref.watch(
+      itineraryDetailProvider(widget.itineraryId),
+    );
+    final isOwner =
+        currentUserId != null && itineraryAsync.value?.userId == currentUserId;
     final bool showEditHint = readOnly && isOwner;
 
     // In edit mode, keep local stop in sync when provider updates.
@@ -639,8 +844,9 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
       ref.listen(itineraryDetailProvider(widget.itineraryId), (_, next) {
         next.whenData((itinerary) {
           try {
-            final stop =
-                itinerary.stops.firstWhere((s) => s.id == widget.stopId);
+            final stop = itinerary.stops.firstWhere(
+              (s) => s.id == widget.stopId,
+            );
             if (mounted) setState(() => _existingStop = stop);
           } catch (_) {}
         });
@@ -648,9 +854,10 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
     }
 
     final l10n = AppLocalizations.of(context)!;
-    final appBarTitle = readOnly
-        ? l10n.stopDetailsView
-        : widget.isEditMode
+    final appBarTitle =
+        readOnly
+            ? l10n.stopDetailsView
+            : widget.isEditMode
             ? l10n.editStopTitle
             : l10n.addStopTitle;
 
@@ -665,536 +872,753 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
       child: SavingOverlay(
         saving: _saving,
         child: Scaffold(
-      backgroundColor: nt.sand,
-      resizeToAvoidBottomInset: false,
-      appBar: AppBar(
-        backgroundColor: nt.sand,
-        title: Text(appBarTitle),
-        actions: [
-          if (readOnly && isOwner)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              child: Center(
-                child: EditPencilButton(
-                  key: _editButtonKey,
-                  icon: Icons.edit_outlined,
-                  iconSize: 22,
-                  tooltip: l10n.editStopTooltip,
-                  onTap: () => setState(() => _isEditing = true),
+          backgroundColor: nt.sand,
+          resizeToAvoidBottomInset: false,
+          appBar: AppBar(
+            backgroundColor: nt.sand,
+            title: Text(appBarTitle),
+            actions: [
+              if (readOnly && isOwner)
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  child: Center(
+                    child: EditPencilButton(
+                      key: _editButtonKey,
+                      icon: Icons.edit_outlined,
+                      iconSize: 22,
+                      tooltip: l10n.editStopTooltip,
+                      onTap: () => setState(() => _isEditing = true),
+                    ),
+                  ),
                 ),
-              ),
-            ),
-          if (!readOnly)
-            _saving
-                ? const Padding(
-                    padding: EdgeInsets.all(16),
-                    child: NTripiRingLoader(size: 20),
-                  )
-                : OfflineGate(
-                    builder: (online) => TextButton(
-                      onPressed: online ? _save : null,
-                      child: Text(
-                        l10n.save,
-                        style: TextStyle(
-                          color: online ? nt.forest : nt.text3,
-                          fontWeight: FontWeight.w700,
-                          fontSize: 15,
-                        ),
-                      ),
-                    ),
-                  ),
-        ],
-      ),
-      body: Align(
-        alignment: Alignment.topCenter,
-        child: ConstrainedBox(
-          constraints: BoxConstraints(
-              maxWidth: isDesktopWeb() ? kDesktopMaxWidth : double.infinity),
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.only(top: 8, bottom: 40),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  // ----------------------------------------------------------------
-                  // Section 1: Place search (hidden in view mode)
-                  // ----------------------------------------------------------------
-                  if (!readOnly) ...[
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
-                      child: LabelWithHelp(
-                        label: l10n.searchForPlaceLabel,
-                        helpTitle: l10n.searchAPlaceHelpTitle,
-                        helpMessage: l10n.searchAPlaceHelpMessage,
-                        labelStyle: Theme.of(context).textTheme.titleSmall,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: TextField(
-                      controller: _searchController,
-                      decoration: InputDecoration(
-                        hintText: l10n.searchPlaceHintText,
-                        filled: true,
-                        fillColor: nt.surface,
-                        prefixIcon:
-                            Icon(Icons.search_rounded, color: nt.forest),
-                        suffixIcon: _searchController.text.isNotEmpty
-                            ? IconButton(
-                                icon: const Icon(Icons.close_rounded,
-                                    size: 18),
-                                onPressed: () {
-                                  _searchController.clear();
-                                  ref.read(placeSearchProvider.notifier).clear();
-                                },
-                              )
-                            : null,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(14),
-                          borderSide:
-                              BorderSide(color: nt.border),
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(14),
-                          borderSide:
-                              BorderSide(color: nt.border),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(14),
-                          borderSide: BorderSide(
-                              color: nt.forest, width: 1.5),
-                        ),
-                      ),
-                      onChanged: _onSearchChanged,
-                    ),
-                    ),
-
-                    // Suggestions list
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: suggestionsAsync.when(
-                      loading: () => const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 8),
-                        child: LinearProgressIndicator(),
-                      ),
-                      error: (_, __) => const SizedBox.shrink(),
-                      data: (suggestions) {
-                        if (suggestions.isEmpty) return const SizedBox.shrink();
-                        return Container(
-                          margin: const EdgeInsets.only(top: 4),
-                          decoration: BoxDecoration(
-                            color: nt.surface,
-                            borderRadius: BorderRadius.circular(14),
-                            border: Border.all(color: nt.border),
-                          ),
-                          clipBehavior: Clip.antiAlias,
-                          child: Column(
-                            children: [
-                              for (var i = 0; i < suggestions.length; i++) ...[
-                                if (i > 0)
-                                  const Divider(height: 1, indent: 52),
-                                ListTile(
-                                  dense: true,
-                                  leading: Container(
-                                    width: 36,
-                                    height: 36,
-                                    decoration: BoxDecoration(
-                                      color: nt.sand,
-                                      borderRadius: BorderRadius.circular(10),
-                                    ),
-                                    alignment: Alignment.center,
-                                    child: Icon(Icons.location_on_rounded,
-                                        size: 18, color: nt.forest),
-                                  ),
-                                  title: Text(suggestions[i].displayName,
-                                      maxLines: 1,
-                                      style: TextStyle(
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.w700,
-                                          color: nt.bark)),
-                                  subtitle: Text(
-                                    suggestions[i].address,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: TextStyle(
-                                        fontSize: 11, color: nt.text2),
-                                  ),
-                                  trailing: Icon(Icons.add_rounded,
-                                      size: 20, color: nt.forest),
-                                  onTap: () =>
-                                      _applySuggestion(suggestions[i]),
-                                ),
-                              ],
-                            ],
-                          ),
-                        );
-                      },
-                    ),
-                    ),
-                    const SizedBox(height: 20),
-                  ],
-
-                  // ── Place name + address ───────────────────────────────
-                  _SFSectionCard(
-                    children: [
-                      _SFBorderlessField(
-                        label: l10n.placeNameLabel.toUpperCase(),
-                        childBuilder: (focusNode) => TextFormField(
-                          controller: _placeNameController,
-                          focusNode: focusNode,
-                          readOnly: readOnly,
-                          onTap: showEditHint ? _showEditModeHint : null,
-                          decoration: const InputDecoration(
-                            border: InputBorder.none,
-                            enabledBorder: InputBorder.none,
-                            focusedBorder: InputBorder.none,
-                            isDense: true,
-                            contentPadding: EdgeInsets.zero,
-                            hintText: '—',
-                          ),
-                          style: TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w600,
-                              color: nt.bark),
-                          validator: (v) => (v == null || v.trim().isEmpty)
-                              ? l10n.placeNameRequired
-                              : null,
-                        ),
-                      ),
-                      const _SFDivider(),
-                      _SFBorderlessField(
-                        label: l10n.addressLabel.toUpperCase(),
-                        childBuilder: (focusNode) => TextFormField(
-                          controller: _placeAddressController,
-                          focusNode: focusNode,
-                          readOnly: readOnly,
-                          onTap: showEditHint ? _showEditModeHint : null,
-                          decoration: const InputDecoration(
-                            border: InputBorder.none,
-                            enabledBorder: InputBorder.none,
-                            focusedBorder: InputBorder.none,
-                            isDense: true,
-                            contentPadding: EdgeInsets.zero,
-                            hintText: '—',
-                          ),
-                          style: TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w600,
-                              color: nt.bark),
-                        ),
-                      ),
-                    ],
-                  ),
-
-                  // ── Location picker ────────────────────────────────────
-                  const SizedBox(height: 8),
-                  _SFSectionCard(
-                    children: [
-                      _SFPickerRow(
-                        icon: Icons.map_rounded,
-                        label: l10n.locationLabel.toUpperCase(),
-                        value: _lat != null && _lng != null
-                            ? 'Lat: ${_lat!.toStringAsFixed(5)}, Lng: ${_lng!.toStringAsFixed(5)}'
-                            : l10n.noLocationSet,
-                        onTap: readOnly ? null : _pickOnMap,
-                      ),
-                    ],
-                  ),
-
-                  // ── Duplicate warning ──────────────────────────────────
-                  if (!widget.isEditMode && duplicate != null)
-                    Container(
-                      margin: const EdgeInsets.only(top: 8),
-                      padding: const EdgeInsets.fromLTRB(14, 10, 14, 10),
-                      decoration: BoxDecoration(
-                        color: nt.transitBg,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: nt.transitBorder),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(Icons.warning_amber_rounded,
-                              size: 16, color: nt.transitIcon),
-                          const SizedBox(width: 8),
-                          Expanded(
+              if (!readOnly)
+                _saving
+                    ? const Padding(
+                      padding: EdgeInsets.all(16),
+                      child: NTripiRingLoader(size: 20),
+                    )
+                    : OfflineGate(
+                      builder:
+                          (online) => TextButton(
+                            onPressed: online ? _save : null,
                             child: Text(
-                              l10n.alreadyInItinerary(
-                                  duplicate.placeName ?? l10n.aStopFallback),
+                              l10n.save,
                               style: TextStyle(
-                                  fontSize: 12, color: nt.transitText),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-
-                  // ── Optional fields toggle (create mode only) ──────────
-                  if (!widget.isEditMode && !readOnly)
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-                      child: Align(
-                        alignment: Alignment.center,
-                        child: InkWell(
-                          onTap: () =>
-                              setState(() => _showOptional = !_showOptional),
-                          borderRadius: BorderRadius.circular(8),
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 12, vertical: 8),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  _showOptional
-                                      ? Icons.expand_less
-                                      : Icons.expand_more,
-                                  size: 16,
-                                  color: nt.forest,
-                                ),
-                                const SizedBox(width: 4),
-                                Text(
-                                  _showOptional
-                                      ? l10n.hideOptionalFields
-                                      : l10n.showOptionalFields,
-                                  style: TextStyle(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w700,
-                                    color: nt.forest,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-
-                  if (!collapseOptional) ...[
-                  // ── DETAILS ────────────────────────────────────────────
-                  _SFSectionLabel(text: l10n.detailsSection.toUpperCase()),
-                  _SFSectionCard(
-                    children: [
-                      // Place type
-                      _SFPickerRow(
-                        icon: _placeType?.icon ?? Icons.category_rounded,
-                        iconColor: _placeType?.color(nt) ?? nt.forest,
-                        label: l10n.placeTypeLabel.toUpperCase(),
-                        value: _placeType?.label(l10n) ?? '—',
-                        onTap: readOnly ? null : _showPlaceTypePicker,
-                      ),
-                      const _SFDivider(),
-                      // Duration
-                      _SFPickerRow(
-                        icon: Icons.schedule_rounded,
-                        label: l10n.timeToSpendModalTitle.toUpperCase(),
-                        value: _durationLabel,
-                        onTap: readOnly ? null : _showDurationPicker,
-                      ),
-                      const _SFDivider(),
-                      // Free toggle
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
-                        child: Row(
-                          children: [
-                            Container(
-                              width: 32,
-                              height: 32,
-                              decoration: BoxDecoration(
-                                color: nt.mist,
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              alignment: Alignment.center,
-                              child: Icon(Icons.payments_rounded,
-                                  size: 16, color: nt.forest),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    l10n.costLabel.toUpperCase(),
-                                    style: TextStyle(
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.w700,
-                                      color: nt.text2,
-                                      letterSpacing: 0.4,
-                                    ),
-                                  ),
-                                  Text(
-                                    l10n.stopIsFree,
-                                    style: TextStyle(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w500,
-                                      color: nt.bark,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            Switch(
-                              value: _isFree,
-                              onChanged: readOnly
-                                  ? null
-                                  : (v) => setState(() => _isFree = v),
-                              thumbColor: WidgetStateProperty.resolveWith((states) {
-                                if (states.contains(WidgetState.disabled)) {
-                                  // disabled-on: muted forest; disabled-off: grey
-                                  return states.contains(WidgetState.selected)
-                                      ? nt.forest.withAlpha(160)
-                                      : nt.text3;
-                                }
-                                return states.contains(WidgetState.selected)
-                                    ? nt.forest
-                                    : nt.surface;
-                              }),
-                              trackColor: WidgetStateProperty.resolveWith((states) {
-                                if (states.contains(WidgetState.disabled)) {
-                                  return states.contains(WidgetState.selected)
-                                      ? nt.mist.withAlpha(200)
-                                      : nt.border;
-                                }
-                                return states.contains(WidgetState.selected)
-                                    ? nt.mist
-                                    : nt.border;
-                              }),
-                            ),
-                          ],
-                        ),
-                      ),
-                      if (!_isFree) ...[
-                        const _SFDivider(),
-                        _SFBorderlessField(
-                          label: l10n.costLabel.toUpperCase(),
-                          childBuilder: (focusNode) => TextFormField(
-                            controller: _costController,
-                            focusNode: focusNode,
-                            readOnly: readOnly,
-                            onTap: showEditHint ? _showEditModeHint : null,
-                            decoration: InputDecoration(
-                              border: InputBorder.none,
-                              enabledBorder: InputBorder.none,
-                              focusedBorder: InputBorder.none,
-                              isDense: true,
-                              contentPadding: EdgeInsets.zero,
-                              hintText: l10n.stopCostHint,
-                              prefixText: '€ ',
-                            ),
-                            keyboardType: const TextInputType.numberWithOptions(
-                                decimal: true),
-                            style: TextStyle(
+                                color: online ? nt.forest : nt.text3,
+                                fontWeight: FontWeight.w700,
                                 fontSize: 15,
-                                fontWeight: FontWeight.w600,
-                                color: nt.bark),
-                            validator: (v) {
-                              if (v == null || v.isEmpty) return null;
-                              if (double.tryParse(v) == null) {
-                                return l10n.enterValidNumber;
-                              }
-                              return null;
+                              ),
+                            ),
+                          ),
+                    ),
+            ],
+          ),
+          body: Align(
+            alignment: Alignment.topCenter,
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                maxWidth: isDesktopWeb() ? kDesktopMaxWidth : double.infinity,
+              ),
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.only(top: 8, bottom: 40),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      // ----------------------------------------------------------------
+                      // Section 1: Place search (hidden in view mode)
+                      // ----------------------------------------------------------------
+                      if (!readOnly) ...[
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
+                          child: LabelWithHelp(
+                            label: l10n.searchForPlaceLabel,
+                            helpTitle: l10n.searchAPlaceHelpTitle,
+                            helpMessage: l10n.searchAPlaceHelpMessage,
+                            labelStyle: Theme.of(context).textTheme.titleSmall,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: TextField(
+                            controller: _searchController,
+                            decoration: InputDecoration(
+                              hintText: l10n.searchPlaceHintText,
+                              filled: true,
+                              fillColor: nt.surface,
+                              prefixIcon: Icon(
+                                Icons.search_rounded,
+                                color: nt.forest,
+                              ),
+                              suffixIcon:
+                                  _searchController.text.isNotEmpty
+                                      ? IconButton(
+                                        icon: const Icon(
+                                          Icons.close_rounded,
+                                          size: 18,
+                                        ),
+                                        onPressed: () {
+                                          _searchController.clear();
+                                          ref
+                                              .read(
+                                                placeSearchProvider.notifier,
+                                              )
+                                              .clear();
+                                        },
+                                      )
+                                      : null,
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(14),
+                                borderSide: BorderSide(color: nt.border),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(14),
+                                borderSide: BorderSide(color: nt.border),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(14),
+                                borderSide: BorderSide(
+                                  color: nt.forest,
+                                  width: 1.5,
+                                ),
+                              ),
+                            ),
+                            onChanged: _onSearchChanged,
+                          ),
+                        ),
+
+                        // Suggestions list
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: suggestionsAsync.when(
+                            loading:
+                                () => const Padding(
+                                  padding: EdgeInsets.symmetric(vertical: 8),
+                                  child: LinearProgressIndicator(),
+                                ),
+                            error: (_, __) => const SizedBox.shrink(),
+                            data: (suggestions) {
+                              if (suggestions.isEmpty)
+                                return const SizedBox.shrink();
+                              // Tiles live in a Material (not a color-decorated
+                              // Container) so ListTile background/ink paint on it — a
+                              // colored intermediate box would hide them (Flutter
+                              // debug assert in list_tile.dart).
+                              return Padding(
+                                padding: const EdgeInsets.only(top: 4),
+                                child: Material(
+                                  color: nt.surface,
+                                  clipBehavior: Clip.antiAlias,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(14),
+                                    side: BorderSide(color: nt.border),
+                                  ),
+                                  child: Column(
+                                    children: [
+                                      for (
+                                        var i = 0;
+                                        i < suggestions.length;
+                                        i++
+                                      ) ...[
+                                        if (i > 0)
+                                          const Divider(height: 1, indent: 52),
+                                        ListTile(
+                                          dense: true,
+                                          leading: Container(
+                                            width: 36,
+                                            height: 36,
+                                            decoration: BoxDecoration(
+                                              color: nt.sand,
+                                              borderRadius:
+                                                  BorderRadius.circular(10),
+                                            ),
+                                            alignment: Alignment.center,
+                                            child: Icon(
+                                              Icons.location_on_rounded,
+                                              size: 18,
+                                              color: nt.forest,
+                                            ),
+                                          ),
+                                          title: Text(
+                                            suggestions[i].displayName,
+                                            maxLines: 2,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: TextStyle(
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.w700,
+                                              color: nt.bark,
+                                            ),
+                                          ),
+                                          // Full address, unabbreviated — it's what
+                                          // disambiguates same-named places.
+                                          subtitle: Text(
+                                            suggestions[i].address,
+                                            style: TextStyle(
+                                              fontSize: 11,
+                                              color: nt.text2,
+                                            ),
+                                          ),
+                                          trailing: Icon(
+                                            Icons.add_rounded,
+                                            size: 20,
+                                            color: nt.forest,
+                                          ),
+                                          onTap:
+                                              () => _applySuggestion(
+                                                suggestions[i],
+                                              ),
+                                        ),
+                                      ],
+                                    ],
+                                  ),
+                                ),
+                              );
                             },
                           ),
                         ),
+                        const SizedBox(height: 20),
                       ],
-                    ],
-                  ),
 
-                  // ── NOTES ─────────────────────────────────────────────
-                  _SFSectionLabel(text: l10n.notesLabel.toUpperCase()),
-                  _SFSectionCard(
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
-                        child: MarkdownNotesEditor(
-                          controller: _notesController,
-                          readOnly: readOnly,
-                          label: l10n.thoughtsLabel,
-                          helpTitle: l10n.thoughtsLabel,
-                          helpMessage: l10n.thoughtsHelp,
-                        ),
+                      // ── Place name + address ───────────────────────────────
+                      _SFSectionCard(
+                        children: [
+                          _SFBorderlessField(
+                            label: l10n.placeNameLabel.toUpperCase(),
+                            childBuilder:
+                                (focusNode) => TextFormField(
+                                  controller: _placeNameController,
+                                  focusNode: focusNode,
+                                  readOnly: readOnly,
+                                  onTap:
+                                      showEditHint ? _showEditModeHint : null,
+                                  decoration: const InputDecoration(
+                                    border: InputBorder.none,
+                                    enabledBorder: InputBorder.none,
+                                    focusedBorder: InputBorder.none,
+                                    isDense: true,
+                                    contentPadding: EdgeInsets.zero,
+                                    hintText: '—',
+                                  ),
+                                  style: TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w600,
+                                    color: nt.bark,
+                                  ),
+                                  validator:
+                                      (v) =>
+                                          (v == null || v.trim().isEmpty)
+                                              ? l10n.placeNameRequired
+                                              : null,
+                                ),
+                          ),
+                          const _SFDivider(),
+                          _SFBorderlessField(
+                            label: l10n.addressLabel.toUpperCase(),
+                            childBuilder:
+                                (focusNode) => TextFormField(
+                                  controller: _placeAddressController,
+                                  focusNode: focusNode,
+                                  readOnly: readOnly,
+                                  onTap:
+                                      showEditHint ? _showEditModeHint : null,
+                                  decoration: const InputDecoration(
+                                    border: InputBorder.none,
+                                    enabledBorder: InputBorder.none,
+                                    focusedBorder: InputBorder.none,
+                                    isDense: true,
+                                    contentPadding: EdgeInsets.zero,
+                                    hintText: '—',
+                                  ),
+                                  style: TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w600,
+                                    color: nt.bark,
+                                  ),
+                                ),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
 
-                  // ── ANNOTATIONS ────────────────────────────────────────
-                  Padding(
-                    padding: const EdgeInsetsDirectional.fromSTEB(22, 14, 16, 6),
-                    child: Row(
-                      children: [
-                        Text(
-                          l10n.annotationsSection.toUpperCase(),
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w700,
-                            color: nt.text2,
-                            letterSpacing: 0.6,
+                      // ── Location: coordinates + map picker + preview ───────
+                      const SizedBox(height: 8),
+                      _SFSectionCard(
+                        children: [
+                          IntrinsicHeight(
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                Expanded(
+                                  child: _SFBorderlessField(
+                                    label: l10n.latitudeLabel.toUpperCase(),
+                                    childBuilder:
+                                        (focusNode) => _buildCoordField(
+                                          focusNode,
+                                          controller: _latController,
+                                          isLat: true,
+                                          readOnly: readOnly,
+                                          showEditHint: showEditHint,
+                                          l10n: l10n,
+                                          nt: nt,
+                                        ),
+                                  ),
+                                ),
+                                Container(width: 1, color: nt.border),
+                                Expanded(
+                                  child: _SFBorderlessField(
+                                    label: l10n.longitudeLabel.toUpperCase(),
+                                    childBuilder:
+                                        (focusNode) => _buildCoordField(
+                                          focusNode,
+                                          controller: _lngController,
+                                          isLat: false,
+                                          readOnly: readOnly,
+                                          showEditHint: showEditHint,
+                                          l10n: l10n,
+                                          nt: nt,
+                                        ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          if (!readOnly) ...[
+                            const _SFDivider(),
+                            _SFPickerRow(
+                              icon: Icons.map_rounded,
+                              label: l10n.locationLabel.toUpperCase(),
+                              value: l10n.mapPickLocationTitle,
+                              onTap: _pickOnMap,
+                            ),
+                          ],
+                          if (_lat != null && _lng != null)
+                            GestureDetector(
+                              onTap: readOnly ? null : _pickOnMap,
+                              child: SizedBox(
+                                height: 160,
+                                child: FlutterMap(
+                                  mapController: _previewMapController,
+                                  options: MapOptions(
+                                    initialCenter: LatLng(_lat!, _lng!),
+                                    initialZoom: 14,
+                                    interactionOptions:
+                                        const InteractionOptions(
+                                          flags: InteractiveFlag.none,
+                                        ),
+                                  ),
+                                  children: [
+                                    TileLayer(
+                                      urlTemplate:
+                                          'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                                      userAgentPackageName: 'com.ntripi.app',
+                                      // silently discard tile errors (offline / test mode)
+                                      errorTileCallback: (_, _, _) {},
+                                    ),
+                                    MarkerLayer(
+                                      markers: [
+                                        Marker(
+                                          point: LatLng(_lat!, _lng!),
+                                          width: 36,
+                                          height: 36,
+                                          // pin tip (glyph bottom) sits on the point
+                                          alignment: Alignment.topCenter,
+                                          child: Icon(
+                                            Icons.location_pin,
+                                            // light-palette red — OSM tiles stay light in dark mode
+                                            color: NtripiColors.light.danger,
+                                            size: 36,
+                                            shadows: [
+                                              Shadow(
+                                                blurRadius: 4,
+                                                color: NtripiBrand.backdrop
+                                                    .withValues(alpha: 0.26),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    // Required OSM attribution (ODbL license requirement).
+                                    RichAttributionWidget(
+                                      attributions: [
+                                        TextSourceAttribution(
+                                          'OpenStreetMap contributors',
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+
+                      // ── Duplicate warning ──────────────────────────────────
+                      if (!widget.isEditMode && duplicate != null)
+                        Container(
+                          margin: const EdgeInsets.only(top: 8),
+                          padding: const EdgeInsets.fromLTRB(14, 10, 14, 10),
+                          decoration: BoxDecoration(
+                            color: nt.transitBg,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: nt.transitBorder),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.warning_amber_rounded,
+                                size: 16,
+                                color: nt.transitIcon,
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  l10n.alreadyInItinerary(
+                                    duplicate.placeName ?? l10n.aStopFallback,
+                                  ),
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: nt.transitText,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                        const Spacer(),
-                        if (!readOnly)
-                          OfflineGate(
-                            builder: (online) => GestureDetector(
+
+                      // ── Optional fields toggle (create mode only) ──────────
+                      if (!widget.isEditMode && !readOnly)
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+                          child: Align(
+                            alignment: Alignment.center,
+                            child: InkWell(
                               onTap:
-                                  online ? () => _showAnnotationDialog() : null,
+                                  () => setState(
+                                    () => _showOptional = !_showOptional,
+                                  ),
+                              borderRadius: BorderRadius.circular(8),
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 8,
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      _showOptional
+                                          ? Icons.expand_less
+                                          : Icons.expand_more,
+                                      size: 16,
+                                      color: nt.forest,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      _showOptional
+                                          ? l10n.hideOptionalFields
+                                          : l10n.showOptionalFields,
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w700,
+                                        color: nt.forest,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+
+                      if (!collapseOptional) ...[
+                        // ── DETAILS ────────────────────────────────────────────
+                        _SFSectionLabel(
+                          text: l10n.detailsSection.toUpperCase(),
+                        ),
+                        _SFSectionCard(
+                          children: [
+                            // Place type
+                            _SFPickerRow(
+                              icon: _placeType?.icon ?? Icons.category_rounded,
+                              iconColor: _placeType?.color(nt) ?? nt.forest,
+                              label: l10n.placeTypeLabel.toUpperCase(),
+                              value: _placeType?.label(l10n) ?? '—',
+                              onTap: readOnly ? null : _showPlaceTypePicker,
+                            ),
+                            const _SFDivider(),
+                            // Duration
+                            _SFPickerRow(
+                              icon: Icons.schedule_rounded,
+                              label: l10n.timeToSpendModalTitle.toUpperCase(),
+                              value: _durationLabel,
+                              onTap: readOnly ? null : _showDurationPicker,
+                            ),
+                            const _SFDivider(),
+                            // Free toggle
+                            Padding(
+                              padding: const EdgeInsets.fromLTRB(
+                                14,
+                                12,
+                                14,
+                                12,
+                              ),
                               child: Row(
-                                mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  Icon(Icons.add_rounded,
-                                      size: 14,
-                                      color: online ? nt.forest : nt.text3),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    l10n.addButton,
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w700,
-                                      color: online ? nt.forest : nt.text3,
+                                  Container(
+                                    width: 32,
+                                    height: 32,
+                                    decoration: BoxDecoration(
+                                      color: nt.mist,
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                    alignment: Alignment.center,
+                                    child: Icon(
+                                      Icons.payments_rounded,
+                                      size: 16,
+                                      color: nt.forest,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          l10n.costLabel.toUpperCase(),
+                                          style: TextStyle(
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.w700,
+                                            color: nt.text2,
+                                            letterSpacing: 0.4,
+                                          ),
+                                        ),
+                                        Text(
+                                          l10n.stopIsFree,
+                                          style: TextStyle(
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.w500,
+                                            color: nt.bark,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  Switch(
+                                    value: _isFree,
+                                    onChanged:
+                                        readOnly
+                                            ? null
+                                            : (v) =>
+                                                setState(() => _isFree = v),
+                                    thumbColor: WidgetStateProperty.resolveWith((
+                                      states,
+                                    ) {
+                                      if (states.contains(
+                                        WidgetState.disabled,
+                                      )) {
+                                        // disabled-on: muted forest; disabled-off: grey
+                                        return states.contains(
+                                              WidgetState.selected,
+                                            )
+                                            ? nt.forest.withAlpha(160)
+                                            : nt.text3;
+                                      }
+                                      return states.contains(
+                                            WidgetState.selected,
+                                          )
+                                          ? nt.forest
+                                          : nt.surface;
+                                    }),
+                                    trackColor: WidgetStateProperty.resolveWith(
+                                      (states) {
+                                        if (states.contains(
+                                          WidgetState.disabled,
+                                        )) {
+                                          return states.contains(
+                                                WidgetState.selected,
+                                              )
+                                              ? nt.mist.withAlpha(200)
+                                              : nt.border;
+                                        }
+                                        return states.contains(
+                                              WidgetState.selected,
+                                            )
+                                            ? nt.mist
+                                            : nt.border;
+                                      },
                                     ),
                                   ),
                                 ],
                               ),
                             ),
-                          ),
-                      ],
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
-                    child: _buildAnnotationsContent(
-                        context, readOnly, l10n),
-                  ),
-                  ],
+                            if (!_isFree) ...[
+                              const _SFDivider(),
+                              _SFBorderlessField(
+                                label: l10n.costLabel.toUpperCase(),
+                                childBuilder:
+                                    (focusNode) => TextFormField(
+                                      controller: _costController,
+                                      focusNode: focusNode,
+                                      readOnly: readOnly,
+                                      onTap:
+                                          showEditHint
+                                              ? _showEditModeHint
+                                              : null,
+                                      decoration: InputDecoration(
+                                        border: InputBorder.none,
+                                        enabledBorder: InputBorder.none,
+                                        focusedBorder: InputBorder.none,
+                                        isDense: true,
+                                        contentPadding: EdgeInsets.zero,
+                                        hintText: l10n.stopCostHint,
+                                        prefixText: '€ ',
+                                      ),
+                                      keyboardType:
+                                          const TextInputType.numberWithOptions(
+                                            decimal: true,
+                                          ),
+                                      style: TextStyle(
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.w600,
+                                        color: nt.bark,
+                                      ),
+                                      validator: (v) {
+                                        if (v == null || v.isEmpty) return null;
+                                        if (double.tryParse(v) == null) {
+                                          return l10n.enterValidNumber;
+                                        }
+                                        return null;
+                                      },
+                                    ),
+                              ),
+                            ],
+                          ],
+                        ),
 
-                  // ── Delete (edit mode, non-readonly) ───────────────────
-                  if (!readOnly && widget.isEditMode) ...[
-                    const SizedBox(height: 16),
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
-                      child: OfflineGate(
-                        builder: (online) => OutlinedButton.icon(
-                          onPressed:
-                              (_saving || !online) ? null : _confirmDelete,
-                          icon: Icon(Icons.delete_outline,
-                              color: nt.ratingRed),
-                          label: Text(
-                            l10n.deleteStopButton,
-                            style: TextStyle(color: nt.ratingRed),
+                        // ── NOTES ─────────────────────────────────────────────
+                        _SFSectionLabel(text: l10n.notesLabel.toUpperCase()),
+                        _SFSectionCard(
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.fromLTRB(
+                                14,
+                                12,
+                                14,
+                                12,
+                              ),
+                              child: MarkdownNotesEditor(
+                                controller: _notesController,
+                                readOnly: readOnly,
+                                label: l10n.thoughtsLabel,
+                                helpTitle: l10n.thoughtsLabel,
+                                helpMessage: l10n.thoughtsHelp,
+                              ),
+                            ),
+                          ],
+                        ),
+
+                        // ── ANNOTATIONS ────────────────────────────────────────
+                        Padding(
+                          padding: const EdgeInsetsDirectional.fromSTEB(
+                            22,
+                            14,
+                            16,
+                            6,
                           ),
-                          style: OutlinedButton.styleFrom(
-                            side: BorderSide(color: nt.ratingRed),
+                          child: Row(
+                            children: [
+                              Text(
+                                l10n.annotationsSection.toUpperCase(),
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w700,
+                                  color: nt.text2,
+                                  letterSpacing: 0.6,
+                                ),
+                              ),
+                              const Spacer(),
+                              if (!readOnly)
+                                OfflineGate(
+                                  builder:
+                                      (online) => GestureDetector(
+                                        onTap:
+                                            online
+                                                ? () => _showAnnotationDialog()
+                                                : null,
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Icon(
+                                              Icons.add_rounded,
+                                              size: 14,
+                                              color:
+                                                  online ? nt.forest : nt.text3,
+                                            ),
+                                            const SizedBox(width: 4),
+                                            Text(
+                                              l10n.addButton,
+                                              style: TextStyle(
+                                                fontSize: 12,
+                                                fontWeight: FontWeight.w700,
+                                                color:
+                                                    online
+                                                        ? nt.forest
+                                                        : nt.text3,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                ),
+                            ],
                           ),
                         ),
-                      ),
-                    ),
-                  ],
-                ],
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
+                          child: _buildAnnotationsContent(
+                            context,
+                            readOnly,
+                            l10n,
+                          ),
+                        ),
+                      ],
+
+                      // ── Delete (edit mode, non-readonly) ───────────────────
+                      if (!readOnly && widget.isEditMode) ...[
+                        const SizedBox(height: 16),
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
+                          child: OfflineGate(
+                            builder:
+                                (online) => OutlinedButton.icon(
+                                  onPressed:
+                                      (_saving || !online)
+                                          ? null
+                                          : _confirmDelete,
+                                  icon: Icon(
+                                    Icons.delete_outline,
+                                    color: nt.ratingRed,
+                                  ),
+                                  label: Text(
+                                    l10n.deleteStopButton,
+                                    style: TextStyle(color: nt.ratingRed),
+                                  ),
+                                  style: OutlinedButton.styleFrom(
+                                    side: BorderSide(color: nt.ratingRed),
+                                  ),
+                                ),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
               ),
             ),
           ),
-        ),
-      ),
         ),
       ),
     );
@@ -1208,90 +1632,112 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (ctx) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                margin: const EdgeInsets.only(bottom: 12),
-                alignment: Alignment.center,
-                child: Container(
-                  width: 36,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: nt.text3.withValues(alpha: 0.5),
-                    borderRadius: BorderRadius.circular(2),
+      builder:
+          (ctx) => SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    alignment: Alignment.center,
+                    child: Container(
+                      width: 36,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: nt.text3.withValues(alpha: 0.5),
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
                   ),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: Text(
-                  AppLocalizations.of(context)!.placeTypeLabel.toUpperCase(),
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    color: nt.text2,
-                    letterSpacing: 0.6,
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: Text(
+                      AppLocalizations.of(
+                        context,
+                      )!.placeTypeLabel.toUpperCase(),
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: nt.text2,
+                        letterSpacing: 0.6,
+                      ),
+                    ),
                   ),
-                ),
-              ),
-              Flexible(
-                child: ListView(
-                  shrinkWrap: true,
-                  children: PlaceType.values.map((t) {
-                    final l10n = AppLocalizations.of(context)!;
-                    final selected = _placeType == t;
-                    return ListTile(
+                  Flexible(
+                    child: ListView(
+                      shrinkWrap: true,
+                      children:
+                          PlaceType.values.map((t) {
+                            final l10n = AppLocalizations.of(context)!;
+                            final selected = _placeType == t;
+                            return ListTile(
+                              leading: Container(
+                                width: 36,
+                                height: 36,
+                                decoration: BoxDecoration(
+                                  color: t.color(nt).withValues(alpha: 0.12),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                alignment: Alignment.center,
+                                child: Icon(
+                                  t.icon,
+                                  size: 18,
+                                  color: t.color(nt),
+                                ),
+                              ),
+                              title: Text(
+                                t.label(l10n),
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w700,
+                                  color: nt.bark,
+                                ),
+                              ),
+                              subtitle: Text(
+                                t.hint(l10n),
+                                style: TextStyle(fontSize: 11, color: nt.text2),
+                              ),
+                              trailing:
+                                  selected
+                                      ? Icon(
+                                        Icons.check_rounded,
+                                        color: nt.forest,
+                                        size: 18,
+                                      )
+                                      : null,
+                              onTap: () => Navigator.pop(ctx, t),
+                            );
+                          }).toList(),
+                    ),
+                  ),
+                  if (_placeType != null)
+                    ListTile(
                       leading: Container(
                         width: 36,
                         height: 36,
                         decoration: BoxDecoration(
-                          color: t.color(nt).withValues(alpha: 0.12),
+                          color: nt.border,
                           borderRadius: BorderRadius.circular(10),
                         ),
                         alignment: Alignment.center,
-                        child: Icon(t.icon, size: 18, color: t.color(nt)),
+                        child: Icon(
+                          Icons.clear_rounded,
+                          size: 18,
+                          color: nt.text3,
+                        ),
                       ),
-                      title: Text(t.label(l10n),
-                          style: TextStyle(
-                              fontWeight: FontWeight.w700, color: nt.bark)),
-                      subtitle: Text(t.hint(l10n),
-                          style: TextStyle(
-                              fontSize: 11, color: nt.text2)),
-                      trailing: selected
-                          ? Icon(Icons.check_rounded,
-                              color: nt.forest, size: 18)
-                          : null,
-                      onTap: () => Navigator.pop(ctx, t),
-                    );
-                  }).toList(),
-                ),
-              ),
-              if (_placeType != null)
-                ListTile(
-                  leading: Container(
-                    width: 36,
-                    height: 36,
-                    decoration: BoxDecoration(
-                      color: nt.border,
-                      borderRadius: BorderRadius.circular(10),
+                      title: Text(
+                        AppLocalizations.of(context)!.noneOption,
+                        style: TextStyle(color: nt.text2),
+                      ),
+                      onTap: () => Navigator.pop(ctx, _clearPlaceTypeSentinel),
                     ),
-                    alignment: Alignment.center,
-                    child: Icon(Icons.clear_rounded,
-                        size: 18, color: nt.text3),
-                  ),
-                  title: Text(AppLocalizations.of(context)!.noneOption,
-                      style: TextStyle(color: nt.text2)),
-                  onTap: () => Navigator.pop(ctx, _clearPlaceTypeSentinel),
-                ),
-            ],
+                ],
+              ),
+            ),
           ),
-        ),
-      ),
     );
     if (!mounted || picked == null) return;
     if (picked == _clearPlaceTypeSentinel) {
@@ -1303,52 +1749,64 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
 
   // ── Annotations section content ──────────────────────────────────────────
   Widget _buildAnnotationsContent(
-      BuildContext context, bool readOnly, AppLocalizations l10n) {
+    BuildContext context,
+    bool readOnly,
+    AppLocalizations l10n,
+  ) {
     if (widget.isEditMode) {
       final annos = _existingStop?.annotations ?? [];
       if (annos.isEmpty) {
-    final nt = context.nt;
-        return Text(l10n.noAnnotationsYet,
-            style: TextStyle(color: nt.text3, fontSize: 13));
+        final nt = context.nt;
+        return Text(
+          l10n.noAnnotationsYet,
+          style: TextStyle(color: nt.text3, fontSize: 13),
+        );
       }
       return Wrap(
         spacing: 8,
         runSpacing: 6,
-        children: annos
-            .map((a) => AnnotationChip(
-                  annotation: a,
-                  onEdit: readOnly
-                      ? null
-                      : () => _showAnnotationDialog(existing: a),
-                  onDelete: readOnly
-                      ? null
-                      : () => _deleteAnnotation(a.id),
-                ))
-            .toList(),
+        children:
+            annos
+                .map(
+                  (a) => AnnotationChip(
+                    annotation: a,
+                    onEdit:
+                        readOnly
+                            ? null
+                            : () => _showAnnotationDialog(existing: a),
+                    onDelete: readOnly ? null : () => _deleteAnnotation(a.id),
+                  ),
+                )
+                .toList(),
       );
     } else {
       if (_pendingAnnotations.isEmpty) {
-    final nt = context.nt;
-        return Text(l10n.noAnnotationsYet,
-            style: TextStyle(color: nt.text3, fontSize: 13));
+        final nt = context.nt;
+        return Text(
+          l10n.noAnnotationsYet,
+          style: TextStyle(color: nt.text3, fontSize: 13),
+        );
       }
       return Wrap(
         spacing: 8,
         runSpacing: 6,
-        children: _pendingAnnotations
-            .map((p) => AnnotationChip(
-                  annotation: Annotation(
-                    id: 'pending-${p.content.hashCode}',
-                    stopId: '',
-                    type: p.type,
-                    content: p.content,
-                    createdAt: DateTime.now(),
-                    updatedAt: DateTime.now(),
+        children:
+            _pendingAnnotations
+                .map(
+                  (p) => AnnotationChip(
+                    annotation: Annotation(
+                      id: 'pending-${p.content.hashCode}',
+                      stopId: '',
+                      type: p.type,
+                      content: p.content,
+                      createdAt: DateTime.now(),
+                      updatedAt: DateTime.now(),
+                    ),
+                    onDelete:
+                        () => setState(() => _pendingAnnotations.remove(p)),
                   ),
-                  onDelete: () =>
-                      setState(() => _pendingAnnotations.remove(p)),
-                ))
-            .toList(),
+                )
+                .toList(),
       );
     }
   }
@@ -1362,17 +1820,17 @@ class _SFSectionLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.fromLTRB(22, 14, 22, 6),
-        child: Text(
-          text,
-          style: TextStyle(
-            fontSize: 11,
-            fontWeight: FontWeight.w700,
-            color: context.nt.text2,
-            letterSpacing: 0.6,
-          ),
-        ),
-      );
+    padding: const EdgeInsets.fromLTRB(22, 14, 22, 6),
+    child: Text(
+      text,
+      style: TextStyle(
+        fontSize: 11,
+        fontWeight: FontWeight.w700,
+        color: context.nt.text2,
+        letterSpacing: 0.6,
+      ),
+    ),
+  );
 }
 
 class _SFSectionCard extends StatelessWidget {
@@ -1381,26 +1839,29 @@ class _SFSectionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
-        margin: const EdgeInsets.fromLTRB(16, 0, 16, 0),
-        decoration: BoxDecoration(
-          color: context.nt.surface,
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: context.nt.border),
-        ),
-        clipBehavior: Clip.antiAlias,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: children,
-        ),
-      );
+    margin: const EdgeInsets.fromLTRB(16, 0, 16, 0),
+    decoration: BoxDecoration(
+      color: context.nt.surface,
+      borderRadius: BorderRadius.circular(18),
+      border: Border.all(color: context.nt.border),
+    ),
+    clipBehavior: Clip.antiAlias,
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: children,
+    ),
+  );
 }
 
 class _SFDivider extends StatelessWidget {
   const _SFDivider();
 
   @override
-  Widget build(BuildContext context) =>
-      Container(height: 1, color: context.nt.border, margin: const EdgeInsetsDirectional.only(start: 16));
+  Widget build(BuildContext context) => Container(
+    height: 1,
+    color: context.nt.border,
+    margin: const EdgeInsetsDirectional.only(start: 16),
+  );
 }
 
 class _SFBorderlessField extends StatefulWidget {
@@ -1423,30 +1884,30 @@ class _SFBorderlessFieldState extends State<_SFBorderlessField> {
 
   @override
   Widget build(BuildContext context) => GestureDetector(
-        // opaque so taps on the label and on empty space inside the column
-        // also focus the input — not just direct hits on the TextFormField
-        behavior: HitTestBehavior.opaque,
-        onTap: _focusNode.requestFocus,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 13, 16, 12),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                widget.label,
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                  color: context.nt.text2,
-                  letterSpacing: 0.4,
-                ),
-              ),
-              const SizedBox(height: 4),
-              widget.childBuilder(_focusNode),
-            ],
+    // opaque so taps on the label and on empty space inside the column
+    // also focus the input — not just direct hits on the TextFormField
+    behavior: HitTestBehavior.opaque,
+    onTap: _focusNode.requestFocus,
+    child: Padding(
+      padding: const EdgeInsets.fromLTRB(16, 13, 16, 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            widget.label,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              color: context.nt.text2,
+              letterSpacing: 0.4,
+            ),
           ),
-        ),
-      );
+          const SizedBox(height: 4),
+          widget.childBuilder(_focusNode),
+        ],
+      ),
+    ),
+  );
 }
 
 class _SFPickerRow extends StatelessWidget {
@@ -1511,8 +1972,7 @@ class _SFPickerRow extends StatelessWidget {
               ),
             ),
             if (onTap != null)
-              Icon(Icons.chevron_right_rounded,
-                  size: 20, color: nt.text3),
+              Icon(Icons.chevron_right_rounded, size: 20, color: nt.text3),
           ],
         ),
       ),

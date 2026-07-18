@@ -3682,6 +3682,36 @@ abstract class AppLocalizations {
   /// **'No location set'**
   String get noLocationSet;
 
+  /// No description provided for @latitudeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Latitude'**
+  String get latitudeLabel;
+
+  /// No description provided for @longitudeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Longitude'**
+  String get longitudeLabel;
+
+  /// No description provided for @invalidLatitudeError.
+  ///
+  /// In en, this message translates to:
+  /// **'Latitude must be a number between -90 and 90'**
+  String get invalidLatitudeError;
+
+  /// No description provided for @invalidLongitudeError.
+  ///
+  /// In en, this message translates to:
+  /// **'Longitude must be a number between -180 and 180'**
+  String get invalidLongitudeError;
+
+  /// No description provided for @coordinatesPairRequiredError.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter both latitude and longitude'**
+  String get coordinatesPairRequiredError;
+
   /// No description provided for @detailsSection.
   ///
   /// In en, this message translates to:

@@ -2082,6 +2082,24 @@ class AppLocalizationsEn extends AppLocalizations {
   String get noLocationSet => 'No location set';
 
   @override
+  String get latitudeLabel => 'Latitude';
+
+  @override
+  String get longitudeLabel => 'Longitude';
+
+  @override
+  String get invalidLatitudeError =>
+      'Latitude must be a number between -90 and 90';
+
+  @override
+  String get invalidLongitudeError =>
+      'Longitude must be a number between -180 and 180';
+
+  @override
+  String get coordinatesPairRequiredError =>
+      'Enter both latitude and longitude';
+
+  @override
   String get detailsSection => 'Details';
 
   @override
