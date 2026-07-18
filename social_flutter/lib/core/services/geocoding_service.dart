@@ -15,6 +15,7 @@
 
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:latlong2/latlong.dart';
 
 /// A single place suggestion returned by Nominatim search or reverse geocoding.
 ///
@@ -46,13 +47,13 @@ class GeocodingService {
   static const _baseUrl = 'https://nominatim.openstreetmap.org';
 
   GeocodingService()
-      : _dio = Dio(
-          BaseOptions(
-            baseUrl: _baseUrl,
-            connectTimeout: const Duration(seconds: 10),
-            receiveTimeout: const Duration(seconds: 10),
-          ),
-        ) {
+    : _dio = Dio(
+        BaseOptions(
+          baseUrl: _baseUrl,
+          connectTimeout: const Duration(seconds: 10),
+          receiveTimeout: const Duration(seconds: 10),
+        ),
+      ) {
     // Required by Nominatim ToS — every request must carry a descriptive
     // User-Agent so the OSM team can identify and contact abusive clients.
     _dio.options.headers['User-Agent'] = 'Ntripi/0.1 (ntripi-app)';
@@ -66,11 +67,18 @@ class GeocodingService {
   /// [languageCode] (e.g. 'ar'/'fr'/'en') is forwarded as Nominatim's
   /// `accept-language`, which localizes the returned `display_name`.
   ///
+  /// [near] biases the search toward that point (usually the device position):
+  /// Nominatim prefers matches inside a ~50 km viewbox around it, and the
+  /// returned suggestions are sorted nearest-first.
+  ///
   /// Nothing is stored at this point — results are displayed as suggestions
   /// only. Coordinates are only persisted when the user confirms a selection
   /// (see StopFormScreen).
-  Future<List<PlaceSuggestion>> search(String query,
-      {String? languageCode}) async {
+  Future<List<PlaceSuggestion>> search(
+    String query, {
+    String? languageCode,
+    LatLng? near,
+  }) async {
     if (query.trim().isEmpty) return [];
 
     final response = await _dio.get<List<dynamic>>(
@@ -82,14 +90,34 @@ class GeocodingService {
         'addressdetails': 1,
         // accept-language localizes Nominatim's display_name to the app language.
         if (languageCode != null) 'accept-language': languageCode,
+        // viewbox without bounded=1 is a soft preference, not a filter —
+        // nearby matches rank higher but famous far-away ones still appear.
+        if (near != null)
+          'viewbox':
+              '${near.longitude - 0.5},${near.latitude - 0.5},'
+              '${near.longitude + 0.5},${near.latitude + 0.5}',
       },
     );
 
     final results = response.data ?? [];
-    return results
-        .cast<Map<String, dynamic>>()
-        .map((result) => _parseSuggestion(result))
-        .toList();
+    final suggestions =
+        results
+            .cast<Map<String, dynamic>>()
+            .map((result) => _parseSuggestion(result))
+            .toList();
+
+    if (near != null) {
+      // Nominatim ranks by importance, not distance — re-sort nearest-first.
+      const distance = Distance();
+      suggestions.sort(
+        (a, b) => distance
+            .as(LengthUnit.Meter, near, LatLng(a.lat, a.lng))
+            .compareTo(
+              distance.as(LengthUnit.Meter, near, LatLng(b.lat, b.lng)),
+            ),
+      );
+    }
+    return suggestions;
   }
 
   /// Reverse geocode a coordinate pair to a [PlaceSuggestion].
@@ -97,8 +125,11 @@ class GeocodingService {
   /// Called when the user drops a pin on the MapPickerScreen.
   /// [languageCode] localizes the resolved `display_name` (see [search]).
   /// Returns null if Nominatim cannot identify the location.
-  Future<PlaceSuggestion?> reverseGeocode(double lat, double lng,
-      {String? languageCode}) async {
+  Future<PlaceSuggestion?> reverseGeocode(
+    double lat,
+    double lng, {
+    String? languageCode,
+  }) async {
     try {
       final response = await _dio.get<Map<String, dynamic>>(
         '/reverse',

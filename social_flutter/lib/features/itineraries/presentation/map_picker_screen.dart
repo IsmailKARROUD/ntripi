@@ -6,6 +6,8 @@
 //
 // OSM attribution is displayed as required by the ODbL license.
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:social_flutter/core/ui/app_theme.dart';
 import 'package:flutter_map/flutter_map.dart';
@@ -15,6 +17,7 @@ import 'package:latlong2/latlong.dart';
 import 'package:social_flutter/core/providers/locale_provider.dart';
 import 'package:social_flutter/core/services/geocoding_service.dart';
 import 'package:social_flutter/core/services/location_service.dart';
+import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
 import 'package:social_flutter/l10n/app_localizations.dart';
 import 'package:social_flutter/shared/widgets/device_location_dot.dart';
 import 'package:social_flutter/shared/widgets/loaders.dart';
@@ -43,6 +46,15 @@ class MapPickerScreen extends ConsumerStatefulWidget {
 
 class _MapPickerScreenState extends ConsumerState<MapPickerScreen> {
   final _mapController = MapController();
+  final _searchController = TextEditingController();
+  Timer? _debounce;
+  // Last query actually sent to Nominatim — gates the "no results" card so it
+  // can't flash while a newer keystroke's debounce is still pending.
+  String _submittedQuery = '';
+  // Suggestion the pin currently sits on; Confirm returns it directly instead
+  // of reverse-geocoding (keeps the exact searched name/address). Cleared by
+  // any manual re-pick (map tap, use-my-location).
+  PlaceSuggestion? _searchedSuggestion;
   LatLng? _selectedLocation;
   LatLng? _deviceLocation;
   bool _isGeocoding = false;
@@ -62,8 +74,56 @@ class _MapPickerScreenState extends ConsumerState<MapPickerScreen> {
 
   @override
   void dispose() {
+    _debounce?.cancel();
+    _searchController.dispose();
+    // Reset the shared notifier so a reopened picker doesn't show stale results.
+    ref.read(mapPlaceSearchProvider.notifier).clear();
     _mapController.dispose();
     super.dispose();
+  }
+
+  /// Point to rank suggestions around: the phone position when known, else
+  /// the current map view — a denied-permission user still gets local results.
+  LatLng? get _searchBias {
+    if (_deviceLocation != null) return _deviceLocation;
+    try {
+      return _mapController.camera.center;
+    } catch (_) {
+      return null; // camera getter throws before the map's first frame
+    }
+  }
+
+  void _onSearchChanged(String value) {
+    // setState only refreshes the clear-button visibility.
+    setState(() {});
+    _debounce?.cancel();
+    // 400ms debounce respects Nominatim's 1 req/s rate-limit policy.
+    _debounce = Timer(const Duration(milliseconds: 400), () {
+      _submittedQuery = value.trim();
+      ref
+          .read(mapPlaceSearchProvider.notifier)
+          .search(value, near: _searchBias);
+    });
+  }
+
+  void _clearSearch() {
+    _debounce?.cancel();
+    _searchController.clear();
+    _submittedQuery = '';
+    ref.read(mapPlaceSearchProvider.notifier).clear();
+    setState(() {});
+  }
+
+  /// Jumps the map to a search result and drops the pin on it.
+  void _selectSuggestion(PlaceSuggestion suggestion) {
+    final position = LatLng(suggestion.lat, suggestion.lng);
+    setState(() {
+      _selectedLocation = position;
+      _searchedSuggestion = suggestion;
+    });
+    _mapController.move(position, 16);
+    _clearSearch();
+    FocusScope.of(context).unfocus();
   }
 
   LatLng get _initialCenter {
@@ -99,6 +159,7 @@ class _MapPickerScreenState extends ConsumerState<MapPickerScreen> {
       setState(() {
         _deviceLocation = position;
         _selectedLocation = position; // drop the pin where the user stands
+        _searchedSuggestion = null; // pin no longer sits on a search result
       });
       _mapController.move(position, 16);
     } else {
@@ -150,6 +211,13 @@ class _MapPickerScreenState extends ConsumerState<MapPickerScreen> {
   Future<void> _confirmLocation() async {
     if (_selectedLocation == null) return;
 
+    // Pin still sits on a search result — return it as-is; a reverse-geocode
+    // at the same point would only degrade the name Nominatim already gave us.
+    if (_searchedSuggestion != null) {
+      context.pop(_searchedSuggestion);
+      return;
+    }
+
     setState(() => _isGeocoding = true);
     try {
       final suggestion = await ref
@@ -177,6 +245,157 @@ class _MapPickerScreenState extends ConsumerState<MapPickerScreen> {
     }
   }
 
+  /// Search field with, beneath it, the live suggestion list, a "no results"
+  /// card, or the tap-to-place instruction banner when the search is idle.
+  Widget _buildSearchOverlay(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final nt = context.nt;
+    final suggestionsAsync = ref.watch(mapPlaceSearchProvider);
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        TextField(
+          controller: _searchController,
+          decoration: InputDecoration(
+            hintText: l10n.searchPlaceHintText,
+            filled: true,
+            fillColor: nt.surface,
+            prefixIcon: Icon(Icons.search_rounded, color: nt.forest),
+            suffixIcon:
+                _searchController.text.isNotEmpty
+                    ? IconButton(
+                      icon: const Icon(Icons.close_rounded, size: 18),
+                      onPressed: _clearSearch,
+                    )
+                    : null,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(14),
+              borderSide: BorderSide(color: nt.border),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(14),
+              borderSide: BorderSide(color: nt.border),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(14),
+              borderSide: BorderSide(color: nt.forest, width: 1.5),
+            ),
+          ),
+          onChanged: _onSearchChanged,
+        ),
+        suggestionsAsync.when(
+          loading:
+              () => const Padding(
+                padding: EdgeInsets.symmetric(vertical: 8),
+                child: LinearProgressIndicator(),
+              ),
+          error: (_, _) => _buildInstructionBanner(context),
+          data: (suggestions) {
+            if (suggestions.isNotEmpty) {
+              return _buildSuggestionsCard(suggestions, nt);
+            }
+            // Only claim "no results" for the query we actually searched —
+            // while a newer keystroke's debounce is pending, stay quiet.
+            if (_submittedQuery.isNotEmpty &&
+                _submittedQuery == _searchController.text.trim()) {
+              return Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Text(
+                      l10n.mapSearchNoResults,
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ),
+                ),
+              );
+            }
+            return _buildInstructionBanner(context);
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildInstructionBanner(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Text(
+          _selectedLocation == null
+              ? AppLocalizations.of(context)!.mapTapToPlacePin
+              : AppLocalizations.of(context)!.mapTapToMovePin,
+          textAlign: TextAlign.center,
+          style: Theme.of(context).textTheme.bodySmall,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSuggestionsCard(
+    List<PlaceSuggestion> suggestions,
+    NtripiColors nt,
+  ) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 4),
+      // Tiles live in a Material (not a color-decorated Container) so ListTile
+      // background/ink paint on it — a colored intermediate box would hide
+      // them (Flutter debug assert in list_tile.dart).
+      child: Material(
+        color: nt.surface,
+        clipBehavior: Clip.antiAlias,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(14),
+          side: BorderSide(color: nt.border),
+        ),
+        child: Column(
+          children: [
+            for (var i = 0; i < suggestions.length; i++) ...[
+              if (i > 0) const Divider(height: 1, indent: 52),
+              ListTile(
+                dense: true,
+                leading: Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: nt.sand,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  alignment: Alignment.center,
+                  child: Icon(
+                    Icons.location_on_rounded,
+                    size: 18,
+                    color: nt.forest,
+                  ),
+                ),
+                title: Text(
+                  suggestions[i].displayName,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: nt.bark,
+                  ),
+                ),
+                // Full address, unabbreviated — it's what disambiguates
+                // same-named places.
+                subtitle: Text(
+                  suggestions[i].address,
+                  style: TextStyle(fontSize: 11, color: nt.text2),
+                ),
+                onTap: () => _selectSuggestion(suggestions[i]),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -202,7 +421,11 @@ class _MapPickerScreenState extends ConsumerState<MapPickerScreen> {
               initialCenter: _initialCenter,
               initialZoom: 13,
               onTap: (_, latLng) {
-                setState(() => _selectedLocation = latLng);
+                setState(() {
+                  _selectedLocation = latLng;
+                  _searchedSuggestion = null; // manual pick overrides search
+                });
+                FocusScope.of(context).unfocus();
               },
             ),
             children: [
@@ -256,23 +479,12 @@ class _MapPickerScreenState extends ConsumerState<MapPickerScreen> {
             ],
           ),
 
-          // Instruction banner
+          // Search bar + suggestions (or the instruction banner when idle)
           Positioned(
             top: 16,
             left: 16,
             right: 16,
-            child: Card(
-              child: Padding(
-                padding: const EdgeInsets.all(12),
-                child: Text(
-                  _selectedLocation == null
-                      ? AppLocalizations.of(context)!.mapTapToPlacePin
-                      : AppLocalizations.of(context)!.mapTapToMovePin,
-                  textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
-              ),
-            ),
+            child: _buildSearchOverlay(context),
           ),
 
           // Use-my-location button — drops the pin at the device position.

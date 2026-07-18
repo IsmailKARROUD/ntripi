@@ -862,6 +862,7 @@
   "mapTapToMovePin": "اضغط في مكان آخر لنقل الدبوس، ثم اضغط تأكيد",
   "mapMyLocation": "موقعي",
   "mapUseMyLocation": "استخدام موقعي",
+  "mapSearchNoResults": "لم يُعثر على أماكن.",
   "locationPermissionDenied": "تم رفض إذن الوصول إلى الموقع",
   "locationServiceDisabled": "خدمات تحديد الموقع معطّلة",
   "locationUnavailable": "تعذّر الحصول على موقعك",

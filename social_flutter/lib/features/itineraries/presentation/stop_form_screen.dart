@@ -387,7 +387,10 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
     _debounce?.cancel();
     // 400ms debounce respects Nominatim's 1 request/second rate limit.
     _debounce = Timer(const Duration(milliseconds: 400), () {
-      ref.read(placeSearchProvider.notifier).search(value);
+      // near ranks suggestions closest-to-the-phone first when position known.
+      ref
+          .read(placeSearchProvider.notifier)
+          .search(value, near: _deviceLocation);
     });
   }
 

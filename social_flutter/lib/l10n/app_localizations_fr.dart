@@ -2076,6 +2076,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get mapUseMyLocation => 'Utiliser ma position';
 
   @override
+  String get mapSearchNoResults => 'Aucun lieu trouvé.';
+
+  @override
   String get locationPermissionDenied => 'Autorisation de localisation refusée';
 
   @override

@@ -867,6 +867,7 @@
   "mapTapToMovePin": "Tap elsewhere to move the pin, then tap Confirm",
   "mapMyLocation": "My location",
   "mapUseMyLocation": "Use my location",
+  "mapSearchNoResults": "No places found.",
   "locationPermissionDenied": "Location permission denied",
   "locationServiceDisabled": "Location services are disabled",
   "locationUnavailable": "Couldn't get your location",

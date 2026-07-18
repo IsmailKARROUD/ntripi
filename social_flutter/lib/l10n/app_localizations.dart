@@ -3598,6 +3598,12 @@ abstract class AppLocalizations {
   /// **'Use my location'**
   String get mapUseMyLocation;
 
+  /// No description provided for @mapSearchNoResults.
+  ///
+  /// In en, this message translates to:
+  /// **'No places found.'**
+  String get mapSearchNoResults;
+
   /// No description provided for @locationPermissionDenied.
   ///
   /// In en, this message translates to:

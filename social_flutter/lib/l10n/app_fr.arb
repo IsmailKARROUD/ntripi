@@ -734,6 +734,7 @@
   "mapTapToMovePin": "Appuyez ailleurs pour déplacer le repère, puis appuyez sur Confirmer",
   "mapMyLocation": "Ma position",
   "mapUseMyLocation": "Utiliser ma position",
+  "mapSearchNoResults": "Aucun lieu trouvé.",
   "locationPermissionDenied": "Autorisation de localisation refusée",
   "locationServiceDisabled": "Les services de localisation sont désactivés",
   "locationUnavailable": "Impossible d'obtenir votre position",

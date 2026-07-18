@@ -5,8 +5,10 @@
 //   itineraryDetailProvider    — full detail for one itinerary (family by ID)
 //   allowedUsersProvider       — restricted allowlist for one itinerary (family by ID)
 //   placeSearchProvider        — Nominatim suggestions for the stop form
+//   mapPlaceSearchProvider     — Nominatim suggestions for the map picker
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:social_flutter/core/connectivity/connectivity_service.dart';
 import 'package:social_flutter/core/providers/locale_provider.dart';
 import 'package:social_flutter/core/services/geocoding_service.dart';
@@ -42,8 +44,9 @@ class MyItinerariesNotifier extends AsyncNotifier<List<Itinerary>> {
   }
 
   Future<Itinerary> addItinerary(Map<String, dynamic> data) async {
-    final itinerary =
-        await ref.read(itineraryRepositoryProvider).createItinerary(data);
+    final itinerary = await ref
+        .read(itineraryRepositoryProvider)
+        .createItinerary(data);
     state.whenData((list) {
       state = AsyncData([itinerary, ...list]);
     });
@@ -60,8 +63,8 @@ class MyItinerariesNotifier extends AsyncNotifier<List<Itinerary>> {
 
 final myItinerariesProvider =
     AsyncNotifierProvider<MyItinerariesNotifier, List<Itinerary>>(
-  () => MyItinerariesNotifier(),
-);
+      () => MyItinerariesNotifier(),
+    );
 
 // ---------------------------------------------------------------------------
 // ItineraryDetailNotifier
@@ -117,10 +120,9 @@ class ItineraryDetailNotifier extends AsyncNotifier<Itinerary> {
 
   /// Update a stop, then refresh.
   Future<void> updateStop(String stopId, Map<String, dynamic> data) async {
-    await ref.read(itineraryRepositoryProvider).updateStop(
-          arg, stopId, data,
-          etag: _etag,
-        );
+    await ref
+        .read(itineraryRepositoryProvider)
+        .updateStop(arg, stopId, data, etag: _etag);
     await refresh();
   }
 
@@ -136,7 +138,9 @@ class ItineraryDetailNotifier extends AsyncNotifier<Itinerary> {
     List<String>? trackOrder,
     List<String>? segmentIdsToDelete,
   }) async {
-    await ref.read(itineraryRepositoryProvider).reorderItinerary(
+    await ref
+        .read(itineraryRepositoryProvider)
+        .reorderItinerary(
           arg,
           stopOrders: stopOrders,
           trackOrder: trackOrder,
@@ -200,19 +204,21 @@ class ItineraryDetailNotifier extends AsyncNotifier<Itinerary> {
       final descProvided = data.containsKey('description');
       final newDescription =
           descProvided ? data['description'] as String? : current.description;
-      state = AsyncData(current.copyWith(
-        title: updated.title,
-        description: newDescription,
-        clearDescription: descProvided && newDescription == null,
-        visibility: updated.visibility,
-        currency: updated.currency,
-        updatedAt: updated.updatedAt,
-        // Cover image is deleted/uploaded BEFORE this PATCH, so the response
-        // carries the authoritative URL — adopt it (clearing when removed) so
-        // stale covers don't linger after a remove.
-        coverImageUrl: updated.coverImageUrl,
-        clearCoverImageUrl: updated.coverImageUrl == null,
-      ));
+      state = AsyncData(
+        current.copyWith(
+          title: updated.title,
+          description: newDescription,
+          clearDescription: descProvided && newDescription == null,
+          visibility: updated.visibility,
+          currency: updated.currency,
+          updatedAt: updated.updatedAt,
+          // Cover image is deleted/uploaded BEFORE this PATCH, so the response
+          // carries the authoritative URL — adopt it (clearing when removed) so
+          // stale covers don't linger after a remove.
+          coverImageUrl: updated.coverImageUrl,
+          clearCoverImageUrl: updated.coverImageUrl == null,
+        ),
+      );
     });
     return updated;
   }
@@ -224,7 +230,10 @@ class ItineraryDetailNotifier extends AsyncNotifier<Itinerary> {
   }
 
   /// Update (replace) a transit segment and refresh.
-  Future<void> updateSegment(String segmentId, Map<String, dynamic> data) async {
+  Future<void> updateSegment(
+    String segmentId,
+    Map<String, dynamic> data,
+  ) async {
     await ref
         .read(itineraryRepositoryProvider)
         .updateSegment(arg, segmentId, data);
@@ -233,9 +242,7 @@ class ItineraryDetailNotifier extends AsyncNotifier<Itinerary> {
 
   /// Delete a transit segment and refresh.
   Future<void> deleteSegment(String segmentId) async {
-    await ref
-        .read(itineraryRepositoryProvider)
-        .deleteSegment(arg, segmentId);
+    await ref.read(itineraryRepositoryProvider).deleteSegment(arg, segmentId);
     await refresh();
   }
 
@@ -254,9 +261,14 @@ class ItineraryDetailNotifier extends AsyncNotifier<Itinerary> {
     String? content,
     AnnotationType? type,
   }) async {
-    await ref.read(itineraryRepositoryProvider).updateAnnotation(
-          arg, stopId, annotationId,
-          content: content, type: type,
+    await ref
+        .read(itineraryRepositoryProvider)
+        .updateAnnotation(
+          arg,
+          stopId,
+          annotationId,
+          content: content,
+          type: type,
           etag: _etag,
         );
     await refresh();
@@ -284,9 +296,13 @@ class ItineraryDetailNotifier extends AsyncNotifier<Itinerary> {
     String? content,
     AnnotationType? type,
   }) async {
-    await ref.read(itineraryRepositoryProvider).updateItineraryAnnotation(
-          arg, annotationId,
-          content: content, type: type,
+    await ref
+        .read(itineraryRepositoryProvider)
+        .updateItineraryAnnotation(
+          arg,
+          annotationId,
+          content: content,
+          type: type,
           etag: _etag,
         );
     await refresh();
@@ -303,8 +319,8 @@ class ItineraryDetailNotifier extends AsyncNotifier<Itinerary> {
 
 final itineraryDetailProvider =
     AsyncNotifierProvider.family<ItineraryDetailNotifier, Itinerary, String>(
-  ItineraryDetailNotifier.new,
-);
+      ItineraryDetailNotifier.new,
+    );
 
 // ---------------------------------------------------------------------------
 // AllowedUsersNotifier
@@ -329,19 +345,18 @@ class AllowedUsersNotifier extends AsyncNotifier<List<AllowedUser>> {
   }
 
   Future<void> removeUser(String userId) async {
-    await ref
-        .read(itineraryRepositoryProvider)
-        .removeAllowedUser(arg, userId);
+    await ref.read(itineraryRepositoryProvider).removeAllowedUser(arg, userId);
     state.whenData((list) {
       state = AsyncData(list.where((u) => u.userId != userId).toList());
     });
   }
 }
 
-final allowedUsersProvider =
-    AsyncNotifierProvider.family<AllowedUsersNotifier, List<AllowedUser>, String>(
-  AllowedUsersNotifier.new,
-);
+final allowedUsersProvider = AsyncNotifierProvider.family<
+  AllowedUsersNotifier,
+  List<AllowedUser>,
+  String
+>(AllowedUsersNotifier.new);
 
 // ---------------------------------------------------------------------------
 // UserItinerariesNotifier
@@ -369,9 +384,10 @@ class UserItinerariesNotifier extends AsyncNotifier<List<Itinerary>> {
 }
 
 final userItinerariesProvider = AsyncNotifierProvider.family<
-    UserItinerariesNotifier, List<Itinerary>, String>(
-  UserItinerariesNotifier.new,
-);
+  UserItinerariesNotifier,
+  List<Itinerary>,
+  String
+>(UserItinerariesNotifier.new);
 
 // ---------------------------------------------------------------------------
 // MyRatingNotifier
@@ -403,8 +419,8 @@ class MyRatingNotifier extends AsyncNotifier<MyRating?> {
 
 final myRatingProvider =
     AsyncNotifierProvider.family<MyRatingNotifier, MyRating?, String>(
-  MyRatingNotifier.new,
-);
+      MyRatingNotifier.new,
+    );
 
 // ---------------------------------------------------------------------------
 // RatingsPageNotifier
@@ -433,8 +449,8 @@ class RatingsPageNotifier extends AsyncNotifier<RatingsPage> {
 
 final ratingsPageProvider =
     AsyncNotifierProvider.family<RatingsPageNotifier, RatingsPage, String>(
-  RatingsPageNotifier.new,
-);
+      RatingsPageNotifier.new,
+    );
 
 // ---------------------------------------------------------------------------
 // PlaceSearchNotifier
@@ -444,16 +460,21 @@ class PlaceSearchNotifier extends AsyncNotifier<List<PlaceSuggestion>> {
   @override
   Future<List<PlaceSuggestion>> build() async => [];
 
-  Future<void> search(String query) async {
+  /// [near] biases results toward that point and sorts them nearest-first
+  /// (see GeocodingService.search).
+  Future<void> search(String query, {LatLng? near}) async {
     if (query.trim().isEmpty) {
       state = const AsyncData([]);
       return;
     }
     state = const AsyncLoading();
     state = await AsyncValue.guard(
-      () => ref.read(geocodingServiceProvider).search(
+      () => ref
+          .read(geocodingServiceProvider)
+          .search(
             query,
             languageCode: ref.read(localeProvider).languageCode,
+            near: near,
           ),
     );
   }
@@ -465,8 +486,16 @@ class PlaceSearchNotifier extends AsyncNotifier<List<PlaceSuggestion>> {
 
 final placeSearchProvider =
     AsyncNotifierProvider<PlaceSearchNotifier, List<PlaceSuggestion>>(
-  () => PlaceSearchNotifier(),
-);
+      () => PlaceSearchNotifier(),
+    );
+
+/// Separate instance for the map picker — the stop form (beneath it in the
+/// navigator stack) watches [placeSearchProvider]; sharing one would leak the
+/// picker's results into the form's inline suggestion list on return.
+final mapPlaceSearchProvider =
+    AsyncNotifierProvider<PlaceSearchNotifier, List<PlaceSuggestion>>(
+      () => PlaceSearchNotifier(),
+    );
 
 // ---------------------------------------------------------------------------
 // ShareService provider
@@ -478,5 +507,6 @@ final shareServiceProvider = Provider<ShareService>((ref) => ShareService());
 // MapsLauncherService provider
 // ---------------------------------------------------------------------------
 
-final mapsLauncherServiceProvider =
-    Provider<MapsLauncherService>((ref) => MapsLauncherService());
+final mapsLauncherServiceProvider = Provider<MapsLauncherService>(
+  (ref) => MapsLauncherService(),
+);
