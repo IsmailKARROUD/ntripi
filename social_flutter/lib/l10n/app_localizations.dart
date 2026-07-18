@@ -3592,6 +3592,12 @@ abstract class AppLocalizations {
   /// **'My location'**
   String get mapMyLocation;
 
+  /// No description provided for @mapUseMyLocation.
+  ///
+  /// In en, this message translates to:
+  /// **'Use my location'**
+  String get mapUseMyLocation;
+
   /// No description provided for @locationPermissionDenied.
   ///
   /// In en, this message translates to:
@@ -3609,6 +3615,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Couldn\'t get your location'**
   String get locationUnavailable;
+
+  /// No description provided for @locationOpenSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Open settings'**
+  String get locationOpenSettings;
 
   /// No description provided for @nothingToPreview.
   ///

@@ -2089,6 +2089,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get mapMyLocation => 'موقعي';
 
   @override
+  String get mapUseMyLocation => 'استخدام موقعي';
+
+  @override
   String get locationPermissionDenied => 'تم رفض إذن الوصول إلى الموقع';
 
   @override
@@ -2096,6 +2099,9 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get locationUnavailable => 'تعذّر الحصول على موقعك';
+
+  @override
+  String get locationOpenSettings => 'فتح الإعدادات';
 
   @override
   String get nothingToPreview => 'لا شيء للمعاينة بعد.';

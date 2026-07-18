@@ -2033,6 +2033,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get mapMyLocation => 'My location';
 
   @override
+  String get mapUseMyLocation => 'Use my location';
+
+  @override
   String get locationPermissionDenied => 'Location permission denied';
 
   @override
@@ -2040,6 +2043,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get locationUnavailable => 'Couldn\'t get your location';
+
+  @override
+  String get locationOpenSettings => 'Open settings';
 
   @override
   String get nothingToPreview => 'Nothing to preview yet.';

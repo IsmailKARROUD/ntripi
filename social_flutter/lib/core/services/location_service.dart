@@ -67,6 +67,16 @@ class LocationService {
       return const LocationUnavailable();
     }
   }
+
+  /// Opens the OS app-settings page so the user can grant a denied permission.
+  Future<void> openAppSettings() async {
+    await Geolocator.openAppSettings();
+  }
+
+  /// Opens the OS location-settings page so the user can turn GPS back on.
+  Future<void> openLocationSettings() async {
+    await Geolocator.openLocationSettings();
+  }
 }
 
 /// Riverpod provider for the LocationService singleton.

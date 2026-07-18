@@ -2073,6 +2073,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get mapMyLocation => 'Ma position';
 
   @override
+  String get mapUseMyLocation => 'Utiliser ma position';
+
+  @override
   String get locationPermissionDenied => 'Autorisation de localisation refusée';
 
   @override
@@ -2081,6 +2084,9 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get locationUnavailable => 'Impossible d\'obtenir votre position';
+
+  @override
+  String get locationOpenSettings => 'Ouvrir les paramètres';
 
   @override
   String get nothingToPreview => 'Rien à prévisualiser pour l\'instant.';

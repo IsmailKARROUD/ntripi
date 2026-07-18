@@ -47,6 +47,7 @@ class _MapPickerScreenState extends ConsumerState<MapPickerScreen> {
   LatLng? _deviceLocation;
   bool _isGeocoding = false;
   bool _isLocating = false;
+  bool _isCapturing = false;
 
   // Default center: Paris, France — a reasonable fallback for a travel app.
   static const _defaultCenter = LatLng(48.8566, 2.3522);
@@ -79,24 +80,71 @@ class _MapPickerScreenState extends ConsumerState<MapPickerScreen> {
     if (!mounted) return;
     setState(() => _isLocating = false);
 
+    if (outcome case LocationSuccess(:final position)) {
+      setState(() => _deviceLocation = position);
+      _mapController.move(position, 16);
+    } else {
+      _showOutcomeError(outcome);
+    }
+  }
+
+  /// Captures the device position as the selected pin — "I'm here right now".
+  Future<void> _useMyLocation() async {
+    setState(() => _isCapturing = true);
+    final outcome = await ref.read(locationServiceProvider).getCurrentLatLng();
+    if (!mounted) return;
+    setState(() => _isCapturing = false);
+
+    if (outcome case LocationSuccess(:final position)) {
+      setState(() {
+        _deviceLocation = position;
+        _selectedLocation = position; // drop the pin where the user stands
+      });
+      _mapController.move(position, 16);
+    } else {
+      _showOutcomeError(outcome);
+    }
+  }
+
+  /// Maps a non-success outcome to a snackbar. Permission/service failures get
+  /// an action that opens the relevant OS settings page so the user can fix it.
+  void _showOutcomeError(LocationOutcome outcome) {
     final l10n = AppLocalizations.of(context)!;
+    final service = ref.read(locationServiceProvider);
     switch (outcome) {
-      case LocationSuccess(:final position):
-        setState(() => _deviceLocation = position);
-        _mapController.move(position, 16);
+      case LocationSuccess():
+        return;
       case LocationServiceDisabled():
-        _showLocationError(l10n.locationServiceDisabled);
+        _showLocationError(
+          l10n.locationServiceDisabled,
+          onOpenSettings: service.openLocationSettings,
+        );
       case LocationPermissionDenied():
-        _showLocationError(l10n.locationPermissionDenied);
+        _showLocationError(
+          l10n.locationPermissionDenied,
+          onOpenSettings: service.openAppSettings,
+        );
       case LocationUnavailable():
         _showLocationError(l10n.locationUnavailable);
     }
   }
 
-  void _showLocationError(String message) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
+  void _showLocationError(String message, {VoidCallback? onOpenSettings}) {
+    final l10n = AppLocalizations.of(context)!;
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text(message),
+          action:
+              onOpenSettings == null
+                  ? null
+                  : SnackBarAction(
+                    label: l10n.locationOpenSettings,
+                    onPressed: onOpenSettings,
+                  ),
+        ),
+      );
   }
 
   Future<void> _confirmLocation() async {
@@ -227,7 +275,22 @@ class _MapPickerScreenState extends ConsumerState<MapPickerScreen> {
             ),
           ),
 
-          // My-location button — camera only, never places the pin.
+          // Use-my-location button — drops the pin at the device position.
+          PositionedDirectional(
+            end: 16,
+            bottom: 152,
+            child: FloatingActionButton.small(
+              heroTag: null,
+              tooltip: AppLocalizations.of(context)!.mapUseMyLocation,
+              onPressed: (_isLocating || _isCapturing) ? null : _useMyLocation,
+              child:
+                  _isCapturing
+                      ? const NTripiRingLoader(size: 18)
+                      : const Icon(Icons.add_location_alt),
+            ),
+          ),
+
+          // Recenter button — moves the camera to the device position only.
           PositionedDirectional(
             end: 16,
             bottom: 100,
@@ -235,7 +298,7 @@ class _MapPickerScreenState extends ConsumerState<MapPickerScreen> {
               // no default FAB hero tag — avoids flights against other FABs
               heroTag: null,
               tooltip: AppLocalizations.of(context)!.mapMyLocation,
-              onPressed: _isLocating ? null : _goToMyLocation,
+              onPressed: (_isLocating || _isCapturing) ? null : _goToMyLocation,
               child:
                   _isLocating
                       ? const NTripiRingLoader(size: 18)
