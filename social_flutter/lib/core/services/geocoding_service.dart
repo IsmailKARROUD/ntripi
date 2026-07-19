@@ -22,17 +22,20 @@ import 'package:latlong2/latlong.dart';
 /// [displayName] is a short human-readable label (e.g. "Eiffel Tower").
 /// [address] is the full formatted address string.
 /// [lat] / [lng] are OSM-sourced coordinates — legal to store (ODbL).
+/// [category] is Nominatim's raw OSM type (e.g. "cafe", "hotel"), if any.
 class PlaceSuggestion {
   final String displayName;
   final String address;
   final double lat;
   final double lng;
+  final String? category;
 
   const PlaceSuggestion({
     required this.displayName,
     required this.address,
     required this.lat,
     required this.lng,
+    this.category,
   });
 }
 
@@ -171,11 +174,18 @@ class GeocodingService {
     // Use the first segment (before the first comma) as a short display name.
     final shortName = fullName.split(',').first.trim();
 
+    // OSM's building=yes tag surfaces as type "yes" — meaningless to users.
+    var category = result['type'] as String?;
+    if (category != null && (category.isEmpty || category == 'yes')) {
+      category = null;
+    }
+
     return PlaceSuggestion(
       displayName: shortName.isNotEmpty ? shortName : fullName,
       address: fullName,
       lat: double.parse(result['lat'] as String),
       lng: double.parse(result['lon'] as String),
+      category: category,
     );
   }
 }

@@ -1,8 +1,9 @@
 // presentation/map_picker_screen.dart — Full-screen map for picking a location.
 //
 // The user taps anywhere on the map to place a pin. Tapping again moves it.
-// "Confirm Location" reverse-geocodes the pin via Nominatim and pops with
-// the resulting PlaceSuggestion, which is then pre-filled in the stop form.
+// Every selected position is reverse-geocoded (Nominatim) into a bottom info
+// card; "Confirm Location" pops with the resulting PlaceSuggestion, which is
+// then pre-filled in the stop form.
 //
 // OSM attribution is displayed as required by the ODbL license.
 
@@ -21,6 +22,7 @@ import 'package:social_flutter/features/itineraries/providers/itinerary_provider
 import 'package:social_flutter/l10n/app_localizations.dart';
 import 'package:social_flutter/shared/widgets/device_location_dot.dart';
 import 'package:social_flutter/shared/widgets/loaders.dart';
+import 'package:social_flutter/shared/widgets/location_error.dart';
 
 class MapPickerScreen extends ConsumerStatefulWidget {
   /// Optional initial coordinates to center the map on.
@@ -55,6 +57,13 @@ class _MapPickerScreenState extends ConsumerState<MapPickerScreen> {
   // of reverse-geocoding (keeps the exact searched name/address). Cleared by
   // any manual re-pick (map tap, use-my-location).
   PlaceSuggestion? _searchedSuggestion;
+  // Reverse-geocoded info for a manually picked pin — feeds the info card and
+  // is reused by Confirm. Its lat/lng always equal the pin's exact position.
+  PlaceSuggestion? _resolvedPlace;
+  bool _isResolving = false;
+  Timer? _resolveDebounce;
+  // Bumped on every new pick — a stale resolve must not overwrite the card.
+  int _resolveEpoch = 0;
   LatLng? _selectedLocation;
   LatLng? _deviceLocation;
   bool _isGeocoding = false;
@@ -85,6 +94,7 @@ class _MapPickerScreenState extends ConsumerState<MapPickerScreen> {
   @override
   void dispose() {
     _debounce?.cancel();
+    _resolveDebounce?.cancel();
     _searchController.dispose();
     // Reset so a reopened picker doesn't show stale results — deferred to a
     // microtask because this screen's provider subscriptions are still open
@@ -168,9 +178,14 @@ class _MapPickerScreenState extends ConsumerState<MapPickerScreen> {
       _mapController.fitCamera(
         CameraFit.bounds(
           bounds: LatLngBounds.fromPoints(points),
-          // top inset clears the search overlay; maxZoom stops a lone nearby
-          // result from slamming the camera down to street level
-          padding: const EdgeInsets.fromLTRB(48, 140, 48, 120),
+          // top inset clears the search overlay, bottom the place-info card;
+          // maxZoom stops a lone nearby result from slamming the camera down
+          padding: EdgeInsets.fromLTRB(
+            48,
+            140,
+            48,
+            _selectedLocation != null ? 220 : 120,
+          ),
           maxZoom: 16,
         ),
       );
@@ -192,15 +207,56 @@ class _MapPickerScreenState extends ConsumerState<MapPickerScreen> {
   /// Jumps the map to a search result and drops the pin on it.
   void _selectSuggestion(PlaceSuggestion suggestion) {
     final position = LatLng(suggestion.lat, suggestion.lng);
+    _resolveDebounce?.cancel();
+    _resolveEpoch++; // a pending resolve must not overwrite the suggestion
     setState(() {
       _selectedLocation = position;
       _searchedSuggestion = suggestion;
+      _resolvedPlace = null;
+      _isResolving = false;
       // Keep the query + result markers (Google-Maps-like session) — only
       // the list collapses; tapping the field reopens it.
       _listVisible = false;
     });
     _mapController.move(position, 16);
     FocusScope.of(context).unfocus();
+  }
+
+  /// Info for the position the pin currently sits on, if known yet.
+  PlaceSuggestion? get _activePlace => _searchedSuggestion ?? _resolvedPlace;
+
+  /// Reverse-geocodes a manually picked pin so the info card can show what
+  /// was selected. The stored result keeps the pin's exact coordinates —
+  /// Nominatim's own lat/lng points at the snapped nearest place, not the pin.
+  void _resolvePlaceInfo(LatLng position) {
+    _resolveDebounce?.cancel();
+    final epoch = ++_resolveEpoch;
+    setState(() {
+      _resolvedPlace = null;
+      _isResolving = true;
+    });
+    // 400ms debounce respects Nominatim's 1 req/s limit on rapid re-taps.
+    _resolveDebounce = Timer(const Duration(milliseconds: 400), () async {
+      final suggestion = await ref
+          .read(geocodingServiceProvider)
+          .reverseGeocode(
+            position.latitude,
+            position.longitude,
+            languageCode: ref.read(localeProvider).languageCode,
+          );
+      if (!mounted || epoch != _resolveEpoch) return;
+      setState(() {
+        _isResolving = false;
+        // Empty name on failure — the card falls back to "Unnamed location".
+        _resolvedPlace = PlaceSuggestion(
+          displayName: suggestion?.displayName ?? '',
+          address: suggestion?.address ?? '',
+          lat: position.latitude,
+          lng: position.longitude,
+          category: suggestion?.category,
+        );
+      });
+    });
   }
 
   LatLng get _initialCenter {
@@ -221,7 +277,7 @@ class _MapPickerScreenState extends ConsumerState<MapPickerScreen> {
       setState(() => _deviceLocation = position);
       _mapController.move(position, 16);
     } else {
-      _showOutcomeError(outcome);
+      showLocationOutcomeSnackbar(context, ref, outcome);
     }
   }
 
@@ -239,54 +295,15 @@ class _MapPickerScreenState extends ConsumerState<MapPickerScreen> {
         _searchedSuggestion = null; // pin no longer sits on a search result
       });
       _mapController.move(position, 16);
+      _resolvePlaceInfo(position);
     } else {
-      _showOutcomeError(outcome);
+      showLocationOutcomeSnackbar(context, ref, outcome);
     }
-  }
-
-  /// Maps a non-success outcome to a snackbar. Permission/service failures get
-  /// an action that opens the relevant OS settings page so the user can fix it.
-  void _showOutcomeError(LocationOutcome outcome) {
-    final l10n = AppLocalizations.of(context)!;
-    final service = ref.read(locationServiceProvider);
-    switch (outcome) {
-      case LocationSuccess():
-        return;
-      case LocationServiceDisabled():
-        _showLocationError(
-          l10n.locationServiceDisabled,
-          onOpenSettings: service.openLocationSettings,
-        );
-      case LocationPermissionDenied():
-        _showLocationError(
-          l10n.locationPermissionDenied,
-          onOpenSettings: service.openAppSettings,
-        );
-      case LocationUnavailable():
-        _showLocationError(l10n.locationUnavailable);
-    }
-  }
-
-  void _showLocationError(String message, {VoidCallback? onOpenSettings}) {
-    final l10n = AppLocalizations.of(context)!;
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(
-          content: Text(message),
-          action:
-              onOpenSettings == null
-                  ? null
-                  : SnackBarAction(
-                    label: l10n.locationOpenSettings,
-                    onPressed: onOpenSettings,
-                  ),
-        ),
-      );
   }
 
   Future<void> _confirmLocation() async {
-    if (_selectedLocation == null) return;
+    final selected = _selectedLocation;
+    if (selected == null) return;
 
     // Pin still sits on a search result — return it as-is; a reverse-geocode
     // at the same point would only degrade the name Nominatim already gave us.
@@ -295,28 +312,38 @@ class _MapPickerScreenState extends ConsumerState<MapPickerScreen> {
       return;
     }
 
+    // The info card already resolved this exact pin — reuse it, no request.
+    final resolved = _resolvedPlace;
+    if (resolved != null &&
+        resolved.lat == selected.latitude &&
+        resolved.lng == selected.longitude) {
+      context.pop(resolved);
+      return;
+    }
+
     setState(() => _isGeocoding = true);
     try {
       final suggestion = await ref
           .read(geocodingServiceProvider)
           .reverseGeocode(
-            _selectedLocation!.latitude,
-            _selectedLocation!.longitude,
+            selected.latitude,
+            selected.longitude,
             languageCode: ref.read(localeProvider).languageCode,
           );
 
       if (!mounted) return;
-      // If Nominatim couldn't identify the location, still return coordinates
-      // with an empty name so the user can fill it in manually.
-      final result =
-          suggestion ??
-          PlaceSuggestion(
-            displayName: '',
-            address: '',
-            lat: _selectedLocation!.latitude,
-            lng: _selectedLocation!.longitude,
-          );
-      context.pop(result);
+      // Always return the pin's exact coordinates — Nominatim's own lat/lng
+      // points at the snapped nearest place, not where the user put the pin.
+      // Empty name when unidentified so the user can fill it in manually.
+      context.pop(
+        PlaceSuggestion(
+          displayName: suggestion?.displayName ?? '',
+          address: suggestion?.address ?? '',
+          lat: selected.latitude,
+          lng: selected.longitude,
+          category: suggestion?.category,
+        ),
+      );
     } finally {
       if (mounted) setState(() => _isGeocoding = false);
     }
@@ -520,6 +547,123 @@ class _MapPickerScreenState extends ConsumerState<MapPickerScreen> {
     );
   }
 
+  /// "food_court" → "Food court" — raw Nominatim OSM value, not localized.
+  String _prettifyCategory(String raw) {
+    final s = raw.replaceAll('_', ' ');
+    return s[0].toUpperCase() + s.substring(1);
+  }
+
+  /// Bottom card with everything known about the selected position — name,
+  /// category, address, exact coordinates — plus the Confirm button.
+  Widget _buildPlaceInfoCard(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final nt = context.nt;
+    final place = _activePlace;
+    final coords =
+        '${_selectedLocation!.latitude.toStringAsFixed(6)}, '
+        '${_selectedLocation!.longitude.toStringAsFixed(6)}';
+
+    return Material(
+      color: nt.surface,
+      elevation: 2,
+      shadowColor: NtripiBrand.backdrop.withValues(alpha: 0.26),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(14),
+        side: BorderSide(color: nt.border),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (_isResolving)
+              const Padding(
+                padding: EdgeInsets.only(bottom: 10),
+                child: LinearProgressIndicator(),
+              )
+            else if (place != null) ...[
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Text(
+                      place.displayName.isNotEmpty
+                          ? place.displayName
+                          : l10n.mapUnnamedPlace,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                        color: nt.bark,
+                      ),
+                    ),
+                  ),
+                  if (place.category != null)
+                    Container(
+                      margin: const EdgeInsetsDirectional.only(start: 8),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 3,
+                      ),
+                      decoration: BoxDecoration(
+                        color: nt.sand,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        _prettifyCategory(place.category!),
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: nt.forest,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+              if (place.address.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(top: 2),
+                  child: Text(
+                    place.address,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(fontSize: 11, color: nt.text2),
+                  ),
+                ),
+              const SizedBox(height: 6),
+            ],
+            Row(
+              children: [
+                Icon(Icons.my_location, size: 13, color: nt.text2),
+                const SizedBox(width: 5),
+                Text(
+                  coords,
+                  // signed decimals render garbled in RTL locales
+                  textDirection: TextDirection.ltr,
+                  style: TextStyle(fontSize: 12, color: nt.text2),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                onPressed: _isGeocoding ? null : _confirmLocation,
+                icon:
+                    _isGeocoding
+                        ? const NTripiRingLoader(size: 18)
+                        : const Icon(Icons.check),
+                label: Text(l10n.mapConfirmLocation),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     // Riverpod keeps the previous value during a refresh, so the numbered
@@ -564,6 +708,7 @@ class _MapPickerScreenState extends ConsumerState<MapPickerScreen> {
                   _searchedSuggestion = null; // manual pick overrides search
                   _listVisible = false;
                 });
+                _resolvePlaceInfo(latLng);
                 FocusScope.of(context).unfocus();
               },
             ),
@@ -641,6 +786,10 @@ class _MapPickerScreenState extends ConsumerState<MapPickerScreen> {
                   markers: [
                     Marker(
                       point: _selectedLocation!,
+                      width: 40,
+                      height: 40,
+                      // pin tip (glyph bottom) sits exactly on the point
+                      alignment: Alignment.topCenter,
                       child: Icon(
                         Icons.location_pin,
                         // light-palette red — OSM tiles stay light in dark mode
@@ -674,52 +823,53 @@ class _MapPickerScreenState extends ConsumerState<MapPickerScreen> {
             child: _buildSearchOverlay(context),
           ),
 
-          // Use-my-location button — drops the pin at the device position.
+          // Location FABs stacked above the place-info card in one column so
+          // the card's variable height never overlaps them.
           PositionedDirectional(
+            start: 16,
             end: 16,
-            bottom: 152,
-            child: FloatingActionButton.small(
-              heroTag: null,
-              tooltip: AppLocalizations.of(context)!.mapUseMyLocation,
-              onPressed: (_isLocating || _isCapturing) ? null : _useMyLocation,
-              child:
-                  _isCapturing
-                      ? const NTripiRingLoader(size: 18)
-                      : const Icon(Icons.add_location_alt),
+            bottom: 16,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Use-my-location — drops the pin at the device position.
+                Align(
+                  alignment: AlignmentDirectional.centerEnd,
+                  child: FloatingActionButton.small(
+                    // no default FAB hero tag — avoids flights against other FABs
+                    heroTag: null,
+                    tooltip: AppLocalizations.of(context)!.mapUseMyLocation,
+                    onPressed:
+                        (_isLocating || _isCapturing) ? null : _useMyLocation,
+                    child:
+                        _isCapturing
+                            ? const NTripiRingLoader(size: 18)
+                            : const Icon(Icons.add_location_alt),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                // Recenter — moves the camera to the device position only.
+                Align(
+                  alignment: AlignmentDirectional.centerEnd,
+                  child: FloatingActionButton.small(
+                    heroTag: null,
+                    tooltip: AppLocalizations.of(context)!.mapMyLocation,
+                    onPressed:
+                        (_isLocating || _isCapturing) ? null : _goToMyLocation,
+                    child:
+                        _isLocating
+                            ? const NTripiRingLoader(size: 18)
+                            : const Icon(Icons.my_location),
+                  ),
+                ),
+                if (_selectedLocation != null) ...[
+                  const SizedBox(height: 12),
+                  _buildPlaceInfoCard(context),
+                ],
+              ],
             ),
           ),
-
-          // Recenter button — moves the camera to the device position only.
-          PositionedDirectional(
-            end: 16,
-            bottom: 100,
-            child: FloatingActionButton.small(
-              // no default FAB hero tag — avoids flights against other FABs
-              heroTag: null,
-              tooltip: AppLocalizations.of(context)!.mapMyLocation,
-              onPressed: (_isLocating || _isCapturing) ? null : _goToMyLocation,
-              child:
-                  _isLocating
-                      ? const NTripiRingLoader(size: 18)
-                      : const Icon(Icons.my_location),
-            ),
-          ),
-
-          // Confirm button at bottom (alternative to AppBar button)
-          if (_selectedLocation != null)
-            Positioned(
-              bottom: 24,
-              left: 24,
-              right: 24,
-              child: FilledButton.icon(
-                onPressed: _isGeocoding ? null : _confirmLocation,
-                icon:
-                    _isGeocoding
-                        ? const NTripiRingLoader(size: 18)
-                        : const Icon(Icons.check),
-                label: Text(AppLocalizations.of(context)!.mapConfirmLocation),
-              ),
-            ),
         ],
       ),
     );

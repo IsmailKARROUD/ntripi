@@ -864,6 +864,7 @@
   "mapUseMyLocation": "استخدام موقعي",
   "mapSearchNoResults": "لم يُعثر على أماكن.",
   "mapSearchThisArea": "البحث في هذه المنطقة",
+  "mapUnnamedPlace": "موقع بدون اسم",
   "locationPermissionDenied": "تم رفض إذن الوصول إلى الموقع",
   "locationServiceDisabled": "خدمات تحديد الموقع معطّلة",
   "locationUnavailable": "تعذّر الحصول على موقعك",

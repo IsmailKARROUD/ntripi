@@ -3610,6 +3610,12 @@ abstract class AppLocalizations {
   /// **'Search this area'**
   String get mapSearchThisArea;
 
+  /// No description provided for @mapUnnamedPlace.
+  ///
+  /// In en, this message translates to:
+  /// **'Unnamed location'**
+  String get mapUnnamedPlace;
+
   /// No description provided for @locationPermissionDenied.
   ///
   /// In en, this message translates to:

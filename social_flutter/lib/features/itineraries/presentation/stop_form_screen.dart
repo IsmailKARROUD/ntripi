@@ -35,6 +35,7 @@ import 'package:social_flutter/l10n/app_localizations.dart';
 import 'package:social_flutter/shared/widgets/device_location_dot.dart';
 import 'package:social_flutter/shared/widgets/field_help.dart';
 import 'package:social_flutter/shared/widgets/loaders.dart';
+import 'package:social_flutter/shared/widgets/location_error.dart';
 import 'package:social_flutter/shared/widgets/offline_gate.dart';
 import 'package:social_flutter/shared/widgets/saving_overlay.dart';
 
@@ -108,6 +109,9 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
   // Device position — preview-map centering + "you are here" dot only.
   // Never copied into _lat/_lng without an explicit user pick.
   LatLng? _deviceLocation;
+
+  // In-flight guard for the preview map's use-my-location button.
+  bool _isCapturingLocation = false;
 
   // Current stop (in edit mode)
   Stop? _existingStop;
@@ -496,6 +500,29 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
         _previewMapController.move(LatLng(_lat!, _lng!), 14);
       } catch (_) {}
     });
+  }
+
+  /// Preview-map counterpart of the picker's use-my-location button: captures
+  /// the device position into the coordinate fields (coords only — place
+  /// name/address stay untouched, they come from search or the picker).
+  Future<void> _useMyLocationInPreview() async {
+    setState(() => _isCapturingLocation = true);
+    final outcome = await ref.read(locationServiceProvider).getCurrentLatLng();
+    if (!mounted) return;
+    setState(() => _isCapturingLocation = false);
+
+    if (outcome case LocationSuccess(:final position)) {
+      setState(() {
+        _deviceLocation = position;
+        _lat = position.latitude;
+        _lng = position.longitude;
+        _setCoordText(_latController, _formatCoord(position.latitude));
+        _setCoordText(_lngController, _formatCoord(position.longitude));
+      });
+      _recenterPreview();
+    } else {
+      showLocationOutcomeSnackbar(context, ref, outcome);
+    }
   }
 
   Widget _buildCoordField(
@@ -1339,6 +1366,42 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                                                 size: 18,
                                                 color: nt.overlayChrome,
                                               ),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  // Use-my-location — fills the coordinate
+                                  // fields with the device position.
+                                  // bottom-start: OSM attribution owns
+                                  // bottom-right, the expand icon top-end.
+                                  if (!readOnly)
+                                    PositionedDirectional(
+                                      bottom: 8,
+                                      start: 8,
+                                      child: Tooltip(
+                                        message: l10n.mapUseMyLocation,
+                                        child: Material(
+                                          color: nt.buttonTransparent,
+                                          shape: const CircleBorder(),
+                                          child: InkWell(
+                                            customBorder: const CircleBorder(),
+                                            onTap:
+                                                _isCapturingLocation
+                                                    ? null
+                                                    : _useMyLocationInPreview,
+                                            child: Padding(
+                                              padding: const EdgeInsets.all(8),
+                                              child:
+                                                  _isCapturingLocation
+                                                      ? const NTripiRingLoader(
+                                                        size: 18,
+                                                      )
+                                                      : Icon(
+                                                        Icons.add_location_alt,
+                                                        size: 18,
+                                                        color: nt.overlayChrome,
+                                                      ),
                                             ),
                                           ),
                                         ),

@@ -2042,6 +2042,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get mapSearchThisArea => 'Search this area';
 
   @override
+  String get mapUnnamedPlace => 'Unnamed location';
+
+  @override
   String get locationPermissionDenied => 'Location permission denied';
 
   @override

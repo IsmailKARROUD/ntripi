@@ -736,6 +736,7 @@
   "mapUseMyLocation": "Utiliser ma position",
   "mapSearchNoResults": "Aucun lieu trouvé.",
   "mapSearchThisArea": "Rechercher dans cette zone",
+  "mapUnnamedPlace": "Lieu sans nom",
   "locationPermissionDenied": "Autorisation de localisation refusée",
   "locationServiceDisabled": "Les services de localisation sont désactivés",
   "locationUnavailable": "Impossible d'obtenir votre position",
