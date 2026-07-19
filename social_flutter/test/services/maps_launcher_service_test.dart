@@ -111,45 +111,46 @@ void main() {
     List<LatLng> points(int n) =>
         List.generate(n, (i) => LatLng(10.0 + i, 20.0 + i));
 
-    test('two points become origin and destination with no waypoints', () {
+    test('omits origin so Google navigates from the device location', () {
       final uri = service.routeUri(points(2));
 
       expect(uri.host, 'www.google.com');
       expect(uri.path, '/maps/dir/');
       expect(uri.queryParameters['api'], '1');
-      expect(uri.queryParameters['origin'], '10.0,20.0');
+      // No origin — Google defaults to the device location, which is what
+      // makes the app offer Start instead of a static preview.
+      expect(uri.queryParameters.containsKey('origin'), isFalse);
       expect(uri.queryParameters['destination'], '11.0,21.0');
-      expect(uri.queryParameters.containsKey('waypoints'), isFalse);
+      expect(uri.queryParameters['waypoints'], '10.0,20.0');
     });
 
-    test('middle points become pipe-separated waypoints in order', () {
+    test('all stops before the last become pipe-separated waypoints in order',
+        () {
       final uri = service.routeUri(points(5));
 
-      expect(uri.queryParameters['origin'], '10.0,20.0');
       expect(uri.queryParameters['destination'], '14.0,24.0');
       expect(uri.queryParameters['waypoints'],
-          '11.0,21.0|12.0,22.0|13.0,23.0');
+          '10.0,20.0|11.0,21.0|12.0,22.0|13.0,23.0');
     });
 
-    test('routes over the cap keep origin, first 9 middle stops, destination',
+    test('routes over the cap keep the first 9 stops and the destination',
         () {
       final uri = service.routeUri(points(15));
 
-      expect(uri.queryParameters['origin'], '10.0,20.0');
       // Destination is preserved even though middle stops were dropped.
       expect(uri.queryParameters['destination'], '24.0,34.0');
       final waypoints = uri.queryParameters['waypoints']!.split('|');
       expect(waypoints.length, MapsLauncherService.maxGoogleWaypoints);
-      expect(waypoints.first, '11.0,21.0');
-      expect(waypoints.last, '19.0,29.0');
+      expect(waypoints.first, '10.0,20.0');
+      expect(waypoints.last, '18.0,28.0');
     });
 
-    test('routes at the cap (11 points) are not truncated', () {
-      final uri = service.routeUri(points(11));
+    test('routes at the cap (10 points) are not truncated', () {
+      final uri = service.routeUri(points(10));
 
       final waypoints = uri.queryParameters['waypoints']!.split('|');
       expect(waypoints.length, MapsLauncherService.maxGoogleWaypoints);
-      expect(uri.queryParameters['destination'], '20.0,30.0');
+      expect(uri.queryParameters['destination'], '19.0,29.0');
     });
   });
 }

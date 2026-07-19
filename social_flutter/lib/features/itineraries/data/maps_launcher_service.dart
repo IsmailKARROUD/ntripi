@@ -27,7 +27,8 @@ enum ExternalMapApp {
 
 class MapsLauncherService {
   // Google Maps URL API hard cap on intermediate waypoints (origin +
-  // destination excluded), so a route link carries at most 11 points.
+  // destination excluded). Origin is the implicit device location, so a
+  // route link carries at most 10 stops (9 waypoints + destination).
   static const maxGoogleWaypoints = 9;
 
   /// Map apps to offer in the picker, in display order.
@@ -84,7 +85,7 @@ class MapsLauncherService {
   Future<bool> openRoute(List<LatLng> orderedPoints) async {
     assert(orderedPoints.length >= 2, 'a route needs at least two points');
     await _launch(routeUri(orderedPoints));
-    return orderedPoints.length > maxGoogleWaypoints + 2;
+    return orderedPoints.length > maxGoogleWaypoints + 1;
   }
 
   Future<void> _launch(Uri uri) =>
@@ -151,21 +152,21 @@ class MapsLauncherService {
 
   @visibleForTesting
   Uri routeUri(List<LatLng> orderedPoints) {
-    // Over the cap: keep origin, the first 9 middle stops, and destination —
-    // the start of the trip is what the user navigates first.
-    final points = orderedPoints.length > maxGoogleWaypoints + 2
+    // Over the cap: keep the first 9 stops and the destination — the start
+    // of the trip is what the user navigates first.
+    final points = orderedPoints.length > maxGoogleWaypoints + 1
         ? [
-            orderedPoints.first,
-            ...orderedPoints.sublist(1, maxGoogleWaypoints + 1),
+            ...orderedPoints.sublist(0, maxGoogleWaypoints),
             orderedPoints.last,
           ]
         : orderedPoints;
     String fmt(LatLng p) => '${p.latitude},${p.longitude}';
-    final waypoints = points.sublist(1, points.length - 1);
+    final waypoints = points.sublist(0, points.length - 1);
+    // No origin — Google defaults it to the device location, the only case
+    // where the app offers Start (turn-by-turn) instead of a static preview.
     // No travelmode param — Google keeps the user's last-used mode.
     return Uri.https('www.google.com', '/maps/dir/', {
       'api': '1',
-      'origin': fmt(points.first),
       'destination': fmt(points.last),
       if (waypoints.isNotEmpty) 'waypoints': waypoints.map(fmt).join('|'),
     });

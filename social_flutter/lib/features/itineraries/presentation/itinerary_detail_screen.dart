@@ -377,7 +377,7 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
     if (truncated && mounted) {
       messenger.showSnackBar(SnackBar(
         content: Text(l10n
-            .routeTruncated(MapsLauncherService.maxGoogleWaypoints + 2)),
+            .routeTruncated(MapsLauncherService.maxGoogleWaypoints + 1)),
       ));
     }
   }
