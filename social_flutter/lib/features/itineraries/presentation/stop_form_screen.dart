@@ -600,6 +600,10 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
       },
     );
     if (result != null) {
+      // Confirming the pre-placed pin untouched must not overwrite a possibly
+      // hand-edited name/address with Nominatim's — the picker keeps exact
+      // coords, so unchanged ones mean the user never moved the pin.
+      if (result.lat == _lat && result.lng == _lng) return;
       _applySuggestion(result);
     }
   }

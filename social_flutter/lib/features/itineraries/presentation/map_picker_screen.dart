@@ -89,6 +89,13 @@ class _MapPickerScreenState extends ConsumerState<MapPickerScreen> {
     if (widget.deviceLat != null && widget.deviceLng != null) {
       _deviceLocation = LatLng(widget.deviceLat!, widget.deviceLng!);
     }
+    // An already-located stop opens with its pin placed and the camera on it;
+    // resolve its info right away so the card shows what the pin sits on.
+    if (widget.initialLat != null && widget.initialLng != null) {
+      final initial = LatLng(widget.initialLat!, widget.initialLng!);
+      _selectedLocation = initial;
+      _resolvePlaceInfo(initial);
+    }
   }
 
   @override
@@ -691,7 +698,8 @@ class _MapPickerScreenState extends ConsumerState<MapPickerScreen> {
             mapController: _mapController,
             options: MapOptions(
               initialCenter: _initialCenter,
-              initialZoom: 13,
+              // A pre-placed pin opens focused on it; otherwise city overview.
+              initialZoom: _selectedLocation != null ? 16 : 13,
               // Fires every gesture frame — only setState on an actual change.
               // hasGesture excludes our own move/fitCamera calls.
               onPositionChanged: (_, hasGesture) {
