@@ -180,11 +180,16 @@ class LinkPreviewService {
     final coords = extractMapCoords(finalUri.toString()) ??
         (bodyPlaceUrl != null ? extractMapCoords(bodyPlaceUrl) : null);
 
+    // Only trust og:image when the link also yields coordinates. A coord-less
+    // place-ID short link (maps.app.goo.gl) gets a GENERIC, wrong-center static
+    // map from Google (observed ~80km off the real place) — suppress it so the
+    // card falls back cleanly to name + "Opens in Google Maps" rather than
+    // showing a misleading location. Full /maps/place/@lat,lng URLs keep theirs.
     final preview = LinkPreview(
       url: originalUrl,
       title: title,
       description: description,
-      imageUrl: image,
+      imageUrl: coords != null ? image : null,
       lat: coords?.$1,
       lng: coords?.$2,
     );
