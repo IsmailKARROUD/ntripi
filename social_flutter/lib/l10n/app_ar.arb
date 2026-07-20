@@ -529,6 +529,8 @@
   "mapLinkLabel": "رابط خرائط Google",
   "mapLinkHint": "الصق رابط خرائط Google",
   "mapLinkInvalid": "أدخل رابط خرائط Google صالحًا",
+  "mapLinkPaste": "لصق",
+  "mapLinkClear": "مسح",
   "locationModeCoordinates": "الإحداثيات",
   "locationModeMapLink": "رابط خرائط Google",
   "linkPreviewOpensInMaps": "يفتح في خرائط Google",

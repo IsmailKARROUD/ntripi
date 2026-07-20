@@ -1354,6 +1354,12 @@ class AppLocalizationsFr extends AppLocalizations {
   String get mapLinkInvalid => 'Saisissez un lien Google Maps valide';
 
   @override
+  String get mapLinkPaste => 'Coller';
+
+  @override
+  String get mapLinkClear => 'Effacer';
+
+  @override
   String get locationModeCoordinates => 'Coordonnées';
 
   @override

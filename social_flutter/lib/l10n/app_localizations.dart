@@ -2428,6 +2428,18 @@ abstract class AppLocalizations {
   /// **'Enter a valid Google Maps link'**
   String get mapLinkInvalid;
 
+  /// No description provided for @mapLinkPaste.
+  ///
+  /// In en, this message translates to:
+  /// **'Paste'**
+  String get mapLinkPaste;
+
+  /// No description provided for @mapLinkClear.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear'**
+  String get mapLinkClear;
+
   /// No description provided for @locationModeCoordinates.
   ///
   /// In en, this message translates to:

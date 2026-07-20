@@ -534,6 +534,8 @@
   "mapLinkLabel": "Google Maps link",
   "mapLinkHint": "Paste a Google Maps link",
   "mapLinkInvalid": "Enter a valid Google Maps link",
+  "mapLinkPaste": "Paste",
+  "mapLinkClear": "Clear",
   "locationModeCoordinates": "Coordinates",
   "locationModeMapLink": "Google Maps link",
   "linkPreviewOpensInMaps": "Opens in Google Maps",

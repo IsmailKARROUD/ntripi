@@ -12,6 +12,7 @@ import 'dart:async';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart'; // Clipboard for the map-link paste button
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -571,6 +572,43 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
       }
     }
     setState(() {});
+  }
+
+  /// Fills the map-link field from the clipboard. Trimmed on the way in so a
+  /// copied link with stray whitespace still passes the Google-Maps allowlist.
+  Future<void> _pasteMapUrl() async {
+    final data = await Clipboard.getData(Clipboard.kTextPlain);
+    if (!mounted) return; // widget may have been popped during the async read
+    final text = data?.text?.trim() ?? '';
+    if (text.isEmpty) return;
+    _mapUrlController.text = text;
+    // Move the caret to the end so the field doesn't scroll to the start.
+    _mapUrlController.selection = TextSelection.collapsed(offset: text.length);
+    _onMapUrlChanged(text); // extract coords + refresh validity
+  }
+
+  void _clearMapUrl() {
+    _mapUrlController.clear();
+    _onMapUrlChanged('');
+  }
+
+  /// Compact suffix action (paste/clear) for the map-link field — sized down
+  /// from IconButton's 48px default so it fits the dense borderless row.
+  Widget _mapLinkAction({
+    required IconData icon,
+    required String tooltip,
+    required Color color,
+    required VoidCallback onPressed,
+  }) {
+    return IconButton(
+      icon: Icon(icon, size: 20),
+      color: color,
+      tooltip: tooltip,
+      visualDensity: VisualDensity.compact,
+      padding: const EdgeInsets.all(4),
+      constraints: const BoxConstraints(),
+      onPressed: onPressed,
+    );
   }
 
   /// Preview-map counterpart of the picker's use-my-location button: captures
@@ -1457,6 +1495,10 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                                         showEditHint ? _showEditModeHint : null,
                                     onChanged: _onMapUrlChanged,
                                     keyboardType: TextInputType.url,
+                                    // Surface the allowlist rejection inline as
+                                    // the user types/pastes — not only on save.
+                                    autovalidateMode:
+                                        AutovalidateMode.onUserInteraction,
                                     decoration: InputDecoration(
                                       border: InputBorder.none,
                                       enabledBorder: InputBorder.none,
@@ -1464,6 +1506,38 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                                       isDense: true,
                                       contentPadding: EdgeInsets.zero,
                                       hintText: l10n.mapLinkHint,
+                                      suffixIcon:
+                                          readOnly
+                                              ? null
+                                              : Row(
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: [
+                                                  _mapLinkAction(
+                                                    icon:
+                                                        Icons
+                                                            .content_paste_rounded,
+                                                    tooltip: l10n.mapLinkPaste,
+                                                    color: nt.forest,
+                                                    onPressed: _pasteMapUrl,
+                                                  ),
+                                                  if (_mapUrlController
+                                                      .text
+                                                      .isNotEmpty)
+                                                    _mapLinkAction(
+                                                      icon: Icons.close_rounded,
+                                                      tooltip: l10n.mapLinkClear,
+                                                      color: nt.text2,
+                                                      onPressed: _clearMapUrl,
+                                                    ),
+                                                ],
+                                              ),
+                                      // Keep the suffix tight against the field
+                                      // (default 48px min would break isDense).
+                                      suffixIconConstraints:
+                                          const BoxConstraints(
+                                            minWidth: 0,
+                                            minHeight: 0,
+                                          ),
                                     ),
                                     style: TextStyle(
                                       fontSize: 15,

@@ -444,6 +444,8 @@
   "mapLinkLabel": "Lien Google Maps",
   "mapLinkHint": "Collez un lien Google Maps",
   "mapLinkInvalid": "Saisissez un lien Google Maps valide",
+  "mapLinkPaste": "Coller",
+  "mapLinkClear": "Effacer",
   "locationModeCoordinates": "Coordonnées",
   "locationModeMapLink": "Lien Google Maps",
   "linkPreviewOpensInMaps": "Ouvre dans Google Maps",

@@ -1369,6 +1369,12 @@ class AppLocalizationsAr extends AppLocalizations {
   String get mapLinkInvalid => 'أدخل رابط خرائط Google صالحًا';
 
   @override
+  String get mapLinkPaste => 'لصق';
+
+  @override
+  String get mapLinkClear => 'مسح';
+
+  @override
   String get locationModeCoordinates => 'الإحداثيات';
 
   @override

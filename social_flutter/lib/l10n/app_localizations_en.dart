@@ -1329,6 +1329,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get mapLinkInvalid => 'Enter a valid Google Maps link';
 
   @override
+  String get mapLinkPaste => 'Paste';
+
+  @override
+  String get mapLinkClear => 'Clear';
+
+  @override
   String get locationModeCoordinates => 'Coordinates';
 
   @override
