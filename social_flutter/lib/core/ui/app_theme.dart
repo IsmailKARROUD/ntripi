@@ -7,20 +7,55 @@ import 'package:google_fonts/google_fonts.dart';
 // Rule: no Color literal may exist outside this file (Colors.transparent
 // excepted). Theme-dependent colors live on [NtripiColors] (light + dark);
 // brightness-independent brand artwork colors live on [NtripiBrand].
+// Inside this file, any hex reused more than once is defined once in the
+// private primitive palette below and referenced by name — never re-typed.
 // ─────────────────────────────────────────────────────────────────────────────
+
+// ── Primitive palette (raw hex, each defined ONCE) ───────────────────────────
+// Every hex value used more than once lives here as a single named primitive;
+// the brand, theme, and ColorScheme tokens below reference these — never a
+// repeated literal. Digits uppercase, `0x` lowercase. Names describe the
+// swatch, not its role (one swatch may back several roles).
+const _forest         = Color(0xFF1F6E3A); // deep brand green
+const _canopy         = Color(0xFF2D7D52); // mid green
+const _canopyDark     = Color(0xFF57BB83); // mid green · dark
+const _leaf           = Color(0xFF74D098); // bright interactive green
+const _mist           = Color(0xFFD0EBDA); // pale green tint
+const _mistDark       = Color(0xFF1F3A2A); // green tint · dark
+const _teaGreen       = Color(0xFFD0EDD8); // pale tertiary container
+const _amber          = Color(0xFFC89030); // brand gold
+const _amberDark      = Color(0xFFDFAE55); // brand gold · dark
+const _bark           = Color(0xFF1A2A1E); // near-black green ink (text, scrim)
+const _barkDark       = Color(0xFFE2E9E2); // off-white text · dark
+const _onLeaf         = Color(0xFF00391D); // deep-green text on a green fill
+const _borderLight    = Color(0xFFE4EDE6); // hairline border · light
+const _borderDark     = Color(0xFF2A342C); // hairline border · dark
+const _onInverseLight = Color(0xFFEFF1EB); // text on inverse surface · light
+const _onInverseDark  = Color(0xFF2B322C); // text on inverse surface · dark
+const _slateDark      = Color(0xFF1B2022); // deepest map slate · dark
+const _danger         = Color(0xFFBA1A1A); // error red · light
+const _dangerDark     = Color(0xFFFFB4AB); // error red · dark
+const _rose           = Color(0xFFFFDAD6); // pale error container
+const _peach          = Color(0xFFFFE3CC); // warm caution/avatar bg · light
+const _peachDark      = Color(0xFF33261A); // warm caution/avatar bg · dark
+const _rust           = Color(0xFFA05D1F); // warm caution/avatar fg · light
+const _rustLight      = Color(0xFFE0A468); // warm caution/avatar fg · dark
+const _slateBlue      = Color(0xFF3B6EA5); // info/avatar blue fg · light
+const _slateBlueLight = Color(0xFF96BEE8); // info/avatar blue fg · dark
+const _buttonScrim    = Color(0x55000000); // frosted dark overlay button
 
 // ── Brand constants (brightness-INDEPENDENT) ─────────────────────────────────
 // Colors of the brand artwork itself — logo mark, splash art, chrome drawn
 // over photos. These must NOT flip with the theme: the logo is the logo.
 abstract final class NtripiBrand {
-  static const forest = Color(0xFF1F5E3A); // deep brand green (splash bg, logo tile)
-  static const canopy = Color(0xFF2D7D52); // logo tile variant on dark grounds
-  static const amber = Color(0xFFC89030);  // logo sun dot
+  static const forest = _forest; // deep brand green (splash bg, logo tile)
+  static const canopy = _canopy; // logo tile variant on dark grounds
+  static const amber = _amber;  // logo sun dot
   static const mint = Color(0xFF94D4A8);   // wordmark tint on dark grounds
   static const chrome = Colors.white;      // marks/text over brand fills & photos
   static const chrome66 = Color(0xA8FFFFFF); // 66% chrome — splash tagline
   static const chrome40 = Color(0x66FFFFFF); // 40% chrome — splash motto
-  static const scrimInk = Color(0xFF1A2A1E); // gradient scrim base over photos
+  static const scrimInk = _bark; // gradient scrim base over photos
   static const backdrop = Colors.black;      // fullscreen photo-viewer bg, over-tile shadows
 }
 
@@ -184,19 +219,19 @@ class NtripiColors extends ThemeExtension<NtripiColors> {
 
   static const light = NtripiColors(
     brightness: Brightness.light,
-    forest: Color(0xFF1F5E3A),
-    canopy: Color(0xFF2D7D52),
-    mist: Color(0xFFD0EBDA),
-    amber: Color(0xFFC89030),
+    forest: _forest,
+    canopy: _canopy,
+    mist: _mist,
+    amber: _amber,
     sand: Color(0xFFF5F2EC),
-    bark: Color(0xFF1A2A1E),
+    bark: _bark,
     surface: Colors.white,
-    border: Color(0xFFE4EDE6),
+    border: _borderLight,
     text2: Color(0xFF5A7562),
     text3: Color(0xFF93A898),
-    inverseSurface: Color(0xFF1A2A1E),
-    onInverseSurface: Color(0xFFEFF1EB),
-    danger: Color(0xFFBA1A1A),
+    inverseSurface: _bark,
+    onInverseSurface: _onInverseLight,
+    danger: _danger,
     dangerTint: Color(0xFFFCECEC),
     transitBg: Color(0xFFFFF8EC),
     transitBorder: Color(0xFFF0E2C2),
@@ -208,13 +243,13 @@ class NtripiColors extends ThemeExtension<NtripiColors> {
     ratingOrange: Color(0xFFD4611A),
     ratingLimeGreen: Color(0xFF7AAE35),
     adviceBg: Color(0xFFE0EBE4),
-    adviceFg: Color(0xFF1F5E3A),
-    cautionBg: Color(0xFFFFE3CC),
-    cautionFg: Color(0xFFA05D1F),
+    adviceFg: _forest,
+    cautionBg: _peach,
+    cautionFg: _rust,
     avoidBg: Color(0xFFFFD6D2),
     avoidFg: Color(0xFFA02828),
     infoBg: Color(0xFFDCEAF6),
-    infoFg: Color(0xFF3B6EA5),
+    infoFg: _slateBlue,
     placeEatDrink: Color(0xFFE65100),
     placeSleep: Color(0xFF5E35B1),
     placePray: Color(0xFF00897B),
@@ -240,16 +275,16 @@ class NtripiColors extends ThemeExtension<NtripiColors> {
     mapLabelBg: Color(0xD1FFFFFF),
     mapMark: Color(0xFF8C9891),
     overlayChrome: Colors.white,
-    buttonTransparent: Color(0x55000000),
+    buttonTransparent: _buttonScrim,
     scrim: Color(0x75142018), // ≈ rgba(20,32,24,0.46)
     shadow: Color(0xFF002814),
     shimmerHighlight: Colors.white,
     avatarPairs: [
-      (Color(0xFFD0EBDA), Color(0xFF1F5E3A)),
-      (Color(0xFFFFE3CC), Color(0xFFA05D1F)),
+      (_mist, _forest),
+      (_peach, _rust),
       (Color(0xFFE0DAF0), Color(0xFF5A3F8F)),
       (Color(0xFFF4D4A8), Color(0xFF8A3A1F)),
-      (Color(0xFFCDE0D6), Color(0xFF3B6EA5)),
+      (Color(0xFFCDE0D6), _slateBlue),
     ],
   );
 
@@ -258,18 +293,18 @@ class NtripiColors extends ThemeExtension<NtripiColors> {
   static const dark = NtripiColors(
     brightness: Brightness.dark,
     forest: Color(0xFF089000),
-    canopy: Color(0xFF57BB83),
-    mist: Color(0xFF1F3A2A),
-    amber: Color(0xFFDFAE55),
+    canopy: _canopyDark,
+    mist: _mistDark,
+    amber: _amberDark,
     sand: Color(0xFF1C231D),
-    bark: Color(0xFFE2E9E2),
+    bark: _barkDark,
     surface: Colors.black,
-    border: Color(0xFF2A342C),
+    border: _borderDark,
     text2: Color(0xFFB8CFC9),
     text3: Color(0xFF75897B),
-    inverseSurface: Color(0xFFE2E9E2),
-    onInverseSurface: Color(0xFF2B322C),
-    danger: Color(0xFFFFB4AB), // M3 dark-error convention
+    inverseSurface: _barkDark,
+    onInverseSurface: _onInverseDark,
+    danger: _dangerDark, // M3 dark-error convention
     dangerTint: Color(0xFF3B211F),
     transitBg: Color(0xFF262014),
     transitBorder: Color(0xFF463B24),
@@ -281,13 +316,13 @@ class NtripiColors extends ThemeExtension<NtripiColors> {
     ratingOrange: Color(0xFFEF8E50),
     ratingLimeGreen: Color(0xFF9DCC57),
     adviceBg: Color(0xFF203226),
-    adviceFg: Color(0xFF74D098),
-    cautionBg: Color(0xFF33261A),
-    cautionFg: Color(0xFFE0A468),
+    adviceFg: _leaf,
+    cautionBg: _peachDark,
+    cautionFg: _rustLight,
     avoidBg: Color(0xFF39211F),
     avoidFg: Color(0xFFEC9B93),
     infoBg: Color(0xFF1C2A38),
-    infoFg: Color(0xFF96BEE8),
+    infoFg: _slateBlueLight,
     placeEatDrink: Color(0xFFFFB074),
     placeSleep: Color(0xFFB39DDB),
     placePray: Color(0xFF4DB6AC),
@@ -300,7 +335,7 @@ class NtripiColors extends ThemeExtension<NtripiColors> {
     placeEntertainment: Color(0xFFCE93D8),
     placeSight: Color(0xFFFFD54F),
     mapLandStart: Color(0xFF23282A),
-    mapLandEnd: Color(0xFF1B2022),
+    mapLandEnd: _slateDark,
     mapWater: Color(0xE62E3A40),
     mapPark: Color(0xD9263129),
     mapBuilding: Color(0x2EA9B8AE),
@@ -309,20 +344,20 @@ class NtripiColors extends ThemeExtension<NtripiColors> {
     mapRoute: Color(0xFF9DB2A5),
     mapInk: Color(0xFFD6DED8),
     mapPinEnds: Color(0xFF97A79B),
-    mapPinLabel: Color(0xFF1B2022),
+    mapPinLabel: _slateDark,
     mapLabelBg: Color(0xD1242B28),
     mapMark: Color(0xFF5C6862),
     overlayChrome: Colors.white,
-    buttonTransparent: Color(0x55000000),
+    buttonTransparent: _buttonScrim,
     scrim: Color(0xA6000000),
     shadow: Colors.black,
     shimmerHighlight: Color(0xFF2B4A38),
     avatarPairs: [
-      (Color(0xFF1F3A2A), Color(0xFF8FD4AA)),
-      (Color(0xFF33261A), Color(0xFFE0A468)),
+      (_mistDark, Color(0xFF8FD4AA)),
+      (_peachDark, _rustLight),
       (Color(0xFF2A2338), Color(0xFFC3B2E8)),
       (Color(0xFF362A1A), Color(0xFFE3B583)),
-      (Color(0xFF20302A), Color(0xFF96BEE8)),
+      (Color(0xFF20302A), _slateBlueLight),
     ],
   );
 
@@ -424,66 +459,66 @@ extension NtripiThemeX on BuildContext {
 
 const _lightScheme = ColorScheme(
   brightness: Brightness.light,
-  primary: Color(0xFF1F5E3A),
+  primary: _forest,
   onPrimary: Colors.white,
-  primaryContainer: Color(0xFFD0EBDA),
-  onPrimaryContainer: Color(0xFF1A2A1E),
-  secondary: Color(0xFFC89030),
+  primaryContainer: _mist,
+  onPrimaryContainer: _bark,
+  secondary: _amber,
   onSecondary: Colors.white,
   secondaryContainer: Color(0xFFFFF0CC),
   onSecondaryContainer: Color(0xFF3B2000),
-  tertiary: Color(0xFF2D7D52),
+  tertiary: _canopy,
   onTertiary: Colors.white,
-  tertiaryContainer: Color(0xFFD0EDD8),
-  onTertiaryContainer: Color(0xFF1A2A1E),
-  error: Color(0xFFBA1A1A),
+  tertiaryContainer: _teaGreen,
+  onTertiaryContainer: _bark,
+  error: _danger,
   onError: Colors.white,
-  errorContainer: Color(0xFFFFDAD6),
+  errorContainer: _rose,
   onErrorContainer: Color(0xFF410002),
   surface: Colors.white,
-  onSurface: Color(0xFF1A2A1E),
+  onSurface: _bark,
   surfaceContainerHighest: Color(0xFFEFF2EC),
   onSurfaceVariant: Color(0xFF44483E),
-  outline: Color(0xFFE4EDE6),
+  outline: _borderLight,
   outlineVariant: Color(0xFFC4CAC0),
   shadow: Colors.black,
   scrim: Colors.black,
-  inverseSurface: Color(0xFF1A2A1E),
-  onInverseSurface: Color(0xFFEFF1EB),
-  inversePrimary: Color(0xFF74D098),
-  surfaceTint: Color(0xFF1F5E3A),
+  inverseSurface: _bark,
+  onInverseSurface: _onInverseLight,
+  inversePrimary: _leaf,
+  surfaceTint: _forest,
 );
 
 const _darkScheme = ColorScheme(
   brightness: Brightness.dark,
-  primary: Color(0xFF74D098),
-  onPrimary: Color(0xFF00391D),
-  primaryContainer: Color(0xFF1F5E3A),
-  onPrimaryContainer: Color(0xFFD0EBDA),
-  secondary: Color(0xFFDFAE55),
+  primary: _leaf,
+  onPrimary: _onLeaf,
+  primaryContainer: _forest,
+  onPrimaryContainer: _mist,
+  secondary: _amberDark,
   onSecondary: Color(0xFF402D00),
   secondaryContainer: Color(0xFF5C4200),
   onSecondaryContainer: Color(0xFFFFDEA8),
-  tertiary: Color(0xFF57BB83),
-  onTertiary: Color(0xFF00391D),
-  tertiaryContainer: Color(0xFF1F5E3A),
-  onTertiaryContainer: Color(0xFFD0EDD8),
-  error: Color(0xFFFFB4AB),
+  tertiary: _canopyDark,
+  onTertiary: _onLeaf,
+  tertiaryContainer: _forest,
+  onTertiaryContainer: _teaGreen,
+  error: _dangerDark,
   onError: Color(0xFF690005),
   errorContainer: Color(0xFF93000A),
-  onErrorContainer: Color(0xFFFFDAD6),
+  onErrorContainer: _rose,
   surface: Color(0xFF121813),
-  onSurface: Color(0xFFE2E9E2),
+  onSurface: _barkDark,
   surfaceContainerHighest: Color(0xFF232B24),
   onSurfaceVariant: Color(0xFFBFC9BC),
-  outline: Color(0xFF2A342C),
+  outline: _borderDark,
   outlineVariant: Color(0xFF3F4A41),
   shadow: Colors.black,
   scrim: Colors.black,
-  inverseSurface: Color(0xFFE2E9E2),
-  onInverseSurface: Color(0xFF2B322C),
-  inversePrimary: Color(0xFF1F5E3A),
-  surfaceTint: Color(0xFF74D098),
+  inverseSurface: _barkDark,
+  onInverseSurface: _onInverseDark,
+  inversePrimary: _forest,
+  surfaceTint: _leaf,
 );
 
 ThemeData buildNtripiTheme() => _buildTheme(NtripiColors.light, _lightScheme);
