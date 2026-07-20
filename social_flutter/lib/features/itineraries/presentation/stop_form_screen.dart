@@ -525,41 +525,15 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
     });
   }
 
-  // Coordinate patterns Google Maps embeds in its URLs, most-precise first:
-  // the place-data pin (!3d!4d), an explicit query/ll param, then the viewport
-  // center (@lat,lng) as a last resort. Short links (maps.app.goo.gl) match
-  // none — those stay link-only with no pin.
-  static final _mapUrlCoordPatterns = <RegExp>[
-    RegExp(r'!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)'),
-    RegExp(
-      r'[?&](?:query|q|ll|destination|center)=(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)',
-    ),
-    RegExp(r'@(-?\d+\.\d+),(-?\d+\.\d+)'),
-  ];
-
-  /// Extracts a lat/lng pair from a Google Maps URL, or null when none is
-  /// embedded (e.g. a short link). Out-of-range matches are skipped.
-  (double, double)? _extractCoordsFromMapUrl(String url) {
-    for (final re in _mapUrlCoordPatterns) {
-      final m = re.firstMatch(url);
-      if (m == null) continue;
-      final lat = double.tryParse(m.group(1)!);
-      final lng = double.tryParse(m.group(2)!);
-      if (lat == null || lng == null) continue;
-      if (lat < -90 || lat > 90 || lng < -180 || lng > 180) continue;
-      return (lat, lng);
-    }
-    return null;
-  }
-
   /// When a valid Google Maps link is pasted, pull any embedded coordinates into
   /// the lat/lng fields so the stop still gets a map pin. A link without coords
-  /// (short link) leaves the existing coordinates alone. setState refreshes the
-  /// inline validator as the user types.
+  /// (short link) leaves the existing coordinates alone — the async preview
+  /// unfurl (which resolves the short link) fills them in later. setState
+  /// refreshes the inline validator as the user types.
   void _onMapUrlChanged(String value) {
     final url = value.trim();
     if (url.isNotEmpty && isGoogleMapsUrl(url)) {
-      final coords = _extractCoordsFromMapUrl(url);
+      final coords = extractMapCoords(url); // shared helper in link_preview_service
       if (coords != null) {
         _setCoordText(_latController, _formatCoord(coords.$1));
         _setCoordText(_lngController, _formatCoord(coords.$2));
@@ -1120,17 +1094,30 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
     }
 
     // Chat-app nicety: when a pasted link unfurls, seed an empty place name with
-    // its title. Only fills when blank, so it never clobbers a name the user typed.
+    // its title, and — for a short link whose pasted form had no coords — drop a
+    // pin from the coords the unfurl recovered off the resolved URL. Both only
+    // fill when still blank, so neither clobbers what the user typed.
     if (!readOnly && _locationMode == _LocationMode.link) {
       final linkUrl = _mapUrlController.text.trim();
       if (isGoogleMapsUrl(linkUrl)) {
         ref.listen(linkPreviewProvider(linkUrl), (_, next) {
           next.whenData((preview) {
-            final title = preview?.title?.trim() ?? '';
-            if (title.isNotEmpty &&
-                _placeNameController.text.trim().isEmpty &&
-                mounted) {
+            if (preview == null || !mounted) return;
+            final title = preview.title?.trim() ?? '';
+            if (title.isNotEmpty && _placeNameController.text.trim().isEmpty) {
               setState(() => _placeNameController.text = title);
+            }
+            if (preview.lat != null &&
+                preview.lng != null &&
+                _lat == null &&
+                _lng == null) {
+              _setCoordText(_latController, _formatCoord(preview.lat!));
+              _setCoordText(_lngController, _formatCoord(preview.lng!));
+              setState(() {
+                _lat = preview.lat;
+                _lng = preview.lng;
+              });
+              _recenterPreview();
             }
           });
         });

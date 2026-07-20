@@ -34,6 +34,34 @@ bool isGoogleMapsUrl(String url) {
       uri.path.startsWith('/maps');
 }
 
+/// Coordinate patterns Google Maps embeds in its URLs, most-precise first: the
+/// place-data pin (!3d!4d), an explicit query/ll param, then the viewport
+/// center (@lat,lng) as a last resort. Shared by the service (parses the
+/// *resolved* URL) and the stop form (parses the *pasted* URL) so there is one
+/// source of truth for coord extraction.
+final _mapCoordPatterns = <RegExp>[
+  RegExp(r'!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)'),
+  RegExp(
+    r'[?&](?:query|q|ll|destination|center)=(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)',
+  ),
+  RegExp(r'@(-?\d+\.\d+),(-?\d+\.\d+)'),
+];
+
+/// Extracts a lat/lng pair from a Google Maps URL, or null when none is embedded
+/// (e.g. a bare short link). Out-of-range matches are skipped.
+(double, double)? extractMapCoords(String url) {
+  for (final re in _mapCoordPatterns) {
+    final m = re.firstMatch(url);
+    if (m == null) continue;
+    final lat = double.tryParse(m.group(1)!);
+    final lng = double.tryParse(m.group(2)!);
+    if (lat == null || lng == null) continue;
+    if (lat < -90 || lat > 90 || lng < -180 || lng > 180) continue;
+    return (lat, lng);
+  }
+  return null;
+}
+
 /// The unfurled Open Graph card data. Any field may be null when the page
 /// omits that tag; a preview with neither title nor image is treated as "no
 /// preview" (fetch returns null) so the caller shows the plain fallback.
@@ -42,12 +70,18 @@ class LinkPreview {
   final String? title;
   final String? description;
   final String? imageUrl;
+  // Coords parsed from the *resolved* URL (post-redirect) — lets the form drop a
+  // pin for a short link whose pasted form carried no coords.
+  final double? lat;
+  final double? lng;
 
   const LinkPreview({
     required this.url,
     this.title,
     this.description,
     this.imageUrl,
+    this.lat,
+    this.lng,
   });
 
   bool get hasContent => title != null || imageUrl != null;
@@ -122,14 +156,77 @@ class LinkPreviewService {
       }
     }
 
+    // Google Maps is a JS SPA: its crawler HTML carries only a GENERIC
+    // og:title ("Google Maps"), never the place name. The real name lives in
+    // the resolved URL path (/maps/place/<NAME>/). Prefer that; fall back to a
+    // non-generic og:title only (a future non-Maps host could have a real one).
+    final pathName = _placeNameFromPath(finalUri.toString()) ??
+        _placeNameFromPath(html);
+    final ogTitle = og['og:title'];
+    final title = pathName ??
+        (ogTitle != null && !_isGenericMapsTitle(ogTitle) ? ogTitle : null);
+
+    // The Maps og:description is boilerplate ("Find local businesses…"); only
+    // surface a description when we actually used a genuine og:title.
+    final description = (pathName == null && title != null)
+        ? og['og:description']
+        : null;
+
+    // Coords from the resolved URL (a short link resolves here even though its
+    // pasted form carried none) — the form uses these to drop a map pin. If the
+    // short link served a JS interstitial (no HTTP redirect, so realUri stayed
+    // the short URL), fall back to the canonical place URL embedded in the body.
+    final bodyPlaceUrl = _firstPlaceUrl(html);
+    final coords = extractMapCoords(finalUri.toString()) ??
+        (bodyPlaceUrl != null ? extractMapCoords(bodyPlaceUrl) : null);
+
     final preview = LinkPreview(
       url: originalUrl,
-      title: og['og:title'],
-      description: og['og:description'],
+      title: title,
+      description: description,
       imageUrl: image,
+      lat: coords?.$1,
+      lng: coords?.$2,
     );
-    return preview.hasContent ? preview : null;
+    return preview.hasContent || preview.lat != null ? preview : null;
   }
+
+  static bool _isGenericMapsTitle(String t) =>
+      t.trim().toLowerCase() == 'google maps';
+
+  /// Pulls the human place name out of a `/maps/place/NAME/` segment in [text]
+  /// (a resolved URL or the raw HTML body, which embeds the canonical place
+  /// URL). Google encodes spaces as '+', so replace '+' BEFORE percent-decoding.
+  static String? _placeNameFromPath(String text) {
+    final m = _placePathPattern.firstMatch(text);
+    if (m == null) return null;
+    final raw = m.group(1)!;
+    if (raw.isEmpty) return null;
+    try {
+      final name = Uri.decodeComponent(raw.replaceAll('+', ' ')).trim();
+      return name.isEmpty ? null : name;
+    } catch (_) {
+      // Malformed %-escape — fall back to the '+'-decoded form.
+      final name = raw.replaceAll('+', ' ').trim();
+      return name.isEmpty ? null : name;
+    }
+  }
+
+  /// First /maps/place/... URL embedded in the body — used to recover coords
+  /// when a short link served a JS interstitial (no HTTP redirect for realUri).
+  static String? _firstPlaceUrl(String html) =>
+      _placeUrlPattern.firstMatch(html)?.group(0);
+
+  // /maps/place/<NAME>/ (or /maps/search/<QUERY>) — the name up to the next
+  // '/', '?' or '#'. Matches both the requested URL and the body's canonical.
+  static final _placePathPattern = RegExp(
+    r'/maps/(?:place|search)/([^/?#]+)',
+    caseSensitive: false,
+  );
+  static final _placeUrlPattern = RegExp(
+    r'''https?://[^\s"'<>]*?/maps/place/[^\s"'<>]*''',
+    caseSensitive: false,
+  );
 
   // Each <meta …> tag; attributes then read individually so property-first and
   // content-first orderings both parse.
