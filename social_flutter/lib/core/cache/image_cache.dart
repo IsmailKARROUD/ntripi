@@ -21,5 +21,22 @@ class NtripiImageCacheManager extends CacheManager {
   static final NtripiImageCacheManager _instance = NtripiImageCacheManager._();
   factory NtripiImageCacheManager() => _instance;
   NtripiImageCacheManager._()
-      : super(Config(_key, stalePeriod: kImageCacheStalePeriod));
+    : super(Config(_key, stalePeriod: kImageCacheStalePeriod));
+}
+
+/// Deliberately short so a hotlinked Google Open Graph image (a link stop's
+/// unfurled preview) is only ever a transient on-device copy — never a
+/// long-lived re-host of third-party content.
+const Duration kLinkPreviewCacheStalePeriod = Duration(days: 7);
+
+/// Separate namespace + short TTL for unfurled link-preview (og:image) thumbnails.
+/// Kept apart from [NtripiImageCacheManager] so these third-party images expire
+/// quickly and never mix with our own avatars/covers.
+class NtripiLinkPreviewCacheManager extends CacheManager {
+  static const _key = 'ntripi_link_preview_cache';
+  static final NtripiLinkPreviewCacheManager _instance =
+      NtripiLinkPreviewCacheManager._();
+  factory NtripiLinkPreviewCacheManager() => _instance;
+  NtripiLinkPreviewCacheManager._()
+    : super(Config(_key, stalePeriod: kLinkPreviewCacheStalePeriod));
 }

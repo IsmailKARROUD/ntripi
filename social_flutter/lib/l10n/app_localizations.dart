@@ -2410,6 +2410,48 @@ abstract class AppLocalizations {
   /// **'Street address or area description. Optional.'**
   String get addressHelp;
 
+  /// No description provided for @mapLinkLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Google Maps link'**
+  String get mapLinkLabel;
+
+  /// No description provided for @mapLinkHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Paste a Google Maps link'**
+  String get mapLinkHint;
+
+  /// No description provided for @mapLinkInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a valid Google Maps link'**
+  String get mapLinkInvalid;
+
+  /// No description provided for @locationModeCoordinates.
+  ///
+  /// In en, this message translates to:
+  /// **'Coordinates'**
+  String get locationModeCoordinates;
+
+  /// No description provided for @locationModeMapLink.
+  ///
+  /// In en, this message translates to:
+  /// **'Google Maps link'**
+  String get locationModeMapLink;
+
+  /// No description provided for @linkPreviewOpensInMaps.
+  ///
+  /// In en, this message translates to:
+  /// **'Opens in Google Maps'**
+  String get linkPreviewOpensInMaps;
+
+  /// No description provided for @linkPreviewLoading.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading preview…'**
+  String get linkPreviewLoading;
+
   /// No description provided for @coordinatesHelp.
   ///
   /// In en, this message translates to:

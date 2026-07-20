@@ -15,8 +15,31 @@ import uuid
 from datetime import datetime
 from decimal import Decimal
 from typing import Literal, Optional
+from urllib.parse import urlparse
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+
+
+# A stop's map_url may only point at Google Maps — OSM's gazetteer is thinner,
+# so users paste a Google Maps link for places it can't resolve. This is the
+# security boundary (do not trust the client): any host not on the allowlist is
+# rejected, so an arbitrary link (YouTube, other providers) can never be stored.
+def validate_google_maps_url(url: Optional[str]) -> Optional[str]:
+    if url is None:
+        return url
+    parsed = urlparse(url.strip())
+    if parsed.scheme not in ("http", "https") or not parsed.hostname:
+        raise ValueError("map_url must be an http(s) Google Maps link")
+    host = parsed.hostname.lower()
+    path = parsed.path or ""
+    # Short-link / maps subdomains carry the destination in the path itself.
+    if host in ("maps.google.com", "maps.app.goo.gl"):
+        return url.strip()
+    # Bare-domain hosts must scope to /maps so a generic google.com/goo.gl
+    # (search, mail, arbitrary short link) can't slip through.
+    if host in ("google.com", "www.google.com", "goo.gl") and path.startswith("/maps"):
+        return url.strip()
+    raise ValueError("map_url must be a Google Maps link")
 
 
 # ---------------------------------------------------------------------------
@@ -106,6 +129,7 @@ class StopCreate(BaseModel):
     place_address: Optional[str] = None
     lat: Optional[float] = Field(None, ge=-90, le=90)
     lng: Optional[float] = Field(None, ge=-180, le=180)
+    map_url: Optional[str] = Field(None, max_length=500)
 
     place_type: Optional[str] = Field(
         None,
@@ -117,17 +141,22 @@ class StopCreate(BaseModel):
     is_free: bool = False
     notes: Optional[str] = None
 
+    _validate_map_url = field_validator("map_url")(validate_google_maps_url)
+
 
 class StopUpdate(BaseModel):
     place_name: Optional[str] = Field(None, max_length=200)
     place_address: Optional[str] = None
     lat: Optional[float] = Field(None, ge=-90, le=90)
     lng: Optional[float] = Field(None, ge=-180, le=180)
+    map_url: Optional[str] = Field(None, max_length=500)
     place_type: Optional[str] = Field(
         None,
         pattern="^(eatDrink|sleep|pray|learnSee|buy|playWatch|nature|transport|healBathe|entertainment|sight)$",
     )
     duration_min: Optional[int] = Field(None, ge=0)
+
+    _validate_map_url = field_validator("map_url")(validate_google_maps_url)
     cost: Optional[Decimal] = Field(None, ge=0)
     is_free: Optional[bool] = None
     notes: Optional[str] = None
@@ -209,6 +238,7 @@ class StopResponse(BaseModel):
     place_address: Optional[str]
     lat: Optional[float]
     lng: Optional[float]
+    map_url: Optional[str]
     place_type: Optional[str]
     duration_min: Optional[int]
     cost: float

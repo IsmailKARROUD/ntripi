@@ -151,6 +151,10 @@ class Stop {
   final double? lng;
   final PlaceType? placeType;
 
+  /// Optional Google Maps link. When set without lat/lng the stop has no map
+  /// pin and opens directly in Google Maps (see stop_detail_screen).
+  final String? mapUrl;
+
   final int? durationMin;
   final double cost;
   final bool isFree;
@@ -170,6 +174,7 @@ class Stop {
     this.lat,
     this.lng,
     this.placeType,
+    this.mapUrl,
     this.durationMin,
     this.cost = 0.0,
     this.isFree = false,
@@ -192,6 +197,7 @@ class Stop {
       lat: (json['lat'] as num?)?.toDouble(),
       lng: (json['lng'] as num?)?.toDouble(),
       placeType: PlaceType.fromString(json['place_type'] as String?),
+      mapUrl: json['map_url'] as String?,
       durationMin: json['duration_min'] as int?,
       cost: (json['cost'] as num?)?.toDouble() ?? 0.0,
       isFree: json['is_free'] as bool? ?? false,
@@ -216,6 +222,7 @@ class Stop {
       if (lat != null) 'lat': lat,
       if (lng != null) 'lng': lng,
       if (placeType != null) 'place_type': placeType!.name,
+      if (mapUrl != null) 'map_url': mapUrl,
       if (durationMin != null) 'duration_min': durationMin,
       'cost': cost,
       'is_free': isFree,
@@ -235,6 +242,7 @@ class Stop {
     double? lat,
     double? lng,
     PlaceType? placeType,
+    String? mapUrl,
     int? durationMin,
     double? cost,
     bool? isFree,
@@ -253,6 +261,7 @@ class Stop {
       lat: lat ?? this.lat,
       lng: lng ?? this.lng,
       placeType: placeType ?? this.placeType,
+      mapUrl: mapUrl ?? this.mapUrl,
       durationMin: durationMin ?? this.durationMin,
       cost: cost ?? this.cost,
       isFree: isFree ?? this.isFree,

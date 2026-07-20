@@ -207,6 +207,28 @@ class TestTrackAndStopSmoke:
         )
         assert r.status_code == 412
 
+    def test_map_url_google_maps_link_accepted_and_returned(self, client: TestClient):
+        itin_id, hdrs, etag_val = self._setup(client)
+        etag = etag_from_updated_at(etag_val)
+        link = "https://maps.app.goo.gl/abc123"
+        r = client.post(
+            f"/itineraries/{itin_id}/stops",
+            json={"place_name": "Hidden gem", "map_url": link, "is_free": True},
+            headers={**hdrs, "If-Match": etag},
+        )
+        assert r.status_code == 201, r.text
+        assert r.json()["map_url"] == link  # round-trips through StopResponse
+
+    def test_map_url_rejects_non_google_maps_link(self, client: TestClient):
+        itin_id, hdrs, etag_val = self._setup(client)
+        etag = etag_from_updated_at(etag_val)
+        r = client.post(
+            f"/itineraries/{itin_id}/stops",
+            json={"place_name": "Nope", "map_url": "https://youtube.com/watch?v=x"},
+            headers={**hdrs, "If-Match": etag},
+        )
+        assert r.status_code == 422, r.text
+
 
 # ---------------------------------------------------------------------------
 # Within-track reorder + rebalance defense

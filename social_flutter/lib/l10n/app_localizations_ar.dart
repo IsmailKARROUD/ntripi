@@ -1360,6 +1360,27 @@ class AppLocalizationsAr extends AppLocalizations {
   String get addressHelp => 'عنوان الشارع أو وصف المنطقة. اختياري.';
 
   @override
+  String get mapLinkLabel => 'رابط خرائط Google';
+
+  @override
+  String get mapLinkHint => 'الصق رابط خرائط Google';
+
+  @override
+  String get mapLinkInvalid => 'أدخل رابط خرائط Google صالحًا';
+
+  @override
+  String get locationModeCoordinates => 'الإحداثيات';
+
+  @override
+  String get locationModeMapLink => 'رابط خرائط Google';
+
+  @override
+  String get linkPreviewOpensInMaps => 'يفتح في خرائط Google';
+
+  @override
+  String get linkPreviewLoading => 'جارٍ تحميل المعاينة…';
+
+  @override
   String get coordinatesHelp =>
       'موقع هذه المحطة على الخريطة. اضغط على \"التحديد على الخريطة\" لتعيينه أو تعديله.';
 

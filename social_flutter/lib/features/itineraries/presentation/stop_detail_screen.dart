@@ -132,14 +132,21 @@ class _StopDetailView extends ConsumerWidget {
               onEdit: () => context.push(
                 '/itineraries/$itineraryId/stops/${stop.id}/edit',
               ),
-              onOpenInMaps: stop.lat != null && stop.lng != null
-                  ? () => showOpenInMapsSheet(
-                        context: context,
-                        lat: stop.lat!,
-                        lng: stop.lng!,
-                        label: stop.placeName,
-                      )
-                  : null,
+              // A saved Google Maps link opens straight in Google Maps (no
+              // app picker); a coordinate-only stop still offers the full
+              // installed-apps sheet.
+              onOpenInMaps: stop.mapUrl != null
+                  ? () => ref
+                      .read(mapsLauncherServiceProvider)
+                      .openUrl(stop.mapUrl!)
+                  : (stop.lat != null && stop.lng != null
+                      ? () => showOpenInMapsSheet(
+                            context: context,
+                            lat: stop.lat!,
+                            lng: stop.lng!,
+                            label: stop.placeName,
+                          )
+                      : null),
             ),
           ),
 

@@ -26,6 +26,8 @@ import 'package:social_flutter/features/itineraries/presentation/widgets/edit_pe
 import 'package:social_flutter/core/ui/destructive_actions.dart';
 import 'package:social_flutter/features/itineraries/presentation/annotation_screen.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/markdown_notes_editor.dart';
+import 'package:social_flutter/features/itineraries/presentation/widgets/link_preview_card.dart';
+import 'package:social_flutter/features/itineraries/data/link_preview_service.dart';
 import 'package:social_flutter/features/itineraries/data/itinerary_repository.dart';
 import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
 import 'package:social_flutter/features/profile/providers/profile_provider.dart';
@@ -83,6 +85,12 @@ class StopFormScreen extends ConsumerStatefulWidget {
 // bottom sheet — both would otherwise pop with null.
 const Object _clearPlaceTypeSentinel = Object();
 
+// A stop's location is entered one of two ways, chosen by a toggle at the top of
+// the form: `coordinates` (OSM search / lat-lng / pick-on-map, the default) or
+// `link` (a Google Maps URL, for places OSM's gazetteer can't resolve). The mode
+// governs which inputs are shown and which fields are authoritative on save.
+enum _LocationMode { coordinates, link }
+
 class _StopFormScreenState extends ConsumerState<StopFormScreen> {
   final _formKey = GlobalKey<FormState>();
   final _searchController = TextEditingController();
@@ -90,6 +98,7 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
   final _placeAddressController = TextEditingController();
   final _latController = TextEditingController();
   final _lngController = TextEditingController();
+  final _mapUrlController = TextEditingController();
   final _previewMapController = MapController();
   int _durationDays = 0;
   int _durationHours = 0;
@@ -105,6 +114,10 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
   double? _lat;
   double? _lng;
   bool _isFree = false;
+
+  // Coordinates (default) vs Google Maps link. In edit/view mode it's derived
+  // from whether the existing stop already has a map_url (see _initFromExistingStop).
+  _LocationMode _locationMode = _LocationMode.coordinates;
 
   // Device position — preview-map centering + "you are here" dot only.
   // Never copied into _lat/_lng without an explicit user pick.
@@ -174,6 +187,8 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
     _placeAddressController.text,
     _latController.text,
     _lngController.text,
+    _mapUrlController.text,
+    _locationMode,
     _placeType,
     _durationDays,
     _durationHours,
@@ -356,6 +371,12 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
       _lng = found.lng;
       _latController.text = _formatCoord(found.lat);
       _lngController.text = _formatCoord(found.lng);
+      _mapUrlController.text = found.mapUrl ?? '';
+      // A saved link opens the form in link mode; otherwise coordinates.
+      _locationMode =
+          (found.mapUrl != null && found.mapUrl!.isNotEmpty)
+              ? _LocationMode.link
+              : _LocationMode.coordinates;
       _placeType = found.placeType;
       if (found.durationMin != null) {
         final total = found.durationMin!;
@@ -381,6 +402,7 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
     _placeAddressController.dispose();
     _latController.dispose();
     _lngController.dispose();
+    _mapUrlController.dispose();
     _previewMapController.dispose();
     _costController.dispose();
     _notesController.dispose();
@@ -500,6 +522,55 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
         _previewMapController.move(LatLng(_lat!, _lng!), 14);
       } catch (_) {}
     });
+  }
+
+  // Coordinate patterns Google Maps embeds in its URLs, most-precise first:
+  // the place-data pin (!3d!4d), an explicit query/ll param, then the viewport
+  // center (@lat,lng) as a last resort. Short links (maps.app.goo.gl) match
+  // none — those stay link-only with no pin.
+  static final _mapUrlCoordPatterns = <RegExp>[
+    RegExp(r'!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)'),
+    RegExp(
+      r'[?&](?:query|q|ll|destination|center)=(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)',
+    ),
+    RegExp(r'@(-?\d+\.\d+),(-?\d+\.\d+)'),
+  ];
+
+  /// Extracts a lat/lng pair from a Google Maps URL, or null when none is
+  /// embedded (e.g. a short link). Out-of-range matches are skipped.
+  (double, double)? _extractCoordsFromMapUrl(String url) {
+    for (final re in _mapUrlCoordPatterns) {
+      final m = re.firstMatch(url);
+      if (m == null) continue;
+      final lat = double.tryParse(m.group(1)!);
+      final lng = double.tryParse(m.group(2)!);
+      if (lat == null || lng == null) continue;
+      if (lat < -90 || lat > 90 || lng < -180 || lng > 180) continue;
+      return (lat, lng);
+    }
+    return null;
+  }
+
+  /// When a valid Google Maps link is pasted, pull any embedded coordinates into
+  /// the lat/lng fields so the stop still gets a map pin. A link without coords
+  /// (short link) leaves the existing coordinates alone. setState refreshes the
+  /// inline validator as the user types.
+  void _onMapUrlChanged(String value) {
+    final url = value.trim();
+    if (url.isNotEmpty && isGoogleMapsUrl(url)) {
+      final coords = _extractCoordsFromMapUrl(url);
+      if (coords != null) {
+        _setCoordText(_latController, _formatCoord(coords.$1));
+        _setCoordText(_lngController, _formatCoord(coords.$2));
+        setState(() {
+          _lat = coords.$1;
+          _lng = coords.$2;
+        });
+        _recenterPreview();
+        return;
+      }
+    }
+    setState(() {});
   }
 
   /// Preview-map counterpart of the picker's use-my-location button: captures
@@ -662,6 +733,13 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
 
     setState(() => _saving = true);
     try {
+      // The active mode is the source of truth: a link stop clears any address
+      // and never persists a stray coordinate-mode map_url, and vice-versa. Any
+      // coords a Google Maps URL carried are kept (extracted in _onMapUrlChanged)
+      // so a link stop still gets a map pin.
+      final bool isLink = _locationMode == _LocationMode.link;
+      final String mapUrl = _mapUrlController.text.trim();
+      final String address = _placeAddressController.text.trim();
       final data = <String, dynamic>{
         if (!widget.isEditMode) 'track_id': widget.trackId,
         if (!widget.isEditMode && widget.afterStopId != null)
@@ -672,8 +750,9 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
           'before_track_id': widget.beforeTrackId,
         if (_placeNameController.text.trim().isNotEmpty)
           'place_name': _placeNameController.text.trim(),
-        if (_placeAddressController.text.trim().isNotEmpty)
-          'place_address': _placeAddressController.text.trim(),
+        // Address belongs to a coordinate stop only; link mode clears it. Always
+        // sent (even null) so switching modes persists the change.
+        'place_address': isLink || address.isEmpty ? null : address,
         // Always send lat/lng (even null) so clearing the coordinates
         // persists — the backend's exclude_unset keeps omitted keys unchanged.
         'lat': _lat,
@@ -681,6 +760,9 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
         // Always send place_type (even null) so clearing it persists — the
         // backend's exclude_unset means an omitted key leaves the old value.
         'place_type': _placeType?.name,
+        // Link is authoritative only in link mode; coordinate mode clears it.
+        // Always sent (even null) so switching modes persists the change.
+        'map_url': isLink && mapUrl.isNotEmpty ? mapUrl : null,
         if (_totalDurationMin != null) 'duration_min': _totalDurationMin,
         'cost': double.tryParse(_costController.text.trim()) ?? 0.0,
         'is_free': _isFree,
@@ -880,6 +962,88 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
     }
   }
 
+  /// Two-segment pill toggle choosing how the location is entered: coordinates
+  /// (OSM search / lat-lng) or a Google Maps link. Only shown in create/edit —
+  /// read-only view derives the visible section straight from the stop's data.
+  Widget _buildModeToggle(
+    BuildContext context,
+    NtripiColors nt,
+    AppLocalizations l10n,
+  ) {
+    // onPrimary, not white — dark mode's forest fill is a light green that needs
+    // deep-green text (matches the app's FilledButton foreground).
+    final onForest = Theme.of(context).colorScheme.onPrimary;
+
+    Widget segment(_LocationMode mode, IconData icon, String label) {
+      final selected = _locationMode == mode;
+      return Expanded(
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap:
+              selected
+                  ? null
+                  : () {
+                    FocusScope.of(context).unfocus();
+                    setState(() => _locationMode = mode);
+                  },
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 180),
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            decoration: BoxDecoration(
+              color: selected ? nt.forest : Colors.transparent,
+              borderRadius: BorderRadius.circular(9),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(icon, size: 16, color: selected ? onForest : nt.text2),
+                const SizedBox(width: 6),
+                Flexible(
+                  child: Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: selected ? onForest : nt.text2,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+      child: Container(
+        padding: const EdgeInsets.all(4),
+        decoration: BoxDecoration(
+          color: nt.surface,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: nt.border),
+        ),
+        child: Row(
+          children: [
+            segment(
+              _LocationMode.coordinates,
+              Icons.place_rounded,
+              l10n.locationModeCoordinates,
+            ),
+            segment(
+              _LocationMode.link,
+              Icons.link_rounded,
+              l10n.locationModeMapLink,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   // ---------------------------------------------------------------------------
   // Build
   // ---------------------------------------------------------------------------
@@ -915,6 +1079,24 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
           } catch (_) {}
         });
       });
+    }
+
+    // Chat-app nicety: when a pasted link unfurls, seed an empty place name with
+    // its title. Only fills when blank, so it never clobbers a name the user typed.
+    if (!readOnly && _locationMode == _LocationMode.link) {
+      final linkUrl = _mapUrlController.text.trim();
+      if (isGoogleMapsUrl(linkUrl)) {
+        ref.listen(linkPreviewProvider(linkUrl), (_, next) {
+          next.whenData((preview) {
+            final title = preview?.title?.trim() ?? '';
+            if (title.isNotEmpty &&
+                _placeNameController.text.trim().isEmpty &&
+                mounted) {
+              setState(() => _placeNameController.text = title);
+            }
+          });
+        });
+      }
     }
 
     final l10n = AppLocalizations.of(context)!;
@@ -994,10 +1176,14 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
+                      // ── Location-source toggle (Coordinates | Google Maps link) ──
+                      if (!readOnly) _buildModeToggle(context, nt, l10n),
+
                       // ----------------------------------------------------------------
-                      // Section 1: Place search (hidden in view mode)
+                      // Section 1: Place search (coordinates mode only, hidden in view)
                       // ----------------------------------------------------------------
-                      if (!readOnly) ...[
+                      if (!readOnly &&
+                          _locationMode == _LocationMode.coordinates) ...[
                         Padding(
                           padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
                           child: LabelWithHelp(
@@ -1181,31 +1367,34 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                                               : null,
                                 ),
                           ),
-                          const _SFDivider(),
-                          _SFBorderlessField(
-                            label: l10n.addressLabel.toUpperCase(),
-                            childBuilder:
-                                (focusNode) => TextFormField(
-                                  controller: _placeAddressController,
-                                  focusNode: focusNode,
-                                  readOnly: readOnly,
-                                  onTap:
-                                      showEditHint ? _showEditModeHint : null,
-                                  decoration: const InputDecoration(
-                                    border: InputBorder.none,
-                                    enabledBorder: InputBorder.none,
-                                    focusedBorder: InputBorder.none,
-                                    isDense: true,
-                                    contentPadding: EdgeInsets.zero,
-                                    hintText: '—',
+                          // Address is a coordinate-stop field; hidden in link mode.
+                          if (_locationMode == _LocationMode.coordinates) ...[
+                            const _SFDivider(),
+                            _SFBorderlessField(
+                              label: l10n.addressLabel.toUpperCase(),
+                              childBuilder:
+                                  (focusNode) => TextFormField(
+                                    controller: _placeAddressController,
+                                    focusNode: focusNode,
+                                    readOnly: readOnly,
+                                    onTap:
+                                        showEditHint ? _showEditModeHint : null,
+                                    decoration: const InputDecoration(
+                                      border: InputBorder.none,
+                                      enabledBorder: InputBorder.none,
+                                      focusedBorder: InputBorder.none,
+                                      isDense: true,
+                                      contentPadding: EdgeInsets.zero,
+                                      hintText: '—',
+                                    ),
+                                    style: TextStyle(
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.w600,
+                                      color: nt.bark,
+                                    ),
                                   ),
-                                  style: TextStyle(
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.w600,
-                                    color: nt.bark,
-                                  ),
-                                ),
-                          ),
+                            ),
+                          ],
                         ],
                       ),
 
@@ -1213,45 +1402,85 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                       const SizedBox(height: 8),
                       _SFSectionCard(
                         children: [
-                          IntrinsicHeight(
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                Expanded(
-                                  child: _SFBorderlessField(
-                                    label: l10n.latitudeLabel.toUpperCase(),
-                                    childBuilder:
-                                        (focusNode) => _buildCoordField(
-                                          focusNode,
-                                          controller: _latController,
-                                          isLat: true,
-                                          readOnly: readOnly,
-                                          showEditHint: showEditHint,
-                                          l10n: l10n,
-                                          nt: nt,
-                                        ),
+                          if (_locationMode == _LocationMode.coordinates)
+                            IntrinsicHeight(
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  Expanded(
+                                    child: _SFBorderlessField(
+                                      label: l10n.latitudeLabel.toUpperCase(),
+                                      childBuilder:
+                                          (focusNode) => _buildCoordField(
+                                            focusNode,
+                                            controller: _latController,
+                                            isLat: true,
+                                            readOnly: readOnly,
+                                            showEditHint: showEditHint,
+                                            l10n: l10n,
+                                            nt: nt,
+                                          ),
+                                    ),
                                   ),
-                                ),
-                                Container(width: 1, color: nt.border),
-                                Expanded(
-                                  child: _SFBorderlessField(
-                                    label: l10n.longitudeLabel.toUpperCase(),
-                                    childBuilder:
-                                        (focusNode) => _buildCoordField(
-                                          focusNode,
-                                          controller: _lngController,
-                                          isLat: false,
-                                          readOnly: readOnly,
-                                          showEditHint: showEditHint,
-                                          l10n: l10n,
-                                          nt: nt,
-                                        ),
+                                  Container(width: 1, color: nt.border),
+                                  Expanded(
+                                    child: _SFBorderlessField(
+                                      label: l10n.longitudeLabel.toUpperCase(),
+                                      childBuilder:
+                                          (focusNode) => _buildCoordField(
+                                            focusNode,
+                                            controller: _lngController,
+                                            isLat: false,
+                                            readOnly: readOnly,
+                                            showEditHint: showEditHint,
+                                            l10n: l10n,
+                                            nt: nt,
+                                          ),
+                                    ),
                                   ),
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
-                          ),
-                          if (!readOnly) ...[
+                          // Google Maps link — for places OSM can't resolve.
+                          // Pasting a full URL still auto-fills the coordinates
+                          // (kept for the map pin); a short link opens straight
+                          // in Google Maps with no pin. Shown in link mode only.
+                          if (_locationMode == _LocationMode.link)
+                            _SFBorderlessField(
+                              label: l10n.mapLinkLabel.toUpperCase(),
+                              childBuilder:
+                                  (focusNode) => TextFormField(
+                                    controller: _mapUrlController,
+                                    focusNode: focusNode,
+                                    readOnly: readOnly,
+                                    onTap:
+                                        showEditHint ? _showEditModeHint : null,
+                                    onChanged: _onMapUrlChanged,
+                                    keyboardType: TextInputType.url,
+                                    decoration: InputDecoration(
+                                      border: InputBorder.none,
+                                      enabledBorder: InputBorder.none,
+                                      focusedBorder: InputBorder.none,
+                                      isDense: true,
+                                      contentPadding: EdgeInsets.zero,
+                                      hintText: l10n.mapLinkHint,
+                                    ),
+                                    style: TextStyle(
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.w600,
+                                      color: nt.bark,
+                                    ),
+                                    validator: (v) {
+                                      final t = v?.trim() ?? '';
+                                      if (t.isEmpty) return null;
+                                      return isGoogleMapsUrl(t)
+                                          ? null
+                                          : l10n.mapLinkInvalid;
+                                    },
+                                  ),
+                            ),
+                          if (!readOnly &&
+                              _locationMode == _LocationMode.coordinates) ...[
                             const _SFDivider(),
                             _SFPickerRow(
                               icon: Icons.map_rounded,
@@ -1260,8 +1489,9 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                               onTap: _pickOnMap,
                             ),
                           ],
-                          if ((_lat != null && _lng != null) ||
-                              _deviceLocation != null)
+                          if (_locationMode == _LocationMode.coordinates &&
+                              ((_lat != null && _lng != null) ||
+                                  _deviceLocation != null))
                             SizedBox(
                               height: 160,
                               child: Stack(
@@ -1416,6 +1646,13 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                             ),
                         ],
                       ),
+
+                      // Unfurled Open Graph card for the pasted link (mobile
+                      // only; on web or a failed fetch it degrades to a plain
+                      // "Opens in Google Maps" row inside the card).
+                      if (_locationMode == _LocationMode.link &&
+                          isGoogleMapsUrl(_mapUrlController.text.trim()))
+                        LinkPreviewCard(url: _mapUrlController.text.trim()),
 
                       // ── Duplicate warning ──────────────────────────────────
                       if (!widget.isEditMode && duplicate != null)

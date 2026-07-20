@@ -87,6 +87,11 @@ class Stop(Base):
     lat: Mapped[Decimal | None] = mapped_column(Numeric(9, 6), nullable=True)
     lng: Mapped[Decimal | None] = mapped_column(Numeric(9, 6), nullable=True)
 
+    # Optional Google Maps link for places OSM's gazetteer can't resolve. When
+    # set without lat/lng the stop has no map pin — it opens directly in Google
+    # Maps. Host is validated against a Google-Maps allowlist in the schema layer.
+    map_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+
     # 11 purpose-based categories (camelCase strings):
     # eatDrink | sleep | pray | learnSee | buy | playWatch | nature |
     # transport | healBathe | entertainment | sight

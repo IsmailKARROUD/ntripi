@@ -1345,6 +1345,27 @@ class AppLocalizationsFr extends AppLocalizations {
       'Adresse postale ou description de la zone. Optionnel.';
 
   @override
+  String get mapLinkLabel => 'Lien Google Maps';
+
+  @override
+  String get mapLinkHint => 'Collez un lien Google Maps';
+
+  @override
+  String get mapLinkInvalid => 'Saisissez un lien Google Maps valide';
+
+  @override
+  String get locationModeCoordinates => 'Coordonnées';
+
+  @override
+  String get locationModeMapLink => 'Lien Google Maps';
+
+  @override
+  String get linkPreviewOpensInMaps => 'Ouvre dans Google Maps';
+
+  @override
+  String get linkPreviewLoading => 'Chargement de l\'aperçu…';
+
+  @override
   String get coordinatesHelp =>
       'La localisation sur la carte pour cette étape. Appuyez sur « Sélectionner sur la carte » pour la définir ou l\'ajuster.';
 

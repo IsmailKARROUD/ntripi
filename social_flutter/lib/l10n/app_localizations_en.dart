@@ -1320,6 +1320,27 @@ class AppLocalizationsEn extends AppLocalizations {
   String get addressHelp => 'Street address or area description. Optional.';
 
   @override
+  String get mapLinkLabel => 'Google Maps link';
+
+  @override
+  String get mapLinkHint => 'Paste a Google Maps link';
+
+  @override
+  String get mapLinkInvalid => 'Enter a valid Google Maps link';
+
+  @override
+  String get locationModeCoordinates => 'Coordinates';
+
+  @override
+  String get locationModeMapLink => 'Google Maps link';
+
+  @override
+  String get linkPreviewOpensInMaps => 'Opens in Google Maps';
+
+  @override
+  String get linkPreviewLoading => 'Loading preview…';
+
+  @override
   String get coordinatesHelp =>
       'The map location for this stop. Tap \"Pick on map\" to set or adjust it.';
 

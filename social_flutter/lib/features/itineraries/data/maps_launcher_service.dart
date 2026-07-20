@@ -91,6 +91,11 @@ class MapsLauncherService {
   Future<void> _launch(Uri uri) =>
       launchUrl(uri, mode: LaunchMode.externalApplication);
 
+  /// Opens a stored map link verbatim (a link stop's saved Google Maps URL).
+  /// The URL was allowlist-validated to a Google Maps host on save, so this
+  /// opens the Google Maps app when installed and the website otherwise.
+  Future<void> openUrl(String url) => _launch(Uri.parse(url));
+
   @visibleForTesting
   Uri placeUri(
     ExternalMapApp app, {
