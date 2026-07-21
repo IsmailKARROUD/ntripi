@@ -119,8 +119,11 @@ class _StopDetailView extends ConsumerWidget {
     final hasNotes = stop.notes != null && stop.notes!.trim().isNotEmpty;
     final hasAnnotations = stop.annotations.isNotEmpty;
     final hasTransit = inboundSegment != null || outboundSegment != null;
-    // Only Google-host links get a map preview; mirrors the editor form's gate.
+    // A saved Google link previews the exact place; a coordinate-only stop
+    // previews its lat/lng. Prefer the link when both exist (richer place).
     final hasMapLink = stop.mapUrl != null && isGoogleMapsUrl(stop.mapUrl!);
+    final hasCoords = stop.lat != null && stop.lng != null;
+    final showMapPreview = hasMapLink || hasCoords;
 
     return Scaffold(
       backgroundColor: nt.surface,
@@ -158,13 +161,16 @@ class _StopDetailView extends ConsumerWidget {
           // Sits under the hero so the map is right beside the place it names.
           // LinkPreviewCard is self-contained (own providers/key/padding) and
           // degrades to an "Opens in Google Maps" row when no embed is possible.
-          if (hasMapLink) ...[
+          if (showMapPreview) ...[
             SliverToBoxAdapter(
               child: _SectionLabel(
                   icon: Icons.map_rounded, label: l10n.mapSection),
             ),
             SliverToBoxAdapter(
-              child: LinkPreviewCard(url: stop.mapUrl!),
+              child: hasMapLink
+                  ? LinkPreviewCard(url: stop.mapUrl!)
+                  : LinkPreviewCard.coordinates(
+                      lat: stop.lat!, lng: stop.lng!),
             ),
           ],
 

@@ -1,5 +1,11 @@
-// presentation/widgets/link_preview_card.dart — WhatsApp/Telegram-style card for
-// a stop's saved Google Maps link.
+// presentation/widgets/link_preview_card.dart — WhatsApp/Telegram-style map card
+// for a stop's location.
+//
+// Two modes:
+//   * default ctor — a stop's saved Google Maps URL, unfurled client-side (the
+//     flow described below).
+//   * .coordinates ctor — a coordinate-only stop: the embed is built straight
+//     from lat/lng (no unfurl) and tapping opens the point in Google Maps.
 //
 // Watches [linkPreviewProvider] (a client-side unfurl; mobile only — web can't
 // read Google cross-origin, so on web the preview resolves to null) and renders:
@@ -19,23 +25,56 @@ import 'package:webview_flutter/webview_flutter.dart';
 import 'package:social_flutter/core/api/api_endpoints.dart';
 import 'package:social_flutter/core/ui/app_theme.dart';
 import 'package:social_flutter/features/itineraries/data/link_preview_service.dart';
+import 'package:social_flutter/features/itineraries/data/maps_launcher_service.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/map_embed_web_view.dart';
 import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
 import 'package:social_flutter/l10n/app_localizations.dart';
 import 'package:social_flutter/shared/widgets/loaders.dart';
 
 class LinkPreviewCard extends ConsumerWidget {
-  final String url;
+  // Link mode: unfurl this saved Google Maps URL. Null in coordinate mode.
+  final String? url;
+  // Coordinate mode: exact stop coords → deterministic embed, no network unfurl.
+  final double? lat;
+  final double? lng;
 
-  const LinkPreviewCard({super.key, required this.url});
+  const LinkPreviewCard({super.key, required String this.url})
+      : lat = null,
+        lng = null;
+
+  // Coordinate-only stop: build the embed straight from lat/lng and open the
+  // point in Google Maps on tap — no unfurl, no title/description.
+  const LinkPreviewCard.coordinates({
+    super.key,
+    required double this.lat,
+    required double this.lng,
+  }) : url = null;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final nt = context.nt;
     final l10n = AppLocalizations.of(context)!;
-    final async = ref.watch(linkPreviewProvider(url));
 
-    void open() => ref.read(mapsLauncherServiceProvider).openUrl(url);
+    // Coordinate mode: exact coords already known — render the embed straight
+    // from them (no unfurl) and open the point in Google Maps on tap.
+    if (url == null) {
+      final embedUrl = _embedUrlForQuery('$lat,$lng');
+      return _shell(
+        nt,
+        onTap: () => ref.read(mapsLauncherServiceProvider).openPlace(
+              ExternalMapApp.googleMaps,
+              lat: lat!,
+              lng: lng!,
+            ),
+        child: embedUrl == null
+            ? _fallbackRow(nt, l10n)
+            : _card(context, nt, l10n, null, embedUrl),
+      );
+    }
+
+    // Link mode: unfurl the saved URL client-side (mobile only) and render.
+    final async = ref.watch(linkPreviewProvider(url!));
+
     // Copy the unfurled place title; no-op when there's no title yet (loading,
     // errors, or web where the cross-origin unfurl is blocked and title is null).
     void copy() {
@@ -47,12 +86,41 @@ class LinkPreviewCard extends ConsumerWidget {
       );
     }
 
+    return _shell(
+      nt,
+      onTap: () => ref.read(mapsLauncherServiceProvider).openUrl(url!),
+      onLongPress: copy,
+      child: async.when(
+        loading: () => _fallbackRow(nt, l10n, loading: true),
+        error: (_, _) => _fallbackRow(nt, l10n),
+        data: (preview) {
+          // Build the map even when the unfurl gave nothing (web): a full
+          // pasted URL still yields coords. Show the card if there's a map
+          // OR unfurled text; otherwise the plain fallback row.
+          final embedUrl = _embedUrl(preview);
+          final hasContent = preview != null && preview.hasContent;
+          return embedUrl == null && !hasContent
+              ? _fallbackRow(nt, l10n)
+              : _card(context, nt, l10n, preview, embedUrl);
+        },
+      ),
+    );
+  }
+
+  // Shared card chrome: the tappable, bordered, clipped container. onLongPress
+  // doubles as onDoubleTap (copy-title in link mode; unused in coordinate mode).
+  Widget _shell(
+    NtripiColors nt, {
+    required VoidCallback onTap,
+    VoidCallback? onLongPress,
+    required Widget child,
+  }) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
       child: InkWell(
-        onTap: open,
-        onLongPress: copy,
-        onDoubleTap: copy,
+        onTap: onTap,
+        onLongPress: onLongPress,
+        onDoubleTap: onLongPress,
         borderRadius: BorderRadius.circular(12),
         child: Container(
           decoration: BoxDecoration(
@@ -61,32 +129,27 @@ class LinkPreviewCard extends ConsumerWidget {
             border: Border.all(color: nt.border),
           ),
           clipBehavior: Clip.antiAlias,
-          child: async.when(
-            loading: () => _fallbackRow(nt, l10n, loading: true),
-            error: (_, _) => _fallbackRow(nt, l10n),
-            data: (preview) {
-              // Build the map even when the unfurl gave nothing (web): a full
-              // pasted URL still yields coords. Show the card if there's a map
-              // OR unfurled text; otherwise the plain fallback row.
-              final embedUrl = _embedUrl(preview);
-              final hasContent = preview != null && preview.hasContent;
-              return embedUrl == null && !hasContent
-                  ? _fallbackRow(nt, l10n)
-                  : _card(context, nt, l10n, preview, embedUrl);
-            },
-          ),
+          child: child,
         ),
       ),
     );
   }
 
-  // Builds the Maps Embed API URL, or null when there's no key or no usable
-  // query. `place` mode drops a marker for both a "lat,lng" and a free-text
-  // place-name query. Query priority: unfurl coords → unfurl place name → coords
-  // embedded in the pasted link (the only source on web, where the cross-origin
-  // unfurl is blocked). No kIsWeb gate — web renders the same URL in an <iframe>.
-  String? _embedUrl(LinkPreview? preview) {
+  // Builds the Maps Embed API URL for a raw query — `place` mode drops a marker
+  // for both a "lat,lng" and a free-text place name. Null when there's no key.
+  // No kIsWeb gate — web renders the same URL in an <iframe>.
+  String? _embedUrlForQuery(String q) {
     if (kGoogleMapsEmbedApiKey.isEmpty) return null;
+    return 'https://www.google.com/maps/embed/v1/place'
+        '?key=$kGoogleMapsEmbedApiKey'
+        '&q=${Uri.encodeComponent(q)}'
+        '&zoom=12';
+  }
+
+  // Link-mode query priority: unfurl coords → unfurl place name → coords
+  // embedded in the pasted link (the only source on web, where the cross-origin
+  // unfurl is blocked). Returns null when there's no key or no usable query.
+  String? _embedUrl(LinkPreview? preview) {
     final lat = preview?.lat;
     final lng = preview?.lng;
     final title = preview?.title?.trim();
@@ -96,14 +159,10 @@ class LinkPreviewCard extends ConsumerWidget {
     } else if (title != null && title.isNotEmpty) {
       q = title;
     } else {
-      final c = extractMapCoords(url); // pasted full URL may carry @lat,lng
+      final c = extractMapCoords(url!); // pasted full URL may carry @lat,lng
       if (c != null) q = '${c.$1},${c.$2}';
     }
-    if (q == null) return null;
-    return 'https://www.google.com/maps/embed/v1/place'
-        '?key=$kGoogleMapsEmbedApiKey'
-        '&q=${Uri.encodeComponent(q)}'
-        '&zoom=12';
+    return q == null ? null : _embedUrlForQuery(q);
   }
 
   Widget _card(
