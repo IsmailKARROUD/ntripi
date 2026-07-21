@@ -2464,6 +2464,12 @@ abstract class AppLocalizations {
   /// **'Loading preview…'**
   String get linkPreviewLoading;
 
+  /// No description provided for @linkPreviewTitleCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Title copied'**
+  String get linkPreviewTitleCopied;
+
   /// No description provided for @coordinatesHelp.
   ///
   /// In en, this message translates to:

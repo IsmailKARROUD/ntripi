@@ -540,6 +540,7 @@
   "locationModeMapLink": "Google Maps link",
   "linkPreviewOpensInMaps": "Opens in Google Maps",
   "linkPreviewLoading": "Loading preview…",
+  "linkPreviewTitleCopied": "Title copied",
   "coordinatesHelp": "The map location for this stop. Tap \"Pick on map\" to set or adjust it.",
   "pickOnMap": "Pick on map",
   "placeTypeLabel": "Place type",

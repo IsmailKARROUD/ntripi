@@ -1387,6 +1387,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get linkPreviewLoading => 'جارٍ تحميل المعاينة…';
 
   @override
+  String get linkPreviewTitleCopied => 'تم نسخ العنوان';
+
+  @override
   String get coordinatesHelp =>
       'موقع هذه المحطة على الخريطة. اضغط على \"التحديد على الخريطة\" لتعيينه أو تعديله.';
 

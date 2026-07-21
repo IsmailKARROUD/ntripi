@@ -1347,6 +1347,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get linkPreviewLoading => 'Loading preview…';
 
   @override
+  String get linkPreviewTitleCopied => 'Title copied';
+
+  @override
   String get coordinatesHelp =>
       'The map location for this stop. Tap \"Pick on map\" to set or adjust it.';
 

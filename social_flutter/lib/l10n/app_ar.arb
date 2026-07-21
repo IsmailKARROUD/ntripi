@@ -535,6 +535,7 @@
   "locationModeMapLink": "رابط خرائط Google",
   "linkPreviewOpensInMaps": "يفتح في خرائط Google",
   "linkPreviewLoading": "جارٍ تحميل المعاينة…",
+  "linkPreviewTitleCopied": "تم نسخ العنوان",
   "coordinatesHelp": "موقع هذه المحطة على الخريطة. اضغط على \"التحديد على الخريطة\" لتعيينه أو تعديله.",
   "pickOnMap": "التحديد على الخريطة",
   "placeTypeLabel": "نوع المكان",

@@ -450,6 +450,7 @@
   "locationModeMapLink": "Lien Google Maps",
   "linkPreviewOpensInMaps": "Ouvre dans Google Maps",
   "linkPreviewLoading": "Chargement de l'aperçu…",
+  "linkPreviewTitleCopied": "Titre copié",
   "coordinatesHelp": "La localisation sur la carte pour cette étape. Appuyez sur « Sélectionner sur la carte » pour la définir ou l'ajuster.",
   "pickOnMap": "Sélectionner sur la carte",
   "placeTypeLabel": "Type de lieu",

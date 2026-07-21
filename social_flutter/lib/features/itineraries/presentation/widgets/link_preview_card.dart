@@ -13,6 +13,7 @@
 
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show Clipboard, ClipboardData;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:social_flutter/core/api/api_endpoints.dart';
@@ -35,11 +36,23 @@ class LinkPreviewCard extends ConsumerWidget {
     final async = ref.watch(linkPreviewProvider(url));
 
     void open() => ref.read(mapsLauncherServiceProvider).openUrl(url);
+    // Copy the unfurled place title; no-op when there's no title yet (loading,
+    // errors, or web where the cross-origin unfurl is blocked and title is null).
+    void copy() {
+      final title = async.value?.title?.trim();
+      if (title == null || title.isEmpty) return;
+      Clipboard.setData(ClipboardData(text: title));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.linkPreviewTitleCopied)),
+      );
+    }
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
       child: InkWell(
         onTap: open,
+        onLongPress: copy,
+        onDoubleTap: copy,
         borderRadius: BorderRadius.circular(12),
         child: Container(
           decoration: BoxDecoration(

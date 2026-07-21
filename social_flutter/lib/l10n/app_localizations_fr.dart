@@ -1372,6 +1372,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get linkPreviewLoading => 'Chargement de l\'aperçu…';
 
   @override
+  String get linkPreviewTitleCopied => 'Titre copié';
+
+  @override
   String get coordinatesHelp =>
       'La localisation sur la carte pour cette étape. Appuyez sur « Sélectionner sur la carte » pour la définir ou l\'ajuster.';
 
