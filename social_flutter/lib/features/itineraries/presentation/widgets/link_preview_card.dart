@@ -5,7 +5,7 @@
 //   * default ctor — a stop's saved Google Maps URL, unfurled client-side (the
 //     flow described below).
 //   * .coordinates ctor — a coordinate-only stop: the embed is built straight
-//     from lat/lng (no unfurl) and tapping opens the point in Google Maps.
+//     from lat/lng (no unfurl) and tapping opens the map-provider picker sheet.
 //
 // Watches [linkPreviewProvider] (a client-side unfurl; mobile only — web can't
 // read Google cross-origin, so on web the preview resolves to null) and renders:
@@ -25,8 +25,8 @@ import 'package:webview_flutter/webview_flutter.dart';
 import 'package:social_flutter/core/api/api_endpoints.dart';
 import 'package:social_flutter/core/ui/app_theme.dart';
 import 'package:social_flutter/features/itineraries/data/link_preview_service.dart';
-import 'package:social_flutter/features/itineraries/data/maps_launcher_service.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/map_embed_web_view.dart';
+import 'package:social_flutter/features/itineraries/presentation/widgets/open_in_maps_sheet.dart';
 import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
 import 'package:social_flutter/l10n/app_localizations.dart';
 import 'package:social_flutter/shared/widgets/loaders.dart';
@@ -37,17 +37,21 @@ class LinkPreviewCard extends ConsumerWidget {
   // Coordinate mode: exact stop coords → deterministic embed, no network unfurl.
   final double? lat;
   final double? lng;
+  // Coordinate mode only: names the dropped pin in the provider picker sheet.
+  final String? label;
 
   const LinkPreviewCard({super.key, required String this.url})
       : lat = null,
-        lng = null;
+        lng = null,
+        label = null;
 
-  // Coordinate-only stop: build the embed straight from lat/lng and open the
-  // point in Google Maps on tap — no unfurl, no title/description.
+  // Coordinate-only stop: build the embed straight from lat/lng and, on tap,
+  // let the viewer pick a map provider — no unfurl, no title/description.
   const LinkPreviewCard.coordinates({
     super.key,
     required double this.lat,
     required double this.lng,
+    this.label,
   }) : url = null;
 
   @override
@@ -56,16 +60,18 @@ class LinkPreviewCard extends ConsumerWidget {
     final l10n = AppLocalizations.of(context)!;
 
     // Coordinate mode: exact coords already known — render the embed straight
-    // from them (no unfurl) and open the point in Google Maps on tap.
+    // from them (no unfurl). With no saved link, tapping offers the provider
+    // picker (same sheet the hero uses) rather than forcing Google Maps.
     if (url == null) {
       final embedUrl = _embedUrlForQuery('$lat,$lng');
       return _shell(
         nt,
-        onTap: () => ref.read(mapsLauncherServiceProvider).openPlace(
-              ExternalMapApp.googleMaps,
-              lat: lat!,
-              lng: lng!,
-            ),
+        onTap: () => showOpenInMapsSheet(
+          context: context,
+          lat: lat!,
+          lng: lng!,
+          label: label,
+        ),
         child: embedUrl == null
             ? _fallbackRow(nt, l10n)
             : _card(context, nt, l10n, null, embedUrl),
@@ -165,6 +171,11 @@ class LinkPreviewCard extends ConsumerWidget {
     return q == null ? null : _embedUrlForQuery(q);
   }
 
+  // Coordinate-mode taps open the provider picker; link-mode taps open Google
+  // Maps directly — so the row's action label differs.
+  String _openLabel(AppLocalizations l10n) =>
+      url == null ? l10n.openInMaps : l10n.linkPreviewOpensInMaps;
+
   Widget _card(
     BuildContext context,
     NtripiColors nt,
@@ -230,7 +241,7 @@ class LinkPreviewCard extends ConsumerWidget {
         const SizedBox(width: 6),
         Expanded(
           child: Text(
-            l10n.linkPreviewOpensInMaps,
+            _openLabel(l10n),
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w700,
@@ -258,7 +269,7 @@ class LinkPreviewCard extends ConsumerWidget {
           const SizedBox(width: 8),
           Expanded(
             child: Text(
-              loading ? l10n.linkPreviewLoading : l10n.linkPreviewOpensInMaps,
+              loading ? l10n.linkPreviewLoading : _openLabel(l10n),
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w700,

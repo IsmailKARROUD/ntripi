@@ -170,7 +170,7 @@ class _StopDetailView extends ConsumerWidget {
               child: hasMapLink
                   ? LinkPreviewCard(url: stop.mapUrl!)
                   : LinkPreviewCard.coordinates(
-                      lat: stop.lat!, lng: stop.lng!),
+                      lat: stop.lat!, lng: stop.lng!, label: stop.placeName),
             ),
           ],
 
