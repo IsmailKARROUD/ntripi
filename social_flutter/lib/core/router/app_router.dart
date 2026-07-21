@@ -155,124 +155,15 @@ final appRouter = GoRouter(
               path: '/itineraries',
               builder: (_, __) => const ItineraryListScreen(),
             ),
-            GoRoute(
-              path: '/itineraries/new',
-              builder: (_, __) => const ItineraryFormScreen(),
-            ),
-            GoRoute(
-              path: '/itineraries/:id',
-              builder: (_, s) {
-                final extra = s.extra as Map<String, dynamic>?;
-                return ItineraryDetailScreen(
-                  itineraryId: s.pathParameters['id']!,
-                  justCreated: extra?['justCreated'] as bool? ?? false,
-                );
-              },
-            ),
-            GoRoute(
-              path: '/itineraries/:id/edit',
-              builder:
-                  (_, s) =>
-                      ItineraryFormScreen(itineraryId: s.pathParameters['id']!),
-            ),
-            GoRoute(
-              path: '/itineraries/:id/ratings',
-              builder:
-                  (_, s) =>
-                      RatingsHubScreen(itineraryId: s.pathParameters['id']!),
-            ),
-            GoRoute(
-              path: '/itineraries/:id/ratings/:dimension',
-              builder:
-                  (_, s) => DimensionRatingsScreen(
-                    itineraryId: s.pathParameters['id']!,
-                    dimension: DimensionKey.fromPath(
-                      s.pathParameters['dimension']!,
-                    ),
-                  ),
-            ),
-            GoRoute(
-              path: '/itineraries/:id/stops/new',
-              builder: (_, s) {
-                final extra = s.extra as Map<String, dynamic>?;
-                return StopFormScreen(
-                  itineraryId: s.pathParameters['id']!,
-                  trackId: extra?['trackId'] as String?,
-                  afterStopId: extra?['afterStopId'] as String?,
-                  afterTrackId: extra?['afterTrackId'] as String?,
-                  beforeTrackId: extra?['beforeTrackId'] as String?,
-                );
-              },
-            ),
-            GoRoute(
-              path: '/itineraries/:id/stops/:stopId',
-              builder:
-                  (_, s) => StopDetailScreen(
-                    itineraryId: s.pathParameters['id']!,
-                    stopId: s.pathParameters['stopId']!,
-                  ),
-            ),
-            GoRoute(
-              path: '/itineraries/:id/stops/:stopId/edit',
-              builder:
-                  (_, s) => StopFormScreen(
-                    itineraryId: s.pathParameters['id']!,
-                    stopId: s.pathParameters['stopId']!,
-                  ),
-            ),
-            /* GoRoute(
-              path: '/itineraries/:id/segments/new',
-              builder: (_, s) {
-                final extra = s.extra as Map<String, dynamic>?;
-                return SegmentFormScreen(
-                  itineraryId: s.pathParameters['id']!,
-                  initialFromStopId: extra?['fromStopId'] as String?,
-                  initialToStopId: extra?['toStopId'] as String?,
-                );
-              },
-            ),
-            GoRoute(
-              path: '/itineraries/:id/segments/:segmentId/edit',
-              builder: (_, s) => SegmentFormScreen(
-                itineraryId: s.pathParameters['id']!,
-                segmentId: s.pathParameters['segmentId']!,
-              ),
-            ), */
-            GoRoute(
-              path: '/map-picker',
-              // Fade+scale instead of a Hero: transforms only repaint, while a
-              // Hero flight relayouts the live map every frame (froze on device).
-              pageBuilder: (_, s) {
-                final extra = s.extra as Map<String, dynamic>?;
-                return CustomTransitionPage(
-                  key: s.pageKey,
-                  child: MapPickerScreen(
-                    initialLat: extra?['lat'] as double?,
-                    initialLng: extra?['lng'] as double?,
-                    deviceLat: extra?['deviceLat'] as double?,
-                    deviceLng: extra?['deviceLng'] as double?,
-                  ),
-                  transitionDuration: const Duration(milliseconds: 250),
-                  transitionsBuilder: (_, animation, _, child) {
-                    final curved = CurvedAnimation(
-                      parent: animation,
-                      curve: Curves.easeOutCubic,
-                      reverseCurve: Curves.easeInCubic,
-                    );
-                    return FadeTransition(
-                      opacity: curved,
-                      child: ScaleTransition(
-                        scale: Tween<double>(
-                          begin: 0.92,
-                          end: 1,
-                        ).animate(curved),
-                        child: child,
-                      ),
-                    );
-                  },
-                );
-              },
-            ),
+            // NOTE: the itinerary detail / form / stop / map-picker routes are
+            // deliberately NOT nested here. They live at the root level (below,
+            // next to /profile/:userId) so they render full-screen on the root
+            // navigator. Nesting them in this branch made pushing them from a
+            // root-level page (e.g. another user's profile, also root) place a
+            // SECOND copy of the shell page on the root navigator → duplicate
+            // page-key assertion → the navigator wedges and the app freezes
+            // (ANR). go_router also forbids a branch sub-route from carrying a
+            // root parentNavigatorKey, so escaping requires living at the root.
           ],
         ),
 
@@ -293,6 +184,111 @@ final appRouter = GoRouter(
           ],
         ),
       ],
+    ),
+
+    // Itinerary detail / form / stop / map-picker routes at the root level
+    // (parentNavigatorKey) so they render full-screen on the root navigator and
+    // can be pushed from ANY context — including root-level pages like another
+    // user's profile — without duplicating the shell page. See the note in
+    // Branch 2. /itineraries/new is listed before /itineraries/:id so the
+    // literal "new" segment wins over the :id wildcard.
+    GoRoute(
+      path: '/itineraries/new',
+      parentNavigatorKey: navigatorKey,
+      builder: (_, __) => const ItineraryFormScreen(),
+    ),
+    GoRoute(
+      path: '/itineraries/:id',
+      parentNavigatorKey: navigatorKey,
+      builder: (_, s) {
+        final extra = s.extra as Map<String, dynamic>?;
+        return ItineraryDetailScreen(
+          itineraryId: s.pathParameters['id']!,
+          justCreated: extra?['justCreated'] as bool? ?? false,
+        );
+      },
+    ),
+    GoRoute(
+      path: '/itineraries/:id/edit',
+      parentNavigatorKey: navigatorKey,
+      builder:
+          (_, s) => ItineraryFormScreen(itineraryId: s.pathParameters['id']!),
+    ),
+    GoRoute(
+      path: '/itineraries/:id/ratings',
+      parentNavigatorKey: navigatorKey,
+      builder: (_, s) => RatingsHubScreen(itineraryId: s.pathParameters['id']!),
+    ),
+    GoRoute(
+      path: '/itineraries/:id/ratings/:dimension',
+      parentNavigatorKey: navigatorKey,
+      builder: (_, s) => DimensionRatingsScreen(
+        itineraryId: s.pathParameters['id']!,
+        dimension: DimensionKey.fromPath(s.pathParameters['dimension']!),
+      ),
+    ),
+    GoRoute(
+      path: '/itineraries/:id/stops/new',
+      parentNavigatorKey: navigatorKey,
+      builder: (_, s) {
+        final extra = s.extra as Map<String, dynamic>?;
+        return StopFormScreen(
+          itineraryId: s.pathParameters['id']!,
+          trackId: extra?['trackId'] as String?,
+          afterStopId: extra?['afterStopId'] as String?,
+          afterTrackId: extra?['afterTrackId'] as String?,
+          beforeTrackId: extra?['beforeTrackId'] as String?,
+        );
+      },
+    ),
+    GoRoute(
+      path: '/itineraries/:id/stops/:stopId',
+      parentNavigatorKey: navigatorKey,
+      builder: (_, s) => StopDetailScreen(
+        itineraryId: s.pathParameters['id']!,
+        stopId: s.pathParameters['stopId']!,
+      ),
+    ),
+    GoRoute(
+      path: '/itineraries/:id/stops/:stopId/edit',
+      parentNavigatorKey: navigatorKey,
+      builder: (_, s) => StopFormScreen(
+        itineraryId: s.pathParameters['id']!,
+        stopId: s.pathParameters['stopId']!,
+      ),
+    ),
+    GoRoute(
+      path: '/map-picker',
+      parentNavigatorKey: navigatorKey,
+      // Fade+scale instead of a Hero: transforms only repaint, while a
+      // Hero flight relayouts the live map every frame (froze on device).
+      pageBuilder: (_, s) {
+        final extra = s.extra as Map<String, dynamic>?;
+        return CustomTransitionPage(
+          key: s.pageKey,
+          child: MapPickerScreen(
+            initialLat: extra?['lat'] as double?,
+            initialLng: extra?['lng'] as double?,
+            deviceLat: extra?['deviceLat'] as double?,
+            deviceLng: extra?['deviceLng'] as double?,
+          ),
+          transitionDuration: const Duration(milliseconds: 250),
+          transitionsBuilder: (_, animation, _, child) {
+            final curved = CurvedAnimation(
+              parent: animation,
+              curve: Curves.easeOutCubic,
+              reverseCurve: Curves.easeInCubic,
+            );
+            return FadeTransition(
+              opacity: curved,
+              child: ScaleTransition(
+                scale: Tween<double>(begin: 0.92, end: 1).animate(curved),
+                child: child,
+              ),
+            );
+          },
+        );
+      },
     ),
 
     // Other-user profile routes at the root level with parentNavigatorKey so
