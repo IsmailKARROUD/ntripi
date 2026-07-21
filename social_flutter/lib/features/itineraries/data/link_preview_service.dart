@@ -8,8 +8,9 @@
 //   * On web a browser can't read Google's cross-origin response (CORS), so we
 //     don't even try — fetch() short-circuits to null and the card degrades to a
 //     plain "Opens in Google Maps" link.
-//   * The og:image is hotlinked (never re-hosted) and only transiently cached on
-//     device via NtripiLinkPreviewCacheManager (short TTL) in the card widget.
+//   * The resolved place name + coordinates are what the card feeds to a Google
+//     Maps Embed webview (mobile only). No image is fetched or re-hosted here —
+//     the unfurl exists only to turn a bare/short link into a name + coords.
 
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
@@ -63,15 +64,15 @@ final _mapCoordPatterns = <RegExp>[
 }
 
 /// The unfurled Open Graph card data. Any field may be null when the page
-/// omits that tag; a preview with neither title nor image is treated as "no
+/// omits that tag; a preview with neither a title nor coords is treated as "no
 /// preview" (fetch returns null) so the caller shows the plain fallback.
 class LinkPreview {
   final String url;
   final String? title;
   final String? description;
-  final String? imageUrl;
   // Coords parsed from the *resolved* URL (post-redirect) — lets the form drop a
-  // pin for a short link whose pasted form carried no coords.
+  // pin for a short link whose pasted form carried no coords, and feeds the
+  // card's Maps Embed webview a precise query.
   final double? lat;
   final double? lng;
 
@@ -79,12 +80,12 @@ class LinkPreview {
     required this.url,
     this.title,
     this.description,
-    this.imageUrl,
     this.lat,
     this.lng,
   });
 
-  bool get hasContent => title != null || imageUrl != null;
+  // A preview is useful if it can seed the place name OR feed the embed a query.
+  bool get hasContent => title != null || lat != null;
 }
 
 class LinkPreviewService {
@@ -147,15 +148,6 @@ class LinkPreviewService {
       og.putIfAbsent(key.toLowerCase(), () => _unescape(content));
     }
 
-    String? image = og['og:image'];
-    if (image != null) {
-      // Resolve a rare relative og:image against the final (post-redirect) URL.
-      final parsed = Uri.tryParse(image);
-      if (parsed != null && !parsed.hasScheme) {
-        image = finalUri.resolveUri(parsed).toString();
-      }
-    }
-
     // Google Maps is a JS SPA: its crawler HTML carries only a GENERIC
     // og:title ("Google Maps"), never the place name. The real name lives in
     // the resolved URL path (/maps/place/<NAME>/). Prefer that; fall back to a
@@ -180,20 +172,14 @@ class LinkPreviewService {
     final coords = extractMapCoords(finalUri.toString()) ??
         (bodyPlaceUrl != null ? extractMapCoords(bodyPlaceUrl) : null);
 
-    // Only trust og:image when the link also yields coordinates. A coord-less
-    // place-ID short link (maps.app.goo.gl) gets a GENERIC, wrong-center static
-    // map from Google (observed ~80km off the real place) — suppress it so the
-    // card falls back cleanly to name + "Opens in Google Maps" rather than
-    // showing a misleading location. Full /maps/place/@lat,lng URLs keep theirs.
     final preview = LinkPreview(
       url: originalUrl,
       title: title,
       description: description,
-      imageUrl: coords != null ? image : null,
       lat: coords?.$1,
       lng: coords?.$2,
     );
-    return preview.hasContent || preview.lat != null ? preview : null;
+    return preview.hasContent ? preview : null;
   }
 
   static bool _isGenericMapsTitle(String t) =>

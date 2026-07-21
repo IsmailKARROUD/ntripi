@@ -177,6 +177,13 @@ const kShareBaseUrl = String.fromEnvironment(
 /// Android APK / Play Store download URL. Empty string means no link.
 const kAndroidDownloadUrl = String.fromEnvironment('ANDROID_DOWNLOAD_URL', defaultValue: '');
 
+/// Google Maps Embed API key for the stop link-preview map (never hardcoded —
+/// provisioned in Google Cloud, restricted to the Maps Embed API). Empty by
+/// default: the preview card falls back to a plain "Opens in Google Maps" row
+/// until the key is supplied via --dart-define, so the feature ships inert.
+const kGoogleMapsEmbedApiKey =
+    String.fromEnvironment('GOOGLE_MAPS_EMBED_API_KEY', defaultValue: '');
+
 /// Public-facing Terms of Service page URL.
 const kTermsUrl = '$kShareBaseUrl/terms';
 
