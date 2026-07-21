@@ -10,10 +10,12 @@ import 'package:go_router/go_router.dart';
 import 'package:social_flutter/core/api/api_client.dart';
 import 'package:social_flutter/core/services/currency.dart';
 import 'package:social_flutter/core/ui/app_theme.dart';
+import 'package:social_flutter/features/itineraries/data/link_preview_service.dart';
 import 'package:social_flutter/features/itineraries/domain/annotation.dart';
 import 'package:social_flutter/features/itineraries/domain/stop.dart';
 import 'package:social_flutter/features/itineraries/domain/transit_segment.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/edit_pencil_button.dart';
+import 'package:social_flutter/features/itineraries/presentation/widgets/link_preview_card.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/markdown_notes_editor.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/open_in_maps_sheet.dart';
 import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
@@ -117,6 +119,8 @@ class _StopDetailView extends ConsumerWidget {
     final hasNotes = stop.notes != null && stop.notes!.trim().isNotEmpty;
     final hasAnnotations = stop.annotations.isNotEmpty;
     final hasTransit = inboundSegment != null || outboundSegment != null;
+    // Only Google-host links get a map preview; mirrors the editor form's gate.
+    final hasMapLink = stop.mapUrl != null && isGoogleMapsUrl(stop.mapUrl!);
 
     return Scaffold(
       backgroundColor: nt.surface,
@@ -149,6 +153,20 @@ class _StopDetailView extends ConsumerWidget {
                       : null),
             ),
           ),
+
+          // ── Map preview ────────────────────────────────────────────────────
+          // Sits under the hero so the map is right beside the place it names.
+          // LinkPreviewCard is self-contained (own providers/key/padding) and
+          // degrades to an "Opens in Google Maps" row when no embed is possible.
+          if (hasMapLink) ...[
+            SliverToBoxAdapter(
+              child: _SectionLabel(
+                  icon: Icons.map_rounded, label: l10n.mapSection),
+            ),
+            SliverToBoxAdapter(
+              child: LinkPreviewCard(url: stop.mapUrl!),
+            ),
+          ],
 
           // ── Stats row: time · cost ─────────────────────────────────────────
           SliverToBoxAdapter(
