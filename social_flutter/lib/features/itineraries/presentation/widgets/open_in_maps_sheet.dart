@@ -8,6 +8,7 @@ import 'package:social_flutter/core/ui/app_theme.dart';
 import 'package:social_flutter/features/itineraries/data/maps_launcher_service.dart';
 import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
 import 'package:social_flutter/l10n/app_localizations.dart';
+import 'package:social_flutter/shared/widgets/loaders.dart';
 
 Future<void> showOpenInMapsSheet({
   required BuildContext context,
@@ -173,17 +174,9 @@ class _OpenInMapsSheetState extends ConsumerState<_OpenInMapsSheet> {
                   builder: (context, snap) {
                     final apps = snap.data;
                     if (apps == null) {
-    final nt = context.nt;
-                      return Padding(
-                        padding: EdgeInsets.symmetric(vertical: 24),
-                        child: Center(
-                          child: SizedBox(
-                            width: 22,
-                            height: 22,
-                            child: CircularProgressIndicator(
-                                strokeWidth: 2.4, color: nt.forest),
-                          ),
-                        ),
+                      return const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 20),
+                        child: Center(child: NTripiRingLoader(size: 36)),
                       );
                     }
                     // Cap the height so a long list (up to 8 apps) scrolls

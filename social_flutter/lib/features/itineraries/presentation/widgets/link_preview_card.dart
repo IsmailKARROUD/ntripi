@@ -233,6 +233,9 @@ class _MapEmbedView extends StatefulWidget {
 
 class _MapEmbedViewState extends State<_MapEmbedView> {
   late final WebViewController _controller;
+  // Covers the webview's blank white frame with a Ntripi loader until the embed
+  // page finishes loading.
+  bool _loading = true;
 
   // Wraps the Google Embed URL inside an HTML string with a full-size <iframe>
   String _buildIframeHtml(String url) {
@@ -265,6 +268,9 @@ class _MapEmbedViewState extends State<_MapEmbedView> {
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
       ..setNavigationDelegate(
         NavigationDelegate(
+          onPageFinished: (_) {
+            if (mounted) setState(() => _loading = false);
+          },
           onNavigationRequest: (req) {
             final host = Uri.tryParse(req.url)?.host ?? '';
             // NOTE: `host.isEmpty` MUST be allowed so loadHtmlString's initial page isn't blocked!
@@ -285,14 +291,23 @@ class _MapEmbedViewState extends State<_MapEmbedView> {
   void didUpdateWidget(covariant _MapEmbedView old) {
     super.didUpdateWidget(old);
     if (old.embedUrl != widget.embedUrl) {
+      setState(() => _loading = true); // new destination — show the loader again
       _controller.loadHtmlString(_buildIframeHtml(widget.embedUrl));
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return WebViewWidget(
-      controller: _controller,
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        WebViewWidget(controller: _controller),
+        if (_loading)
+          ColoredBox(
+            color: context.nt.mist,
+            child: const Center(child: NTripiRingLoader(size: 44)),
+          ),
+      ],
     );
   }
 }
