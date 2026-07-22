@@ -11,7 +11,8 @@ RUN flutter build web \
     --release \
     --base-href=/app/ \
     --dart-define=API_BASE_URL=https://ntripi.app \
-    --dart-define=SHARE_BASE_URL=https://ntripi.app
+    --dart-define=SHARE_BASE_URL=https://ntripi.app \
+    --dart-define=GOOGLE_MAPS_EMBED_API_KEY=AIzaSyD8gF4G_w7voK0YPHA_Y234sgXInsrU__8
 
 # ─────────── Stage 2: Python runtime ───────────
 FROM python:3.11-slim

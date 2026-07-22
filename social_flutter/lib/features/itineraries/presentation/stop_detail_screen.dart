@@ -168,7 +168,10 @@ class _StopDetailView extends ConsumerWidget {
             ),
             SliverToBoxAdapter(
               child: hasMapLink
-                  ? LinkPreviewCard(url: stop.mapUrl!)
+                  // Pass stored coords too: on web (no unfurl) they're the
+                  // fallback embed query when the saved link carries none.
+                  ? LinkPreviewCard(
+                      url: stop.mapUrl!, lat: stop.lat, lng: stop.lng)
                   : LinkPreviewCard.coordinates(
                       lat: stop.lat!, lng: stop.lng!, label: stop.placeName),
             ),

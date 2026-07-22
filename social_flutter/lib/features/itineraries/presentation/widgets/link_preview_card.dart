@@ -40,10 +40,11 @@ class LinkPreviewCard extends ConsumerWidget {
   // Coordinate mode only: names the dropped pin in the provider picker sheet.
   final String? label;
 
-  const LinkPreviewCard({super.key, required String this.url})
-      : lat = null,
-        lng = null,
-        label = null;
+  // Link mode. lat/lng are the stop's stored coords (from unfurl at save time):
+  // a last-resort embed query when the URL itself carries none — the only way a
+  // short-link stop shows a map on web, where the client-side unfurl is blocked.
+  const LinkPreviewCard({super.key, required String this.url, this.lat, this.lng})
+      : label = null;
 
   // Coordinate-only stop: build the embed straight from lat/lng and, on tap,
   // let the viewer pick a map provider — no unfurl, no title/description.
@@ -153,20 +154,25 @@ class LinkPreviewCard extends ConsumerWidget {
   }
 
   // Link-mode query priority: unfurl coords → unfurl place name → coords
-  // embedded in the pasted link (the only source on web, where the cross-origin
-  // unfurl is blocked). Returns null when there's no key or no usable query.
+  // embedded in the pasted link → the stop's stored coords. The last two are the
+  // only sources on web, where the cross-origin unfurl is blocked; stored coords
+  // rescue short links that carry none in the URL string. Null with no key/query.
   String? _embedUrl(LinkPreview? preview) {
-    final lat = preview?.lat;
-    final lng = preview?.lng;
+    final pLat = preview?.lat;
+    final pLng = preview?.lng;
     final title = preview?.title?.trim();
     String? q;
-    if (lat != null && lng != null) {
-      q = '$lat,$lng';
+    if (pLat != null && pLng != null) {
+      q = '$pLat,$pLng';
     } else if (title != null && title.isNotEmpty) {
       q = title;
     } else {
       final c = extractMapCoords(url!); // pasted full URL may carry @lat,lng
-      if (c != null) q = '${c.$1},${c.$2}';
+      if (c != null) {
+        q = '${c.$1},${c.$2}';
+      } else if (lat != null && lng != null) {
+        q = '$lat,$lng'; // fall back to coords saved on the stop itself
+      }
     }
     return q == null ? null : _embedUrlForQuery(q);
   }

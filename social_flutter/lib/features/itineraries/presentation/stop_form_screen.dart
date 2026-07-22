@@ -1713,7 +1713,12 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                       // "Opens in Google Maps" row inside the card).
                       if (_locationMode == _LocationMode.link &&
                           isGoogleMapsUrl(_mapUrlController.text.trim()))
-                        LinkPreviewCard(url: _mapUrlController.text.trim()),
+                        // Coords extracted from the link feed the embed on web,
+                        // where the unfurl can't run to resolve them itself.
+                        LinkPreviewCard(
+                            url: _mapUrlController.text.trim(),
+                            lat: _lat,
+                            lng: _lng),
 
                       // ── Duplicate warning ──────────────────────────────────
                       if (!widget.isEditMode && duplicate != null)
