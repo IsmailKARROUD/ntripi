@@ -789,20 +789,16 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
       if (widget.isEditMode) {
         await notifier.updateStop(widget.stopId!, data);
       } else {
-        await notifier.addStop(data);
+        // Use the created stop's real id — a top/mid insert is not last in
+        // rank order, so guessing stops.lastOrNull attached annotations to a
+        // pre-existing stop.
+        final newStop = await notifier.addStop(data);
         // Submit any annotations queued before the stop existed.
-        if (_pendingAnnotations.isNotEmpty) {
-          final itinerary =
-              ref.read(itineraryDetailProvider(widget.itineraryId)).value;
-          final newStop = itinerary?.stops.lastOrNull;
-          if (newStop != null) {
-            for (final pending in _pendingAnnotations) {
-              await notifier.addAnnotation(newStop.id, {
-                'type': pending.type.name,
-                'content': pending.content,
-              });
-            }
-          }
+        for (final pending in _pendingAnnotations) {
+          await notifier.addAnnotation(newStop.id, {
+            'type': pending.type.name,
+            'content': pending.content,
+          });
         }
       }
 

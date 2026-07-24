@@ -112,10 +112,15 @@ class ItineraryDetailNotifier extends AsyncNotifier<Itinerary> {
 
   /// Add a stop, then refresh so totals and track structure are accurate.
   /// The ETag is attached automatically via _etag — the presentation layer
-  /// does not need to know about concurrency control.
-  Future<void> addStop(Map<String, dynamic> data) async {
-    await ref.read(itineraryRepositoryProvider).addStop(arg, data, etag: _etag);
+  /// does not need to know about concurrency control. Returns the created
+  /// [Stop] so callers can act on its real server-assigned id (e.g. attach
+  /// annotations) — the new stop is not necessarily last in rank order.
+  Future<Stop> addStop(Map<String, dynamic> data) async {
+    final created = await ref
+        .read(itineraryRepositoryProvider)
+        .addStop(arg, data, etag: _etag);
     await refresh();
+    return created;
   }
 
   /// Update a stop, then refresh.
