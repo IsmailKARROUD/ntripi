@@ -657,7 +657,7 @@ class RatingDistributionBars extends StatelessWidget {
 }
 
 /// One rater tile.
-class _RatingListTile extends StatefulWidget {
+class _RatingListTile extends StatelessWidget {
   final RatingWithUser rating;
   final DimensionKey dimension;
 
@@ -667,19 +667,11 @@ class _RatingListTile extends StatefulWidget {
   });
 
   @override
-  State<_RatingListTile> createState() => _RatingListTileState();
-}
-
-class _RatingListTileState extends State<_RatingListTile> {
-  bool _noteExpanded = false;
-
-  @override
   Widget build(BuildContext context) {
     final nt = context.nt;
     final l10n = AppLocalizations.of(context)!;
-    final rating = widget.rating;
     final user = rating.user;
-    final score = rating.scoreForDimension(widget.dimension) ?? rating.score;
+    final score = rating.scoreForDimension(dimension) ?? rating.score;
     final hasNote = rating.note != null && rating.note!.trim().isNotEmpty;
 
     final Widget tile = ListTile(
@@ -701,8 +693,8 @@ class _RatingListTileState extends State<_RatingListTile> {
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: List.generate(5, (i) {
-          final glyphs = widget.dimension.ratingGlyphs;
-          final inverted = widget.dimension.invertedRating;
+          final glyphs = dimension.ratingGlyphs;
+          final inverted = dimension.invertedRating;
           // Uncrowded: fill from the right; tint empties too.
           final filled = inverted ? (i + 1) > score : i < score;
           return Icon(
@@ -728,12 +720,7 @@ class _RatingListTileState extends State<_RatingListTile> {
               Padding(
                 padding:
                     const EdgeInsetsDirectional.only(start: 72, end: 16, bottom: 4),
-                child: _ReviewNote(
-                  note: rating.note!,
-                  expanded: _noteExpanded,
-                  onToggle: () =>
-                      setState(() => _noteExpanded = !_noteExpanded),
-                ),
+                child: _ReviewNote(note: rating.note!),
               ),
             ],
           )
@@ -743,64 +730,74 @@ class _RatingListTileState extends State<_RatingListTile> {
   }
 }
 
-class _ReviewNote extends StatelessWidget {
+/// One-line preview of a rater's note that expands to full markdown on tap —
+/// mirrors the expandable-notes pattern in stop_card.dart (`_ReadNotesSection`).
+class _ReviewNote extends StatefulWidget {
   final String note;
-  final bool expanded;
-  final VoidCallback onToggle;
 
-  const _ReviewNote({
-    required this.note,
-    required this.expanded,
-    required this.onToggle,
-  });
+  const _ReviewNote({required this.note});
+
+  @override
+  State<_ReviewNote> createState() => _ReviewNoteState();
+}
+
+class _ReviewNoteState extends State<_ReviewNote> {
+  bool _expanded = false;
 
   @override
   Widget build(BuildContext context) {
     final nt = context.nt;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        InkWell(
-          onTap: onToggle,
-          borderRadius: BorderRadius.circular(4),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 2),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.format_quote, size: 14, color: nt.text2),
-                const SizedBox(width: 4),
-                Text(
-                  expanded
-                      ? AppLocalizations.of(context)!.hideReview
-                      : AppLocalizations.of(context)!.readReview,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: nt.text2,
-                        fontWeight: FontWeight.w500,
-                      ),
+    final l10n = AppLocalizations.of(context)!;
+    final style = TextStyle(fontSize: 13, height: 1.4, color: nt.text2);
+    final linkStyle = TextStyle(
+      fontSize: 12,
+      color: nt.forest,
+      fontWeight: FontWeight.w600,
+    );
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final tp = TextPainter(
+          text: TextSpan(text: widget.note, style: style),
+          maxLines: 1,
+          // must match the rendered Text's direction or the overflow check lies for Arabic notes
+          textDirection: Directionality.of(context),
+        )..layout(maxWidth: constraints.maxWidth);
+        final overflows = tp.didExceedMaxLines;
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (_expanded)
+              InertMarkdownBody(data: widget.note)
+            else
+              GestureDetector(
+                // tapping the one-line preview reveals the rest — no-op when it already fits
+                onTap:
+                    overflows ? () => setState(() => _expanded = true) : null,
+                behavior: HitTestBehavior.opaque,
+                child: Text(
+                  widget.note,
+                  style: style,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
-                Icon(
-                  expanded ? Icons.expand_less : Icons.expand_more,
-                  size: 18,
-                  color: nt.text2,
+              ),
+            if (overflows || _expanded)
+              GestureDetector(
+                onTap: () => setState(() => _expanded = !_expanded),
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 2),
+                  child: Text(
+                    _expanded ? l10n.viewLess : l10n.viewMore,
+                    style: linkStyle,
+                  ),
                 ),
-              ],
-            ),
-          ),
-        ),
-        AnimatedSize(
-          duration: const Duration(milliseconds: 180),
-          curve: Curves.easeInOut,
-          alignment: AlignmentDirectional.topStart,
-          child: expanded
-              ? Padding(
-                  padding: const EdgeInsets.only(top: 4),
-                  child: InertMarkdownBody(data: note),
-                )
-              : const SizedBox(width: double.infinity),
-        ),
-      ],
+              ),
+          ],
+        );
+      },
     );
   }
 }
