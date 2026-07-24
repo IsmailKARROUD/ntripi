@@ -639,15 +639,22 @@ def update_itinerary(
 
 @router.delete("/{itinerary_id}", status_code=status.HTTP_204_NO_CONTENT,
                summary="Delete an itinerary and all its tracks/stops")
-def delete_itinerary(
+async def delete_itinerary(
     itinerary_id: uuid.UUID,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> None:
     itinerary = _get_itinerary_or_404(itinerary_id, db)
     _require_owner(itinerary, current_user)
+
+    had_cover = itinerary.cover_image_url is not None
     db.delete(itinerary)
     db.commit()
+
+    # Purge the cover from storage after the row is gone — orphans a file at
+    # worst if storage fails, rather than leaving a live itinerary imageless.
+    if had_cover:
+        await storage().delete(f"itineraries/{itinerary_id}.jpg")
 
 
 # ---------------------------------------------------------------------------
