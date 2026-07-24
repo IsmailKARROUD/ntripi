@@ -63,6 +63,27 @@ final _mapCoordPatterns = <RegExp>[
   return null;
 }
 
+/// Google place IDs as they appear in a Maps URL: an explicit `place_id:`/
+/// `place_id=` param, or the `!1s` data field when it holds a `ChIJ…` ID. Only
+/// the `ChIJ…` namespace is usable — the hex `!1s0x…:0x…` feature ID that most
+/// long URLs carry is a *different* identifier the Embed API does not accept.
+final _placeIdPatterns = <RegExp>[
+  RegExp(r'place_id[:=]([A-Za-z0-9_-]{15,})'),
+  RegExp(r'!1s(ChIJ[A-Za-z0-9_-]+)'),
+];
+
+/// Extracts a Google place ID from a Maps URL, or null when none is embedded.
+/// Preferred over coords for the embed: `q=place_id:…` renders a named place
+/// card, where a bare `lat,lng` renders only a pin. Short links carry no place
+/// ID (the code is opaque until Google redirects), so they return null here.
+String? extractPlaceId(String url) {
+  for (final re in _placeIdPatterns) {
+    final id = re.firstMatch(url)?.group(1);
+    if (id != null && id.isNotEmpty) return id;
+  }
+  return null;
+}
+
 /// The unfurled Open Graph card data. Any field may be null when the page
 /// omits that tag; a preview with neither a title nor coords is treated as "no
 /// preview" (fetch returns null) so the caller shows the plain fallback.

@@ -1350,6 +1350,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get linkPreviewTitleCopied => 'Title copied';
 
   @override
+  String get linkPreviewMapMobileOnly =>
+      'Map preview available in the mobile app';
+
+  @override
   String get coordinatesHelp =>
       'The map location for this stop. Tap \"Pick on map\" to set or adjust it.';
 

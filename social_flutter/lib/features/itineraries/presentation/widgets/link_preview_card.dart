@@ -106,9 +106,13 @@ class LinkPreviewCard extends ConsumerWidget {
           // OR unfurled text; otherwise the plain fallback row.
           final embedUrl = _embedUrl(preview);
           final hasContent = preview != null && preview.hasContent;
-          return embedUrl == null && !hasContent
-              ? _fallbackRow(nt, l10n)
-              : _card(context, nt, l10n, preview, embedUrl);
+          if (embedUrl != null || hasContent) {
+            return _card(context, nt, l10n, preview, embedUrl);
+          }
+          // Nothing to embed. On web that means an unresolvable short link (the
+          // unfurl can't run cross-origin) — tell the viewer the map preview
+          // lives in the app, but keep the tappable "Opens in Google Maps" row.
+          return kIsWeb ? _webNoEmbed(nt, l10n) : _fallbackRow(nt, l10n);
         },
       ),
     );
@@ -153,11 +157,25 @@ class LinkPreviewCard extends ConsumerWidget {
         '&zoom=12';
   }
 
-  // Link-mode query priority: unfurl coords → unfurl place name → coords
-  // embedded in the pasted link → the stop's stored coords. The last two are the
-  // only sources on web, where the cross-origin unfurl is blocked; stored coords
-  // rescue short links that carry none in the URL string. Null with no key/query.
+  // Same embed endpoint keyed by place ID. The `place_id:` prefix is syntax, so
+  // only the ID itself is escaped — encoding the colon would break the query.
+  String? _embedUrlForPlaceId(String placeId) {
+    if (kGoogleMapsEmbedApiKey.isEmpty) return null;
+    return 'https://www.google.com/maps/embed/v1/place'
+        '?key=$kGoogleMapsEmbedApiKey'
+        '&q=place_id:${Uri.encodeComponent(placeId)}'
+        '&zoom=12';
+  }
+
+  // Link-mode query priority: place ID in the link → unfurl coords → unfurl
+  // place name → coords embedded in the link → the stop's stored coords. The
+  // place ID and the last two are the only sources on web, where the
+  // cross-origin unfurl is blocked. Null with no key/query.
   String? _embedUrl(LinkPreview? preview) {
+    // Most precise, and needs no unfurl — renders a named place card, not a pin.
+    final placeId = extractPlaceId(url!);
+    if (placeId != null) return _embedUrlForPlaceId(placeId);
+
     final pLat = preview?.lat;
     final pLng = preview?.lng;
     final title = preview?.title?.trim();
@@ -287,6 +305,37 @@ class LinkPreviewCard extends ConsumerWidget {
             const NTripiRingLoader(size: 16)
           else
             Icon(Icons.open_in_new_rounded, size: 14, color: nt.forest),
+        ],
+      ),
+    );
+  }
+
+  // Web link mode with nothing to embed (a short link the browser can't resolve
+  // cross-origin): the notice sits above the still-tappable open-in-maps row.
+  Widget _webNoEmbed(NtripiColors nt, AppLocalizations l10n) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _mobileNoticeRow(nt, l10n),
+        _fallbackRow(nt, l10n),
+      ],
+    );
+  }
+
+  // Muted line telling the viewer the embedded map preview is only in the app.
+  Widget _mobileNoticeRow(NtripiColors nt, AppLocalizations l10n) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
+      child: Row(
+        children: [
+          Icon(Icons.smartphone_rounded, size: 16, color: nt.text2),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              l10n.linkPreviewMapMobileOnly,
+              style: TextStyle(fontSize: 12, color: nt.text2),
+            ),
+          ),
         ],
       ),
     );

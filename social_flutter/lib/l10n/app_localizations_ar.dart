@@ -1390,6 +1390,10 @@ class AppLocalizationsAr extends AppLocalizations {
   String get linkPreviewTitleCopied => 'تم نسخ العنوان';
 
   @override
+  String get linkPreviewMapMobileOnly =>
+      'معاينة الخريطة متوفّرة في تطبيق الجوال';
+
+  @override
   String get coordinatesHelp =>
       'موقع هذه المحطة على الخريطة. اضغط على \"التحديد على الخريطة\" لتعيينه أو تعديله.';
 

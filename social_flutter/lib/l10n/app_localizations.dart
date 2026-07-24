@@ -2470,6 +2470,12 @@ abstract class AppLocalizations {
   /// **'Title copied'**
   String get linkPreviewTitleCopied;
 
+  /// No description provided for @linkPreviewMapMobileOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'Map preview available in the mobile app'**
+  String get linkPreviewMapMobileOnly;
+
   /// No description provided for @coordinatesHelp.
   ///
   /// In en, this message translates to:

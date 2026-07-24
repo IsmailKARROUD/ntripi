@@ -1375,6 +1375,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get linkPreviewTitleCopied => 'Titre copié';
 
   @override
+  String get linkPreviewMapMobileOnly =>
+      'Aperçu de la carte disponible dans l\'application mobile';
+
+  @override
   String get coordinatesHelp =>
       'La localisation sur la carte pour cette étape. Appuyez sur « Sélectionner sur la carte » pour la définir ou l\'ajuster.';
 
