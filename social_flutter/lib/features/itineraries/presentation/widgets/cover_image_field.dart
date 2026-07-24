@@ -83,6 +83,15 @@ class CoverImageField extends StatefulWidget {
   /// URL of the existing cover image (from the server). Null if none.
   final String? initialUrl;
 
+  /// Cropped bytes already picked by the user (deferred upload not yet sent).
+  /// Lets the field re-hydrate its preview when the parent rebuilds it after
+  /// this widget was unmounted (e.g. collapsing the optional-fields section).
+  final Uint8List? initialBytes;
+  final String? initialFilename;
+
+  /// True when the user already removed the existing image in a prior mount.
+  final bool initialRemoved;
+
   /// Called when the user picks + crops a new image. Deferred upload — caller
   /// decides when to send it to the server.
   final void Function(Uint8List bytes, String filename) onImageSelected;
@@ -98,6 +107,9 @@ class CoverImageField extends StatefulWidget {
   const CoverImageField({
     super.key,
     this.initialUrl,
+    this.initialBytes,
+    this.initialFilename,
+    this.initialRemoved = false,
     required this.onImageSelected,
     required this.onImageRemoved,
     this.targetWidth = 1200,
@@ -115,6 +127,18 @@ class _CoverImageFieldState extends State<CoverImageField> {
   bool _removed = false;
   bool _picking = false;
   String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    // Re-hydrate from the parent's deferred-upload state so the preview
+    // survives this widget being unmounted and rebuilt (e.g. toggling the
+    // optional-fields section). The parent is the source of truth for what
+    // will actually be uploaded on save.
+    _pickedBytes = widget.initialBytes;
+    _pickedFilename = widget.initialFilename;
+    _removed = widget.initialRemoved;
+  }
 
   bool get _hasImage =>
       !_removed && (_pickedBytes != null || widget.initialUrl != null);

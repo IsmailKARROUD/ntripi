@@ -528,6 +528,11 @@ class _ItineraryFormScreenState extends ConsumerState<ItineraryFormScreen> {
                             .value
                             ?.coverImageUrl
                         : null,
+                    // Re-seed the field from parent state so the preview
+                    // persists across optional-fields collapse/expand.
+                    initialBytes: _pendingImageBytes,
+                    initialFilename: _pendingImageFilename,
+                    initialRemoved: _removeExistingImage,
                     onImageSelected: (bytes, filename) => setState(() {
                       _pendingImageBytes = bytes;
                       _pendingImageFilename = filename;
