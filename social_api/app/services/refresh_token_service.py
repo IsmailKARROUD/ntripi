@@ -19,8 +19,6 @@ Rotation chain (theft detection):
 
 from __future__ import annotations
 
-import hashlib
-import secrets
 import uuid
 from datetime import datetime, timedelta, timezone
 
@@ -30,26 +28,11 @@ from sqlalchemy.orm import Session
 from app.config import get_settings
 from app.models.refresh_token import RefreshToken
 from app.services.auth import create_access_token
+from app.services.token_util import as_aware_utc, hash_token, new_raw_token
 
 
 class InvalidGrantError(Exception):
     """Raised when a refresh token is unknown, expired, or revoked."""
-
-
-def _hash(raw_token: str) -> str:
-    return hashlib.sha256(raw_token.encode("utf-8")).hexdigest()
-
-
-def _as_aware_utc(dt: datetime) -> datetime:
-    # SQLite (tests) returns naive datetimes; PostgreSQL returns tz-aware.
-    # Normalize so comparisons never raise TypeError across backends.
-    return dt if dt.tzinfo is not None else dt.replace(tzinfo=timezone.utc)
-
-
-def _generate_raw_token() -> str:
-    # 32 bytes → ~43 char base64url string. URL-safe so it can be passed
-    # through HTTP request bodies and headers without further escaping.
-    return secrets.token_urlsafe(32)
 
 
 def issue(
@@ -65,10 +48,10 @@ def issue(
     Pass family_id when rotating; omit it for a fresh login/register.
     """
     settings = get_settings()
-    raw = _generate_raw_token()
+    raw = new_raw_token()
     row = RefreshToken(
         user_id=user_id,
-        token_hash=_hash(raw),
+        token_hash=hash_token(raw),
         family_id=family_id or uuid.uuid4(),
         expires_at=datetime.now(timezone.utc)
         + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS),
@@ -92,7 +75,7 @@ def rotate(
     revoked. On replay of a revoked token, the entire family is revoked
     before raising — this is the theft-detection behaviour.
     """
-    token_hash = _hash(raw_token)
+    token_hash = hash_token(raw_token)
 
     stmt = select(RefreshToken).where(RefreshToken.token_hash == token_hash)
     try:
@@ -106,7 +89,7 @@ def rotate(
 
     now = datetime.now(timezone.utc)
 
-    if _as_aware_utc(current.expires_at) <= now:
+    if as_aware_utc(current.expires_at) <= now:
         raise InvalidGrantError("refresh token expired")
 
     if current.revoked_at is not None:
@@ -135,7 +118,7 @@ def revoke(db: Session, raw_token: str) -> None:
     Silently no-ops on unknown / already-revoked tokens — /auth/logout
     must never leak token validity.
     """
-    token_hash = _hash(raw_token)
+    token_hash = hash_token(raw_token)
     row = db.execute(
         select(RefreshToken).where(RefreshToken.token_hash == token_hash)
     ).scalar_one_or_none()

@@ -27,7 +27,7 @@ from app.models.stop import Stop
 from app.models.track import Track
 from app.models.transit_segment import TransitSegment
 from app.models.user import User
-from app.services.share_service import prepare_share_context, _resolve_preview_image_url
+from app.services.share_service import build_share_url, prepare_share_context, _resolve_preview_image_url
 from app.templating import templates
 
 router = APIRouter(prefix="/share", tags=["share"])
@@ -84,7 +84,7 @@ def share_itinerary(
             status_code=404,
         )
 
-    share_url = f"{settings.share_base_url}/share/i/{itinerary.id}"
+    share_url = build_share_url(itinerary, settings)
     preview_image_url = _resolve_preview_image_url(itinerary, settings)
 
     if itinerary.visibility in ("followers", "restricted"):

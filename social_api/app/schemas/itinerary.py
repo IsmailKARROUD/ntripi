@@ -20,6 +20,15 @@ from urllib.parse import urlparse
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 
+# Shared field constraints. Kept as regex strings (not Literal types) so the
+# 422 validation-error shape stays byte-identical to the pre-refactor schemas.
+_NOTE_TYPE_PATTERN = "^(advice|caution|avoid|info)$"
+_PLACE_TYPE_PATTERN = (
+    "^(eatDrink|sleep|pray|learnSee|buy|playWatch|nature|transport|healBathe|entertainment|sight)$"
+)
+_VISIBILITY = Literal['public', 'followers', 'restricted', 'only_me']
+
+
 # A stop's map_url may only point at Google Maps — OSM's gazetteer is thinner,
 # so users paste a Google Maps link for places it can't resolve. This is the
 # security boundary (do not trust the client): any host not on the allowlist is
@@ -43,25 +52,38 @@ def validate_google_maps_url(url: Optional[str]) -> Optional[str]:
 
 
 # ---------------------------------------------------------------------------
-# Itinerary-level annotation schemas
+# Annotation schemas
+#
+# Itinerary-level and stop-level annotations share identical request bodies;
+# only the response FK differs (itinerary_id vs stop_id). The two Response
+# classes stay separate on purpose — a shared base would serialize the FK
+# field last (base-class fields come first), changing the JSON key order.
 # ---------------------------------------------------------------------------
 
-class ItineraryAnnotationCreate(BaseModel):
-    type: str = Field(..., pattern="^(advice|caution|avoid|info)$")
+class _AnnotationCreateBase(BaseModel):
+    type: str = Field(..., pattern=_NOTE_TYPE_PATTERN)
     content: str = Field(..., min_length=1, max_length=2000)
 
 
-class ItineraryAnnotationUpdate(BaseModel):
-    type: str | None = Field(None, pattern="^(advice|caution|avoid|info)$")
+class _AnnotationUpdateBase(BaseModel):
+    type: str | None = Field(None, pattern=_NOTE_TYPE_PATTERN)
     content: str | None = Field(None, min_length=1, max_length=2000)
 
     @model_validator(mode='after')
-    def at_least_one_field(self) -> 'ItineraryAnnotationUpdate':
+    def at_least_one_field(self) -> '_AnnotationUpdateBase':
         if self.type is None and self.content is None:
             raise ValueError(
                 "At least one field (type or content) must be provided."
             )
         return self
+
+
+class ItineraryAnnotationCreate(_AnnotationCreateBase):
+    pass
+
+
+class ItineraryAnnotationUpdate(_AnnotationUpdateBase):
+    pass
 
 
 class ItineraryAnnotationResponse(BaseModel):
@@ -75,26 +97,12 @@ class ItineraryAnnotationResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
-# ---------------------------------------------------------------------------
-# Stop-level annotation schemas
-# ---------------------------------------------------------------------------
-
-class AnnotationCreate(BaseModel):
-    type: str = Field(..., pattern="^(advice|caution|avoid|info)$")
-    content: str = Field(..., min_length=1, max_length=2000)
+class AnnotationCreate(_AnnotationCreateBase):
+    pass
 
 
-class AnnotationUpdate(BaseModel):
-    type: str | None = Field(None, pattern="^(advice|caution|avoid|info)$")
-    content: str | None = Field(None, min_length=1, max_length=2000)
-
-    @model_validator(mode='after')
-    def at_least_one_field(self) -> 'AnnotationUpdate':
-        if self.type is None and self.content is None:
-            raise ValueError(
-                "At least one field (type or content) must be provided."
-            )
-        return self
+class AnnotationUpdate(_AnnotationUpdateBase):
+    pass
 
 
 class AnnotationResponse(BaseModel):
@@ -131,10 +139,7 @@ class StopCreate(BaseModel):
     lng: Optional[float] = Field(None, ge=-180, le=180)
     map_url: Optional[str] = Field(None, max_length=500)
 
-    place_type: Optional[str] = Field(
-        None,
-        pattern="^(eatDrink|sleep|pray|learnSee|buy|playWatch|nature|transport|healBathe|entertainment|sight)$",
-    )
+    place_type: Optional[str] = Field(None, pattern=_PLACE_TYPE_PATTERN)
 
     duration_min: Optional[int] = Field(None, ge=0)
     cost: Decimal = Field(default=Decimal("0.00"), ge=0)
@@ -150,10 +155,7 @@ class StopUpdate(BaseModel):
     lat: Optional[float] = Field(None, ge=-90, le=90)
     lng: Optional[float] = Field(None, ge=-180, le=180)
     map_url: Optional[str] = Field(None, max_length=500)
-    place_type: Optional[str] = Field(
-        None,
-        pattern="^(eatDrink|sleep|pray|learnSee|buy|playWatch|nature|transport|healBathe|entertainment|sight)$",
-    )
+    place_type: Optional[str] = Field(None, pattern=_PLACE_TYPE_PATTERN)
     duration_min: Optional[int] = Field(None, ge=0)
 
     _validate_map_url = field_validator("map_url")(validate_google_maps_url)
@@ -358,14 +360,14 @@ class ItineraryCreate(BaseModel):
     title: str = Field(..., min_length=1, max_length=200)
     description: Optional[str] = None
     currency: str = Field(default="EUR", max_length=3, min_length=3)
-    visibility: Literal['public', 'followers', 'restricted', 'only_me'] = 'only_me'
+    visibility: _VISIBILITY = 'only_me'
 
 
 class ItineraryUpdate(BaseModel):
     title: Optional[str] = Field(None, min_length=1, max_length=200)
     description: Optional[str] = None
     currency: Optional[str] = Field(None, max_length=3, min_length=3)
-    visibility: Optional[Literal['public', 'followers', 'restricted', 'only_me']] = None
+    visibility: Optional[_VISIBILITY] = None
 
 
 # ---------------------------------------------------------------------------
@@ -438,7 +440,7 @@ class ItinerarySummary(BaseModel):
     total_duration_min: int
     total_cost: float
     currency: str
-    visibility: Literal['public', 'followers', 'restricted', 'only_me']
+    visibility: _VISIBILITY
     created_at: datetime
     updated_at: datetime
     rating_avg: Optional[float]

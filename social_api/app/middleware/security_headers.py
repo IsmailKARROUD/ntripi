@@ -18,7 +18,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import Response
 
-_SKIP_PREFIXES = ("/uploads", "/static", "/app")
+from app.middleware import STATIC_PREFIXES as _SKIP_PREFIXES
 
 
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):

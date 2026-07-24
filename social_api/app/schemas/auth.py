@@ -47,15 +47,6 @@ class LoginRequest(BaseModel):
     password: str
 
 
-class TokenResponse(BaseModel):
-    """Legacy access-token-only response. Kept for reference; not used by
-    the public auth endpoints anymore (they return TokenPair)."""
-    access_token: str
-    token_type: str = "bearer"
-    user_id: str
-    username: str
-
-
 class TokenPair(BaseModel):
     """Response shape for /auth/login, /auth/register, /auth/refresh.
 

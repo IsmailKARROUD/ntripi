@@ -1,7 +1,11 @@
+import time
 from io import BytesIO
+from typing import Callable
 
 from PIL import Image
 from PIL.Image import Resampling
+
+from app.storage.factory import storage
 
 ALLOWED_FORMATS = {"JPEG", "PNG", "WEBP"}
 TARGET_WIDTH = 1200
@@ -13,6 +17,49 @@ MAX_FILE_SIZE = 10 * 1024 * 1024  # 10 MB
 
 class ImageProcessingError(Exception):
     pass
+
+
+def _decode_and_validate(raw_bytes: bytes) -> Image.Image:
+    """Reject oversized/undersized/unsupported uploads and return an RGB image.
+
+    Shared front-half of the cover and avatar pipelines: size guard, decode,
+    format check, minimum-dimension check, and RGB conversion (handles RGBA,
+    palette-mode PNGs, etc.). Raises ImageProcessingError with a user-readable
+    message on any failure.
+    """
+    if len(raw_bytes) > MAX_FILE_SIZE:
+        raise ImageProcessingError(
+            f"Image exceeds {MAX_FILE_SIZE // (1024 * 1024)} MB limit."
+        )
+
+    try:
+        img = Image.open(BytesIO(raw_bytes))
+    except Exception as exc:
+        raise ImageProcessingError(f"Could not read image: {exc}") from exc
+
+    if img.format not in ALLOWED_FORMATS:
+        raise ImageProcessingError(
+            f"Unsupported format '{img.format}'. Upload a JPEG, PNG, or WebP file."
+        )
+
+    if img.width < MIN_DIMENSION or img.height < MIN_DIMENSION:
+        raise ImageProcessingError(
+            f"Image too small ({img.width}×{img.height}). "
+            f"Minimum size is {MIN_DIMENSION}×{MIN_DIMENSION}."
+        )
+
+    if img.mode != "RGB":
+        img = img.convert("RGB")
+
+    return img
+
+
+def _encode_jpeg(img: Image.Image) -> bytes:
+    buf = BytesIO()
+    # save() with format="JPEG" never copies source EXIF — EXIF stripping
+    # is implicit because we're constructing a new Image object in memory.
+    img.save(buf, format="JPEG", quality=85, optimize=True)
+    return buf.getvalue()
 
 
 def process_cover_image(raw_bytes: bytes) -> bytes:
@@ -31,38 +78,10 @@ def process_cover_image(raw_bytes: bytes) -> bytes:
     Raises ImageProcessingError with a user-readable message on any failure.
     Returns processed JPEG bytes.
     """
-    if len(raw_bytes) > MAX_FILE_SIZE:
-        raise ImageProcessingError(
-            f"Image exceeds {MAX_FILE_SIZE // (1024 * 1024)} MB limit."
-        )
-
-    try:
-        img = Image.open(BytesIO(raw_bytes))
-    except Exception as exc:
-        raise ImageProcessingError(f"Could not read image: {exc}") from exc
-
-    if img.format not in ALLOWED_FORMATS:
-        raise ImageProcessingError(
-            f"Unsupported format '{img.format}'. Upload a JPEG, PNG, or WebP file."
-        )
-
-    if img.width < MIN_DIMENSION or img.height < MIN_DIMENSION:
-        raise ImageProcessingError(
-            f"Image too small ({img.width}×{img.height}). "
-            f"Minimum size is {MIN_DIMENSION}×{MIN_DIMENSION}."
-        )
-
-    if img.mode != "RGB":
-        img = img.convert("RGB")
-
+    img = _decode_and_validate(raw_bytes)
     img = _crop_to_aspect(img, TARGET_WIDTH, TARGET_HEIGHT)
     img = img.resize((TARGET_WIDTH, TARGET_HEIGHT), Resampling.LANCZOS)
-
-    buf = BytesIO()
-    # save() with format="JPEG" never copies source EXIF — EXIF stripping
-    # is implicit because we're constructing a new Image object in memory.
-    img.save(buf, format="JPEG", quality=85, optimize=True)
-    return buf.getvalue()
+    return _encode_jpeg(img)
 
 
 def process_avatar_image(raw_bytes: bytes) -> bytes:
@@ -72,36 +91,27 @@ def process_avatar_image(raw_bytes: bytes) -> bytes:
     image — avatars render inside a circular ClipOval on the client, so the
     client's square crop must be preserved end-to-end.
     """
-    if len(raw_bytes) > MAX_FILE_SIZE:
-        raise ImageProcessingError(
-            f"Image exceeds {MAX_FILE_SIZE // (1024 * 1024)} MB limit."
-        )
-
-    try:
-        img = Image.open(BytesIO(raw_bytes))
-    except Exception as exc:
-        raise ImageProcessingError(f"Could not read image: {exc}") from exc
-
-    if img.format not in ALLOWED_FORMATS:
-        raise ImageProcessingError(
-            f"Unsupported format '{img.format}'. Upload a JPEG, PNG, or WebP file."
-        )
-
-    if img.width < MIN_DIMENSION or img.height < MIN_DIMENSION:
-        raise ImageProcessingError(
-            f"Image too small ({img.width}×{img.height}). "
-            f"Minimum size is {MIN_DIMENSION}×{MIN_DIMENSION}."
-        )
-
-    if img.mode != "RGB":
-        img = img.convert("RGB")
-
+    img = _decode_and_validate(raw_bytes)
     img = _crop_to_aspect(img, AVATAR_SIZE, AVATAR_SIZE)
     img = img.resize((AVATAR_SIZE, AVATAR_SIZE), Resampling.LANCZOS)
+    return _encode_jpeg(img)
 
-    buf = BytesIO()
-    img.save(buf, format="JPEG", quality=85, optimize=True)
-    return buf.getvalue()
+
+async def process_and_store(raw_bytes: bytes, key: str,
+                            processor: Callable[[bytes], bytes], *,
+                            cache_bust: bool) -> str:
+    """Process an upload through `processor` and store it under `key`.
+
+    `processor` (process_cover_image / process_avatar_image) raises
+    ImageProcessingError on a bad upload — the router translates that to 400.
+    When cache_bust is set, a `?v=<ms>` suffix busts every URL-keyed cache
+    (CachedNetworkImage, browser, CDN) since storage keys are stable per user.
+    """
+    processed = processor(raw_bytes)
+    url = await storage().save(key, processed, "image/jpeg")
+    if cache_bust:
+        url = f"{url}?v={int(time.time() * 1000)}"
+    return url
 
 
 def _crop_to_aspect(img: Image.Image, target_w: int, target_h: int) -> Image.Image:

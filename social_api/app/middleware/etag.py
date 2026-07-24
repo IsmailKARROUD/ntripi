@@ -27,10 +27,7 @@ from starlette.responses import Response
 from starlette.types import ASGIApp
 
 from app.dependencies import _normalize_etag
-
-# Paths under these prefixes are served by Starlette StaticFiles and should
-# bypass body buffering — they may be large binaries (images, web bundles).
-_STATIC_PREFIXES = ("/uploads", "/static", "/app")
+from app.middleware import STATIC_PREFIXES as _STATIC_PREFIXES
 
 
 class ETagMiddleware(BaseHTTPMiddleware):

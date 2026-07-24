@@ -16,10 +16,10 @@ import uuid
 from sqlalchemy.orm import Session
 from sqlalchemy import func, select
 
-from app.models.follow import Follow, FollowStatus
 from app.models.itinerary import Itinerary
 from app.models.itinerary_allowed_user import ItineraryAllowedUser
 from app.models.itinerary_rating import ItineraryRating
+from app.services.user_service import is_accepted_follower
 
 
 def can_view_itinerary(
@@ -43,14 +43,7 @@ def can_view_itinerary(
         return True
 
     if visibility == 'followers':
-        follow = db.execute(
-            select(Follow).where(
-                Follow.follower_id == viewer_id,
-                Follow.following_id == itinerary.user_id,
-                Follow.status == FollowStatus.accepted,
-            )
-        ).scalar_one_or_none()
-        return follow is not None
+        return is_accepted_follower(db, viewer_id, itinerary.user_id)
 
     if visibility == 'restricted':
         allowed = db.execute(

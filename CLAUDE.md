@@ -44,6 +44,27 @@ Monorepo at `/Users/ismac/project/Ntripi/`:
 - Auth service: `auth_service.py` shared by web (`/web/login`) and API (`/auth/login`)
 - Image processing: `app/services/image_service.py` — Pillow resize + EXIF strip + 1200×630 cover-fit + JPEG
 
+### Shared Helpers (DRY — reuse these, never re-inline the logic)
+
+Extracted in the 2026-07 dedup refactor. Before writing a query/response block in a router, check here first; if a block appears a second time anywhere, extract it instead of copying.
+
+- **`app/services/user_service.py`** — cross-router user/follow helpers:
+  - `get_active_user_or_404(db, user_id)` / `get_active_user_by_username_or_404(db, username)` — the only way to fetch-or-404 a user (enforces `is_active` + `username_lower`).
+  - `get_follow(db, follower_id, following_id)` · `is_accepted_follower(...)` — never write inline Follow queries.
+  - `bump_follow_counters(follower, followed, delta)` — the only way to touch `followers_count`/`following_count` (None-skip, `max(0, …)`). Exception: `delete_my_account`'s bulk UPDATEs.
+- **`app/services/token_util.py`** — `hash_token` / `as_aware_utc` / `new_raw_token` for every opaque-token service (refresh, email). New token types must use these.
+- **`app/services/image_service.py`** — `process_and_store(raw, key, processor, *, cache_bust)` for all image uploads. `cache_bust=True` for user avatar/cover (stable keys need `?v=`), `False` for itinerary covers (never carried `?v=`).
+- **`app/services/share_service.py`** — `build_share_url(itinerary, settings)` for the public share URL; never rebuild the f-string.
+- **`app/middleware/__init__.py`** — `STATIC_PREFIXES` shared by ETag + security-headers middleware; add new static mounts there, not in each middleware.
+- **`app/routers/itineraries.py` router-private helpers** (keep router-private; don't re-inline):
+  - `_etag_json_response(schema_cls, obj, itinerary, status_code)` — every response that carries the concurrency ETag. In `reorder_itinerary`, pass the freshly reloaded detail, not the stale itinerary.
+  - `_require_viewable(itinerary, viewer_id, db, detail=…)` — the only 403 access gate (wraps `can_view_itinerary`). `get_itinerary` passes its historical divergent wording explicitly — do not "fix" it.
+  - `_two_phase_renumber(rows, db)` — the only way to rewrite a full rank set (`!`-prefixed temp ranks dodge the UNIQUE constraint). Callers validate ownership first.
+  - `_require_stops_in_itinerary(...)` — segment stop-membership check.
+  - Annotation CRUD: `_get_itinerary_annotation_or_404` / `_get_stop_annotation_or_404` (joins Stop — the IDOR guard) / `_apply_annotation_fields` / `_save_annotation` / `_delete_annotation`.
+- **`app/schemas/itinerary.py`** — reuse `_NOTE_TYPE_PATTERN`, `_PLACE_TYPE_PATTERN`, `_VISIBILITY`; annotation request schemas subclass `_AnnotationCreateBase`/`_AnnotationUpdateBase`. The two annotation **Response** classes stay separate on purpose — a shared base would reorder JSON keys (base-class fields serialize first). Same rule for any future Response dedup: JSON key order = Pydantic field-definition order = part of the API contract.
+- Keep validation-error shapes stable: constrained string fields stay `pattern=` regex, not `Literal` — switching changes the 422 body.
+
 ### Security Middleware Stack
 
 `add_middleware` is **LIFO** — the last `add_middleware` call is the outermost layer (receives requests first, responses last). The correct code order to achieve the desired runtime order is:
@@ -211,6 +232,9 @@ Persistent volume must be mounted at `/app/uploads` or images vanish on redeploy
 - Do NOT use `allow_origin_regex=".*"` in CORS — explicit list only
 - Do NOT use `allow_methods=["*"]` or `allow_headers=["*"]` in CORS — explicit lists only
 - Do NOT query `User.username == something` — always `username_lower`
+- Do NOT write inline fetch-user-or-404, Follow queries, or follower-counter math — use `app/services/user_service.py` helpers
+- Do NOT duplicate a helper that already exists in the Shared Helpers section — extract on second occurrence instead of copying
+- Do NOT merge Pydantic Response classes into a shared base if it reorders JSON keys — field-definition order is part of the API contract
 - Do NOT use `--web-renderer` flag in Flutter (removed in 3.29)
 - Do NOT reference `DATABASE_PUBLIC_URL` from the backend — use `${{Postgres.DATABASE_URL}}`
 - Do NOT bypass the storage abstraction

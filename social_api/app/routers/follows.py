@@ -31,9 +31,45 @@ from app.dependencies import get_current_user, require_verified_email
 from app.models.follow import Follow, FollowStatus
 from app.models.user import User
 from app.schemas.follow import FollowRequestItem, FollowResponse, FollowerListItem
+from app.services.user_service import (
+    bump_follow_counters,
+    get_active_user_or_404,
+    get_follow,
+    is_accepted_follower,
+)
 from app.errors import ApiError
 
 router = APIRouter(tags=["Follows"])
+
+
+def _require_follow_list_access(target_user: User, current_user: User,
+                                db: Session) -> None:
+    # Private accounts only expose their follower/following lists to the owner
+    # and to accepted followers; everyone else is denied.
+    if target_user.is_private and target_user.id != current_user.id:
+        if not is_accepted_follower(db, current_user.id, target_user.id):
+            raise ApiError(
+                status_code=status.HTTP_403_FORBIDDEN,
+                code="account_private", detail="This account is private.",
+            )
+
+
+def _users_as_list_items(user_ids: list[uuid.UUID],
+                         db: Session) -> list[FollowerListItem]:
+    results = []
+    for uid in user_ids:
+        user = db.get(User, uid)
+        if user:
+            results.append(
+                FollowerListItem(
+                    id=user.id,
+                    username=user.username,
+                    display_name=user.display_name,
+                    avatar_url=user.avatar_url,
+                    is_private=user.is_private,
+                )
+            )
+    return results
 
 
 # ---------------------------------------------------------------------------
@@ -65,20 +101,10 @@ def follow_user(
             code="cannot_follow_self", detail="You cannot follow yourself.",
         )
 
-    target_user = db.get(User, user_id)
-    if not target_user or not target_user.is_active:
-        raise ApiError(
-            status_code=status.HTTP_404_NOT_FOUND,
-            code="user_not_found", detail="User not found.",
-        )
+    target_user = get_active_user_or_404(db, user_id)
 
     # Check if a follow record already exists (either pending or accepted).
-    existing = db.execute(
-        select(Follow).where(
-            Follow.follower_id == current_user.id,
-            Follow.following_id == user_id,
-        )
-    ).scalar_one_or_none()
+    existing = get_follow(db, current_user.id, user_id)
 
     if existing:
         # Give a descriptive message based on the current status.
@@ -103,8 +129,7 @@ def follow_user(
 
     # Only update counters if the follow is immediately accepted.
     if initial_status == FollowStatus.accepted:
-        current_user.following_count = max(0, current_user.following_count + 1)
-        target_user.followers_count = max(0, target_user.followers_count + 1)
+        bump_follow_counters(current_user, target_user, 1)
 
     db.commit()
     db.refresh(new_follow)
@@ -133,12 +158,7 @@ def unfollow_user(
       - If the deleted record was 'pending' → leave counters unchanged
         (they were never incremented for a pending follow).
     """
-    follow = db.execute(
-        select(Follow).where(
-            Follow.follower_id == current_user.id,
-            Follow.following_id == user_id,
-        )
-    ).scalar_one_or_none()
+    follow = get_follow(db, current_user.id, user_id)
 
     if not follow:
         raise ApiError(
@@ -150,10 +170,7 @@ def unfollow_user(
     db.delete(follow)
 
     if was_accepted:
-        unfollowed_user = db.get(User, user_id)
-        current_user.following_count = max(0, current_user.following_count - 1)
-        if unfollowed_user:
-            unfollowed_user.followers_count = max(0, unfollowed_user.followers_count - 1)
+        bump_follow_counters(current_user, db.get(User, user_id), -1)
 
     db.commit()
 
@@ -246,10 +263,7 @@ def accept_follow_request(
     # Accept the request and update counters.
     follow.status = FollowStatus.accepted
 
-    requester = db.get(User, follow.follower_id)
-    if requester:
-        requester.following_count = max(0, requester.following_count + 1)
-    current_user.followers_count = max(0, current_user.followers_count + 1)
+    bump_follow_counters(db.get(User, follow.follower_id), current_user, 1)
 
     db.commit()
     db.refresh(follow)
@@ -322,26 +336,9 @@ def list_followers(
       ...can see the followers list.
       Everyone else gets 403.
     """
-    target_user = db.get(User, user_id)
-    if not target_user or not target_user.is_active:
-        raise ApiError(status_code=status.HTTP_404_NOT_FOUND, code="user_not_found", detail="User not found.")
+    target_user = get_active_user_or_404(db, user_id)
 
-    # Check privacy access.
-    if target_user.is_private and target_user.id != current_user.id:
-        # Is the current user an accepted follower?
-        follow_check = db.execute(
-            select(Follow).where(
-                Follow.follower_id == current_user.id,
-                Follow.following_id == target_user.id,
-                Follow.status == FollowStatus.accepted,
-            )
-        ).scalar_one_or_none()
-
-        if not follow_check:
-            raise ApiError(
-                status_code=status.HTTP_403_FORBIDDEN,
-                code="account_private", detail="This account is private.",
-            )
+    _require_follow_list_access(target_user, current_user, db)
 
     # Get accepted followers.
     follows = db.execute(
@@ -353,20 +350,7 @@ def list_followers(
         .offset(offset)
     ).scalars().all()
 
-    results = []
-    for follow in follows:
-        follower = db.get(User, follow.follower_id)
-        if follower:
-            results.append(
-                FollowerListItem(
-                    id=follower.id,
-                    username=follower.username,
-                    display_name=follower.display_name,
-                    avatar_url=follower.avatar_url,
-                    is_private=follower.is_private,
-                )
-            )
-    return results
+    return _users_as_list_items([f.follower_id for f in follows], db)
 
 
 # ---------------------------------------------------------------------------
@@ -389,25 +373,10 @@ def list_following(
     Return a paginated list of users that the target user follows.
     Same privacy rules as the followers list.
     """
-    target_user = db.get(User, user_id)
-    if not target_user or not target_user.is_active:
-        raise ApiError(status_code=status.HTTP_404_NOT_FOUND, code="user_not_found", detail="User not found.")
+    target_user = get_active_user_or_404(db, user_id)
 
     # Privacy check: same logic as list_followers.
-    if target_user.is_private and target_user.id != current_user.id:
-        follow_check = db.execute(
-            select(Follow).where(
-                Follow.follower_id == current_user.id,
-                Follow.following_id == target_user.id,
-                Follow.status == FollowStatus.accepted,
-            )
-        ).scalar_one_or_none()
-
-        if not follow_check:
-            raise ApiError(
-                status_code=status.HTTP_403_FORBIDDEN,
-                code="account_private", detail="This account is private.",
-            )
+    _require_follow_list_access(target_user, current_user, db)
 
     follows = db.execute(
         select(Follow).where(
@@ -418,17 +387,4 @@ def list_following(
         .offset(offset)
     ).scalars().all()
 
-    results = []
-    for follow in follows:
-        followed_user = db.get(User, follow.following_id)
-        if followed_user:
-            results.append(
-                FollowerListItem(
-                    id=followed_user.id,
-                    username=followed_user.username,
-                    display_name=followed_user.display_name,
-                    avatar_url=followed_user.avatar_url,
-                    is_private=followed_user.is_private,
-                )
-            )
-    return results
+    return _users_as_list_items([f.following_id for f in follows], db)

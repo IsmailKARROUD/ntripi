@@ -8,8 +8,6 @@ URL-safe random string; only its SHA-256 hash is stored. Tokens are single-use
 
 from __future__ import annotations
 
-import hashlib
-import secrets
 import uuid
 from datetime import datetime, timedelta, timezone
 
@@ -17,6 +15,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.models.email_token import EmailToken
+from app.services.token_util import as_aware_utc, hash_token, new_raw_token
 
 PURPOSE_PASSWORD_RESET = "password_reset"
 PURPOSE_EMAIL_VERIFY = "email_verify"
@@ -26,15 +25,6 @@ class InvalidTokenError(Exception):
     """Raised when an email token is unknown, expired, used, or wrong-purpose."""
 
 
-def _hash(raw_token: str) -> str:
-    return hashlib.sha256(raw_token.encode("utf-8")).hexdigest()
-
-
-def _as_aware_utc(dt: datetime) -> datetime:
-    # SQLite (tests) returns naive datetimes; PostgreSQL returns tz-aware.
-    return dt if dt.tzinfo is not None else dt.replace(tzinfo=timezone.utc)
-
-
 def issue(
     db: Session,
     user_id: uuid.UUID,
@@ -42,10 +32,10 @@ def issue(
     ttl: timedelta,
 ) -> str:
     """Create a token row and return the raw token (never readable again)."""
-    raw = secrets.token_urlsafe(32)
+    raw = new_raw_token()
     row = EmailToken(
         user_id=user_id,
-        token_hash=_hash(raw),
+        token_hash=hash_token(raw),
         purpose=purpose,
         expires_at=datetime.now(timezone.utc) + ttl,
     )
@@ -61,14 +51,14 @@ def consume(db: Session, raw_token: str, purpose: str) -> uuid.UUID:
     The caller commits.
     """
     row = db.execute(
-        select(EmailToken).where(EmailToken.token_hash == _hash(raw_token))
+        select(EmailToken).where(EmailToken.token_hash == hash_token(raw_token))
     ).scalar_one_or_none()
 
     if row is None or row.purpose != purpose:
         raise InvalidTokenError("unknown token")
     if row.used_at is not None:
         raise InvalidTokenError("token already used")
-    if _as_aware_utc(row.expires_at) <= datetime.now(timezone.utc):
+    if as_aware_utc(row.expires_at) <= datetime.now(timezone.utc):
         raise InvalidTokenError("token expired")
 
     row.used_at = datetime.now(timezone.utc)

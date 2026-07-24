@@ -11,7 +11,6 @@ Endpoints:
   GET  /users/{user_id}       → public profile of any user (with follow status)
 """
 
-import time
 import uuid
 
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
@@ -25,7 +24,6 @@ from app.limiter import limiter
 from app.models.follow import Follow, FollowStatus
 from app.models.itinerary import Itinerary
 from app.models.itinerary_rating import ItineraryRating
-from app.models.stop import Stop
 from app.models.track import Track
 from app.models.user import User
 from app.schemas.user import (
@@ -39,8 +37,15 @@ from app.schemas.user import (
     VisitedLocationsResponse,
 )
 from app.services.auth import verify_google_id_token, verify_password
+from app.services.user_service import (
+    bump_follow_counters,
+    get_active_user_by_username_or_404,
+    get_active_user_or_404,
+    get_follow,
+)
 from app.services.image_service import (
     ImageProcessingError,
+    process_and_store,
     process_avatar_image,
     process_cover_image,
 )
@@ -49,6 +54,36 @@ from app.storage.factory import storage
 from app.errors import ApiError
 
 router = APIRouter(prefix="/users", tags=["Users"])
+
+
+def _build_public_profile(target_user: User, current_user: User,
+                          db: Session) -> UserPublicProfile:
+    # is_following / follow_is_pending aren't columns — derived from the
+    # current_user → target_user follow row and built by hand.
+    follow_record = get_follow(db, current_user.id, target_user.id)
+    return UserPublicProfile(
+        id=target_user.id,
+        username=target_user.username,
+        display_name=target_user.display_name,
+        bio=target_user.bio,
+        avatar_url=target_user.avatar_url,
+        cover_image_url=target_user.cover_image_url,
+        is_private=target_user.is_private,
+        followers_count=target_user.followers_count,
+        following_count=target_user.following_count,
+        created_at=target_user.created_at,
+        passport_countries=target_user.passport_countries,
+        resident_country=target_user.resident_country,
+        languages=target_user.languages,
+        is_following=(
+            follow_record is not None
+            and follow_record.status == FollowStatus.accepted
+        ),
+        follow_is_pending=(
+            follow_record is not None
+            and follow_record.status == FollowStatus.pending
+        ),
+    )
 
 
 @router.get(
@@ -109,10 +144,7 @@ def update_my_profile(
 
         for follow in pending_follows:
             follow.status = FollowStatus.accepted
-            follower = db.get(User, follow.follower_id)
-            if follower:
-                follower.following_count = max(0, follower.following_count + 1)
-            current_user.followers_count = max(0, current_user.followers_count + 1)
+            bump_follow_counters(db.get(User, follow.follower_id), current_user, 1)
 
     db.commit()
     db.refresh(current_user)
@@ -255,46 +287,8 @@ def get_user_by_username(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> UserPublicProfile:
-    target_user = db.execute(
-        select(User).where(User.username_lower == username.lower())
-    ).scalar_one_or_none()
-
-    if not target_user or not target_user.is_active:
-        raise ApiError(
-            status_code=status.HTTP_404_NOT_FOUND,
-            code="user_not_found", detail="User not found.",
-        )
-
-    follow_record = db.execute(
-        select(Follow).where(
-            Follow.follower_id == current_user.id,
-            Follow.following_id == target_user.id,
-        )
-    ).scalar_one_or_none()
-
-    return UserPublicProfile(
-        id=target_user.id,
-        username=target_user.username,
-        display_name=target_user.display_name,
-        bio=target_user.bio,
-        avatar_url=target_user.avatar_url,
-        cover_image_url=target_user.cover_image_url,
-        is_private=target_user.is_private,
-        followers_count=target_user.followers_count,
-        following_count=target_user.following_count,
-        created_at=target_user.created_at,
-        passport_countries=target_user.passport_countries,
-        resident_country=target_user.resident_country,
-        languages=target_user.languages,
-        is_following=(
-            follow_record is not None
-            and follow_record.status == FollowStatus.accepted
-        ),
-        follow_is_pending=(
-            follow_record is not None
-            and follow_record.status == FollowStatus.pending
-        ),
-    )
+    target_user = get_active_user_by_username_or_404(db, username)
+    return _build_public_profile(target_user, current_user, db)
 
 
 @router.get(
@@ -371,17 +365,12 @@ async def upload_my_avatar(
     raw_bytes = await file.read()
     try:
         # Square 800×800 pipeline so the client's 1:1 crop is preserved.
-        processed = process_avatar_image(raw_bytes)
+        versioned_url = await process_and_store(
+            raw_bytes, f"avatars/{current_user.id}.jpg",
+            process_avatar_image, cache_bust=True)
     except ImageProcessingError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
 
-    key = f"avatars/{current_user.id}.jpg"
-    public_url = await storage().save(key, processed, "image/jpeg")
-
-    # ?v=<unix_ts> busts every URL-keyed cache (CachedNetworkImage on every
-    # device, browser cache, CDN) — R2 keys are stable per user, so without
-    # this every cache would serve the previous bytes for its full TTL.
-    versioned_url = f"{public_url}?v={int(time.time() * 1000)}"
     current_user.avatar_url = versioned_url
     db.commit()
 
@@ -417,15 +406,13 @@ async def upload_my_cover_image(
 ) -> UserImageResponse:
     raw_bytes = await file.read()
     try:
-        processed = process_cover_image(raw_bytes)
+        # See note on upload_my_avatar — same cache-busting rationale.
+        versioned_url = await process_and_store(
+            raw_bytes, f"covers/{current_user.id}.jpg",
+            process_cover_image, cache_bust=True)
     except ImageProcessingError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
 
-    key = f"covers/{current_user.id}.jpg"
-    public_url = await storage().save(key, processed, "image/jpeg")
-
-    # See note on upload_my_avatar — same cache-busting rationale.
-    versioned_url = f"{public_url}?v={int(time.time() * 1000)}"
     current_user.cover_image_url = versioned_url
     db.commit()
 
@@ -465,11 +452,7 @@ def get_user_locations(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> VisitedLocationsResponse:
-    target_user = db.get(User, user_id)
-    if not target_user or not target_user.is_active:
-        raise ApiError(
-            status_code=status.HTTP_404_NOT_FOUND, code="user_not_found", detail="User not found."
-        )
+    get_active_user_or_404(db, user_id)  # 404 if the target doesn't exist
 
     itineraries = db.execute(
         select(Itinerary)
@@ -534,37 +517,4 @@ def get_user_profile(
             code="user_not_found", detail="User not found.",
         )
 
-    # Look up the follow relationship from current_user → target_user.
-    follow_record = db.execute(
-        select(Follow).where(
-            Follow.follower_id == current_user.id,
-            Follow.following_id == target_user.id,
-        )
-    ).scalar_one_or_none()
-
-    is_following = (
-        follow_record is not None and follow_record.status == FollowStatus.accepted
-    )
-    follow_is_pending = (
-        follow_record is not None and follow_record.status == FollowStatus.pending
-    )
-
-    # Build the response manually because is_following and follow_is_pending
-    # are not columns on the User ORM model — they're computed here.
-    return UserPublicProfile(
-        id=target_user.id,
-        username=target_user.username,
-        display_name=target_user.display_name,
-        bio=target_user.bio,
-        avatar_url=target_user.avatar_url,
-        cover_image_url=target_user.cover_image_url,
-        is_private=target_user.is_private,
-        followers_count=target_user.followers_count,
-        following_count=target_user.following_count,
-        created_at=target_user.created_at,
-        passport_countries=target_user.passport_countries,
-        resident_country=target_user.resident_country,
-        languages=target_user.languages,
-        is_following=is_following,
-        follow_is_pending=follow_is_pending,
-    )
+    return _build_public_profile(target_user, current_user, db)

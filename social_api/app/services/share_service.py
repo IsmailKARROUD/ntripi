@@ -58,7 +58,7 @@ def prepare_share_context(
         for stop in stops
     ]
 
-    share_url = f"{settings.share_base_url}/share/i/{itinerary.id}"
+    share_url = build_share_url(itinerary, settings)
 
     return {
         "itinerary": itinerary,
@@ -80,6 +80,11 @@ def prepare_share_context(
 # ---------------------------------------------------------------------------
 # Private helpers
 # ---------------------------------------------------------------------------
+
+def build_share_url(itinerary: "Itinerary", settings: "Settings") -> str:
+    """Absolute public share URL for an itinerary."""
+    return f"{settings.share_base_url}/share/i/{itinerary.id}"
+
 
 def _resolve_preview_image_url(itinerary: "Itinerary", settings: "Settings") -> str:
     """Return the absolute URL for the itinerary's OG preview image.

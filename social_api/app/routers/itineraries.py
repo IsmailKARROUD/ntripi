@@ -31,8 +31,9 @@ from datetime import datetime, timezone
 from typing import Literal
 
 from fastapi import APIRouter, Depends, File, HTTPException, Query, Request, UploadFile, status
-from fastapi.responses import Response
-from sqlalchemy import select, func as sqlfunc
+from fastapi.encoders import jsonable_encoder
+from fastapi.responses import JSONResponse, Response
+from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, selectinload
 
@@ -76,16 +77,16 @@ from app.schemas.itinerary import (
     StopCreate,
     StopResponse,
     StopUpdate,
-    TrackResponse,
     TransitSegmentCreate,
     TransitSegmentResponse,
     TransportLegCreate,
     TransportLegResponse,
     TransportLegUpdate,
 )
-from app.services.image_service import ImageProcessingError, process_cover_image
+from app.services.image_service import ImageProcessingError, process_and_store, process_cover_image
 from app.services.itinerary_access import can_view_itinerary, recalculate_rating
 from app.services.ordering import MAX_RANK_LENGTH, key_between, n_keys_between
+from app.services.user_service import get_active_user_or_404
 from app.storage.factory import storage
 from app.errors import ApiError
 
@@ -113,21 +114,14 @@ def _touch_itinerary(itinerary: Itinerary) -> None:
     itinerary.updated_at = datetime.now(timezone.utc)
 
 
-def _bump_and_etag(itinerary: Itinerary, db: Session) -> str:
-    """Touch updated_at and return the new ETag string."""
-    db.execute(
-        select(Itinerary)
-        .where(Itinerary.id == itinerary.id)
-        .with_for_update()
-    )
-    db.execute(
-        # Use raw SQL so SQLAlchemy's onupdate triggers correctly.
-        select(sqlfunc.now())
-    )
-    itinerary.updated_at = sqlfunc.now()  # type: ignore[assignment]
-    db.flush()
-    db.refresh(itinerary)
-    return _etag_value(itinerary)
+def _etag_json_response(schema_cls, obj, itinerary: Itinerary,
+                        status_code: int = status.HTTP_200_OK) -> JSONResponse:
+    # Endpoint-set ETag reuses the If-Match concurrency token (updated_at),
+    # so the ETagMiddleware leaves it alone and 304s against this ISO value.
+    data = jsonable_encoder(schema_cls.model_validate(obj))
+    resp = JSONResponse(content=data, status_code=status_code)
+    resp.headers["ETag"] = _etag_value(itinerary)
+    return resp
 
 
 # ---------------------------------------------------------------------------
@@ -146,6 +140,93 @@ def _require_owner(itinerary: Itinerary, current_user: User) -> None:
     if itinerary.user_id != current_user.id:
         raise ApiError(status_code=status.HTTP_403_FORBIDDEN,
                             code="itinerary_not_owner", detail="You do not have permission to modify this itinerary.")
+
+
+def _require_viewable(itinerary: Itinerary, viewer_id: uuid.UUID, db: Session,
+                      detail: str = "You do not have access to this itinerary.") -> None:
+    # Visibility single source of truth — see app/services/itinerary_access.py.
+    if not can_view_itinerary(itinerary, viewer_id, db):
+        raise ApiError(status_code=status.HTTP_403_FORBIDDEN,
+                            code="itinerary_access_denied", detail=detail)
+
+
+def _two_phase_renumber(rows, db: Session) -> None:
+    # Two-phase to dodge unique-collisions while rewriting a full rank set:
+    # first park every row on '!'+id (ASCII 33 sorts below every key_between
+    # char under COLLATE "C", so temp ranks can't clash), flush, then assign
+    # the final evenly-spaced keys.
+    for row in rows:
+        row.rank = f"!{row.id}"
+    db.flush()
+    for row, new_rank in zip(rows, n_keys_between(None, None, len(rows))):
+        row.rank = new_rank
+    db.flush()
+
+
+def _require_stops_in_itinerary(itinerary_id: uuid.UUID, from_stop_id: uuid.UUID,
+                                to_stop_id: uuid.UUID, db: Session) -> None:
+    for stop_id, label in ((from_stop_id, "from_stop_id"), (to_stop_id, "to_stop_id")):
+        stop = db.execute(
+            select(Stop).where(Stop.id == stop_id, Stop.itinerary_id == itinerary_id)
+        ).scalar_one_or_none()
+        if not stop:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
+                                detail=f"{label} does not belong to this itinerary.")
+
+
+def _annotation_not_found() -> ApiError:
+    return ApiError(status_code=status.HTTP_404_NOT_FOUND,
+                        code="annotation_not_found", detail="Annotation not found.")
+
+
+def _get_itinerary_annotation_or_404(annotation_id: uuid.UUID, itinerary_id: uuid.UUID,
+                                     db: Session) -> ItineraryAnnotation:
+    annotation = db.execute(
+        select(ItineraryAnnotation).where(
+            ItineraryAnnotation.id == annotation_id,
+            ItineraryAnnotation.itinerary_id == itinerary_id,
+        )
+    ).scalar_one_or_none()
+    if not annotation:
+        raise _annotation_not_found()
+    return annotation
+
+
+def _get_stop_annotation_or_404(annotation_id: uuid.UUID, stop_id: uuid.UUID,
+                                itinerary_id: uuid.UUID, db: Session) -> Annotation:
+    annotation = db.execute(
+        select(Annotation)
+        .join(Stop, Annotation.stop_id == Stop.id)
+        .where(
+            Annotation.id == annotation_id,
+            Annotation.stop_id == stop_id,
+            Stop.itinerary_id == itinerary_id,
+        )
+    ).scalar_one_or_none()
+    if not annotation:
+        raise _annotation_not_found()
+    return annotation
+
+
+def _apply_annotation_fields(annotation, body) -> None:
+    if body.type is not None:
+        annotation.type = body.type
+    if body.content is not None:
+        annotation.content = body.content
+
+
+def _save_annotation(annotation, itinerary: Itinerary, db: Session):
+    db.add(annotation)  # no-op for an already-persistent annotation on update
+    _touch_itinerary(itinerary)
+    db.commit()
+    db.refresh(annotation)
+    return annotation
+
+
+def _delete_annotation(annotation, itinerary: Itinerary, db: Session) -> None:
+    db.delete(annotation)
+    _touch_itinerary(itinerary)
+    db.commit()
 
 
 def _recalculate_segment_totals(segment: TransitSegment, db: Session) -> None:
@@ -286,14 +367,7 @@ def _rebalance_track(track: Track, db: Session) -> None:
     if len(stops) <= 1:
         return
 
-    for stop in stops:
-        stop.rank = f"!{stop.id}"
-    db.flush()
-
-    new_ranks = n_keys_between(None, None, len(stops))
-    for stop, new_rank in zip(stops, new_ranks):
-        stop.rank = new_rank
-    db.flush()
+    _two_phase_renumber(stops, db)
 
 
 def _resolve_stop_rank(
@@ -595,18 +669,12 @@ def get_itinerary(
 ) -> Response:
     itinerary = _load_itinerary_detail(itinerary_id, db)
 
-    if not can_view_itinerary(itinerary, current_user.id, db):
-        raise ApiError(status_code=status.HTTP_403_FORBIDDEN,
-                            code="itinerary_access_denied", detail="You don't have access to this itinerary")
+    # Preserve the pre-refactor wording (contraction, no period) — the other
+    # access-denied sites use the _require_viewable default; this one differs.
+    _require_viewable(itinerary, current_user.id, db,
+                      detail="You don't have access to this itinerary")
 
-    from fastapi.responses import JSONResponse
-    import json
-    from fastapi.encoders import jsonable_encoder
-
-    data = jsonable_encoder(ItineraryDetail.model_validate(itinerary))
-    response = JSONResponse(content=data)
-    response.headers["ETag"] = _etag_value(itinerary)
-    return response
+    return _etag_json_response(ItineraryDetail, itinerary, itinerary)
 
 
 # ---------------------------------------------------------------------------
@@ -837,13 +905,9 @@ def add_stop(
     db.refresh(stop)
     db.refresh(itinerary)  # refresh to get the new updated_at for the ETag
 
-    from fastapi.encoders import jsonable_encoder
-    from fastapi.responses import JSONResponse
-    data = jsonable_encoder(StopResponse.model_validate(stop))
-    resp = JSONResponse(content=data, status_code=status.HTTP_201_CREATED)
     # Return the new ETag so the client can immediately use it for the next mutation.
-    resp.headers["ETag"] = _etag_value(itinerary)
-    return resp
+    return _etag_json_response(StopResponse, stop, itinerary,
+                               status_code=status.HTTP_201_CREATED)
 
 
 # ---------------------------------------------------------------------------
@@ -911,12 +975,7 @@ def update_stop(
     db.refresh(stop)
     db.refresh(itinerary)
 
-    from fastapi.encoders import jsonable_encoder
-    from fastapi.responses import JSONResponse
-    data = jsonable_encoder(StopResponse.model_validate(stop))
-    resp = JSONResponse(content=data)
-    resp.headers["ETag"] = _etag_value(itinerary)
-    return resp
+    return _etag_json_response(StopResponse, stop, itinerary)
 
 
 # ---------------------------------------------------------------------------
@@ -949,8 +1008,7 @@ def delete_stop(
     db.commit()
     db.refresh(itinerary)
 
-    from fastapi.responses import Response as FastAPIResponse
-    resp = FastAPIResponse(status_code=status.HTTP_204_NO_CONTENT)
+    resp = Response(status_code=status.HTTP_204_NO_CONTENT)
     resp.headers["ETag"] = _etag_value(itinerary)
     return resp
 
@@ -1053,28 +1111,11 @@ def reorder_itinerary(
 
     # ── Apply track_order via two-phase rank rewrite ───────────────────────
     if body.track_order is not None:
-        for tid in body.track_order:
-            t = db.get(Track, tid)
-            t.rank = f"!{tid}"
-        db.flush()
-        new_ranks = n_keys_between(None, None, len(body.track_order))
-        for tid, rank in zip(body.track_order, new_ranks):
-            t = db.get(Track, tid)
-            t.rank = rank
-        db.flush()
+        _two_phase_renumber([db.get(Track, tid) for tid in body.track_order], db)
 
     # ── Apply stop_orders per-track two-phase rank rewrite ─────────────────
     for track_id, stop_ids in body.stop_orders.items():
-        for sid in stop_ids:
-            stop = db.get(Stop, sid)
-            stop.rank = f"!{sid}"
-        db.flush()
-
-        new_ranks = n_keys_between(None, None, len(stop_ids))
-        for sid, rank in zip(stop_ids, new_ranks):
-            stop = db.get(Stop, sid)
-            stop.rank = rank
-        db.flush()
+        _two_phase_renumber([db.get(Stop, sid) for sid in stop_ids], db)
 
     # ── Delete segments (cascade-removes legs) ─────────────────────────────
     for seg_id in body.segments_to_delete:
@@ -1089,12 +1130,8 @@ def reorder_itinerary(
 
     detail = _load_itinerary_detail(itinerary_id, db)
 
-    from fastapi.encoders import jsonable_encoder
-    from fastapi.responses import JSONResponse
-    data = jsonable_encoder(ItineraryDetail.model_validate(detail))
-    resp = JSONResponse(content=data)
-    resp.headers["ETag"] = _etag_value(detail)
-    return resp
+    # ETag comes from the freshly reloaded detail, not the pre-commit itinerary.
+    return _etag_json_response(ItineraryDetail, detail, detail)
 
 
 # ---------------------------------------------------------------------------
@@ -1116,11 +1153,7 @@ def add_itinerary_annotation(
         type=body.type,
         content=body.content,
     )
-    db.add(annotation)
-    _touch_itinerary(itinerary)
-    db.commit()
-    db.refresh(annotation)
-    return annotation  # type: ignore[return-value]
+    return _save_annotation(annotation, itinerary, db)  # type: ignore[return-value]
 
 
 @router.patch("/{itinerary_id}/annotations/{annotation_id}",
@@ -1135,26 +1168,9 @@ def update_itinerary_annotation(
     db: Session = Depends(get_db),
     itinerary: Itinerary = Depends(require_etag),
 ) -> ItineraryAnnotationResponse:
-    annotation = db.execute(
-        select(ItineraryAnnotation).where(
-            ItineraryAnnotation.id == annotation_id,
-            ItineraryAnnotation.itinerary_id == itinerary_id,
-        )
-    ).scalar_one_or_none()
-
-    if not annotation:
-        raise ApiError(status_code=status.HTTP_404_NOT_FOUND,
-                            code="annotation_not_found", detail="Annotation not found.")
-
-    if body.type is not None:
-        annotation.type = body.type
-    if body.content is not None:
-        annotation.content = body.content
-
-    _touch_itinerary(itinerary)
-    db.commit()
-    db.refresh(annotation)
-    return annotation  # type: ignore[return-value]
+    annotation = _get_itinerary_annotation_or_404(annotation_id, itinerary_id, db)
+    _apply_annotation_fields(annotation, body)
+    return _save_annotation(annotation, itinerary, db)  # type: ignore[return-value]
 
 
 @router.delete("/{itinerary_id}/annotations/{annotation_id}",
@@ -1168,20 +1184,8 @@ def delete_itinerary_annotation(
     db: Session = Depends(get_db),
     itinerary: Itinerary = Depends(require_etag),
 ) -> None:
-    annotation = db.execute(
-        select(ItineraryAnnotation).where(
-            ItineraryAnnotation.id == annotation_id,
-            ItineraryAnnotation.itinerary_id == itinerary_id,
-        )
-    ).scalar_one_or_none()
-
-    if not annotation:
-        raise ApiError(status_code=status.HTTP_404_NOT_FOUND,
-                            code="annotation_not_found", detail="Annotation not found.")
-
-    db.delete(annotation)
-    _touch_itinerary(itinerary)
-    db.commit()
+    annotation = _get_itinerary_annotation_or_404(annotation_id, itinerary_id, db)
+    _delete_annotation(annotation, itinerary, db)
 
 
 # ---------------------------------------------------------------------------
@@ -1209,11 +1213,7 @@ def add_annotation(
                             code="stop_not_found", detail="Stop not found.")
 
     annotation = Annotation(stop_id=stop_id, type=body.type, content=body.content)
-    db.add(annotation)
-    _touch_itinerary(itinerary)
-    db.commit()
-    db.refresh(annotation)
-    return annotation  # type: ignore[return-value]
+    return _save_annotation(annotation, itinerary, db)  # type: ignore[return-value]
 
 
 @router.delete("/{itinerary_id}/stops/{stop_id}/annotations/{annotation_id}",
@@ -1228,23 +1228,8 @@ def delete_annotation(
     current_user: User = Depends(get_current_user),
     itinerary: Itinerary = Depends(require_etag),
 ) -> None:
-    annotation = db.execute(
-        select(Annotation)
-        .join(Stop, Annotation.stop_id == Stop.id)
-        .where(
-            Annotation.id == annotation_id,
-            Annotation.stop_id == stop_id,
-            Stop.itinerary_id == itinerary_id,
-        )
-    ).scalar_one_or_none()
-
-    if not annotation:
-        raise ApiError(status_code=status.HTTP_404_NOT_FOUND,
-                            code="annotation_not_found", detail="Annotation not found.")
-
-    db.delete(annotation)
-    _touch_itinerary(itinerary)
-    db.commit()
+    annotation = _get_stop_annotation_or_404(annotation_id, stop_id, itinerary_id, db)
+    _delete_annotation(annotation, itinerary, db)
 
 
 @router.patch("/{itinerary_id}/stops/{stop_id}/annotations/{annotation_id}",
@@ -1259,29 +1244,9 @@ def update_annotation(
     current_user: User = Depends(get_current_user),
     itinerary: Itinerary = Depends(require_etag),
 ) -> AnnotationResponse:
-    annotation = db.execute(
-        select(Annotation)
-        .join(Stop, Annotation.stop_id == Stop.id)
-        .where(
-            Annotation.id == annotation_id,
-            Annotation.stop_id == stop_id,
-            Stop.itinerary_id == itinerary_id,
-        )
-    ).scalar_one_or_none()
-
-    if not annotation:
-        raise ApiError(status_code=status.HTTP_404_NOT_FOUND,
-                            code="annotation_not_found", detail="Annotation not found.")
-
-    if body.content is not None:
-        annotation.content = body.content
-    if body.type is not None:
-        annotation.type = body.type
-
-    _touch_itinerary(itinerary)
-    db.commit()
-    db.refresh(annotation)
-    return annotation  # type: ignore[return-value]
+    annotation = _get_stop_annotation_or_404(annotation_id, stop_id, itinerary_id, db)
+    _apply_annotation_fields(annotation, body)
+    return _save_annotation(annotation, itinerary, db)  # type: ignore[return-value]
 
 
 # ---------------------------------------------------------------------------
@@ -1298,9 +1263,7 @@ def upsert_rating(
     current_user: User = Depends(require_verified_email),  # high-value: verified email required
 ) -> RatingResponse:
     itinerary = _get_itinerary_or_404(itinerary_id, db)
-    if not can_view_itinerary(itinerary, current_user.id, db):
-        raise ApiError(status_code=status.HTTP_403_FORBIDDEN,
-                            code="itinerary_access_denied", detail="You do not have access to this itinerary.")
+    _require_viewable(itinerary, current_user.id, db)
 
     existing = db.execute(
         select(ItineraryRating).where(
@@ -1410,9 +1373,7 @@ def save_itinerary(
         raise ApiError(status_code=status.HTTP_400_BAD_REQUEST,
                             code="cannot_save_own_itinerary", detail="You cannot save your own itinerary.")
 
-    if not can_view_itinerary(itinerary, current_user.id, db):
-        raise ApiError(status_code=status.HTTP_403_FORBIDDEN,
-                            code="itinerary_access_denied", detail="You do not have access to this itinerary.")
+    _require_viewable(itinerary, current_user.id, db)
 
     existing = db.get(SavedItinerary, (itinerary_id, current_user.id))
     if existing:
@@ -1445,9 +1406,7 @@ def get_ratings_page(
     current_user: User = Depends(get_current_user),
 ) -> RatingsPageResponse:
     itinerary = _get_itinerary_or_404(itinerary_id, db)
-    if not can_view_itinerary(itinerary, current_user.id, db):
-        raise ApiError(status_code=status.HTTP_403_FORBIDDEN,
-                            code="itinerary_access_denied", detail="You do not have access to this itinerary.")
+    _require_viewable(itinerary, current_user.id, db)
 
     rows = db.execute(
         select(
@@ -1521,13 +1480,7 @@ def create_segment(
     itinerary = _get_itinerary_or_404(itinerary_id, db)
     _require_owner(itinerary, current_user)
 
-    for stop_id, label in ((body.from_stop_id, "from_stop_id"), (body.to_stop_id, "to_stop_id")):
-        stop = db.execute(
-            select(Stop).where(Stop.id == stop_id, Stop.itinerary_id == itinerary_id)
-        ).scalar_one_or_none()
-        if not stop:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
-                                detail=f"{label} does not belong to this itinerary.")
+    _require_stops_in_itinerary(itinerary_id, body.from_stop_id, body.to_stop_id, db)
 
     segment = TransitSegment(
         itinerary_id=itinerary_id,
@@ -1562,9 +1515,7 @@ def list_segments(
     current_user: User = Depends(get_current_user),
 ) -> list[TransitSegmentResponse]:
     itinerary = _get_itinerary_or_404(itinerary_id, db)
-    if not can_view_itinerary(itinerary, current_user.id, db):
-        raise ApiError(status_code=status.HTTP_403_FORBIDDEN,
-                            code="itinerary_access_denied", detail="You do not have access to this itinerary.")
+    _require_viewable(itinerary, current_user.id, db)
 
     segments = db.execute(
         select(TransitSegment)
@@ -1598,13 +1549,7 @@ def update_segment(
 
     segment = _get_segment_or_404(segment_id, itinerary_id, db)
 
-    for stop_id, label in ((body.from_stop_id, "from_stop_id"), (body.to_stop_id, "to_stop_id")):
-        stop = db.execute(
-            select(Stop).where(Stop.id == stop_id, Stop.itinerary_id == itinerary_id)
-        ).scalar_one_or_none()
-        if not stop:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
-                                detail=f"{label} does not belong to this itinerary.")
+    _require_stops_in_itinerary(itinerary_id, body.from_stop_id, body.to_stop_id, db)
 
     segment.from_stop_id = body.from_stop_id
     segment.to_stop_id = body.to_stop_id
@@ -1755,12 +1700,12 @@ async def upload_itinerary_image(
     raw_bytes = await file.read()
 
     try:
-        processed = process_cover_image(raw_bytes)
+        # No cache-bust here: itinerary covers have never carried a ?v= suffix.
+        public_url = await process_and_store(
+            raw_bytes, f"itineraries/{itinerary_id}.jpg",
+            process_cover_image, cache_bust=False)
     except ImageProcessingError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
-
-    key = f"itineraries/{itinerary_id}.jpg"
-    public_url = await storage().save(key, processed, "image/jpeg")
 
     itinerary.cover_image_url = public_url
     db.commit()
@@ -1797,10 +1742,7 @@ def get_user_itineraries(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> list[ItinerarySummary]:
-    target_user = db.get(User, user_id)
-    if not target_user or not target_user.is_active:
-        raise ApiError(status_code=status.HTTP_404_NOT_FOUND,
-                            code="user_not_found", detail="User not found.")
+    get_active_user_or_404(db, user_id)  # 404 if the target doesn't exist
 
     itineraries = db.execute(
         select(Itinerary)
