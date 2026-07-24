@@ -314,6 +314,9 @@ class _ItineraryFormScreenState extends ConsumerState<ItineraryFormScreen> {
       hintText: title,
     );
     if (!confirmed || !mounted) return;
+    // Drive the existing SavingOverlay so the loader blocks the screen until
+    // the network delete resolves. Left true on success — the screen unmounts.
+    setState(() => _saving = true);
     try {
       await ref
           .read(myItinerariesProvider.notifier)
@@ -321,6 +324,7 @@ class _ItineraryFormScreenState extends ConsumerState<ItineraryFormScreen> {
       if (!mounted) return;
       router.go('/itineraries');
     } on Exception catch (e) {
+      if (mounted) setState(() => _saving = false);
       messenger.showSnackBar(
         SnackBar(content: Text(extractErrorMessage(e as dynamic, AppLocalizations.of(context)!))),
       );

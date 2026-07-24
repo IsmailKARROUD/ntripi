@@ -15,11 +15,22 @@ import 'package:social_flutter/features/itineraries/providers/itinerary_provider
 import 'package:social_flutter/core/utils/platform_utils.dart';
 import 'package:social_flutter/l10n/app_localizations.dart';
 import 'package:social_flutter/shared/widgets/loaders.dart';
+import 'package:social_flutter/shared/widgets/saving_overlay.dart';
 import 'package:social_flutter/core/connectivity/connectivity_service.dart';
 import 'package:social_flutter/shared/widgets/offline_gate.dart';
 
-class ItineraryListScreen extends ConsumerWidget {
+class ItineraryListScreen extends ConsumerStatefulWidget {
   const ItineraryListScreen({super.key});
+
+  @override
+  ConsumerState<ItineraryListScreen> createState() =>
+      _ItineraryListScreenState();
+}
+
+class _ItineraryListScreenState extends ConsumerState<ItineraryListScreen> {
+  // Blocks the screen with the SavingOverlay loader while a delete is in
+  // flight — removeItinerary awaits the network call before dropping the card.
+  bool _deleting = false;
 
   Future<void> _confirmDelete(
     BuildContext context,
@@ -38,6 +49,7 @@ class ItineraryListScreen extends ConsumerWidget {
 
     if (!confirmed || !context.mounted) return;
 
+    setState(() => _deleting = true);
     try {
       await ref
           .read(myItinerariesProvider.notifier)
@@ -47,11 +59,13 @@ class ItineraryListScreen extends ConsumerWidget {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(extractErrorMessage(e as dynamic, AppLocalizations.of(context)!))),
       );
+    } finally {
+      if (mounted) setState(() => _deleting = false);
     }
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final nt = context.nt;
     final l10n = AppLocalizations.of(context)!;
     final itinerariesAsync = ref.watch(myItinerariesProvider);
@@ -59,7 +73,10 @@ class ItineraryListScreen extends ConsumerWidget {
     // offline it just no-ops; the shell's offline banner explains why.
     final online = ref.watch(isOnlineProvider).value ?? true;
 
-    return Scaffold(
+    return SavingOverlay(
+      saving: _deleting,
+      tint: nt.surface,
+      child: Scaffold(
       backgroundColor: nt.surface,
       resizeToAvoidBottomInset: false,
       body: SafeArea(
@@ -193,6 +210,7 @@ class ItineraryListScreen extends ConsumerWidget {
           ),
         ),
       ),
+    ),
     );
   }
 }
