@@ -32,7 +32,8 @@ class ProfileHeroAndIdentity extends StatelessWidget {
   final String? coverImageUrl;
   final List<VisitedLocation> locations;
   final VoidCallback? onHeroTap;
-  final VoidCallback? onAvatarTap;
+  // Receives the global tap point so the viewer can grow out of it.
+  final void Function(Offset globalPosition)? onAvatarTap;
   // Anchors the "add a profile photo" hint beak at the Edit pencil button.
   final GlobalKey? editButtonKey;
 
@@ -96,7 +97,9 @@ class ProfileHeroAndIdentity extends StatelessWidget {
               children: [
                 GestureDetector(
                   behavior: HitTestBehavior.opaque,
-                  onTap: onAvatarTap,
+                  onTapUp: onAvatarTap == null
+                      ? null
+                      : (details) => onAvatarTap!(details.globalPosition),
                   child: AvatarWithBadge(
                     avatarUrl: user.avatarUrl,
                     isPrivate: user.isPrivate,
@@ -190,9 +193,8 @@ class ProfileMapHero extends StatelessWidget {
     final showMapBlurAndCta = !hasCover && !isContentHidden;
     // A real cover opens full-screen on tap; the map fallback keeps its
     // existing "tap to see stops" behavior.
-    final heroTap = (hasCover && !isContentHidden)
-        ? () => showFullscreenImage(context, imageUrl: coverImageUrl!)
-        : onHeroTap;
+    final coverTappable = hasCover && !isContentHidden;
+    final showHeroTapLayer = coverTappable || onHeroTap != null;
 
     return ClipRect(
       child: Stack(
@@ -326,11 +328,20 @@ class ProfileMapHero extends StatelessWidget {
           // Whole-hero tap target. Placed BEFORE the chrome buttons so the
           // buttons (drawn after) intercept their own taps first; this layer
           // catches everything else.
-          if (heroTap != null)
+          if (showHeroTapLayer)
             Positioned.fill(
               child: GestureDetector(
                 behavior: HitTestBehavior.opaque,
-                onTap: heroTap,
+                // Capture the tap point so the cover grows out of it.
+                onTapUp: (details) {
+                  if (coverTappable) {
+                    showFullscreenImage(context,
+                        imageUrl: coverImageUrl!,
+                        sourcePosition: details.globalPosition);
+                  } else {
+                    onHeroTap?.call();
+                  }
+                },
               ),
             ),
 

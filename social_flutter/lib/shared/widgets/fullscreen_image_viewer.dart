@@ -14,14 +14,48 @@ import 'package:social_flutter/core/ui/app_theme.dart';
 
 /// Opens [imageUrl] full-screen on a black backdrop. [imageUrl] may be a
 /// relative `/uploads/...` path (backend media) or an absolute URL.
-void showFullscreenImage(BuildContext context, {required String imageUrl}) {
+///
+/// [sourcePosition] is the global tap point; when given, the viewer grows out
+/// of (and collapses back into) that point instead of scaling from the center.
+void showFullscreenImage(
+  BuildContext context, {
+  required String imageUrl,
+  Offset? sourcePosition,
+}) {
   if (imageUrl.isEmpty) return;
   // Same relative→absolute rule the profile hero uses for cover images.
   final resolved = imageUrl.startsWith('/') ? '$kApiBaseUrl$imageUrl' : imageUrl;
+
+  // Map the tap point to a scale alignment (-1..1 across the screen) so the
+  // ScaleTransition emanates from exactly where the user tapped.
+  var origin = Alignment.center;
+  if (sourcePosition != null) {
+    final size = MediaQuery.of(context).size;
+    if (size.width > 0 && size.height > 0) {
+      origin = Alignment(
+        (sourcePosition.dx / size.width) * 2 - 1,
+        (sourcePosition.dy / size.height) * 2 - 1,
+      );
+    }
+  }
+
   Navigator.of(context).push(
-    MaterialPageRoute(
-      fullscreenDialog: true,
-      builder: (_) => _FullscreenImageScreen(imageUrl: resolved),
+    PageRouteBuilder(
+      transitionDuration: const Duration(milliseconds: 250),
+      reverseTransitionDuration: const Duration(milliseconds: 200),
+      pageBuilder: (_, _, _) => _FullscreenImageScreen(imageUrl: resolved),
+      // Grow + fade out of the tapped point (or the center as a fallback).
+      transitionsBuilder: (_, animation, _, child) {
+        final curved = CurvedAnimation(parent: animation, curve: Curves.ease);
+        return FadeTransition(
+          opacity: curved,
+          child: ScaleTransition(
+            scale: Tween<double>(begin: 0.2, end: 1.0).animate(curved),
+            alignment: origin,
+            child: child,
+          ),
+        );
+      },
     ),
   );
 }

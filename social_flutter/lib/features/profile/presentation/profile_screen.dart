@@ -217,10 +217,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                               ),
                             ),
                           ),
-                  onAvatarTap: () {
+                  onAvatarTap: (pos) {
                     final avatar = user.avatarUrl;
                     if (avatar != null && avatar.isNotEmpty) {
-                      showFullscreenImage(context, imageUrl: avatar);
+                      showFullscreenImage(context,
+                          imageUrl: avatar, sourcePosition: pos);
                     } else if (widget.isSelf) {
                       // No avatar: point the owner at the Edit pencil to add one.
                       final ctx = _editButtonKey.currentContext;
