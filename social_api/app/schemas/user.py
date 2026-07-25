@@ -122,8 +122,8 @@ class UserUpdateRequest(BaseModel):
             return None
         if not isinstance(v, list):
             raise ValueError("must be a list of language codes")
-        if len(v) > 10:
-            raise ValueError("at most 10 languages")
+        if len(v) > 60:
+            raise ValueError("at most 60 languages")
         result = []
         for code in v:
             if not isinstance(code, str) or len(code) < 2 or len(code) > 3 or not code.isalpha():

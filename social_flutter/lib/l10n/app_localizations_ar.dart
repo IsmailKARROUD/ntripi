@@ -388,6 +388,11 @@ class AppLocalizationsAr extends AppLocalizations {
   String get languagesLabel => 'اللغات';
 
   @override
+  String maxLanguagesReached(int count) {
+    return 'يمكنك إضافة $count لغة كحد أقصى.';
+  }
+
+  @override
   String get privacySection => 'الخصوصية';
 
   @override

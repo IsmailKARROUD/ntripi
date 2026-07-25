@@ -138,6 +138,15 @@
   "passportLabel": "Passport",
   "livesInLabel": "Lives in",
   "languagesLabel": "Languages",
+  "maxLanguagesReached": "You can add up to {count} languages.",
+  "@maxLanguagesReached": {
+    "description": "Snackbar shown when the user tries to add a language beyond the allowed maximum.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "privacySection": "Privacy",
   "securitySection": "Security",
   "dangerZoneSection": "Danger zone",

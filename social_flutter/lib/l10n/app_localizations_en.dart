@@ -385,6 +385,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get languagesLabel => 'Languages';
 
   @override
+  String maxLanguagesReached(int count) {
+    return 'You can add up to $count languages.';
+  }
+
+  @override
   String get privacySection => 'Privacy';
 
   @override

@@ -796,6 +796,12 @@ abstract class AppLocalizations {
   /// **'Languages'**
   String get languagesLabel;
 
+  /// Snackbar shown when the user tries to add a language beyond the allowed maximum.
+  ///
+  /// In en, this message translates to:
+  /// **'You can add up to {count} languages.'**
+  String maxLanguagesReached(int count);
+
   /// No description provided for @privacySection.
   ///
   /// In en, this message translates to:

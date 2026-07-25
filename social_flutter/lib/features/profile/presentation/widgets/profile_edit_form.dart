@@ -52,6 +52,9 @@ class _ProfileEditFormState extends ConsumerState<ProfileEditForm> {
   late List<String> _editLanguages;
   bool _languagesChanged = false;
 
+  // Mirrors the backend cap in social_api/app/schemas/user.py (_check_languages).
+  static const int _kMaxLanguages = 60;
+
   // Picker state — bytes are uploaded inside _saveEdits before the JSON PATCH.
   Uint8List? _pickedAvatarBytes;
   String? _pickedAvatarFilename;
@@ -626,6 +629,17 @@ class _ProfileEditFormState extends ConsumerState<ProfileEditForm> {
                     codes: _editLanguages,
                     labelFor: (code) => code,
                     onAdd: () async {
+                      // Mirror the backend cap (social_api schemas/user.py) so the
+                      // user gets a clear message instead of a 422 at save time.
+                      if (_editLanguages.length >= _kMaxLanguages) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content:
+                                Text(l10n.maxLanguagesReached(_kMaxLanguages)),
+                          ),
+                        );
+                        return;
+                      }
                       final code = await showLanguagePickerSheet(
                         context,
                         exclude: _editLanguages,

@@ -138,6 +138,7 @@
   "passportLabel": "جواز السفر",
   "livesInLabel": "يقيم في",
   "languagesLabel": "اللغات",
+  "maxLanguagesReached": "يمكنك إضافة {count} لغة كحد أقصى.",
   "privacySection": "الخصوصية",
   "securitySection": "الأمان",
   "dangerZoneSection": "منطقة الخطر",
