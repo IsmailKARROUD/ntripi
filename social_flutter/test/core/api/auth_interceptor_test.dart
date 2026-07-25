@@ -181,6 +181,64 @@ void main() {
     });
   });
 
+  group('onError 401 application-level', () {
+    test('passes a coded 401 (incorrect_password) through without refresh',
+        () async {
+      final futureExp = DateTime.now()
+              .add(const Duration(minutes: 10))
+              .millisecondsSinceEpoch ~/
+          1000;
+      FlutterSecureStorage.setMockInitialValues({
+        'ntripi_access_token': _jwtWithExp(futureExp),
+        'ntripi_refresh_token': 'refresh',
+      });
+
+      final stack = makeStack();
+      // Protected route returns an application-level 401 carrying a `code`
+      // (wrong password on DELETE /users/me) — not a token-expiry 401.
+      stack.adapter.onDelete(
+        '/users/me',
+        (server) => server.reply(401, {
+          'code': 'incorrect_password',
+          'detail': 'Incorrect password.',
+        }),
+      );
+      // If the interceptor wrongly treated this as a token 401, it would
+      // refresh + retry — wire BOTH to succeed so a regression surfaces as a
+      // masked 204 instead of the 401 the caller must actually see.
+      stack.bareAdapter.onPost(
+        kRefreshEndpoint,
+        (server) => server.reply(200, {
+          'access_token': _jwtWithExp(futureExp + 60),
+          'refresh_token': 'new-refresh',
+          'refresh_expires_at': DateTime.now()
+              .add(const Duration(days: 30))
+              .toUtc()
+              .toIso8601String(),
+          'token_type': 'bearer',
+          'user_id': 'u',
+          'username': 'alice',
+        }),
+      );
+      stack.bareAdapter.onDelete(
+        '/users/me',
+        (server) => server.reply(204, {}),
+      );
+
+      DioException? caught;
+      try {
+        await stack.dio.delete('/users/me');
+      } on DioException catch (e) {
+        caught = e;
+      }
+
+      // The coded 401 reached the caller unchanged (not masked by a retry).
+      expect(caught, isNotNull);
+      expect(caught!.response?.statusCode, 401);
+      expect(caught.response?.data['code'], 'incorrect_password');
+    });
+  });
+
   group('offline tolerance', () {
     test(
         'when refresh fails with network error, request flies with auth_skipped',

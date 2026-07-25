@@ -63,6 +63,9 @@ class UserPrivateProfile(UserBase):
     # True when the account can log in with a password (not Google-only). The
     # client uses this to show/hide "Change password". Reads User.has_password.
     has_password: bool
+    # True when a Google login is linked. With has_password, lets the delete
+    # screen offer Google as an alternative re-auth for dual-method accounts.
+    has_google: bool
     is_active: bool
     updated_at: datetime
 

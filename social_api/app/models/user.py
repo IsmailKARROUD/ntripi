@@ -104,6 +104,13 @@ class User(Base):
         return self.password_hash is not None
 
     @property
+    def has_google(self) -> bool:
+        """True when a Google login is linked (google_sub set). An account can
+        have both a password and Google — the delete flow offers either as a
+        re-auth credential when both are present."""
+        return self.google_sub is not None
+
+    @property
     def name_for_display(self) -> str:
         """Returns display_name if set, else falls back to @username."""
         return self.display_name or f"@{self.username}"

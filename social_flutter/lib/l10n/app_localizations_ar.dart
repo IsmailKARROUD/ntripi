@@ -1134,6 +1134,10 @@ class AppLocalizationsAr extends AppLocalizations {
   String get deleteAccountEnterPassword => 'أدخل كلمة المرور للتأكيد';
 
   @override
+  String get deleteAccountEnterPasswordError =>
+      'الرجاء إدخال كلمة المرور للاستمرار.';
+
+  @override
   String get deleteAccountPasswordLabel => 'كلمة المرور';
 
   @override
@@ -1152,6 +1156,13 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get deleteAccountGoogleButton => 'المصادقة عبر Google';
+
+  @override
+  String get deleteAccountOrDivider => 'أو';
+
+  @override
+  String get deleteAccountGoogleAlternative =>
+      'تفضّل استخدام Google؟ أعد المصادقة عبر Google بدلاً من ذلك.';
 
   @override
   String get deleteAnnotationTitle => 'حذف التنويه؟';

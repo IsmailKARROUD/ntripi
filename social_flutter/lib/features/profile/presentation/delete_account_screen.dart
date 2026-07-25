@@ -68,6 +68,13 @@ class _DeleteAccountScreenState extends ConsumerState<DeleteAccountScreen> {
   // ── Password account ──────────────────────────────────────────────────────
 
   Future<void> _confirmAndDeleteWithPassword() async {
+    // Guard the blank field before the type-to-confirm step so the user isn't
+    // made to type the confirmation phrase only to fail on an empty password.
+    if (_passwordController.text.isEmpty) {
+      setState(() => _errorMessage =
+          AppLocalizations.of(context)!.deleteAccountEnterPasswordError);
+      return;
+    }
     if (!await _confirmTyped() || !mounted) return;
     setState(() {
       _isLoading = true;
@@ -198,6 +205,9 @@ class _DeleteAccountScreenState extends ConsumerState<DeleteAccountScreen> {
 
   Widget _buildBody(BuildContext context, AppLocalizations l10n, User user) {
     final nt = context.nt;
+    // Dual-method accounts (password + linked Google) get BOTH re-auth options:
+    // the password path, then Google as an alternative below an OR divider.
+    final dualMethod = user.hasPassword && user.hasGoogle;
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
       child: Column(
@@ -223,10 +233,26 @@ class _DeleteAccountScreenState extends ConsumerState<DeleteAccountScreen> {
 
           const SizedBox(height: 32),
 
+          // Primary action for the account's own method.
           if (user.hasPassword)
             _passwordDeleteButton(l10n)
           else
             _googleActionArea(l10n),
+
+          // Dual-method: offer Google as an alternative to the password.
+          if (dualMethod) ...[
+            const SizedBox(height: 20),
+            _orDivider(l10n),
+            const SizedBox(height: 20),
+            Text(
+              l10n.deleteAccountGoogleAlternative,
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 13, color: nt.text2),
+            ),
+            const SizedBox(height: 12),
+            _googleActionArea(l10n),
+          ],
+
           const SizedBox(height: 12),
 
           OutlinedButton(
@@ -354,6 +380,27 @@ class _DeleteAccountScreenState extends ConsumerState<DeleteAccountScreen> {
             ? const NTripiRingLoader(size: 20)
             : Text(l10n.deleteAccountButton, style: const TextStyle(fontSize: 16)),
       ),
+    );
+  }
+
+  Widget _orDivider(AppLocalizations l10n) {
+    final nt = context.nt;
+    return Row(
+      children: [
+        Expanded(child: Divider(color: nt.border)),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          child: Text(
+            l10n.deleteAccountOrDivider,
+            style: TextStyle(
+              color: nt.text2,
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+        Expanded(child: Divider(color: nt.border)),
+      ],
     );
   }
 

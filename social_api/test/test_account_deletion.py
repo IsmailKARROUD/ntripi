@@ -391,3 +391,85 @@ class TestGoogleAccountDeletion:
                            headers=auth_headers(token))
         assert r.status_code == 401
         assert r.json()["code"] == "google_reauth_required"
+
+
+# ---------------------------------------------------------------------------
+# Class: TestDualMethodDeletion — an account with BOTH a password and a linked
+# Google login (a password user who signed in with Google on the same verified
+# email). Either credential must be accepted for deletion.
+# ---------------------------------------------------------------------------
+
+def link_google(client, monkeypatch, email, sub="g-dual"):
+    """Sign in with Google on an EXISTING verified email → links google_sub and
+    keeps password_hash, producing a dual-method account. Returns its token."""
+    _patch_google_verifier(monkeypatch, sub=sub, email=email)
+    r = client.post("/auth/google", json={"id_token": "fake", "tos_accepted": True})
+    assert r.status_code == 200, r.json()
+    return r.json()["access_token"]
+
+
+class TestDualMethodDeletion:
+    def test_dual_method_deletes_with_password(self, client, monkeypatch):
+        register_ok(client, "alice", "alice@x.com")
+        token = link_google(client, monkeypatch, "alice@x.com")
+
+        r = delete_account(client, token, "test1234")
+        assert r.status_code == 204, r.text
+        assert client.get("/users/me", headers=auth_headers(token)).status_code == 401
+
+    def test_dual_method_deletes_with_google_token(self, client, monkeypatch):
+        register_ok(client, "alice", "alice@x.com")
+        token = link_google(client, monkeypatch, "alice@x.com", sub="g-dual")
+
+        # Verifier still returns the linked sub → Google re-auth works too.
+        r = delete_account_google(client, token)
+        assert r.status_code == 204, r.text
+        assert client.get("/users/me", headers=auth_headers(token)).status_code == 401
+
+    def test_dual_method_wrong_password_rejected(self, client, monkeypatch):
+        register_ok(client, "alice", "alice@x.com")
+        token = link_google(client, monkeypatch, "alice@x.com")
+
+        r = delete_account(client, token, "wrongpass9")
+        assert r.status_code == 401
+        assert r.json()["code"] == "incorrect_password"
+
+    def test_dual_method_google_mismatch_rejected(self, client, monkeypatch):
+        register_ok(client, "alice", "alice@x.com")
+        token = link_google(client, monkeypatch, "alice@x.com", sub="g-dual")
+
+        # A Google token for a DIFFERENT account must not delete this one.
+        import app.routers.users as users_router
+        monkeypatch.setattr(
+            users_router, "verify_google_id_token", lambda t: {"sub": "someone-else"},
+        )
+        r = delete_account_google(client, token)
+        assert r.status_code == 401
+        assert r.json()["code"] == "google_account_mismatch"
+
+
+# ---------------------------------------------------------------------------
+# Class: TestHasGoogleFlag — GET /users/me exposes has_google so the client can
+# offer Google re-auth on dual-method accounts.
+# ---------------------------------------------------------------------------
+
+class TestHasGoogleFlag:
+    def test_password_only_account_has_no_google(self, client):
+        alice = register_ok(client, "alice", "alice@x.com")
+        me = client.get("/users/me", headers=auth_headers(alice["access_token"])).json()
+        assert me["has_password"] is True
+        assert me["has_google"] is False
+
+    def test_google_only_account_has_google(self, client, monkeypatch):
+        _patch_google_verifier(monkeypatch, sub="g-1")
+        gina = google_signin(client, sub="g-1")
+        me = client.get("/users/me", headers=auth_headers(gina["access_token"])).json()
+        assert me["has_password"] is False
+        assert me["has_google"] is True
+
+    def test_dual_method_account_has_both(self, client, monkeypatch):
+        register_ok(client, "alice", "alice@x.com")
+        token = link_google(client, monkeypatch, "alice@x.com")
+        me = client.get("/users/me", headers=auth_headers(token)).json()
+        assert me["has_password"] is True
+        assert me["has_google"] is True

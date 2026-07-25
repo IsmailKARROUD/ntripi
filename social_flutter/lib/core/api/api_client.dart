@@ -208,6 +208,16 @@ class AuthInterceptor extends Interceptor {
       return;
     }
 
+    // Application-level 401s (wrong password, Google re-auth required, …) carry
+    // an error `code`; only genuine access-token failures from get_current_user
+    // are codeless. Don't refresh/retry/logout on these — let the caller surface
+    // the message (otherwise a wrong-password 401 would bounce the user to /login).
+    final data = err.response?.data;
+    if (data is Map && data['code'] is String) {
+      handler.next(err);
+      return;
+    }
+
     // Server rejected our access token mid-flight (token was valid by
     // local check but revoked server-side, or `exp` slipped past during
     // the request). Try one refresh + retry, then give up.

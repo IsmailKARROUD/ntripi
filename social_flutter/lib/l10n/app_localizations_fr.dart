@@ -1130,6 +1130,10 @@ class AppLocalizationsFr extends AppLocalizations {
       'Entrez votre mot de passe pour confirmer';
 
   @override
+  String get deleteAccountEnterPasswordError =>
+      'Veuillez saisir votre mot de passe pour continuer.';
+
+  @override
   String get deleteAccountPasswordLabel => 'Mot de passe';
 
   @override
@@ -1148,6 +1152,13 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get deleteAccountGoogleButton => 'Continuer avec Google';
+
+  @override
+  String get deleteAccountOrDivider => 'OU';
+
+  @override
+  String get deleteAccountGoogleAlternative =>
+      'Vous préférez Google ? Ré-authentifiez-vous avec Google.';
 
   @override
   String get deleteAnnotationTitle => 'Supprimer l\'annotation ?';

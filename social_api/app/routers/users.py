@@ -188,26 +188,22 @@ def delete_my_account(
     every request. With the user row gone, it returns None and raises 401.
     No token blacklist is needed.
     """
-    # Step 1 — re-authenticate before an irreversible delete.
-    if current_user.has_password:
-        # Password account. has_password guarantees password_hash is not None —
-        # keeps verify_password None-safe (it can't hash a None).
-        if not payload.password or not verify_password(
-            payload.password, current_user.password_hash
-        ):
+    # Step 1 — re-authenticate before an irreversible delete. Dual-method
+    # accounts (password + linked Google) may present EITHER credential; the
+    # branch is picked by which one the client sent, not by account precedence.
+    # Truthy checks mean an empty-string password counts as "not given," so a
+    # dual-method user sending only a Google token still reaches the Google path.
+    if payload.password and current_user.has_password:
+        # has_password guarantees password_hash is not None — keeps
+        # verify_password None-safe (it can't hash a None).
+        if not verify_password(payload.password, current_user.password_hash):
             raise ApiError(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 code="incorrect_password", detail="Incorrect password.",
             )
-    elif current_user.google_sub:
-        # Passwordless Google account: verify a fresh Google ID token whose
-        # `sub` matches this account (mirrors the /auth/google re-auth path).
-        if not payload.google_id_token:
-            raise ApiError(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                code="google_reauth_required",
-                detail="Google re-authentication required.",
-            )
+    elif payload.google_id_token and current_user.google_sub:
+        # Verify a fresh Google ID token whose `sub` matches this account
+        # (mirrors the /auth/google re-auth path).
         try:
             claims = verify_google_id_token(payload.google_id_token)
         except Exception:
@@ -222,9 +218,21 @@ def delete_my_account(
                 code="google_account_mismatch",
                 detail="Google account does not match.",
             )
+    # No usable credential was supplied — report by what the account expects.
     # Future providers (Apple/Facebook) add an `elif current_user.apple_sub:` /
-    # `elif current_user.facebook_id:` branch here, verifying that provider's
+    # `elif current_user.facebook_id:` branch above, verifying that provider's
     # credential from a new optional field on DeleteAccountRequest.
+    elif current_user.has_password:
+        raise ApiError(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            code="incorrect_password", detail="Incorrect password.",
+        )
+    elif current_user.google_sub:
+        raise ApiError(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            code="google_reauth_required",
+            detail="Google re-authentication required.",
+        )
     else:
         # No password and no known provider — should be unreachable; fail closed.
         raise ApiError(

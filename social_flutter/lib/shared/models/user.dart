@@ -26,6 +26,11 @@ class User {
   /// present on GET /users/me; used to show/hide "Change password".
   final bool hasPassword;
 
+  /// True when a Google login is linked. Only present on GET /users/me; with
+  /// [hasPassword] it lets the delete screen offer Google as an alternative
+  /// re-auth for dual-method accounts.
+  final bool hasGoogle;
+
   final String? displayName;
   final String? bio;
   final String? avatarUrl;
@@ -63,6 +68,7 @@ class User {
     this.email,
     this.emailVerified = false,
     this.hasPassword = false,
+    this.hasGoogle = false,
     this.displayName,
     this.bio,
     this.avatarUrl,
@@ -85,6 +91,7 @@ class User {
       email: json['email'] as String?,
       emailVerified: json['email_verified'] as bool? ?? false,
       hasPassword: json['has_password'] as bool? ?? false,
+      hasGoogle: json['has_google'] as bool? ?? false,
       displayName: json['display_name'] as String?,
       bio: json['bio'] as String?,
       avatarUrl: json['avatar_url'] as String?,
@@ -114,6 +121,7 @@ class User {
       if (email != null) 'email': email,
       'email_verified': emailVerified,
       'has_password': hasPassword,
+      'has_google': hasGoogle,
       if (displayName != null) 'display_name': displayName,
       if (bio != null) 'bio': bio,
       if (avatarUrl != null) 'avatar_url': avatarUrl,
@@ -138,6 +146,7 @@ class User {
     String? email,
     bool? emailVerified,
     bool? hasPassword,
+    bool? hasGoogle,
     String? displayName,
     String? bio,
     String? avatarUrl,
@@ -160,6 +169,7 @@ class User {
       email: email ?? this.email,
       emailVerified: emailVerified ?? this.emailVerified,
       hasPassword: hasPassword ?? this.hasPassword,
+      hasGoogle: hasGoogle ?? this.hasGoogle,
       displayName: displayName ?? this.displayName,
       bio: bio ?? this.bio,
       avatarUrl: clearAvatarUrl ? null : (avatarUrl ?? this.avatarUrl),

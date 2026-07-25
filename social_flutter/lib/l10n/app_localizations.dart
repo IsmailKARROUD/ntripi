@@ -2056,6 +2056,12 @@ abstract class AppLocalizations {
   /// **'Enter your password to confirm'**
   String get deleteAccountEnterPassword;
 
+  /// No description provided for @deleteAccountEnterPasswordError.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter your password to continue.'**
+  String get deleteAccountEnterPasswordError;
+
   /// No description provided for @deleteAccountPasswordLabel.
   ///
   /// In en, this message translates to:
@@ -2091,6 +2097,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Continue with Google'**
   String get deleteAccountGoogleButton;
+
+  /// No description provided for @deleteAccountOrDivider.
+  ///
+  /// In en, this message translates to:
+  /// **'OR'**
+  String get deleteAccountOrDivider;
+
+  /// No description provided for @deleteAccountGoogleAlternative.
+  ///
+  /// In en, this message translates to:
+  /// **'Prefer Google? Re-authenticate with Google instead.'**
+  String get deleteAccountGoogleAlternative;
 
   /// No description provided for @deleteAnnotationTitle.
   ///
