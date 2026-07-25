@@ -52,9 +52,6 @@ class _ProfileEditFormState extends ConsumerState<ProfileEditForm> {
   late List<String> _editLanguages;
   bool _languagesChanged = false;
 
-  // Mirrors the backend cap in social_api/app/schemas/user.py (_check_languages).
-  static const int _kMaxLanguages = 60;
-
   // Picker state — bytes are uploaded inside _saveEdits before the JSON PATCH.
   Uint8List? _pickedAvatarBytes;
   String? _pickedAvatarFilename;
@@ -629,25 +626,19 @@ class _ProfileEditFormState extends ConsumerState<ProfileEditForm> {
                     codes: _editLanguages,
                     labelFor: (code) => code,
                     onAdd: () async {
-                      // Mirror the backend cap (social_api schemas/user.py) so the
-                      // user gets a clear message instead of a 422 at save time.
-                      if (_editLanguages.length >= _kMaxLanguages) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content:
-                                Text(l10n.maxLanguagesReached(_kMaxLanguages)),
-                          ),
-                        );
-                        return;
-                      }
-                      final code = await showLanguagePickerSheet(
+                      // Multi-select checklist: open once, apply the whole set.
+                      // Cap is enforced inside the sheet.
+                      final result = await showLanguagePickerSheet(
                         context,
-                        exclude: _editLanguages,
+                        selected: _editLanguages,
                       );
-                      if (code != null && mounted) {
+                      if (result != null && mounted) {
+                        // Only mark dirty when the set actually changed.
+                        final changed = result.length != _editLanguages.length ||
+                            !result.toSet().containsAll(_editLanguages);
                         setState(() {
-                          _editLanguages = [..._editLanguages, code];
-                          _languagesChanged = true;
+                          _editLanguages = result;
+                          if (changed) _languagesChanged = true;
                         });
                       }
                     },

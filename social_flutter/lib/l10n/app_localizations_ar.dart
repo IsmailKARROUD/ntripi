@@ -2223,7 +2223,10 @@ class AppLocalizationsAr extends AppLocalizations {
   String get detailsSection => 'التفاصيل';
 
   @override
-  String get addLanguageTitle => 'إضافة لغة';
+  String get selectLanguagesTitle => 'اختر اللغات';
+
+  @override
+  String get done => 'تم';
 
   @override
   String alreadyInItinerary(String name) {

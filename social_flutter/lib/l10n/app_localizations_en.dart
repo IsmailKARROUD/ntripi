@@ -2169,7 +2169,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get detailsSection => 'Details';
 
   @override
-  String get addLanguageTitle => 'Add language';
+  String get selectLanguagesTitle => 'Select languages';
+
+  @override
+  String get done => 'Done';
 
   @override
   String alreadyInItinerary(String name) {

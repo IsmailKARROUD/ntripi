@@ -3,25 +3,31 @@ import 'package:social_flutter/core/ui/app_theme.dart';
 import 'package:social_flutter/l10n/app_localizations.dart';
 import 'package:social_flutter/shared/data/languages.dart';
 
-/// Shows a bottom sheet language picker and returns the selected language code,
-/// or `null` if the user dismisses without selecting.
+// Mirrors the backend cap in social_api/app/schemas/user.py (_check_languages).
+const int _kMaxLanguages = 60;
+
+/// Shows a multi-select language checklist and returns the full chosen set of
+/// language codes. Closing the sheet any way — Done, back, or scrim-tap —
+/// submits the current selection (see the PopScope below); the caller only
+/// gets `null` if the sheet is somehow torn down without popping.
 ///
-/// Already-selected language codes are excluded from the list.
-Future<String?> showLanguagePickerSheet(
+/// [selected] pre-ticks the languages the user already has so they can add or
+/// remove in one pass.
+Future<List<String>?> showLanguagePickerSheet(
   BuildContext context, {
-  List<String> exclude = const [],
+  List<String> selected = const [],
 }) {
-  return showModalBottomSheet<String>(
+  return showModalBottomSheet<List<String>>(
     context: context,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
-    builder: (ctx) => _LanguagePickerSheet(exclude: exclude),
+    builder: (ctx) => _LanguagePickerSheet(initialSelected: selected),
   );
 }
 
 class _LanguagePickerSheet extends StatefulWidget {
-  final List<String> exclude;
-  const _LanguagePickerSheet({required this.exclude});
+  final List<String> initialSelected;
+  const _LanguagePickerSheet({required this.initialSelected});
 
   @override
   State<_LanguagePickerSheet> createState() => _LanguagePickerSheetState();
@@ -30,6 +36,14 @@ class _LanguagePickerSheet extends StatefulWidget {
 class _LanguagePickerSheetState extends State<_LanguagePickerSheet> {
   final _searchCtrl = TextEditingController();
   String _query = '';
+  // Codes are stored upper-cased to match the backend + Language.code casing.
+  late final Set<String> _selected;
+
+  @override
+  void initState() {
+    super.initState();
+    _selected = widget.initialSelected.map((c) => c.toUpperCase()).toSet();
+  }
 
   @override
   void dispose() {
@@ -37,9 +51,28 @@ class _LanguagePickerSheetState extends State<_LanguagePickerSheet> {
     super.dispose();
   }
 
+  void _toggle(String code) {
+    final upper = code.toUpperCase();
+    if (_selected.contains(upper)) {
+      setState(() => _selected.remove(upper));
+      return;
+    }
+    // Enforce the cap client-side so the user gets a clear message instead of a
+    // 422 at save time. Mirror of the backend limit in schemas/user.py.
+    if (_selected.length >= _kMaxLanguages) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content:
+              Text(AppLocalizations.of(context)!.maxLanguagesReached(_kMaxLanguages)),
+        ),
+      );
+      return;
+    }
+    setState(() => _selected.add(upper));
+  }
+
   List<Language> _filtered(String langCode) {
-    final excluded = widget.exclude.map((c) => c.toUpperCase()).toSet();
-    final list = kLanguages.where((l) => !excluded.contains(l.code)).toList();
+    final list = List<Language>.from(kLanguages);
     // Source list is EN-alphabetical; re-sort so FR users get FR order.
     list.sort((a, b) => a.localizedName(langCode).compareTo(b.localizedName(langCode)));
     if (_query.isEmpty) return list;
@@ -56,110 +89,152 @@ class _LanguagePickerSheetState extends State<_LanguagePickerSheet> {
   @override
   Widget build(BuildContext context) {
     final nt = context.nt;
+    final l10n = AppLocalizations.of(context)!;
     final langCode = Localizations.localeOf(context).languageCode;
     final filtered = _filtered(langCode);
     final maxHeight = MediaQuery.of(context).size.height * 0.85;
-    return Container(
-      constraints: BoxConstraints(maxHeight: maxHeight),
-      decoration: BoxDecoration(
-        color: nt.sand,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Handle
-          Container(
-            margin: const EdgeInsets.only(top: 10),
-            width: 36,
-            height: 4,
-            decoration: BoxDecoration(
-              color: nt.border,
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 14, 16, 4),
-            child: Align(
-              alignment: AlignmentDirectional.centerStart,
-              child: Text(
-                AppLocalizations.of(context)!.addLanguageTitle,
-                style: TextStyle(
-                  fontSize: 17,
-                  fontWeight: FontWeight.w700,
-                  color: nt.bark,
-                  letterSpacing: -0.2,
-                ),
+    // canPop:false so back-button / scrim-tap / drag-dismiss all route through
+    // onPopInvokedWithResult and submit the current selection (close = submit).
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (didPop) return;
+        Navigator.of(context).pop(_selected.toList());
+      },
+      child: Container(
+        constraints: BoxConstraints(maxHeight: maxHeight),
+        decoration: BoxDecoration(
+          color: nt.sand,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Handle
+            Container(
+              margin: const EdgeInsets.only(top: 10),
+              width: 36,
+              height: 4,
+              decoration: BoxDecoration(
+                color: nt.border,
+                borderRadius: BorderRadius.circular(2),
               ),
             ),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
-            child: TextField(
-              controller: _searchCtrl,
-              autofocus: true,
-              onChanged: (v) => setState(() => _query = v),
-              decoration: InputDecoration(
-                hintText: AppLocalizations.of(context)!.languageSearchHint,
-                hintStyle: TextStyle(color: nt.text3, fontSize: 15),
-                prefixIcon: Icon(Icons.search_rounded, color: nt.text2, size: 20),
-                suffixIcon: _query.isNotEmpty
-                    ? IconButton(
-                        icon: Icon(Icons.close_rounded, size: 18, color: nt.text2),
-                        onPressed: () {
-                          _searchCtrl.clear();
-                          setState(() => _query = '');
-                        },
-                      )
-                    : null,
-                filled: true,
-                fillColor: nt.surface,
-                contentPadding: const EdgeInsets.symmetric(vertical: 12),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
-                  borderSide: BorderSide(color: nt.border),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
-                  borderSide: BorderSide(color: nt.border),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
-                  borderSide: BorderSide(color: nt.forest, width: 1.5),
-                ),
-              ),
-            ),
-          ),
-          Flexible(
-            child: ListView.builder(
-              shrinkWrap: true,
-              itemCount: filtered.length,
-              itemBuilder: (context, index) {
-                final lang = filtered[index];
-                return ListTile(
-                  title: Text(
-                    lang.localizedName(langCode),
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w500,
-                      color: nt.bark,
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 14, 8, 4),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      l10n.selectLanguagesTitle,
+                      style: TextStyle(
+                        fontSize: 17,
+                        fontWeight: FontWeight.w700,
+                        color: nt.bark,
+                        letterSpacing: -0.2,
+                      ),
                     ),
                   ),
-                  trailing: Text(
-                    lang.code,
+                  // Live count against the cap — plain digits, locale-agnostic.
+                  Text(
+                    '${_selected.length}/$_kMaxLanguages',
                     style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
                       color: nt.text2,
                     ),
                   ),
-                  onTap: () => Navigator.of(context).pop(lang.code),
-                );
-              },
+                  TextButton(
+                    onPressed: () =>
+                        Navigator.of(context).pop(_selected.toList()),
+                    style: TextButton.styleFrom(foregroundColor: nt.forest),
+                    child: Text(
+                      l10n.done,
+                      style: const TextStyle(
+                          fontWeight: FontWeight.w700, fontSize: 15),
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-          SizedBox(height: MediaQuery.of(context).padding.bottom),
-        ],
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+              child: TextField(
+                controller: _searchCtrl,
+                autofocus: true,
+                onChanged: (v) => setState(() => _query = v),
+                decoration: InputDecoration(
+                  hintText: l10n.languageSearchHint,
+                  hintStyle: TextStyle(color: nt.text3, fontSize: 15),
+                  prefixIcon: Icon(Icons.search_rounded, color: nt.text2, size: 20),
+                  suffixIcon: _query.isNotEmpty
+                      ? IconButton(
+                          icon: Icon(Icons.close_rounded, size: 18, color: nt.text2),
+                          onPressed: () {
+                            _searchCtrl.clear();
+                            setState(() => _query = '');
+                          },
+                        )
+                      : null,
+                  filled: true,
+                  fillColor: nt.surface,
+                  contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: BorderSide(color: nt.border),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: BorderSide(color: nt.border),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: BorderSide(color: nt.forest, width: 1.5),
+                  ),
+                ),
+              ),
+            ),
+            Flexible(
+              child: ListView.builder(
+                shrinkWrap: true,
+                itemCount: filtered.length,
+                itemBuilder: (context, index) {
+                  final lang = filtered[index];
+                  final isSelected = _selected.contains(lang.code);
+                  return ListTile(
+                    onTap: () => _toggle(lang.code),
+                    // Leading check indicator: filled when selected, outline when not.
+                    leading: Icon(
+                      isSelected
+                          ? Icons.check_circle_rounded
+                          : Icons.radio_button_unchecked_rounded,
+                      color: isSelected ? nt.forest : nt.text3,
+                      size: 22,
+                    ),
+                    title: Text(
+                      lang.localizedName(langCode),
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight:
+                            isSelected ? FontWeight.w700 : FontWeight.w500,
+                        color: nt.bark,
+                      ),
+                    ),
+                    trailing: Text(
+                      lang.code,
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: nt.text2,
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+            SizedBox(height: MediaQuery.of(context).padding.bottom),
+          ],
+        ),
       ),
     );
   }

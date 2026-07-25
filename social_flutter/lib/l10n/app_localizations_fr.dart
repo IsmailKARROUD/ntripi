@@ -2210,7 +2210,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get detailsSection => 'Détails';
 
   @override
-  String get addLanguageTitle => 'Ajouter une langue';
+  String get selectLanguagesTitle => 'Sélectionner les langues';
+
+  @override
+  String get done => 'Terminé';
 
   @override
   String alreadyInItinerary(String name) {

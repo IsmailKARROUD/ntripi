@@ -775,7 +775,8 @@
   "invalidLongitudeError": "La longitude doit être un nombre entre -180 et 180",
   "coordinatesPairRequiredError": "Saisissez à la fois la latitude et la longitude",
   "detailsSection": "Détails",
-  "addLanguageTitle": "Ajouter une langue",
+  "selectLanguagesTitle": "Sélectionner les langues",
+  "done": "Terminé",
   "alreadyInItinerary": "{name} est déjà dans cet itinéraire.",
   "@alreadyInItinerary": {
     "placeholders": {

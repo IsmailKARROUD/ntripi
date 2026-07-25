@@ -903,7 +903,8 @@
   "invalidLongitudeError": "يجب أن يكون خط الطول رقمًا بين -180 و180",
   "coordinatesPairRequiredError": "أدخل خط العرض وخط الطول معًا",
   "detailsSection": "التفاصيل",
-  "addLanguageTitle": "إضافة لغة",
+  "selectLanguagesTitle": "اختر اللغات",
+  "done": "تم",
   "alreadyInItinerary": "{name} موجودة بالفعل في خط السير هذا.",
   "@alreadyInItinerary": {
     "placeholders": {

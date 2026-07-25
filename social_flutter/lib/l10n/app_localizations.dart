@@ -3844,11 +3844,17 @@ abstract class AppLocalizations {
   /// **'Details'**
   String get detailsSection;
 
-  /// No description provided for @addLanguageTitle.
+  /// No description provided for @selectLanguagesTitle.
   ///
   /// In en, this message translates to:
-  /// **'Add language'**
-  String get addLanguageTitle;
+  /// **'Select languages'**
+  String get selectLanguagesTitle;
+
+  /// No description provided for @done.
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get done;
 
   /// No description provided for @alreadyInItinerary.
   ///
