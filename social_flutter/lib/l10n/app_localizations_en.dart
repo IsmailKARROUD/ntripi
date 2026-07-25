@@ -275,6 +275,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'To add a cover image, tap this button at the top.';
 
   @override
+  String get addProfilePhoto => 'Add a profile photo';
+
+  @override
+  String get addAvatarHintMessage =>
+      'To add a profile photo, tap this button at the top.';
+
+  @override
   String stopCount(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,

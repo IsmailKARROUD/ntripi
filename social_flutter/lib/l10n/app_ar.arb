@@ -90,6 +90,8 @@
   "addStopHintTitle": "أضف محطاتك",
   "addStopHintMessage": "لإضافة محطات، اضغط على تعديل ✎ في الأعلى.",
   "addCoverHintMessage": "لإضافة صورة غلاف، اضغط على هذا الزر في الأعلى.",
+  "addProfilePhoto": "أضف صورة الملف الشخصي",
+  "addAvatarHintMessage": "لإضافة صورة الملف الشخصي، اضغط على هذا الزر في الأعلى.",
   "stopCount": "{count, plural, zero{لا توجد محطات} one{محطة واحدة} two{محطتان} few{{count} محطات} many{{count} محطة} other{{count} محطة}}",
   "@stopCount": {
     "placeholders": {

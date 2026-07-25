@@ -32,6 +32,8 @@ import 'package:social_flutter/features/profile/providers/profile_provider.dart'
 import 'package:social_flutter/features/profile/providers/user_locations_provider.dart';
 import 'package:social_flutter/l10n/app_localizations.dart';
 import 'package:social_flutter/shared/models/user.dart';
+import 'package:social_flutter/shared/widgets/field_help.dart';
+import 'package:social_flutter/shared/widgets/fullscreen_image_viewer.dart';
 import 'package:social_flutter/shared/widgets/loaders.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
@@ -56,6 +58,8 @@ class ProfileScreen extends ConsumerStatefulWidget {
 
 class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   bool _isEditing = false;
+  // Anchor for the "add a profile photo" hint that points at the Edit pencil.
+  final GlobalKey _editButtonKey = GlobalKey();
 
   @override
   void initState() {
@@ -202,6 +206,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       : null,
                   coverImageUrl: user.coverImageUrl,
                   locations: heroLocations,
+                  editButtonKey: _editButtonKey,
                   onHeroTap: isContentHidden
                       ? null
                       : () => Navigator.of(context).push(
@@ -212,6 +217,24 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                               ),
                             ),
                           ),
+                  onAvatarTap: () {
+                    final avatar = user.avatarUrl;
+                    if (avatar != null && avatar.isNotEmpty) {
+                      showFullscreenImage(context, imageUrl: avatar);
+                    } else if (widget.isSelf) {
+                      // No avatar: point the owner at the Edit pencil to add one.
+                      final ctx = _editButtonKey.currentContext;
+                      if (ctx != null) {
+                        showFieldHelp(
+                          ctx,
+                          title: l10n.addProfilePhoto,
+                          message: l10n.addAvatarHintMessage,
+                          pointer: true,
+                        );
+                      }
+                    }
+                    // Other user with no avatar: nothing to do.
+                  },
                 ),
 
                 // Tally row — my-profile style for both.

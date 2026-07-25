@@ -604,6 +604,18 @@ abstract class AppLocalizations {
   /// **'To add a cover image, tap this button at the top.'**
   String get addCoverHintMessage;
 
+  /// No description provided for @addProfilePhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a profile photo'**
+  String get addProfilePhoto;
+
+  /// No description provided for @addAvatarHintMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'To add a profile photo, tap this button at the top.'**
+  String get addAvatarHintMessage;
+
   /// No description provided for @stopCount.
   ///
   /// In en, this message translates to:

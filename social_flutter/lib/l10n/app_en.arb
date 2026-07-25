@@ -90,6 +90,8 @@
   "addStopHintTitle": "Add your stops",
   "addStopHintMessage": "To add stops, tap Edit ✎ at the top.",
   "addCoverHintMessage": "To add a cover image, tap this button at the top.",
+  "addProfilePhoto": "Add a profile photo",
+  "addAvatarHintMessage": "To add a profile photo, tap this button at the top.",
   "stopCount": "{count, plural, one{{count} stop} other{{count} stops}}",
   "@stopCount": {
     "placeholders": {

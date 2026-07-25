@@ -274,6 +274,13 @@ class AppLocalizationsAr extends AppLocalizations {
       'لإضافة صورة غلاف، اضغط على هذا الزر في الأعلى.';
 
   @override
+  String get addProfilePhoto => 'أضف صورة الملف الشخصي';
+
+  @override
+  String get addAvatarHintMessage =>
+      'لإضافة صورة الملف الشخصي، اضغط على هذا الزر في الأعلى.';
+
+  @override
   String stopCount(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,

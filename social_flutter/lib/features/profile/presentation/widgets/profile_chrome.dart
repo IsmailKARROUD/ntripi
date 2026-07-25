@@ -15,6 +15,7 @@ import 'package:social_flutter/core/ui/app_theme.dart';
 import 'package:social_flutter/features/profile/domain/visited_location.dart';
 import 'package:social_flutter/l10n/app_localizations.dart';
 import 'package:social_flutter/shared/models/user.dart';
+import 'package:social_flutter/shared/widgets/fullscreen_image_viewer.dart';
 import 'package:social_flutter/shared/widgets/user_avatar.dart';
 
 /// Renders the OSM map hero (260 px) with the avatar + name/handle
@@ -31,6 +32,9 @@ class ProfileHeroAndIdentity extends StatelessWidget {
   final String? coverImageUrl;
   final List<VisitedLocation> locations;
   final VoidCallback? onHeroTap;
+  final VoidCallback? onAvatarTap;
+  // Anchors the "add a profile photo" hint beak at the Edit pencil button.
+  final GlobalKey? editButtonKey;
 
   const ProfileHeroAndIdentity({
     super.key,
@@ -44,6 +48,8 @@ class ProfileHeroAndIdentity extends StatelessWidget {
     this.coverImageUrl,
     this.locations = const [],
     this.onHeroTap,
+    this.onAvatarTap,
+    this.editButtonKey,
   });
 
   @override
@@ -78,6 +84,7 @@ class ProfileHeroAndIdentity extends StatelessWidget {
               coverImageUrl: coverImageUrl,
               locations: locations,
               onHeroTap: onHeroTap,
+              editButtonKey: editButtonKey,
             ),
           ),
           Positioned(
@@ -87,9 +94,13 @@ class ProfileHeroAndIdentity extends StatelessWidget {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                AvatarWithBadge(
-                  avatarUrl: user.avatarUrl,
-                  isPrivate: user.isPrivate,
+                GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: onAvatarTap,
+                  child: AvatarWithBadge(
+                    avatarUrl: user.avatarUrl,
+                    isPrivate: user.isPrivate,
+                  ),
                 ),
                 const SizedBox(width: 14),
                 Padding(
@@ -143,6 +154,7 @@ class ProfileMapHero extends StatelessWidget {
   final String? coverImageUrl;
   final List<VisitedLocation> locations;
   final VoidCallback? onHeroTap;
+  final GlobalKey? editButtonKey;
 
   const ProfileMapHero({
     super.key,
@@ -156,6 +168,7 @@ class ProfileMapHero extends StatelessWidget {
     this.coverImageUrl,
     this.locations = const [],
     this.onHeroTap,
+    this.editButtonKey,
   });
 
   String? _resolveCoverUrl() {
@@ -175,6 +188,11 @@ class ProfileMapHero extends StatelessWidget {
     // (cover should be clear) and hidden when isContentHidden (the lock veil
     // is the stronger signal).
     final showMapBlurAndCta = !hasCover && !isContentHidden;
+    // A real cover opens full-screen on tap; the map fallback keeps its
+    // existing "tap to see stops" behavior.
+    final heroTap = (hasCover && !isContentHidden)
+        ? () => showFullscreenImage(context, imageUrl: coverImageUrl!)
+        : onHeroTap;
 
     return ClipRect(
       child: Stack(
@@ -308,11 +326,11 @@ class ProfileMapHero extends StatelessWidget {
           // Whole-hero tap target. Placed BEFORE the chrome buttons so the
           // buttons (drawn after) intercept their own taps first; this layer
           // catches everything else.
-          if (onHeroTap != null)
+          if (heroTap != null)
             Positioned.fill(
               child: GestureDetector(
                 behavior: HitTestBehavior.opaque,
-                onTap: onHeroTap,
+                onTap: heroTap,
               ),
             ),
 
@@ -330,6 +348,7 @@ class ProfileMapHero extends StatelessWidget {
                   children: isSelf
                       ? [
                           GlassIconButton(
+                            key: editButtonKey,
                             icon: Icons.edit_outlined,
                             tooltip: l10n.editProfileTooltip,
                             onTap: onEdit,
