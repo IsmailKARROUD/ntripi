@@ -13,18 +13,29 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:social_flutter/core/ui/app_theme.dart';
 import 'package:social_flutter/features/profile/presentation/profile_identity_facts.dart';
+import 'package:social_flutter/l10n/app_localizations.dart';
 import 'package:social_flutter/shared/models/user.dart';
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
+// The delegates are required: the widget reads l10n labels (passport/lives/
+// speaks) via AppLocalizations.of(context)!, which is null without them. The
+// SingleChildScrollView absorbs height so only horizontal (Flex) overflow can
+// surface in the overflow-regression tests.
 Widget _wrap(User user) => MaterialApp(
+      theme: buildNtripiTheme(),
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
       home: Scaffold(
-        body: Padding(
-          padding: const EdgeInsets.all(16),
-          child: ProfileIdentityFacts(user: user),
+        body: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: ProfileIdentityFacts(user: user),
+          ),
         ),
       ),
     );
@@ -45,6 +56,15 @@ User _user({
       residentCountry: residentCountry,
       languages: languages,
     );
+
+/// Narrow phone viewport — the width at which a single-line row of 4 countries
+/// overflowed before the Wrap/soft-wrap fix. DPR 1.0 ⇒ logical == physical px.
+void _setPhoneSize(WidgetTester tester) {
+  tester.view.physicalSize = const Size(360, 800);
+  tester.view.devicePixelRatio = 1.0;
+  addTearDown(tester.view.resetPhysicalSize);
+  addTearDown(tester.view.resetDevicePixelRatio);
+}
 
 // ---------------------------------------------------------------------------
 
@@ -249,6 +269,81 @@ void main() {
       expect(find.text('PASSPORT'), findsOneWidget);
       expect(find.text('LIVES IN'), findsOneWidget);
       expect(find.text('SPEAKS'), findsOneWidget);
+    });
+
+    // ── RenderFlex overflow regression (narrow phone width) ──────────────────
+    // Bug: 4 passport countries / a long languages list overflowed a single
+    // line ("A RenderFlex overflowed"). Passport entries now flow via Wrap and
+    // the Speaks value soft-wraps. These run at a real phone width — the wide
+    // viewport the other tests use never triggered the overflow.
+
+    group('RenderFlex overflow regression', () {
+      testWidgets(
+          'Given 4 passport countries at a phone width, '
+          'When widget builds, '
+          'Then entries wrap onto new lines with no RenderFlex overflow',
+          (tester) async {
+        _setPhoneSize(tester);
+
+        await tester.pumpWidget(
+          _wrap(_user(passportCountries: ['FR', 'MA', 'JP', 'ES'])),
+        );
+        await tester.pump();
+
+        // Before the fix, this frame reported "A RenderFlex overflowed".
+        expect(tester.takeException(), isNull);
+
+        // Wrapping relocates entries across lines but drops none of them.
+        expect(find.text('PASSPORT'), findsOneWidget);
+        expect(find.textContaining('France'), findsOneWidget);
+        expect(find.textContaining('Morocco'), findsOneWidget);
+        expect(find.textContaining('Japan'), findsOneWidget);
+        expect(find.textContaining('Spain'), findsOneWidget);
+      });
+
+      testWidgets(
+          'Given 8 spoken languages at a phone width, '
+          'When widget builds, '
+          'Then the Speaks value soft-wraps with no RenderFlex overflow',
+          (tester) async {
+        _setPhoneSize(tester);
+
+        await tester.pumpWidget(
+          _wrap(_user(
+            languages: ['EN', 'FR', 'AR', 'DE', 'IT', 'NL', 'ZH', 'HI'],
+          )),
+        );
+        await tester.pump();
+
+        expect(tester.takeException(), isNull);
+        // Codes stay one ' · '-joined Text; wrapping is visual only, so the
+        // underlying string still contains the sequence.
+        expect(find.text('SPEAKS'), findsOneWidget);
+        expect(find.textContaining('EN · FR'), findsOneWidget);
+      });
+
+      testWidgets(
+          'Given passport + resident + many languages at a phone width, '
+          'When widget builds, '
+          'Then all three chips render with no RenderFlex overflow',
+          (tester) async {
+        _setPhoneSize(tester);
+
+        await tester.pumpWidget(
+          _wrap(_user(
+            passportCountries: ['FR', 'MA', 'JP', 'ES'],
+            residentCountry: 'CA',
+            languages: ['EN', 'FR', 'AR', 'DE', 'IT', 'NL'],
+          )),
+        );
+        await tester.pump();
+
+        expect(tester.takeException(), isNull);
+        expect(find.text('PASSPORT'), findsOneWidget);
+        expect(find.text('LIVES IN'), findsOneWidget);
+        expect(find.text('SPEAKS'), findsOneWidget);
+        expect(find.textContaining('Canada'), findsOneWidget);
+      });
     });
   });
 }

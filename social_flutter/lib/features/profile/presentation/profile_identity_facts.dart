@@ -86,7 +86,9 @@ class _PassportRow extends StatelessWidget {
         children: [
           Icon(Icons.badge_rounded, size: 18, color: nt.forest),
           const SizedBox(width: 6),
-          IntrinsicWidth(
+          // Flexible + Wrap so 4+ countries flow onto a new line instead of
+          // overflowing the row (was IntrinsicWidth + single-line Row).
+          Flexible(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
@@ -101,24 +103,22 @@ class _PassportRow extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 4),
-                Row(
-                  mainAxisSize: MainAxisSize.min,
+                Wrap(
+                  spacing: 12,
+                  runSpacing: 4,
                   children: codes.map((c) {
                     final country = countryByCode(c);
                     final flag = country?.flag ?? '';
                     final name = country?.localizedName(
                             Localizations.localeOf(context).languageCode) ??
                         c;
-                    return Padding(
-                      padding: const EdgeInsetsDirectional.only(end: 12),
-                      child: Text(
-                        '$flag $name',
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w700,
-                          color: nt.bark,
-                          height: 1.2,
-                        ),
+                    return Text(
+                      '$flag $name',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: nt.bark,
+                        height: 1.2,
                       ),
                     );
                   }).toList(),
@@ -161,7 +161,9 @@ class _IdentityFactChip extends StatelessWidget {
         children: [
           Icon(icon, size: 18, color: nt.forest),
           const SizedBox(width: 6),
-          IntrinsicWidth(
+          // Flexible (not IntrinsicWidth) so a long "Speaks" list soft-wraps
+          // within the available width instead of overflowing the row.
+          Flexible(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
