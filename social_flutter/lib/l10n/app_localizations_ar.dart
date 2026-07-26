@@ -21,7 +21,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get required => 'مطلوب';
 
   @override
-  String get retry => 'إعادة المحاولة';
+  String get retry => 'حاوِل';
 
   @override
   String get dismiss => 'إغلاق';
@@ -39,7 +39,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get navProfile => 'الملف الشخصي';
 
   @override
-  String get navItineraries => 'خطوط السير';
+  String get navItineraries => 'المسارات';
 
   @override
   String get navFeed => 'اكتشف';
@@ -48,7 +48,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get navSaved => 'المحفوظات';
 
   @override
-  String get saveItineraryTooltip => 'حفظ خط السير';
+  String get saveItineraryTooltip => 'حفظ المسار';
 
   @override
   String get unsaveItineraryTooltip => 'إزالة من المحفوظات';
@@ -58,13 +58,13 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get noSavedItinerariesYet =>
-      'لا توجد خطوط سير محفوظة بعد. المس علامة الحفظ على أي خط سير لتحتفظ به هنا.';
+      'لا توجد مسارات محفوظة بعد. المس علامة الحفظ على أي مسار لتحتفظ به هنا.';
 
   @override
   String get searchSavedHint => 'ابحث في المحفوظات…';
 
   @override
-  String get savedSearchNoResults => 'لا يوجد خط سير محفوظ يطابق بحثك.';
+  String get savedSearchNoResults => 'لا يوجد مسار محفوظ يطابق بحثك.';
 
   @override
   String get feedTitle => 'اكتشف';
@@ -76,7 +76,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get feedTabRecent => 'الأحدث';
 
   @override
-  String get feedEmpty => 'لا توجد خطوط سير عامة بعد. عُد قريبًا!';
+  String get feedEmpty => 'لا توجد مسارات عامة بعد. عُد قريبًا!';
 
   @override
   String get feedTopEmpty => 'لا توجد رحلات مقيّمة كافية بعد — جرّب الأحدث.';
@@ -328,16 +328,16 @@ class AppLocalizationsAr extends AppLocalizations {
   String get shareProfileTooltip => 'مشاركة الملف الشخصي';
 
   @override
-  String get couldNotLoadItineraries => 'تعذّر تحميل خطوط السير.';
+  String get couldNotLoadItineraries => 'تعذّر تحميل المسارات.';
 
   @override
   String get whereTheyveBeen => 'الأماكن التي زاروها';
 
   @override
-  String get itinerariesSectionHeader => 'خطوط السير';
+  String get itinerariesSectionHeader => 'المسارات';
 
   @override
-  String get noPublicItinerariesYet => 'لا توجد خطوط سير عامة بعد.';
+  String get noPublicItinerariesYet => 'لا توجد مسارات عامة بعد.';
 
   @override
   String get accountIsPrivateTitle => 'هذا الحساب خاص';
@@ -347,11 +347,11 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get followRequestPendingMessage =>
-      'بعد قبول طلبك، ستتمكن من رؤية خطوط السير والمحطات وخريطة الرحلات.';
+      'بعد قبول طلبك، ستتمكن من رؤية المسارات والمحطات وخريطة الرحلات.';
 
   @override
   String followToSeeMessage(String handle) {
-    return 'تابِع $handle لرؤية خطوط السير والمحطات وخريطة الرحلات.';
+    return 'تابِع $handle لرؤية المسارات والمحطات وخريطة الرحلات.';
   }
 
   @override
@@ -413,7 +413,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get privateAccountSubtitle =>
-      'يجب على الأشخاص طلب متابعتك لرؤية خطوط سيرك.';
+      'يجب على الأشخاص طلب متابعتك لرؤية مساراتك.';
 
   @override
   String get switchToPublicTitle => 'التبديل إلى حساب عام؟';
@@ -449,7 +449,7 @@ class AppLocalizationsAr extends AppLocalizations {
       'أضف محطات ومقاطع تنقّل وملاحظات. شاركها مع أصدقائك أو احتفظ بها خاصة.';
 
   @override
-  String get createItinerary => 'إنشاء خط سير';
+  String get createItinerary => 'إنشاء مسار';
 
   @override
   String get needInspiration => 'هل تحتاج إلى إلهام؟';
@@ -630,36 +630,36 @@ class AppLocalizationsAr extends AppLocalizations {
       'اعثر على الأشخاص عبر اسم المستخدم @ أو الاسم المعروض. اضغط على نتيجة لعرض الملف الشخصي.';
 
   @override
-  String get myItineraries => 'خطوط سيري';
+  String get myItineraries => 'مساراتي';
 
   @override
-  String get noItinerariesYet => 'لا توجد خطوط سير بعد.';
+  String get noItinerariesYet => 'لا توجد مسارات بعد.';
 
   @override
   String get tapToCreateFirst => 'اضغط + لإنشاء رحلتك الأولى.';
 
   @override
-  String get deleteItineraryTitle => 'حذف خط السير هذا؟';
+  String get deleteItineraryTitle => 'حذف المسار هذا؟';
 
   @override
   String get deleteItineraryMessage =>
       'ستُحذف نهائيًا جميع المحطات والتنويهات ومقاطع التنقّل والتقييمات وروابط المشاركة. لا يمكن التراجع عن هذا.';
 
   @override
-  String get deleteItineraryButton => 'حذف خط السير';
+  String get deleteItineraryButton => 'حذف المسار';
 
   @override
-  String get newItinerary => 'خط سير جديد';
+  String get newItinerary => 'مسار جديد';
 
   @override
-  String get editItinerary => 'تعديل خط السير';
+  String get editItinerary => 'تعديل المسار';
 
   @override
   String get coverImageLabel => 'صورة الغلاف';
 
   @override
   String get coverImageHelp =>
-      'صورة بمقاس 1200×630 تظهر على بطاقة خط السير ومعاينات الروابط. اسحب داخل مربع الاقتصاص لتغيير الموضع.';
+      'صورة بمقاس 1200×630 تظهر على بطاقة المسار ومعاينات الروابط. اسحب داخل مربع الاقتصاص لتغيير الموضع.';
 
   @override
   String get itineraryTitleLabel => 'العنوان *';
@@ -669,7 +669,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get itineraryTitleHelp =>
-      'اسم قصير وواضح لهذه الرحلة. يظهر على بطاقة خط السير ومعاينات المشاركة.';
+      'اسم قصير وواضح لهذه الرحلة. يظهر على بطاقة المسار ومعاينات المشاركة.';
 
   @override
   String get itineraryTitleRequired => 'العنوان مطلوب';
@@ -689,7 +689,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get currencyHelp =>
-      'العملة الافتراضية لجميع تكاليف المحطات والتنقّل في خط السير هذا.';
+      'العملة الافتراضية لجميع تكاليف المحطات والتنقّل في المسار هذا.';
 
   @override
   String get visibilityLabel => 'الظهور';
@@ -712,7 +712,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get imageSaveButUploadFailed =>
-      'تم حفظ خط السير، لكن رفع الصورة فشل. حاول مجددًا من شاشة التعديل.';
+      'تم حفظ المسار، لكن رفع الصورة فشل. حاول مجددًا من شاشة التعديل.';
 
   @override
   String get formSectionBasics => 'الأساسيات';
@@ -727,7 +727,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get formSectionDangerZone => 'منطقة الخطر';
 
   @override
-  String get formLabelDeleteItinerary => 'حذف خط السير';
+  String get formLabelDeleteItinerary => 'حذف المسار';
 
   @override
   String get formDeleteItineraryHint => 'اكتب العنوان للتأكيد';
@@ -741,7 +741,7 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
-  String get deleteItineraryFormTitle => 'حذف خط السير';
+  String get deleteItineraryFormTitle => 'حذف المسار';
 
   @override
   String deleteItineraryFormMessage(String title) {
@@ -956,15 +956,15 @@ class AppLocalizationsAr extends AppLocalizations {
       count,
       locale: localeName,
       other:
-          'سيُحذف $count مقطع تنقّل لأن محطاتها لن تكون في مسارات متجاورة:\n\n$segments',
+          'سيُحذف $count مقطع تنقّل لأن محطاتها لن تكون في ممرات متجاورة:\n\n$segments',
       many:
-          'سيُحذف $count مقطع تنقّل لأن محطاتها لن تكون في مسارات متجاورة:\n\n$segments',
+          'سيُحذف $count مقطع تنقّل لأن محطاتها لن تكون في ممرات متجاورة:\n\n$segments',
       few:
-          'ستُحذف $count مقاطع تنقّل لأن محطاتها لن تكون في مسارات متجاورة:\n\n$segments',
+          'ستُحذف $count مقاطع تنقّل لأن محطاتها لن تكون في ممرات متجاورة:\n\n$segments',
       two:
-          'سيُحذف مقطعا تنقّل لأن محطاتهما لن تكون في مسارات متجاورة:\n\n$segments',
+          'سيُحذف مقطعا تنقّل لأن محطاتهما لن تكون في ممرات متجاورة:\n\n$segments',
       one:
-          'سيُحذف مقطع تنقّل واحد لأن محطتيه لن تكونا في مسارين متجاورين:\n\n$segments',
+          'سيُحذف مقطع تنقّل واحد لأن محطتيه لن تكونا في ممرين متجاورين:\n\n$segments',
       zero: 'لن يُحذف أي مقطع تنقّل:\n\n$segments',
     );
     return '$_temp0';
@@ -1096,7 +1096,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get deleteAccountConfirmMessage =>
-      'سيتم إخفاء هوية حسابك وخطوط سيرك ومتابعاتك وتقييماتك أو حذفها وفقًا لسياسة الخصوصية. سيتم تسجيل خروجك فورًا. لا يمكن التراجع عن هذا.';
+      'سيتم إخفاء هوية حسابك ومساراتك ومتابعاتك وتقييماتك أو حذفها وفقًا لسياسة الخصوصية. سيتم تسجيل خروجك فورًا. لا يمكن التراجع عن هذا.';
 
   @override
   String get deleteAccountRequiredText => 'حذف حسابي';
@@ -1121,14 +1121,14 @@ class AppLocalizationsAr extends AppLocalizations {
   String get deleteAccountBullet1 => 'ملفك الشخصي وجميع بياناتك الشخصية';
 
   @override
-  String get deleteAccountBullet2 => 'جميع خطوط سيرك ومحطاتك';
+  String get deleteAccountBullet2 => 'جميع مساراتك ومحطاتك';
 
   @override
   String get deleteAccountBullet3 => 'علاقات المتابعة الخاصة بك';
 
   @override
   String get deleteAccountNote =>
-      'التقييمات التي منحتها لخطوط سير أخرى ستُحفظ بشكل مجهول كبيانات مجتمعية.';
+      'التقييمات التي منحتها لمسارات أخرى ستُحفظ بشكل مجهول كبيانات مجتمعية.';
 
   @override
   String get deleteAccountEnterPassword => 'أدخل كلمة المرور للتأكيد';
@@ -1169,7 +1169,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get deleteAnnotationMessage =>
-      'سيؤدي هذا إلى إزالة هذا التنويه نهائيًا من خط السير.';
+      'سيؤدي هذا إلى إزالة هذا التنويه نهائيًا من المسار.';
 
   @override
   String get deleteAnnotationStopMessage => 'سيُزال هذا التنويه نهائيًا.';
@@ -1182,7 +1182,7 @@ class AppLocalizationsAr extends AppLocalizations {
       'سيتم مسح الاتصال بين هاتين المحطتين. يمكنك إضافة واحد جديد لاحقًا.';
 
   @override
-  String get reorderTracksTitle => 'إعادة ترتيب المسارات';
+  String get reorderTracksTitle => 'إعادة ترتيب الممرات';
 
   @override
   String get shareTooltip => 'مشاركة';
@@ -1212,7 +1212,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get addStopTooltip => 'إضافة محطة';
 
   @override
-  String get reorderTracksTooltip => 'إعادة ترتيب المسارات';
+  String get reorderTracksTooltip => 'إعادة ترتيب الممرات';
 
   @override
   String get mapSection => 'الخريطة';
@@ -1322,18 +1322,18 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String duplicateStopMessage(String name) {
-    return '$name موجودة بالفعل في خط السير هذا. هل تريد إضافتها مرة أخرى على أي حال؟';
+    return '$name موجودة بالفعل في المسار هذا. هل تريد إضافتها مرة أخرى على أي حال؟';
   }
 
   @override
   String get addAnyway => 'الإضافة على أي حال';
 
   @override
-  String get itineraryUpdatedTitle => 'تم تحديث خط السير من مكان آخر';
+  String get itineraryUpdatedTitle => 'تم تحديث المسار من مكان آخر';
 
   @override
   String get itineraryUpdatedMessage =>
-      'تم تعديل خط السير هذا من جهاز آخر. ارجع وأعد التحميل لرؤية أحدث نسخة.';
+      'تم تعديل المسار هذا من جهاز آخر. ارجع وأعد التحميل لرؤية أحدث نسخة.';
 
   @override
   String get goBack => 'رجوع';
@@ -1520,7 +1520,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get costLabel => 'التكلفة';
 
   @override
-  String get costHelp => 'التكلفة التقريبية للشخص الواحد، بعملة خط السير.';
+  String get costHelp => 'التكلفة التقريبية للشخص الواحد، بعملة المسار.';
 
   @override
   String get enterValidNumber => 'أدخل رقمًا صالحًا';
@@ -1589,7 +1589,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get legCostHelp =>
-      'التكلفة التقريبية بعملة خط السير. يُعطَّل عند تفعيل \"مجاني\".';
+      'التكلفة التقريبية بعملة المسار. يُعطَّل عند تفعيل \"مجاني\".';
 
   @override
   String get hoursLabel => 'س';
@@ -1654,11 +1654,11 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String moveStopDescription(int max) {
-    return 'اختر مسارًا موجودًا، أو فجوة لإنشاء مسار جديد، أو استخرجها إلى مسار خاص بها. المسارات التي بلغت الحد الأقصى ($max محطات) معطّلة.';
+    return 'اختر ممرًا موجودًا، أو فجوة لإنشاء ممر جديد، أو استخرجها إلى ممر خاص بها. الممرات التي بلغت الحد الأقصى ($max محطات) معطّلة.';
   }
 
   @override
-  String get extractIntoOwnTrack => 'استخراج إلى مسار جديد خاص بها';
+  String get extractIntoOwnTrack => 'استخراج إلى ممر جديد خاص بها';
 
   @override
   String get moveButton => 'نقل';
@@ -1670,43 +1670,43 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get itineraryChangedElsewhere =>
-      'تغيّر خط السير من مكان آخر — أغلق وأعد الفتح لرؤية أحدث ترتيب.';
+      'تغيّر المسار من مكان آخر — أغلق وأعد الفتح لرؤية أحدث ترتيب.';
 
   @override
   String get moveStopOrphan1 =>
-      'هذه آخر محطة في مسارها — سيُزال المسار من خط السير.';
+      'هذه آخر محطة في ممرها — سيُزال الممر من المسار.';
 
   @override
   String moveStopOrphanSegments(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: 'سيُحذف $count مقطع تنقّل لأن محطاتها لن تكون في مسارات متجاورة.',
-      many: 'سيُحذف $count مقطع تنقّل لأن محطاتها لن تكون في مسارات متجاورة.',
-      few: 'ستُحذف $count مقاطع تنقّل لأن محطاتها لن تكون في مسارات متجاورة.',
-      two: 'سيُحذف مقطعا تنقّل لأن محطاتهما لن تكون في مسارات متجاورة.',
-      one: 'سيُحذف مقطع تنقّل واحد لأن محطتيه لن تكونا في مسارين متجاورين.',
+      other: 'سيُحذف $count مقطع تنقّل لأن محطاتها لن تكون في ممرات متجاورة.',
+      many: 'سيُحذف $count مقطع تنقّل لأن محطاتها لن تكون في ممرات متجاورة.',
+      few: 'ستُحذف $count مقاطع تنقّل لأن محطاتها لن تكون في ممرات متجاورة.',
+      two: 'سيُحذف مقطعا تنقّل لأن محطاتهما لن تكون في ممرات متجاورة.',
+      one: 'سيُحذف مقطع تنقّل واحد لأن محطتيه لن تكونا في ممرين متجاورين.',
       zero: 'لن يُحذف أي مقطع تنقّل.',
     );
     return '$_temp0';
   }
 
   @override
-  String get moveStopNewTrack => 'مسار جديد';
+  String get moveStopNewTrack => 'ممر جديد';
 
   @override
   String moveStopNewTrackBefore(int n) {
-    return 'مسار جديد قبل المسار $n';
+    return 'ممر جديد قبل الممر $n';
   }
 
   @override
   String moveStopNewTrackAfter(int n) {
-    return 'مسار جديد بعد المسار $n';
+    return 'ممر جديد بعد الممر $n';
   }
 
   @override
   String moveStopNewTrackBetween(int a, int b) {
-    return 'مسار جديد بين المسار $a والمسار $b';
+    return 'ممر جديد بين الممر $a والممر $b';
   }
 
   @override
@@ -1719,7 +1719,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String extractSubtitle(String trackName) {
-    return 'يفصل هذه المحطة عن \"$trackName\" — يُنشأ المسار الجديد بعده مباشرة.';
+    return 'يفصل هذه المحطة عن \"$trackName\" — يُنشأ الممر الجديد بعده مباشرة.';
   }
 
   @override
@@ -1727,17 +1727,17 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get removeRatingMessage =>
-      'سيُحذف تقييمك وسيتم تحديث المتوسط لجميع من يشاهد خط السير هذا.';
+      'سيُحذف تقييمك وسيتم تحديث المتوسط لجميع من يشاهد المسار هذا.';
 
   @override
-  String get rateItineraryTitle => 'قيّم خط السير هذا';
+  String get rateItineraryTitle => 'قيّم المسار هذا';
 
   @override
   String get overallRatingLabel => 'التقييم العام *';
 
   @override
   String get overallRatingHelp =>
-      'مطلوب. تقييمك العام لخط السير هذا، من نجمة إلى 5 نجوم.';
+      'مطلوب. تقييمك العام للمسار هذا، من نجمة إلى 5 نجوم.';
 
   @override
   String get ratingThanksMessage => 'شكرًا! تقييمك يساعد الآخرين.';
@@ -1772,7 +1772,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get accessibilityHelp =>
-      'اختياري. مدى سهولة الوصول في خط السير (التنقل، اللغة، اللافتات).';
+      'اختياري. مدى سهولة الوصول في المسار (التنقل، اللغة، اللافتات).';
 
   @override
   String get familyFriendlyLabel => 'مناسب للعائلات';
@@ -1954,7 +1954,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get saveItineraryFirstAllowlist =>
-      'احفظ خط السير أولاً، ثم أدر قائمة السماح من شاشة التعديل.';
+      'احفظ المسار أولاً، ثم أدر قائمة السماح من شاشة التعديل.';
 
   @override
   String get allowlistLabel => 'قائمة السماح';
@@ -1986,7 +1986,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get otherOption => 'أخرى';
 
   @override
-  String get thisItineraryFallback => 'خط السير هذا';
+  String get thisItineraryFallback => 'المسار هذا';
 
   @override
   String get discardReorderMessage => 'لن يتم حفظ إعادة الترتيب.';
@@ -2001,7 +2001,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get unknownStop => '(غير معروف)';
 
   @override
-  String get dragToChangeTrackOrder => 'اسحب لتغيير ترتيب المسارات';
+  String get dragToChangeTrackOrder => 'اسحب لتغيير ترتيب الممرات';
 
   @override
   String transitSegmentsWillBeDeleted(int count) {
@@ -2051,7 +2051,7 @@ class AppLocalizationsAr extends AppLocalizations {
       'اسحب لتغيير الخيار الذي يظهر أولًا. اضغط حفظ للتطبيق.';
 
   @override
-  String get emptyTrackLabel => '(مسار فارغ)';
+  String get emptyTrackLabel => '(ممر فارغ)';
 
   @override
   String get moveStopToLabel => 'نقل المحطة إلى';
@@ -2178,7 +2178,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get splashTagline =>
-      'اكتشف وشارك خطوط سير الرحلات\nالتي أعدّها مستكشفون حقيقيون';
+      'اكتشف وشارك مسارات الرحلات\nالتي أعدّها مستكشفون حقيقيون';
 
   @override
   String get splashMotto => 'استكشف العالم، رحلة تلو الأخرى';
@@ -2248,7 +2248,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String alreadyInItinerary(String name) {
-    return '$name موجودة بالفعل في خط السير هذا.';
+    return '$name موجودة بالفعل في المسار هذا.';
   }
 
   @override
@@ -2272,19 +2272,17 @@ class AppLocalizationsAr extends AppLocalizations {
       'أكّد بريدك الإلكتروني عبر Google للقيام بذلك.';
 
   @override
-  String get apiErrorItineraryNotFound => 'خط السير غير موجود.';
+  String get apiErrorItineraryNotFound => 'المسار غير موجود.';
 
   @override
-  String get apiErrorItineraryNotOwner =>
-      'ليست لديك صلاحية تعديل خط السير هذا.';
+  String get apiErrorItineraryNotOwner => 'ليست لديك صلاحية تعديل المسار هذا.';
 
   @override
   String get apiErrorIfMatchRequired =>
       'تعذّر حفظ هذا التغيير — يرجى إعادة التحميل والمحاولة مجددًا.';
 
   @override
-  String get apiErrorItineraryStale =>
-      'تم تعديل خط السير — يرجى إعادة التحميل.';
+  String get apiErrorItineraryStale => 'تم تعديل المسار — يرجى إعادة التحميل.';
 
   @override
   String get apiErrorWaitlistContactRequired =>
@@ -2301,7 +2299,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get apiErrorTrackNotFound =>
-      'المسار غير موجود، أو لا ينتمي إلى خط السير هذا.';
+      'الممر غير موجود، أو لا ينتمي إلى المسار هذا.';
 
   @override
   String get apiErrorSegmentNotFound => 'مقطع التنقّل غير موجود.';
@@ -2310,12 +2308,11 @@ class AppLocalizationsAr extends AppLocalizations {
   String get apiErrorLegNotFound => 'مرحلة النقل غير موجودة.';
 
   @override
-  String get apiErrorItineraryAccessDenied =>
-      'لا يمكنك الوصول إلى خط السير هذا.';
+  String get apiErrorItineraryAccessDenied => 'لا يمكنك الوصول إلى المسار هذا.';
 
   @override
   String get apiErrorAllowlistRestrictedOnly =>
-      'تنطبق قائمة السماح على خطوط السير المقيّدة فقط.';
+      'تنطبق قائمة السماح على المسارات المقيّدة فقط.';
 
   @override
   String get apiErrorUserNotFound => 'المستخدم غير موجود.';
@@ -2336,7 +2333,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get apiErrorAnnotationNotFound => 'التنويه غير موجود.';
 
   @override
-  String get apiErrorRatingNotFound => 'لم تقيّم خط السير هذا.';
+  String get apiErrorRatingNotFound => 'لم تقيّم المسار هذا.';
 
   @override
   String get apiErrorSegmentAlreadyExists =>

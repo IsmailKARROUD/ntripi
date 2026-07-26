@@ -30,7 +30,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
     "meta_default_desc": {
         "en": "Travel itineraries, shared.",
         "fr": "Des itinéraires de voyage, partagés.",
-        "ar": "خطوط سير للرحلات، تتم مشاركتها.",
+        "ar": "مسارات للرحلات، تتم مشاركتها.",
     },
     # login_submit is kept: reset_password_done.html labels its /app/ CTA with it.
     "login_submit": {"en": "Sign in", "fr": "Se connecter", "ar": "تسجيل الدخول"},
@@ -69,20 +69,20 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
     "share_not_found_title": {
         "en": "Itinerary Not Found — Ntripi",
         "fr": "Itinéraire introuvable — Ntripi",
-        "ar": "خط السير غير موجود — Ntripi",
+        "ar": "المسار غير موجود — Ntripi",
     },
-    "share_not_found_heading": {"en": "Itinerary not found", "fr": "Itinéraire introuvable", "ar": "خط السير غير موجود"},
+    "share_not_found_heading": {"en": "Itinerary not found", "fr": "Itinéraire introuvable", "ar": "المسار غير موجود"},
     "share_not_found_body": {
         "en": "This itinerary is not available or may have been removed.",
         "fr": "Cet itinéraire n'est pas disponible ou a peut-être été supprimé.",
-        "ar": "خط السير هذا غير متاح أو ربما تمت إزالته.",
+        "ar": "المسار هذا غير متاح أو ربما تمت إزالته.",
     },
     "share_go_to_ntripi": {"en": "Go to Ntripi", "fr": "Aller sur Ntripi", "ar": "الانتقال إلى Ntripi"},
-    "share_private_heading": {"en": "This itinerary is private", "fr": "Cet itinéraire est privé", "ar": "خط السير هذا خاص"},
+    "share_private_heading": {"en": "This itinerary is private", "fr": "Cet itinéraire est privé", "ar": "المسار هذا خاص"},
     "share_private_body": {
         "en": "The owner has restricted who can view this itinerary.",
         "fr": "Le propriétaire a restreint l'accès à cet itinéraire.",
-        "ar": "قيّد المالك من يمكنه عرض خط السير هذا.",
+        "ar": "قيّد المالك من يمكنه عرض المسار هذا.",
     },
     "share_by": {"en": "by", "fr": "par", "ar": "بواسطة"},
     "share_stops": {"en": "stops", "fr": "étapes", "ar": "محطات"},
@@ -91,20 +91,20 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
     "share_private_message": {
         "en": "This is a private itinerary. Open the Ntripi app to view the full trip.",
         "fr": "Cet itinéraire est privé. Ouvrez l'application Ntripi pour voir le voyage complet.",
-        "ar": "خط السير هذا خاص. افتح تطبيق Ntripi لعرض الرحلة كاملة.",
+        "ar": "المسار هذا خاص. افتح تطبيق Ntripi لعرض الرحلة كاملة.",
     },
     "share_install_prompt": {"en": "Don't have Ntripi?", "fr": "Vous n'avez pas Ntripi ?", "ar": "ليس لديك Ntripi؟"},
     "share_shared_via": {"en": "Shared via Ntripi", "fr": "Partagé via Ntripi", "ar": "تمت المشاركة عبر Ntripi"},
     "share_note_from_author": {"en": "Note from author", "fr": "Note de l'auteur", "ar": "ملاحظة من الكاتب"},
     "share_get_the_app": {"en": "Get the app", "fr": "Obtenir l'application", "ar": "احصل على التطبيق"},
-    "share_public_badge": {"en": "Public itinerary", "fr": "Itinéraire public", "ar": "خط سير عام"},
+    "share_public_badge": {"en": "Public itinerary", "fr": "Itinéraire public", "ar": "مسار عام"},
     "share_the_route": {"en": "The Route", "fr": "L'itinéraire", "ar": "الطريق"},
     "share_free": {"en": "Free", "fr": "Gratuit", "ar": "مجاني"},
     "share_plan_own": {"en": "Plan your own journey", "fr": "Planifiez votre propre voyage", "ar": "خطط لرحلتك الخاصة"},
     "share_plan_own_sub": {
         "en": "Open this itinerary in the Ntripi app, or download to start creating your own.",
         "fr": "Ouvrez cet itinéraire dans l'application Ntripi, ou téléchargez-la pour créer le vôtre.",
-        "ar": "افتح خط السير هذا في تطبيق Ntripi، أو نزّله لتبدأ في إنشاء خط السير الخاص بك.",
+        "ar": "افتح المسار هذا في تطبيق Ntripi، أو نزّله لتبدأ في إنشاء المسار الخاص بك.",
     },
     "share_open_in_app_short": {"en": "Open in app", "fr": "Ouvrir dans l'app", "ar": "افتح في التطبيق"},
     "share_or_download": {"en": "or download", "fr": "ou télécharger", "ar": "أو نزّله"},
@@ -114,12 +114,12 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
     "home_title": {
         "en": "Ntripi — Share your travel itineraries",
         "fr": "Ntripi — Partagez vos itinéraires de voyage",
-        "ar": "Ntripi — شارك خطوط سير رحلاتك",
+        "ar": "Ntripi — شارك مسارات رحلاتك",
     },
     "home_description": {
         "en": "Plan, share, and discover travel itineraries",
         "fr": "Planifiez, partagez et découvrez des itinéraires de voyage",
-        "ar": "خطط وشارك واكتشف خطوط سير الرحلات",
+        "ar": "خطط وشارك واكتشف مسارات الرحلات",
     },
     "home_coming_soon": {
         "en": "Coming soon on iOS & Android",
@@ -131,7 +131,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
     "home_hero_sub": {
         "en": "Build travel itineraries with real stops, costs, and routes. Share what works. Discover trips that locals love.",
         "fr": "Créez des itinéraires de voyage avec de vraies étapes, coûts et parcours. Partagez ce qui fonctionne. Découvrez des voyages que les locaux adorent.",
-        "ar": "أنشئ خطوط سير للرحلات بمحطات وتكاليف وطرق حقيقية. شارك ما ينجح. واكتشف رحلات يحبها السكان المحليون.",
+        "ar": "أنشئ مسارات للرحلات بمحطات وتكاليف وطرق حقيقية. شارك ما ينجح. واكتشف رحلات يحبها السكان المحليون.",
     },
     "home_hero_have_account": {
         "en": "Already have an account?",
@@ -147,13 +147,13 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
     "home_feat1_p": {
         "en": "Build itineraries with stops, transit modes, costs, and personal notes. Everything in one place, easy to share.",
         "fr": "Créez des itinéraires avec étapes, modes de transport, coûts et notes personnelles. Tout au même endroit, facile à partager.",
-        "ar": "أنشئ خطوط سير بمحطات ووسائل نقل وتكاليف وملاحظات شخصية. كل شيء في مكان واحد وسهل المشاركة.",
+        "ar": "أنشئ مسارات بمحطات ووسائل نقل وتكاليف وملاحظات شخصية. كل شيء في مكان واحد وسهل المشاركة.",
     },
     "home_feat2_h": {"en": "Share anywhere", "fr": "Partagez partout", "ar": "شارك في أي مكان"},
     "home_feat2_p": {
         "en": "Send a link to anyone. No install required — they can browse your full itinerary in any browser.",
         "fr": "Envoyez un lien à qui vous voulez. Aucune installation requise — chacun peut parcourir votre itinéraire complet dans son navigateur.",
-        "ar": "أرسل رابطًا لأي شخص. لا حاجة إلى تثبيت — يمكن للجميع تصفح خط سيرك كاملاً في أي متصفح.",
+        "ar": "أرسل رابطًا لأي شخص. لا حاجة إلى تثبيت — يمكن للجميع تصفح مسارك كاملاً في أي متصفح.",
     },
     "home_feat3_h": {"en": "Trust the community", "fr": "Faites confiance à la communauté", "ar": "ثق بالمجتمع"},
     "home_feat3_p": {
@@ -165,7 +165,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
     "home_feat4_p": {
         "en": "Discover public itineraries shared by travelers worldwide. Follow explorers and get inspired for your next trip.",
         "fr": "Découvrez des itinéraires publics partagés par des voyageurs du monde entier. Suivez des explorateurs et inspirez-vous pour votre prochain voyage.",
-        "ar": "اكتشف خطوط سير عامة يشاركها مسافرون من حول العالم. تابِع المستكشفين واستلهم رحلتك القادمة.",
+        "ar": "اكتشف مسارات عامة يشاركها مسافرون من حول العالم. تابِع المستكشفين واستلهم رحلتك القادمة.",
     },
     "home_feat5_h": {"en": "Detailed stop info", "fr": "Détails de chaque étape", "ar": "تفاصيل كل محطة"},
     "home_feat5_p": {
@@ -182,7 +182,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
     "home_how_label": {"en": "How it works", "fr": "Comment ça marche", "ar": "كيف يعمل"},
     "home_how_title_pre": {"en": "Three steps to your next", "fr": "Trois étapes vers votre prochaine", "ar": "ثلاث خطوات نحو"},
     "home_how_title_em": {"en": "adventure", "fr": "aventure", "ar": "مغامرتك القادمة"},
-    "home_step1_h": {"en": "Create an itinerary", "fr": "Créez un itinéraire", "ar": "أنشئ خط سير"},
+    "home_step1_h": {"en": "Create an itinerary", "fr": "Créez un itinéraire", "ar": "أنشئ مسار"},
     "home_step1_p": {
         "en": "Add your stops, choose transport, set costs and notes for each leg of the journey.",
         "fr": "Ajoutez vos étapes, choisissez le transport, définissez les coûts et notes pour chaque tronçon du voyage.",
@@ -205,7 +205,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
     "home_ratings_p": {
         "en": "We go beyond a single star. Every itinerary is rated across multiple dimensions so you always know what to expect before you go.",
         "fr": "Nous allons au-delà d'une simple étoile. Chaque itinéraire est évalué sur plusieurs dimensions pour que vous sachiez toujours à quoi vous attendre.",
-        "ar": "نذهب أبعد من نجمة واحدة. يُقيَّم كل خط سير عبر أبعاد متعددة لتعرف دائمًا ما ينتظرك قبل أن تنطلق.",
+        "ar": "نذهب أبعد من نجمة واحدة. يُقيَّم كل مسار عبر أبعاد متعددة لتعرف دائمًا ما ينتظرك قبل أن تنطلق.",
     },
     # Dimension pills mirror the app's DimensionKey labels (Flutter l10n) verbatim.
     "home_rating_overall": {"en": "Overall", "fr": "Globale", "ar": "عام"},
