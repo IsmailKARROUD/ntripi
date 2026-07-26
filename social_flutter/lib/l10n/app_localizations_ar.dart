@@ -518,6 +518,15 @@ class AppLocalizationsAr extends AppLocalizations {
   String get languageArabic => 'العربية';
 
   @override
+  String get languageSpanish => 'Español';
+
+  @override
+  String get languageGerman => 'Deutsch';
+
+  @override
+  String get languageChinese => '简体中文';
+
+  @override
   String get themePickerTitle => 'المظهر';
 
   @override

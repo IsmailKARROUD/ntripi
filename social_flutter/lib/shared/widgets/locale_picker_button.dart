@@ -9,6 +9,9 @@ const _kSupportedLocales = [
   (code: 'fr', flag: '🇫🇷', label: 'Français'),
   // globe, not a country flag — Arabic spans many countries
   (code: 'ar', flag: '🌐', label: 'العربية'),
+  (code: 'es', flag: '🇪🇸', label: 'Español'),
+  (code: 'de', flag: '🇩🇪', label: 'Deutsch'),
+  (code: 'zh', flag: '🇨🇳', label: '简体中文'),
 ];
 
 class LocalePickerButton extends ConsumerWidget {
@@ -22,6 +25,9 @@ class LocalePickerButton extends ConsumerWidget {
       'en': l10n.languageEnglish,
       'fr': l10n.languageFrench,
       'ar': l10n.languageArabic,
+      'es': l10n.languageSpanish,
+      'de': l10n.languageGerman,
+      'zh': l10n.languageChinese,
     };
     final currentCode = ref.watch(localeProvider).languageCode;
     final current = _kSupportedLocales.firstWhere(

@@ -38,6 +38,9 @@ class _SettingsSheet extends ConsumerWidget {
       (code: 'en', label: l10n.languageEnglish),
       (code: 'fr', label: l10n.languageFrench),
       (code: 'ar', label: l10n.languageArabic),
+      (code: 'es', label: l10n.languageSpanish),
+      (code: 'de', label: l10n.languageGerman),
+      (code: 'zh', label: l10n.languageChinese),
     ];
 
     showModalBottomSheet<void>(
@@ -268,6 +271,9 @@ class _SettingsSheet extends ConsumerWidget {
     final langDetail = switch (currentLocale.languageCode) {
       'fr' => l10n.languageFrench,
       'ar' => l10n.languageArabic,
+      'es' => l10n.languageSpanish,
+      'de' => l10n.languageGerman,
+      'zh' => l10n.languageChinese,
       _ => l10n.languageEnglish,
     };
     final themeDetail = switch (ref.watch(themeModeProvider)) {

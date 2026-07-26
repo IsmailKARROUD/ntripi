@@ -6,7 +6,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 const _kLocaleKey = 'ntripi_app_locale';
 
 // Must stay in sync with _kSupportedLocales in locale_picker_button.dart
-const _kSupportedCodes = {'en', 'fr', 'ar'};
+const _kSupportedCodes = {'en', 'fr', 'ar', 'es', 'de', 'zh'};
 
 const _storage = FlutterSecureStorage(
   aOptions: AndroidOptions(encryptedSharedPreferences: true),
