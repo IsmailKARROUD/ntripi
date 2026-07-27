@@ -4,6 +4,7 @@ import 'package:social_flutter/core/providers/locale_provider.dart';
 import 'package:social_flutter/core/providers/theme_mode_provider.dart';
 import 'package:social_flutter/core/ui/app_theme.dart';
 import 'package:social_flutter/l10n/app_localizations.dart';
+import 'package:social_flutter/shared/data/app_locales.dart';
 
 void showProfileSettingsSheet(
   BuildContext context, {
@@ -33,15 +34,7 @@ class _SettingsSheet extends ConsumerWidget {
     final l10n = AppLocalizations.of(context)!;
     final nt = context.nt;
     final currentCode = ref.read(localeProvider).languageCode;
-
-    final languages = [
-      (code: 'en', label: l10n.languageEnglish),
-      (code: 'fr', label: l10n.languageFrench),
-      (code: 'ar', label: l10n.languageArabic),
-      (code: 'es', label: l10n.languageSpanish),
-      (code: 'de', label: l10n.languageGerman),
-      (code: 'zh', label: l10n.languageChinese),
-    ];
+    final languages = kAppLocales;
 
     showModalBottomSheet<void>(
       context: context,
@@ -107,19 +100,14 @@ class _SettingsSheet extends ConsumerWidget {
                                 ),
                                 alignment: Alignment.center,
                                 child: Text(
-                                  languages[i].code.toUpperCase(),
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w800,
-                                    color: nt.forest,
-                                    letterSpacing: 0.5,
-                                  ),
+                                  languages[i].flag,
+                                  style: const TextStyle(fontSize: 18),
                                 ),
                               ),
                               const SizedBox(width: 12),
                               Expanded(
                                 child: Text(
-                                  languages[i].label,
+                                  localeLabel(l10n, languages[i].code),
                                   style: TextStyle(
                                     fontSize: 15,
                                     fontWeight: FontWeight.w600,
@@ -268,14 +256,7 @@ class _SettingsSheet extends ConsumerWidget {
     final l10n = AppLocalizations.of(context)!;
     final nt = context.nt;
     final currentLocale = ref.watch(localeProvider);
-    final langDetail = switch (currentLocale.languageCode) {
-      'fr' => l10n.languageFrench,
-      'ar' => l10n.languageArabic,
-      'es' => l10n.languageSpanish,
-      'de' => l10n.languageGerman,
-      'zh' => l10n.languageChinese,
-      _ => l10n.languageEnglish,
-    };
+    final langDetail = localeLabel(l10n, currentLocale.languageCode);
     final themeDetail = switch (ref.watch(themeModeProvider)) {
       ThemeMode.light => l10n.themeLight,
       ThemeMode.dark => l10n.themeDark,

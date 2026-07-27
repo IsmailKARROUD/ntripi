@@ -3,16 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:social_flutter/core/providers/locale_provider.dart';
 import 'package:social_flutter/core/ui/app_theme.dart';
 import 'package:social_flutter/l10n/app_localizations.dart';
-
-const _kSupportedLocales = [
-  (code: 'en', flag: '🇬🇧', label: 'English'),
-  (code: 'fr', flag: '🇫🇷', label: 'Français'),
-  // globe, not a country flag — Arabic spans many countries
-  (code: 'ar', flag: '🌐', label: 'العربية'),
-  (code: 'es', flag: '🇪🇸', label: 'Español'),
-  (code: 'de', flag: '🇩🇪', label: 'Deutsch'),
-  (code: 'zh', flag: '🇨🇳', label: '简体中文'),
-];
+import 'package:social_flutter/shared/data/app_locales.dart';
 
 class LocalePickerButton extends ConsumerWidget {
   const LocalePickerButton({super.key});
@@ -21,18 +12,10 @@ class LocalePickerButton extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final nt = context.nt;
     final l10n = AppLocalizations.of(context)!;
-    final labels = {
-      'en': l10n.languageEnglish,
-      'fr': l10n.languageFrench,
-      'ar': l10n.languageArabic,
-      'es': l10n.languageSpanish,
-      'de': l10n.languageGerman,
-      'zh': l10n.languageChinese,
-    };
     final currentCode = ref.watch(localeProvider).languageCode;
-    final current = _kSupportedLocales.firstWhere(
+    final current = kAppLocales.firstWhere(
       (l) => l.code == currentCode,
-      orElse: () => _kSupportedLocales.first,
+      orElse: () => kAppLocales.first,
     );
 
     return PopupMenuButton<String>(
@@ -40,7 +23,7 @@ class LocalePickerButton extends ConsumerWidget {
           ref.read(localeProvider.notifier).setLocale(Locale(code)),
       color: nt.surface,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      itemBuilder: (_) => _kSupportedLocales
+      itemBuilder: (_) => kAppLocales
           .map(
             (l) => PopupMenuItem<String>(
               value: l.code,
@@ -49,7 +32,7 @@ class LocalePickerButton extends ConsumerWidget {
                   Text(l.flag, style: const TextStyle(fontSize: 16)),
                   const SizedBox(width: 10),
                   Text(
-                    labels[l.code] ?? l.label,
+                    localeLabel(l10n, l.code),
                     style: TextStyle(
                       fontSize: 14,
                       color: nt.bark,

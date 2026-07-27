@@ -2,11 +2,9 @@ import 'dart:ui';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:social_flutter/shared/data/app_locales.dart';
 
 const _kLocaleKey = 'ntripi_app_locale';
-
-// Must stay in sync with _kSupportedLocales in locale_picker_button.dart
-const _kSupportedCodes = {'en', 'fr', 'ar', 'es', 'de', 'zh'};
 
 const _storage = FlutterSecureStorage(
   aOptions: AndroidOptions(encryptedSharedPreferences: true),
@@ -30,7 +28,7 @@ class LocaleNotifier extends Notifier<Locale> {
       // First launch: mirror the device system language, fall back to English
       // if the system language isn't one of the app's supported locales.
       final systemCode = PlatformDispatcher.instance.locale.languageCode;
-      state = _kSupportedCodes.contains(systemCode)
+      state = kAppLocaleCodes.contains(systemCode)
           ? Locale(systemCode)
           : const Locale('en');
     }
