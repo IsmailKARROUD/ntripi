@@ -86,6 +86,18 @@ def has_pending_report(db: Session, user_id, itinerary_id) -> bool:
     ).first() is not None
 
 
+def has_pending_report_by_ip(db: Session, ip_hash: str, itinerary_id) -> bool:
+    """True if this anonymous IP already has an unresolved report for this itinerary —
+    used to make re-reporting idempotent (no duplicate row, no duplicate email)."""
+    return db.execute(
+        select(ContentReport.id).where(
+            ContentReport.reporter_ip_hash == ip_hash,
+            ContentReport.reported_itinerary_id == itinerary_id,
+            ContentReport.resolution == "pending",
+        ).limit(1)
+    ).first() is not None
+
+
 def send_report_notification(report, itinerary, reporter, settings) -> None:
     """Email the operator about a new report. Best-effort — caller swallows errors.
 

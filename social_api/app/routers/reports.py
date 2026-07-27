@@ -86,6 +86,9 @@ def create_report(
         ip = request.client.host if request.client else "unknown"
         ip_hash = report_service.hash_ip(ip, settings.SECRET_KEY)
         report_service.scrub_expired_ip_hashes(db, cutoff)
+        # Re-reporting from the same IP is idempotent (no new row, no duplicate email).
+        if report_service.has_pending_report_by_ip(db, ip_hash, itinerary.id):
+            return ReportAck()
         if report_service.count_recent_ip_reports(db, ip_hash, cutoff) >= report_service.IP_DAILY_LIMIT:
             raise rate_limited
         report = ContentReport(

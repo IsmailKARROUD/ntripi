@@ -179,6 +179,20 @@ class TestReportLimits:
         assert _count_reports() == 1          # second call added no row
         assert len(sent) == 1                 # and sent no second email
 
+    def test_duplicate_anonymous_report_is_idempotent(self, client, monkeypatch):
+        _set_operator_email(monkeypatch, "ops@example.com")
+        sent = _capture_emails(monkeypatch)
+
+        owner = register_user(client, "owner_anon_dup", "owner_anon_dup@example.com")
+        it_id = _create_itinerary(client, owner["access_token"])
+
+        # TestClient has a constant client IP, so the IP hash is stable across requests.
+        r1 = client.post("/reports", json={"itinerary_id": it_id, "reason": "spam"})
+        r2 = client.post("/reports", json={"itinerary_id": it_id, "reason": "spam"})
+        assert r1.status_code == 201 and r2.status_code == 201
+        assert _count_reports() == 1          # second call added no row
+        assert len(sent) == 1                 # and sent no second email
+
     def test_per_user_daily_limit(self, client, monkeypatch):
         _set_operator_email(monkeypatch, "ops@example.com")
         _capture_emails(monkeypatch)
@@ -208,13 +222,18 @@ class TestReportLimits:
         _capture_emails(monkeypatch)
 
         owner = register_user(client, "owner7", "owner7@example.com")
-        it_id = _create_itinerary(client, owner["access_token"])
 
+        # Create 3 different itineraries and report each once from the same IP.
         # TestClient sends a constant client IP, so the per-IP hash is stable.
-        for _ in range(3):
+        # Each report on a different itinerary counts toward the limit.
+        for i in range(3):
+            it_id = _create_itinerary(client, owner["access_token"], title=f"Trip {i+1}")
             r = client.post("/reports", json={"itinerary_id": it_id, "reason": "spam"})
             assert r.status_code == 201, r.json()
-        r = client.post("/reports", json={"itinerary_id": it_id, "reason": "spam"})
+
+        # A 4th report on a new itinerary hits the IP daily limit.
+        it_id_4 = _create_itinerary(client, owner["access_token"], title="Trip 4")
+        r = client.post("/reports", json={"itinerary_id": it_id_4, "reason": "spam"})
         assert r.status_code == 429
         assert r.json()["code"] == "report_rate_limited"
 
