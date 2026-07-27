@@ -116,4 +116,4 @@ flutter:
    - assets/data/currencies.json
    # NSFW pre-check model (mobile). The .tflite binary is not committed — the
    # check is a no-op until it's dropped in (see assets/models/README.md).
-   - assets/models/
+   - assets/models/nsfw_mobilenet.tflite
