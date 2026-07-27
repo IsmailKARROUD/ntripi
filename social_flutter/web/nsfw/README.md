@@ -19,8 +19,8 @@ web/nsfw/model/*.bin         # model weight shards (~4.2 MB total)
 
 ```bash
 cd web/nsfw
-curl -L -o tf.min.js     https://unpkg.com/@tensorflow/tfjs/dist/tf.min.js
-curl -L -o nsfwjs.min.js https://unpkg.com/nsfwjs/dist/nsfwjs.min.js
+curl -L -o tf.min.js https://unpkg.com/@tensorflow/tfjs@3.21.0/dist/tf.min.js
+curl -L -o nsfwjs.min.js https://unpkg.com/nsfwjs@2.4.2/dist/nsfwjs.min.js
 # MobileNetV2Mid graph model (from the nsfwjs repo's example/nsfw_demo model):
 #   https://github.com/infinitered/nsfwjs → models/mobilenet_v2_mid/
 # Place model.json + the group1-shard*.bin files under web/nsfw/model/.
