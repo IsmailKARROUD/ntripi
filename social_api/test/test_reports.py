@@ -262,6 +262,10 @@ class TestShareReportUI:
         assert r.status_code == 200
         assert "report-dialog" in r.text
         assert "report-link" in r.text
+        # Report button sits in the top-right cluster next to the "Public itinerary" badge.
+        assert "hero-top-actions" in r.text
+        # The thank-you confirmation must offer an explicit close control.
+        assert "report-close" in r.text
 
     def test_private_share_page_has_no_report_ui(self, client):
         owner = register_user(client, "owner11", "owner11@example.com")

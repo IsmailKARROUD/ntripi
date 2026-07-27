@@ -106,8 +106,12 @@
       font-size: clamp(32px, 5vw, 44px); font-weight: 800;
       color: white; letter-spacing: -1px; line-height: 1.1;
     }
+    /* Top-right cluster: the "Public itinerary" badge + the report button sit together. */
+    .hero-top-actions {
+      position: absolute; top: 20px; inset-inline-end: 20px; z-index: 2;
+      display: flex; align-items: center; gap: 8px;
+    }
     .share-badge {
-      position: absolute; top: 20px; inset-inline-end: 20px;
       display: inline-flex; align-items: center; gap: 6px;
       background: rgba(255,255,255,.18); color: white;
       backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
@@ -115,6 +119,16 @@
       border: 1px solid rgba(255,255,255,.2);
     }
     .share-badge-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--amber); }
+    /* Matches the badge's translucent pill so the report affordance sits beside it without shouting. */
+    .report-badge-btn {
+      display: inline-flex; align-items: center; gap: 5px;
+      background: rgba(255,255,255,.18); color: white;
+      backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+      padding: 6px 12px; border-radius: 50px; font-size: 11px; font-weight: 600;
+      border: 1px solid rgba(255,255,255,.2); cursor: pointer; font-family: inherit;
+      transition: background .15s;
+    }
+    .report-badge-btn:hover { background: rgba(255,255,255,.30); }
 
     /* ── META PILLS ── */
     .meta-row { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 20px; }
@@ -237,8 +251,6 @@
       font-size: 13px; color: var(--text3);
     }
     footer a { color: var(--forest); font-weight: 600; text-decoration: none; }
-    .report-link { color: var(--text3); font-size: 12px; text-decoration: none; }
-    .report-link:hover { color: var(--text2); }
 
     /* ── REPORT DIALOG ── */
     #report-dialog {
@@ -298,7 +310,10 @@
     </svg>
     {% endif %}
     <div class="hero-cover-overlay"></div>
-    <div class="share-badge"><div class="share-badge-dot"></div>{{ _('share_public_badge') }}</div>
+    <div class="hero-top-actions">
+      <div class="share-badge"><div class="share-badge-dot"></div>{{ _('share_public_badge') }}</div>
+      <button type="button" id="report-link" class="report-badge-btn" aria-label="{{ _('report_link') }}">⚑ {{ _('report_short') }}</button>
+    </div>
     <div class="hero-cover-content">
       <div class="cover-author">
         <div class="author-avatar">{{ owner.username[0]|upper }}</div>
@@ -448,7 +463,6 @@
 </div>
 
 <footer>
-  <a href="#" id="report-link" class="report-link">⚑ {{ _('report_link') }}</a><br><br>
   Shared via <a href="/">Ntripi</a> · ntripi.app
 </footer>
 
@@ -468,12 +482,18 @@
       </select>
       <div class="report-field-label">{{ _('report_notes_label') }}</div>
       <textarea id="report-notes" class="report-textarea" maxlength="2000"></textarea>
+      <p id="report-error-msg" style="display:none; color:var(--amber); font-size:13px; font-weight:600; margin-bottom:12px"></p>
       <div class="report-actions">
         <button type="button" id="report-cancel" class="report-btn report-btn-cancel">{{ _('report_cancel') }}</button>
         <button type="button" id="report-submit" class="report-btn report-btn-submit">{{ _('report_submit') }}</button>
       </div>
     </div>
-    <p id="report-feedback" style="display:none"></p>
+    <div id="report-feedback-wrap" style="display:none">
+      <p id="report-feedback"></p>
+      <div class="report-actions" style="margin-top:16px">
+        <button type="button" id="report-close" class="report-btn report-btn-submit">{{ _('report_close') }}</button>
+      </div>
+    </div>
   </div>
 </dialog>
 
@@ -483,8 +503,11 @@
     var link = document.getElementById('report-link');
     var submitBtn = document.getElementById('report-submit');
     var cancelBtn = document.getElementById('report-cancel');
+    var closeBtn = document.getElementById('report-close');
     var formWrap = document.getElementById('report-form-wrap');
+    var feedbackWrap = document.getElementById('report-feedback-wrap');
     var feedback = document.getElementById('report-feedback');
+    var errorMsg = document.getElementById('report-error-msg');
     var itineraryId = {{ itinerary.id|string|tojson }};
     var msgThanks = {{ _('report_thanks')|tojson }};
     var msgError = {{ _('report_error')|tojson }};
@@ -495,9 +518,18 @@
       if (typeof dialog.showModal === 'function') { dialog.showModal(); }
     });
     cancelBtn.addEventListener('click', function () { dialog.close(); });
+    closeBtn.addEventListener('click', function () { dialog.close(); });
+
+    // Retryable failure: keep the form open so the user can fix/retry or cancel.
+    function showInlineError(msg) {
+      errorMsg.textContent = msg;
+      errorMsg.style.display = 'block';
+      submitBtn.disabled = false;
+    }
 
     submitBtn.addEventListener('click', function () {
       submitBtn.disabled = true;
+      errorMsg.style.display = 'none';
       var reason = document.getElementById('report-reason').value;
       var notes = document.getElementById('report-notes').value.trim();
       fetch('/reports', {
@@ -506,22 +538,17 @@
         body: JSON.stringify({ itinerary_id: itineraryId, reason: reason, notes: notes || null })
       }).then(function (res) {
         if (res.status === 201) {
+          // Success: swap the form for the thank-you + explicit Close button.
           formWrap.style.display = 'none';
           feedback.textContent = msgThanks;
-          feedback.style.display = 'block';
+          feedbackWrap.style.display = 'block';
         } else if (res.status === 429) {
-          feedback.textContent = msgRateLimited;
-          feedback.style.display = 'block';
-          submitBtn.disabled = false;
+          showInlineError(msgRateLimited);
         } else {
-          feedback.textContent = msgError;
-          feedback.style.display = 'block';
-          submitBtn.disabled = false;
+          showInlineError(msgError);
         }
       }).catch(function () {
-        feedback.textContent = msgError;
-        feedback.style.display = 'block';
-        submitBtn.disabled = false;
+        showInlineError(msgError);
       });
     });
   })();

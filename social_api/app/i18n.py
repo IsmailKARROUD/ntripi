@@ -112,6 +112,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
     "share_get_it_on": {"en": "Get it on", "fr": "Disponible sur", "ar": "متوفر على"},
     # ── Content reporting (share page) ────────────────────────────────────
     "report_link": {"en": "Report this itinerary", "fr": "Signaler cet itinéraire", "ar": "الإبلاغ عن هذا المسار"},
+    "report_short": {"en": "Report", "fr": "Signaler", "ar": "إبلاغ"},
     "report_title": {"en": "Report this itinerary", "fr": "Signaler cet itinéraire", "ar": "الإبلاغ عن هذا المسار"},
     "report_reason_label": {"en": "Reason", "fr": "Motif", "ar": "السبب"},
     "report_reason_spam": {"en": "Spam", "fr": "Spam", "ar": "محتوى مزعج"},
@@ -125,6 +126,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
     "report_submit": {"en": "Submit report", "fr": "Envoyer le signalement", "ar": "إرسال البلاغ"},
     "report_cancel": {"en": "Cancel", "fr": "Annuler", "ar": "إلغاء"},
     "report_thanks": {"en": "Thanks. We'll review this report.", "fr": "Merci. Nous examinerons ce signalement.", "ar": "شكرًا. سنراجع هذا البلاغ."},
+    "report_close": {"en": "Close", "fr": "Fermer", "ar": "إغلاق"},
     "report_error": {"en": "Something went wrong. Please try again.", "fr": "Une erreur s'est produite. Veuillez réessayer.", "ar": "حدث خطأ ما. يُرجى المحاولة مرة أخرى."},
     "report_rate_limited": {
         "en": "Too many reports from your connection. Please try again later.",
