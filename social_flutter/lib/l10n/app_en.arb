@@ -986,5 +986,20 @@
   "apiErrorAccountPrivate": "This account is private.",
   "apiErrorTosRequired": "You must accept the Terms of Service to register.",
   "apiErrorUsernameTaken": "This username is already taken.",
-  "apiErrorEmailTaken": "An account with this email already exists."
+  "apiErrorEmailTaken": "An account with this email already exists.",
+
+  "reportItineraryTitle": "Report this itinerary",
+  "reportItineraryTooltip": "Report",
+  "reportReasonSpam": "Spam",
+  "reportReasonNsfw": "Nudity or sexual content",
+  "reportReasonViolence": "Violence",
+  "reportReasonHateSpeech": "Hate speech",
+  "reportReasonHarassment": "Harassment",
+  "reportReasonCopyright": "Copyright infringement",
+  "reportReasonOther": "Other",
+  "reportNotesHint": "Add details (optional)",
+  "reportSubmit": "Submit report",
+  "reportThanks": "Thanks. We'll review this report.",
+  "apiErrorReportOwnContent": "You can't report your own content.",
+  "apiErrorReportRateLimited": "Too many reports. Please try again later."
 }

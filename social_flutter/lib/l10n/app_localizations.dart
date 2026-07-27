@@ -4131,6 +4131,90 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'An account with this email already exists.'**
   String get apiErrorEmailTaken;
+
+  /// No description provided for @reportItineraryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Report this itinerary'**
+  String get reportItineraryTitle;
+
+  /// No description provided for @reportItineraryTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Report'**
+  String get reportItineraryTooltip;
+
+  /// No description provided for @reportReasonSpam.
+  ///
+  /// In en, this message translates to:
+  /// **'Spam'**
+  String get reportReasonSpam;
+
+  /// No description provided for @reportReasonNsfw.
+  ///
+  /// In en, this message translates to:
+  /// **'Nudity or sexual content'**
+  String get reportReasonNsfw;
+
+  /// No description provided for @reportReasonViolence.
+  ///
+  /// In en, this message translates to:
+  /// **'Violence'**
+  String get reportReasonViolence;
+
+  /// No description provided for @reportReasonHateSpeech.
+  ///
+  /// In en, this message translates to:
+  /// **'Hate speech'**
+  String get reportReasonHateSpeech;
+
+  /// No description provided for @reportReasonHarassment.
+  ///
+  /// In en, this message translates to:
+  /// **'Harassment'**
+  String get reportReasonHarassment;
+
+  /// No description provided for @reportReasonCopyright.
+  ///
+  /// In en, this message translates to:
+  /// **'Copyright infringement'**
+  String get reportReasonCopyright;
+
+  /// No description provided for @reportReasonOther.
+  ///
+  /// In en, this message translates to:
+  /// **'Other'**
+  String get reportReasonOther;
+
+  /// No description provided for @reportNotesHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Add details (optional)'**
+  String get reportNotesHint;
+
+  /// No description provided for @reportSubmit.
+  ///
+  /// In en, this message translates to:
+  /// **'Submit report'**
+  String get reportSubmit;
+
+  /// No description provided for @reportThanks.
+  ///
+  /// In en, this message translates to:
+  /// **'Thanks. We\'ll review this report.'**
+  String get reportThanks;
+
+  /// No description provided for @apiErrorReportOwnContent.
+  ///
+  /// In en, this message translates to:
+  /// **'You can\'t report your own content.'**
+  String get apiErrorReportOwnContent;
+
+  /// No description provided for @apiErrorReportRateLimited.
+  ///
+  /// In en, this message translates to:
+  /// **'Too many reports. Please try again later.'**
+  String get apiErrorReportRateLimited;
 }
 
 class _AppLocalizationsDelegate

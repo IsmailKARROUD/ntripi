@@ -1,7 +1,7 @@
 // presentation/itinerary_detail_screen.dart — Full itinerary view with map.
 //
 // Layout (CustomScrollView so pull-to-refresh works over the whole page):
-//   AppBar       — title | add-stop + add-segment + reorder icons (edit mode) | share + more_vert
+//   AppBar       — title | add-stop + add-segment + reorder icons (edit mode) | share + flag (non-owner) + more_vert
 //   Summary chips — duration, cost, safety rating, stop count, visibility
 //   Description  — optional free-text
 //   Rating section — community avg + current user's 5-star picker
@@ -57,6 +57,7 @@ import 'package:social_flutter/features/itineraries/presentation/widgets/edit_pe
 import 'package:social_flutter/features/itineraries/presentation/widgets/markdown_notes_editor.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/move_stop_to_track_sheet.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/rate_itinerary_dialog.dart';
+import 'package:social_flutter/features/itineraries/presentation/widgets/report_itinerary_sheet.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/parallel_stop_group.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/segment_card.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/track_reorder_view.dart';
@@ -718,6 +719,10 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                                     .read(shareServiceProvider)
                                     .shareItinerary(itinerary, l10n)
                                 : null,
+                            onReport: isOwner
+                                ? null
+                                : () => showReportItinerarySheet(
+                                    context, ref, widget.itineraryId),
                             onEditDetails: isOwner
                                 ? () => context.push(
                                     '/itineraries/${widget.itineraryId}/edit')
@@ -1197,6 +1202,8 @@ class _CoverHero extends StatefulWidget {
   final GlobalKey editDetailsButtonKey;
   final VoidCallback onBack;
   final VoidCallback? onShare;
+  // Viewer-only (non-owner) report action; null hides the flag button.
+  final VoidCallback? onReport;
   final VoidCallback? onEditDetails;
   final VoidCallback? onEnterEdit;
   final VoidCallback? onExitEdit;
@@ -1212,6 +1219,7 @@ class _CoverHero extends StatefulWidget {
     required this.editDetailsButtonKey,
     required this.onBack,
     this.onShare,
+    this.onReport,
     this.onEditDetails,
     this.onEnterEdit,
     this.onExitEdit,
@@ -1308,6 +1316,13 @@ class _CoverHeroState extends State<_CoverHero> {
                     _GlassButton(
                       icon: Icons.share_rounded,
                       onTap: widget.onShare,
+                    ),
+                    const SizedBox(width: 6),
+                  ],
+                  if (!widget.isOwner && widget.onReport != null) ...[
+                    _GlassButton(
+                      icon: Icons.flag_outlined,
+                      onTap: widget.onReport,
                     ),
                     const SizedBox(width: 6),
                   ],

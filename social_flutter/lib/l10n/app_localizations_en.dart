@@ -2331,4 +2331,47 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get apiErrorEmailTaken => 'An account with this email already exists.';
+
+  @override
+  String get reportItineraryTitle => 'Report this itinerary';
+
+  @override
+  String get reportItineraryTooltip => 'Report';
+
+  @override
+  String get reportReasonSpam => 'Spam';
+
+  @override
+  String get reportReasonNsfw => 'Nudity or sexual content';
+
+  @override
+  String get reportReasonViolence => 'Violence';
+
+  @override
+  String get reportReasonHateSpeech => 'Hate speech';
+
+  @override
+  String get reportReasonHarassment => 'Harassment';
+
+  @override
+  String get reportReasonCopyright => 'Copyright infringement';
+
+  @override
+  String get reportReasonOther => 'Other';
+
+  @override
+  String get reportNotesHint => 'Add details (optional)';
+
+  @override
+  String get reportSubmit => 'Submit report';
+
+  @override
+  String get reportThanks => 'Thanks. We\'ll review this report.';
+
+  @override
+  String get apiErrorReportOwnContent => 'You can\'t report your own content.';
+
+  @override
+  String get apiErrorReportRateLimited =>
+      'Too many reports. Please try again later.';
 }

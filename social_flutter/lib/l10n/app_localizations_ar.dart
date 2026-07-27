@@ -2382,4 +2382,48 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get apiErrorEmailTaken => 'يوجد حساب بهذا البريد الإلكتروني بالفعل.';
+
+  @override
+  String get reportItineraryTitle => 'الإبلاغ عن هذا المسار';
+
+  @override
+  String get reportItineraryTooltip => 'إبلاغ';
+
+  @override
+  String get reportReasonSpam => 'محتوى مزعج';
+
+  @override
+  String get reportReasonNsfw => 'عُري أو محتوى جنسي';
+
+  @override
+  String get reportReasonViolence => 'عنف';
+
+  @override
+  String get reportReasonHateSpeech => 'خطاب كراهية';
+
+  @override
+  String get reportReasonHarassment => 'تحرّش';
+
+  @override
+  String get reportReasonCopyright => 'انتهاك حقوق النشر';
+
+  @override
+  String get reportReasonOther => 'أخرى';
+
+  @override
+  String get reportNotesHint => 'أضف تفاصيل (اختياري)';
+
+  @override
+  String get reportSubmit => 'إرسال البلاغ';
+
+  @override
+  String get reportThanks => 'شكرًا. سنراجع هذا البلاغ.';
+
+  @override
+  String get apiErrorReportOwnContent =>
+      'لا يمكنك الإبلاغ عن المحتوى الخاص بك.';
+
+  @override
+  String get apiErrorReportRateLimited =>
+      'عدد كبير جدًا من البلاغات. يُرجى المحاولة لاحقًا.';
 }

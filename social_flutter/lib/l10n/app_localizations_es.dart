@@ -2355,4 +2355,48 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get apiErrorEmailTaken => 'Ya existe una cuenta con este correo.';
+
+  @override
+  String get reportItineraryTitle => 'Denunciar este itinerario';
+
+  @override
+  String get reportItineraryTooltip => 'Denunciar';
+
+  @override
+  String get reportReasonSpam => 'Spam';
+
+  @override
+  String get reportReasonNsfw => 'Desnudez o contenido sexual';
+
+  @override
+  String get reportReasonViolence => 'Violencia';
+
+  @override
+  String get reportReasonHateSpeech => 'Discurso de odio';
+
+  @override
+  String get reportReasonHarassment => 'Acoso';
+
+  @override
+  String get reportReasonCopyright => 'Infracción de derechos de autor';
+
+  @override
+  String get reportReasonOther => 'Otro';
+
+  @override
+  String get reportNotesHint => 'Añadir detalles (opcional)';
+
+  @override
+  String get reportSubmit => 'Enviar denuncia';
+
+  @override
+  String get reportThanks => 'Gracias. Revisaremos esta denuncia.';
+
+  @override
+  String get apiErrorReportOwnContent =>
+      'No puedes denunciar tu propio contenido.';
+
+  @override
+  String get apiErrorReportRateLimited =>
+      'Demasiadas denuncias. Inténtalo de nuevo más tarde.';
 }

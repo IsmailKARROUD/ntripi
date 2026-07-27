@@ -2374,4 +2374,48 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get apiErrorEmailTaken =>
       'Ein Konto mit dieser E-Mail existiert bereits.';
+
+  @override
+  String get reportItineraryTitle => 'Diese Reiseroute melden';
+
+  @override
+  String get reportItineraryTooltip => 'Melden';
+
+  @override
+  String get reportReasonSpam => 'Spam';
+
+  @override
+  String get reportReasonNsfw => 'Nacktheit oder sexuelle Inhalte';
+
+  @override
+  String get reportReasonViolence => 'Gewalt';
+
+  @override
+  String get reportReasonHateSpeech => 'Hassrede';
+
+  @override
+  String get reportReasonHarassment => 'Belästigung';
+
+  @override
+  String get reportReasonCopyright => 'Urheberrechtsverletzung';
+
+  @override
+  String get reportReasonOther => 'Sonstiges';
+
+  @override
+  String get reportNotesHint => 'Details hinzufügen (optional)';
+
+  @override
+  String get reportSubmit => 'Meldung senden';
+
+  @override
+  String get reportThanks => 'Danke. Wir prüfen diese Meldung.';
+
+  @override
+  String get apiErrorReportOwnContent =>
+      'Du kannst deine eigenen Inhalte nicht melden.';
+
+  @override
+  String get apiErrorReportRateLimited =>
+      'Zu viele Meldungen. Bitte versuche es später erneut.';
 }

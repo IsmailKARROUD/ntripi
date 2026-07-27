@@ -18,11 +18,12 @@ from app.models.itinerary_annotation import ItineraryAnnotation
 from app.models.transit_segment import TransitSegment
 from app.models.transport_leg import TransportLeg
 from app.models.waitlist import WaitlistEntry
+from app.models.content_report import ContentReport
 
 __all__ = [
     "User", "RefreshToken", "EmailToken", "PasswordHistory", "SecurityAuditLog",
     "Follow", "FollowStatus",
     "Itinerary", "ItineraryAllowedUser", "SavedItinerary", "Track",
     "Stop", "Annotation", "ItineraryRating", "ItineraryAnnotation",
-    "TransitSegment", "TransportLeg", "WaitlistEntry",
+    "TransitSegment", "TransportLeg", "WaitlistEntry", "ContentReport",
 ]

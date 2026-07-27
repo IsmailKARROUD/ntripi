@@ -110,6 +110,27 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
     "share_or_download": {"en": "or download", "fr": "ou télécharger", "ar": "أو نزّله"},
     "share_download_on": {"en": "Download on the", "fr": "Télécharger sur l'", "ar": "حمّله من"},
     "share_get_it_on": {"en": "Get it on", "fr": "Disponible sur", "ar": "متوفر على"},
+    # ── Content reporting (share page) ────────────────────────────────────
+    "report_link": {"en": "Report this itinerary", "fr": "Signaler cet itinéraire", "ar": "الإبلاغ عن هذا المسار"},
+    "report_title": {"en": "Report this itinerary", "fr": "Signaler cet itinéraire", "ar": "الإبلاغ عن هذا المسار"},
+    "report_reason_label": {"en": "Reason", "fr": "Motif", "ar": "السبب"},
+    "report_reason_spam": {"en": "Spam", "fr": "Spam", "ar": "محتوى مزعج"},
+    "report_reason_nsfw": {"en": "Nudity or sexual content", "fr": "Nudité ou contenu sexuel", "ar": "عُري أو محتوى جنسي"},
+    "report_reason_violence": {"en": "Violence", "fr": "Violence", "ar": "عنف"},
+    "report_reason_hate_speech": {"en": "Hate speech", "fr": "Discours haineux", "ar": "خطاب كراهية"},
+    "report_reason_harassment": {"en": "Harassment", "fr": "Harcèlement", "ar": "تحرّش"},
+    "report_reason_copyright": {"en": "Copyright infringement", "fr": "Atteinte au droit d'auteur", "ar": "انتهاك حقوق النشر"},
+    "report_reason_other": {"en": "Other", "fr": "Autre", "ar": "أخرى"},
+    "report_notes_label": {"en": "Details (optional)", "fr": "Détails (facultatif)", "ar": "تفاصيل (اختياري)"},
+    "report_submit": {"en": "Submit report", "fr": "Envoyer le signalement", "ar": "إرسال البلاغ"},
+    "report_cancel": {"en": "Cancel", "fr": "Annuler", "ar": "إلغاء"},
+    "report_thanks": {"en": "Thanks. We'll review this report.", "fr": "Merci. Nous examinerons ce signalement.", "ar": "شكرًا. سنراجع هذا البلاغ."},
+    "report_error": {"en": "Something went wrong. Please try again.", "fr": "Une erreur s'est produite. Veuillez réessayer.", "ar": "حدث خطأ ما. يُرجى المحاولة مرة أخرى."},
+    "report_rate_limited": {
+        "en": "Too many reports from your connection. Please try again later.",
+        "fr": "Trop de signalements depuis votre connexion. Veuillez réessayer plus tard.",
+        "ar": "عدد كبير جدًا من البلاغات من اتصالك. يُرجى المحاولة لاحقًا.",
+    },
     # ── Homepage ──────────────────────────────────────────────────────────
     "home_title": {
         "en": "Ntripi — Share your travel itineraries",

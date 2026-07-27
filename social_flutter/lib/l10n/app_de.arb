@@ -670,5 +670,20 @@
   "apiErrorAccountPrivate": "Dieses Konto ist privat.",
   "apiErrorTosRequired": "Du musst die Nutzungsbedingungen akzeptieren, um dich zu registrieren.",
   "apiErrorUsernameTaken": "Dieser Benutzername ist bereits vergeben.",
-  "apiErrorEmailTaken": "Ein Konto mit dieser E-Mail existiert bereits."
+  "apiErrorEmailTaken": "Ein Konto mit dieser E-Mail existiert bereits.",
+
+  "reportItineraryTitle": "Diese Reiseroute melden",
+  "reportItineraryTooltip": "Melden",
+  "reportReasonSpam": "Spam",
+  "reportReasonNsfw": "Nacktheit oder sexuelle Inhalte",
+  "reportReasonViolence": "Gewalt",
+  "reportReasonHateSpeech": "Hassrede",
+  "reportReasonHarassment": "Belästigung",
+  "reportReasonCopyright": "Urheberrechtsverletzung",
+  "reportReasonOther": "Sonstiges",
+  "reportNotesHint": "Details hinzufügen (optional)",
+  "reportSubmit": "Meldung senden",
+  "reportThanks": "Danke. Wir prüfen diese Meldung.",
+  "apiErrorReportOwnContent": "Du kannst deine eigenen Inhalte nicht melden.",
+  "apiErrorReportRateLimited": "Zu viele Meldungen. Bitte versuche es später erneut."
 }

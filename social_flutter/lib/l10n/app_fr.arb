@@ -840,5 +840,20 @@
   "apiErrorAccountPrivate": "Ce compte est privé.",
   "apiErrorTosRequired": "Vous devez accepter les Conditions d'utilisation pour vous inscrire.",
   "apiErrorUsernameTaken": "Cet identifiant est déjà pris.",
-  "apiErrorEmailTaken": "Un compte existe déjà avec cet e-mail."
+  "apiErrorEmailTaken": "Un compte existe déjà avec cet e-mail.",
+
+  "reportItineraryTitle": "Signaler cet itinéraire",
+  "reportItineraryTooltip": "Signaler",
+  "reportReasonSpam": "Spam",
+  "reportReasonNsfw": "Nudité ou contenu sexuel",
+  "reportReasonViolence": "Violence",
+  "reportReasonHateSpeech": "Discours haineux",
+  "reportReasonHarassment": "Harcèlement",
+  "reportReasonCopyright": "Atteinte au droit d'auteur",
+  "reportReasonOther": "Autre",
+  "reportNotesHint": "Ajouter des détails (facultatif)",
+  "reportSubmit": "Envoyer le signalement",
+  "reportThanks": "Merci. Nous examinerons ce signalement.",
+  "apiErrorReportOwnContent": "Vous ne pouvez pas signaler votre propre contenu.",
+  "apiErrorReportRateLimited": "Trop de signalements. Veuillez réessayer plus tard."
 }

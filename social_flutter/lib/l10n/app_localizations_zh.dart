@@ -2210,4 +2210,46 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get apiErrorEmailTaken => '使用此邮箱的账号已存在。';
+
+  @override
+  String get reportItineraryTitle => '举报此行程';
+
+  @override
+  String get reportItineraryTooltip => '举报';
+
+  @override
+  String get reportReasonSpam => '垃圾内容';
+
+  @override
+  String get reportReasonNsfw => '裸露或性相关内容';
+
+  @override
+  String get reportReasonViolence => '暴力';
+
+  @override
+  String get reportReasonHateSpeech => '仇恨言论';
+
+  @override
+  String get reportReasonHarassment => '骚扰';
+
+  @override
+  String get reportReasonCopyright => '侵犯版权';
+
+  @override
+  String get reportReasonOther => '其他';
+
+  @override
+  String get reportNotesHint => '补充说明（可选）';
+
+  @override
+  String get reportSubmit => '提交举报';
+
+  @override
+  String get reportThanks => '谢谢。我们会审核此举报。';
+
+  @override
+  String get apiErrorReportOwnContent => '你无法举报自己的内容。';
+
+  @override
+  String get apiErrorReportRateLimited => '举报次数过多。请稍后再试。';
 }

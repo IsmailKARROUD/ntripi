@@ -670,5 +670,20 @@
   "apiErrorAccountPrivate": "该账号为私密账号。",
   "apiErrorTosRequired": "注册前必须接受服务条款。",
   "apiErrorUsernameTaken": "该用户名已被占用。",
-  "apiErrorEmailTaken": "使用此邮箱的账号已存在。"
+  "apiErrorEmailTaken": "使用此邮箱的账号已存在。",
+
+  "reportItineraryTitle": "举报此行程",
+  "reportItineraryTooltip": "举报",
+  "reportReasonSpam": "垃圾内容",
+  "reportReasonNsfw": "裸露或性相关内容",
+  "reportReasonViolence": "暴力",
+  "reportReasonHateSpeech": "仇恨言论",
+  "reportReasonHarassment": "骚扰",
+  "reportReasonCopyright": "侵犯版权",
+  "reportReasonOther": "其他",
+  "reportNotesHint": "补充说明（可选）",
+  "reportSubmit": "提交举报",
+  "reportThanks": "谢谢。我们会审核此举报。",
+  "apiErrorReportOwnContent": "你无法举报自己的内容。",
+  "apiErrorReportRateLimited": "举报次数过多。请稍后再试。"
 }

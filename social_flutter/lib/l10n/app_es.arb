@@ -670,5 +670,20 @@
   "apiErrorAccountPrivate": "Esta cuenta es privada.",
   "apiErrorTosRequired": "Debes aceptar los Términos del servicio para registrarte.",
   "apiErrorUsernameTaken": "Este nombre de usuario ya está en uso.",
-  "apiErrorEmailTaken": "Ya existe una cuenta con este correo."
+  "apiErrorEmailTaken": "Ya existe una cuenta con este correo.",
+
+  "reportItineraryTitle": "Denunciar este itinerario",
+  "reportItineraryTooltip": "Denunciar",
+  "reportReasonSpam": "Spam",
+  "reportReasonNsfw": "Desnudez o contenido sexual",
+  "reportReasonViolence": "Violencia",
+  "reportReasonHateSpeech": "Discurso de odio",
+  "reportReasonHarassment": "Acoso",
+  "reportReasonCopyright": "Infracción de derechos de autor",
+  "reportReasonOther": "Otro",
+  "reportNotesHint": "Añadir detalles (opcional)",
+  "reportSubmit": "Enviar denuncia",
+  "reportThanks": "Gracias. Revisaremos esta denuncia.",
+  "apiErrorReportOwnContent": "No puedes denunciar tu propio contenido.",
+  "apiErrorReportRateLimited": "Demasiadas denuncias. Inténtalo de nuevo más tarde."
 }

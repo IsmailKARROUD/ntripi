@@ -91,6 +91,10 @@ class Settings(BaseSettings):
     RESEND_API_KEY: str | None = None
     EMAIL_FROM: str = "Ntripi <noreply@ntripi.app>"
 
+    # Where new-content-report notification emails go. Unset = reports are only
+    # logged to the DB and the email step is skipped with a warning.
+    OPERATOR_EMAIL: str | None = None
+
     # When True, new passwords are checked against Have I Been Pwned's breach
     # corpus (k-anonymity range API) and rejected if seen. The check fails open
     # (a HIBP outage never blocks a change). Disable in offline dev / tests.

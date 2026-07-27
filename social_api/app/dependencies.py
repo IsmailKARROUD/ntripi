@@ -38,25 +38,9 @@ from app.errors import ApiError
 bearer_scheme = HTTPBearer(auto_error=False)
 
 
-def get_current_user(
-    credentials: HTTPAuthorizationCredentials | None = Depends(bearer_scheme),
-    db: Session = Depends(get_db),
-) -> User:
-    """
-    Validate the JWT and return the authenticated User object.
-
-    Fails fast:
-      - 403 if Authorization header is missing.
-      - 401 if token is invalid or expired.
-      - 401 if the user no longer exists.
-      - 403 if the user's account is deactivated.
-    """
-    if credentials is None:
-        raise ApiError(
-            status_code=status.HTTP_403_FORBIDDEN,
-            code="not_authenticated", detail="Not authenticated.",
-        )
-
+def _authenticated_user(credentials: HTTPAuthorizationCredentials, db: Session) -> User:
+    """Validate a present Bearer token and return its User (401 invalid/expired/
+    unknown, 403 deactivated). Shared by the required and optional dependencies."""
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials.",
@@ -82,6 +66,42 @@ def get_current_user(
         )
 
     return user
+
+
+def get_current_user(
+    credentials: HTTPAuthorizationCredentials | None = Depends(bearer_scheme),
+    db: Session = Depends(get_db),
+) -> User:
+    """
+    Validate the JWT and return the authenticated User object.
+
+    Fails fast:
+      - 403 if Authorization header is missing.
+      - 401 if token is invalid or expired.
+      - 401 if the user no longer exists.
+      - 403 if the user's account is deactivated.
+    """
+    if credentials is None:
+        raise ApiError(
+            status_code=status.HTTP_403_FORBIDDEN,
+            code="not_authenticated", detail="Not authenticated.",
+        )
+    return _authenticated_user(credentials, db)
+
+
+def get_current_user_optional(
+    credentials: HTTPAuthorizationCredentials | None = Depends(bearer_scheme),
+    db: Session = Depends(get_db),
+) -> User | None:
+    """
+    Return the authenticated User, or None when no Authorization header is sent.
+
+    A *present but invalid* token still 401s (via _authenticated_user) — a stale
+    app token must not silently downgrade a request to anonymous.
+    """
+    if credentials is None:
+        return None
+    return _authenticated_user(credentials, db)
 
 
 def require_verified_email(

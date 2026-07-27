@@ -237,6 +237,35 @@
       font-size: 13px; color: var(--text3);
     }
     footer a { color: var(--forest); font-weight: 600; text-decoration: none; }
+    .report-link { color: var(--text3); font-size: 12px; text-decoration: none; }
+    .report-link:hover { color: var(--text2); }
+
+    /* ── REPORT DIALOG ── */
+    #report-dialog {
+      border: none; border-radius: 20px; padding: 0;
+      width: min(92vw, 440px);
+      background: var(--surface); color: var(--text);
+      box-shadow: var(--shadow-md);
+    }
+    #report-dialog::backdrop { background: rgba(0,0,0,.4); }
+    .report-body { padding: 24px; }
+    .report-heading { font-size: 18px; font-weight: 800; color: var(--bark); margin-bottom: 16px; letter-spacing: -.3px; }
+    .report-field-label { font-size: 12px; font-weight: 700; color: var(--text2); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 6px; }
+    .report-select, .report-textarea {
+      width: 100%; font-family: inherit; font-size: 14px; color: var(--text);
+      background: var(--sand); border: 1px solid var(--border); border-radius: 12px;
+      padding: 10px 12px; margin-bottom: 16px;
+    }
+    .report-textarea { resize: vertical; min-height: 72px; }
+    .report-actions { display: flex; gap: 10px; justify-content: flex-end; }
+    .report-btn {
+      padding: 10px 18px; border-radius: 50px; border: none;
+      font-family: inherit; font-weight: 700; font-size: 14px; cursor: pointer;
+    }
+    .report-btn-cancel { background: var(--mist); color: var(--forest); }
+    .report-btn-submit { background: var(--forest); color: white; }
+    .report-btn-submit:disabled { opacity: .5; cursor: not-allowed; }
+    #report-feedback { font-size: 14px; color: var(--text); margin-top: 4px; }
   </style>
 </head>
 <body>
@@ -419,8 +448,84 @@
 </div>
 
 <footer>
+  <a href="#" id="report-link" class="report-link">⚑ {{ _('report_link') }}</a><br><br>
   Shared via <a href="/">Ntripi</a> · ntripi.app
 </footer>
+
+<dialog id="report-dialog">
+  <div class="report-body">
+    <div id="report-form-wrap">
+      <div class="report-heading">{{ _('report_title') }}</div>
+      <div class="report-field-label">{{ _('report_reason_label') }}</div>
+      <select id="report-reason" class="report-select">
+        <option value="spam">{{ _('report_reason_spam') }}</option>
+        <option value="nsfw">{{ _('report_reason_nsfw') }}</option>
+        <option value="violence">{{ _('report_reason_violence') }}</option>
+        <option value="hate_speech">{{ _('report_reason_hate_speech') }}</option>
+        <option value="harassment">{{ _('report_reason_harassment') }}</option>
+        <option value="copyright">{{ _('report_reason_copyright') }}</option>
+        <option value="other">{{ _('report_reason_other') }}</option>
+      </select>
+      <div class="report-field-label">{{ _('report_notes_label') }}</div>
+      <textarea id="report-notes" class="report-textarea" maxlength="2000"></textarea>
+      <div class="report-actions">
+        <button type="button" id="report-cancel" class="report-btn report-btn-cancel">{{ _('report_cancel') }}</button>
+        <button type="button" id="report-submit" class="report-btn report-btn-submit">{{ _('report_submit') }}</button>
+      </div>
+    </div>
+    <p id="report-feedback" style="display:none"></p>
+  </div>
+</dialog>
+
+<script>
+  (function () {
+    var dialog = document.getElementById('report-dialog');
+    var link = document.getElementById('report-link');
+    var submitBtn = document.getElementById('report-submit');
+    var cancelBtn = document.getElementById('report-cancel');
+    var formWrap = document.getElementById('report-form-wrap');
+    var feedback = document.getElementById('report-feedback');
+    var itineraryId = {{ itinerary.id|string|tojson }};
+    var msgThanks = {{ _('report_thanks')|tojson }};
+    var msgError = {{ _('report_error')|tojson }};
+    var msgRateLimited = {{ _('report_rate_limited')|tojson }};
+
+    link.addEventListener('click', function (e) {
+      e.preventDefault();
+      if (typeof dialog.showModal === 'function') { dialog.showModal(); }
+    });
+    cancelBtn.addEventListener('click', function () { dialog.close(); });
+
+    submitBtn.addEventListener('click', function () {
+      submitBtn.disabled = true;
+      var reason = document.getElementById('report-reason').value;
+      var notes = document.getElementById('report-notes').value.trim();
+      fetch('/reports', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ itinerary_id: itineraryId, reason: reason, notes: notes || null })
+      }).then(function (res) {
+        if (res.status === 201) {
+          formWrap.style.display = 'none';
+          feedback.textContent = msgThanks;
+          feedback.style.display = 'block';
+        } else if (res.status === 429) {
+          feedback.textContent = msgRateLimited;
+          feedback.style.display = 'block';
+          submitBtn.disabled = false;
+        } else {
+          feedback.textContent = msgError;
+          feedback.style.display = 'block';
+          submitBtn.disabled = false;
+        }
+      }).catch(function () {
+        feedback.textContent = msgError;
+        feedback.style.display = 'block';
+        submitBtn.disabled = false;
+      });
+    });
+  })();
+</script>
 
 </body>
 </html>

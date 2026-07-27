@@ -2376,4 +2376,48 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get apiErrorEmailTaken => 'Un compte existe déjà avec cet e-mail.';
+
+  @override
+  String get reportItineraryTitle => 'Signaler cet itinéraire';
+
+  @override
+  String get reportItineraryTooltip => 'Signaler';
+
+  @override
+  String get reportReasonSpam => 'Spam';
+
+  @override
+  String get reportReasonNsfw => 'Nudité ou contenu sexuel';
+
+  @override
+  String get reportReasonViolence => 'Violence';
+
+  @override
+  String get reportReasonHateSpeech => 'Discours haineux';
+
+  @override
+  String get reportReasonHarassment => 'Harcèlement';
+
+  @override
+  String get reportReasonCopyright => 'Atteinte au droit d\'auteur';
+
+  @override
+  String get reportReasonOther => 'Autre';
+
+  @override
+  String get reportNotesHint => 'Ajouter des détails (facultatif)';
+
+  @override
+  String get reportSubmit => 'Envoyer le signalement';
+
+  @override
+  String get reportThanks => 'Merci. Nous examinerons ce signalement.';
+
+  @override
+  String get apiErrorReportOwnContent =>
+      'Vous ne pouvez pas signaler votre propre contenu.';
+
+  @override
+  String get apiErrorReportRateLimited =>
+      'Trop de signalements. Veuillez réessayer plus tard.';
 }

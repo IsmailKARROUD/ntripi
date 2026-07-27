@@ -968,5 +968,20 @@
   "apiErrorAccountPrivate": "هذا الحساب خاص.",
   "apiErrorTosRequired": "يجب قبول شروط الخدمة للتسجيل.",
   "apiErrorUsernameTaken": "اسم المستخدم هذا مستخدم بالفعل.",
-  "apiErrorEmailTaken": "يوجد حساب بهذا البريد الإلكتروني بالفعل."
+  "apiErrorEmailTaken": "يوجد حساب بهذا البريد الإلكتروني بالفعل.",
+
+  "reportItineraryTitle": "الإبلاغ عن هذا المسار",
+  "reportItineraryTooltip": "إبلاغ",
+  "reportReasonSpam": "محتوى مزعج",
+  "reportReasonNsfw": "عُري أو محتوى جنسي",
+  "reportReasonViolence": "عنف",
+  "reportReasonHateSpeech": "خطاب كراهية",
+  "reportReasonHarassment": "تحرّش",
+  "reportReasonCopyright": "انتهاك حقوق النشر",
+  "reportReasonOther": "أخرى",
+  "reportNotesHint": "أضف تفاصيل (اختياري)",
+  "reportSubmit": "إرسال البلاغ",
+  "reportThanks": "شكرًا. سنراجع هذا البلاغ.",
+  "apiErrorReportOwnContent": "لا يمكنك الإبلاغ عن المحتوى الخاص بك.",
+  "apiErrorReportRateLimited": "عدد كبير جدًا من البلاغات. يُرجى المحاولة لاحقًا."
 }

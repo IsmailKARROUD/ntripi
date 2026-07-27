@@ -209,3 +209,10 @@ String itineraryRatingsEndpoint(String id) => '/itineraries/$id/ratings';
 
 /// Get or delete the current user's own rating.
 String itineraryMyRatingEndpoint(String id) => '/itineraries/$id/ratings/me';
+
+// ---------------------------------------------------------------------------
+// Reports
+// ---------------------------------------------------------------------------
+
+/// Report an itinerary for moderation (auth optional server-side).
+const kReportsEndpoint = '/reports';

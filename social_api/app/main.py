@@ -38,7 +38,7 @@ from app.limiter import limiter
 from app.middleware.etag import ETagMiddleware
 from app.middleware.language import LanguageCookieMiddleware
 from app.middleware.security_headers import SecurityHeadersMiddleware
-from app.routers import auth, users, follows, itineraries, share, web, waitlist
+from app.routers import auth, users, follows, itineraries, share, web, waitlist, reports
 from app.storage.factory import storage
 
 logger = logging.getLogger(__name__)
@@ -205,6 +205,7 @@ app.include_router(itineraries.router, prefix="/itineraries")  # /itineraries/..
 app.include_router(itineraries.user_itineraries_router, prefix="/users", tags=["Itineraries"])  # /users/{id}/itineraries
 app.include_router(share.router)    # /share/i/{id} — public HTML landing pages
 app.include_router(waitlist.router) # /waitlist/join — pre-launch waitlist
+app.include_router(reports.router)  # POST /reports — content reporting
 app.include_router(web.router)      # /, /login, /register, /privacy, /terms
 
 # ---------------------------------------------------------------------------
