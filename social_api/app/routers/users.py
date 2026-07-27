@@ -18,6 +18,7 @@ from sqlalchemy import select, or_, update
 from sqlalchemy.orm import Session, selectinload
 from starlette.requests import Request
 
+from app.config import get_settings
 from app.database import get_db
 from app.dependencies import get_current_user
 from app.limiter import limiter
@@ -49,6 +50,7 @@ from app.services.image_service import (
     process_avatar_image,
     process_cover_image,
 )
+from app.services.moderation_service import ModerationContext, ModerationRejectedError
 from app.services.itinerary_access import can_view_itinerary
 from app.storage.factory import storage
 from app.errors import ApiError
@@ -371,13 +373,24 @@ async def upload_my_avatar(
     current_user: User = Depends(get_current_user),
 ) -> UserImageResponse:
     raw_bytes = await file.read()
+    key = f"avatars/{current_user.id}.jpg"
+    moderation = ModerationContext(
+        db=db, settings=get_settings(), target_kind="avatar",
+        uploader=current_user, storage_key=key,
+    )
     try:
         # Square 800×800 pipeline so the client's 1:1 crop is preserved.
         versioned_url = await process_and_store(
-            raw_bytes, f"avatars/{current_user.id}.jpg",
-            process_avatar_image, cache_bust=True)
+            raw_bytes, key, process_avatar_image, cache_bust=True,
+            moderation=moderation)
     except ImageProcessingError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
+    except ModerationRejectedError:
+        raise ApiError(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            code="image_moderation_rejected",
+            detail="This image appears to contain prohibited content and was not uploaded.",
+        )
 
     current_user.avatar_url = versioned_url
     db.commit()
@@ -413,13 +426,24 @@ async def upload_my_cover_image(
     current_user: User = Depends(get_current_user),
 ) -> UserImageResponse:
     raw_bytes = await file.read()
+    key = f"covers/{current_user.id}.jpg"
+    moderation = ModerationContext(
+        db=db, settings=get_settings(), target_kind="user_cover",
+        uploader=current_user, storage_key=key,
+    )
     try:
         # See note on upload_my_avatar — same cache-busting rationale.
         versioned_url = await process_and_store(
-            raw_bytes, f"covers/{current_user.id}.jpg",
-            process_cover_image, cache_bust=True)
+            raw_bytes, key, process_cover_image, cache_bust=True,
+            moderation=moderation)
     except ImageProcessingError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
+    except ModerationRejectedError:
+        raise ApiError(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            code="image_moderation_rejected",
+            detail="This image appears to contain prohibited content and was not uploaded.",
+        )
 
     current_user.cover_image_url = versioned_url
     db.commit()

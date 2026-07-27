@@ -2426,4 +2426,12 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get apiErrorReportRateLimited =>
       'عدد كبير جدًا من البلاغات. يُرجى المحاولة لاحقًا.';
+
+  @override
+  String get imageBlockedNsfw =>
+      'يبدو أن هذه الصورة تحتوي على محتوى غير مسموح به.';
+
+  @override
+  String get apiErrorImageModerationRejected =>
+      'تعذّر رفع هذه الصورة لأنها قد تحتوي على محتوى محظور.';
 }

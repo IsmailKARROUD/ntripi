@@ -983,5 +983,7 @@
   "reportSubmit": "إرسال البلاغ",
   "reportThanks": "شكرًا. سنراجع هذا البلاغ.",
   "apiErrorReportOwnContent": "لا يمكنك الإبلاغ عن المحتوى الخاص بك.",
-  "apiErrorReportRateLimited": "عدد كبير جدًا من البلاغات. يُرجى المحاولة لاحقًا."
+  "apiErrorReportRateLimited": "عدد كبير جدًا من البلاغات. يُرجى المحاولة لاحقًا.",
+  "imageBlockedNsfw": "يبدو أن هذه الصورة تحتوي على محتوى غير مسموح به.",
+  "apiErrorImageModerationRejected": "تعذّر رفع هذه الصورة لأنها قد تحتوي على محتوى محظور."
 }

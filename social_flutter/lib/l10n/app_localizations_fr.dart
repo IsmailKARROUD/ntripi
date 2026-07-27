@@ -2420,4 +2420,12 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get apiErrorReportRateLimited =>
       'Trop de signalements. Veuillez réessayer plus tard.';
+
+  @override
+  String get imageBlockedNsfw =>
+      'Cette image semble contenir un contenu non autorisé.';
+
+  @override
+  String get apiErrorImageModerationRejected =>
+      'Cette image ne peut pas être téléversée car elle peut contenir un contenu interdit.';
 }

@@ -4215,6 +4215,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Too many reports. Please try again later.'**
   String get apiErrorReportRateLimited;
+
+  /// No description provided for @imageBlockedNsfw.
+  ///
+  /// In en, this message translates to:
+  /// **'This image appears to contain content that isn\'t allowed.'**
+  String get imageBlockedNsfw;
+
+  /// No description provided for @apiErrorImageModerationRejected.
+  ///
+  /// In en, this message translates to:
+  /// **'This image can\'t be uploaded because it may contain prohibited content.'**
+  String get apiErrorImageModerationRejected;
 }
 
 class _AppLocalizationsDelegate

@@ -855,5 +855,7 @@
   "reportSubmit": "Envoyer le signalement",
   "reportThanks": "Merci. Nous examinerons ce signalement.",
   "apiErrorReportOwnContent": "Vous ne pouvez pas signaler votre propre contenu.",
-  "apiErrorReportRateLimited": "Trop de signalements. Veuillez réessayer plus tard."
+  "apiErrorReportRateLimited": "Trop de signalements. Veuillez réessayer plus tard.",
+  "imageBlockedNsfw": "Cette image semble contenir un contenu non autorisé.",
+  "apiErrorImageModerationRejected": "Cette image ne peut pas être téléversée car elle peut contenir un contenu interdit."
 }

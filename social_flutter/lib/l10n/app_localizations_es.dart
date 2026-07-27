@@ -2399,4 +2399,12 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get apiErrorReportRateLimited =>
       'Demasiadas denuncias. Inténtalo de nuevo más tarde.';
+
+  @override
+  String get imageBlockedNsfw =>
+      'Esta imagen parece contener contenido no permitido.';
+
+  @override
+  String get apiErrorImageModerationRejected =>
+      'Esta imagen no se puede subir porque puede contener contenido prohibido.';
 }

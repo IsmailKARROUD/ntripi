@@ -685,5 +685,7 @@
   "reportSubmit": "提交举报",
   "reportThanks": "谢谢。我们会审核此举报。",
   "apiErrorReportOwnContent": "你无法举报自己的内容。",
-  "apiErrorReportRateLimited": "举报次数过多。请稍后再试。"
+  "apiErrorReportRateLimited": "举报次数过多。请稍后再试。",
+  "imageBlockedNsfw": "此图片似乎包含不允许的内容。",
+  "apiErrorImageModerationRejected": "无法上传此图片，因为它可能包含违禁内容。"
 }

@@ -117,6 +117,16 @@ class Settings(BaseSettings):
     R2_ENDPOINT: str | None = None
     R2_PUBLIC_URL: str | None = None
 
+    # Image moderation (AWS Rekognition) — scans processed uploads before storage.
+    # Disabled (or missing creds) = uploads are stored unscanned, exactly as before.
+    # Thresholds are 0-100 confidence percentages, tunable without redeploy.
+    MODERATION_ENABLED: bool = False
+    MODERATION_AWS_ACCESS_KEY_ID: str | None = None
+    MODERATION_AWS_SECRET_ACCESS_KEY: str | None = None
+    MODERATION_AWS_REGION: str | None = None
+    MODERATION_REJECT_THRESHOLD: float = 80.0  # hard reject: image not stored, 422
+    MODERATION_FLAG_THRESHOLD: float = 50.0  # soft flag: stored + logged + operator email
+
     # Tell pydantic-settings to look for a .env file in the working directory.
     # extra="ignore" means unknown .env keys don't cause validation errors.
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")

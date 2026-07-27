@@ -24,6 +24,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:social_flutter/core/api/api_endpoints.dart';
 import 'package:social_flutter/core/cache/image_cache.dart';
+import 'package:social_flutter/core/moderation/nsfw_precheck.dart';
 import 'package:social_flutter/core/ui/app_theme.dart';
 import 'package:social_flutter/core/utils/platform_utils.dart';
 import 'package:social_flutter/l10n/app_localizations.dart';
@@ -138,6 +139,8 @@ class _CoverImageFieldState extends State<CoverImageField> {
     _pickedBytes = widget.initialBytes;
     _pickedFilename = widget.initialFilename;
     _removed = widget.initialRemoved;
+    // Warm up the NSFW model now so the check is instant when the user picks.
+    warmUpNsfwPrecheck();
   }
 
   bool get _hasImage =>
@@ -163,6 +166,15 @@ class _CoverImageFieldState extends State<CoverImageField> {
         if (mounted) {
           setState(
               () => _error = AppLocalizations.of(context)!.imageTooLarge);
+        }
+        return;
+      }
+      // Client-side NSFW pre-check — instant reject before any upload. Returns
+      // false on any failure (backend Rekognition scan is the real authority).
+      if (await isLikelyNsfw(bytes)) {
+        if (mounted) {
+          setState(
+              () => _error = AppLocalizations.of(context)!.imageBlockedNsfw);
         }
         return;
       }

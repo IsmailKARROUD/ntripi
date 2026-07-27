@@ -685,5 +685,7 @@
   "reportSubmit": "Meldung senden",
   "reportThanks": "Danke. Wir prüfen diese Meldung.",
   "apiErrorReportOwnContent": "Du kannst deine eigenen Inhalte nicht melden.",
-  "apiErrorReportRateLimited": "Zu viele Meldungen. Bitte versuche es später erneut."
+  "apiErrorReportRateLimited": "Zu viele Meldungen. Bitte versuche es später erneut.",
+  "imageBlockedNsfw": "Dieses Bild scheint unzulässige Inhalte zu enthalten.",
+  "apiErrorImageModerationRejected": "Dieses Bild kann nicht hochgeladen werden, da es möglicherweise unzulässige Inhalte enthält."
 }

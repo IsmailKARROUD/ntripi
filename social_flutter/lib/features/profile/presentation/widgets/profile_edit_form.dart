@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:social_flutter/core/moderation/nsfw_precheck.dart';
 import 'package:social_flutter/core/ui/app_theme.dart';
 import 'package:social_flutter/core/ui/destructive_actions.dart';
 import 'package:social_flutter/features/follows/providers/follow_provider.dart';
@@ -75,6 +76,8 @@ class _ProfileEditFormState extends ConsumerState<ProfileEditForm> {
     _editPassportCountries = List.from(u.passportCountries ?? []);
     _editResidentCountry = u.residentCountry;
     _editLanguages = List.from(u.languages ?? []);
+    // Warm up the NSFW model so the avatar pre-check is instant on pick.
+    warmUpNsfwPrecheck();
   }
 
   @override
@@ -99,6 +102,16 @@ class _ProfileEditFormState extends ConsumerState<ProfileEditForm> {
       );
       if (picked == null || !mounted) return;
       final raw = await picked.readAsBytes();
+      if (!mounted) return;
+      // Client-side NSFW pre-check — block before crop/upload. Returns false on
+      // any failure (backend Rekognition scan is the real authority).
+      if (await isLikelyNsfw(raw)) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(AppLocalizations.of(context)!.imageBlockedNsfw)),
+        );
+        return;
+      }
       if (!mounted) return;
       final cropped = await openImageCropOverlay(
         context,

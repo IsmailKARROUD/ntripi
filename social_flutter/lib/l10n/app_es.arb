@@ -685,5 +685,7 @@
   "reportSubmit": "Enviar denuncia",
   "reportThanks": "Gracias. Revisaremos esta denuncia.",
   "apiErrorReportOwnContent": "No puedes denunciar tu propio contenido.",
-  "apiErrorReportRateLimited": "Demasiadas denuncias. Inténtalo de nuevo más tarde."
+  "apiErrorReportRateLimited": "Demasiadas denuncias. Inténtalo de nuevo más tarde.",
+  "imageBlockedNsfw": "Esta imagen parece contener contenido no permitido.",
+  "apiErrorImageModerationRejected": "Esta imagen no se puede subir porque puede contener contenido prohibido."
 }

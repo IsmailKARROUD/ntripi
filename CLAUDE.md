@@ -203,6 +203,8 @@ Railway env vars: `DATABASE_URL=${{Postgres.DATABASE_URL}}` · `SECRET_KEY` · `
 
 Optional: `FEED_TOP_MIN_RATINGS=3` — minimum rating count for an itinerary to appear in the "Top" discovery feed (defaults to 3; lower it while the catalogue is young).
 
+Optional (image moderation — AWS Rekognition backend tier): `MODERATION_ENABLED=True` · `MODERATION_AWS_ACCESS_KEY_ID` · `MODERATION_AWS_SECRET_ACCESS_KEY` · `MODERATION_AWS_REGION` (e.g. `eu-west-1`) · `MODERATION_REJECT_THRESHOLD=80` · `MODERATION_FLAG_THRESHOLD=50`. Disabled (default) or any missing cred = uploads stored unscanned, exactly as before. Scan runs after Pillow processing, before storage: hard-reject (explicit nudity / violence / gore ≥ reject threshold) → 422, nothing stored; soft-flag (any label ≥ flag threshold) → stored + logged + operator-emailed (`OPERATOR_EMAIL`); AWS error → stored as `pending` (fail-open). IAM policy needs only `rekognition:DetectModerationLabels`. Set an AWS Budgets $50/mo alert on Rekognition. Client-side pre-check (NSFWJS web / TFLite mobile) is a UX/cost optimization only — the backend is the authority; its model files are not vendored (see `social_flutter/{assets/models,web/nsfw}/README.md`).
+
 Persistent volume must be mounted at `/app/uploads` or images vanish on redeploy.
 
 ---

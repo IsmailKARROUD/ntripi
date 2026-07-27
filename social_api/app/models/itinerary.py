@@ -82,6 +82,14 @@ class Itinerary(Base):
         String(20), default="only_me", server_default="'only_me'", nullable=False
     )
 
+    # Cover-image moderation state, set by the Rekognition scan on upload:
+    # 'approved' (clean / no cover / moderation off), 'pending' (AWS was down,
+    # stored unscanned), 'flagged' (stored, awaiting operator review),
+    # 'rejected' (operator-set only — hard-rejected uploads store nothing).
+    moderation_status: Mapped[str] = mapped_column(
+        String(20), default="approved", server_default="'approved'", nullable=False
+    )
+
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         server_default=func.now(),

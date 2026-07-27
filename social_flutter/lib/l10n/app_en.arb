@@ -1001,5 +1001,7 @@
   "reportSubmit": "Submit report",
   "reportThanks": "Thanks. We'll review this report.",
   "apiErrorReportOwnContent": "You can't report your own content.",
-  "apiErrorReportRateLimited": "Too many reports. Please try again later."
+  "apiErrorReportRateLimited": "Too many reports. Please try again later.",
+  "imageBlockedNsfw": "This image appears to contain content that isn't allowed.",
+  "apiErrorImageModerationRejected": "This image can't be uploaded because it may contain prohibited content."
 }

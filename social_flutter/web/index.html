@@ -49,6 +49,10 @@
     For more details:
     * https://docs.flutter.dev/platform-integration/web/initialization
   -->
+  <!-- Client-side NSFW pre-check bridge (see web/nsfw/). Tiny + defers; the
+       heavy TF.js/model load happens lazily only when an upload UI mounts. -->
+  <script src="nsfw/nsfw_glue.js" defer></script>
+
   <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>

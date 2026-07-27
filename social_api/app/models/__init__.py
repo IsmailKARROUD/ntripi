@@ -19,6 +19,7 @@ from app.models.transit_segment import TransitSegment
 from app.models.transport_leg import TransportLeg
 from app.models.waitlist import WaitlistEntry
 from app.models.content_report import ContentReport
+from app.models.image_moderation_log import ImageModerationLog
 
 __all__ = [
     "User", "RefreshToken", "EmailToken", "PasswordHistory", "SecurityAuditLog",
@@ -26,4 +27,5 @@ __all__ = [
     "Itinerary", "ItineraryAllowedUser", "SavedItinerary", "Track",
     "Stop", "Annotation", "ItineraryRating", "ItineraryAnnotation",
     "TransitSegment", "TransportLeg", "WaitlistEntry", "ContentReport",
+    "ImageModerationLog",
 ]

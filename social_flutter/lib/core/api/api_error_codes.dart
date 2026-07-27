@@ -42,6 +42,7 @@ String? localizedApiError(String code, AppLocalizations l10n) {
       'email_taken' => l10n.apiErrorEmailTaken,
       'report_own_content' => l10n.apiErrorReportOwnContent,
       'report_rate_limited' => l10n.apiErrorReportRateLimited,
+      'image_moderation_rejected' => l10n.apiErrorImageModerationRejected,
       _ => null,
     };
 }

@@ -1,11 +1,15 @@
 import time
 from io import BytesIO
-from typing import Callable
+from typing import TYPE_CHECKING, Callable
 
 from PIL import Image
 from PIL.Image import Resampling
 
+from app.services import moderation_service
 from app.storage.factory import storage
+
+if TYPE_CHECKING:
+    from app.services.moderation_service import ModerationContext
 
 ALLOWED_FORMATS = {"JPEG", "PNG", "WEBP"}
 TARGET_WIDTH = 1200
@@ -99,15 +103,25 @@ def process_avatar_image(raw_bytes: bytes) -> bytes:
 
 async def process_and_store(raw_bytes: bytes, key: str,
                             processor: Callable[[bytes], bytes], *,
-                            cache_bust: bool) -> str:
+                            cache_bust: bool,
+                            moderation: "ModerationContext | None" = None) -> str:
     """Process an upload through `processor` and store it under `key`.
 
     `processor` (process_cover_image / process_avatar_image) raises
     ImageProcessingError on a bad upload — the router translates that to 400.
     When cache_bust is set, a `?v=<ms>` suffix busts every URL-keyed cache
     (CachedNetworkImage, browser, CDN) since storage keys are stable per user.
+
+    When a ModerationContext is passed, the processed bytes are scanned before
+    storage — a hard-reject raises ModerationRejectedError (router → 422) so the
+    rejected image is never written. Omitting it (or moderation being disabled)
+    stores the image exactly as before.
     """
     processed = processor(raw_bytes)
+    if moderation is not None:
+        # Scan sits after Pillow processing, before storage — rejected bytes
+        # are never persisted.
+        await moderation_service.moderate_or_raise(processed, moderation)
     url = await storage().save(key, processed, "image/jpeg")
     if cache_bust:
         url = f"{url}?v={int(time.time() * 1000)}"

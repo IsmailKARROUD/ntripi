@@ -84,6 +84,7 @@ from app.schemas.itinerary import (
     TransportLegUpdate,
 )
 from app.services.image_service import ImageProcessingError, process_and_store, process_cover_image
+from app.services.moderation_service import ModerationContext, ModerationRejectedError
 from app.services.itinerary_access import can_view_itinerary, recalculate_rating
 from app.services.ordering import MAX_RANK_LENGTH, key_between, n_keys_between
 from app.services.user_service import get_active_user_or_404
@@ -1699,15 +1700,31 @@ async def upload_itinerary_image(
 
     raw_bytes = await file.read()
 
+    key = f"itineraries/{itinerary_id}.jpg"
+    moderation = ModerationContext(
+        db=db, settings=get_settings(), target_kind="itinerary_cover",
+        uploader=current_user, storage_key=key, itinerary_id=itinerary.id,
+    )
     try:
         # No cache-bust here: itinerary covers have never carried a ?v= suffix.
         public_url = await process_and_store(
-            raw_bytes, f"itineraries/{itinerary_id}.jpg",
-            process_cover_image, cache_bust=False)
+            raw_bytes, key, process_cover_image, cache_bust=False,
+            moderation=moderation)
     except ImageProcessingError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
+    except ModerationRejectedError:
+        # Rejected content was never stored; the audit row was already committed.
+        raise ApiError(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            code="image_moderation_rejected",
+            detail="This image appears to contain prohibited content and was not uploaded.",
+        )
 
     itinerary.cover_image_url = public_url
+    # 'error_allowed' (AWS was down) → needs later review; else mirror the scan.
+    itinerary.moderation_status = (
+        "pending" if moderation.action == "error_allowed" else moderation.action
+    )
     db.commit()
 
     return ItineraryImageResponse(cover_image_url=public_url)
@@ -1727,6 +1744,7 @@ async def delete_itinerary_image(
     await storage().delete(key)
 
     itinerary.cover_image_url = None
+    itinerary.moderation_status = "approved"  # no cover → nothing to moderate
     db.commit()
 
 

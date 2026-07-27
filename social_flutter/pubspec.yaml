@@ -92,6 +92,11 @@ dependencies:
   webview_flutter: ^4.13.0
   web: ^1.1.1
 
+  # On-device NSFW pre-check (mobile) — runs a bundled TFLite model as the
+  # client tier of image moderation. Web uses NSFWJS via JS interop instead
+  # (lib/core/moderation/). Never-block: a missing model disables the check.
+  tflite_flutter: ^0.12.1
+
 
 
 dev_dependencies:
@@ -109,3 +114,6 @@ flutter:
   uses-material-design: true
   assets:
    - assets/data/currencies.json
+   # NSFW pre-check model (mobile). The .tflite binary is not committed — the
+   # check is a no-op until it's dropped in (see assets/models/README.md).
+   - assets/models/

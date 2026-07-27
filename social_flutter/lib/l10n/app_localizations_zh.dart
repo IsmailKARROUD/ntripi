@@ -2252,4 +2252,10 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get apiErrorReportRateLimited => '举报次数过多。请稍后再试。';
+
+  @override
+  String get imageBlockedNsfw => '此图片似乎包含不允许的内容。';
+
+  @override
+  String get apiErrorImageModerationRejected => '无法上传此图片，因为它可能包含违禁内容。';
 }
