@@ -2258,4 +2258,94 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get apiErrorImageModerationRejected => '无法上传此图片，因为它可能包含违禁内容。';
+
+  @override
+  String get suspendedTitle => '你的账号已被封停';
+
+  @override
+  String get suspendedMessage => '管理员因违反社区准则封停了此账号。封停期间你无法登录。';
+
+  @override
+  String get suspendedAppealButton => '申诉此决定';
+
+  @override
+  String get suspendedBackToLogin => '返回登录';
+
+  @override
+  String get hiddenBannerTitle => '已被管理员隐藏';
+
+  @override
+  String get hiddenBannerMessage =>
+      '只有你能看到此行程。它不会出现在动态、搜索或分享页面中。你可以在设置的“账号状态”中申诉。';
+
+  @override
+  String get accountStatusTitle => '账号状态';
+
+  @override
+  String get violationsEmpty => '你的账号没有任何管理操作记录。';
+
+  @override
+  String get violationHidden => '已隐藏';
+
+  @override
+  String get violationRemoved => '已移除';
+
+  @override
+  String get violationWarned => '警告';
+
+  @override
+  String get violationBanned => '封停';
+
+  @override
+  String get violationOther => '管理操作';
+
+  @override
+  String get violationLifted => '已解除';
+
+  @override
+  String get appealPending => '申诉审核中';
+
+  @override
+  String get appealRejected => '申诉被驳回';
+
+  @override
+  String get appealRestored => '已恢复';
+
+  @override
+  String get appealReduced => '处罚已减轻';
+
+  @override
+  String get appealAvailable => '可申诉';
+
+  @override
+  String get appealSubmit => '申诉';
+
+  @override
+  String get appealSubmitted => '申诉已提交，结果将通过邮件通知你。';
+
+  @override
+  String get appealFormTitle => '申诉此决定';
+
+  @override
+  String get appealFormMessage => '请说明你认为此决定有误的原因，管理员会进行复核。';
+
+  @override
+  String get appealReasonLabel => '你的说明';
+
+  @override
+  String get appealReasonRequired => '请说明申诉理由。';
+
+  @override
+  String appealCooldownUntil(String date) {
+    return '你可以在 $date 之后再次申诉。';
+  }
+
+  @override
+  String get apiErrorAppealPending => '该项目已有一条待处理的申诉。';
+
+  @override
+  String get apiErrorAppealCooldown => '申诉被驳回后，需满 30 天才能再次申诉该项目。';
+
+  @override
+  String get apiErrorAppealTargetNotFound => '此处没有可申诉的管理操作。';
 }

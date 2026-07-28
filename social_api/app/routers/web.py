@@ -10,16 +10,26 @@ Routes:
   GET  /reset-password       → Password-reset form (link from email)
   POST /web/reset-password
   GET  /verify-email         → Email-verification landing (link from email)
+  GET  /robots.txt           → keeps /admin out of search indexes
+  GET  /appeal/{token}       → Moderation appeal form (link from email)
+  POST /web/appeal
+  GET  /appeal               → Request an appeal link by email (suspended users)
+  POST /web/appeal-request
 
 /app/ is served by the StaticFiles mount in main.py (Flutter web build).
 All sign-in/sign-up happens inside the Flutter app — the server renders no
-auth forms and sets no session cookie.
+auth forms and sets no session cookie. The appeal pages are the one exception:
+a suspended user cannot authenticate at all, so their appeal path must be a
+server-rendered form authorized by a signed link instead of a session.
 """
 
 from __future__ import annotations
 
+import uuid
+
 from fastapi import APIRouter, Depends, Form, Request
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, PlainTextResponse, RedirectResponse
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.config import Settings, get_settings
@@ -27,7 +37,10 @@ from app.constants.privacy import PRIVACY_CONTENT, PRIVACY_DATE
 from app.constants.tos import TOS_DATE, TOS_SUMMARY, TOS_VERSION
 from app.database import get_db
 from app.i18n import resolve_lang
-from app.services import auth_service
+from app.limiter import limiter
+from app.models.moderation_log import ModerationLog
+from app.models.user import User
+from app.services import appeal_service, appeal_token, auth_service, email_service
 from app.templating import templates
 
 router = APIRouter(tags=["web"])
@@ -155,4 +168,139 @@ def verify_email_page(
         }, status_code=200)
     return templates.TemplateResponse(request, "email_verified.html", {
         "page_title": "Email verified — Ntripi",
+    })
+
+
+# ---------------------------------------------------------------------------
+# robots.txt
+# ---------------------------------------------------------------------------
+
+@router.get("/robots.txt", response_class=PlainTextResponse)
+def robots_txt() -> PlainTextResponse:
+    # Only /admin is disallowed — /app deep links are user-shareable and fine to
+    # index. The admin pages additionally carry X-Robots-Tag: noindex.
+    return PlainTextResponse("User-agent: *\nDisallow: /admin/\n")
+
+
+# ---------------------------------------------------------------------------
+# Moderation appeals (public — a suspended user cannot authenticate)
+# ---------------------------------------------------------------------------
+
+def _appeal_invalid(request: Request) -> HTMLResponse:
+    return templates.TemplateResponse(request, "token_invalid.html", {
+        "page_title": "Link expired — Ntripi",
+        "message": "This appeal link is invalid or has expired.",
+    }, status_code=200)
+
+
+@router.get("/appeal/{token}", response_class=HTMLResponse)
+def appeal_form(request: Request, token: str, db: Session = Depends(get_db)) -> HTMLResponse:
+    claims = appeal_token.decode_appeal_token(token)
+    if claims is None:
+        return _appeal_invalid(request)
+
+    return templates.TemplateResponse(request, "appeal_form.html", {
+        "page_title": "Appeal a decision — Ntripi",
+        "token": token,
+        "action_label": _ACTION_LABELS.get(claims.get("target_type"), "decision"),
+    })
+
+
+# Human-readable subject of the appeal, derived from what the link points at.
+_ACTION_LABELS = {"itinerary": "removed itinerary", "user": "account decision"}
+
+
+@router.post("/web/appeal", response_class=HTMLResponse)
+@limiter.limit("10/hour")
+def web_appeal_submit(
+    request: Request,  # required first positional for slowapi rate limiting
+    token: str = Form(...),
+    reason: str = Form(""),
+    db: Session = Depends(get_db),
+) -> HTMLResponse:
+    claims = appeal_token.decode_appeal_token(token)
+    if claims is None:
+        return _appeal_invalid(request)
+
+    try:
+        user_id = uuid.UUID(claims["sub"])
+        target_id = uuid.UUID(claims["target_id"]) if claims.get("target_id") else None
+    except (ValueError, TypeError, KeyError):
+        return _appeal_invalid(request)
+
+    user = db.get(User, user_id)
+    if user is None or target_id is None:
+        return _appeal_invalid(request)
+
+    def _form_error(msg: str) -> HTMLResponse:
+        return templates.TemplateResponse(request, "appeal_form.html", {
+            "page_title": "Appeal a decision — Ntripi",
+            "token": token,
+            "action_label": _ACTION_LABELS.get(claims.get("target_type"), "decision"),
+            "error_message": msg,
+        }, status_code=200)
+
+    try:
+        appeal_service.create_appeal(
+            db, user, claims.get("target_type", ""), target_id, reason,
+            log_id=uuid.UUID(claims["log_id"]) if claims.get("log_id") else None,
+        )
+    except appeal_service.AppealError as exc:
+        return _form_error(exc.message)
+
+    return templates.TemplateResponse(request, "appeal_done.html", {
+        "page_title": "Appeal received — Ntripi",
+    })
+
+
+@router.get("/appeal", response_class=HTMLResponse)
+def appeal_request_page(request: Request) -> HTMLResponse:
+    return templates.TemplateResponse(request, "appeal_request.html", {
+        "page_title": "Appeal a decision — Ntripi",
+    })
+
+
+@router.post("/web/appeal-request", response_class=HTMLResponse)
+@limiter.limit("5/hour")
+def web_appeal_request(
+    request: Request,  # required first positional for slowapi rate limiting
+    email: str = Form(""),
+    db: Session = Depends(get_db),
+) -> HTMLResponse:
+    """Email a fresh appeal link. Always renders the same confirmation, whether
+    or not the address exists — enumeration-safe, like the password-reset flow."""
+    address = (email or "").strip().lower()
+    if address:
+        user = db.execute(select(User).where(User.email == address)).scalar_one_or_none()
+        if user is not None:
+            action = db.execute(
+                select(ModerationLog)
+                .where(
+                    ModerationLog.target_type == "user",
+                    ModerationLog.target_id == user.id,
+                    ModerationLog.action.in_(appeal_service.APPEALABLE_ACTIONS),
+                )
+                .order_by(ModerationLog.created_at.desc())
+            ).scalars().first()
+            if action is not None:
+                from app.services.auth_service import _email_html
+
+                link = appeal_token.appeal_link(
+                    appeal_token.mint_appeal_token(user.id, "user", user.id, action.id)
+                )
+                email_service.send_email(
+                    to=user.email,
+                    subject="Ntripi — Appeal a moderation decision",
+                    html=_email_html(
+                        "Appeal a moderation decision",
+                        "Use the link below to explain why you believe the decision "
+                        "against your account was incorrect. A moderator will review it.",
+                        "Appeal this decision",
+                        link,
+                    ),
+                )
+
+    return templates.TemplateResponse(request, "appeal_done.html", {
+        "page_title": "Check your email — Ntripi",
+        "check_email": True,
     })

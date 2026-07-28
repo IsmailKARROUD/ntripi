@@ -85,7 +85,9 @@ from app.schemas.itinerary import (
 )
 from app.services.image_service import ImageProcessingError, process_and_store, process_cover_image
 from app.services.moderation_service import ModerationContext, ModerationRejectedError
-from app.services.itinerary_access import can_view_itinerary, recalculate_rating
+from app.services.itinerary_access import (
+    can_view_itinerary, public_listing_criteria, recalculate_rating,
+)
 from app.services.ordering import MAX_RANK_LENGTH, key_between, n_keys_between
 from app.services.user_service import get_active_user_or_404
 from app.storage.factory import storage
@@ -131,7 +133,9 @@ def _etag_json_response(schema_cls, obj, itinerary: Itinerary,
 
 def _get_itinerary_or_404(itinerary_id: uuid.UUID, db: Session) -> Itinerary:
     itinerary = db.get(Itinerary, itinerary_id)
-    if not itinerary:
+    # Soft-deleted itineraries are gone for everyone (owner included) — 404 here
+    # covers the detail read AND every mutation that flows through this helper.
+    if not itinerary or itinerary.deleted_at is not None:
         raise ApiError(status_code=status.HTTP_404_NOT_FOUND,
                             code="itinerary_not_found", detail="Itinerary not found.")
     return itinerary
@@ -286,7 +290,7 @@ def _load_itinerary_detail(itinerary_id: uuid.UUID, db: Session) -> Itinerary:
             selectinload(Itinerary.segments).selectinload(TransitSegment.from_stop),
             selectinload(Itinerary.annotations),
         )
-        .where(Itinerary.id == itinerary_id)
+        .where(Itinerary.id == itinerary_id, Itinerary.deleted_at.is_(None))
     ).scalar_one_or_none()
 
     if not itinerary:
@@ -556,7 +560,9 @@ def list_my_itineraries(
 ) -> list[ItinerarySummary]:
     itineraries = db.execute(
         select(Itinerary)
-        .where(Itinerary.user_id == current_user.id)
+        # Owner sees their own hidden itineraries (with a banner) but never their
+        # soft-deleted ones.
+        .where(Itinerary.user_id == current_user.id, Itinerary.deleted_at.is_(None))
         .order_by(Itinerary.created_at.desc())
     ).scalars().all()
     return itineraries  # type: ignore[return-value]
@@ -604,6 +610,9 @@ def list_feed(
         # same selectinload pattern as _load_itinerary_detail.
         .options(selectinload(Itinerary.tracks).selectinload(Track.stops))
         .where(Itinerary.visibility == "public")
+        # Exclude moderator-hidden/soft-deleted itineraries and banned owners'
+        # content — single source of truth in itinerary_access.
+        .where(*public_listing_criteria())
     )
 
     if sort == "top":

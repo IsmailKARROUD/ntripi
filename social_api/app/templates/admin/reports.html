@@ -1,0 +1,96 @@
+{% extends "admin/_base.html" %}
+{% block content %}
+<h1>Pending reports</h1>
+<p class="sub">
+  Oldest first. Rows turn amber after 12 hours and red after 24 — App Store UGC
+  guidelines expect reports to be actioned within a day.
+</p>
+
+{% if rows %}
+{# One form wraps the table so the bulk checkboxes and the shared reason submit
+   together; each row's own buttons live in a separate per-row form below. #}
+<form method="post" action="/admin/reports/bulk" class="card">
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th style="width:28px"></th>
+          <th>In queue</th>
+          <th>Content</th>
+          <th>Author</th>
+          <th>Reason</th>
+          <th style="width:320px">Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in rows %}
+        <tr>
+          <td><input type="checkbox" name="report_ids" value="{{ r.report.id }}"></td>
+          <td><span class="pill {{ r.sla }}">{{ r.age }}</span></td>
+          <td>
+            {% if r.itinerary %}
+              {% if r.itinerary.cover_image_url %}
+                <img class="thumb" src="{{ r.itinerary.cover_image_url }}" alt="">
+              {% endif %}
+              <div>{{ r.itinerary.title }}</div>
+              <div class="muted">
+                {{ r.itinerary.visibility }}
+                {% if r.itinerary.hidden_at %} · hidden{% endif %}
+                {% if r.itinerary.deleted_at %} · removed{% endif %}
+              </div>
+            {% else %}
+              <span class="muted">Content already gone</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if r.owner %}
+              <div>{{ r.owner.username }}</div>
+              <div class="muted">{% if r.owner.is_active %}active{% else %}suspended{% endif %}</div>
+            {% else %}
+              <span class="muted">—</span>
+            {% endif %}
+          </td>
+          <td>
+            <div>{{ r.report.reason }}</div>
+            {% if r.report.notes %}<div class="muted snippet">{{ r.report.notes }}</div>{% endif %}
+            <div class="muted">
+              {% if r.report.reporter_user_id %}by member{% else %}anonymous{% endif %}
+            </div>
+          </td>
+          <td>
+            {# Nested forms are invalid HTML; `form=` attaches these controls to
+               the per-row form rendered after the table. #}
+            <input type="text" name="reason" placeholder="Reason (required)"
+                   form="rf-{{ r.report.id }}" required>
+            <div class="actions">
+              <button type="submit" name="action" value="dismiss" form="rf-{{ r.report.id }}">Dismiss</button>
+              <button type="submit" name="action" value="hide"    form="rf-{{ r.report.id }}">Hide</button>
+              <button type="submit" name="action" value="delete"  form="rf-{{ r.report.id }}" class="danger">Remove</button>
+              <button type="submit" name="action" value="warn"    form="rf-{{ r.report.id }}">Warn</button>
+              <button type="submit" name="action" value="ban"     form="rf-{{ r.report.id }}" class="danger">Ban</button>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div style="margin-top:14px;display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap">
+    <div style="flex:1 1 260px">
+      <label for="bulk-reason">Bulk reason (applies to every checked report)</label>
+      <input type="text" id="bulk-reason" name="reason" placeholder="e.g. coordinated spam wave">
+    </div>
+    <button type="submit" name="action" value="dismiss">Dismiss selected</button>
+    <button type="submit" name="action" value="delete" class="danger">Remove selected</button>
+  </div>
+</form>
+
+{% for r in rows %}
+<form id="rf-{{ r.report.id }}" method="post" action="/admin/reports/{{ r.report.id }}/action"></form>
+{% endfor %}
+
+{% else %}
+<div class="card"><p class="muted">Nothing in the queue. 🎉</p></div>
+{% endif %}
+{% endblock %}

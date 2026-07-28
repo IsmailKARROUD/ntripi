@@ -100,6 +100,22 @@ def reset_rate_limiter():
     yield
 
 
+@pytest.fixture(autouse=True)
+def no_outbound_email(monkeypatch):
+    """Stub the email backend for every test.
+
+    The local .env points EMAIL_BACKEND at Resend with a live API key, so any
+    flow that sends mail (registration, moderation warnings, appeal outcomes)
+    would otherwise fire real HTTP requests during the suite. Tests that assert
+    on email content patch their own module-level reference on top of this.
+    """
+    monkeypatch.setattr(
+        "app.services.email_service.send_email",
+        lambda to, subject, html: None,
+    )
+    yield
+
+
 @pytest.fixture()
 def client():
     """
@@ -191,6 +207,69 @@ def auth_headers(token: str) -> dict:
     Flutter app will send on every protected request.
     """
     return {"Authorization": f"Bearer {token}"}
+
+
+# ---------------------------------------------------------------------------
+# Admin dashboard helpers
+# ---------------------------------------------------------------------------
+
+# The HTTP Basic credentials the admin_enabled fixture installs.
+ADMIN_BASIC = ("ops_admin", "basic-pass-1234")
+
+
+@pytest.fixture()
+def admin_enabled(monkeypatch):
+    """Turn the /admin dashboard on for a test.
+
+    With either credential unset the whole router 404s (feature off), so every
+    admin test needs this. Mutating the cached Settings singleton is the same
+    approach the moderation tests use.
+    """
+    from app.config import get_settings
+
+    settings = get_settings()
+    monkeypatch.setattr(settings, "ADMIN_BASIC_USERNAME", ADMIN_BASIC[0])
+    monkeypatch.setattr(settings, "ADMIN_BASIC_PASSWORD", ADMIN_BASIC[1])
+    return ADMIN_BASIC
+
+
+def make_admin(email: str) -> None:
+    """Grant admin rights directly in the test DB — production does this with a
+    manual SQL UPDATE; there is deliberately no API to promote a user."""
+    from sqlalchemy import select
+    from app.models.user import User
+
+    db = TestingSessionLocal()
+    try:
+        user = db.execute(
+            select(User).where(User.email == email.strip().lower())
+        ).scalar_one()
+        user.is_admin = True
+        db.commit()
+    finally:
+        db.close()
+
+
+def admin_session(client: TestClient, identifier: str, password: str = "test1234") -> str:
+    """Sign in at /admin/login and attach the session cookie to the client.
+
+    The cookie is read out of the Set-Cookie header and set on the jar
+    explicitly: when DEBUG is False it carries Secure, and httpx will not
+    replay a Secure cookie over the http:// test base URL.
+    """
+    from app.routers.admin import ADMIN_COOKIE
+
+    response = client.post(
+        "/admin/login",
+        data={"identifier": identifier, "password": password},
+        auth=ADMIN_BASIC,
+        follow_redirects=False,
+    )
+    assert response.status_code == 303, response.text
+    raw = response.headers["set-cookie"]
+    token = raw.split(f"{ADMIN_COOKIE}=", 1)[1].split(";", 1)[0]
+    client.cookies.set(ADMIN_COOKIE, token)
+    return token
 
 
 def etag_from_updated_at(updated_at_iso: str) -> str:

@@ -2382,4 +2382,100 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get apiErrorImageModerationRejected =>
       'This image can\'t be uploaded because it may contain prohibited content.';
+
+  @override
+  String get suspendedTitle => 'Your account is suspended';
+
+  @override
+  String get suspendedMessage =>
+      'A moderator has suspended this account for breaking our community guidelines. You can\'t sign in while the suspension is active.';
+
+  @override
+  String get suspendedAppealButton => 'Appeal this decision';
+
+  @override
+  String get suspendedBackToLogin => 'Back to sign in';
+
+  @override
+  String get hiddenBannerTitle => 'Hidden by a moderator';
+
+  @override
+  String get hiddenBannerMessage =>
+      'Only you can see this itinerary. It won\'t appear in the feed, in search, or on its share page. You can appeal from Account status in settings.';
+
+  @override
+  String get accountStatusTitle => 'Account status';
+
+  @override
+  String get violationsEmpty => 'No moderation actions on your account.';
+
+  @override
+  String get violationHidden => 'Hidden';
+
+  @override
+  String get violationRemoved => 'Removed';
+
+  @override
+  String get violationWarned => 'Warning';
+
+  @override
+  String get violationBanned => 'Suspension';
+
+  @override
+  String get violationOther => 'Moderation action';
+
+  @override
+  String get violationLifted => 'Lifted';
+
+  @override
+  String get appealPending => 'Appeal under review';
+
+  @override
+  String get appealRejected => 'Appeal rejected';
+
+  @override
+  String get appealRestored => 'Restored';
+
+  @override
+  String get appealReduced => 'Penalty reduced';
+
+  @override
+  String get appealAvailable => 'Appeal available';
+
+  @override
+  String get appealSubmit => 'Appeal';
+
+  @override
+  String get appealSubmitted =>
+      'Appeal submitted. We\'ll email you the outcome.';
+
+  @override
+  String get appealFormTitle => 'Appeal this decision';
+
+  @override
+  String get appealFormMessage =>
+      'Explain why you believe this was incorrect. A moderator will review it.';
+
+  @override
+  String get appealReasonLabel => 'Your explanation';
+
+  @override
+  String get appealReasonRequired => 'Please explain why you\'re appealing.';
+
+  @override
+  String appealCooldownUntil(String date) {
+    return 'You can appeal again after $date.';
+  }
+
+  @override
+  String get apiErrorAppealPending =>
+      'You already have an appeal pending for this item.';
+
+  @override
+  String get apiErrorAppealCooldown =>
+      'You can only appeal this item again 30 days after a rejected appeal.';
+
+  @override
+  String get apiErrorAppealTargetNotFound =>
+      'There is no moderation action to appeal here.';
 }

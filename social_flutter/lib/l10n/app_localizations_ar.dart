@@ -2434,4 +2434,100 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get apiErrorImageModerationRejected =>
       'تعذّر رفع هذه الصورة لأنها قد تحتوي على محتوى محظور.';
+
+  @override
+  String get suspendedTitle => 'تم تعليق حسابك';
+
+  @override
+  String get suspendedMessage =>
+      'قام أحد المشرفين بتعليق هذا الحساب لمخالفته إرشادات المجتمع. لا يمكنك تسجيل الدخول أثناء سريان التعليق.';
+
+  @override
+  String get suspendedAppealButton => 'الاعتراض على القرار';
+
+  @override
+  String get suspendedBackToLogin => 'العودة إلى تسجيل الدخول';
+
+  @override
+  String get hiddenBannerTitle => 'مخفي بواسطة مشرف';
+
+  @override
+  String get hiddenBannerMessage =>
+      'أنت وحدك من يرى هذا المسار. لن يظهر في الموجز ولا في البحث ولا في صفحة المشاركة. يمكنك الاعتراض من حالة الحساب في الإعدادات.';
+
+  @override
+  String get accountStatusTitle => 'حالة الحساب';
+
+  @override
+  String get violationsEmpty => 'لا توجد إجراءات إشراف على حسابك.';
+
+  @override
+  String get violationHidden => 'مخفي';
+
+  @override
+  String get violationRemoved => 'تمت إزالته';
+
+  @override
+  String get violationWarned => 'تحذير';
+
+  @override
+  String get violationBanned => 'تعليق';
+
+  @override
+  String get violationOther => 'إجراء إشراف';
+
+  @override
+  String get violationLifted => 'تم رفعه';
+
+  @override
+  String get appealPending => 'الاعتراض قيد المراجعة';
+
+  @override
+  String get appealRejected => 'تم رفض الاعتراض';
+
+  @override
+  String get appealRestored => 'تمت الاستعادة';
+
+  @override
+  String get appealReduced => 'تم تخفيف العقوبة';
+
+  @override
+  String get appealAvailable => 'يمكن الاعتراض';
+
+  @override
+  String get appealSubmit => 'اعتراض';
+
+  @override
+  String get appealSubmitted =>
+      'تم إرسال الاعتراض. سنرسل إليك النتيجة عبر البريد الإلكتروني.';
+
+  @override
+  String get appealFormTitle => 'الاعتراض على هذا القرار';
+
+  @override
+  String get appealFormMessage =>
+      'اشرح سبب اعتقادك بأن هذا القرار غير صحيح. سيقوم أحد المشرفين بمراجعته.';
+
+  @override
+  String get appealReasonLabel => 'شرحك';
+
+  @override
+  String get appealReasonRequired => 'يُرجى شرح سبب اعتراضك.';
+
+  @override
+  String appealCooldownUntil(String date) {
+    return 'يمكنك الاعتراض مجددًا بعد $date.';
+  }
+
+  @override
+  String get apiErrorAppealPending =>
+      'لديك اعتراض قيد المراجعة على هذا العنصر بالفعل.';
+
+  @override
+  String get apiErrorAppealCooldown =>
+      'يمكنك الاعتراض على هذا العنصر مجددًا بعد 30 يومًا من رفض الاعتراض.';
+
+  @override
+  String get apiErrorAppealTargetNotFound =>
+      'لا يوجد إجراء إشراف للاعتراض عليه هنا.';
 }

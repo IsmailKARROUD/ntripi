@@ -1,0 +1,74 @@
+{% extends "admin/_base.html" %}
+{% block content %}
+<h1>Flagged uploads</h1>
+<p class="sub">
+  Images the automated scan flagged at upload time (stored, pending a human
+  call). Approving clears the flag; removing deletes the file but keeps the
+  scan record as evidence.
+</p>
+
+{% if rows %}
+<div class="card table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>In queue</th>
+        <th>Image</th>
+        <th>Kind</th>
+        <th>Uploader</th>
+        <th>Labels</th>
+        <th style="width:320px">Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in rows %}
+      <tr>
+        <td><span class="pill {{ r.sla }}">{{ r.age }}</span></td>
+        <td>
+          {% if r.itinerary and r.itinerary.cover_image_url %}
+            <img class="thumb" src="{{ r.itinerary.cover_image_url }}" alt="">
+            <div class="muted">{{ r.itinerary.title }}</div>
+          {% elif r.uploader and r.log.target_kind == 'avatar' and r.uploader.avatar_url %}
+            <img class="thumb" src="{{ r.uploader.avatar_url }}" alt="">
+          {% elif r.uploader and r.log.target_kind == 'user_cover' and r.uploader.cover_image_url %}
+            <img class="thumb" src="{{ r.uploader.cover_image_url }}" alt="">
+          {% else %}
+            <span class="muted">Target gone</span>
+          {% endif %}
+        </td>
+        <td class="muted">{{ r.log.target_kind }}</td>
+        <td>
+          {% if r.uploader %}
+            <div>{{ r.uploader.username }}</div>
+            <div class="muted">{% if r.uploader.is_active %}active{% else %}suspended{% endif %}</div>
+          {% else %}
+            <span class="muted">—</span>
+          {% endif %}
+        </td>
+        <td class="snippet muted">
+          {% for label in r.log.labels %}
+            {{ label.get('name') }} ({{ '%.0f'|format(label.get('confidence', 0)) }}%){% if not loop.last %}, {% endif %}
+          {% endfor %}
+        </td>
+        <td>
+          <form method="post" action="/admin/flagged/{{ r.log.id }}/action">
+            <input type="text" name="reason" placeholder="Reason (required)" required>
+            <div class="actions">
+              <button type="submit" name="action" value="approve">Approve</button>
+              <button type="submit" name="action" value="remove" class="danger">Remove image</button>
+              {% if r.uploader %}
+                <button type="submit" name="action" value="warn">Warn</button>
+                <button type="submit" name="action" value="ban" class="danger">Ban</button>
+              {% endif %}
+            </div>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="card"><p class="muted">No flagged uploads awaiting review.</p></div>
+{% endif %}
+{% endblock %}

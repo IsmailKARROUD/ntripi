@@ -1,0 +1,60 @@
+{% extends "admin/_base.html" %}
+{% block content %}
+<h1>Moderation log</h1>
+<p class="sub">
+  Append-only audit trail. Each row keeps a snapshot of the content as it was at
+  action time, so evidence survives even if the original record is purged.
+  Hide and ban rows can be reversed from here.
+</p>
+
+<div class="card table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>When</th>
+        <th>Action</th>
+        <th>Target</th>
+        <th>Reason</th>
+        <th style="width:280px">Reverse</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in rows %}
+      <tr>
+        <td class="muted">{{ row.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+        <td><span class="pill sla-ok">{{ row.action }}</span></td>
+        <td>
+          <div class="muted">{{ row.target_type }}</div>
+          {% if row.content_snapshot %}
+            <div>{{ row.content_snapshot.get('title') or row.content_snapshot.get('username') or '—' }}</div>
+          {% endif %}
+        </td>
+        <td class="snippet">{{ row.reason }}</td>
+        <td>
+          {% if row.action == 'hide' and row.target_id %}
+          <form method="post" action="/admin/itineraries/{{ row.target_id }}/unhide">
+            <input type="text" name="reason" placeholder="Reason (required)" required>
+            <div class="actions"><button type="submit">Unhide</button></div>
+          </form>
+          {% elif row.action == 'ban' and row.target_id %}
+          <form method="post" action="/admin/users/{{ row.target_id }}/unban">
+            <input type="text" name="reason" placeholder="Reason (required)" required>
+            <div class="actions"><button type="submit">Unban</button></div>
+          </form>
+          {% else %}
+          <span class="muted">—</span>
+          {% endif %}
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="5" class="muted">No moderation actions recorded yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<div class="pager">
+  {% if page > 1 %}<a href="/admin/log?page={{ page - 1 }}">← Newer</a>{% endif %}
+  {% if has_next %}<a href="/admin/log?page={{ page + 1 }}">Older →</a>{% endif %}
+</div>
+{% endblock %}

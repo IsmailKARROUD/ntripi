@@ -1,0 +1,65 @@
+{% extends "admin/_base.html" %}
+{% block content %}
+<h1>Open appeals</h1>
+<p class="sub">
+  Restore reverses the action, uphold confirms it (and locks re-appeals for 30
+  days), reduce softens it — a ban becomes a warning, a removal becomes a hide.
+  The user is emailed the outcome automatically.
+</p>
+
+{% if rows %}
+<div class="card table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>Waiting</th>
+        <th>User</th>
+        <th>Item</th>
+        <th>Their explanation</th>
+        <th style="width:340px">Decision</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in rows %}
+      <tr>
+        <td><span class="pill {{ r.sla }}">{{ r.age }}</span></td>
+        <td>
+          {% if r.user %}
+            <div>{{ r.user.username }}</div>
+            <div class="muted">{% if r.user.is_active %}active{% else %}suspended{% endif %}</div>
+          {% else %}<span class="muted">—</span>{% endif %}
+        </td>
+        <td>
+          <div class="muted">{{ r.appeal.target_type }}</div>
+          {% if r.itinerary %}
+            <div>{{ r.itinerary.title }}</div>
+            <div class="muted">
+              {% if r.itinerary.deleted_at %}removed{% elif r.itinerary.hidden_at %}hidden{% else %}live{% endif %}
+            </div>
+          {% endif %}
+          {% if r.owner_banned and r.appeal.target_type == 'itinerary' %}
+            <div class="pill sla-warn" style="margin-top:4px">
+              Author still suspended — restoring won't make this public
+            </div>
+          {% endif %}
+        </td>
+        <td class="snippet">{{ r.appeal.user_reason }}</td>
+        <td>
+          <form method="post" action="/admin/appeals/{{ r.appeal.id }}/decide">
+            <input type="text" name="admin_response" placeholder="Note to the user (optional)">
+            <div class="actions">
+              <button type="submit" name="decision" value="restore" class="primary">Restore</button>
+              <button type="submit" name="decision" value="reduce">Reduce</button>
+              <button type="submit" name="decision" value="uphold" class="danger">Uphold</button>
+            </div>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="card"><p class="muted">No appeals awaiting a decision.</p></div>
+{% endif %}
+{% endblock %}

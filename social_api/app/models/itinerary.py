@@ -90,6 +90,19 @@ class Itinerary(Base):
         String(20), default="approved", server_default="'approved'", nullable=False
     )
 
+    # Moderator soft-state (set from the /admin dashboard, never by the owner):
+    #   hidden_at  — visible ONLY to the owner (banner shown); excluded from feed,
+    #                search, share, and other users' views. Owner can still edit.
+    #   deleted_at — soft delete: invisible to EVERYONE incl. the owner (404), but
+    #                the row + files are preserved as legal/safety evidence.
+    # Both are enforced centrally in can_view_itinerary() + the raw list/share paths.
+    hidden_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    deleted_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         server_default=func.now(),
@@ -133,6 +146,12 @@ class Itinerary(Base):
         cascade="all, delete-orphan",
         order_by="ItineraryAnnotation.created_at",
     )
+
+    @property
+    def hidden(self) -> bool:
+        """True when a moderator has hidden this itinerary. Surfaced in the
+        detail response (from_attributes) so the owner's client shows a banner."""
+        return self.hidden_at is not None
 
     @property
     def stops_count(self) -> int:

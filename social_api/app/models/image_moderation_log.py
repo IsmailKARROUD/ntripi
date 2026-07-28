@@ -77,6 +77,12 @@ class ImageModerationLog(Base):
     # list[{"name": str, "confidence": float}] — never the full AWS response.
     labels: Mapped[list] = mapped_column(JSON, default=list, nullable=False)
 
+    # Set when an operator clears this flagged row from the dashboard queue
+    # (approve / remove-image). NULL = still in the flagged-uploads queue.
+    reviewed_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+
     # Indexed: the 90-day retention delete filters on it.
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),

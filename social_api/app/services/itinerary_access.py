@@ -19,7 +19,20 @@ from sqlalchemy import func, select
 from app.models.itinerary import Itinerary
 from app.models.itinerary_allowed_user import ItineraryAllowedUser
 from app.models.itinerary_rating import ItineraryRating
+from app.models.user import User
 from app.services.user_service import is_accepted_follower
+
+
+def public_listing_criteria() -> list:
+    """SQLAlchemy WHERE clauses that hide moderator-affected itineraries from
+    public/other-user list queries. Caller MUST join `User` (the owner) so the
+    banned-owner clause resolves. Keep in lock-step with can_view_itinerary so a
+    row-level check and a query-level filter can never disagree."""
+    return [
+        Itinerary.deleted_at.is_(None),   # soft-deleted → gone for everyone
+        Itinerary.hidden_at.is_(None),    # moderator-hidden → owner-only
+        User.is_active.is_(True),         # banned owner → all their content hidden
+    ]
 
 
 def can_view_itinerary(
@@ -30,12 +43,28 @@ def can_view_itinerary(
     """
     Returns True if viewer_id is allowed to see this itinerary.
 
-    The owner check runs first, before the visibility check, so owners always
-    have access regardless of visibility setting.
+    Moderation state is checked first: a soft-deleted itinerary is invisible to
+    everyone (including the owner); a hidden one or a banned owner's content is
+    invisible to everyone except the owner. Only then does the owner short-circuit
+    and the visibility ladder apply.
     """
-    # Owner always has access.
+    # Soft-deleted → invisible to everyone, owner included (evidence preserved).
+    if itinerary.deleted_at is not None:
+        return False
+
+    # Owner always has access to their own live/hidden content (they're active —
+    # a banned user can't authenticate to become a viewer in the first place).
     if itinerary.user_id == viewer_id:
         return True
+
+    # Moderator-hidden → owner-only (handled above); everyone else is denied.
+    if itinerary.hidden_at is not None:
+        return False
+
+    # Banned owner → hide all their content from other viewers until unbanned.
+    owner = db.get(User, itinerary.user_id)
+    if owner is not None and not owner.is_active:
+        return False
 
     visibility = itinerary.visibility
 

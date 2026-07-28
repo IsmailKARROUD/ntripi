@@ -5,6 +5,7 @@ import 'dart:typed_data';
 import 'package:dio/dio.dart';
 import 'package:social_flutter/core/api/api_endpoints.dart';
 import 'package:social_flutter/core/storage/secure_storage.dart';
+import 'package:social_flutter/features/profile/domain/violation.dart';
 import 'package:social_flutter/features/profile/domain/visited_location.dart';
 import 'package:social_flutter/shared/models/user.dart';
 
@@ -128,6 +129,34 @@ class ProfileRepository {
   /// DELETE /users/me/cover-image — clear the cover.
   Future<void> deleteCoverImage() async {
     await _dio.delete(kMyCoverImageEndpoint);
+  }
+
+  // -------------------------------------------------------------------------
+  // Moderation status / appeals
+  // -------------------------------------------------------------------------
+
+  /// GET /appeals/violations — moderation actions against the current user.
+  Future<List<Violation>> getViolations() async {
+    final response = await _dio.get<Map<String, dynamic>>(kViolationsEndpoint);
+    final list = (response.data!['violations'] as List).cast<Map<String, dynamic>>();
+    return list.map(Violation.fromJson).toList();
+  }
+
+  /// POST /appeals — contest a moderation action.
+  ///
+  /// The server enforces one open appeal per item (409 `appeal_already_pending`)
+  /// and a 30-day lock after a rejection (429 `appeal_cooldown`); callers surface
+  /// those codes via [apiErrorCode].
+  Future<void> submitAppeal({
+    required String targetType,
+    required String targetId,
+    required String reason,
+  }) async {
+    await _dio.post(kAppealsEndpoint, data: {
+      'target_type': targetType,
+      'target_id': targetId,
+      'reason': reason,
+    });
   }
 
   /// GET /users/{userId}/locations — aggregate stop coords visible to viewer.

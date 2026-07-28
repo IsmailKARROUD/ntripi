@@ -1,0 +1,140 @@
+{# Admin dashboard shell — deliberately standalone (not extending the public
+   _base.html): this is an internal English-only tool with a denser layout and
+   no marketing chrome, language switcher, or footer links. Design tokens are
+   copied from the public base so the two stay visually related. #}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>{{ page_title }} — Ntripi admin</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --forest:  oklch(34% 0.11 150);
+      --canopy:  oklch(48% 0.13 150);
+      --mist:    oklch(90% 0.06 150);
+      --amber:   oklch(66% 0.17 75);
+      --sand:    oklch(97% 0.008 80);
+      --text:    oklch(18% 0.03 150);
+      --text2:   oklch(48% 0.04 150);
+      --border:  oklch(90% 0.02 150);
+      --surface: #ffffff;
+      --radius:  12px;
+      --warn-bg: #FFF4D6;
+      --warn-fg: #6B4E00;
+      --late-bg: #FFDAD6;
+      --late-fg: #410002;
+      --ok-bg:   #E3F1E6;
+      --ok-fg:   #14532d;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--sand); color: var(--text); line-height: 1.5;
+      min-height: 100vh;
+    }
+
+    header {
+      background: var(--forest); color: #fff;
+      padding: 12px 20px; display: flex; align-items: center; gap: 20px;
+      flex-wrap: wrap;
+    }
+    header .brand { font-weight: 700; font-size: 17px; }
+    header nav { display: flex; gap: 14px; flex-wrap: wrap; }
+    header nav a { color: #fff; opacity: .85; text-decoration: none; font-size: 14px; }
+    header nav a:hover, header nav a.active { opacity: 1; text-decoration: underline; }
+    header .spacer { margin-left: auto; }
+    header form { display: inline; }
+    header button.linklike {
+      background: none; border: 0; color: #fff; opacity: .85;
+      font: inherit; font-size: 14px; cursor: pointer; text-decoration: underline;
+    }
+
+    main { max-width: 1180px; margin: 0 auto; padding: 24px 20px 60px; }
+    h1 { font-size: 22px; margin-bottom: 4px; }
+    h2 { font-size: 16px; margin: 28px 0 10px; }
+    p.sub { color: var(--text2); font-size: 14px; margin-bottom: 18px; }
+
+    .card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 16px; margin-bottom: 16px;
+    }
+
+    .flash { padding: 10px 14px; border-radius: var(--radius); margin-bottom: 16px; font-size: 14px; }
+    .flash.error  { background: var(--late-bg); color: var(--late-fg); }
+    .flash.notice { background: var(--ok-bg);   color: var(--ok-fg); }
+
+    /* Wide tables scroll inside their own container — the page never scrolls
+       horizontally on a laptop screen. */
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    th, td { text-align: left; padding: 10px 8px; border-bottom: 1px solid var(--border); vertical-align: top; }
+    th { font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: var(--text2); }
+    tr:last-child td { border-bottom: 0; }
+
+    .pill { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 12px; font-weight: 600; }
+    .sla-ok   { background: var(--ok-bg);   color: var(--ok-fg); }
+    .sla-warn { background: var(--warn-bg); color: var(--warn-fg); }
+    .sla-late { background: var(--late-bg); color: var(--late-fg); }
+
+    .muted { color: var(--text2); font-size: 13px; }
+    .snippet { max-width: 320px; }
+
+    input[type=text], input[type=password], textarea, input[type=search] {
+      font: inherit; padding: 7px 10px; border: 1px solid var(--border);
+      border-radius: 8px; width: 100%; background: #fff; color: var(--text);
+    }
+    textarea { min-height: 60px; resize: vertical; }
+    label { font-size: 13px; color: var(--text2); display: block; margin-bottom: 4px; }
+
+    button, .btn {
+      font: inherit; font-size: 13px; font-weight: 600; cursor: pointer;
+      padding: 7px 12px; border-radius: 8px; border: 1px solid var(--border);
+      background: #fff; color: var(--text);
+    }
+    button:hover { border-color: var(--canopy); }
+    button.primary { background: var(--forest); border-color: var(--forest); color: #fff; }
+    button.danger  { background: var(--late-bg); border-color: var(--late-bg); color: var(--late-fg); }
+    .actions { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+
+    .stats { display: flex; gap: 12px; flex-wrap: wrap; }
+    .stat {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 14px 18px; min-width: 150px; flex: 1 1 150px;
+    }
+    .stat .n { font-size: 26px; font-weight: 700; }
+    .stat .l { font-size: 13px; color: var(--text2); }
+
+    .thumb { width: 72px; height: 40px; object-fit: cover; border-radius: 6px; border: 1px solid var(--border); }
+    .pager { display: flex; gap: 10px; margin-top: 14px; font-size: 14px; }
+  </style>
+</head>
+<body>
+  {% if admin %}
+  <header>
+    <span class="brand">Ntripi admin</span>
+    <nav>
+      <a href="/admin">Overview</a>
+      <a href="/admin/reports">Reports</a>
+      <a href="/admin/flagged">Flagged</a>
+      <a href="/admin/appeals">Appeals</a>
+      <a href="/admin/log">Log</a>
+    </nav>
+    <span class="spacer"></span>
+    <span class="muted" style="color:#fff;opacity:.8">{{ admin.username }}</span>
+    <form method="post" action="/admin/logout">
+      <button type="submit" class="linklike">Sign out</button>
+    </form>
+  </header>
+  {% endif %}
+
+  <main>
+    {% if error_message %}<div class="flash error">{{ error_message }}</div>{% endif %}
+    {% if notice_message %}<div class="flash notice">{{ notice_message }}</div>{% endif %}
+    {% block content %}{% endblock %}
+  </main>
+</body>
+</html>

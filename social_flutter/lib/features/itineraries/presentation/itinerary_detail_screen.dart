@@ -734,6 +734,12 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                           ),
                         ),
 
+                        // ── Moderator-hidden notice (author only) ──────────
+                        // The server only sends hidden=true to the owner, so
+                        // the isOwner check is defense in depth.
+                        if (isOwner && itinerary.hidden)
+                          const SliverToBoxAdapter(child: _HiddenBanner()),
+
                         // ── Owner row ──────────────────────────────────────
                         if (ownerUserId.isNotEmpty)
                           SliverToBoxAdapter(
@@ -1416,6 +1422,55 @@ class _GlassButton extends StatelessWidget {
         ),
         alignment: Alignment.center,
         child: Icon(icon, color: NtripiBrand.chrome, size: 22),
+      ),
+    );
+  }
+}
+
+// ─── Moderator-hidden banner ─────────────────────────────────────────────────
+// Shown to the author only: the itinerary is still theirs to view and edit, but
+// nobody else can see it. Informational — appeals go through Account status.
+class _HiddenBanner extends StatelessWidget {
+  const _HiddenBanner();
+
+  @override
+  Widget build(BuildContext context) {
+    final nt = context.nt;
+    final l10n = AppLocalizations.of(context)!;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: nt.cautionBg,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: nt.border),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.visibility_off_outlined, size: 20, color: nt.cautionFg),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    l10n.hiddenBannerTitle,
+                    style: TextStyle(
+                      fontWeight: FontWeight.w700,
+                      color: nt.cautionFg,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            Text(
+              l10n.hiddenBannerMessage,
+              style: TextStyle(fontSize: 13, color: nt.cautionFg),
+            ),
+          ],
+        ),
       ),
     );
   }

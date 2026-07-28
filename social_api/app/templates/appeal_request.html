@@ -1,0 +1,28 @@
+{% extends "_base.html" %}
+{% block content %}
+
+<section class="card" style="max-width:460px;margin:0 auto">
+  <h2 style="font-size:1.5rem;font-weight:800;margin-bottom:8px;text-align:center">Appeal a decision</h2>
+  <p style="text-align:center;color:var(--text2);margin-bottom:20px">
+    Enter the email address on your Ntripi account and we'll send you a link to
+    submit an appeal.
+  </p>
+
+  {% if error_message %}
+  <div class="error-banner">{{ error_message }}</div>
+  {% endif %}
+
+  <form method="POST" action="/web/appeal-request">
+    <div class="form-group">
+      <label class="form-label" for="email">Email address</label>
+      <input class="form-input" type="email" id="email" name="email"
+             required autofocus autocomplete="email" placeholder="you@example.com">
+    </div>
+
+    <button type="submit" class="btn-primary" style="width:100%;text-align:center;margin-top:8px">
+      Send appeal link
+    </button>
+  </form>
+</section>
+
+{% endblock %}

@@ -49,7 +49,9 @@ def create_report(
     settings: Settings = Depends(get_settings),
 ) -> ReportAck:
     itinerary = db.get(Itinerary, body.itinerary_id)
-    if itinerary is None:
+    # A soft-deleted or moderator-hidden itinerary isn't visible to a reporter —
+    # 404 identically to a missing one so we never leak that it was moderated.
+    if itinerary is None or itinerary.deleted_at is not None or itinerary.hidden_at is not None:
         raise ApiError(
             status_code=status.HTTP_404_NOT_FOUND,
             code="itinerary_not_found", detail="Itinerary not found.",

@@ -2428,4 +2428,101 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get apiErrorImageModerationRejected =>
       'Cette image ne peut pas être téléversée car elle peut contenir un contenu interdit.';
+
+  @override
+  String get suspendedTitle => 'Votre compte est suspendu';
+
+  @override
+  String get suspendedMessage =>
+      'Un modérateur a suspendu ce compte pour non-respect de nos règles communautaires. Vous ne pouvez pas vous connecter tant que la suspension est active.';
+
+  @override
+  String get suspendedAppealButton => 'Contester cette décision';
+
+  @override
+  String get suspendedBackToLogin => 'Retour à la connexion';
+
+  @override
+  String get hiddenBannerTitle => 'Masqué par un modérateur';
+
+  @override
+  String get hiddenBannerMessage =>
+      'Vous seul voyez cet itinéraire. Il n\'apparaît ni dans le fil, ni dans la recherche, ni sur sa page de partage. Vous pouvez contester depuis État du compte dans les réglages.';
+
+  @override
+  String get accountStatusTitle => 'État du compte';
+
+  @override
+  String get violationsEmpty => 'Aucune action de modération sur votre compte.';
+
+  @override
+  String get violationHidden => 'Masqué';
+
+  @override
+  String get violationRemoved => 'Supprimé';
+
+  @override
+  String get violationWarned => 'Avertissement';
+
+  @override
+  String get violationBanned => 'Suspension';
+
+  @override
+  String get violationOther => 'Action de modération';
+
+  @override
+  String get violationLifted => 'Levée';
+
+  @override
+  String get appealPending => 'Contestation en cours d\'examen';
+
+  @override
+  String get appealRejected => 'Contestation rejetée';
+
+  @override
+  String get appealRestored => 'Rétabli';
+
+  @override
+  String get appealReduced => 'Sanction réduite';
+
+  @override
+  String get appealAvailable => 'Contestation possible';
+
+  @override
+  String get appealSubmit => 'Contester';
+
+  @override
+  String get appealSubmitted =>
+      'Contestation envoyée. Nous vous enverrons le résultat par e-mail.';
+
+  @override
+  String get appealFormTitle => 'Contester cette décision';
+
+  @override
+  String get appealFormMessage =>
+      'Expliquez pourquoi vous estimez que c\'est une erreur. Un modérateur l\'examinera.';
+
+  @override
+  String get appealReasonLabel => 'Votre explication';
+
+  @override
+  String get appealReasonRequired =>
+      'Veuillez expliquer le motif de votre contestation.';
+
+  @override
+  String appealCooldownUntil(String date) {
+    return 'Vous pourrez contester à nouveau après le $date.';
+  }
+
+  @override
+  String get apiErrorAppealPending =>
+      'Vous avez déjà une contestation en cours pour cet élément.';
+
+  @override
+  String get apiErrorAppealCooldown =>
+      'Vous ne pouvez contester à nouveau cet élément que 30 jours après un rejet.';
+
+  @override
+  String get apiErrorAppealTargetNotFound =>
+      'Aucune action de modération à contester ici.';
 }

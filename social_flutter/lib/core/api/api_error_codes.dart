@@ -43,6 +43,9 @@ String? localizedApiError(String code, AppLocalizations l10n) {
       'report_own_content' => l10n.apiErrorReportOwnContent,
       'report_rate_limited' => l10n.apiErrorReportRateLimited,
       'image_moderation_rejected' => l10n.apiErrorImageModerationRejected,
+      'appeal_already_pending' => l10n.apiErrorAppealPending,
+      'appeal_cooldown' => l10n.apiErrorAppealCooldown,
+      'appeal_target_not_found' => l10n.apiErrorAppealTargetNotFound,
       _ => null,
     };
 }

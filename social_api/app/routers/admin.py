@@ -1,0 +1,543 @@
+"""
+routers/admin.py — Internal moderation dashboard (server-rendered Jinja2).
+
+Two independent auth layers guard every route:
+
+  1. HTTP Basic (ADMIN_BASIC_USERNAME/PASSWORD). If either env var is unset the
+     whole dashboard 404s — the panel is invisible, not merely locked.
+  2. A per-admin session cookie minted by POST /admin/login, holding a JWT with
+     scope="admin". The scope claim is mandatory on decode: an API access token
+     is signed with the same key, so without that check a stolen 15-minute
+     mobile token would open the dashboard.
+
+CSRF defense is the cookie's SameSite=Strict plus the fact that every mutation
+is a POST — a cross-site form post simply arrives without the cookie. All
+mutations follow Post/Redirect/Get so a refresh can't replay an action.
+
+Pages are English-only (single-operator tool) and excluded from the OpenAPI
+schema. `Cache-Control: no-store` + `X-Robots-Tag: noindex` are applied to every
+/admin response by SecurityHeadersMiddleware.
+"""
+
+from __future__ import annotations
+
+import secrets
+import uuid
+from datetime import datetime, timedelta, timezone
+
+from fastapi import APIRouter, Depends, Form, HTTPException, Request, status
+from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.security import HTTPBasic, HTTPBasicCredentials
+from jose import JWTError, jwt
+from sqlalchemy.orm import Session
+
+from app.config import Settings, get_settings
+from app.database import get_db
+from app.limiter import limiter
+from app.models.appeal import Appeal
+from app.models.content_report import ContentReport
+from app.models.image_moderation_log import ImageModerationLog
+from app.models.itinerary import Itinerary
+from app.models.user import User
+from app.services import admin_service, appeal_service, auth_service
+from app.templating import templates
+
+ADMIN_COOKIE = "ntripi_admin_session"
+_ADMIN_SCOPE = "admin"
+_LOG_PAGE_SIZE = 50
+
+_basic_scheme = HTTPBasic(auto_error=False)
+
+
+# ---------------------------------------------------------------------------
+# Layer 1 — HTTP Basic
+# ---------------------------------------------------------------------------
+
+def _require_basic(
+    credentials: HTTPBasicCredentials | None = Depends(_basic_scheme),
+    settings: Settings = Depends(get_settings),
+) -> None:
+    expected_user = settings.ADMIN_BASIC_USERNAME
+    expected_pass = settings.ADMIN_BASIC_PASSWORD
+
+    # Feature off unless BOTH are configured — 404 so the panel's existence
+    # isn't advertised by a 401 challenge.
+    if not expected_user or not expected_pass:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not Found")
+
+    unauthorized = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Not authenticated",
+        headers={"WWW-Authenticate": "Basic"},
+    )
+    if credentials is None:
+        raise unauthorized
+
+    # Compare both fields unconditionally — timing-safe, same rule as login.
+    user_ok = secrets.compare_digest(
+        credentials.username.encode("utf-8"), expected_user.encode("utf-8")
+    )
+    pass_ok = secrets.compare_digest(
+        credentials.password.encode("utf-8"), expected_pass.encode("utf-8")
+    )
+    if not (user_ok and pass_ok):
+        raise unauthorized
+
+
+router = APIRouter(
+    prefix="/admin",
+    tags=["admin"],
+    include_in_schema=False,
+    dependencies=[Depends(_require_basic)],
+)
+
+
+# ---------------------------------------------------------------------------
+# Layer 2 — admin session cookie
+# ---------------------------------------------------------------------------
+
+def _mint_admin_session(user: User, settings: Settings) -> str:
+    now = datetime.now(timezone.utc)
+    return jwt.encode(
+        {
+            "sub": str(user.id),
+            "scope": _ADMIN_SCOPE,
+            "iat": now,
+            "exp": now + timedelta(minutes=settings.ADMIN_SESSION_EXPIRE_MINUTES),
+        },
+        settings.SECRET_KEY,
+        algorithm=settings.ALGORITHM,
+    )
+
+
+def _login_redirect() -> HTTPException:
+    # 303 from a dependency: FastAPI's handler preserves the Location header and
+    # browsers follow it, so an expired session lands on the login form.
+    return HTTPException(
+        status_code=status.HTTP_303_SEE_OTHER,
+        detail="admin login required",
+        headers={"Location": "/admin/login"},
+    )
+
+
+def _require_admin_page(
+    request: Request,
+    db: Session = Depends(get_db),
+    settings: Settings = Depends(get_settings),
+) -> User:
+    token = request.cookies.get(ADMIN_COOKIE)
+    if not token:
+        raise _login_redirect()
+
+    try:
+        payload = jwt.decode(
+            token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM]
+        )
+    except JWTError:
+        raise _login_redirect()
+
+    # Mandatory: an API access token (no scope) must never unlock the dashboard.
+    if payload.get("scope") != _ADMIN_SCOPE:
+        raise _login_redirect()
+
+    try:
+        user_id = uuid.UUID(payload.get("sub") or "")
+    except ValueError:
+        raise _login_redirect()
+
+    user = db.get(User, user_id)
+    if user is None or not user.is_admin or not user.is_active:
+        raise _login_redirect()
+    return user
+
+
+def _page(request: Request, name: str, context: dict, status_code: int = 200) -> HTMLResponse:
+    return templates.TemplateResponse(
+        request, f"admin/{name}", context, status_code=status_code
+    )
+
+
+def _redirect(path: str, error: str | None = None, notice: str | None = None):
+    query = ""
+    if error:
+        query = f"?error={error}"
+    elif notice:
+        query = f"?notice={notice}"
+    return RedirectResponse(f"{path}{query}", status_code=status.HTTP_303_SEE_OTHER)
+
+
+# ---------------------------------------------------------------------------
+# Login / logout
+# ---------------------------------------------------------------------------
+
+@router.get("/login", response_class=HTMLResponse)
+def admin_login_form(request: Request) -> HTMLResponse:
+    return _page(request, "login.html", {"page_title": "Admin sign in"})
+
+
+@router.post("/login")
+@limiter.limit("10/minute")
+def admin_login(
+    request: Request,  # required first positional for slowapi rate limiting
+    identifier: str = Form(...),
+    password: str = Form(...),
+    db: Session = Depends(get_db),
+    settings: Settings = Depends(get_settings),
+):
+    invalid = _page(
+        request, "login.html",
+        {"page_title": "Admin sign in", "error_message": "Invalid credentials."},
+        status_code=401,
+    )
+    try:
+        # Reuses the app's timing-safe password check (and its deactivated-account
+        # guard); admin rights are then checked separately.
+        user, _token = auth_service.authenticate_user(identifier, password, db)
+    except auth_service.AuthError:
+        return invalid
+
+    if not user.is_admin:
+        return invalid
+
+    response = RedirectResponse("/admin", status_code=status.HTTP_303_SEE_OTHER)
+    response.set_cookie(
+        ADMIN_COOKIE,
+        _mint_admin_session(user, settings),
+        max_age=settings.ADMIN_SESSION_EXPIRE_MINUTES * 60,
+        httponly=True,
+        # Not over plain http in dev, or the cookie is silently dropped.
+        secure=not settings.DEBUG,
+        # Strict is the CSRF defense for every POST in this router.
+        samesite="strict",
+        path="/admin",
+    )
+    return response
+
+
+@router.post("/logout")
+def admin_logout():
+    response = RedirectResponse("/admin/login", status_code=status.HTTP_303_SEE_OTHER)
+    response.delete_cookie(ADMIN_COOKIE, path="/admin")
+    return response
+
+
+# ---------------------------------------------------------------------------
+# Overview
+# ---------------------------------------------------------------------------
+
+@router.get("", response_class=HTMLResponse)
+def admin_dashboard(
+    request: Request,
+    db: Session = Depends(get_db),
+    admin: User = Depends(_require_admin_page),
+) -> HTMLResponse:
+    return _page(request, "dashboard.html", {
+        "page_title": "Overview",
+        "admin": admin,
+        "counts": admin_service.overview_counts(db),
+        "recent": admin_service.recent_log(db, limit=20),
+    })
+
+
+# ---------------------------------------------------------------------------
+# Reports queue
+# ---------------------------------------------------------------------------
+
+@router.get("/reports", response_class=HTMLResponse)
+def admin_reports(
+    request: Request,
+    error: str | None = None,
+    notice: str | None = None,
+    db: Session = Depends(get_db),
+    admin: User = Depends(_require_admin_page),
+) -> HTMLResponse:
+    reports = admin_service.pending_reports(db)
+    rows = []
+    for report in reports:
+        itinerary = (
+            db.get(Itinerary, report.reported_itinerary_id)
+            if report.reported_itinerary_id else None
+        )
+        rows.append({
+            "report": report,
+            "itinerary": itinerary,
+            "owner": db.get(User, itinerary.user_id) if itinerary else None,
+            "age": admin_service.humanize_age(report.created_at),
+            "sla": admin_service.sla_class(report.created_at),
+        })
+    return _page(request, "reports.html", {
+        "page_title": "Reports",
+        "admin": admin,
+        "rows": rows,
+        "error_message": error,
+        "notice_message": notice,
+    })
+
+
+@router.post("/reports/{report_id}/action")
+def admin_report_action(
+    report_id: uuid.UUID,
+    action: str = Form(...),
+    reason: str = Form(""),
+    db: Session = Depends(get_db),
+    admin: User = Depends(_require_admin_page),
+):
+    report = db.get(ContentReport, report_id)
+    if report is None:
+        raise HTTPException(status_code=404, detail="Report not found")
+
+    reason = (reason or "").strip()
+    if not reason:
+        return _redirect("/admin/reports", error="A reason is required.")
+    if report.resolution != "pending":
+        # Another tab (or a double submit) already handled it.
+        return _redirect("/admin/reports", notice="That report was already resolved.")
+
+    itinerary = (
+        db.get(Itinerary, report.reported_itinerary_id)
+        if report.reported_itinerary_id else None
+    )
+    owner = db.get(User, itinerary.user_id) if itinerary else None
+
+    if action == "dismiss":
+        admin_service.dismiss_report(db, admin, report, reason)
+    elif action in ("hide", "delete"):
+        if itinerary is None:
+            return _redirect("/admin/reports", error="The reported content no longer exists.")
+        if action == "hide":
+            admin_service.hide_itinerary(db, admin, itinerary, reason, report)
+        else:
+            admin_service.soft_delete_itinerary(db, admin, itinerary, reason, report)
+    elif action in ("warn", "ban"):
+        if owner is None:
+            return _redirect("/admin/reports", error="The content author no longer exists.")
+        if action == "warn":
+            admin_service.warn_user(db, admin, owner, reason, report)
+        else:
+            admin_service.ban_user(db, admin, owner, reason, report)
+    else:
+        return _redirect("/admin/reports", error="Unknown action.")
+
+    return _redirect("/admin/reports", notice="Action applied.")
+
+
+@router.post("/reports/bulk")
+def admin_reports_bulk(
+    action: str = Form(...),
+    reason: str = Form(""),
+    report_ids: list[uuid.UUID] = Form(default=[]),
+    db: Session = Depends(get_db),
+    admin: User = Depends(_require_admin_page),
+):
+    reason = (reason or "").strip()
+    if not reason:
+        return _redirect("/admin/reports", error="A reason is required.")
+    if not report_ids:
+        return _redirect("/admin/reports", error="Select at least one report.")
+    if action not in ("dismiss", "delete"):
+        return _redirect("/admin/reports", error="Unknown bulk action.")
+
+    handled = admin_service.bulk_resolve(db, admin, list(report_ids), action, reason)
+    return _redirect("/admin/reports", notice=f"{handled} report(s) processed.")
+
+
+# ---------------------------------------------------------------------------
+# Flagged uploads queue
+# ---------------------------------------------------------------------------
+
+@router.get("/flagged", response_class=HTMLResponse)
+def admin_flagged(
+    request: Request,
+    error: str | None = None,
+    notice: str | None = None,
+    db: Session = Depends(get_db),
+    admin: User = Depends(_require_admin_page),
+) -> HTMLResponse:
+    rows = []
+    for log_row in admin_service.flagged_queue(db):
+        itinerary = (
+            db.get(Itinerary, log_row.target_itinerary_id)
+            if log_row.target_itinerary_id else None
+        )
+        rows.append({
+            "log": log_row,
+            "itinerary": itinerary,
+            "uploader": (
+                db.get(User, log_row.uploader_user_id)
+                if log_row.uploader_user_id else None
+            ),
+            "age": admin_service.humanize_age(log_row.created_at),
+            "sla": admin_service.sla_class(log_row.created_at),
+        })
+    return _page(request, "flagged.html", {
+        "page_title": "Flagged uploads",
+        "admin": admin,
+        "rows": rows,
+        "error_message": error,
+        "notice_message": notice,
+    })
+
+
+@router.post("/flagged/{log_id}/action")
+async def admin_flagged_action(
+    log_id: uuid.UUID,
+    action: str = Form(...),
+    reason: str = Form(""),
+    db: Session = Depends(get_db),
+    admin: User = Depends(_require_admin_page),
+):
+    log_row = db.get(ImageModerationLog, log_id)
+    if log_row is None:
+        raise HTTPException(status_code=404, detail="Flagged upload not found")
+
+    reason = (reason or "").strip()
+    if not reason:
+        return _redirect("/admin/flagged", error="A reason is required.")
+    if log_row.reviewed_at is not None:
+        return _redirect("/admin/flagged", notice="That upload was already reviewed.")
+
+    if action == "approve":
+        admin_service.approve_flagged(db, admin, log_row, reason)
+    elif action == "remove":
+        await admin_service.remove_flagged_image(db, admin, log_row, reason)
+    elif action in ("warn", "ban"):
+        uploader = (
+            db.get(User, log_row.uploader_user_id)
+            if log_row.uploader_user_id else None
+        )
+        if uploader is None:
+            return _redirect("/admin/flagged", error="The uploader no longer exists.")
+        # Clear the row from the queue too — the operator has judged it.
+        log_row.reviewed_at = datetime.now(timezone.utc)
+        if action == "warn":
+            admin_service.warn_user(db, admin, uploader, reason)
+        else:
+            admin_service.ban_user(db, admin, uploader, reason)
+    else:
+        return _redirect("/admin/flagged", error="Unknown action.")
+
+    return _redirect("/admin/flagged", notice="Action applied.")
+
+
+# ---------------------------------------------------------------------------
+# Appeals queue
+# ---------------------------------------------------------------------------
+
+@router.get("/appeals", response_class=HTMLResponse)
+def admin_appeals(
+    request: Request,
+    error: str | None = None,
+    notice: str | None = None,
+    db: Session = Depends(get_db),
+    admin: User = Depends(_require_admin_page),
+) -> HTMLResponse:
+    rows = []
+    for appeal in admin_service.pending_appeals(db):
+        itinerary = (
+            db.get(Itinerary, appeal.target_id)
+            if appeal.target_type == admin_service.TARGET_ITINERARY else None
+        )
+        owner = db.get(User, appeal.user_id)
+        rows.append({
+            "appeal": appeal,
+            "user": owner,
+            "itinerary": itinerary,
+            # Restoring content owned by a still-banned user won't make it public
+            # again — surface that so the operator can unban too.
+            "owner_banned": owner is not None and not owner.is_active,
+            "age": admin_service.humanize_age(appeal.created_at),
+            "sla": admin_service.sla_class(appeal.created_at),
+        })
+    return _page(request, "appeals.html", {
+        "page_title": "Appeals",
+        "admin": admin,
+        "rows": rows,
+        "error_message": error,
+        "notice_message": notice,
+    })
+
+
+@router.post("/appeals/{appeal_id}/decide")
+def admin_appeal_decide(
+    appeal_id: uuid.UUID,
+    decision: str = Form(...),
+    admin_response: str = Form(""),
+    db: Session = Depends(get_db),
+    admin: User = Depends(_require_admin_page),
+):
+    appeal = db.get(Appeal, appeal_id)
+    if appeal is None:
+        raise HTTPException(status_code=404, detail="Appeal not found")
+    if decision not in appeal_service.DECISIONS:
+        return _redirect("/admin/appeals", error="Unknown decision.")
+
+    try:
+        appeal_service.decide_appeal(db, admin, appeal, decision, admin_response)
+    except appeal_service.AppealError as exc:
+        return _redirect("/admin/appeals", notice=exc.message)
+
+    return _redirect("/admin/appeals", notice="Appeal decided.")
+
+
+# ---------------------------------------------------------------------------
+# Audit log + reversals
+# ---------------------------------------------------------------------------
+
+@router.get("/log", response_class=HTMLResponse)
+def admin_log(
+    request: Request,
+    page: int = 1,
+    error: str | None = None,
+    notice: str | None = None,
+    db: Session = Depends(get_db),
+    admin: User = Depends(_require_admin_page),
+) -> HTMLResponse:
+    page = max(1, page)
+    offset = (page - 1) * _LOG_PAGE_SIZE
+    rows = admin_service.recent_log(db, limit=_LOG_PAGE_SIZE + 1, offset=offset)
+    has_next = len(rows) > _LOG_PAGE_SIZE
+    return _page(request, "log.html", {
+        "page_title": "Moderation log",
+        "admin": admin,
+        "rows": rows[:_LOG_PAGE_SIZE],
+        "page": page,
+        "has_next": has_next,
+        "error_message": error,
+        "notice_message": notice,
+    })
+
+
+@router.post("/itineraries/{itinerary_id}/unhide")
+def admin_unhide(
+    itinerary_id: uuid.UUID,
+    reason: str = Form(""),
+    db: Session = Depends(get_db),
+    admin: User = Depends(_require_admin_page),
+):
+    reason = (reason or "").strip()
+    if not reason:
+        return _redirect("/admin/log", error="A reason is required.")
+    itinerary = db.get(Itinerary, itinerary_id)
+    if itinerary is None:
+        return _redirect("/admin/log", error="That itinerary no longer exists.")
+
+    admin_service.unhide_itinerary(db, admin, itinerary, reason)
+    return _redirect("/admin/log", notice="Itinerary is visible again.")
+
+
+@router.post("/users/{user_id}/unban")
+def admin_unban(
+    user_id: uuid.UUID,
+    reason: str = Form(""),
+    db: Session = Depends(get_db),
+    admin: User = Depends(_require_admin_page),
+):
+    reason = (reason or "").strip()
+    if not reason:
+        return _redirect("/admin/log", error="A reason is required.")
+    user = db.get(User, user_id)
+    if user is None:
+        return _redirect("/admin/log", error="That user no longer exists.")
+
+    admin_service.unban_user(db, admin, user, reason)
+    return _redirect("/admin/log", notice="Account reinstated.")

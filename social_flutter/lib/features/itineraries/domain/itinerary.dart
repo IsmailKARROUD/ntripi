@@ -72,6 +72,11 @@ class Itinerary {
   /// responses, or derived from [tracks] in detail responses.
   final int stopsCount;
 
+  /// True when a moderator hid this itinerary: it stays visible to its author
+  /// (who sees a banner) but to nobody else. The server only ever sends true to
+  /// the owner — everyone else is filtered out or denied before the response.
+  final bool hidden;
+
   const Itinerary({
     required this.id,
     required this.userId,
@@ -90,6 +95,7 @@ class Itinerary {
     this.segments = const [],
     this.annotations = const [],
     this.stopsCount = 0,
+    this.hidden = false,
   });
 
   factory Itinerary.fromJson(Map<String, dynamic> json) {
@@ -121,6 +127,8 @@ class Itinerary {
       stopsCount: tracks.isNotEmpty
           ? tracks.fold(0, (sum, t) => sum + t.stops.length)
           : (json['stops_count'] as int? ?? 0),
+      // Absent from summary/list payloads — only the detail response carries it.
+      hidden: json['hidden'] as bool? ?? false,
     );
   }
 
@@ -199,6 +207,7 @@ class Itinerary {
       'visibility': reverseMap[visibility],
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
+      'hidden': hidden,
     };
   }
 
@@ -224,6 +233,7 @@ class Itinerary {
     List<TransitSegment>? segments,
     List<ItineraryAnnotation>? annotations,
     int? stopsCount,
+    bool? hidden,
   }) {
     return Itinerary(
       id: id ?? this.id,
@@ -244,6 +254,7 @@ class Itinerary {
       segments: segments ?? this.segments,
       annotations: annotations ?? this.annotations,
       stopsCount: stopsCount ?? this.stopsCount,
+      hidden: hidden ?? this.hidden,
     );
   }
 

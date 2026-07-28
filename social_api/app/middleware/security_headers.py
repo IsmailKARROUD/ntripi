@@ -33,6 +33,14 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
         response.headers["Content-Security-Policy"] = "frame-ancestors 'none'"
 
+        # Admin dashboard: never indexed, never cached. Set here rather than in
+        # the router because these pages return TemplateResponse directly, which
+        # bypasses a dependency-injected Response object's headers.
+        path = request.url.path
+        if path == "/admin" or path.startswith("/admin/"):
+            response.headers["X-Robots-Tag"] = "noindex, nofollow"
+            response.headers["Cache-Control"] = "no-store"
+
         if request.url.scheme == "https":
             response.headers["Strict-Transport-Security"] = "max-age=31536000"
 

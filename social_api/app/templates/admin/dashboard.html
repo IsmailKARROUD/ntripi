@@ -1,0 +1,41 @@
+{% extends "admin/_base.html" %}
+{% block content %}
+<h1>Overview</h1>
+<p class="sub">Queue health and the most recent moderation activity.</p>
+
+<div class="stats">
+  <div class="stat"><div class="n">{{ counts.pending_reports }}</div><div class="l"><a href="/admin/reports">Pending reports</a></div></div>
+  <div class="stat"><div class="n">{{ counts.flagged_uploads }}</div><div class="l"><a href="/admin/flagged">Flagged uploads</a></div></div>
+  <div class="stat"><div class="n">{{ counts.pending_appeals }}</div><div class="l"><a href="/admin/appeals">Open appeals</a></div></div>
+  <div class="stat"><div class="n">{{ counts.hidden_itineraries }}</div><div class="l">Hidden itineraries</div></div>
+  <div class="stat"><div class="n">{{ counts.deleted_itineraries }}</div><div class="l">Removed itineraries</div></div>
+  <div class="stat"><div class="n">{{ counts.banned_users }}</div><div class="l">Suspended accounts</div></div>
+</div>
+
+<h2>Recent actions</h2>
+<div class="card table-wrap">
+  <table>
+    <thead>
+      <tr><th>When</th><th>Action</th><th>Target</th><th>Reason</th></tr>
+    </thead>
+    <tbody>
+      {% for row in recent %}
+      <tr>
+        <td class="muted">{{ row.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+        <td><span class="pill sla-ok">{{ row.action }}</span></td>
+        <td class="muted">
+          {{ row.target_type }}
+          {% if row.content_snapshot %}
+            — {{ row.content_snapshot.get('title') or row.content_snapshot.get('username') or '—' }}
+          {% endif %}
+        </td>
+        <td class="snippet">{{ row.reason }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="4" class="muted">No moderation actions yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+<p class="muted"><a href="/admin/log">View the full log →</a></p>
+{% endblock %}

@@ -27,7 +27,9 @@ from app.database import Base
 # Single source of truth for the enum values — kept in sync with the check
 # constraints below and the ReportCreate regex in app/schemas/report.py.
 REPORT_REASONS = ("spam", "nsfw", "violence", "hate_speech", "harassment", "copyright", "other")
-REPORT_RESOLUTIONS = ("pending", "dismissed", "content_removed", "user_warned", "user_banned")
+# content_hidden is distinct from content_removed — hide keeps the content
+# owner-visible, so mapping it to "removed" would make the audit trail lie.
+REPORT_RESOLUTIONS = ("pending", "dismissed", "content_removed", "content_hidden", "user_warned", "user_banned")
 
 
 class ContentReport(Base):
@@ -38,7 +40,7 @@ class ContentReport(Base):
             name="ck_report_reason",
         ),
         CheckConstraint(
-            "resolution IN ('pending','dismissed','content_removed','user_warned','user_banned')",
+            "resolution IN ('pending','dismissed','content_removed','content_hidden','user_warned','user_banned')",
             name="ck_report_resolution",
         ),
     )

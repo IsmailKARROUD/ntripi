@@ -15,6 +15,7 @@ import 'package:social_flutter/core/api/api_endpoints.dart';
 import 'package:social_flutter/core/cache/image_cache.dart';
 import 'package:social_flutter/core/connectivity/connectivity_service.dart';
 import 'package:social_flutter/features/profile/data/profile_repository.dart';
+import 'package:social_flutter/features/profile/domain/violation.dart';
 import 'package:social_flutter/shared/models/user.dart';
 
 /// CachedNetworkImage / putFile key the entry by the absolute URL. The server
@@ -152,6 +153,12 @@ class MyProfileNotifier extends AsyncNotifier<User> {
 
 final myProfileProvider =
     AsyncNotifierProvider<MyProfileNotifier, User>(() => MyProfileNotifier());
+
+/// Moderation actions taken against the current user (Account status screen).
+/// Invalidate after filing an appeal so the row's state refreshes.
+final myViolationsProvider = FutureProvider.autoDispose<List<Violation>>((ref) {
+  return ref.read(profileRepositoryProvider).getViolations();
+});
 
 /// Loads a specific user's public profile by their ID.
 /// We use a family provider so each user ID gets its own cached state.

@@ -2426,4 +2426,101 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get apiErrorImageModerationRejected =>
       'Dieses Bild kann nicht hochgeladen werden, da es möglicherweise unzulässige Inhalte enthält.';
+
+  @override
+  String get suspendedTitle => 'Dein Konto ist gesperrt';
+
+  @override
+  String get suspendedMessage =>
+      'Ein Moderator hat dieses Konto wegen Verstoßes gegen unsere Community-Richtlinien gesperrt. Solange die Sperre aktiv ist, kannst du dich nicht anmelden.';
+
+  @override
+  String get suspendedAppealButton => 'Entscheidung anfechten';
+
+  @override
+  String get suspendedBackToLogin => 'Zurück zur Anmeldung';
+
+  @override
+  String get hiddenBannerTitle => 'Von einem Moderator ausgeblendet';
+
+  @override
+  String get hiddenBannerMessage =>
+      'Nur du siehst diese Reiseroute. Sie erscheint weder im Feed noch in der Suche oder auf ihrer Teilen-Seite. Du kannst sie unter Kontostatus in den Einstellungen anfechten.';
+
+  @override
+  String get accountStatusTitle => 'Kontostatus';
+
+  @override
+  String get violationsEmpty => 'Keine Moderationsmaßnahmen für dein Konto.';
+
+  @override
+  String get violationHidden => 'Ausgeblendet';
+
+  @override
+  String get violationRemoved => 'Entfernt';
+
+  @override
+  String get violationWarned => 'Verwarnung';
+
+  @override
+  String get violationBanned => 'Sperre';
+
+  @override
+  String get violationOther => 'Moderationsmaßnahme';
+
+  @override
+  String get violationLifted => 'Aufgehoben';
+
+  @override
+  String get appealPending => 'Einspruch wird geprüft';
+
+  @override
+  String get appealRejected => 'Einspruch abgelehnt';
+
+  @override
+  String get appealRestored => 'Wiederhergestellt';
+
+  @override
+  String get appealReduced => 'Maßnahme abgemildert';
+
+  @override
+  String get appealAvailable => 'Einspruch möglich';
+
+  @override
+  String get appealSubmit => 'Einspruch';
+
+  @override
+  String get appealSubmitted =>
+      'Einspruch eingereicht. Wir senden dir das Ergebnis per E-Mail.';
+
+  @override
+  String get appealFormTitle => 'Diese Entscheidung anfechten';
+
+  @override
+  String get appealFormMessage =>
+      'Erkläre, warum du die Entscheidung für falsch hältst. Ein Moderator prüft sie.';
+
+  @override
+  String get appealReasonLabel => 'Deine Erklärung';
+
+  @override
+  String get appealReasonRequired =>
+      'Bitte erkläre, warum du Einspruch einlegst.';
+
+  @override
+  String appealCooldownUntil(String date) {
+    return 'Du kannst nach dem $date erneut Einspruch einlegen.';
+  }
+
+  @override
+  String get apiErrorAppealPending =>
+      'Für dieses Element läuft bereits ein Einspruch.';
+
+  @override
+  String get apiErrorAppealCooldown =>
+      'Du kannst für dieses Element erst 30 Tage nach einer Ablehnung erneut Einspruch einlegen.';
+
+  @override
+  String get apiErrorAppealTargetNotFound =>
+      'Hier gibt es keine Moderationsmaßnahme zum Anfechten.';
 }

@@ -1,0 +1,20 @@
+{% extends "admin/_base.html" %}
+{% block content %}
+<div style="max-width:380px;margin:60px auto">
+  <h1>Ntripi admin</h1>
+  <p class="sub">Moderation dashboard. Authorized operators only.</p>
+
+  {# error_message is rendered by the base layout's flash block #}
+  <form method="post" action="/admin/login" class="card">
+    <div style="margin-bottom:12px">
+      <label for="identifier">Email or username</label>
+      <input type="text" id="identifier" name="identifier" autocomplete="username" required autofocus>
+    </div>
+    <div style="margin-bottom:16px">
+      <label for="password">Password</label>
+      <input type="password" id="password" name="password" autocomplete="current-password" required>
+    </div>
+    <button type="submit" class="primary" style="width:100%">Sign in</button>
+  </form>
+</div>
+{% endblock %}

@@ -1,0 +1,20 @@
+{% extends "_base.html" %}
+{% block content %}
+
+<section class="card" style="max-width:460px;margin:0 auto;text-align:center">
+  {% if check_email %}
+    <h2 style="font-size:1.5rem;font-weight:800;margin-bottom:12px">Check your email</h2>
+    <p style="color:var(--text2)">
+      If that address belongs to an account with a moderation decision, we've sent
+      it a link to submit an appeal.
+    </p>
+  {% else %}
+    <h2 style="font-size:1.5rem;font-weight:800;margin-bottom:12px">Appeal received</h2>
+    <p style="color:var(--text2)">
+      A moderator will review your explanation and email you the outcome. You can
+      submit one appeal per item.
+    </p>
+  {% endif %}
+</section>
+
+{% endblock %}

@@ -67,6 +67,12 @@ class User(Base):
 
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
 
+    # Grants access to the /admin moderation dashboard. Set manually via SQL —
+    # there is no API or UI to promote a user (single-operator model).
+    is_admin: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, server_default=false(), default=False
+    )
+
     tos_accepted_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True, default=None
     )

@@ -51,6 +51,12 @@ const kSearchUsersEndpoint = '/users/search';
 const kMyAvatarEndpoint = '/users/me/avatar';
 const kMyCoverImageEndpoint = '/users/me/cover-image';
 
+// ---------------------------------------------------------------------------
+// Moderation appeals
+// ---------------------------------------------------------------------------
+const kAppealsEndpoint = '/appeals';
+const kViolationsEndpoint = '/appeals/violations';
+
 /// Returns the aggregate visited-locations endpoint for a given user.
 String userLocationsEndpoint(String userId) => '/users/$userId/locations';
 

@@ -64,8 +64,14 @@ def share_itinerary(
         for track in itinerary.tracks:
             track.stops.sort(key=lambda s: s.rank)
 
-    # Not found or only_me → identical 404 response to avoid leaking existence.
-    if itinerary is None or itinerary.visibility == "only_me":
+    # Not found, only_me, or moderator soft-deleted/hidden → identical 404 to
+    # avoid leaking existence (a hidden/deleted itinerary must never render here).
+    if (
+        itinerary is None
+        or itinerary.visibility == "only_me"
+        or itinerary.deleted_at is not None
+        or itinerary.hidden_at is not None
+    ):
         return templates.TemplateResponse(
             request,
             "share_not_found.html",
@@ -76,8 +82,8 @@ def share_itinerary(
         select(User).where(User.id == itinerary.user_id)
     ).scalar_one_or_none()
 
-    # Owner deleted (edge case) → treat as not found.
-    if owner is None:
+    # Owner deleted (edge case) or banned → treat as not found.
+    if owner is None or not owner.is_active:
         return templates.TemplateResponse(
             request,
             "share_not_found.html",

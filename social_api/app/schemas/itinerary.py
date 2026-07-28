@@ -463,6 +463,10 @@ class ItineraryDetail(ItinerarySummary):
     tracks: list[TrackResponse] = []
     segments: list[TransitSegmentResponse] = []
     annotations: list[ItineraryAnnotationResponse] = []
+    # Moderator-hidden flag (from Itinerary.hidden). Appended last so existing
+    # JSON key order — part of the API contract — is unchanged. Only ever true
+    # for the owner: every other viewer is filtered out or 403s before this.
+    hidden: bool = False
 
 
 # ---------------------------------------------------------------------------

@@ -25,6 +25,7 @@ import 'package:go_router/go_router.dart';
 import 'package:social_flutter/core/api/api_endpoints.dart';
 import 'package:social_flutter/core/api/api_error_codes.dart';
 import 'package:social_flutter/core/auth/token_manager.dart';
+import 'package:social_flutter/core/storage/secure_storage.dart';
 import 'package:social_flutter/l10n/app_localizations.dart';
 
 /// Singleton Dio instance used throughout the app.
@@ -135,6 +136,16 @@ void _goToLogin() {
   });
 }
 
+void _goToSuspended() {
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    final ctx = navigatorKey.currentContext;
+    if (ctx != null && ctx.mounted) ctx.go('/suspended');
+  });
+}
+
+/// Backend code returned on every request from a moderator-suspended account.
+const kAccountDeactivatedCode = 'account_deactivated';
+
 bool _isAuthEndpoint(String path) {
   return path == kLoginEndpoint ||
       path == kRegisterEndpoint ||
@@ -202,6 +213,21 @@ class AuthInterceptor extends Interceptor {
   ) async {
     final status = err.response?.statusCode;
     final path = err.requestOptions.path;
+
+    // A moderator suspension is enforced on every request (401 or 403 with this
+    // code), so it must be caught before both the 401-only filter below and the
+    // coded-error passthrough — otherwise a banned user just sees a generic
+    // error on whatever screen they were on. Tokens are cleared here rather
+    // than via AuthNotifier: an interceptor has no Riverpod ref.
+    final body = err.response?.data;
+    if ((status == 401 || status == 403) &&
+        body is Map &&
+        body['code'] == kAccountDeactivatedCode) {
+      await clearAllTokens();
+      _goToSuspended();
+      handler.next(err);
+      return;
+    }
 
     if (status != 401 || _isAuthEndpoint(path)) {
       handler.next(err);

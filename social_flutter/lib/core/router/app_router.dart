@@ -12,6 +12,7 @@ import 'package:social_flutter/features/auth/presentation/forgot_password_screen
 import 'package:social_flutter/features/auth/presentation/login_screen.dart';
 import 'package:social_flutter/features/auth/presentation/register_screen.dart';
 import 'package:social_flutter/features/auth/presentation/splash_screen.dart';
+import 'package:social_flutter/features/auth/presentation/suspended_screen.dart';
 import 'package:social_flutter/features/feed/presentation/feed_screen.dart';
 import 'package:social_flutter/features/follows/presentation/follow_list_screen.dart';
 import 'package:social_flutter/features/follows/presentation/follow_requests_screen.dart';
@@ -25,6 +26,7 @@ import 'package:social_flutter/features/itineraries/presentation/stop_form_scree
 import 'package:social_flutter/features/itineraries/domain/dimension_key.dart';
 import 'package:social_flutter/features/itineraries/presentation/dimension_ratings_screen.dart';
 import 'package:social_flutter/features/itineraries/presentation/ratings_page_screen.dart';
+import 'package:social_flutter/features/profile/presentation/account_status_screen.dart';
 import 'package:social_flutter/features/profile/presentation/change_password_screen.dart';
 import 'package:social_flutter/features/profile/presentation/delete_account_screen.dart';
 import 'package:social_flutter/features/profile/presentation/profile_screen.dart';
@@ -47,8 +49,16 @@ final appRouter = GoRouter(
         refresh.isNotEmpty &&
         (refreshExp == null || refreshExp.isAfter(DateTime.now()));
 
-    // Routes that require no authentication check
-    const publicRoutes = ['/login', '/register', '/splash', '/forgot-password'];
+    // Routes that require no authentication check. /suspended is public because
+    // the interceptor clears the tokens before landing there — without it the
+    // guard would immediately bounce a banned user to /login.
+    const publicRoutes = [
+      '/login',
+      '/register',
+      '/splash',
+      '/forgot-password',
+      '/suspended',
+    ];
     final isPublic = publicRoutes.contains(state.matchedLocation);
 
     if (!hasAuth && !isPublic) return '/login';
@@ -73,6 +83,13 @@ final appRouter = GoRouter(
     GoRoute(
       path: '/forgot-password',
       builder: (context, state) => const ForgotPasswordScreen(),
+    ),
+
+    // Terminal screen for a suspended account — pushed by AuthInterceptor when
+    // any response carries the account_deactivated code.
+    GoRoute(
+      path: '/suspended',
+      builder: (context, state) => const SuspendedScreen(),
     ),
 
     // Protected routes with persistent bottom nav.
@@ -140,6 +157,10 @@ final appRouter = GoRouter(
             GoRoute(
               path: '/settings/delete-account',
               builder: (_, __) => const DeleteAccountScreen(),
+            ),
+            GoRoute(
+              path: '/settings/account-status',
+              builder: (_, __) => const AccountStatusScreen(),
             ),
             GoRoute(
               path: '/follow-requests',

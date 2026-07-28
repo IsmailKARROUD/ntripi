@@ -4227,6 +4227,180 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'This image can\'t be uploaded because it may contain prohibited content.'**
   String get apiErrorImageModerationRejected;
+
+  /// No description provided for @suspendedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your account is suspended'**
+  String get suspendedTitle;
+
+  /// No description provided for @suspendedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'A moderator has suspended this account for breaking our community guidelines. You can\'t sign in while the suspension is active.'**
+  String get suspendedMessage;
+
+  /// No description provided for @suspendedAppealButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Appeal this decision'**
+  String get suspendedAppealButton;
+
+  /// No description provided for @suspendedBackToLogin.
+  ///
+  /// In en, this message translates to:
+  /// **'Back to sign in'**
+  String get suspendedBackToLogin;
+
+  /// No description provided for @hiddenBannerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Hidden by a moderator'**
+  String get hiddenBannerTitle;
+
+  /// No description provided for @hiddenBannerMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Only you can see this itinerary. It won\'t appear in the feed, in search, or on its share page. You can appeal from Account status in settings.'**
+  String get hiddenBannerMessage;
+
+  /// No description provided for @accountStatusTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Account status'**
+  String get accountStatusTitle;
+
+  /// No description provided for @violationsEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No moderation actions on your account.'**
+  String get violationsEmpty;
+
+  /// No description provided for @violationHidden.
+  ///
+  /// In en, this message translates to:
+  /// **'Hidden'**
+  String get violationHidden;
+
+  /// No description provided for @violationRemoved.
+  ///
+  /// In en, this message translates to:
+  /// **'Removed'**
+  String get violationRemoved;
+
+  /// No description provided for @violationWarned.
+  ///
+  /// In en, this message translates to:
+  /// **'Warning'**
+  String get violationWarned;
+
+  /// No description provided for @violationBanned.
+  ///
+  /// In en, this message translates to:
+  /// **'Suspension'**
+  String get violationBanned;
+
+  /// No description provided for @violationOther.
+  ///
+  /// In en, this message translates to:
+  /// **'Moderation action'**
+  String get violationOther;
+
+  /// No description provided for @violationLifted.
+  ///
+  /// In en, this message translates to:
+  /// **'Lifted'**
+  String get violationLifted;
+
+  /// No description provided for @appealPending.
+  ///
+  /// In en, this message translates to:
+  /// **'Appeal under review'**
+  String get appealPending;
+
+  /// No description provided for @appealRejected.
+  ///
+  /// In en, this message translates to:
+  /// **'Appeal rejected'**
+  String get appealRejected;
+
+  /// No description provided for @appealRestored.
+  ///
+  /// In en, this message translates to:
+  /// **'Restored'**
+  String get appealRestored;
+
+  /// No description provided for @appealReduced.
+  ///
+  /// In en, this message translates to:
+  /// **'Penalty reduced'**
+  String get appealReduced;
+
+  /// No description provided for @appealAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Appeal available'**
+  String get appealAvailable;
+
+  /// No description provided for @appealSubmit.
+  ///
+  /// In en, this message translates to:
+  /// **'Appeal'**
+  String get appealSubmit;
+
+  /// No description provided for @appealSubmitted.
+  ///
+  /// In en, this message translates to:
+  /// **'Appeal submitted. We\'ll email you the outcome.'**
+  String get appealSubmitted;
+
+  /// No description provided for @appealFormTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Appeal this decision'**
+  String get appealFormTitle;
+
+  /// No description provided for @appealFormMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Explain why you believe this was incorrect. A moderator will review it.'**
+  String get appealFormMessage;
+
+  /// No description provided for @appealReasonLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Your explanation'**
+  String get appealReasonLabel;
+
+  /// No description provided for @appealReasonRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Please explain why you\'re appealing.'**
+  String get appealReasonRequired;
+
+  /// No description provided for @appealCooldownUntil.
+  ///
+  /// In en, this message translates to:
+  /// **'You can appeal again after {date}.'**
+  String appealCooldownUntil(String date);
+
+  /// No description provided for @apiErrorAppealPending.
+  ///
+  /// In en, this message translates to:
+  /// **'You already have an appeal pending for this item.'**
+  String get apiErrorAppealPending;
+
+  /// No description provided for @apiErrorAppealCooldown.
+  ///
+  /// In en, this message translates to:
+  /// **'You can only appeal this item again 30 days after a rejected appeal.'**
+  String get apiErrorAppealCooldown;
+
+  /// No description provided for @apiErrorAppealTargetNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'There is no moderation action to appeal here.'**
+  String get apiErrorAppealTargetNotFound;
 }
 
 class _AppLocalizationsDelegate

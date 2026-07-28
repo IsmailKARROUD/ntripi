@@ -95,6 +95,15 @@ class Settings(BaseSettings):
     # logged to the DB and the email step is skipped with a warning.
     OPERATOR_EMAIL: str | None = None
 
+    # Admin moderation dashboard (/admin). Feature is OFF unless BOTH basic-auth
+    # credentials are set — otherwise every /admin route returns 404 (the panel
+    # is invisible, not merely locked). The HTTP Basic layer is a coarse gate in
+    # front of the per-admin session login. ADMIN_SESSION_EXPIRE_MINUTES is the
+    # admin session-cookie lifetime (default 12h).
+    ADMIN_BASIC_USERNAME: str | None = None
+    ADMIN_BASIC_PASSWORD: str | None = None
+    ADMIN_SESSION_EXPIRE_MINUTES: int = 720
+
     # When True, new passwords are checked against Have I Been Pwned's breach
     # corpus (k-anonymity range API) and rejected if seen. The check fails open
     # (a HIBP outage never blocks a change). Disable in offline dev / tests.
