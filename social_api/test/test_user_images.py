@@ -206,3 +206,43 @@ class TestCoverImageUpload:
         resp = client.get(f"/users/{alice['user_id']}", headers=bob_hdrs)
         assert resp.status_code == 200
         assert resp.json()["cover_image_url"].startswith("/uploads/covers/")
+
+
+# ---------------------------------------------------------------------------
+# URL-field lockdown — avatar/cover can only be OUR own storage URLs (or null).
+# An external URL would bypass the upload-time moderation scan, so PATCH rejects
+# it (the client no longer exposes a URL field, but the API must be un-bypassable).
+# ---------------------------------------------------------------------------
+
+class TestImageUrlLockdown:
+
+    def test_external_avatar_url_rejected(self, client: TestClient):
+        alice = register_user(client, "alice_url1", "url1@test.com")
+        hdrs = auth_headers(alice["access_token"])
+        resp = client.patch(
+            "/users/me", json={"avatar_url": "https://evil.example/x.jpg"},
+            headers=hdrs)
+        assert resp.status_code == 422
+
+    def test_external_cover_url_rejected(self, client: TestClient):
+        alice = register_user(client, "alice_url2", "url2@test.com")
+        hdrs = auth_headers(alice["access_token"])
+        resp = client.patch(
+            "/users/me", json={"cover_image_url": "https://evil.example/x.jpg"},
+            headers=hdrs)
+        assert resp.status_code == 422
+
+    def test_own_storage_avatar_url_accepted(self, client: TestClient):
+        alice = register_user(client, "alice_url3", "url3@test.com")
+        hdrs = auth_headers(alice["access_token"])
+        resp = client.patch(
+            "/users/me", json={"avatar_url": "/uploads/avatars/abc.jpg"},
+            headers=hdrs)
+        assert resp.status_code == 200
+
+    def test_null_avatar_url_accepted(self, client: TestClient):
+        alice = register_user(client, "alice_url4", "url4@test.com")
+        hdrs = auth_headers(alice["access_token"])
+        resp = client.patch(
+            "/users/me", json={"avatar_url": None}, headers=hdrs)
+        assert resp.status_code == 200

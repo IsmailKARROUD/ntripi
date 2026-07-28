@@ -44,8 +44,6 @@ class ProfileEditForm extends ConsumerStatefulWidget {
 class _ProfileEditFormState extends ConsumerState<ProfileEditForm> {
   late final TextEditingController _displayNameController;
   late final TextEditingController _bioController;
-  late final TextEditingController _avatarUrlController;
-  late final TextEditingController _coverImageUrlController;
   late bool? _editIsPrivate;
   late List<String> _editPassportCountries;
   bool _passportCountriesChanged = false;
@@ -70,9 +68,6 @@ class _ProfileEditFormState extends ConsumerState<ProfileEditForm> {
     final u = widget.user;
     _displayNameController = TextEditingController(text: u.displayName ?? '');
     _bioController = TextEditingController(text: u.bio ?? '');
-    _avatarUrlController = TextEditingController(text: u.avatarUrl ?? '');
-    _coverImageUrlController =
-        TextEditingController(text: u.coverImageUrl ?? '');
     _editIsPrivate = u.isPrivate;
     _editPassportCountries = List.from(u.passportCountries ?? []);
     _editResidentCountry = u.residentCountry;
@@ -85,8 +80,6 @@ class _ProfileEditFormState extends ConsumerState<ProfileEditForm> {
   void dispose() {
     _displayNameController.dispose();
     _bioController.dispose();
-    _avatarUrlController.dispose();
-    _coverImageUrlController.dispose();
     super.dispose();
   }
 
@@ -125,24 +118,20 @@ class _ProfileEditFormState extends ConsumerState<ProfileEditForm> {
         _pickedAvatarBytes = cropped;
         _pickedAvatarFilename = picked.name;
         _avatarRemoved = false;
-        // Picker wins — drop any external URL so save uploads the bytes
-        // instead of PATCHing the stale URL.
-        _avatarUrlController.clear();
       });
     } catch (_) {
       // Picker errors are silent — user can retry.
     }
   }
 
-  /// Clear the avatar — drop picked bytes, clear the URL field, and mark
-  /// _avatarRemoved so _saveEdits calls deleteAvatar() (storage + column).
+  /// Clear the avatar — drop picked bytes and mark _avatarRemoved so
+  /// _saveEdits calls deleteAvatar() (storage + column).
   void _removeAvatar() {
     if (_saving) return;
     setState(() {
       _pickedAvatarBytes = null;
       _pickedAvatarFilename = null;
       _avatarRemoved = true;
-      _avatarUrlController.clear();
     });
   }
 
@@ -186,19 +175,16 @@ class _ProfileEditFormState extends ConsumerState<ProfileEditForm> {
     final notifier = ref.read(myProfileProvider.notifier);
 
     try {
-      // Binary phase first. An explicit Remove always wins — even if the URL
-      // field still holds the old value — so the file is deleted from storage.
-      // An upload (picker) replaces the previous file at the same storage key.
-      final avatarText = _avatarUrlController.text.trim();
+      // Binary phase first — avatar/cover are set only via the picker's scanned
+      // upload endpoints (or cleared via delete); a Remove wins over an upload.
       if (_avatarRemoved) {
         await notifier.deleteAvatar();
-      } else if (_pickedAvatarBytes != null && avatarText.isEmpty) {
+      } else if (_pickedAvatarBytes != null) {
         await notifier.uploadAvatar(
           _pickedAvatarBytes!,
           _pickedAvatarFilename ?? 'avatar.jpg',
         );
       }
-      final coverText = _coverImageUrlController.text.trim();
       if (_coverRemoved) {
         await notifier.deleteCoverImage();
       } else if (_pickedCoverBytes != null) {
@@ -208,6 +194,8 @@ class _ProfileEditFormState extends ConsumerState<ProfileEditForm> {
         );
       }
 
+      // Image columns are owned by the upload/delete endpoints above — the
+      // profile PATCH never touches avatar_url / cover_image_url.
       await notifier.updateProfile(
         displayName: _displayNameController.text.trim().isEmpty
             ? null
@@ -215,24 +203,6 @@ class _ProfileEditFormState extends ConsumerState<ProfileEditForm> {
         bio: _bioController.text.trim().isEmpty
             ? null
             : _bioController.text.trim(),
-        // Only PATCH avatar_url when a typed URL is present AND no upload
-        // happened (URL field wins). If the field is empty and no bytes were
-        // picked, signal "clear" so the server nulls the column.
-        avatarUrl: (_avatarRemoved || _pickedAvatarBytes != null)
-            ? null
-            : (avatarText.isEmpty ? null : avatarText),
-        clearAvatarUrl: !_avatarRemoved &&
-            _pickedAvatarBytes == null &&
-            avatarText.isEmpty,
-        // Skip cover_image_url PATCH entirely if a binary action just ran —
-        // delete/upload already set the column. Otherwise the URL field is the
-        // source of truth: empty means clear, non-empty means set.
-        coverImageUrl: (_coverRemoved || _pickedCoverBytes != null)
-            ? null
-            : (coverText.isEmpty ? null : coverText),
-        clearCoverImageUrl: !_coverRemoved &&
-            _pickedCoverBytes == null &&
-            coverText.isEmpty,
         isPrivate: _editIsPrivate,
         passportCountries: _editPassportCountries,
         passportCountriesChanged: _passportCountriesChanged,
@@ -441,7 +411,8 @@ class _ProfileEditFormState extends ConsumerState<ProfileEditForm> {
                   ),
                 ),
 
-                // Cover image section — picker UI + URL fallback field.
+                // Cover image section — picker only. Images are scanned on
+                // upload (NSFWJS + AWS); no raw-URL entry so nothing bypasses it.
                 _SectionLabel(
                   icon: Icons.image_outlined,
                   label: l10n.coverImageSection,
@@ -456,37 +427,12 @@ class _ProfileEditFormState extends ConsumerState<ProfileEditForm> {
                         _pickedCoverBytes = bytes;
                         _pickedCoverFilename = fn;
                         _coverRemoved = false;
-                        // Picker wins — drop any external URL so save uploads
-                        // the new bytes instead of patching the stale URL.
-                        _coverImageUrlController.clear();
                       }),
                       onImageRemoved: () => setState(() {
                         _pickedCoverBytes = null;
                         _pickedCoverFilename = null;
                         _coverRemoved = true;
-                        // Reflect the removal in the URL field too.
-                        _coverImageUrlController.clear();
                       }),
-                    ),
-                  ),
-                  const _FieldDivider(),
-                  _EditFieldRow(
-                    icon: Icons.link_rounded,
-                    label: l10n.coverImageUrlLabel,
-                    child: TextField(
-                      controller: _coverImageUrlController,
-                      style: TextStyle(
-                          fontSize: 15,
-                          color: nt.bark,
-                          fontWeight: FontWeight.w500),
-                      decoration: InputDecoration(
-                        hintText: 'https://…',
-                        hintStyle: TextStyle(color: nt.text3, fontSize: 14),
-                        border: InputBorder.none,
-                        contentPadding:
-                            EdgeInsetsDirectional.only(start: 8, top: 8, bottom: 8),
-                        isDense: true,
-                      ),
                     ),
                   ),
                 ]),
@@ -557,26 +503,6 @@ class _ProfileEditFormState extends ConsumerState<ProfileEditForm> {
                                 size: 16, color: nt.text3),
                           ],
                         ),
-                      ),
-                    ),
-                  ),
-                  const _FieldDivider(),
-                  _EditFieldRow(
-                    icon: Icons.link_rounded,
-                    label: l10n.avatarUrlLabel,
-                    child: TextField(
-                      controller: _avatarUrlController,
-                      style: TextStyle(
-                          fontSize: 15,
-                          color: nt.bark,
-                          fontWeight: FontWeight.w500),
-                      decoration: InputDecoration(
-                        hintText: 'https://…',
-                        hintStyle: TextStyle(color: nt.text3, fontSize: 14),
-                        border: InputBorder.none,
-                        contentPadding:
-                            EdgeInsetsDirectional.only(start: 8, top: 8, bottom: 8),
-                        isDense: true,
                       ),
                     ),
                   ),

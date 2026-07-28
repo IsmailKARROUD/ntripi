@@ -53,13 +53,13 @@ class ProfileRepository {
   }
 
   /// PATCH /users/me — partial profile update.
+  ///
+  /// Avatar/cover images are NOT settable here — they're managed by the
+  /// dedicated upload (POST) / delete endpoints, which run the moderation
+  /// pipeline. The server rejects external avatar_url/cover_image_url values.
   Future<User> updateMyProfile({
     String? displayName,
     String? bio,
-    String? avatarUrl,
-    bool clearAvatarUrl = false,
-    String? coverImageUrl,
-    bool clearCoverImageUrl = false,
     bool? isPrivate,
     List<String>? passportCountries,
     bool passportCountriesChanged = false,
@@ -71,16 +71,6 @@ class ProfileRepository {
     final data = <String, dynamic>{};
     if (displayName != null) data['display_name'] = displayName;
     if (bio != null) data['bio'] = bio;
-    if (clearAvatarUrl) {
-      data['avatar_url'] = null;
-    } else if (avatarUrl != null) {
-      data['avatar_url'] = avatarUrl;
-    }
-    if (clearCoverImageUrl) {
-      data['cover_image_url'] = null;
-    } else if (coverImageUrl != null) {
-      data['cover_image_url'] = coverImageUrl;
-    }
     if (isPrivate != null) data['is_private'] = isPrivate;
     if (passportCountriesChanged) data['passport_countries'] = passportCountries ?? [];
     if (clearResidentCountry) {

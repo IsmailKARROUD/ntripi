@@ -93,6 +93,14 @@ class UserUpdateRequest(BaseModel):
         from app.validators.username import validate_display_name
         return validate_display_name(v)
 
+    @field_validator("avatar_url", "cover_image_url")
+    @classmethod
+    def _check_image_url(cls, v: str | None) -> str | None:
+        # Reject external URLs — images must be uploaded (and thus scanned),
+        # not pasted. Only our own storage URLs (or null) are accepted here.
+        from app.validators.image_url import validate_own_storage_image_url
+        return validate_own_storage_image_url(v)
+
     @field_validator("passport_countries", mode="before")
     @classmethod
     def _check_passports(cls, v: list | None) -> list[str] | None:

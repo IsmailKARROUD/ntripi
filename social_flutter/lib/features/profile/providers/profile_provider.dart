@@ -76,10 +76,6 @@ class MyProfileNotifier extends AsyncNotifier<User> {
   Future<void> updateProfile({
     String? displayName,
     String? bio,
-    String? avatarUrl,
-    bool clearAvatarUrl = false,
-    String? coverImageUrl,
-    bool clearCoverImageUrl = false,
     bool? isPrivate,
     List<String>? passportCountries,
     bool passportCountriesChanged = false,
@@ -92,10 +88,6 @@ class MyProfileNotifier extends AsyncNotifier<User> {
       () => ref.read(profileRepositoryProvider).updateMyProfile(
             displayName: displayName,
             bio: bio,
-            avatarUrl: avatarUrl,
-            clearAvatarUrl: clearAvatarUrl,
-            coverImageUrl: coverImageUrl,
-            clearCoverImageUrl: clearCoverImageUrl,
             isPrivate: isPrivate,
             passportCountries: passportCountries,
             passportCountriesChanged: passportCountriesChanged,
