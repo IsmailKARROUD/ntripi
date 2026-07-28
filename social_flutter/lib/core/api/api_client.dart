@@ -245,6 +245,20 @@ class AuthInterceptor extends Interceptor {
   }
 }
 
+/// Returns the backend `code` string from a DioException error body, or null.
+/// Lets callers branch on a specific backend error (e.g. surface the real AWS
+/// moderation reason instead of a generic "upload failed" message).
+String? apiErrorCode(dynamic e) {
+  if (e is DioException) {
+    final data = e.response?.data;
+    if (data is Map<String, dynamic>) {
+      final code = data['code'];
+      if (code is String) return code;
+    }
+  }
+  return null;
+}
+
 /// Helper: extract a human-readable message from any exception.
 String extractErrorMessage(dynamic e, [AppLocalizations? l10n]) {
   if (e is DioException) {

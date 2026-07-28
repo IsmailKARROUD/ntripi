@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:social_flutter/core/api/api_client.dart';
 import 'package:social_flutter/core/moderation/nsfw_precheck.dart';
 import 'package:social_flutter/core/ui/app_theme.dart';
 import 'package:social_flutter/core/ui/destructive_actions.dart';
@@ -244,12 +245,18 @@ class _ProfileEditFormState extends ConsumerState<ProfileEditForm> {
 
       if (!mounted) return;
       widget.onSaved();
-    } catch (_) {
-      // Re-enable the form and surface a generic error. The user can retry.
+    } catch (e) {
+      // Re-enable the form and surface the error. A moderation rejection shows
+      // the real backend (AWS) reason via the same extractErrorMessage path
+      // used elsewhere, so the user knows their image was refused; other
+      // failures keep the generic retry message.
       if (!mounted) return;
       setState(() => _saving = false);
+      final message = apiErrorCode(e) == 'image_moderation_rejected'
+          ? extractErrorMessage(e, l10n)
+          : l10n.couldNotLoadItineraries;
       messenger?.showSnackBar(
-        SnackBar(content: Text(l10n.couldNotLoadItineraries)),
+        SnackBar(content: Text(message)),
       );
     }
   }

@@ -243,13 +243,18 @@ class _ItineraryFormScreenState extends ConsumerState<ItineraryFormScreen> {
               bytes: _pendingImageBytes!,
               filename: _pendingImageFilename ?? 'cover.jpg',
             );
-          } on Exception {
+          } on Exception catch (e) {
             if (mounted) {
+              final l10n = AppLocalizations.of(context)!;
+              // A moderation rejection is actionable — surface the real backend
+              // (AWS) reason via the same extractErrorMessage path used
+              // elsewhere, not the generic "saved but upload failed", so the
+              // user knows *why* the cover was refused.
+              final message = apiErrorCode(e) == 'image_moderation_rejected'
+                  ? extractErrorMessage(e, l10n)
+                  : l10n.imageSaveButUploadFailed;
               ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                      AppLocalizations.of(context)!.imageSaveButUploadFailed),
-                ),
+                SnackBar(content: Text(message)),
               );
             }
           }
