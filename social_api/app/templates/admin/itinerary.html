@@ -1,0 +1,246 @@
+{% extends "admin/_base.html" %}
+{% block content %}
+
+{% if not itinerary %}
+<h1>Itinerary unavailable</h1>
+<div class="card">
+  <p class="muted">
+    This itinerary no longer exists in the database. Moderation log rows keep
+    their <code>target_id</code> after a hard delete, so the snapshot stored on
+    the log row is the only remaining evidence.
+  </p>
+  <p style="margin-top:10px"><a href="/admin/log">← Back to the log</a></p>
+</div>
+
+{% else %}
+<h1>{{ itinerary.title }}</h1>
+<p class="sub">
+  Operator view — shows the content regardless of visibility, hidden, or removed
+  state. Read-only: act from the queues.
+</p>
+
+<div class="card">
+  {% if itinerary.cover_image_url %}
+    <img src="{{ itinerary.cover_image_url }}" alt=""
+         style="width:100%;max-width:520px;border-radius:var(--radius);border:1px solid var(--border);margin-bottom:12px">
+  {% else %}
+    <p class="muted" style="margin-bottom:12px">No cover image.</p>
+  {% endif %}
+
+  <div class="actions" style="margin-top:0">
+    <span class="pill sla-ok">{{ itinerary.visibility }}</span>
+    <span class="pill {% if itinerary.moderation_status in ('flagged', 'rejected') %}sla-late{% elif itinerary.moderation_status == 'pending' %}sla-warn{% else %}sla-ok{% endif %}">
+      image: {{ itinerary.moderation_status }}
+    </span>
+    {% if itinerary.hidden_at %}<span class="pill sla-warn">hidden</span>{% endif %}
+    {% if itinerary.deleted_at %}<span class="pill sla-late">removed</span>{% endif %}
+  </div>
+
+  <p class="muted" style="margin-top:10px">
+    id {{ itinerary.id }} · created {{ itinerary.created_at.strftime('%Y-%m-%d %H:%M') }}
+    · {{ itinerary.stops_count }} stop(s)
+    · {{ itinerary.total_duration_min }} min
+    · {{ itinerary.total_cost }} {{ itinerary.currency }}
+    {% if itinerary.rating_count %} · {{ itinerary.rating_avg }}★ ({{ itinerary.rating_count }}){% endif %}
+  </p>
+
+  <p style="margin-top:10px">
+    {% if public_page_live %}
+      <a href="{{ share_url }}" target="_blank" rel="noopener">Open public page ↗</a>
+    {% else %}
+      {# The share route 404s on exactly these states — don't offer a dead link. #}
+      <span class="muted">Not publicly reachable (hidden, removed, only_me, or author suspended).</span>
+    {% endif %}
+  </p>
+</div>
+
+<h2>Author</h2>
+<div class="card">
+  {% if owner %}
+    <div>{{ owner.display_name or owner.username }} · @{{ owner.username }}</div>
+    <div class="muted">
+      {{ owner.email }} ·
+      {% if owner.is_active %}active{% else %}suspended{% endif %} ·
+      joined {{ owner.created_at.strftime('%Y-%m-%d') }}
+    </div>
+  {% else %}
+    <p class="muted">The author account no longer exists.</p>
+  {% endif %}
+</div>
+
+<h2>Description</h2>
+<div class="card">
+  {% if itinerary.description %}
+    <div style="white-space:pre-wrap">{{ itinerary.description }}</div>
+  {% else %}
+    <p class="muted">No description.</p>
+  {% endif %}
+</div>
+
+{% if itinerary.annotations %}
+<h2>Trip-wide notes</h2>
+<div class="card">
+  {% for note in itinerary.annotations %}
+  <div style="margin-bottom:8px">
+    <span class="pill {% if note.type in ('caution', 'avoid') %}sla-warn{% else %}sla-ok{% endif %}">{{ note.type }}</span>
+    <span style="white-space:pre-wrap">{{ note.content }}</span>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+<h2>Stops</h2>
+<div class="card table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th style="width:60px">Track</th>
+        <th>Place</th>
+        <th>Type</th>
+        <th>Cost / time</th>
+        <th>Notes</th>
+      </tr>
+    </thead>
+    <tbody>
+      {# Tracks are parallel alternatives; the loop index is the column number. #}
+      {% for track in itinerary.tracks %}
+        {% set track_no = loop.index %}
+        {% for stop in track.stops %}
+        <tr>
+          <td class="muted">{{ track_no }}.{{ loop.index }}</td>
+          <td>
+            <div>{{ stop.place_name or '—' }}</div>
+            {% if stop.place_address %}<div class="muted">{{ stop.place_address }}</div>{% endif %}
+            {% if stop.lat is not none and stop.lng is not none %}
+              <div class="muted">{{ stop.lat }}, {{ stop.lng }}</div>
+            {% endif %}
+            {% if stop.map_url %}
+              <div class="muted snippet"><a href="{{ stop.map_url }}" target="_blank" rel="noopener nofollow">map link ↗</a></div>
+            {% endif %}
+          </td>
+          <td class="muted">{{ stop.place_type or '—' }}</td>
+          <td class="muted">
+            {% if stop.is_free %}free{% else %}{{ stop.cost }} {{ itinerary.currency }}{% endif %}
+            {% if stop.duration_min %}<div>{{ stop.duration_min }} min</div>{% endif %}
+          </td>
+          <td class="snippet">
+            {% if stop.notes %}<div style="white-space:pre-wrap">{{ stop.notes }}</div>{% endif %}
+            {% for note in stop.annotations %}
+            <div class="muted" style="margin-top:4px">
+              <span class="pill {% if note.type in ('caution', 'avoid') %}sla-warn{% else %}sla-ok{% endif %}">{{ note.type }}</span>
+              <span style="white-space:pre-wrap">{{ note.content }}</span>
+            </div>
+            {% endfor %}
+            {% if not stop.notes and not stop.annotations %}<span class="muted">—</span>{% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      {% else %}
+      <tr><td colspan="5" class="muted">No stops.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<h2>Reports ({{ reports | length }})</h2>
+<div class="card table-wrap">
+  <table>
+    <thead>
+      <tr><th>When</th><th>Reason</th><th>Notes</th><th>Reporter</th><th>Resolution</th></tr>
+    </thead>
+    <tbody>
+      {% for report in reports %}
+      <tr>
+        <td class="muted">{{ report.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+        <td>{{ report.reason }}</td>
+        <td class="snippet muted">{{ report.notes or '—' }}</td>
+        <td class="muted">{% if report.reporter_user_id %}member{% else %}anonymous{% endif %}</td>
+        <td>
+          <span class="pill {% if report.resolution == 'pending' %}sla-warn{% else %}sla-ok{% endif %}">{{ report.resolution }}</span>
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="5" class="muted">Never reported.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<h2>Image scans ({{ image_logs | length }})</h2>
+<div class="card table-wrap">
+  <table>
+    <thead>
+      <tr><th>When</th><th>Kind</th><th>Result</th><th>Labels</th><th>Reviewed</th></tr>
+    </thead>
+    <tbody>
+      {% for scan in image_logs %}
+      <tr>
+        <td class="muted">{{ scan.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+        <td class="muted">{{ scan.target_kind }}</td>
+        <td>
+          <span class="pill {% if scan.action in ('flagged', 'rejected') %}sla-late{% elif scan.action == 'error_allowed' %}sla-warn{% else %}sla-ok{% endif %}">{{ scan.action }}</span>
+        </td>
+        <td class="snippet muted">
+          {% for label in scan.labels %}
+            {{ label.get('name') }} ({{ '%.0f'|format(label.get('confidence', 0)) }}%){% if not loop.last %}, {% endif %}
+          {% else %}
+            —
+          {% endfor %}
+        </td>
+        <td class="muted">
+          {% if scan.reviewed_at %}{{ scan.reviewed_at.strftime('%Y-%m-%d %H:%M') }}{% else %}pending{% endif %}
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="5" class="muted">No scan records.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<h2>Appeals ({{ appeals | length }})</h2>
+<div class="card table-wrap">
+  <table>
+    <thead>
+      <tr><th>When</th><th>Status</th><th>Their explanation</th><th>Our response</th></tr>
+    </thead>
+    <tbody>
+      {% for appeal in appeals %}
+      <tr>
+        <td class="muted">{{ appeal.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+        <td>
+          <span class="pill {% if appeal.status == 'pending' %}sla-warn{% else %}sla-ok{% endif %}">{{ appeal.status }}</span>
+        </td>
+        <td class="snippet">{{ appeal.user_reason }}</td>
+        <td class="snippet muted">{{ appeal.admin_response or '—' }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="4" class="muted">No appeals.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<h2>Moderation history ({{ log_rows | length }})</h2>
+<div class="card table-wrap">
+  <table>
+    <thead>
+      <tr><th>When</th><th>Action</th><th>By</th><th>Reason</th></tr>
+    </thead>
+    <tbody>
+      {% for row in log_rows %}
+      <tr>
+        <td class="muted">{{ row.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+        <td><span class="pill sla-ok">{{ row.action }}</span></td>
+        <td class="muted">{{ admin_names.get(row.admin_user_id) or '—' }}</td>
+        <td class="snippet">{{ row.reason }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="4" class="muted">No actions taken against this itinerary.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+{% endblock %}

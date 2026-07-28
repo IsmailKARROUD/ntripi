@@ -1,4 +1,5 @@
 {% extends "admin/_base.html" %}
+{% from "admin/_macros.html" import itinerary_link %}
 {% block content %}
 <h1>Flagged uploads</h1>
 <p class="sub">
@@ -25,9 +26,17 @@
       <tr>
         <td><span class="pill {{ r.sla }}">{{ r.age }}</span></td>
         <td>
-          {% if r.itinerary and r.itinerary.cover_image_url %}
-            <img class="thumb" src="{{ r.itinerary.cover_image_url }}" alt="">
-            <div class="muted">{{ r.itinerary.title }}</div>
+          {# The cover may already have been removed by an earlier action — the
+             itinerary still needs to be reachable, so the title is unconditional. #}
+          {% if r.itinerary %}
+            {% if r.itinerary.cover_image_url %}
+              <a href="/admin/itineraries/{{ r.itinerary.id }}">
+                <img class="thumb" src="{{ r.itinerary.cover_image_url }}" alt="">
+              </a>
+            {% else %}
+              <div class="muted">Cover already removed</div>
+            {% endif %}
+            <div>{{ itinerary_link(r.itinerary.id, r.itinerary.title) }}</div>
           {% elif r.uploader and r.log.target_kind == 'avatar' and r.uploader.avatar_url %}
             <img class="thumb" src="{{ r.uploader.avatar_url }}" alt="">
           {% elif r.uploader and r.log.target_kind == 'user_cover' and r.uploader.cover_image_url %}

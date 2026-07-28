@@ -1,4 +1,5 @@
 {% extends "admin/_base.html" %}
+{% from "admin/_macros.html" import itinerary_link %}
 {% block content %}
 <h1>Pending reports</h1>
 <p class="sub">
@@ -30,9 +31,11 @@
           <td>
             {% if r.itinerary %}
               {% if r.itinerary.cover_image_url %}
-                <img class="thumb" src="{{ r.itinerary.cover_image_url }}" alt="">
+                <a href="/admin/itineraries/{{ r.itinerary.id }}">
+                  <img class="thumb" src="{{ r.itinerary.cover_image_url }}" alt="">
+                </a>
               {% endif %}
-              <div>{{ r.itinerary.title }}</div>
+              <div>{{ itinerary_link(r.itinerary.id, r.itinerary.title) }}</div>
               <div class="muted">
                 {{ r.itinerary.visibility }}
                 {% if r.itinerary.hidden_at %} · hidden{% endif %}

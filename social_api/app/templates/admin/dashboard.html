@@ -1,4 +1,5 @@
 {% extends "admin/_base.html" %}
+{% from "admin/_macros.html" import itinerary_link %}
 {% block content %}
 <h1>Overview</h1>
 <p class="sub">Queue health and the most recent moderation activity.</p>
@@ -25,8 +26,12 @@
         <td><span class="pill sla-ok">{{ row.action }}</span></td>
         <td class="muted">
           {{ row.target_type }}
-          {% if row.content_snapshot %}
-            — {{ row.content_snapshot.get('title') or row.content_snapshot.get('username') or '—' }}
+          {% set label = (row.content_snapshot or {}).get('title')
+                         or (row.content_snapshot or {}).get('username') %}
+          {% if row.target_type == 'itinerary' and row.target_id %}
+            — {{ itinerary_link(row.target_id, label or 'Open itinerary') }}
+          {% elif row.content_snapshot %}
+            — {{ label or '—' }}
           {% endif %}
         </td>
         <td class="snippet">{{ row.reason }}</td>

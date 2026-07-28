@@ -24,7 +24,10 @@ class TestBasicAuthLayer:
 
     def test_404_when_credentials_not_configured(self, client: TestClient):
         # No admin_enabled fixture → feature off → the panel is invisible.
-        for path in ("/admin", "/admin/login", "/admin/reports"):
+        for path in (
+            "/admin", "/admin/login", "/admin/reports",
+            "/admin/itineraries/00000000-0000-0000-0000-000000000000",
+        ):
             assert client.get(path).status_code == 404, path
 
     def test_401_without_basic_credentials(self, client: TestClient, admin_enabled):

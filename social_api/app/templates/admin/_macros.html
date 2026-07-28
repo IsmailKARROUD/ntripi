@@ -1,0 +1,9 @@
+{# Shared admin snippets. Imported, not extended — keep every macro here
+   self-contained so a template can pull in just the one it needs. #}
+
+{# The one way to link an itinerary from any admin queue or log row. Points at
+   the admin detail page, never /share/i/{id}: the public page 404s for hidden,
+   removed, only_me, and banned-owner content — i.e. most moderation targets. #}
+{% macro itinerary_link(itinerary_id, label) -%}
+<a href="/admin/itineraries/{{ itinerary_id }}">{{ label }}</a>
+{%- endmacro %}

@@ -40,6 +40,7 @@ from app.models.image_moderation_log import ImageModerationLog
 from app.models.itinerary import Itinerary
 from app.models.user import User
 from app.services import admin_service, appeal_service, auth_service
+from app.services.share_service import build_share_url
 from app.templating import templates
 
 ADMIN_COOKIE = "ntripi_admin_session"
@@ -504,6 +505,33 @@ def admin_log(
         "has_next": has_next,
         "error_message": error,
         "notice_message": notice,
+    })
+
+
+@router.get("/itineraries/{itinerary_id}", response_class=HTMLResponse)
+def admin_itinerary_detail(
+    itinerary_id: uuid.UUID,
+    request: Request,
+    db: Session = Depends(get_db),
+    settings: Settings = Depends(get_settings),
+    admin: User = Depends(_require_admin_page),
+) -> HTMLResponse:
+    """Read-only inspection page — reachable from every queue and log row."""
+    detail = admin_service.itinerary_detail(db, itinerary_id)
+    if detail is None:
+        # Log rows keep target_id after a hard delete, so this link is reachable
+        # for purged content — render the shell, not a raw error.
+        return _page(
+            request, "itinerary.html",
+            {"page_title": "Itinerary", "admin": admin, "itinerary": None},
+            status_code=404,
+        )
+
+    return _page(request, "itinerary.html", {
+        "page_title": detail["itinerary"].title,
+        "admin": admin,
+        **detail,
+        "share_url": build_share_url(detail["itinerary"], settings),
     })
 
 

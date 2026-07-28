@@ -37,6 +37,11 @@
       min-height: 100vh;
     }
 
+    /* Mirrors the public _base.html link convention; `header nav a` below is
+       more specific, so the white nav links are unaffected. */
+    a { color: var(--forest); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
     header {
       background: var(--forest); color: #fff;
       padding: 12px 20px; display: flex; align-items: center; gap: 20px;

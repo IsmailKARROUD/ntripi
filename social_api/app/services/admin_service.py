@@ -20,7 +20,7 @@ import uuid
 from datetime import datetime, timedelta, timezone
 
 from sqlalchemy import func, select
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 from sqlalchemy.orm.attributes import flag_modified
 
 from app.models.appeal import Appeal
@@ -28,6 +28,8 @@ from app.models.content_report import ContentReport
 from app.models.image_moderation_log import ImageModerationLog
 from app.models.itinerary import Itinerary
 from app.models.moderation_log import ModerationLog
+from app.models.stop import Stop
+from app.models.track import Track
 from app.models.user import User
 from app.services import appeal_token, email_service, refresh_token_service
 from app.storage.factory import storage
@@ -439,6 +441,87 @@ def overview_counts(db: Session) -> dict:
         ),
         "banned_users": _count(
             select(func.count(User.id)).where(User.is_active.is_(False))
+        ),
+    }
+
+
+def itinerary_detail(db: Session, itinerary_id: uuid.UUID) -> dict | None:
+    """Everything an operator needs to judge one itinerary — no visibility gate.
+
+    Deliberately bypasses can_view_itinerary(): hidden/removed/only_me content is
+    exactly what a moderator has to read. Returns None when the row is gone —
+    log links can point at hard-deleted itineraries.
+    """
+    itinerary = db.execute(
+        select(Itinerary)
+        .options(
+            selectinload(Itinerary.tracks)
+            .selectinload(Track.stops)
+            .selectinload(Stop.annotations),
+            selectinload(Itinerary.annotations),
+        )
+        .where(Itinerary.id == itinerary_id)
+    ).scalar_one_or_none()
+    if itinerary is None:
+        return None
+
+    itinerary.tracks.sort(key=lambda t: t.rank)
+    for track in itinerary.tracks:
+        track.stops.sort(key=lambda s: s.rank)
+
+    owner = db.get(User, itinerary.user_id)
+
+    def _all(stmt) -> list:
+        return list(db.execute(stmt).scalars().all())
+
+    log_rows = _all(
+        select(ModerationLog)
+        .where(
+            ModerationLog.target_type == TARGET_ITINERARY,
+            ModerationLog.target_id == itinerary_id,
+        )
+        .order_by(ModerationLog.created_at.desc())
+    )
+    # One IN query instead of a lookup per row — ModerationLog has no ORM
+    # relationship to the acting admin, only the FK.
+    admin_ids = {row.admin_user_id for row in log_rows if row.admin_user_id}
+    admin_names = {
+        user.id: user.username
+        for user in _all(select(User).where(User.id.in_(admin_ids)))
+    } if admin_ids else {}
+
+    return {
+        "itinerary": itinerary,
+        "owner": owner,
+        "log_rows": log_rows,
+        "admin_names": admin_names,
+        # Resolved reports are kept too — repeat offences are the signal.
+        "reports": _all(
+            select(ContentReport)
+            .where(ContentReport.reported_itinerary_id == itinerary_id)
+            .order_by(ContentReport.created_at.desc())
+        ),
+        "image_logs": _all(
+            select(ImageModerationLog)
+            .where(ImageModerationLog.target_itinerary_id == itinerary_id)
+            .order_by(ImageModerationLog.created_at.desc())
+        ),
+        "appeals": _all(
+            select(Appeal)
+            .where(
+                Appeal.target_type == TARGET_ITINERARY,
+                Appeal.target_id == itinerary_id,
+            )
+            .order_by(Appeal.created_at.desc())
+        ),
+        # Mirrors the gate in routers/share.py — tells the template whether the
+        # public share link would resolve or 404.
+        "public_page_live": (
+            itinerary.visibility != "only_me"
+            and itinerary.hidden_at is None
+            and itinerary.deleted_at is None
+            and owner is not None
+            and owner.is_active
         ),
     }
 

@@ -287,6 +287,12 @@ class TestDecisions:
             auth=ADMIN_BASIC, follow_redirects=False,
         )
 
+    def test_queue_links_the_itinerary_for_the_reviewer(self, client, world):
+        self._open_appeal(client, world)
+        resp = client.get("/admin/appeals", auth=ADMIN_BASIC)
+        assert resp.status_code == 200
+        assert f"/admin/itineraries/{world['itinerary_id']}" in resp.text
+
     def test_restore_brings_content_back(self, client, world):
         appeal = self._open_appeal(client, world)
         assert _itinerary_row(world["itinerary_id"]).deleted_at is not None
