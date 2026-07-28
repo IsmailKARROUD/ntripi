@@ -18,8 +18,10 @@ import 'package:tflite_flutter/tflite_flutter.dart';
 //   0 drawings · 1 hentai · 2 neutral · 3 porn · 4 sexy
 const int _kHentaiIndex = 1;
 const int _kPornIndex = 3;
+const int _kSexyIndex = 4;
 const int _kModelInputSize = 224;
-const double _kNsfwThreshold = 0.60;
+const double _kNsfwThreshold = 0.6;
+const double _kNsfwThresholdSexy = 0.999;
 const String _kModelAsset = 'assets/models/nsfw_mobilenet.tflite';
 
 // The loaded model (null until _load succeeds, or forever if it fails).
@@ -71,7 +73,8 @@ Future<bool> isLikelyNsfw(Uint8List imageBytes) async {
     // Flag only the two explicit classes above the threshold; `sexy`/`drawings`
     // stay allowed (this is a soft UX pre-check, not the authoritative filter).
     return scores[_kPornIndex] > _kNsfwThreshold ||
-        scores[_kHentaiIndex] > _kNsfwThreshold;
+        scores[_kHentaiIndex] > _kNsfwThreshold ||
+        scores[_kSexyIndex] > _kNsfwThresholdSexy;
   } catch (e) {
     // Any failure → allow the upload; the backend scan is authoritative.
     if (kDebugMode) debugPrint('NSFW pre-check errored (allowing): $e');
