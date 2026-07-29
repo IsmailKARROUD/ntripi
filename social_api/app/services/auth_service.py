@@ -189,7 +189,13 @@ def login_or_register_google(
     ).scalar_one_or_none()
     if user:
         if not user.is_active:
-            raise AuthError("Your account has been deactivated.", http_status=403)
+            # Same code as the password path — the client keys off it to route a
+            # suspended user to the appeal screen instead of a dead-end error.
+            raise AuthError(
+                "Your account has been deactivated.",
+                http_status=403,
+                code="account_deactivated",
+            )
         if email_verified and not user.email_verified:
             user.email_verified = True
         db.commit()
@@ -202,7 +208,11 @@ def login_or_register_google(
     ).scalar_one_or_none()
     if existing:
         if not existing.is_active:
-            raise AuthError("Your account has been deactivated.", http_status=403)
+            raise AuthError(
+                "Your account has been deactivated.",
+                http_status=403,
+                code="account_deactivated",
+            )
         if not email_verified:
             # Only link/verify on a Google-verified email — an unverified Google
             # email could be attacker-controlled and must not claim an account.

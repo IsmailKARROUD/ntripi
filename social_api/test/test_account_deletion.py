@@ -12,7 +12,7 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import text
 
-from conftest import auth_headers, mark_email_verified
+from conftest import auth_headers, mark_email_verified, patch_google_verifier
 
 
 # ---------------------------------------------------------------------------
@@ -298,21 +298,6 @@ class TestDeleteCascades:
 # their provider instead of a password. Google is the only provider today.
 # ---------------------------------------------------------------------------
 
-def _patch_google_verifier(monkeypatch, *, sub, email="gina@x.com"):
-    """Patch verify_google_id_token on BOTH router modules — each imported it
-    via `from ... import`, so the name must be patched on each importing module
-    (auth for /auth/google sign-in, users for DELETE re-auth)."""
-    import app.routers.auth as auth_router
-    import app.routers.users as users_router
-
-    def _claims(token):
-        return {"sub": sub, "email": email, "email_verified": True,
-                "name": None, "picture": None}
-
-    monkeypatch.setattr(auth_router, "verify_google_id_token", _claims)
-    monkeypatch.setattr(users_router, "verify_google_id_token", _claims)
-
-
 def google_signin(client, sub="g-1", email="gina@x.com"):
     r = client.post(
         "/auth/google", json={"id_token": "fake", "tos_accepted": True}
@@ -331,7 +316,7 @@ def delete_account_google(client, token, id_token="fake"):
 
 class TestGoogleAccountDeletion:
     def test_google_user_deletes_with_matching_token(self, client, monkeypatch):
-        _patch_google_verifier(monkeypatch, sub="g-1")
+        patch_google_verifier(monkeypatch, sub="g-1")
         gina = google_signin(client, sub="g-1")
         token = gina["access_token"]
 
@@ -342,7 +327,7 @@ class TestGoogleAccountDeletion:
         assert client.get("/users/me", headers=auth_headers(token)).status_code == 401
 
     def test_google_delete_rejects_mismatched_sub(self, client, monkeypatch):
-        _patch_google_verifier(monkeypatch, sub="g-1")
+        patch_google_verifier(monkeypatch, sub="g-1")
         token = google_signin(client, sub="g-1")["access_token"]
 
         # The re-auth token belongs to a DIFFERENT Google account.
@@ -356,7 +341,7 @@ class TestGoogleAccountDeletion:
         assert r.json()["code"] == "google_account_mismatch"
 
     def test_google_delete_requires_a_token(self, client, monkeypatch):
-        _patch_google_verifier(monkeypatch, sub="g-1")
+        patch_google_verifier(monkeypatch, sub="g-1")
         token = google_signin(client, sub="g-1")["access_token"]
 
         r = client.request("DELETE", "/users/me", json={},
@@ -365,7 +350,7 @@ class TestGoogleAccountDeletion:
         assert r.json()["code"] == "google_reauth_required"
 
     def test_google_delete_rejects_invalid_token(self, client, monkeypatch):
-        _patch_google_verifier(monkeypatch, sub="g-1")
+        patch_google_verifier(monkeypatch, sub="g-1")
         token = google_signin(client, sub="g-1")["access_token"]
 
         # Verifier raises → any verification failure is a clean 401 (not a 500).
@@ -383,7 +368,7 @@ class TestGoogleAccountDeletion:
         # Regression for the original bug: a passwordless account hitting the
         # password branch used to crash with 500 (verify_password(None)).
         # It must now fail cleanly, asking for Google re-auth instead.
-        _patch_google_verifier(monkeypatch, sub="g-1")
+        patch_google_verifier(monkeypatch, sub="g-1")
         token = google_signin(client, sub="g-1")["access_token"]
 
         r = client.request("DELETE", "/users/me",
@@ -402,7 +387,7 @@ class TestGoogleAccountDeletion:
 def link_google(client, monkeypatch, email, sub="g-dual"):
     """Sign in with Google on an EXISTING verified email → links google_sub and
     keeps password_hash, producing a dual-method account. Returns its token."""
-    _patch_google_verifier(monkeypatch, sub=sub, email=email)
+    patch_google_verifier(monkeypatch, sub=sub, email=email)
     r = client.post("/auth/google", json={"id_token": "fake", "tos_accepted": True})
     assert r.status_code == 200, r.json()
     return r.json()["access_token"]
@@ -461,7 +446,7 @@ class TestHasGoogleFlag:
         assert me["has_google"] is False
 
     def test_google_only_account_has_google(self, client, monkeypatch):
-        _patch_google_verifier(monkeypatch, sub="g-1")
+        patch_google_verifier(monkeypatch, sub="g-1")
         gina = google_signin(client, sub="g-1")
         me = client.get("/users/me", headers=auth_headers(gina["access_token"])).json()
         assert me["has_password"] is False

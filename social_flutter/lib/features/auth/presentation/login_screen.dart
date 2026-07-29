@@ -13,6 +13,7 @@ import 'package:social_flutter/features/auth/providers/auth_provider.dart';
 import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
 import 'package:social_flutter/features/itineraries/providers/saved_itineraries_provider.dart';
 import 'package:social_flutter/features/profile/providers/profile_provider.dart';
+import 'package:social_flutter/core/utils/appeal_link.dart';
 import 'package:social_flutter/core/utils/platform_utils.dart';
 import 'package:social_flutter/l10n/app_localizations.dart';
 import 'package:social_flutter/shared/widgets/field_help.dart';
@@ -36,6 +37,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   bool _isLoading = false;
   String? _errorMessage;
+
+  /// Backend `code` behind [_errorMessage] — drives the appeal link on a
+  /// suspension (the interceptor also routes to /suspended, but the user can
+  /// walk back here and retry).
+  String? _errorCode;
   bool _obscurePassword = true;
 
   @override
@@ -45,11 +51,28 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     super.dispose();
   }
 
+  /// Records the message *and* the backend code — the banner needs the code to
+  /// decide whether to offer the appeal link.
+  void _showDioError(DioException e) {
+    setState(() {
+      _errorMessage = extractErrorMessage(e, AppLocalizations.of(context)!);
+      _errorCode = apiErrorCode(e);
+    });
+  }
+
+  void _showGenericError() {
+    setState(() {
+      _errorMessage = AppLocalizations.of(context)!.errorGenericRetry;
+      _errorCode = null;
+    });
+  }
+
   Future<void> _login() async {
     if (!_formKey.currentState!.validate()) return;
     setState(() {
       _isLoading = true;
       _errorMessage = null;
+      _errorCode = null;
     });
     try {
       final repo = ref.read(authRepositoryProvider);
@@ -63,7 +86,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       ref.invalidate(savedItinerariesProvider);
       if (mounted) context.go('/profile/me');
     } on DioException catch (e) {
-      setState(() => _errorMessage = extractErrorMessage(e, AppLocalizations.of(context)!));
+      _showDioError(e);
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -75,6 +98,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     setState(() {
       _isLoading = true;
       _errorMessage = null;
+      _errorCode = null;
     });
     try {
       final idToken = await GoogleSignInService.instance.obtainIdToken();
@@ -82,11 +106,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       await _completeGoogleSignIn(idToken);
     } on DioException catch (e) {
       if (mounted) {
-        setState(() => _errorMessage = extractErrorMessage(e, AppLocalizations.of(context)!));
+        _showDioError(e);
       }
     } catch (_) {
       if (mounted) {
-        setState(() => _errorMessage = AppLocalizations.of(context)!.errorGenericRetry);
+        _showGenericError();
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -98,12 +122,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     setState(() {
       _isLoading = true;
       _errorMessage = null;
+      _errorCode = null;
     });
     try {
       await _completeGoogleSignIn(idToken);
     } on DioException catch (e) {
       if (mounted) {
-        setState(() => _errorMessage = extractErrorMessage(e, AppLocalizations.of(context)!));
+        _showDioError(e);
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -111,9 +136,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   void _onWebGoogleError(Object error) {
-    if (mounted) {
-      setState(() => _errorMessage = AppLocalizations.of(context)!.errorGenericRetry);
-    }
+    if (mounted) _showGenericError();
   }
 
   /// Shared tail for both flows: persist tokens (done in the repo) then route in.
@@ -250,9 +273,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 ),
                 const SizedBox(height: 4),
 
-                // Error banner
+                // Error banner — a suspension gets a way out, not a dead end
                 if (_errorMessage != null) ...[
-                  _ErrorBanner(_errorMessage!),
+                  _ErrorBanner(
+                    _errorMessage!,
+                    onAppeal: _errorCode == kAccountDeactivatedCode
+                        ? openAppealPage
+                        : null,
+                  ),
                   const SizedBox(height: 16),
                 ],
 
@@ -383,7 +411,12 @@ class _FieldLabel extends StatelessWidget {
 
 class _ErrorBanner extends StatelessWidget {
   final String message;
-  const _ErrorBanner(this.message);
+
+  /// When set, the banner grows an appeal link under the message. Only a
+  /// moderator suspension passes one — every other error is not appealable.
+  final VoidCallback? onAppeal;
+
+  const _ErrorBanner(this.message, {this.onAppeal});
 
   @override
   Widget build(BuildContext context) {
@@ -395,13 +428,36 @@ class _ErrorBanner extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: cs.error.withValues(alpha: 0.4)),
       ),
-      child: Text(
-        message,
-        style: TextStyle(
-          color: cs.onErrorContainer,
-          fontSize: 13,
-        ),
-        textAlign: TextAlign.center,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            message,
+            style: TextStyle(
+              color: cs.onErrorContainer,
+              fontSize: 13,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          if (onAppeal != null)
+            TextButton(
+              onPressed: onAppeal,
+              style: TextButton.styleFrom(
+                foregroundColor: cs.onErrorContainer,
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                minimumSize: Size.zero,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+              child: Text(
+                AppLocalizations.of(context)!.suspendedAppealButton,
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  decoration: TextDecoration.underline,
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }

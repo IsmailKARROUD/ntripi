@@ -200,6 +200,21 @@ def mark_email_verified(email: str) -> None:
         db.close()
 
 
+def patch_google_verifier(monkeypatch, *, sub, email="gina@x.com") -> None:
+    """Patch verify_google_id_token on BOTH router modules — each imported it
+    via `from ... import`, so the name must be patched on each importing module
+    (auth for /auth/google sign-in, users for DELETE re-auth)."""
+    import app.routers.auth as auth_router
+    import app.routers.users as users_router
+
+    def _claims(token):
+        return {"sub": sub, "email": email, "email_verified": True,
+                "name": None, "picture": None}
+
+    monkeypatch.setattr(auth_router, "verify_google_id_token", _claims)
+    monkeypatch.setattr(users_router, "verify_google_id_token", _claims)
+
+
 def auth_headers(token: str) -> dict:
     """
     Returns the Authorization header dict that the TestClient needs

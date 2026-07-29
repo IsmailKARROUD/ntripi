@@ -11,22 +11,12 @@
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:social_flutter/core/api/api_endpoints.dart';
 import 'package:social_flutter/core/ui/app_theme.dart';
+import 'package:social_flutter/core/utils/appeal_link.dart';
 import 'package:social_flutter/l10n/app_localizations.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 class SuspendedScreen extends StatelessWidget {
   const SuspendedScreen({super.key});
-
-  Future<void> _openAppealForm() async {
-    // Tokenless request form — asks for the account email and re-sends the
-    // signed appeal link. The suspension email carries a direct link too.
-    await launchUrl(
-      Uri.parse('$kApiBaseUrl/appeal'),
-      mode: LaunchMode.externalApplication,
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -75,7 +65,7 @@ class SuspendedScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 28),
                   FilledButton(
-                    onPressed: _openAppealForm,
+                    onPressed: openAppealPage,
                     child: Text(l10n.suspendedAppealButton),
                   ),
                   const SizedBox(height: 10),

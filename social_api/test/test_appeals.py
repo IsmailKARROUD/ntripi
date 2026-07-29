@@ -12,10 +12,11 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 from fastapi.testclient import TestClient
+from sqlalchemy import update
 
 from conftest import (
     ADMIN_BASIC, TestingSessionLocal, admin_session, auth_headers, make_admin,
-    register_user,
+    patch_google_verifier, register_user,
 )
 from app.models.appeal import Appeal
 from app.models.content_report import ContentReport
@@ -419,6 +420,57 @@ class TestPublicAppealForm:
         assert submitted.status_code == 200
         assert "Appeal received" in submitted.text
         assert _appeal_row().status == "pending"
+
+    def test_password_login_reports_the_suspension_by_code(self, client, world):
+        """The client routes a suspended user to the appeal screen off `code`,
+        not off the prose `detail` — every sign-in path must carry it."""
+        self._ban_and_token(client, world)
+
+        resp = client.post(
+            "/auth/login",
+            json={"identifier": "author@test.com", "password": "test1234"},
+        )
+        assert resp.status_code == 403
+        assert resp.json()["code"] == "account_deactivated"
+
+    def test_google_signin_reports_the_suspension_by_code(self, client, world,
+                                                          monkeypatch):
+        """Both google_sign_in branches: linking onto an existing account, and
+        the returning-google_sub user. Without the code the app strands them on
+        the login screen with no way to appeal."""
+        patch_google_verifier(monkeypatch, sub="g-author", email="author@test.com")
+
+        # Link Google onto the password account while it is still active, so the
+        # post-ban attempt below takes the google_sub branch.
+        linked = client.post(
+            "/auth/google", json={"id_token": "fake", "tos_accepted": True}
+        )
+        assert linked.status_code == 200, linked.json()
+
+        self._ban_and_token(client, world)
+
+        resp = client.post(
+            "/auth/google", json={"id_token": "fake", "tos_accepted": True}
+        )
+        assert resp.status_code == 403
+        assert resp.json()["code"] == "account_deactivated"
+
+        # Same for an account Google has never been linked to (email branch).
+        patch_google_verifier(monkeypatch, sub="g-fresh", email="author@test.com")
+        db = TestingSessionLocal()
+        try:
+            db.execute(
+                update(User).where(User.email == "author@test.com").values(google_sub=None)
+            )
+            db.commit()
+        finally:
+            db.close()
+
+        resp = client.post(
+            "/auth/google", json={"id_token": "fake", "tos_accepted": True}
+        )
+        assert resp.status_code == 403
+        assert resp.json()["code"] == "account_deactivated"
 
     def test_form_rejects_a_garbage_token(self, client, world):
         resp = client.get("/appeal/not-a-real-token")
