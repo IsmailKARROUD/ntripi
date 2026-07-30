@@ -39,6 +39,7 @@ import 'package:social_flutter/shared/widgets/device_location_dot.dart';
 import 'package:social_flutter/shared/widgets/field_help.dart';
 import 'package:social_flutter/shared/widgets/loaders.dart';
 import 'package:social_flutter/shared/widgets/location_error.dart';
+import 'package:social_flutter/shared/widgets/moderation_hint.dart';
 import 'package:social_flutter/shared/widgets/offline_gate.dart';
 import 'package:social_flutter/shared/widgets/saving_overlay.dart';
 
@@ -1971,12 +1972,17 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                                 14,
                                 12,
                               ),
-                              child: MarkdownNotesEditor(
+                              // Notes only — the place name/address fields stay
+                              // unfiltered (real place names false-positive).
+                              child: ModerationHint(
                                 controller: _notesController,
-                                readOnly: readOnly,
-                                label: l10n.thoughtsLabel,
-                                helpTitle: l10n.thoughtsLabel,
-                                helpMessage: l10n.thoughtsHelp,
+                                child: MarkdownNotesEditor(
+                                  controller: _notesController,
+                                  readOnly: readOnly,
+                                  label: l10n.thoughtsLabel,
+                                  helpTitle: l10n.thoughtsLabel,
+                                  helpMessage: l10n.thoughtsHelp,
+                                ),
                               ),
                             ),
                           ],

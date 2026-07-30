@@ -19,6 +19,7 @@ import 'package:social_flutter/l10n/app_localizations.dart';
 import 'package:social_flutter/shared/data/countries.dart';
 import 'package:social_flutter/shared/models/user.dart';
 import 'package:social_flutter/shared/widgets/markdown_edit_screen.dart';
+import 'package:social_flutter/shared/widgets/moderation_hint.dart';
 import 'package:social_flutter/shared/widgets/offline_gate.dart';
 import 'package:social_flutter/shared/widgets/saving_overlay.dart';
 import 'package:social_flutter/shared/widgets/user_avatar.dart';
@@ -444,17 +445,20 @@ class _ProfileEditFormState extends ConsumerState<ProfileEditForm> {
                   _EditFieldRow(
                     icon: Icons.badge_outlined,
                     label: l10n.displayNameLabel,
-                    child: TextField(
+                    child: ModerationHint(
                       controller: _displayNameController,
-                      style: TextStyle(
-                          fontSize: 15,
-                          color: nt.bark,
-                          fontWeight: FontWeight.w500),
-                      decoration: const InputDecoration(
-                        border: InputBorder.none,
-                        contentPadding:
-                            EdgeInsetsDirectional.only(start: 8, top: 8, bottom: 8),
-                        isDense: true,
+                      child: TextField(
+                        controller: _displayNameController,
+                        style: TextStyle(
+                            fontSize: 15,
+                            color: nt.bark,
+                            fontWeight: FontWeight.w500),
+                        decoration: const InputDecoration(
+                          border: InputBorder.none,
+                          contentPadding: EdgeInsetsDirectional.only(
+                              start: 8, top: 8, bottom: 8),
+                          isDense: true,
+                        ),
                       ),
                     ),
                   ),

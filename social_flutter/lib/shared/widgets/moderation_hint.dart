@@ -18,10 +18,16 @@ class ModerationHint extends StatefulWidget {
   final TextEditingController controller;
   final Widget child;
 
+  /// Test seam — the real wordlist can't load under `flutter test`, and its
+  /// failure mode is (correctly) "clean", so the hint could never fire.
+  @visibleForTesting
+  final Future<bool> Function(String text)? checker;
+
   const ModerationHint({
     super.key,
     required this.controller,
     required this.child,
+    this.checker,
   });
 
   @override
@@ -38,7 +44,7 @@ class _ModerationHintState extends State<ModerationHint> {
   void initState() {
     super.initState();
     // Load the wordlists now so the first check after a pause is instant.
-    warmUpTextPrecheck();
+    if (widget.checker == null) warmUpTextPrecheck();
     widget.controller.addListener(_onChanged);
   }
 
@@ -55,7 +61,14 @@ class _ModerationHintState extends State<ModerationHint> {
   }
 
   Future<void> _check() async {
-    final flagged = await looksOffensive(widget.controller.text);
+    // A checker that throws must never surface as a crash — see the never-block
+    // contract in text_precheck.dart. Any failure reads as clean.
+    bool flagged;
+    try {
+      flagged = await (widget.checker ?? looksOffensive)(widget.controller.text);
+    } catch (_) {
+      flagged = false;
+    }
     if (!mounted || flagged == _flagged) return;
     setState(() => _flagged = flagged);
   }

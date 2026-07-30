@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:social_flutter/core/ui/app_theme.dart';
 import 'package:social_flutter/features/itineraries/domain/annotation.dart';
 import 'package:social_flutter/l10n/app_localizations.dart';
+import 'package:social_flutter/shared/widgets/moderation_hint.dart';
 
 /// Result returned when the user confirms the dialog.
 typedef AnnotationFormResult = ({String content, AnnotationType type});
@@ -143,31 +144,34 @@ class _AnnotationFormDialogState extends State<AnnotationFormDialog> {
                 ),
               ),
             ),
-            TextFormField(
+            ModerationHint(
               controller: _contentController,
-              maxLines: 3,
-              autofocus: true,
-              decoration: InputDecoration(
-                hintText: l10n.annotationContentLabel,
-                fillColor: nt.surface,
-                filled: true,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
-                  borderSide: BorderSide(color: nt.border),
+              child: TextFormField(
+                controller: _contentController,
+                maxLines: 3,
+                autofocus: true,
+                decoration: InputDecoration(
+                  hintText: l10n.annotationContentLabel,
+                  fillColor: nt.surface,
+                  filled: true,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: BorderSide(color: nt.border),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: BorderSide(color: nt.border),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: BorderSide(color: nt.forest, width: 1.5),
+                  ),
+                  alignLabelWithHint: true,
                 ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
-                  borderSide: BorderSide(color: nt.border),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
-                  borderSide: BorderSide(color: nt.forest, width: 1.5),
-                ),
-                alignLabelWithHint: true,
+                validator: (v) => (v == null || v.trim().isEmpty)
+                    ? l10n.annotationContentRequired
+                    : null,
               ),
-              validator: (v) => (v == null || v.trim().isEmpty)
-                  ? l10n.annotationContentRequired
-                  : null,
             ),
             const SizedBox(height: 4),
           ],

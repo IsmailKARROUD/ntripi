@@ -16,6 +16,7 @@ import 'package:social_flutter/features/itineraries/presentation/widgets/annotat
     show AnnotationFormResult;
 import 'package:social_flutter/l10n/app_localizations.dart';
 import 'package:social_flutter/shared/widgets/loaders.dart';
+import 'package:social_flutter/shared/widgets/moderation_hint.dart';
 import 'package:social_flutter/shared/widgets/offline_gate.dart';
 import 'package:social_flutter/shared/widgets/saving_overlay.dart';
 
@@ -316,31 +317,39 @@ class _AnnotationScreenState extends State<AnnotationScreen> {
               ),
             ),
           ),
-          Container(
-            margin: const EdgeInsets.fromLTRB(16, 0, 16, 0),
-            decoration: BoxDecoration(
-              color: nt.surface,
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: nt.border),
-            ),
-            child: TextField(
+          // Margin moved out to the Padding so the advisory hint lines up with
+          // the card it belongs to rather than the screen edge.
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: ModerationHint(
               controller: _contentController,
-              autofocus: true,
-              maxLines: 5,
-              minLines: 3,
-              onChanged: (_) => setState(() {}), // rebuild for Save enable
-              decoration: InputDecoration(
-                hintText: AppLocalizations.of(context)!.annotationContentHint,
-                hintStyle:  TextStyle(color: nt.text3),
-                border: InputBorder.none,
-                enabledBorder: InputBorder.none,
-                focusedBorder: InputBorder.none,
-                contentPadding:  EdgeInsets.fromLTRB(16, 14, 16, 14),
-              ),
-              style: TextStyle(
-                fontSize: 14,
-                color: nt.bark,
-                height: 1.5,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: nt.surface,
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(color: nt.border),
+                ),
+                child: TextField(
+                  controller: _contentController,
+                  autofocus: true,
+                  maxLines: 5,
+                  minLines: 3,
+                  onChanged: (_) => setState(() {}), // rebuild for Save enable
+                  decoration: InputDecoration(
+                    hintText:
+                        AppLocalizations.of(context)!.annotationContentHint,
+                    hintStyle: TextStyle(color: nt.text3),
+                    border: InputBorder.none,
+                    enabledBorder: InputBorder.none,
+                    focusedBorder: InputBorder.none,
+                    contentPadding: EdgeInsets.fromLTRB(16, 14, 16, 14),
+                  ),
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: nt.bark,
+                    height: 1.5,
+                  ),
+                ),
               ),
             ),
           ),

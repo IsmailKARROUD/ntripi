@@ -13,6 +13,7 @@ import 'package:social_flutter/core/ui/destructive_actions.dart';
 import 'package:social_flutter/core/utils/platform_utils.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/markdown_notes_editor.dart';
 import 'package:social_flutter/l10n/app_localizations.dart';
+import 'package:social_flutter/shared/widgets/moderation_hint.dart';
 import 'package:social_flutter/shared/widgets/offline_gate.dart';
 import 'package:social_flutter/shared/widgets/saving_overlay.dart';
 
@@ -191,12 +192,17 @@ class _MarkdownEditScreenState extends State<MarkdownEditScreen> {
                 maxWidth: isDesktopWeb() ? kDesktopMaxWidth : double.infinity),
             child: SingleChildScrollView(
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 40),
-              child: MarkdownNotesEditor(
+              // Every caller edits prose here (description, bio) — a future
+              // title-type field must opt out: place names false-positive.
+              child: ModerationHint(
                 controller: _controller,
-                readOnly: _saving,
-                label: widget.title,
-                helpTitle: widget.helpTitle,
-                helpMessage: widget.helpMessage,
+                child: MarkdownNotesEditor(
+                  controller: _controller,
+                  readOnly: _saving,
+                  label: widget.title,
+                  helpTitle: widget.helpTitle,
+                  helpMessage: widget.helpMessage,
+                ),
               ),
             ),
           ),
