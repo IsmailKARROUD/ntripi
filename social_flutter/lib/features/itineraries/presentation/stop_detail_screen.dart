@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:social_flutter/core/api/api_client.dart';
+import 'package:social_flutter/core/router/navigation_ext.dart';
 import 'package:social_flutter/core/services/currency.dart';
 import 'package:social_flutter/core/ui/app_theme.dart';
 import 'package:social_flutter/features/itineraries/data/link_preview_service.dart';
@@ -135,7 +136,8 @@ class _StopDetailView extends ConsumerWidget {
               stop: stop,
               stopNumber: stopNumber,
               totalStops: totalStops,
-              onBack: () => context.pop(),
+              // A shared/deep link can open this page as the only route.
+              onBack: () => context.popOr('/itineraries/$itineraryId'),
               onEdit: () => context.push(
                 '/itineraries/$itineraryId/stops/${stop.id}/edit',
               ),

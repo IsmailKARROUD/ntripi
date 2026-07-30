@@ -96,7 +96,6 @@ dependencies:
   # client tier of image moderation. Web uses NSFWJS via JS interop instead
   # (lib/core/moderation/). Never-block: a missing model disables the check.
   tflite_flutter: ^0.12.1
-  safe_text: ^2.1.6
 
 
 

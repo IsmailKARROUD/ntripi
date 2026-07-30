@@ -39,6 +39,7 @@ import 'package:go_router/go_router.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:social_flutter/core/api/api_client.dart';
 import 'package:social_flutter/core/cache/image_cache.dart';
+import 'package:social_flutter/core/router/navigation_ext.dart';
 import 'package:social_flutter/core/ui/app_theme.dart';
 import 'package:social_flutter/core/ui/destructive_actions.dart';
 import 'package:social_flutter/features/itineraries/data/maps_launcher_service.dart';
@@ -713,7 +714,9 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                             editButtonKey: _editButtonKey,
                             editDetailsButtonKey: _editDetailsButtonKey,
                             onCoverTap: isOwner ? _showAddCoverHint : null,
-                            onBack: () => context.pop(),
+                            // Reached via go() after create / stop-delete, so
+                            // there may be nothing on the stack to pop.
+                            onBack: () => context.popOr('/itineraries'),
                             onShare: itinerary.visibility !=
                                     ItineraryVisibility.onlyMe
                                 ? () => ref

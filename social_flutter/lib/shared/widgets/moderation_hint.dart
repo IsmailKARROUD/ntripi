@@ -18,8 +18,8 @@ class ModerationHint extends StatefulWidget {
   final TextEditingController controller;
   final Widget child;
 
-  /// Test seam — the real wordlist can't load under `flutter test`, and its
-  /// failure mode is (correctly) "clean", so the hint could never fire.
+  /// Test seam — lets a test drive the widget's reaction without asserting on
+  /// which words the real list happens to contain.
   @visibleForTesting
   final Future<bool> Function(String text)? checker;
 
@@ -43,8 +43,6 @@ class _ModerationHintState extends State<ModerationHint> {
   @override
   void initState() {
     super.initState();
-    // Load the wordlists now so the first check after a pause is instant.
-    if (widget.checker == null) warmUpTextPrecheck();
     widget.controller.addListener(_onChanged);
   }
 
