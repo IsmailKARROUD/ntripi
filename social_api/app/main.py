@@ -128,12 +128,23 @@ class ContentSizeLimitMiddleware(BaseHTTPMiddleware):
 
 
 # ---------------------------------------------------------------------------
-# In-process moderation sweep (local development only)
+# In-process moderation sweep
 # ---------------------------------------------------------------------------
-# Production triggers the sweep over HTTP from an external scheduler, which keeps
-# the deployment portable. Local dev has no scheduler, so SWEEP_IN_PROCESS=True
-# runs it on a timer inside the app instead. Same code path either way — the
-# advisory lock means both can be enabled without a concurrent run.
+# Something has to drive the sweep on a schedule, or SLA auto-hides and
+# post-outage re-checks simply never happen. Two supported ways, same code path:
+#
+#   SWEEP_IN_PROCESS=True    a timer in this process. Nothing external to set
+#                            up, so it is the sensible choice for a single
+#                            instance (and for local dev, which has no
+#                            scheduler at all).
+#   An external scheduler    POSTing /internal/moderation-sweep. Independent of
+#                            this process, so it keeps to a wall-clock schedule
+#                            across deploys — each restart resets the timer
+#                            below, which can starve a long interval on a busy
+#                            deploy day.
+#
+# Both may be enabled at once: the advisory lock makes the duplicate run skip
+# rather than race.
 
 async def _sweep_loop() -> None:
     interval = max(60, get_settings().SWEEP_INTERVAL_MINUTES * 60)

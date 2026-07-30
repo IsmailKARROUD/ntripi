@@ -209,7 +209,7 @@ Persistent volume must be mounted at `/app/uploads` or images vanish on redeploy
 
 Optional (text moderation): `TEXT_MODERATION_PROVIDER=openai|local|disabled` (default `disabled`) · `OPENAI_API_KEY` · `TEXT_MODERATION_MODEL=omni-moderation-latest` · `TEXT_MODERATION_TIMEOUT_SECONDS=5.0` · `TEXT_MODERATION_CACHE_TTL_DAYS=30` · `TEXT_MODERATION_LOG_RETENTION_DAYS=90`. Startup **fails** if `openai` is selected without a key — a silent downgrade to the wordlist is worse than not booting.
 
-Optional (moderation sweep): `MODERATION_SLA_HOURS=20` (≤22, validated) · `SWEEP_TOKEN` (unset ⇒ `/internal/moderation-sweep` 404s) · `SWEEP_IN_PROCESS=False` · `SWEEP_INTERVAL_MINUTES=30`. Production drives it from an external scheduler: `curl -X POST -H "Authorization: Bearer $SWEEP_TOKEN" https://ntripi.app/internal/moderation-sweep` hourly.
+Moderation sweep — **one of the two drivers is required**, or SLA auto-hide and post-outage re-checks never run: `SWEEP_IN_PROCESS=True` (timer in the app process; no token, no scheduler — the single-instance default) **or** an external scheduler running `curl -X POST -H "Authorization: Bearer $SWEEP_TOKEN" https://ntripi.app/internal/moderation-sweep` hourly (keeps a wall-clock schedule across deploys, which restart the in-process timer). Both at once is safe — the advisory lock makes the duplicate a no-op. Also: `MODERATION_SLA_HOURS=20` (≤22, validated) · `SWEEP_TOKEN` (unset ⇒ `/internal/moderation-sweep` 404s) · `SWEEP_INTERVAL_MINUTES=30` (in-process only; floored at 60s).
 
 Optional (reports/safety): `REPORT_HIDE_THRESHOLDS` (comma `category:count`) · `REPORT_RATE_LIMIT=10/hour` · `ABUSE_CONTACT_EMAIL=abuse@ntripi.app` (must match the in-app address AND the store listing).
 

@@ -161,11 +161,13 @@ class Settings(BaseSettings):
     # so the cap is 22 to leave margin for a missed run during a deploy.
     MODERATION_SLA_HOURS: int = Field(default=20, ge=1, le=22)
 
-    # Moderation sweep (SLA enforcement, pending re-checks, cache purge).
+    # Moderation sweep (SLA enforcement, pending re-checks, cache purge). One of
+    # the two must be configured or the sweep never runs: SWEEP_IN_PROCESS for a
+    # timer inside the app (simplest on a single instance), or an external
+    # scheduler POSTing the endpoint (unaffected by deploys, which restart the
+    # in-process timer).
     # SWEEP_TOKEN unset = POST /internal/moderation-sweep returns 404 (the
     # endpoint is invisible, not merely locked — same rule as /admin).
-    # SWEEP_IN_PROCESS runs the sweep on a timer inside the app instead, for
-    # local dev where no external scheduler exists.
     SWEEP_TOKEN: str | None = None
     SWEEP_IN_PROCESS: bool = False
     SWEEP_INTERVAL_MINUTES: int = 30
