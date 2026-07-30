@@ -1,0 +1,73 @@
+{% extends "admin/_base.html" %}
+{% from "admin/_macros.html" import itinerary_link %}
+{% block content %}
+<h1>Legal escalations</h1>
+
+<div class="card" style="border-left:4px solid #b00020">
+  <p>
+    Content reported as CSAM, or scored above threshold on the minors category.
+    It has already been hidden automatically. These items carry obligations
+    beyond taking the content down, so they cannot be closed from the reports
+    queue — closing one here requires a written note recording what was done.
+  </p>
+  <p class="muted">
+    Ntripi does not report to authorities automatically. That decision, and the
+    filing itself, is yours.
+  </p>
+</div>
+
+{% if rows %}
+<div class="card table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>Open for</th>
+        <th>Content</th>
+        <th>Author</th>
+        <th>Raised by</th>
+        <th style="width:340px">Close</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in rows %}
+      <tr>
+        <td><span class="pill danger">{{ r.age }}</span></td>
+        <td>
+          {% if r.escalation.target_type == 'itinerary' and r.target %}
+            {{ itinerary_link(r.target.id, r.label) }}
+          {% else %}
+            {{ r.label }}
+          {% endif %}
+          <div class="muted">{{ r.escalation.target_type }}</div>
+          {% if not r.target %}<div class="muted">Content no longer exists</div>{% endif %}
+        </td>
+        <td>
+          {% if r.author %}
+            <div>{{ r.author.username }}</div>
+            <div class="muted">{{ r.author.email }}</div>
+          {% else %}
+            <span class="muted">—</span>
+          {% endif %}
+        </td>
+        <td class="muted">
+          {% if r.escalation.source == 'report' %}user report{% else %}classifier score{% endif %}
+          <div>{{ r.escalation.created_at.strftime('%Y-%m-%d %H:%M') }} UTC</div>
+        </td>
+        <td>
+          <form method="post" action="/admin/legal/{{ r.escalation.id }}/close">
+            <input type="text" name="note"
+                   placeholder="What action was taken? (required)" required>
+            <div class="actions">
+              <button type="submit" class="danger">Close escalation</button>
+            </div>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="card"><p class="muted">No open legal escalations.</p></div>
+{% endif %}
+{% endblock %}

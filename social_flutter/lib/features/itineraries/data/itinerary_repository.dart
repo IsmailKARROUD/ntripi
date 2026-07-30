@@ -135,18 +135,6 @@ class ItineraryRepository {
 
   // Fire-and-forget: reporting has no client-side state to cache. Auth is
   // optional server-side, but in-app reports always carry the Bearer token.
-  Future<void> reportItinerary({
-    required String itineraryId,
-    required String reason,
-    String? notes,
-  }) async {
-    await _dio.post(kReportsEndpoint, data: {
-      'itinerary_id': itineraryId,
-      'reason': reason,
-      if (notes != null && notes.isNotEmpty) 'notes': notes,
-    });
-  }
-
   Future<Itinerary> createItinerary(Map<String, dynamic> data) async {
     final response =
         await _dio.post<Map<String, dynamic>>(kItinerariesEndpoint, data: data);

@@ -2530,4 +2530,113 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get apiErrorAppealTargetNotFound =>
       'لا يوجد إجراء إشراف للاعتراض عليه هنا.';
+
+  @override
+  String get apiErrorTextModerationRejected =>
+      'قد يخالف هذا النص إرشادات المجتمع، لذلك لم يُحفظ. يُرجى تعديله والمحاولة مرة أخرى.';
+
+  @override
+  String get apiErrorCannotBlockSelf => 'لا يمكنك حظر نفسك.';
+
+  @override
+  String moderationRejectedBecause(String reason) {
+    return 'لم يُحفظ هذا النص لأنه قد يتضمن $reason. يُرجى تعديله والمحاولة مرة أخرى.';
+  }
+
+  @override
+  String get moderationCategoryMinors => 'محتوى يتعلق بالقاصرين';
+
+  @override
+  String get moderationCategorySexual => 'محتوى جنسي';
+
+  @override
+  String get moderationCategoryHate => 'خطاب كراهية';
+
+  @override
+  String get moderationCategoryHarassment => 'تحرّشًا';
+
+  @override
+  String get moderationCategoryViolence => 'محتوى عنيف';
+
+  @override
+  String get moderationCategorySelfHarm => 'محتوى عن إيذاء النفس';
+
+  @override
+  String get moderationCategoryIllicit => 'نشاطًا غير قانوني';
+
+  @override
+  String get reportReasonCsam => 'مواد اعتداء جنسي على الأطفال';
+
+  @override
+  String get reportReasonSexualContent => 'عري أو محتوى جنسي';
+
+  @override
+  String get reportReasonViolenceThreat => 'عنف أو تهديدات';
+
+  @override
+  String get reportContent => 'إبلاغ';
+
+  @override
+  String get reportUser => 'الإبلاغ عن هذا الحساب';
+
+  @override
+  String get reportStop => 'الإبلاغ عن هذه المحطة';
+
+  @override
+  String get reportReview => 'الإبلاغ عن هذه المراجعة';
+
+  @override
+  String get blockUser => 'حظر';
+
+  @override
+  String get unblockUser => 'إلغاء الحظر';
+
+  @override
+  String blockUserTitle(String username) {
+    return 'حظر @$username؟';
+  }
+
+  @override
+  String get blockUserMessage =>
+      'لن يرى أيٌّ منكما خطوط سير الآخر أو ملفه الشخصي، ولن يتمكن أيٌّ منكما من متابعة الآخر. ولن يُبلَّغ بذلك.';
+
+  @override
+  String get blockedUsers => 'الحسابات المحظورة';
+
+  @override
+  String get blockedUsersEmpty => 'لم تحظر أي حساب.';
+
+  @override
+  String blockedUserRemoved(String username) {
+    return 'أُلغي حظر @$username.';
+  }
+
+  @override
+  String blockedUserAdded(String username) {
+    return 'حُظر @$username.';
+  }
+
+  @override
+  String get abuseContact => 'الإبلاغ عن إساءة';
+
+  @override
+  String get abuseContactSubtitle => 'راسلنا بشأن المحتوى الضار';
+
+  @override
+  String get communityGuidelines => 'إرشادات المجتمع';
+
+  @override
+  String get moderationHintTitle => 'قد يُفهم هذا النص على أنه مسيء';
+
+  @override
+  String get moderationHintBody =>
+      'يمكنك نشره على أي حال — هذا تنبيه فقط وليس منعًا.';
+
+  @override
+  String get hiddenAppealAction => 'طلب إعادة النظر';
+
+  @override
+  String hiddenBannerReason(String reason) {
+    return 'السبب: $reason';
+  }
 }

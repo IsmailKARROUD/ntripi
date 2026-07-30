@@ -1,7 +1,9 @@
 import uuid
 from datetime import datetime, timezone
 
-from sqlalchemy import Boolean, Integer, JSON, String, Text, DateTime, func, false
+from sqlalchemy import (
+    Boolean, CheckConstraint, Integer, JSON, String, Text, DateTime, func, false,
+)
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.dialects.postgresql import UUID
 
@@ -10,6 +12,13 @@ from app.database import Base
 
 class User(Base):
     __tablename__ = "users"
+
+    __table_args__ = (
+        CheckConstraint(
+            "moderation_status IN ('approved','pending','flagged','hidden','rejected')",
+            name="ck_user_moderation_status",
+        ),
+    )
 
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
@@ -75,6 +84,19 @@ class User(Base):
 
     tos_accepted_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True, default=None
+    )
+
+    # Which ToS revision they agreed to. Without it, "they accepted the terms"
+    # is unprovable the moment the terms change.
+    tos_accepted_version: Mapped[str | None] = mapped_column(
+        String(16), nullable=True, default=None
+    )
+
+    # Moderation state of this profile's free text (display_name + bio).
+    # 'hidden'/'rejected' means other viewers see the @username fallback and no
+    # bio; the account itself is unaffected (bans use is_active).
+    moderation_status: Mapped[str] = mapped_column(
+        String(20), default="approved", server_default="'approved'", nullable=False
     )
 
     created_at: Mapped[datetime] = mapped_column(

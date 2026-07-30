@@ -220,5 +220,28 @@ String itineraryMyRatingEndpoint(String id) => '/itineraries/$id/ratings/me';
 // Reports
 // ---------------------------------------------------------------------------
 
-/// Report an itinerary for moderation (auth optional server-side).
+/// Report content for moderation (auth optional server-side). Targets are
+/// polymorphic — see ReportTarget.
 const kReportsEndpoint = '/reports';
+
+// ---------------------------------------------------------------------------
+// Blocking
+// ---------------------------------------------------------------------------
+
+/// Block / unblock a user (POST / DELETE on the same path).
+String kBlockEndpoint(String userId) => '/users/$userId/block';
+
+/// The accounts the current user has blocked.
+const kMyBlocksEndpoint = '/users/me/blocks';
+
+// ---------------------------------------------------------------------------
+// Safety / compliance surfaces
+// ---------------------------------------------------------------------------
+
+/// Community guidelines, served by the backend so updating them is a deploy
+/// rather than an app-store submission.
+const kGuidelinesUrl = '$kShareBaseUrl/guidelines';
+
+/// Published abuse contact. Must match the backend's ABUSE_CONTACT_EMAIL and
+/// the store listing — reviewers compare them.
+const kAbuseContactEmail = 'abuse@ntripi.app';

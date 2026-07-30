@@ -27,6 +27,7 @@ import 'package:social_flutter/features/itineraries/domain/dimension_key.dart';
 import 'package:social_flutter/features/itineraries/presentation/dimension_ratings_screen.dart';
 import 'package:social_flutter/features/itineraries/presentation/ratings_page_screen.dart';
 import 'package:social_flutter/features/profile/presentation/account_status_screen.dart';
+import 'package:social_flutter/features/reports/presentation/blocked_users_screen.dart';
 import 'package:social_flutter/features/profile/presentation/change_password_screen.dart';
 import 'package:social_flutter/features/profile/presentation/delete_account_screen.dart';
 import 'package:social_flutter/features/profile/presentation/profile_screen.dart';
@@ -161,6 +162,10 @@ final appRouter = GoRouter(
             GoRoute(
               path: '/settings/account-status',
               builder: (_, __) => const AccountStatusScreen(),
+            ),
+            GoRoute(
+              path: '/settings/blocked-users',
+              builder: (_, __) => const BlockedUsersScreen(),
             ),
             GoRoute(
               path: '/follow-requests',

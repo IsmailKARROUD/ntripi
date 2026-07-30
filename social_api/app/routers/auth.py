@@ -21,6 +21,7 @@ from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy.orm import Session
 from starlette.requests import Request
 
+from app.config import Settings, get_settings
 from app.constants.tos import TOS_DATE, TOS_SUMMARY, TOS_VERSION
 from app.database import get_db
 from app.dependencies import get_current_user
@@ -308,9 +309,13 @@ def resend_verification(
     "/tos",
     summary="Get the current Terms of Service",
 )
-def get_tos() -> dict:
+def get_tos(settings: Settings = Depends(get_settings)) -> dict:
     return {
         "version": TOS_VERSION,
         "date": TOS_DATE,
         "summary": TOS_SUMMARY,
+        # Served here so the in-app address can never drift from the backend
+        # configuration or the store listing.
+        "abuse_contact": settings.ABUSE_CONTACT_EMAIL,
+        "community_guidelines_url": f"{settings.share_base_url}/guidelines",
     }

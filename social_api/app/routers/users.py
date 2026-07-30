@@ -43,6 +43,7 @@ from app.services.user_service import (
     get_active_user_by_username_or_404,
     get_active_user_or_404,
     get_follow,
+    public_profile_text,
 )
 from app.services.image_service import (
     ImageProcessingError,
@@ -51,23 +52,41 @@ from app.services.image_service import (
     process_cover_image,
 )
 from app.services.moderation_service import ModerationContext, ModerationRejectedError
+from app.services import block_service
 from app.services.itinerary_access import can_view_itinerary
+from app.services.text_moderation_service import moderate_or_422
 from app.storage.factory import storage
 from app.errors import ApiError
 
 router = APIRouter(prefix="/users", tags=["Users"])
 
 
+def _require_not_blocked(db: Session, viewer: User, target: User) -> None:
+    """404 when either party has blocked the other.
+
+    Indistinguishable from a deleted account on purpose: the blocked user must
+    not be able to tell they were blocked, and the blocker must not have to see
+    the profile of someone they blocked.
+    """
+    if block_service.is_blocked_either_way(db, viewer.id, target.id):
+        raise ApiError(
+            status_code=status.HTTP_404_NOT_FOUND,
+            code="user_not_found", detail="User not found.",
+        )
+
+
 def _build_public_profile(target_user: User, current_user: User,
                           db: Session) -> UserPublicProfile:
+    _require_not_blocked(db, current_user, target_user)
     # is_following / follow_is_pending aren't columns — derived from the
     # current_user → target_user follow row and built by hand.
     follow_record = get_follow(db, current_user.id, target_user.id)
+    display_name, bio = public_profile_text(target_user, current_user.id)
     return UserPublicProfile(
         id=target_user.id,
         username=target_user.username,
-        display_name=target_user.display_name,
-        bio=target_user.bio,
+        display_name=display_name,
+        bio=bio,
         avatar_url=target_user.avatar_url,
         cover_image_url=target_user.cover_image_url,
         is_private=target_user.is_private,
@@ -131,6 +150,20 @@ def update_my_profile(
 
     # Apply only the provided fields (partial update pattern).
     update_data = payload.model_dump(exclude_unset=True)
+
+    ctx = moderate_or_422(
+        db, get_settings(),
+        target_type="user",
+        author=current_user,
+        fields={key: update_data[key]
+                for key in ("display_name", "bio") if key in update_data},
+        target_id=current_user.id,
+    )
+    if "display_name" in update_data or "bio" in update_data:
+        # Assigned, not escalated: rewritten profile text is new content, so a
+        # cleaned-up bio clears the previous flag.
+        current_user.moderation_status = ctx.status
+
     for field, value in update_data.items():
         setattr(current_user, field, value)
 
@@ -349,7 +382,21 @@ def search_users(
         .offset(offset)
     ).scalars().all()
 
-    return results  # type: ignore[return-value]
+    # Built by hand rather than from_attributes: a moderated display name must
+    # not leak through search, which is exactly where an abusive handle would
+    # get the most reach. (The user is excluded from their own results, so the
+    # author-sees-own case can't arise here.)
+    return [
+        UserSearchResult(
+            id=user.id,
+            username=user.username,
+            display_name=public_profile_text(user, current_user.id)[0],
+            avatar_url=user.avatar_url,
+            is_private=user.is_private,
+            followers_count=user.followers_count,
+        )
+        for user in results
+    ]
 
 
 # ---------------------------------------------------------------------------
@@ -512,6 +559,80 @@ def get_user_locations(
                 )
 
     return VisitedLocationsResponse(locations=locations)
+
+
+# ---------------------------------------------------------------------------
+# Blocking
+#
+# Declared before /{identifier} so "me" and the block paths are matched
+# literally rather than being swallowed as a username.
+# ---------------------------------------------------------------------------
+
+@router.get(
+    "/me/blocks",
+    response_model=list[UserSearchResult],
+    summary="List the accounts the current user has blocked",
+)
+def list_my_blocks(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> list[UserSearchResult]:
+    """The blocked-users list. Reviewers look for this specifically: a block
+    that cannot be found and lifted is not a real block."""
+    return [
+        UserSearchResult(
+            id=user.id,
+            username=user.username,
+            # Blocked-user text is shown to the person who blocked them, so the
+            # moderation filter still applies.
+            display_name=public_profile_text(user, current_user.id)[0],
+            avatar_url=user.avatar_url,
+            is_private=user.is_private,
+            followers_count=user.followers_count,
+        )
+        for user in block_service.list_blocks(db, current_user)
+    ]
+
+
+@router.post(
+    "/{user_id}/block",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Block a user",
+)
+def block_user(
+    user_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> None:
+    if user_id == current_user.id:
+        raise ApiError(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            code="cannot_block_self", detail="You cannot block yourself.",
+        )
+    # Deliberately not get_active_user_or_404's blocked-aware variant: blocking
+    # someone must work even if they already blocked you.
+    target = db.get(User, user_id)
+    if target is None or not target.is_active:
+        raise ApiError(
+            status_code=status.HTTP_404_NOT_FOUND,
+            code="user_not_found", detail="User not found.",
+        )
+    block_service.create_block(db, current_user, target)
+
+
+@router.delete(
+    "/{user_id}/block",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Unblock a user",
+)
+def unblock_user(
+    user_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> None:
+    # Idempotent: unblocking someone who isn't blocked is a no-op, so an
+    # optimistic UI never has to error.
+    block_service.delete_block(db, current_user, user_id)
 
 
 @router.get(

@@ -30,6 +30,8 @@ import 'package:social_flutter/features/profile/presentation/widgets/profile_edi
 import 'package:social_flutter/features/profile/presentation/widgets/profile_settings_sheet.dart';
 import 'package:social_flutter/features/profile/providers/profile_provider.dart';
 import 'package:social_flutter/features/profile/providers/user_locations_provider.dart';
+import 'package:social_flutter/features/reports/domain/report_target.dart';
+import 'package:social_flutter/features/reports/presentation/ugc_actions.dart';
 import 'package:social_flutter/l10n/app_localizations.dart';
 import 'package:social_flutter/shared/models/user.dart';
 import 'package:social_flutter/shared/widgets/field_help.dart';
@@ -205,6 +207,17 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                           )
                       : null,
                   coverImageUrl: user.coverImageUrl,
+                  // Every UGC surface needs a report action; a profile is one.
+                  moreActions: widget.isSelf
+                      ? null
+                      : UgcActionsMenu(
+                          target: ReportTarget.user(user.id),
+                          authorUserId: user.id,
+                          authorUsername: user.username,
+                          iconColor: Colors.white,
+                          // The profile is about to be invisible to us.
+                          onBlocked: () => Navigator.of(context).maybePop(),
+                        ),
                   locations: heroLocations,
                   editButtonKey: _editButtonKey,
                   onHeroTap: isContentHidden

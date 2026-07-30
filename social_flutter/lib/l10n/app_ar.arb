@@ -1,6 +1,5 @@
 {
   "@@locale": "ar",
-
   "save": "حفظ",
   "cancel": "إلغاء",
   "delete": "حذف",
@@ -9,7 +8,6 @@
   "dismiss": "إغلاق",
   "seeAll": "عرض الكل",
   "back": "رجوع",
-
   "navSearch": "بحث",
   "navProfile": "الملف الشخصي",
   "navItineraries": "المسارات",
@@ -26,13 +24,11 @@
   "feedTabRecent": "الأحدث",
   "feedEmpty": "لا توجد مسارات عامة بعد. عُد قريبًا!",
   "feedTopEmpty": "لا توجد رحلات مقيّمة كافية بعد — جرّب الأحدث.",
-
   "offlineBanner": "أنت غير متصل بالإنترنت! قد لا تتوفر بعض الميزات.",
   "offlineActionTitle": "أنت غير متصل بالإنترنت",
   "offlineActionMessage": "لا يمكن إجراء تعديلات دون اتصال بالإنترنت. يرجى إعادة الاتصال والمحاولة مجددًا.",
   "downloadBanner": "لتجربة أفضل، نزّل تطبيق Ntripi.",
   "downloadBannerButton": "تنزيل",
-
   "loginTitle": "مرحبًا بعودتك",
   "loginSubtitle": "سجّل الدخول لمواصلة رحلتك",
   "loginEmailLabel": "البريد الإلكتروني أو اسم المستخدم",
@@ -45,7 +41,6 @@
   "loginNoAccount": "ليس لديك حساب؟ ",
   "loginSignUp": "إنشاء حساب",
   "loginOrContinueWith": "أو سجّل الدخول باستخدام",
-
   "registerTitle": "إنشاء حساب",
   "registerSubtitle": "انضم إلى آلاف المستكشفين الذين يشاركون رحلاتهم",
   "registerDisplayName": "الاسم المعروض",
@@ -81,7 +76,6 @@
   "registerCreateAccount": "إنشاء الحساب",
   "registerAlreadyHaveAccount": "لديك حساب بالفعل؟ ",
   "registerSignIn": "تسجيل الدخول",
-
   "followers": "المتابِعون",
   "following": "يتابِع",
   "latestTrip": "أحدث رحلة",
@@ -95,7 +89,9 @@
   "stopCount": "{count, plural, zero{لا توجد محطات} one{محطة واحدة} two{محطتان} few{{count} محطات} many{{count} محطة} other{{count} محطة}}",
   "@stopCount": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "expand": "توسيع",
@@ -106,7 +102,9 @@
   "followRequestsBannerTitle": "طلبات المتابعة ({count})",
   "@followRequestsBannerTitle": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "tapToReview": "اضغط للمراجعة",
@@ -123,10 +121,11 @@
   "followToSeeMessage": "تابِع {handle} لرؤية المسارات والمحطات وخريطة الرحلات.",
   "@followToSeeMessage": {
     "placeholders": {
-      "handle": { "type": "String" }
+      "handle": {
+        "type": "String"
+      }
     }
   },
-
   "editProfileTitle": "تعديل الملف الشخصي",
   "uploadPhoto": "رفع صورة",
   "identitySection": "الهوية",
@@ -150,17 +149,17 @@
   "switchToPublicMessage": "{count, plural, zero{ليس لديك طلبات متابعة معلّقة. هل تريد الاستمرار؟} one{لديك طلب متابعة واحد معلّق. التبديل إلى العام سيقبله تلقائيًا. هل تريد الاستمرار؟} two{لديك طلبا متابعة معلّقان. التبديل إلى العام سيقبلهما تلقائيًا. هل تريد الاستمرار؟} few{لديك {count} طلبات متابعة معلّقة. التبديل إلى العام سيقبلها جميعًا تلقائيًا. هل تريد الاستمرار؟} many{لديك {count} طلب متابعة معلّقًا. التبديل إلى العام سيقبلها جميعًا تلقائيًا. هل تريد الاستمرار؟} other{لديك {count} طلب متابعة معلّق. التبديل إلى العام سيقبلها جميعًا تلقائيًا. هل تريد الاستمرار؟}}",
   "@switchToPublicMessage": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "switchToPublicButton": "التبديل إلى عام",
-
   "planFirstJourney": "خطط لرحلتك الأولى",
   "planFirstJourneyHint": "أضف محطات ومقاطع تنقّل وملاحظات. شاركها مع أصدقائك أو احتفظ بها خاصة.",
   "createItinerary": "إنشاء مسار",
   "needInspiration": "هل تحتاج إلى إلهام؟",
   "browseForIdeas": "تصفّح رحلات المجتمع للحصول على أفكار.",
-
   "settingsTitle": "الإعدادات",
   "settingsAccount": "الحساب",
   "settingsNotifications": "الإشعارات",
@@ -177,7 +176,6 @@
   "logoutConfirmTitle": "تسجيل الخروج",
   "logoutConfirmMessage": "هل أنت متأكد أنك تريد تسجيل الخروج؟",
   "logoutConfirmButton": "تسجيل الخروج",
-
   "languagePickerTitle": "اللغة",
   "languageEnglish": "English",
   "languageFrench": "Français",
@@ -185,39 +183,44 @@
   "languageSpanish": "Español",
   "languageGerman": "Deutsch",
   "languageChinese": "简体中文",
-
   "themePickerTitle": "المظهر",
   "themeSystem": "النظام",
   "themeLight": "فاتح",
   "themeDark": "داكن",
-
   "followRequestsTitle": "طلبات المتابعة",
   "noRequests": "لا توجد طلبات معلّقة",
   "requestsCountLabel": "الطلبات · {count}",
   "@requestsCountLabel": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "acceptButton": "قبول",
   "rejectButton": "رفض",
-
   "followersTabLabel": "{count, plural, =0{المتابِعون} one{متابِع واحد} two{متابِعان} few{{count} متابِعين} many{{count} متابِعًا} other{{count} متابِع}}",
   "@followersTabLabel": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "followingTabLabel": "{count, plural, =0{يتابِع} one{يتابِع شخصًا واحدًا} two{يتابِع شخصين} few{يتابِع {count} أشخاص} many{يتابِع {count} شخصًا} other{يتابِع {count} شخص}}",
   "@followingTabLabel": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "followRequestsSectionLabel": "طلبات المتابعة · {count}",
   "@followRequestsSectionLabel": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "allFollowersSection": "جميع المتابِعين",
@@ -225,31 +228,32 @@
   "notFollowingAnyone": "لا يتابع أحدًا بعد.",
   "peopleYouFollow": "الأشخاص الذين تتابعهم",
   "confirmButton": "تأكيد",
-
   "searchPeoplePlaceholder": "ابحث عن أشخاص…",
   "searchForPeople": "ابحث عن أشخاص لمتابعتهم",
   "noUsersFound": "لم يُعثر على مستخدمين.",
   "searchResultsCount": "النتائج · {count}",
   "@searchResultsCount": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "followerCountLabel": "{count, plural, zero{لا متابعين} one{متابِع واحد} two{متابِعان} few{{count} متابِعين} many{{count} متابِعًا} other{{count} متابِع}}",
   "@followerCountLabel": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "searchUsersHelp": "اعثر على الأشخاص عبر اسم المستخدم @ أو الاسم المعروض. اضغط على نتيجة لعرض الملف الشخصي.",
-
   "myItineraries": "مساراتي",
   "noItinerariesYet": "لا توجد مسارات بعد.",
   "tapToCreateFirst": "اضغط + لإنشاء رحلتك الأولى.",
   "deleteItineraryTitle": "حذف المسار هذا؟",
   "deleteItineraryMessage": "ستُحذف نهائيًا جميع المحطات والتنويهات ومقاطع التنقّل والتقييمات وروابط المشاركة. لا يمكن التراجع عن هذا.",
   "deleteItineraryButton": "حذف المسار",
-
   "newItinerary": "مسار جديد",
   "editItinerary": "تعديل المسار",
   "coverImageLabel": "صورة الغلاف",
@@ -289,37 +293,42 @@
   "deleteItineraryFormMessage": "سيؤدي هذا إلى حذف \"{title}\" وجميع محطاته نهائيًا. اكتب العنوان للتأكيد.",
   "@deleteItineraryFormMessage": {
     "placeholders": {
-      "title": { "type": "String" }
+      "title": {
+        "type": "String"
+      }
     }
   },
-
   "followButton": "متابعة",
   "followingButton": "متابَع",
   "requestedButton": "تم الطلب",
   "unfollowedSnackbar": "ألغيت متابعة @{username}",
   "@unfollowedSnackbar": {
     "placeholders": {
-      "username": { "type": "String" }
+      "username": {
+        "type": "String"
+      }
     }
   },
   "cancelRequestTitle": "إلغاء الطلب؟",
   "cancelRequestMessage": "هل تريد إلغاء طلب متابعة @{username}؟",
   "@cancelRequestMessage": {
     "placeholders": {
-      "username": { "type": "String" }
+      "username": {
+        "type": "String"
+      }
     }
   },
   "cancelRequestConfirm": "إلغاء الطلب",
   "cancelRequestKeep": "إبقاء",
-
   "undoButton": "تراجع",
   "couldNotUndo": "تعذّر التراجع: {error}",
   "@couldNotUndo": {
     "placeholders": {
-      "error": { "type": "String" }
+      "error": {
+        "type": "String"
+      }
     }
   },
-
   "errorNoInternet": "لا يوجد اتصال بالإنترنت. يرجى التحقق من الشبكة والمحاولة مجددًا.",
   "errorGenericRetry": "حدث خطأ. يرجى المحاولة مجددًا.",
   "errorGeneric": "حدث خطأ.",
@@ -327,10 +336,11 @@
   "typeToConfirmInstruction": "اكتب \"{text}\" للتأكيد:",
   "@typeToConfirmInstruction": {
     "placeholders": {
-      "text": { "type": "String" }
+      "text": {
+        "type": "String"
+      }
     }
   },
-
   "daysLabel": "ي",
   "noneOption": "بدون",
   "discardButton": "تجاهل",
@@ -338,7 +348,6 @@
   "discardChangesMessage": "لن يتم حفظ تغييراتك.",
   "keepEditingButton": "مواصلة التعديل",
   "orderSavedMessage": "تم حفظ الترتيب",
-
   "segmentSelectBothStops": "اختر محطة الانطلاق ومحطة الوصول.",
   "segmentStopsMustDiffer": "يجب أن تختلف محطتا الانطلاق والوصول.",
   "segmentAddLegFirst": "أضف مرحلة واحدة على الأقل قبل الحفظ.",
@@ -348,34 +357,27 @@
   "segmentReplace": "استبدال",
   "segmentFromStopLabel": "محطة الانطلاق",
   "segmentToStopLabel": "محطة الوصول",
-
   "visibilityScreenTitle": "من يمكنه رؤية هذا؟",
   "visibilityAddPerson": "إضافة شخص",
   "visibilitySearchByUsername": "ابحث باسم المستخدم…",
-
   "couldNotLoadRatings": "تعذّر تحميل التقييمات",
   "stopNotFound": "المحطة غير موجودة.",
   "mapPickLocationTitle": "اختيار الموقع",
   "mapConfirmLocation": "تأكيد الموقع",
   "stopCostHint": "مثال: 20",
-
   "ratingsTitle": "التقييمات",
   "noRatingsYet": "لا توجد تقييمات بعد",
   "ratingsOverallLabel": "التقييم العام",
   "rateThisTrip": "قيّم هذه الرحلة",
   "deletedUser": "مستخدم محذوف",
-
   "annotationContentHint": "ما الذي ينبغي للمسافرين معرفته؟",
-
   "countryPickerTitle": "اختر البلد",
   "countrySearchHint": "ابحث عن بلد…",
   "countryNoneClear": "بدون / مسح",
   "languageSearchHint": "ابحث عن لغة…",
-
   "coverChangeButton": "تغيير",
   "coverEditCropButton": "تعديل الاقتصاص",
   "coverAdjustTitle": "ضبط صورة الغلاف",
-
   "mdBoldTooltip": "غامق",
   "mdItalicTooltip": "مائل",
   "mdHeading1Tooltip": "عنوان 1",
@@ -384,7 +386,6 @@
   "mdNumberedListTooltip": "قائمة مرقّمة",
   "mdEditTab": "تحرير",
   "mdPreviewTab": "معاينة",
-
   "legCostHint": "مثال: 12.50",
   "addLegButton": "إضافة مرحلة",
   "totalLabel": "الإجمالي",
@@ -392,11 +393,14 @@
   "reorderOrphanMessage": "{count, plural, zero{لن يُحذف أي مقطع تنقّل:\n\n{segments}} one{سيُحذف مقطع تنقّل واحد لأن محطتيه لن تكونا في ممرين متجاورين:\n\n{segments}} two{سيُحذف مقطعا تنقّل لأن محطاتهما لن تكون في ممرات متجاورة:\n\n{segments}} few{ستُحذف {count} مقاطع تنقّل لأن محطاتها لن تكون في ممرات متجاورة:\n\n{segments}} many{سيُحذف {count} مقطع تنقّل لأن محطاتها لن تكون في ممرات متجاورة:\n\n{segments}} other{سيُحذف {count} مقطع تنقّل لأن محطاتها لن تكون في ممرات متجاورة:\n\n{segments}}}",
   "@reorderOrphanMessage": {
     "placeholders": {
-      "count": { "type": "int" },
-      "segments": { "type": "String" }
+      "count": {
+        "type": "int"
+      },
+      "segments": {
+        "type": "String"
+      }
     }
   },
-
   "loadingLabel": "جارٍ التحميل…",
   "usernameRequired": "اسم المستخدم مطلوب",
   "usernameTooShort": "يجب ألا يقل اسم المستخدم عن 4 أحرف",
@@ -433,7 +437,6 @@
   "doneTooltip": "تم",
   "addButton": "إضافة",
   "deleteButton": "حذف",
-
   "deleteAccountTitle": "حذف الحساب",
   "deleteAccountConfirmTitle": "حذف حسابك؟",
   "deleteAccountConfirmMessage": "سيتم إخفاء هوية حسابك ومساراتك ومتابعاتك وتقييماتك أو حذفها وفقًا لسياسة الخصوصية. سيتم تسجيل خروجك فورًا. لا يمكن التراجع عن هذا.",
@@ -457,7 +460,6 @@
   "deleteAccountGoogleButton": "المصادقة عبر Google",
   "deleteAccountOrDivider": "أو",
   "deleteAccountGoogleAlternative": "تفضّل استخدام Google؟ أعد المصادقة عبر Google بدلاً من ذلك.",
-
   "deleteAnnotationTitle": "حذف التنويه؟",
   "deleteAnnotationMessage": "سيؤدي هذا إلى إزالة هذا التنويه نهائيًا من المسار.",
   "deleteAnnotationStopMessage": "سيُزال هذا التنويه نهائيًا.",
@@ -486,7 +488,9 @@
   "ratingCount": "{count, plural, zero{لا تقييمات} one{تقييم واحد} two{تقييمان} few{{count} تقييمات} many{{count} تقييمًا} other{{count} تقييم}}",
   "@ratingCount": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "yourRating": "تقييمك",
@@ -494,17 +498,20 @@
   "deleteOrphanSegmentsTitle": "{count, plural, zero{حذف مقاطع التنقّل؟} one{حذف مقطع التنقّل؟} two{حذف مقطعي التنقّل؟} few{حذف مقاطع التنقّل؟} many{حذف مقاطع التنقّل؟} other{حذف مقاطع التنقّل؟}}",
   "@deleteOrphanSegmentsTitle": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "deleteOrphanSegmentsMessage": "{count, plural, zero{لا توجد مقاطع تنقّل بين هاتين المحطتين. هل تريد الاستمرار؟} one{هناك مقطع تنقّل واحد يربط بين هاتين المحطتين. إضافة محطة بينهما ستخفيه لأن المحطتين لن تكونا متجاورتين. هل تريد حذف المقطع والاستمرار؟} two{هناك مقطعا تنقّل يربطان بين هاتين المحطتين. إضافة محطة بينهما ستخفيهما لأن المحطتين لن تكونا متجاورتين. هل تريد حذف المقطعين والاستمرار؟} few{هناك {count} مقاطع تنقّل تربط بين هاتين المحطتين. إضافة محطة بينهما ستخفيها لأن المحطتين لن تكونا متجاورتين. هل تريد حذف المقاطع والاستمرار؟} many{هناك {count} مقطع تنقّل يربط بين هاتين المحطتين. إضافة محطة بينهما ستخفيها لأن المحطتين لن تكونا متجاورتين. هل تريد حذف المقاطع والاستمرار؟} other{هناك {count} مقطع تنقّل يربط بين هاتين المحطتين. إضافة محطة بينهما ستخفيها لأن المحطتين لن تكونا متجاورتين. هل تريد حذف المقاطع والاستمرار؟}}",
   "@deleteOrphanSegmentsMessage": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "deleteAndContinue": "الحذف والاستمرار",
-
   "notSet": "غير محدد",
   "stopDetailsView": "تفاصيل المحطة",
   "editStopTitle": "تعديل المحطة",
@@ -514,7 +521,9 @@
   "duplicateStopMessage": "{name} موجودة بالفعل في المسار هذا. هل تريد إضافتها مرة أخرى على أي حال؟",
   "@duplicateStopMessage": {
     "placeholders": {
-      "name": { "type": "String" }
+      "name": {
+        "type": "String"
+      }
     }
   },
   "addAnyway": "الإضافة على أي حال",
@@ -588,7 +597,6 @@
   "addStopButton": "إضافة محطة",
   "deleteStopButton": "حذف المحطة",
   "timeToSpendModalTitle": "مدة الزيارة",
-
   "editTransitTitle": "تعديل التنقّل",
   "addTransitTitle": "إضافة تنقّل",
   "updateTransitButton": "تحديث التنقّل",
@@ -607,7 +615,6 @@
   "freeLegHelp": "فعّل الخيار إذا كانت هذه المرحلة لا تكلّف شيئًا (مشي، نقل مشمول، إلخ).",
   "legThoughtsLabel": "انطباعات (اختياري)",
   "legThoughtsHelp": "اختياري. أي شيء مفيد معرفته عن هذه المرحلة — نصائح الحجز، تعليمات التبديل، أين تجلس، مفاجآت أسعار التذاكر.",
-
   "annotationTypeLabel": "النوع",
   "annotationTypeHelp": "نصيحة: معلومة مفيدة. احترس: كن حذرًا. تجنّب: لا تذهب. معلومة: ملاحظة محايدة.",
   "annotationAdvice": "نصيحة",
@@ -620,12 +627,13 @@
   "editAnnotationTitle": "تعديل التنويه",
   "addAnnotationDialogTitle": "إضافة تنويه",
   "saveButton": "حفظ",
-
   "moveStopTitle": "نقل المحطة",
   "moveStopDescription": "اختر ممرًا موجودًا، أو فجوة لإنشاء ممر جديد، أو استخرجها إلى ممر خاص بها. الممرات التي بلغت الحد الأقصى ({max} محطات) معطّلة.",
   "@moveStopDescription": {
     "placeholders": {
-      "max": { "type": "int" }
+      "max": {
+        "type": "int"
+      }
     }
   },
   "extractIntoOwnTrack": "استخراج إلى ممر جديد خاص بها",
@@ -633,7 +641,9 @@
   "moveStopMoved": "نُقلت إلى {destination}",
   "@moveStopMoved": {
     "placeholders": {
-      "destination": { "type": "String" }
+      "destination": {
+        "type": "String"
+      }
     }
   },
   "itineraryChangedElsewhere": "تغيّر المسار من مكان آخر — أغلق وأعد الفتح لرؤية أحدث ترتيب.",
@@ -641,43 +651,56 @@
   "moveStopOrphanSegments": "{count, plural, zero{لن يُحذف أي مقطع تنقّل.} one{سيُحذف مقطع تنقّل واحد لأن محطتيه لن تكونا في ممرين متجاورين.} two{سيُحذف مقطعا تنقّل لأن محطاتهما لن تكون في ممرات متجاورة.} few{ستُحذف {count} مقاطع تنقّل لأن محطاتها لن تكون في ممرات متجاورة.} many{سيُحذف {count} مقطع تنقّل لأن محطاتها لن تكون في ممرات متجاورة.} other{سيُحذف {count} مقطع تنقّل لأن محطاتها لن تكون في ممرات متجاورة.}}",
   "@moveStopOrphanSegments": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "moveStopNewTrack": "ممر جديد",
   "moveStopNewTrackBefore": "ممر جديد قبل الممر {n}",
   "@moveStopNewTrackBefore": {
     "placeholders": {
-      "n": { "type": "int" }
+      "n": {
+        "type": "int"
+      }
     }
   },
   "moveStopNewTrackAfter": "ممر جديد بعد الممر {n}",
   "@moveStopNewTrackAfter": {
     "placeholders": {
-      "n": { "type": "int" }
+      "n": {
+        "type": "int"
+      }
     }
   },
   "moveStopNewTrackBetween": "ممر جديد بين الممر {a} والممر {b}",
   "@moveStopNewTrackBetween": {
     "placeholders": {
-      "a": { "type": "int" },
-      "b": { "type": "int" }
+      "a": {
+        "type": "int"
+      },
+      "b": {
+        "type": "int"
+      }
     }
   },
   "moveStopCurrentSuffix": "  •  الحالي",
   "moveStopFull": "ممتلئ {max}/{max}",
   "@moveStopFull": {
     "placeholders": {
-      "max": { "type": "int" }
+      "max": {
+        "type": "int"
+      }
     }
   },
   "extractSubtitle": "يفصل هذه المحطة عن \"{trackName}\" — يُنشأ الممر الجديد بعده مباشرة.",
   "@extractSubtitle": {
     "placeholders": {
-      "trackName": { "type": "String" }
+      "trackName": {
+        "type": "String"
+      }
     }
   },
-
   "removeRatingTitle": "إزالة تقييمك؟",
   "removeRatingMessage": "سيُحذف تقييمك وسيتم تحديث المتوسط لجميع من يشاهد المسار هذا.",
   "rateItineraryTitle": "قيّم المسار هذا",
@@ -698,12 +721,14 @@
   "familyFriendlyHelp": "اختياري. مدى ملاءمة الرحلة للعائلات ذات الأطفال.",
   "crowdednessLabel": "غير مزدحم",
   "crowdednessHelp": "اختياري. مدى الشعور بقلة الازدحام والرحابة — 5 = غير مزدحم على نحو مريح، 1 = مكتظ.",
-
   "showOptionalFields": "إظهار الحقول الاختيارية",
-  "@showOptionalFields": {"description": "Toggle label to reveal hidden optional fields on the stop/itinerary creation form"},
+  "@showOptionalFields": {
+    "description": "Toggle label to reveal hidden optional fields on the stop/itinerary creation form"
+  },
   "hideOptionalFields": "إخفاء الحقول الاختيارية",
-  "@hideOptionalFields": {"description": "Toggle label to hide optional fields again on the stop/itinerary creation form"},
-
+  "@hideOptionalFields": {
+    "description": "Toggle label to hide optional fields again on the stop/itinerary creation form"
+  },
   "transportModeWalk": "سيرًا",
   "transportModeBus": "حافلة",
   "transportModeTram": "ترام",
@@ -715,7 +740,6 @@
   "transportModeFerry": "عبّارة",
   "transportModeCar": "سيارة",
   "transportModeAirplane": "طائرة",
-
   "dimensionOverall": "عام",
   "dimensionOverallDesc": "الانطباع العام",
   "dimensionSafetyDesc": "مدى شعورك بالأمان طوال الرحلة",
@@ -726,57 +750,67 @@
   "dimensionRatingTitle": "تقييم {label}",
   "@dimensionRatingTitle": {
     "placeholders": {
-      "label": { "type": "String" }
+      "label": {
+        "type": "String"
+      }
     }
   },
   "noRatingsYetFor": "لا توجد تقييمات لـ {label} بعد",
   "@noRatingsYetFor": {
     "placeholders": {
-      "label": { "type": "String" }
+      "label": {
+        "type": "String"
+      }
     }
   },
   "basedOnRatings": "{count, plural, zero{لا توجد تقييمات بعد} one{استنادًا إلى تقييم واحد} two{استنادًا إلى تقييمين} few{استنادًا إلى {count} تقييمات} many{استنادًا إلى {count} تقييمًا} other{استنادًا إلى {count} تقييم}}",
   "@basedOnRatings": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "ratersLabel": "المقيّمون",
-
   "annotationAdviceDesc": "شيء مفيد أو نصيحة من خبير.",
   "annotationCautionDesc": "انتبه — قد تكون هناك مفاجآت.",
   "annotationAvoidDesc": "لا تفعل هذا. وفّر وقتك.",
   "annotationInfoDesc": "حقيقة محايدة تستحق المعرفة.",
-
   "unknownUser": "غير معروف",
   "timeAgoMonths": "قبل {count} شهر",
   "@timeAgoMonths": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "timeAgoDays": "قبل {count} يوم",
   "@timeAgoDays": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "timeAgoHours": "قبل {count} ساعة",
   "@timeAgoHours": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "timeAgoMinutes": "قبل {count} دقيقة",
   "@timeAgoMinutes": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "timeJustNow": "الآن",
-
   "yearsAbbrev": "سنة",
-
   "timeLabel": "الوقت",
   "transitLabel": "التنقّل",
   "noLegsYetTapAdd": "لا توجد مراحل بعد. اضغط ＋ للإضافة.",
@@ -784,16 +818,19 @@
   "fromStopName": "من {name}",
   "@fromStopName": {
     "placeholders": {
-      "name": { "type": "String" }
+      "name": {
+        "type": "String"
+      }
     }
   },
   "toStopName": "إلى {name}",
   "@toStopName": {
     "placeholders": {
-      "name": { "type": "String" }
+      "name": {
+        "type": "String"
+      }
     }
   },
-
   "visibilityPublicDesc": "يمكن لأي شخص لديه الرابط العرض.",
   "visibilityFollowersDesc": "فقط الأشخاص الذين يتابعونك.",
   "visibilityRestrictedDesc": "فقط الأشخاص الذين تسمح لهم.",
@@ -803,17 +840,20 @@
   "personCount": "{count, plural, zero{لا أحد} one{شخص واحد} two{شخصان} few{{count} أشخاص} many{{count} شخصًا} other{{count} شخص}}",
   "@personCount": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "removedFromAllowlist": "أُزيل {name} من قائمة السماح",
   "@removedFromAllowlist": {
     "placeholders": {
-      "name": { "type": "String" }
+      "name": {
+        "type": "String"
+      }
     }
   },
   "addPeople": "إضافة أشخاص",
-
   "otherOption": "أخرى",
   "thisItineraryFallback": "المسار هذا",
   "discardReorderMessage": "لن يتم حفظ إعادة الترتيب.",
@@ -824,28 +864,35 @@
   "transitSegmentsWillBeDeleted": "{count, plural, zero{لن يُحذف أي مقطع تنقّل} one{سيُحذف مقطع تنقّل واحد} two{سيُحذف مقطعا تنقّل} few{ستُحذف {count} مقاطع تنقّل} many{سيُحذف {count} مقطع تنقّل} other{سيُحذف {count} مقطع تنقّل}}",
   "@transitSegmentsWillBeDeleted": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "andMoreCount": "… و{count} أخرى",
   "@andMoreCount": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "altsCount": "{count, plural, zero{لا بدائل} one{بديل واحد} two{بديلان} few{{count} بدائل} many{{count} بديلًا} other{{count} بديل}}",
   "@altsCount": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "segmentToWillBeDeleted": "← {name}  —  سيُحذف المقطع",
   "@segmentToWillBeDeleted": {
     "placeholders": {
-      "name": { "type": "String" }
+      "name": {
+        "type": "String"
+      }
     }
   },
-
   "reorderAlternativesTitle": "إعادة ترتيب البدائل",
   "reorderAlternativesHint": "اسحب لتغيير الخيار الذي يظهر أولًا. اضغط حفظ للتطبيق.",
   "emptyTrackLabel": "(ممر فارغ)",
@@ -859,7 +906,9 @@
   "travelersRatedThis": "{count, plural, zero{لم يقيّمه أي مسافر بعد} one{قيّمه مسافر واحد} two{قيّمه مسافران} few{قيّمه {count} مسافرين} many{قيّمه {count} مسافرًا} other{قيّمه {count} مسافر}}",
   "@travelersRatedThis": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "byDimensionLabel": "حسب البُعد",
@@ -868,7 +917,6 @@
   "changeButton": "تغيير",
   "hideReview": "إخفاء المراجعة",
   "readReview": "قراءة المراجعة",
-
   "notesLabel": "ملاحظات",
   "viewLess": "عرض أقل",
   "viewMore": "... عرض المزيد",
@@ -916,25 +964,36 @@
   "alreadyInItinerary": "{name} موجودة بالفعل في المسار هذا.",
   "@alreadyInItinerary": {
     "placeholders": {
-      "name": { "type": "String" }
+      "name": {
+        "type": "String"
+      }
     }
   },
   "stopNumberOfTotal": "المحطة {n} من {total}",
   "@stopNumberOfTotal": {
     "placeholders": {
-      "n": { "type": "int" },
-      "total": { "type": "int" }
+      "n": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
     }
   },
   "shareCaption": "اطّلع على \"{title}\" على Ntripi — {stops}، {duration}",
   "@shareCaption": {
     "placeholders": {
-      "title": { "type": "String" },
-      "stops": { "type": "String" },
-      "duration": { "type": "String" }
+      "title": {
+        "type": "String"
+      },
+      "stops": {
+        "type": "String"
+      },
+      "duration": {
+        "type": "String"
+      }
     }
   },
-
   "apiErrorNotAuthenticated": "لم تسجّل الدخول.",
   "apiErrorAccountDeactivated": "تم تعطيل حسابك.",
   "apiErrorEmailUnverified": "أكّد بريدك الإلكتروني عبر Google للقيام بذلك.",
@@ -969,7 +1028,6 @@
   "apiErrorTosRequired": "يجب قبول شروط الخدمة للتسجيل.",
   "apiErrorUsernameTaken": "اسم المستخدم هذا مستخدم بالفعل.",
   "apiErrorEmailTaken": "يوجد حساب بهذا البريد الإلكتروني بالفعل.",
-
   "reportItineraryTitle": "الإبلاغ عن هذا المسار",
   "reportItineraryTooltip": "إبلاغ",
   "reportReasonSpam": "محتوى مزعج",
@@ -1014,5 +1072,37 @@
   "appealCooldownUntil": "يمكنك الاعتراض مجددًا بعد {date}.",
   "apiErrorAppealPending": "لديك اعتراض قيد المراجعة على هذا العنصر بالفعل.",
   "apiErrorAppealCooldown": "يمكنك الاعتراض على هذا العنصر مجددًا بعد 30 يومًا من رفض الاعتراض.",
-  "apiErrorAppealTargetNotFound": "لا يوجد إجراء إشراف للاعتراض عليه هنا."
+  "apiErrorAppealTargetNotFound": "لا يوجد إجراء إشراف للاعتراض عليه هنا.",
+  "apiErrorTextModerationRejected": "قد يخالف هذا النص إرشادات المجتمع، لذلك لم يُحفظ. يُرجى تعديله والمحاولة مرة أخرى.",
+  "apiErrorCannotBlockSelf": "لا يمكنك حظر نفسك.",
+  "moderationRejectedBecause": "لم يُحفظ هذا النص لأنه قد يتضمن {reason}. يُرجى تعديله والمحاولة مرة أخرى.",
+  "moderationCategoryMinors": "محتوى يتعلق بالقاصرين",
+  "moderationCategorySexual": "محتوى جنسي",
+  "moderationCategoryHate": "خطاب كراهية",
+  "moderationCategoryHarassment": "تحرّشًا",
+  "moderationCategoryViolence": "محتوى عنيف",
+  "moderationCategorySelfHarm": "محتوى عن إيذاء النفس",
+  "moderationCategoryIllicit": "نشاطًا غير قانوني",
+  "reportReasonCsam": "مواد اعتداء جنسي على الأطفال",
+  "reportReasonSexualContent": "عري أو محتوى جنسي",
+  "reportReasonViolenceThreat": "عنف أو تهديدات",
+  "reportContent": "إبلاغ",
+  "reportUser": "الإبلاغ عن هذا الحساب",
+  "reportStop": "الإبلاغ عن هذه المحطة",
+  "reportReview": "الإبلاغ عن هذه المراجعة",
+  "blockUser": "حظر",
+  "unblockUser": "إلغاء الحظر",
+  "blockUserTitle": "حظر @{username}؟",
+  "blockUserMessage": "لن يرى أيٌّ منكما خطوط سير الآخر أو ملفه الشخصي، ولن يتمكن أيٌّ منكما من متابعة الآخر. ولن يُبلَّغ بذلك.",
+  "blockedUsers": "الحسابات المحظورة",
+  "blockedUsersEmpty": "لم تحظر أي حساب.",
+  "blockedUserRemoved": "أُلغي حظر @{username}.",
+  "blockedUserAdded": "حُظر @{username}.",
+  "abuseContact": "الإبلاغ عن إساءة",
+  "abuseContactSubtitle": "راسلنا بشأن المحتوى الضار",
+  "communityGuidelines": "إرشادات المجتمع",
+  "moderationHintTitle": "قد يُفهم هذا النص على أنه مسيء",
+  "moderationHintBody": "يمكنك نشره على أي حال — هذا تنبيه فقط وليس منعًا.",
+  "hiddenAppealAction": "طلب إعادة النظر",
+  "hiddenBannerReason": "السبب: {reason}"
 }

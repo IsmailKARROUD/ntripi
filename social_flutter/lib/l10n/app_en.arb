@@ -1,6 +1,5 @@
 {
   "@@locale": "en",
-
   "save": "Save",
   "cancel": "Cancel",
   "delete": "Delete",
@@ -9,7 +8,6 @@
   "dismiss": "Dismiss",
   "seeAll": "See all",
   "back": "Back",
-
   "navSearch": "Search",
   "navProfile": "Profile",
   "navItineraries": "Itineraries",
@@ -26,13 +24,11 @@
   "feedTabRecent": "Recent",
   "feedEmpty": "No public itineraries yet. Check back soon!",
   "feedTopEmpty": "Not enough rated trips yet — check Recent.",
-
   "offlineBanner": "You're Offline! Some features may be unavailable.",
   "offlineActionTitle": "You're offline",
   "offlineActionMessage": "Changes can't be made without an internet connection. Reconnect and try again.",
   "downloadBanner": "For a better experience, download the Ntripi app.",
   "downloadBannerButton": "Download",
-
   "loginTitle": "Welcome back",
   "loginSubtitle": "Sign in to continue your journey",
   "loginEmailLabel": "Email or username",
@@ -45,7 +41,6 @@
   "loginNoAccount": "Don't have an account? ",
   "loginSignUp": "Sign up",
   "loginOrContinueWith": "or continue with",
-
   "registerTitle": "Create account",
   "registerSubtitle": "Join thousands of explorers sharing routes",
   "registerDisplayName": "Display Name",
@@ -81,7 +76,6 @@
   "registerCreateAccount": "Create Account",
   "registerAlreadyHaveAccount": "Already have an account? ",
   "registerSignIn": "Sign in",
-
   "followers": "Followers",
   "following": "Following",
   "latestTrip": "LATEST TRIP",
@@ -95,7 +89,9 @@
   "stopCount": "{count, plural, one{{count} stop} other{{count} stops}}",
   "@stopCount": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "expand": "Expand",
@@ -106,7 +102,9 @@
   "followRequestsBannerTitle": "Follow Requests ({count})",
   "@followRequestsBannerTitle": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "tapToReview": "Tap to review",
@@ -123,10 +121,11 @@
   "followToSeeMessage": "Follow {handle} to see their itineraries, stops and travel map.",
   "@followToSeeMessage": {
     "placeholders": {
-      "handle": { "type": "String" }
+      "handle": {
+        "type": "String"
+      }
     }
   },
-
   "editProfileTitle": "Edit profile",
   "uploadPhoto": "Upload photo",
   "identitySection": "Identity",
@@ -158,17 +157,17 @@
   "switchToPublicMessage": "{count, plural, one{You have 1 pending follow request. Switching to public will automatically accept it. Continue?} other{You have {count} pending follow requests. Switching to public will automatically accept all of them. Continue?}}",
   "@switchToPublicMessage": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "switchToPublicButton": "Switch to public",
-
   "planFirstJourney": "Plan your first journey",
   "planFirstJourneyHint": "Add stops, transit segments and notes. Share it with friends or keep it private.",
   "createItinerary": "Create itinerary",
   "needInspiration": "Need inspiration?",
   "browseForIdeas": "Explore the community feed for ideas.",
-
   "settingsTitle": "Settings",
   "settingsAccount": "Account",
   "settingsNotifications": "Notifications",
@@ -185,7 +184,6 @@
   "logoutConfirmTitle": "Log out",
   "logoutConfirmMessage": "Are you sure you want to log out?",
   "logoutConfirmButton": "Log out",
-
   "languagePickerTitle": "Language",
   "languageEnglish": "English",
   "languageFrench": "Français",
@@ -193,39 +191,44 @@
   "languageSpanish": "Español",
   "languageGerman": "Deutsch",
   "languageChinese": "简体中文",
-
   "themePickerTitle": "Theme",
   "themeSystem": "System",
   "themeLight": "Light",
   "themeDark": "Dark",
-
   "followRequestsTitle": "Follow Requests",
   "noRequests": "No pending requests",
   "requestsCountLabel": "Requests · {count}",
   "@requestsCountLabel": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "acceptButton": "Accept",
   "rejectButton": "Reject",
-
   "followersTabLabel": "{count, plural, =0{Followers} other{{count} Followers}}",
   "@followersTabLabel": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "followingTabLabel": "{count, plural, =0{Following} other{{count} Following}}",
   "@followingTabLabel": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "followRequestsSectionLabel": "Follow requests · {count}",
   "@followRequestsSectionLabel": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "allFollowersSection": "All followers",
@@ -233,31 +236,32 @@
   "notFollowingAnyone": "Not following anyone yet.",
   "peopleYouFollow": "People you follow",
   "confirmButton": "Confirm",
-
   "searchPeoplePlaceholder": "Search people…",
   "searchForPeople": "Search for people to follow",
   "noUsersFound": "No users found.",
   "searchResultsCount": "Results · {count}",
   "@searchResultsCount": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "followerCountLabel": "{count, plural, one{{count} follower} other{{count} followers}}",
   "@followerCountLabel": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "searchUsersHelp": "Find people by their @username or by their display name. Tap a result to view their profile.",
-
   "myItineraries": "My Itineraries",
   "noItinerariesYet": "No itineraries yet.",
   "tapToCreateFirst": "Tap + to create your first trip.",
   "deleteItineraryTitle": "Delete this itinerary?",
   "deleteItineraryMessage": "All stops, annotations, segments, ratings, and shared links will be permanently destroyed. This cannot be undone.",
   "deleteItineraryButton": "Delete itinerary",
-
   "newItinerary": "New Itinerary",
   "editItinerary": "Edit Itinerary",
   "coverImageLabel": "Cover image",
@@ -297,37 +301,42 @@
   "deleteItineraryFormMessage": "This will permanently delete \"{title}\" and all its stops. Type the title to confirm.",
   "@deleteItineraryFormMessage": {
     "placeholders": {
-      "title": { "type": "String" }
+      "title": {
+        "type": "String"
+      }
     }
   },
-
   "followButton": "Follow",
   "followingButton": "Following",
   "requestedButton": "Requested",
   "unfollowedSnackbar": "Unfollowed @{username}",
   "@unfollowedSnackbar": {
     "placeholders": {
-      "username": { "type": "String" }
+      "username": {
+        "type": "String"
+      }
     }
   },
   "cancelRequestTitle": "Cancel request?",
   "cancelRequestMessage": "Cancel your follow request to @{username}?",
   "@cancelRequestMessage": {
     "placeholders": {
-      "username": { "type": "String" }
+      "username": {
+        "type": "String"
+      }
     }
   },
   "cancelRequestConfirm": "Cancel request",
   "cancelRequestKeep": "Keep",
-
   "undoButton": "UNDO",
   "couldNotUndo": "Could not undo: {error}",
   "@couldNotUndo": {
     "placeholders": {
-      "error": { "type": "String" }
+      "error": {
+        "type": "String"
+      }
     }
   },
-
   "errorNoInternet": "No internet connection. Please check your network and try again.",
   "errorGenericRetry": "An error occurred. Please try again.",
   "errorGeneric": "An error occurred.",
@@ -335,10 +344,11 @@
   "typeToConfirmInstruction": "Type \"{text}\" to confirm:",
   "@typeToConfirmInstruction": {
     "placeholders": {
-      "text": { "type": "String" }
+      "text": {
+        "type": "String"
+      }
     }
   },
-
   "daysLabel": "d",
   "noneOption": "None",
   "discardButton": "Discard",
@@ -346,7 +356,6 @@
   "discardChangesMessage": "Your changes will not be saved.",
   "keepEditingButton": "Keep editing",
   "orderSavedMessage": "Order saved",
-
   "segmentSelectBothStops": "Select both a From and a To stop.",
   "segmentStopsMustDiffer": "From and To stops must differ.",
   "segmentAddLegFirst": "Add at least one leg before saving.",
@@ -356,34 +365,27 @@
   "segmentReplace": "Replace",
   "segmentFromStopLabel": "From Stop",
   "segmentToStopLabel": "To Stop",
-
   "visibilityScreenTitle": "Who can see this?",
   "visibilityAddPerson": "Add person",
   "visibilitySearchByUsername": "Search by username…",
-
   "couldNotLoadRatings": "Could not load ratings",
   "stopNotFound": "Stop not found.",
   "mapPickLocationTitle": "Pick Location",
   "mapConfirmLocation": "Confirm Location",
   "stopCostHint": "e.g. 20",
-
   "ratingsTitle": "Ratings",
   "noRatingsYet": "No ratings yet",
   "ratingsOverallLabel": "OVERALL",
   "rateThisTrip": "Rate this trip",
   "deletedUser": "Deleted User",
-
   "annotationContentHint": "What should travelers know?",
-
   "countryPickerTitle": "Select country",
   "countrySearchHint": "Search countries…",
   "countryNoneClear": "None / Clear",
   "languageSearchHint": "Search languages…",
-
   "coverChangeButton": "Change",
   "coverEditCropButton": "Edit crop",
   "coverAdjustTitle": "Adjust cover photo",
-
   "mdBoldTooltip": "Bold",
   "mdItalicTooltip": "Italic",
   "mdHeading1Tooltip": "Heading 1",
@@ -392,7 +394,6 @@
   "mdNumberedListTooltip": "Numbered list",
   "mdEditTab": "Edit",
   "mdPreviewTab": "Preview",
-
   "legCostHint": "e.g. 12.50",
   "addLegButton": "Add leg",
   "totalLabel": "Total",
@@ -400,11 +401,14 @@
   "reorderOrphanMessage": "{count, plural, one{{count} transit segment will be deleted because its stops will no longer be in adjacent tracks:\n\n{segments}} other{{count} transit segments will be deleted because their stops will no longer be in adjacent tracks:\n\n{segments}}}",
   "@reorderOrphanMessage": {
     "placeholders": {
-      "count": { "type": "int" },
-      "segments": { "type": "String" }
+      "count": {
+        "type": "int"
+      },
+      "segments": {
+        "type": "String"
+      }
     }
   },
-
   "loadingLabel": "Loading…",
   "usernameRequired": "Username is required",
   "usernameTooShort": "Username must be at least 4 characters",
@@ -441,7 +445,6 @@
   "doneTooltip": "Done",
   "addButton": "Add",
   "deleteButton": "Delete",
-
   "deleteAccountTitle": "Delete Account",
   "deleteAccountConfirmTitle": "Delete your account?",
   "deleteAccountConfirmMessage": "Your account, itineraries, follows, and ratings will be anonymized or deleted per our privacy policy. You will be signed out immediately. This cannot be undone.",
@@ -465,7 +468,6 @@
   "deleteAccountGoogleButton": "Continue with Google",
   "deleteAccountOrDivider": "OR",
   "deleteAccountGoogleAlternative": "Prefer Google? Re-authenticate with Google instead.",
-
   "deleteAnnotationTitle": "Delete annotation?",
   "deleteAnnotationMessage": "This will permanently remove this annotation from the itinerary.",
   "deleteAnnotationStopMessage": "This annotation will be permanently removed.",
@@ -489,7 +491,9 @@
   "routeTruncated": "Google Maps can only show the first {count} stops",
   "@routeTruncated": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "openStreetMapContributors": "OpenStreetMap contributors",
@@ -499,7 +503,9 @@
   "ratingCount": "{count, plural, one{1 rating} other{{count} ratings}}",
   "@ratingCount": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "yourRating": "Your rating",
@@ -507,17 +513,20 @@
   "deleteOrphanSegmentsTitle": "{count, plural, one{Delete transit segment?} other{Delete transit segments?}}",
   "@deleteOrphanSegmentsTitle": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "deleteOrphanSegmentsMessage": "{count, plural, one{There is 1 transit segment connecting these two stops. Adding a stop between them will hide it because the stops will no longer be adjacent. Delete the segment and continue?} other{There are {count} transit segments connecting these two stops. Adding a stop between them will hide them because the stops will no longer be adjacent. Delete the segments and continue?}}",
   "@deleteOrphanSegmentsMessage": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "deleteAndContinue": "Delete & continue",
-
   "notSet": "Not set",
   "stopDetailsView": "Stop Details",
   "editStopTitle": "Edit Stop",
@@ -527,7 +536,9 @@
   "duplicateStopMessage": "{name} is already in this itinerary. Add it again anyway?",
   "@duplicateStopMessage": {
     "placeholders": {
-      "name": { "type": "String" }
+      "name": {
+        "type": "String"
+      }
     }
   },
   "addAnyway": "Add anyway",
@@ -601,7 +612,6 @@
   "addStopButton": "Add Stop",
   "deleteStopButton": "Delete Stop",
   "timeToSpendModalTitle": "Time to spend",
-
   "editTransitTitle": "Edit Transit",
   "addTransitTitle": "Add Transit",
   "updateTransitButton": "Update Transit",
@@ -620,7 +630,6 @@
   "freeLegHelp": "Toggle on if this leg costs nothing (walking, included transfer, etc.).",
   "legThoughtsLabel": "Thoughts (optional)",
   "legThoughtsHelp": "Optional. Anything useful to know about this leg — booking tips, transfer instructions, where to sit, ticket cost surprises.",
-
   "annotationTypeLabel": "Type",
   "annotationTypeHelp": "Advice: a helpful tip. Caution: be careful. Avoid: don't go. Info: a neutral note.",
   "annotationAdvice": "Advice",
@@ -633,12 +642,13 @@
   "editAnnotationTitle": "Edit annotation",
   "addAnnotationDialogTitle": "Add annotation",
   "saveButton": "Save",
-
   "moveStopTitle": "Move stop",
   "moveStopDescription": "Choose an existing track, a gap to create a new track, or extract into its own track. Tracks at the {max}-stop maximum are disabled.",
   "@moveStopDescription": {
     "placeholders": {
-      "max": { "type": "int" }
+      "max": {
+        "type": "int"
+      }
     }
   },
   "extractIntoOwnTrack": "Extract into its own new track",
@@ -646,7 +656,9 @@
   "moveStopMoved": "Moved to {destination}",
   "@moveStopMoved": {
     "placeholders": {
-      "destination": { "type": "String" }
+      "destination": {
+        "type": "String"
+      }
     }
   },
   "itineraryChangedElsewhere": "Itinerary changed elsewhere — close and reopen to see the latest order.",
@@ -654,43 +666,56 @@
   "moveStopOrphanSegments": "{count, plural, one{1 transit segment will be deleted because its stops will no longer be in adjacent tracks.} other{{count} transit segments will be deleted because their stops will no longer be in adjacent tracks.}}",
   "@moveStopOrphanSegments": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "moveStopNewTrack": "New track",
   "moveStopNewTrackBefore": "New track before Track {n}",
   "@moveStopNewTrackBefore": {
     "placeholders": {
-      "n": { "type": "int" }
+      "n": {
+        "type": "int"
+      }
     }
   },
   "moveStopNewTrackAfter": "New track after Track {n}",
   "@moveStopNewTrackAfter": {
     "placeholders": {
-      "n": { "type": "int" }
+      "n": {
+        "type": "int"
+      }
     }
   },
   "moveStopNewTrackBetween": "New track between Track {a} and Track {b}",
   "@moveStopNewTrackBetween": {
     "placeholders": {
-      "a": { "type": "int" },
-      "b": { "type": "int" }
+      "a": {
+        "type": "int"
+      },
+      "b": {
+        "type": "int"
+      }
     }
   },
   "moveStopCurrentSuffix": "  •  current",
   "moveStopFull": "Full {max}/{max}",
   "@moveStopFull": {
     "placeholders": {
-      "max": { "type": "int" }
+      "max": {
+        "type": "int"
+      }
     }
   },
   "extractSubtitle": "Splits this stop out of \"{trackName}\" — new track lands right after.",
   "@extractSubtitle": {
     "placeholders": {
-      "trackName": { "type": "String" }
+      "trackName": {
+        "type": "String"
+      }
     }
   },
-
   "removeRatingTitle": "Remove your rating?",
   "removeRatingMessage": "Your rating will be deleted and the average will update for everyone viewing this itinerary.",
   "rateItineraryTitle": "Rate this itinerary",
@@ -711,12 +736,14 @@
   "familyFriendlyHelp": "Optional. How suitable the trip is for families with children.",
   "crowdednessLabel": "Uncrowded",
   "crowdednessHelp": "Optional. How uncrowded and spacious it felt — 5 = pleasantly uncrowded, 1 = overcrowded.",
-
   "showOptionalFields": "Show optional fields",
-  "@showOptionalFields": {"description": "Toggle label to reveal hidden optional fields on the stop/itinerary creation form"},
+  "@showOptionalFields": {
+    "description": "Toggle label to reveal hidden optional fields on the stop/itinerary creation form"
+  },
   "hideOptionalFields": "Hide optional fields",
-  "@hideOptionalFields": {"description": "Toggle label to hide optional fields again on the stop/itinerary creation form"},
-
+  "@hideOptionalFields": {
+    "description": "Toggle label to hide optional fields again on the stop/itinerary creation form"
+  },
   "transportModeWalk": "Walk",
   "transportModeBus": "Bus",
   "transportModeTram": "Tram",
@@ -728,7 +755,6 @@
   "transportModeFerry": "Ferry",
   "transportModeCar": "Car",
   "transportModeAirplane": "Airplane",
-
   "dimensionOverall": "Overall",
   "dimensionOverallDesc": "General impression",
   "dimensionSafetyDesc": "How safe you felt throughout",
@@ -739,57 +765,67 @@
   "dimensionRatingTitle": "{label} Rating",
   "@dimensionRatingTitle": {
     "placeholders": {
-      "label": { "type": "String" }
+      "label": {
+        "type": "String"
+      }
     }
   },
   "noRatingsYetFor": "No ratings yet for {label}",
   "@noRatingsYetFor": {
     "placeholders": {
-      "label": { "type": "String" }
+      "label": {
+        "type": "String"
+      }
     }
   },
   "basedOnRatings": "{count, plural, one{Based on {count} rating} other{Based on {count} ratings}}",
   "@basedOnRatings": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "ratersLabel": "Raters",
-
   "annotationAdviceDesc": "Something useful or pro-tip.",
   "annotationCautionDesc": "Pay attention — surprises possible.",
   "annotationAvoidDesc": "Don't do this. Save your time.",
   "annotationInfoDesc": "A neutral fact worth knowing.",
-
   "unknownUser": "Unknown",
   "timeAgoMonths": "{count}mo ago",
   "@timeAgoMonths": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "timeAgoDays": "{count}d ago",
   "@timeAgoDays": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "timeAgoHours": "{count}h ago",
   "@timeAgoHours": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "timeAgoMinutes": "{count}min ago",
   "@timeAgoMinutes": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "timeJustNow": "Just now",
-
   "yearsAbbrev": "y",
-
   "timeLabel": "Time",
   "transitLabel": "Transit",
   "noLegsYetTapAdd": "No legs yet. Tap ＋ to add.",
@@ -797,16 +833,19 @@
   "fromStopName": "From {name}",
   "@fromStopName": {
     "placeholders": {
-      "name": { "type": "String" }
+      "name": {
+        "type": "String"
+      }
     }
   },
   "toStopName": "To {name}",
   "@toStopName": {
     "placeholders": {
-      "name": { "type": "String" }
+      "name": {
+        "type": "String"
+      }
     }
   },
-
   "visibilityPublicDesc": "Anyone with the link can view.",
   "visibilityFollowersDesc": "Only people who follow you.",
   "visibilityRestrictedDesc": "Only people you allow.",
@@ -816,17 +855,20 @@
   "personCount": "{count, plural, one{{count} person} other{{count} people}}",
   "@personCount": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "removedFromAllowlist": "Removed {name} from allowlist",
   "@removedFromAllowlist": {
     "placeholders": {
-      "name": { "type": "String" }
+      "name": {
+        "type": "String"
+      }
     }
   },
   "addPeople": "Add people",
-
   "otherOption": "Other",
   "thisItineraryFallback": "this itinerary",
   "discardReorderMessage": "Your reorder will not be saved.",
@@ -837,28 +879,35 @@
   "transitSegmentsWillBeDeleted": "{count, plural, one{1 transit segment will be deleted} other{{count} transit segments will be deleted}}",
   "@transitSegmentsWillBeDeleted": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "andMoreCount": "… and {count} more",
   "@andMoreCount": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "altsCount": "{count, plural, one{{count} alt} other{{count} alts}}",
   "@altsCount": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "segmentToWillBeDeleted": "→ {name}  —  segment will be deleted",
   "@segmentToWillBeDeleted": {
     "placeholders": {
-      "name": { "type": "String" }
+      "name": {
+        "type": "String"
+      }
     }
   },
-
   "reorderAlternativesTitle": "Reorder alternatives",
   "reorderAlternativesHint": "Drag to change which option appears first. Tap Save to apply.",
   "emptyTrackLabel": "(empty track)",
@@ -872,7 +921,9 @@
   "travelersRatedThis": "{count, plural, one{{count} traveler rated this} other{{count} travelers rated this}}",
   "@travelersRatedThis": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "byDimensionLabel": "By dimension",
@@ -881,7 +932,6 @@
   "changeButton": "Change",
   "hideReview": "Hide review",
   "readReview": "Read review",
-
   "notesLabel": "Notes",
   "viewLess": "view less",
   "viewMore": "... view more",
@@ -913,7 +963,9 @@
   "stopWithNumber": "Stop {n}",
   "@stopWithNumber": {
     "placeholders": {
-      "n": { "type": "int" }
+      "n": {
+        "type": "int"
+      }
     }
   },
   "undoLabel": "Undo",
@@ -934,25 +986,36 @@
   "alreadyInItinerary": "{name} is already in this itinerary.",
   "@alreadyInItinerary": {
     "placeholders": {
-      "name": { "type": "String" }
+      "name": {
+        "type": "String"
+      }
     }
   },
   "stopNumberOfTotal": "Stop {n} of {total}",
   "@stopNumberOfTotal": {
     "placeholders": {
-      "n": { "type": "int" },
-      "total": { "type": "int" }
+      "n": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
     }
   },
   "shareCaption": "Check out \"{title}\" on Ntripi — {stops}, {duration}",
   "@shareCaption": {
     "placeholders": {
-      "title": { "type": "String" },
-      "stops": { "type": "String" },
-      "duration": { "type": "String" }
+      "title": {
+        "type": "String"
+      },
+      "stops": {
+        "type": "String"
+      },
+      "duration": {
+        "type": "String"
+      }
     }
   },
-
   "apiErrorNotAuthenticated": "You are not signed in.",
   "apiErrorAccountDeactivated": "Your account has been deactivated.",
   "apiErrorEmailUnverified": "Verify your email via Google to do this.",
@@ -987,7 +1050,6 @@
   "apiErrorTosRequired": "You must accept the Terms of Service to register.",
   "apiErrorUsernameTaken": "This username is already taken.",
   "apiErrorEmailTaken": "An account with this email already exists.",
-
   "reportItineraryTitle": "Report this itinerary",
   "reportItineraryTooltip": "Report",
   "reportReasonSpam": "Spam",
@@ -1030,8 +1092,81 @@
   "appealReasonLabel": "Your explanation",
   "appealReasonRequired": "Please explain why you're appealing.",
   "appealCooldownUntil": "You can appeal again after {date}.",
-  "@appealCooldownUntil": {"placeholders": {"date": {"type": "String"}}},
+  "@appealCooldownUntil": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
   "apiErrorAppealPending": "You already have an appeal pending for this item.",
   "apiErrorAppealCooldown": "You can only appeal this item again 30 days after a rejected appeal.",
-  "apiErrorAppealTargetNotFound": "There is no moderation action to appeal here."
+  "apiErrorAppealTargetNotFound": "There is no moderation action to appeal here.",
+  "apiErrorTextModerationRejected": "This text may violate the community guidelines, so it wasn't saved. Please edit it and try again.",
+  "apiErrorCannotBlockSelf": "You can't block yourself.",
+  "moderationRejectedBecause": "This text wasn't saved because it may contain {reason}. Please edit it and try again.",
+  "@moderationRejectedBecause": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "moderationCategoryMinors": "content involving minors",
+  "moderationCategorySexual": "sexual content",
+  "moderationCategoryHate": "hate speech",
+  "moderationCategoryHarassment": "harassment",
+  "moderationCategoryViolence": "violent content",
+  "moderationCategorySelfHarm": "content about self-harm",
+  "moderationCategoryIllicit": "illegal activity",
+  "reportReasonCsam": "Child sexual abuse material",
+  "reportReasonSexualContent": "Nudity or sexual content",
+  "reportReasonViolenceThreat": "Violence or threats",
+  "reportContent": "Report",
+  "reportUser": "Report this account",
+  "reportStop": "Report this stop",
+  "reportReview": "Report this review",
+  "blockUser": "Block",
+  "unblockUser": "Unblock",
+  "blockUserTitle": "Block @{username}?",
+  "@blockUserTitle": {
+    "placeholders": {
+      "username": {
+        "type": "String"
+      }
+    }
+  },
+  "blockUserMessage": "You won't see each other's trips or profiles, and neither of you can follow the other. They won't be told.",
+  "blockedUsers": "Blocked accounts",
+  "blockedUsersEmpty": "You haven't blocked anyone.",
+  "blockedUserRemoved": "Unblocked @{username}.",
+  "@blockedUserRemoved": {
+    "placeholders": {
+      "username": {
+        "type": "String"
+      }
+    }
+  },
+  "blockedUserAdded": "Blocked @{username}.",
+  "@blockedUserAdded": {
+    "placeholders": {
+      "username": {
+        "type": "String"
+      }
+    }
+  },
+  "abuseContact": "Report abuse",
+  "abuseContactSubtitle": "Email us about harmful content",
+  "communityGuidelines": "Community guidelines",
+  "moderationHintTitle": "This might read as offensive",
+  "moderationHintBody": "You can post it anyway — this is only a heads-up, not a block.",
+  "hiddenAppealAction": "Ask us to review this",
+  "hiddenBannerReason": "Reason: {reason}",
+  "@hiddenBannerReason": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  }
 }

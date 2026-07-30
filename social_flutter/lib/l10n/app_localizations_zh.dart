@@ -2348,4 +2348,110 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get apiErrorAppealTargetNotFound => '此处没有可申诉的管理操作。';
+
+  @override
+  String get apiErrorTextModerationRejected => '这段文字可能违反社区准则，未能保存。请修改后重试。';
+
+  @override
+  String get apiErrorCannotBlockSelf => '你不能屏蔽自己。';
+
+  @override
+  String moderationRejectedBecause(String reason) {
+    return '这段文字未能保存，因为其中可能包含$reason。请修改后重试。';
+  }
+
+  @override
+  String get moderationCategoryMinors => '涉及未成年人的内容';
+
+  @override
+  String get moderationCategorySexual => '色情内容';
+
+  @override
+  String get moderationCategoryHate => '仇恨言论';
+
+  @override
+  String get moderationCategoryHarassment => '骚扰内容';
+
+  @override
+  String get moderationCategoryViolence => '暴力内容';
+
+  @override
+  String get moderationCategorySelfHarm => '有关自我伤害的内容';
+
+  @override
+  String get moderationCategoryIllicit => '非法活动';
+
+  @override
+  String get reportReasonCsam => '儿童性虐待内容';
+
+  @override
+  String get reportReasonSexualContent => '裸露或色情内容';
+
+  @override
+  String get reportReasonViolenceThreat => '暴力或威胁';
+
+  @override
+  String get reportContent => '举报';
+
+  @override
+  String get reportUser => '举报该账号';
+
+  @override
+  String get reportStop => '举报该地点';
+
+  @override
+  String get reportReview => '举报该评价';
+
+  @override
+  String get blockUser => '屏蔽';
+
+  @override
+  String get unblockUser => '解除屏蔽';
+
+  @override
+  String blockUserTitle(String username) {
+    return '屏蔽 @$username？';
+  }
+
+  @override
+  String get blockUserMessage => '你们将无法看到彼此的行程和主页，也无法互相关注。对方不会收到通知。';
+
+  @override
+  String get blockedUsers => '已屏蔽的账号';
+
+  @override
+  String get blockedUsersEmpty => '你还没有屏蔽任何人。';
+
+  @override
+  String blockedUserRemoved(String username) {
+    return '已解除屏蔽 @$username。';
+  }
+
+  @override
+  String blockedUserAdded(String username) {
+    return '已屏蔽 @$username。';
+  }
+
+  @override
+  String get abuseContact => '举报滥用行为';
+
+  @override
+  String get abuseContactSubtitle => '就有害内容与我们联系';
+
+  @override
+  String get communityGuidelines => '社区准则';
+
+  @override
+  String get moderationHintTitle => '这段文字可能会被视为冒犯';
+
+  @override
+  String get moderationHintBody => '你仍然可以发布——这只是提醒，不会阻止你。';
+
+  @override
+  String get hiddenAppealAction => '申请复核';
+
+  @override
+  String hiddenBannerReason(String reason) {
+    return '原因：$reason';
+  }
 }

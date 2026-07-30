@@ -28,6 +28,17 @@ _PLACE_TYPE_PATTERN = (
 )
 _VISIBILITY = Literal['public', 'followers', 'restricted', 'only_me']
 
+# Caps on the free-text columns (all `Text` in PostgreSQL, so previously
+# unbounded). These bound what a single write can submit to the moderation
+# provider — both a cost ceiling and a defence against a megabyte of prose in
+# one request. Generous enough that no plausible travel note hits them.
+_MAX_DESCRIPTION = 4000
+_MAX_STOP_ADDRESS = 400
+_MAX_STOP_NOTES = 2000
+_MAX_RATING_NOTE = 2000
+_MAX_LEG_DIRECTION = 200
+_MAX_LEG_NOTES = 1000
+
 
 # A stop's map_url may only point at Google Maps — OSM's gazetteer is thinner,
 # so users paste a Google Maps link for places it can't resolve. This is the
@@ -134,7 +145,7 @@ class StopCreate(BaseModel):
     before_track_id: Optional[uuid.UUID] = None
 
     place_name: Optional[str] = Field(None, max_length=200)
-    place_address: Optional[str] = None
+    place_address: Optional[str] = Field(None, max_length=_MAX_STOP_ADDRESS)
     lat: Optional[float] = Field(None, ge=-90, le=90)
     lng: Optional[float] = Field(None, ge=-180, le=180)
     map_url: Optional[str] = Field(None, max_length=500)
@@ -144,14 +155,14 @@ class StopCreate(BaseModel):
     duration_min: Optional[int] = Field(None, ge=0)
     cost: Decimal = Field(default=Decimal("0.00"), ge=0)
     is_free: bool = False
-    notes: Optional[str] = None
+    notes: Optional[str] = Field(None, max_length=_MAX_STOP_NOTES)
 
     _validate_map_url = field_validator("map_url")(validate_google_maps_url)
 
 
 class StopUpdate(BaseModel):
     place_name: Optional[str] = Field(None, max_length=200)
-    place_address: Optional[str] = None
+    place_address: Optional[str] = Field(None, max_length=_MAX_STOP_ADDRESS)
     lat: Optional[float] = Field(None, ge=-90, le=90)
     lng: Optional[float] = Field(None, ge=-180, le=180)
     map_url: Optional[str] = Field(None, max_length=500)
@@ -161,7 +172,7 @@ class StopUpdate(BaseModel):
     _validate_map_url = field_validator("map_url")(validate_google_maps_url)
     cost: Optional[Decimal] = Field(None, ge=0)
     is_free: Optional[bool] = None
-    notes: Optional[str] = None
+    notes: Optional[str] = Field(None, max_length=_MAX_STOP_NOTES)
 
     # Optional move: if track_id provided and differs from current, stop is moved.
     track_id: Optional[uuid.UUID] = None
@@ -281,11 +292,11 @@ class TransportLegCreate(BaseModel):
     position: int = Field(..., ge=1)
     mode: _LEG_MODES
     line: Optional[str] = Field(None, max_length=30)
-    direction: Optional[str] = None
+    direction: Optional[str] = Field(None, max_length=_MAX_LEG_DIRECTION)
     duration_min: Optional[int] = Field(None, ge=0)
     cost: Decimal = Field(default=Decimal("0.00"), ge=0)
     is_free: bool = False
-    notes: Optional[str] = None
+    notes: Optional[str] = Field(None, max_length=_MAX_LEG_NOTES)
     note_type: Optional[_NOTE_TYPES] = None
 
 
@@ -294,11 +305,11 @@ class TransportLegUpdate(BaseModel):
     # unit when the parent segment is updated (full replace via PATCH /segments/{id}).
     mode: Optional[_LEG_MODES] = None
     line: Optional[str] = Field(None, max_length=30)
-    direction: Optional[str] = None
+    direction: Optional[str] = Field(None, max_length=_MAX_LEG_DIRECTION)
     duration_min: Optional[int] = Field(None, ge=0)
     cost: Optional[Decimal] = Field(None, ge=0)
     is_free: Optional[bool] = None
-    notes: Optional[str] = None
+    notes: Optional[str] = Field(None, max_length=_MAX_LEG_NOTES)
     note_type: Optional[_NOTE_TYPES] = None
 
 
@@ -358,14 +369,14 @@ class TransitSegmentResponse(BaseModel):
 
 class ItineraryCreate(BaseModel):
     title: str = Field(..., min_length=1, max_length=200)
-    description: Optional[str] = None
+    description: Optional[str] = Field(None, max_length=_MAX_DESCRIPTION)
     currency: str = Field(default="EUR", max_length=3, min_length=3)
     visibility: _VISIBILITY = 'only_me'
 
 
 class ItineraryUpdate(BaseModel):
     title: Optional[str] = Field(None, min_length=1, max_length=200)
-    description: Optional[str] = None
+    description: Optional[str] = Field(None, max_length=_MAX_DESCRIPTION)
     currency: Optional[str] = Field(None, max_length=3, min_length=3)
     visibility: Optional[_VISIBILITY] = None
 
@@ -381,7 +392,7 @@ class RatingSubmit(BaseModel):
     accessibility_stars: Optional[int] = Field(None, ge=1, le=5)
     family_friendly_stars: Optional[int] = Field(None, ge=1, le=5)
     crowdedness_stars: Optional[int] = Field(None, ge=1, le=5)
-    note: Optional[str] = None
+    note: Optional[str] = Field(None, max_length=_MAX_RATING_NOTE)
 
 
 class RatingResponse(BaseModel):
@@ -415,6 +426,9 @@ class RatingWithUser(BaseModel):
     note: Optional[str]
     updated_at: datetime
     user: RaterInfo
+    # Appended, never inserted: field order is JSON key order, which is part of
+    # the API contract. Needed so a reader can report an individual review.
+    id: uuid.UUID
 
 
 class RatingDistribution(BaseModel):

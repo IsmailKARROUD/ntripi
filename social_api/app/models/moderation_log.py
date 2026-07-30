@@ -1,11 +1,19 @@
 """
 models/moderation_log.py — SQLAlchemy ORM model for the moderation_log table.
 
-Append-only audit trail of every operator action taken from the /admin
-dashboard (dismiss / hide / delete / warn / ban + reversals + appeal decisions).
-This is the legal/safety evidence record: a content_snapshot is captured at
-action time so the raw text/media URLs survive even if the original row is
-later hard-purged.
+Append-only audit trail of every moderation action — operator actions taken from
+the /admin dashboard (dismiss / hide / delete / warn / ban + reversals + appeal
+decisions) and automated ones (classifier rejections, report-threshold and SLA
+auto-hides, re-checks, CSAM escalations). This is the legal/safety evidence
+record and the proof we acted inside 24 hours.
+
+Two flavours of row:
+  operator — admin_user_id set, content_snapshot captured at action time so the
+             raw text/media URLs survive a later hard purge.
+  system   — admin_user_id NULL and content_snapshot NULL by design. An
+             automated row records structured facts only (category, threshold,
+             decision id) so the audit trail holds no raw content text, email
+             addresses, or display names.
 
 target_id is polymorphic (itinerary or user) with NO foreign key on purpose —
 a hard user delete (delete_my_account) must NOT cascade away the evidence, and
@@ -30,24 +38,42 @@ from sqlalchemy.orm import Mapped, mapped_column
 from app.database import Base
 
 # Single source of truth for the enum values — kept in sync with the check
-# constraints below and admin_service / appeal_service.
-MODERATION_LOG_TARGET_TYPES = ("itinerary", "user")
-MODERATION_LOG_ACTIONS = (
+# constraints below and admin_service / appeal_service / report_service.
+MODERATION_LOG_TARGET_TYPES = ("itinerary", "user", "rating")
+
+# Operator actions taken by a human from the dashboard.
+MODERATION_LOG_OPERATOR_ACTIONS = (
     "dismiss", "hide", "unhide", "delete", "warn", "ban", "unban",
     "appeal_restore", "appeal_uphold", "appeal_reduce",
 )
+
+# System actions with no human actor (admin_user_id NULL, content_snapshot NULL —
+# automated rows carry no raw content, only structured facts in `reason`).
+MODERATION_LOG_SYSTEM_ACTIONS = (
+    "auto_reject",        # classifier blocked a write, or a re-check rejected live content
+    "auto_hide_reports",  # distinct-reporter threshold reached
+    "auto_hide_sla",      # the 24 h review deadline was about to lapse
+    "recheck",            # 'pending' content re-scanned after a provider outage
+    "appeal_filed",       # the user asked for a decision to be reviewed
+    "legal_escalate",     # CSAM signal — obligations beyond hiding
+)
+
+MODERATION_LOG_ACTIONS = (
+    MODERATION_LOG_OPERATOR_ACTIONS + MODERATION_LOG_SYSTEM_ACTIONS
+)
+
+_ACTIONS_SQL = ",".join(f"'{action}'" for action in MODERATION_LOG_ACTIONS)
 
 
 class ModerationLog(Base):
     __tablename__ = "moderation_log"
     __table_args__ = (
         CheckConstraint(
-            "target_type IN ('itinerary','user')",
+            "target_type IN ('itinerary','user','rating')",
             name="ck_moderation_log_target_type",
         ),
         CheckConstraint(
-            "action IN ('dismiss','hide','unhide','delete','warn','ban','unban',"
-            "'appeal_restore','appeal_uphold','appeal_reduce')",
+            f"action IN ({_ACTIONS_SQL})",
             name="ck_moderation_log_action",
         ),
     )

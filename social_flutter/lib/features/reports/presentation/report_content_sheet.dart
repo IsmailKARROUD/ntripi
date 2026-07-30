@@ -1,49 +1,41 @@
-// features/itineraries/presentation/widgets/report_itinerary_sheet.dart
+// features/reports/presentation/report_content_sheet.dart
 //
-// Bottom sheet for reporting an itinerary as inappropriate. Viewer picks one
-// reason and optionally adds details; the report is POSTed fire-and-forget to
-// /reports (see ItineraryRepository.reportItinerary). Modelled on
-// rate_itinerary_dialog.dart (same sheet shape, SavingOverlay, PopScope).
+// The single reporting surface for every kind of user content: itineraries,
+// stops, reviews and profiles. Viewer picks one reason and optionally adds
+// details; the report is POSTed to /reports.
+//
+// One sheet for all of them on purpose — a report action missing from any UGC
+// surface is an app-store rejection risk, and four near-identical sheets would
+// drift apart the first time the category list changed.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:social_flutter/core/api/api_client.dart';
 import 'package:social_flutter/core/ui/app_theme.dart';
-import 'package:social_flutter/features/itineraries/data/itinerary_repository.dart';
+import 'package:social_flutter/features/reports/data/report_repository.dart';
+import 'package:social_flutter/features/reports/domain/report_target.dart';
 import 'package:social_flutter/l10n/app_localizations.dart';
 import 'package:social_flutter/shared/widgets/loaders.dart';
 import 'package:social_flutter/shared/widgets/offline_gate.dart';
 import 'package:social_flutter/shared/widgets/saving_overlay.dart';
 
-// Wire values sent to the backend — must match the reason regex in
-// app/schemas/report.py. UI-only, so no domain model is needed.
-const _kReportReasons = <String>[
-  'spam',
-  'nsfw',
-  'violence',
-  'hate_speech',
-  'harassment',
-  'copyright',
-  'other',
-];
-
 String _reasonLabel(String reason, AppLocalizations l10n) {
   return switch (reason) {
     'spam' => l10n.reportReasonSpam,
-    'nsfw' => l10n.reportReasonNsfw,
-    'violence' => l10n.reportReasonViolence,
-    'hate_speech' => l10n.reportReasonHateSpeech,
     'harassment' => l10n.reportReasonHarassment,
-    'copyright' => l10n.reportReasonCopyright,
+    'hate_speech' => l10n.reportReasonHateSpeech,
+    'sexual_content' => l10n.reportReasonSexualContent,
+    'violence_threat' => l10n.reportReasonViolenceThreat,
+    'csam' => l10n.reportReasonCsam,
     _ => l10n.reportReasonOther,
   };
 }
 
 /// Opens the report bottom sheet and returns when the user submits or dismisses.
-Future<void> showReportItinerarySheet(
+Future<void> showReportContentSheet(
   BuildContext context,
   WidgetRef ref,
-  String itineraryId,
+  ReportTarget target,
 ) {
   return showModalBottomSheet<void>(
     context: context,
@@ -55,29 +47,23 @@ Future<void> showReportItinerarySheet(
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
     ),
-    builder: (_) => _ReportItinerarySheet(
-      itineraryId: itineraryId,
-      parentRef: ref,
-    ),
+    builder: (_) => _ReportContentSheet(target: target, parentRef: ref),
   );
 }
 
 // ---------------------------------------------------------------------------
 
-class _ReportItinerarySheet extends StatefulWidget {
-  final String itineraryId;
+class _ReportContentSheet extends StatefulWidget {
+  final ReportTarget target;
   final WidgetRef parentRef;
 
-  const _ReportItinerarySheet({
-    required this.itineraryId,
-    required this.parentRef,
-  });
+  const _ReportContentSheet({required this.target, required this.parentRef});
 
   @override
-  State<_ReportItinerarySheet> createState() => _ReportItinerarySheetState();
+  State<_ReportContentSheet> createState() => _ReportContentSheetState();
 }
 
-class _ReportItinerarySheetState extends State<_ReportItinerarySheet> {
+class _ReportContentSheetState extends State<_ReportContentSheet> {
   String? _reason;
   final _notesController = TextEditingController();
   bool _saving = false;
@@ -96,11 +82,10 @@ class _ReportItinerarySheetState extends State<_ReportItinerarySheet> {
     final messenger = ScaffoldMessenger.of(context);
     setState(() => _saving = true);
     try {
-      final notes = _notesController.text.trim();
-      await widget.parentRef.read(itineraryRepositoryProvider).reportItinerary(
-            itineraryId: widget.itineraryId,
+      await widget.parentRef.read(reportRepositoryProvider).report(
+            target: widget.target,
             reason: _reason!,
-            notes: notes.isEmpty ? null : notes,
+            notes: _notesController.text,
           );
       if (mounted) Navigator.of(context).pop();
       messenger.showSnackBar(SnackBar(content: Text(l10n.reportThanks)));
@@ -171,15 +156,15 @@ class _ReportItinerarySheetState extends State<_ReportItinerarySheet> {
                 clipBehavior: Clip.antiAlias,
                 child: Column(
                   children: [
-                    for (var i = 0; i < _kReportReasons.length; i++) ...[
+                    for (var i = 0; i < kReportReasons.length; i++) ...[
                       if (i > 0)
                         Divider(height: 1, indent: 16, endIndent: 16, color: nt.border),
                       _ReasonRow(
-                        label: _reasonLabel(_kReportReasons[i], l10n),
-                        selected: _reason == _kReportReasons[i],
+                        label: _reasonLabel(kReportReasons[i], l10n),
+                        selected: _reason == kReportReasons[i],
                         onTap: _saving
                             ? null
-                            : () => setState(() => _reason = _kReportReasons[i]),
+                            : () => setState(() => _reason = kReportReasons[i]),
                       ),
                     ],
                   ],

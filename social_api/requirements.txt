@@ -19,3 +19,7 @@ boto3==1.43.2
 # Google". The [requests] extra pulls in `requests`, needed by the
 # google.auth.transport.requests.Request transport (not a core google-auth dep).
 google-auth[requests]==2.55.0
+# Offline fallback classifier for text moderation — used when the primary
+# provider is unreachable, so a vendor outage never leaves text unscanned.
+# Pulls in scikit-learn; that weight is the price of a no-network fallback.
+alt-profanity-check==1.6.1

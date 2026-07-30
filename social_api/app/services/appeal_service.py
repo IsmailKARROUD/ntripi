@@ -21,16 +21,30 @@ from sqlalchemy.orm import Session
 
 from app.models.appeal import Appeal
 from app.models.itinerary import Itinerary
+from app.models.itinerary_rating import ItineraryRating
 from app.models.moderation_log import ModerationLog
+from app.models.text_moderation_decision import TextModerationDecision
 from app.models.user import User
-from app.services import admin_service, email_service
+from app.services import admin_service, email_service, moderation_actions
 from app.services.admin_service import TARGET_ITINERARY, TARGET_USER
+from app.services.moderation_actions import TARGET_RATING
 
-# Only penalties a user can meaningfully contest. A `hide` is surfaced on the
-# violations page for transparency but isn't appealable on its own — the in-app
-# banner already explains it, and `reduce` converts deletes into hides.
-APPEALABLE_ACTIONS = ("delete", "warn", "ban")
-VISIBLE_ACTIONS = ("hide", "delete", "warn", "ban")
+# Penalties a user can contest. Hides are appealable — including the automated
+# ones: an auto-hide is a provisional action taken by a classifier or a reporter
+# count, nobody has judged it, and the whole point of the SLA path is that the
+# appeal route stays open when we could not review in time. A one-tap appeal is
+# the only thing standing between a false positive and a silenced user.
+APPEALABLE_ACTIONS = (
+    "delete", "warn", "ban",
+    "hide", "auto_hide_reports", "auto_hide_sla", "auto_reject",
+)
+VISIBLE_ACTIONS = (
+    "hide", "delete", "warn", "ban",
+    "auto_hide_reports", "auto_hide_sla", "auto_reject",
+)
+
+# Actions whose remedy is "make the content visible again".
+_HIDE_FAMILY = ("hide", "auto_hide_reports", "auto_hide_sla", "auto_reject")
 
 REAPPEAL_COOLDOWN = timedelta(days=30)
 MAX_REASON_LEN = 2000
@@ -69,18 +83,25 @@ def _owned_itinerary_ids(db: Session, user: User) -> list[uuid.UUID]:
     ).scalars().all())
 
 
+def _owns_target(db: Session, user: User, target_type: str, target_id: uuid.UUID) -> bool:
+    """Whether this user authored the target. The IDOR guard on every appeal —
+    without it, anyone could appeal anyone's moderation action."""
+    if target_type == TARGET_USER:
+        return target_id == user.id
+    if target_type == TARGET_ITINERARY:
+        return target_id in _owned_itinerary_ids(db, user)
+    if target_type == TARGET_RATING:
+        rating = db.get(ItineraryRating, target_id)
+        return rating is not None and rating.user_id == user.id
+    return False
+
+
 def find_action(
     db: Session, user: User, target_type: str, target_id: uuid.UUID,
 ) -> ModerationLog | None:
     """The most recent appealable action against this user or their content.
     Returns None when the target isn't theirs — callers treat that as 404."""
-    if target_type == TARGET_USER:
-        if target_id != user.id:
-            return None
-    elif target_type == TARGET_ITINERARY:
-        if target_id not in _owned_itinerary_ids(db, user):
-            return None
-    else:
+    if not _owns_target(db, user, target_type, target_id):
         return None
 
     return db.execute(
@@ -154,6 +175,13 @@ def create_appeal(
         user_reason=reason,
     )
     db.add(appeal)
+    # Filing an appeal is itself an auditable moderation event — it is the proof
+    # that the contest path was available and used. No snapshot: the user's own
+    # words live on the appeal row, and audit rows carry no content.
+    moderation_actions.log_system_action(
+        db, target_type, target_id, "appeal_filed",
+        f"Appeal filed against action {action.action}.",
+    )
     db.commit()
     db.refresh(appeal)
     return appeal
@@ -163,10 +191,40 @@ def create_appeal(
 # Violations feed (in-app "Account status" page)
 # ---------------------------------------------------------------------------
 
+def _owned_rating_ids(db: Session, user: User) -> list[uuid.UUID]:
+    return list(db.execute(
+        select(ItineraryRating.id).where(ItineraryRating.user_id == user.id)
+    ).scalars().all())
+
+
+def _resolve_item_title(db: Session, row: ModerationLog) -> str | None:
+    """A label for the actioned item — never the moderated content itself.
+
+    Operator actions capture a snapshot at action time; automated ones carry no
+    snapshot by design (audit rows hold no content), so the title is read from
+    the live row instead. Without this fallback an automated hide would show the
+    author "something of yours was hidden" with no way to tell what.
+    """
+    snapshot = row.content_snapshot or {}
+    label = snapshot.get("title") or snapshot.get("username")
+    if label:
+        return label
+
+    if row.target_type == TARGET_ITINERARY:
+        itinerary = db.get(Itinerary, row.target_id) if row.target_id else None
+        return itinerary.title if itinerary is not None else None
+    if row.target_type == TARGET_RATING:
+        return "Your review"
+    if row.target_type == TARGET_USER:
+        return "Your profile"
+    return None
+
+
 def violations_feed(db: Session, user: User) -> list[dict]:
     """Moderation actions taken against this user or their content, newest first,
     each annotated with whether it can be appealed right now."""
     itinerary_ids = _owned_itinerary_ids(db, user)
+    rating_ids = _owned_rating_ids(db, user)
 
     conditions = [
         (ModerationLog.target_type == TARGET_USER) & (ModerationLog.target_id == user.id)
@@ -175,6 +233,11 @@ def violations_feed(db: Session, user: User) -> list[dict]:
         conditions.append(
             (ModerationLog.target_type == TARGET_ITINERARY)
             & (ModerationLog.target_id.in_(itinerary_ids))
+        )
+    if rating_ids:
+        conditions.append(
+            (ModerationLog.target_type == TARGET_RATING)
+            & (ModerationLog.target_id.in_(rating_ids))
         )
 
     rows = db.execute(
@@ -209,14 +272,13 @@ def violations_feed(db: Session, user: User) -> list[dict]:
             and cooldown_until is None
         )
 
-        snapshot = row.content_snapshot or {}
         items.append({
             "id": row.id,
             "action": row.action,
             "target_type": row.target_type,
             "target_id": row.target_id,
             # Title only — never the moderated content itself.
-            "item_title": snapshot.get("title") or snapshot.get("username"),
+            "item_title": _resolve_item_title(db, row),
             "created_at": row.created_at,
             "active": active,
             "appealable": appealable,
@@ -227,17 +289,27 @@ def violations_feed(db: Session, user: User) -> list[dict]:
 
 
 def _action_still_active(db: Session, row: ModerationLog, user: User) -> bool:
-    """False once the penalty has been lifted (unhide / unban / appeal restore)."""
+    """False once the penalty has been lifted (unhide / unban / appeal restore).
+
+    An inactive action drops out of the appealable set: there is nothing left to
+    contest once the content is visible again.
+    """
     if row.action == "ban":
         return not user.is_active
-    if row.action in ("delete", "hide"):
+    if row.action == "delete":
         itinerary = db.get(Itinerary, row.target_id) if row.target_id else None
-        if itinerary is None:
-            return False
-        return (
-            itinerary.deleted_at is not None if row.action == "delete"
-            else itinerary.hidden_at is not None
-        )
+        return itinerary is not None and itinerary.deleted_at is not None
+    if row.action in _HIDE_FAMILY:
+        if row.target_type == TARGET_ITINERARY:
+            itinerary = db.get(Itinerary, row.target_id) if row.target_id else None
+            return itinerary is not None and itinerary.hidden_at is not None
+        if row.target_type == TARGET_RATING:
+            rating = db.get(ItineraryRating, row.target_id) if row.target_id else None
+            return rating is not None and rating.moderation_status in ("hidden", "rejected")
+        if row.target_type == TARGET_USER:
+            target = db.get(User, row.target_id) if row.target_id else None
+            return target is not None and target.moderation_status in ("hidden", "rejected")
+        return False
     # A warning is a permanent record — it stays contestable until appealed.
     return True
 
@@ -275,14 +347,19 @@ def decide_appeal(
 
     if decision == "restore":
         if itinerary is not None:
-            # Reversing a takedown also clears the cover-scan rejection that
-            # would otherwise keep the itinerary marked as bad content.
-            fields: dict = {"deleted_at": None, "hidden_at": None}
-            if itinerary.moderation_status == "rejected":
-                fields["moderation_status"] = "approved"
-            admin_service.set_preserving_etag(itinerary, **fields)
+            # Reversing a takedown also clears the moderation status that would
+            # otherwise keep the itinerary marked as bad content.
+            admin_service.set_preserving_etag(
+                itinerary, deleted_at=None, hidden_at=None,
+                moderation_status="approved",
+            )
+        else:
+            _restore_non_itinerary_target(db, appeal)
         if original_action == "ban" and user is not None:
             user.is_active = True
+        # A restored item is no longer a queue item — leaving the decision
+        # unreviewed would keep it in the moderator's list forever.
+        _mark_decisions_reviewed(db, appeal.target_type, appeal.target_id)
         appeal.status = "restored"
         heading = "Your appeal was accepted"
         body = "We reviewed your appeal and reversed the action."
@@ -296,9 +373,15 @@ def decide_appeal(
         if original_action == "ban" and user is not None:
             user.is_active = True
             body = "Your suspension was lifted and replaced with a warning."
+        elif original_action in _HIDE_FAMILY:
+            # Already the lightest content penalty — there is nothing to reduce
+            # it to, so the outcome is the same as upholding, said honestly.
+            body = ("Your content remains hidden from other users while it is "
+                    "under review.")
         elif itinerary is not None:
             admin_service.set_preserving_etag(
                 itinerary, deleted_at=None, hidden_at=_now(),
+                moderation_status="hidden",
             )
             body = ("Your content was restored but remains hidden from other "
                     "users while it is under review.")
@@ -324,6 +407,39 @@ def decide_appeal(
 
     if user is not None:
         _send_decision_email(user, heading, body)
+
+
+def _restore_non_itinerary_target(db: Session, appeal: Appeal) -> None:
+    """Un-hide a rating or a profile. Ratings also need the averages recomputed —
+    restoring one puts its score back into the aggregate."""
+    from app.services.itinerary_access import recalculate_rating
+
+    if appeal.target_type == TARGET_RATING:
+        rating = db.get(ItineraryRating, appeal.target_id)
+        if rating is None:
+            return
+        rating.moderation_status = "approved"
+        itinerary = db.get(Itinerary, rating.itinerary_id)
+        if itinerary is not None:
+            db.flush()
+            recalculate_rating(itinerary, db)
+    elif appeal.target_type == TARGET_USER:
+        target_user = db.get(User, appeal.target_id)
+        if target_user is not None:
+            target_user.moderation_status = "approved"
+
+
+def _mark_decisions_reviewed(db: Session, target_type: str, target_id) -> None:
+    """Clear this target's unreviewed classifier decisions out of the queue."""
+    rows = db.execute(
+        select(TextModerationDecision).where(
+            TextModerationDecision.target_type == target_type,
+            TextModerationDecision.target_id == target_id,
+            TextModerationDecision.reviewed_at.is_(None),
+        )
+    ).scalars().all()
+    for row in rows:
+        row.reviewed_at = _now()
 
 
 def _send_decision_email(user: User, heading: str, body: str) -> None:

@@ -86,10 +86,14 @@ from app.schemas.itinerary import (
 from app.services.image_service import ImageProcessingError, process_and_store, process_cover_image
 from app.services.moderation_service import ModerationContext, ModerationRejectedError
 from app.services.itinerary_access import (
-    can_view_itinerary, public_listing_criteria, recalculate_rating,
+    HIDDEN_STATUSES, can_view_itinerary, public_listing_criteria,
+    recalculate_rating, visible_rating_criteria,
 )
 from app.services.ordering import MAX_RANK_LENGTH, key_between, n_keys_between
-from app.services.user_service import get_active_user_or_404
+from app.services.text_moderation_service import (
+    apply_moderation_status, attach_target, moderate_or_422,
+)
+from app.services.user_service import get_active_user_or_404, public_profile_text
 from app.storage.factory import storage
 from app.errors import ApiError
 
@@ -153,6 +157,50 @@ def _require_viewable(itinerary: Itinerary, viewer_id: uuid.UUID, db: Session,
     if not can_view_itinerary(itinerary, viewer_id, db):
         raise ApiError(status_code=status.HTTP_403_FORBIDDEN,
                             code="itinerary_access_denied", detail=detail)
+
+
+def _moderate_itinerary_text(
+    fields: dict[str, str | None],
+    itinerary: Itinerary | None,
+    db: Session,
+    current_user: User,
+):
+    """Scan text belonging to an itinerary and stamp the outcome on it.
+
+    Stop, annotation and transport-leg text has no status column of its own —
+    it rolls up here, because hiding is itinerary-level and a per-fragment
+    status would have no read path to enforce it.
+
+    Call from the endpoint BODY, after the ownership/If-Match checks: a 412
+    must never spend a moderation call. `itinerary` is None on create (the row
+    does not exist yet); the caller stamps the returned status itself.
+    """
+    ctx = moderate_or_422(
+        db, get_settings(),
+        target_type="itinerary",
+        author=current_user,
+        fields=fields,
+        target_id=itinerary.id if itinerary is not None else None,
+    )
+    if itinerary is not None:
+        apply_moderation_status(itinerary, ctx.status)
+        # A minors hit is taken down on the spot rather than queued. This is the
+        # owner's own request, so a plain assignment is right — set_preserving_etag
+        # exists for moderation writes that happen outside the owner's request.
+        if ctx.escalate and itinerary.hidden_at is None:
+            itinerary.hidden_at = datetime.now(timezone.utc)
+    return ctx
+
+
+def _leg_text_fields(legs) -> dict[str, str | None]:
+    """Flatten every leg's free text into one field map, so a segment's legs are
+    scanned in a single provider call rather than one per leg. Keys only need to
+    be unique — they are never stored."""
+    return {
+        f"leg{index}_{name}": getattr(leg, name, None)
+        for index, leg in enumerate(legs)
+        for name in ("line", "direction", "notes")
+    }
 
 
 def _two_phase_renumber(rows, db: Session) -> None:
@@ -534,6 +582,10 @@ def create_itinerary(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_verified_email),  # high-value: verified email required
 ) -> ItinerarySummary:
+    ctx = _moderate_itinerary_text(
+        {"title": body.title, "description": body.description},
+        None, db, current_user,
+    )
     itinerary = Itinerary(
         user_id=current_user.id,
         title=body.title,
@@ -542,8 +594,14 @@ def create_itinerary(
         visibility=body.visibility,
         total_duration_min=0,
         total_cost=Decimal("0.00"),
+        moderation_status=ctx.status,
+        # A minors hit publishes hidden rather than queued — see moderation_policy.
+        hidden_at=datetime.now(timezone.utc) if ctx.escalate else None,
     )
     db.add(itinerary)
+    db.flush()
+    # The scan ran before this row existed, so its decision has no target yet.
+    attach_target(ctx, itinerary.id)
     db.commit()
     db.refresh(itinerary)
     return itinerary  # type: ignore[return-value]
@@ -574,7 +632,8 @@ def list_my_itineraries(
 # instead of treating it as a {itinerary_id} UUID.
 # ---------------------------------------------------------------------------
 
-def _to_feed_item(itinerary: Itinerary, owner: User) -> ItineraryFeedItem:
+def _to_feed_item(itinerary: Itinerary, owner: User,
+                  viewer_id: uuid.UUID | None = None) -> ItineraryFeedItem:
     # Reuse ItinerarySummary's field mapping for the base, then graft on the
     # owner (same RaterInfo shape the ratings endpoint builds).
     return ItineraryFeedItem(
@@ -582,7 +641,9 @@ def _to_feed_item(itinerary: Itinerary, owner: User) -> ItineraryFeedItem:
         owner=RaterInfo(
             user_id=owner.id,
             username=owner.username,
-            display_name=owner.display_name,
+            # The feed is the widest-reach surface — a moderated display name
+            # must not ride along with an otherwise clean itinerary.
+            display_name=public_profile_text(owner, viewer_id)[0],
             avatar_url=owner.avatar_url,
         ),
     )
@@ -612,7 +673,7 @@ def list_feed(
         .where(Itinerary.visibility == "public")
         # Exclude moderator-hidden/soft-deleted itineraries and banned owners'
         # content — single source of truth in itinerary_access.
-        .where(*public_listing_criteria())
+        .where(*public_listing_criteria(db, current_user.id))
     )
 
     if sort == "top":
@@ -631,7 +692,9 @@ def list_feed(
         )
 
     rows = db.execute(query.limit(limit).offset(offset)).all()
-    return [_to_feed_item(itinerary, owner) for itinerary, owner in rows]
+    return [
+        _to_feed_item(itinerary, owner, current_user.id) for itinerary, owner in rows
+    ]
 
 
 # ---------------------------------------------------------------------------
@@ -703,6 +766,12 @@ def update_itinerary(
     _require_owner(itinerary, current_user)
 
     update_data = body.model_dump(exclude_unset=True)
+    # Only the text actually being submitted is scanned — re-scanning untouched
+    # fields would bill for text already cleared on a previous write.
+    _moderate_itinerary_text(
+        {key: update_data[key] for key in ("title", "description") if key in update_data},
+        itinerary, db, current_user,
+    )
     for field, value in update_data.items():
         setattr(itinerary, field, value)
 
@@ -867,6 +936,13 @@ def add_stop(
       IntegrityError. We retry up to 3 times (re-fetching ranks each time)
       before giving up with 409. In practice collisions are extremely rare.
     """
+    # Before the retry loop: a rank collision must not re-bill the moderation call.
+    _moderate_itinerary_text(
+        {"place_name": body.place_name, "place_address": body.place_address,
+         "notes": body.notes},
+        itinerary, db, _verified,
+    )
+
     for attempt in range(3):
         try:
             if body.track_id is not None:
@@ -932,6 +1008,8 @@ def update_stop(
     body: StopUpdate,
     request: Request,
     db: Session = Depends(get_db),
+    # Same cached instance require_etag already resolved — no extra query.
+    current_user: User = Depends(get_current_user),
     itinerary: Itinerary = Depends(require_etag),
 ) -> Response:
     stop = _get_stop_or_404(stop_id, itinerary_id, db)
@@ -942,6 +1020,11 @@ def update_stop(
         'track_id', 'after_stop_id', 'before_stop_id',
         'after_track_id', 'before_track_id',
     })
+    _moderate_itinerary_text(
+        {key: scalar_fields[key]
+         for key in ("place_name", "place_address", "notes") if key in scalar_fields},
+        itinerary, db, current_user,
+    )
     for field, value in scalar_fields.items():
         setattr(stop, field, value)
 
@@ -1158,6 +1241,7 @@ def add_itinerary_annotation(
     db: Session = Depends(get_db),
     itinerary: Itinerary = Depends(require_etag),
 ) -> ItineraryAnnotationResponse:
+    _moderate_itinerary_text({"content": body.content}, itinerary, db, current_user)
     annotation = ItineraryAnnotation(
         itinerary_id=itinerary_id,
         type=body.type,
@@ -1179,6 +1263,7 @@ def update_itinerary_annotation(
     itinerary: Itinerary = Depends(require_etag),
 ) -> ItineraryAnnotationResponse:
     annotation = _get_itinerary_annotation_or_404(annotation_id, itinerary_id, db)
+    _moderate_itinerary_text({"content": body.content}, itinerary, db, current_user)
     _apply_annotation_fields(annotation, body)
     return _save_annotation(annotation, itinerary, db)  # type: ignore[return-value]
 
@@ -1222,6 +1307,7 @@ def add_annotation(
         raise ApiError(status_code=status.HTTP_404_NOT_FOUND,
                             code="stop_not_found", detail="Stop not found.")
 
+    _moderate_itinerary_text({"content": body.content}, itinerary, db, current_user)
     annotation = Annotation(stop_id=stop_id, type=body.type, content=body.content)
     return _save_annotation(annotation, itinerary, db)  # type: ignore[return-value]
 
@@ -1255,6 +1341,7 @@ def update_annotation(
     itinerary: Itinerary = Depends(require_etag),
 ) -> AnnotationResponse:
     annotation = _get_stop_annotation_or_404(annotation_id, stop_id, itinerary_id, db)
+    _moderate_itinerary_text({"content": body.content}, itinerary, db, current_user)
     _apply_annotation_fields(annotation, body)
     return _save_annotation(annotation, itinerary, db)  # type: ignore[return-value]
 
@@ -1286,6 +1373,16 @@ def upsert_rating(
     if note == "":
         note = None
 
+    # Ratings carry their own status: a stranger's abusive review must never
+    # take down the itinerary owner's trip.
+    ctx = moderate_or_422(
+        db, get_settings(),
+        target_type="rating",
+        author=current_user,
+        fields={"note": note},
+        target_id=existing.id if existing else None,
+    )
+
     if existing:
         existing.stars = body.stars
         existing.safety_stars = body.safety_stars
@@ -1294,6 +1391,9 @@ def upsert_rating(
         existing.family_friendly_stars = body.family_friendly_stars
         existing.crowdedness_stars = body.crowdedness_stars
         existing.note = note
+        # Assigned, not escalated: an edited note is new content, so a rewritten
+        # note that now passes clears the previous flag.
+        existing.moderation_status = ctx.status
         rating = existing
     else:
         rating = ItineraryRating(
@@ -1306,10 +1406,14 @@ def upsert_rating(
             family_friendly_stars=body.family_friendly_stars,
             crowdedness_stars=body.crowdedness_stars,
             note=note,
+            moderation_status=ctx.status,
         )
         db.add(rating)
 
     db.flush()
+    # A first-time rating is scanned before its row exists — point the decision
+    # at it now so the moderator queue knows what it refers to.
+    attach_target(ctx, rating.id)
     recalculate_rating(itinerary, db)
     db.commit()
     db.refresh(rating)
@@ -1420,6 +1524,7 @@ def get_ratings_page(
 
     rows = db.execute(
         select(
+            ItineraryRating.id,
             ItineraryRating.stars,
             ItineraryRating.safety_stars,
             ItineraryRating.experience_stars,
@@ -1432,9 +1537,14 @@ def get_ratings_page(
             User.username,
             User.display_name,
             User.avatar_url,
+            User.moderation_status.label("rater_moderation_status"),
         )
         .outerjoin(User, ItineraryRating.user_id == User.id)
-        .where(ItineraryRating.itinerary_id == itinerary_id)
+        .where(
+            ItineraryRating.itinerary_id == itinerary_id,
+            # Moderated notes are visible to their own author only.
+            *visible_rating_criteria(current_user.id),
+        )
         .order_by(ItineraryRating.updated_at.desc())
     ).all()
 
@@ -1456,10 +1566,16 @@ def get_ratings_page(
             crowdedness_score=row.crowdedness_stars,
             note=row.note,
             updated_at=row.updated_at,
+            id=row.id,
             user=RaterInfo(
                 user_id=row.user_id,
                 username=row.username,
-                display_name=row.display_name,
+                display_name=(
+                    row.display_name
+                    if row.rater_moderation_status not in HIDDEN_STATUSES
+                    or row.user_id == current_user.id
+                    else None
+                ),
                 avatar_url=row.avatar_url,
             ),
         )
@@ -1491,6 +1607,8 @@ def create_segment(
     _require_owner(itinerary, current_user)
 
     _require_stops_in_itinerary(itinerary_id, body.from_stop_id, body.to_stop_id, db)
+
+    _moderate_itinerary_text(_leg_text_fields(body.legs), itinerary, db, current_user)
 
     segment = TransitSegment(
         itinerary_id=itinerary_id,
@@ -1561,6 +1679,8 @@ def update_segment(
 
     _require_stops_in_itinerary(itinerary_id, body.from_stop_id, body.to_stop_id, db)
 
+    _moderate_itinerary_text(_leg_text_fields(body.legs), itinerary, db, current_user)
+
     segment.from_stop_id = body.from_stop_id
     segment.to_stop_id = body.to_stop_id
 
@@ -1625,6 +1745,8 @@ def add_leg(
 
     segment = _get_segment_or_404(segment_id, itinerary_id, db)
 
+    _moderate_itinerary_text(_leg_text_fields([body]), itinerary, db, current_user)
+
     leg = TransportLeg(segment_id=segment.id, **body.model_dump())
     db.add(leg)
     try:
@@ -1659,6 +1781,11 @@ def update_leg(
     leg = _get_leg_or_404(leg_id, segment_id, db)
 
     update_data = body.model_dump(exclude_unset=True)
+    _moderate_itinerary_text(
+        {key: update_data[key]
+         for key in ("line", "direction", "notes") if key in update_data},
+        itinerary, db, current_user,
+    )
     for field, value in update_data.items():
         setattr(leg, field, value)
 

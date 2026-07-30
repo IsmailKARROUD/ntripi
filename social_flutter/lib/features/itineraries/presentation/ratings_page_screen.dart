@@ -13,6 +13,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:social_flutter/core/ui/app_theme.dart';
 import 'package:social_flutter/features/itineraries/domain/dimension_key.dart';
+import 'package:social_flutter/features/profile/providers/profile_provider.dart';
+import 'package:social_flutter/features/reports/domain/report_target.dart';
+import 'package:social_flutter/features/reports/presentation/ugc_actions.dart';
 import 'package:social_flutter/features/itineraries/domain/ratings_page.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/markdown_notes_editor.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/rate_itinerary_dialog.dart';
@@ -34,6 +37,8 @@ class RatingsHubScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final nt = context.nt;
     final ratingsAsync = ref.watch(ratingsPageProvider(itineraryId));
+    // Your own review gets no report action — you don't report yourself.
+    final viewerId = ref.watch(myProfileProvider).value?.id;
     final myRating = ref.watch(myRatingProvider(itineraryId)).value;
     final page = ratingsAsync.value;
 
@@ -140,7 +145,10 @@ class RatingsHubScreen extends ConsumerWidget {
                     SliverList(
                       delegate: SliverChildBuilderDelegate(
                         (context, i) =>
-                            _RatingListTile(rating: page.ratings[i]),
+                            _RatingListTile(
+                              rating: page.ratings[i],
+                              viewerId: viewerId,
+                            ),
                         childCount: page.ratings.length,
                       ),
                     ),
@@ -657,17 +665,21 @@ class RatingDistributionBars extends StatelessWidget {
 }
 
 /// One rater tile.
-class _RatingListTile extends StatelessWidget {
+class _RatingListTile extends ConsumerWidget {
   final RatingWithUser rating;
   final DimensionKey dimension;
+
+  /// Null when the viewer wrote this review — you don't report yourself.
+  final String? viewerId;
 
   const _RatingListTile({
     required this.rating,
     this.dimension = DimensionKey.overall,
+    this.viewerId,
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final nt = context.nt;
     final l10n = AppLocalizations.of(context)!;
     final user = rating.user;
@@ -690,21 +702,33 @@ class _RatingListTile extends StatelessWidget {
           : Text(user.displayNameOrFallback(l10n),
               style: const TextStyle(fontWeight: FontWeight.w600)),
       subtitle: Text(rating.timeAgo(l10n)),
+      // A review is user content like any other, so it needs its own report
+      // action — the id is absent only for responses cached before it existed.
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
-        children: List.generate(5, (i) {
-          final glyphs = dimension.ratingGlyphs;
-          final inverted = dimension.invertedRating;
-          // Uncrowded: fill from the right; tint empties too.
-          final filled = inverted ? (i + 1) > score : i < score;
-          return Icon(
-            filled ? glyphs.filled : glyphs.empty,
-            size: 16,
-            color: inverted
-                ? nt.rating(score.toDouble())
-                : (filled ? nt.rating(score.toDouble()) : nt.text3),
-          );
-        }),
+        children: [
+          ...List.generate(5, (i) {
+            final glyphs = dimension.ratingGlyphs;
+            final inverted = dimension.invertedRating;
+            // Uncrowded: fill from the right; tint empties too.
+            final filled = inverted ? (i + 1) > score : i < score;
+            return Icon(
+              filled ? glyphs.filled : glyphs.empty,
+              size: 16,
+              color: inverted
+                  ? nt.rating(score.toDouble())
+                  : (filled ? nt.rating(score.toDouble()) : nt.text3),
+            );
+          }),
+          if (rating.id != null &&
+              !user.isDeleted &&
+              user.userId != viewerId)
+            UgcActionsMenu(
+              target: ReportTarget.rating(rating.id!),
+              authorUserId: user.userId,
+              authorUsername: user.username,
+            ),
+        ],
       ),
       onTap: user.isDeleted
           ? null

@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:social_flutter/core/api/api_endpoints.dart';
 import 'package:social_flutter/core/providers/locale_provider.dart';
 import 'package:social_flutter/core/providers/theme_mode_provider.dart';
 import 'package:social_flutter/core/ui/app_theme.dart';
 import 'package:social_flutter/l10n/app_localizations.dart';
 import 'package:social_flutter/shared/data/app_locales.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 void showProfileSettingsSheet(
   BuildContext context, {
@@ -362,10 +364,22 @@ class _SettingsSheet extends ConsumerWidget {
                         iconBg: nt.mist,
                         iconColor: nt.forest,
                         label: l10n.accountStatusTitle,
-                        isLast: true,
                         onTap: () {
                           Navigator.pop(context);
                           context.push('/settings/account-status');
+                        },
+                      ),
+                      // Reviewers check for a blocked list that can be found
+                      // and reversed — a block with no way back is not one.
+                      _SheetRow(
+                        icon: Icons.block_rounded,
+                        iconBg: nt.mist,
+                        iconColor: nt.forest,
+                        label: l10n.blockedUsers,
+                        isLast: true,
+                        onTap: () {
+                          Navigator.pop(context);
+                          context.push('/settings/blocked-users');
                         },
                       ),
                     ],
@@ -392,8 +406,33 @@ class _SettingsSheet extends ConsumerWidget {
                         iconBg: nt.mist,
                         iconColor: nt.forest,
                         label: l10n.settingsTerms,
+                        onTap: () => launchUrl(
+                          Uri.parse(kTermsUrl),
+                          mode: LaunchMode.externalApplication,
+                        ),
+                      ),
+                      _SheetRow(
+                        icon: Icons.menu_book_rounded,
+                        iconBg: nt.mist,
+                        iconColor: nt.forest,
+                        label: l10n.communityGuidelines,
+                        onTap: () => launchUrl(
+                          Uri.parse(kGuidelinesUrl),
+                          mode: LaunchMode.externalApplication,
+                        ),
+                      ),
+                      // Must match the backend's ABUSE_CONTACT_EMAIL and the
+                      // store listing — one address, published in one place.
+                      _SheetRow(
+                        icon: Icons.report_gmailerrorred_rounded,
+                        iconBg: nt.mist,
+                        iconColor: nt.forest,
+                        label: l10n.abuseContact,
+                        detail: kAbuseContactEmail,
                         isLast: true,
-                        onTap: () => _comingSoon(context),
+                        onTap: () => launchUrl(
+                          Uri(scheme: 'mailto', path: kAbuseContactEmail),
+                        ),
                       ),
                     ],
                   ),

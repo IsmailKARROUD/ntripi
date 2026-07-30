@@ -1,5 +1,6 @@
 // features/itineraries/domain/itinerary.dart — Itinerary Dart model.
 
+import 'package:social_flutter/shared/models/moderation_status.dart';
 import 'package:flutter/material.dart';
 import 'package:social_flutter/core/services/currency.dart';
 import 'package:social_flutter/features/itineraries/domain/itinerary_annotation.dart';
@@ -77,6 +78,11 @@ class Itinerary {
   /// the owner — everyone else is filtered out or denied before the response.
   final bool hidden;
 
+  /// Combined moderation state of this itinerary's text and cover image.
+  /// Unknown values from a newer backend degrade to [ModerationStatus.approved]
+  /// so a server-side addition can never break a deployed client.
+  final ModerationStatus moderationStatus;
+
   const Itinerary({
     required this.id,
     required this.userId,
@@ -96,6 +102,7 @@ class Itinerary {
     this.annotations = const [],
     this.stopsCount = 0,
     this.hidden = false,
+    this.moderationStatus = ModerationStatus.approved,
   });
 
   factory Itinerary.fromJson(Map<String, dynamic> json) {
@@ -129,6 +136,9 @@ class Itinerary {
           : (json['stops_count'] as int? ?? 0),
       // Absent from summary/list payloads — only the detail response carries it.
       hidden: json['hidden'] as bool? ?? false,
+      moderationStatus: ModerationStatus.fromString(
+        json['moderation_status'] as String?,
+      ),
     );
   }
 
@@ -208,6 +218,7 @@ class Itinerary {
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
       'hidden': hidden,
+      'moderation_status': moderationStatus.wireValue,
     };
   }
 
@@ -234,6 +245,7 @@ class Itinerary {
     List<ItineraryAnnotation>? annotations,
     int? stopsCount,
     bool? hidden,
+    ModerationStatus? moderationStatus,
   }) {
     return Itinerary(
       id: id ?? this.id,
@@ -255,6 +267,7 @@ class Itinerary {
       annotations: annotations ?? this.annotations,
       stopsCount: stopsCount ?? this.stopsCount,
       hidden: hidden ?? this.hidden,
+      moderationStatus: moderationStatus ?? this.moderationStatus,
     );
   }
 

@@ -2478,4 +2478,113 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get apiErrorAppealTargetNotFound =>
       'There is no moderation action to appeal here.';
+
+  @override
+  String get apiErrorTextModerationRejected =>
+      'This text may violate the community guidelines, so it wasn\'t saved. Please edit it and try again.';
+
+  @override
+  String get apiErrorCannotBlockSelf => 'You can\'t block yourself.';
+
+  @override
+  String moderationRejectedBecause(String reason) {
+    return 'This text wasn\'t saved because it may contain $reason. Please edit it and try again.';
+  }
+
+  @override
+  String get moderationCategoryMinors => 'content involving minors';
+
+  @override
+  String get moderationCategorySexual => 'sexual content';
+
+  @override
+  String get moderationCategoryHate => 'hate speech';
+
+  @override
+  String get moderationCategoryHarassment => 'harassment';
+
+  @override
+  String get moderationCategoryViolence => 'violent content';
+
+  @override
+  String get moderationCategorySelfHarm => 'content about self-harm';
+
+  @override
+  String get moderationCategoryIllicit => 'illegal activity';
+
+  @override
+  String get reportReasonCsam => 'Child sexual abuse material';
+
+  @override
+  String get reportReasonSexualContent => 'Nudity or sexual content';
+
+  @override
+  String get reportReasonViolenceThreat => 'Violence or threats';
+
+  @override
+  String get reportContent => 'Report';
+
+  @override
+  String get reportUser => 'Report this account';
+
+  @override
+  String get reportStop => 'Report this stop';
+
+  @override
+  String get reportReview => 'Report this review';
+
+  @override
+  String get blockUser => 'Block';
+
+  @override
+  String get unblockUser => 'Unblock';
+
+  @override
+  String blockUserTitle(String username) {
+    return 'Block @$username?';
+  }
+
+  @override
+  String get blockUserMessage =>
+      'You won\'t see each other\'s trips or profiles, and neither of you can follow the other. They won\'t be told.';
+
+  @override
+  String get blockedUsers => 'Blocked accounts';
+
+  @override
+  String get blockedUsersEmpty => 'You haven\'t blocked anyone.';
+
+  @override
+  String blockedUserRemoved(String username) {
+    return 'Unblocked @$username.';
+  }
+
+  @override
+  String blockedUserAdded(String username) {
+    return 'Blocked @$username.';
+  }
+
+  @override
+  String get abuseContact => 'Report abuse';
+
+  @override
+  String get abuseContactSubtitle => 'Email us about harmful content';
+
+  @override
+  String get communityGuidelines => 'Community guidelines';
+
+  @override
+  String get moderationHintTitle => 'This might read as offensive';
+
+  @override
+  String get moderationHintBody =>
+      'You can post it anyway — this is only a heads-up, not a block.';
+
+  @override
+  String get hiddenAppealAction => 'Ask us to review this';
+
+  @override
+  String hiddenBannerReason(String reason) {
+    return 'Reason: $reason';
+  }
 }

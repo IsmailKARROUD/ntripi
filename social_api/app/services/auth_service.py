@@ -14,6 +14,7 @@ from sqlalchemy import select, or_
 from sqlalchemy.orm import Session
 
 from app.config import get_settings
+from app.constants.tos import TOS_VERSION
 from app.models.user import User
 from app.models.password_history import PasswordHistory
 from app.models.security_audit_log import SecurityAuditLog
@@ -151,6 +152,9 @@ def create_user(
         password_hash=hash_password(password),
         display_name=display_name,
         tos_accepted_at=datetime.now(timezone.utc),
+        # Record WHICH revision was accepted — "they agreed to the terms"
+        # is unprovable once the terms change.
+        tos_accepted_version=TOS_VERSION,
     )
     db.add(new_user)
     db.commit()
@@ -258,6 +262,9 @@ def login_or_register_google(
         display_name=display_name,
         avatar_url=picture,
         tos_accepted_at=datetime.now(timezone.utc),
+        # Record WHICH revision was accepted — "they agreed to the terms"
+        # is unprovable once the terms change.
+        tos_accepted_version=TOS_VERSION,
     )
     db.add(new_user)
     db.commit()

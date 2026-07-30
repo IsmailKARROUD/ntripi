@@ -15,8 +15,12 @@ Why @lru_cache on get_settings()?
 """
 
 from functools import lru_cache
-from pydantic import Field
+from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+# Accepted values for TEXT_MODERATION_PROVIDER. "local" needs no network;
+# "disabled" is the dev/test default and skips every scan.
+TEXT_MODERATION_PROVIDERS = ("openai", "local", "disabled")
 
 
 class Settings(BaseSettings):
@@ -136,9 +140,87 @@ class Settings(BaseSettings):
     MODERATION_REJECT_THRESHOLD: float = 80.0  # hard reject: image not stored, 422
     MODERATION_FLAG_THRESHOLD: float = 50.0  # soft flag: stored + logged + operator email
 
+    # Text moderation — scans user prose (titles, descriptions, notes, bios…)
+    # before the write. Swapping providers is a config change only:
+    #   "openai"   — OpenAI Moderation API, falls back to "local" on failure
+    #   "local"    — alt-profanity-check, self-contained, no network
+    #   "disabled" — no scanning at all (dev/test default)
+    TEXT_MODERATION_PROVIDER: str = "disabled"
+    OPENAI_API_KEY: str | None = None
+    TEXT_MODERATION_MODEL: str = "omni-moderation-latest"
+    TEXT_MODERATION_TIMEOUT_SECONDS: float = 5.0
+    # Verdicts are cached by hash(text + model + policy version) so identical
+    # text is never re-submitted; entries expire after this many days.
+    TEXT_MODERATION_CACHE_TTL_DAYS: int = 30
+    # Reviewed decision rows are purged after this long (unreviewed rows are
+    # never purged — they are the moderator queue).
+    TEXT_MODERATION_LOG_RETENTION_DAYS: int = 90
+
+    # Hours after which an unreviewed report is auto-actioned. The DSA clock is
+    # 24h from when the report is *filed*, and the sweep only runs periodically,
+    # so the cap is 22 to leave margin for a missed run during a deploy.
+    MODERATION_SLA_HOURS: int = Field(default=20, ge=1, le=22)
+
+    # Moderation sweep (SLA enforcement, pending re-checks, cache purge).
+    # SWEEP_TOKEN unset = POST /internal/moderation-sweep returns 404 (the
+    # endpoint is invisible, not merely locked — same rule as /admin).
+    # SWEEP_IN_PROCESS runs the sweep on a timer inside the app instead, for
+    # local dev where no external scheduler exists.
+    SWEEP_TOKEN: str | None = None
+    SWEEP_IN_PROCESS: bool = False
+    SWEEP_INTERVAL_MINUTES: int = 30
+
+    # Distinct reporters required before content is hidden immediately, per
+    # report category. One user reporting repeatedly counts once.
+    REPORT_HIDE_THRESHOLDS: str = (
+        "csam:1,sexual_content:1,violence_threat:1,"
+        "hate_speech:2,harassment:2,other:3,spam:4"
+    )
+    # slowapi limit string for POST /reports — blunts report griefing.
+    REPORT_RATE_LIMIT: str = "10/hour"
+
+    # Published abuse contact. Must match the app-store listing; use the domain
+    # address, never a personal one.
+    ABUSE_CONTACT_EMAIL: str = "abuse@ntripi.app"
+
     # Tell pydantic-settings to look for a .env file in the working directory.
     # extra="ignore" means unknown .env keys don't cause validation errors.
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+
+    @model_validator(mode="after")
+    def _validate_text_moderation(self) -> "Settings":
+        """Fail fast at startup rather than silently degrading later: an unknown
+        provider name, an OpenAI selection with no key, or an unparseable
+        threshold string are all misconfigurations we cannot recover from."""
+        if self.TEXT_MODERATION_PROVIDER not in TEXT_MODERATION_PROVIDERS:
+            raise ValueError(
+                f"TEXT_MODERATION_PROVIDER must be one of "
+                f"{', '.join(TEXT_MODERATION_PROVIDERS)}"
+            )
+        if self.TEXT_MODERATION_PROVIDER == "openai" and not self.OPENAI_API_KEY:
+            raise ValueError(
+                "TEXT_MODERATION_PROVIDER='openai' requires OPENAI_API_KEY"
+            )
+        self.report_hide_thresholds  # noqa: B018 — parse now so a typo fails at boot
+        return self
+
+    @property
+    def report_hide_thresholds(self) -> dict[str, int]:
+        """Parsed REPORT_HIDE_THRESHOLDS as {category: distinct_reporters}.
+        Comma-separated `name:count` pairs — same env-string convention as
+        ALLOWED_ORIGINS, so no JSON-in-env."""
+        thresholds: dict[str, int] = {}
+        for pair in self.REPORT_HIDE_THRESHOLDS.split(","):
+            pair = pair.strip()
+            if not pair:
+                continue
+            name, _, count = pair.partition(":")
+            if not _ or not count.strip().isdigit() or int(count) < 1:
+                raise ValueError(
+                    f"REPORT_HIDE_THRESHOLDS entry {pair!r} must be 'category:positive_int'"
+                )
+            thresholds[name.strip()] = int(count)
+        return thresholds
 
     @property
     def google_client_ids(self) -> set[str]:

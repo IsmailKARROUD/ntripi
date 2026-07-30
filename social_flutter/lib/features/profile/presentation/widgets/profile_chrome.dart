@@ -30,6 +30,9 @@ class ProfileHeroAndIdentity extends StatelessWidget {
   final VoidCallback? onEdit;
   final VoidCallback? onSettings;
   final String? coverImageUrl;
+
+  /// Report / block affordance for someone else's profile. Null on your own.
+  final Widget? moreActions;
   final List<VisitedLocation> locations;
   final VoidCallback? onHeroTap;
   // Receives the global tap point so the viewer can grow out of it.
@@ -47,6 +50,7 @@ class ProfileHeroAndIdentity extends StatelessWidget {
     this.onEdit,
     this.onSettings,
     this.coverImageUrl,
+    this.moreActions,
     this.locations = const [],
     this.onHeroTap,
     this.onAvatarTap,
@@ -155,6 +159,9 @@ class ProfileMapHero extends StatelessWidget {
   final VoidCallback? onEdit;
   final VoidCallback? onSettings;
   final String? coverImageUrl;
+
+  /// Report / block affordance for someone else's profile. Null on your own.
+  final Widget? moreActions;
   final List<VisitedLocation> locations;
   final VoidCallback? onHeroTap;
   final GlobalKey? editButtonKey;
@@ -169,6 +176,7 @@ class ProfileMapHero extends StatelessWidget {
     this.onEdit,
     this.onSettings,
     this.coverImageUrl,
+    this.moreActions,
     this.locations = const [],
     this.onHeroTap,
     this.editButtonKey,
@@ -376,9 +384,18 @@ class ProfileMapHero extends StatelessWidget {
                             tooltip: l10n.back,
                             onTap: () => Navigator.of(context).maybePop(),
                           ),
-                          GlassIconButton(
-                            icon: Icons.share_outlined,
-                            tooltip: l10n.shareProfileTooltip,
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              GlassIconButton(
+                                icon: Icons.share_outlined,
+                                tooltip: l10n.shareProfileTooltip,
+                              ),
+                              if (moreActions != null) ...[
+                                const SizedBox(width: 8),
+                                moreActions!,
+                              ],
+                            ],
                           ),
                         ],
                 ),

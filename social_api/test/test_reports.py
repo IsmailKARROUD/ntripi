@@ -60,7 +60,8 @@ def _seed_report(*, reporter_user_id=None, reported_itinerary_id=None,
     db = TestingSessionLocal()
     try:
         report = ContentReport(
-            reported_itinerary_id=reported_itinerary_id,
+            target_type="itinerary",
+            target_id=reported_itinerary_id,
             reporter_user_id=reporter_user_id,
             reason=reason,
             reporter_ip_hash=reporter_ip_hash,

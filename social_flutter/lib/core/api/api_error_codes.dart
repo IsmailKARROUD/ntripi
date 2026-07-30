@@ -46,6 +46,54 @@ String? localizedApiError(String code, AppLocalizations l10n) {
       'appeal_already_pending' => l10n.apiErrorAppealPending,
       'appeal_cooldown' => l10n.apiErrorAppealCooldown,
       'appeal_target_not_found' => l10n.apiErrorAppealTargetNotFound,
+      'text_moderation_rejected' => l10n.apiErrorTextModerationRejected,
+      'cannot_block_self' => l10n.apiErrorCannotBlockSelf,
       _ => null,
     };
+}
+
+/// Plain-language reason for a moderation rejection.
+///
+/// The backend sends raw classifier category ids (`sexual/minors`,
+/// `illicit/violent`). Showing those to the person who just wrote a sentence
+/// would be both baffling and needlessly clinical, so each maps to a phrase.
+/// Unknown ids — a newer backend, a new category — fall back to the generic
+/// message rather than leaking an internal identifier.
+String moderationRejectionMessage(
+  List<String> categories,
+  AppLocalizations l10n,
+) {
+  for (final category in categories) {
+    final phrase = switch (category) {
+      'sexual/minors' => l10n.moderationCategoryMinors,
+      'sexual' => l10n.moderationCategorySexual,
+      'hate' || 'hate/threatening' => l10n.moderationCategoryHate,
+      'harassment' || 'harassment/threatening' => l10n.moderationCategoryHarassment,
+      'violence' || 'violence/graphic' => l10n.moderationCategoryViolence,
+      'self-harm' ||
+      'self-harm/intent' ||
+      'self-harm/instructions' =>
+        l10n.moderationCategorySelfHarm,
+      'illicit' || 'illicit/violent' => l10n.moderationCategoryIllicit,
+      _ => null,
+    };
+    if (phrase != null) return l10n.moderationRejectedBecause(phrase);
+  }
+  return l10n.apiErrorTextModerationRejected;
+}
+
+/// The `categories` list from a moderation rejection body, or empty.
+List<String> moderationCategories(dynamic error) {
+  final data = _responseData(error);
+  final raw = data is Map ? data['categories'] : null;
+  if (raw is List) return raw.whereType<String>().toList();
+  return const [];
+}
+
+dynamic _responseData(dynamic error) {
+  try {
+    return (error as dynamic).response?.data;
+  } catch (_) {
+    return null;
+  }
 }

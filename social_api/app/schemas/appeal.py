@@ -14,7 +14,7 @@ from datetime import datetime
 from pydantic import BaseModel, ConfigDict, Field
 
 # Kept as pattern= (not Literal) — project rule: switching changes the 422 body shape.
-_TARGET_TYPE_PATTERN = r"^(itinerary|user)$"
+_TARGET_TYPE_PATTERN = r"^(itinerary|user|rating)$"
 
 
 class AppealCreate(BaseModel):

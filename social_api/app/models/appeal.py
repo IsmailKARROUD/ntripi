@@ -40,7 +40,7 @@ class Appeal(Base):
             name="ck_appeal_status",
         ),
         CheckConstraint(
-            "target_type IN ('itinerary','user')",
+            "target_type IN ('itinerary','user','rating')",
             name="ck_appeal_target_type",
         ),
     )

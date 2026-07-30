@@ -305,6 +305,13 @@ String extractErrorMessage(dynamic e, [AppLocalizations? l10n]) {
         // the server's human `detail`, then a generic message.
         final code = data['code'];
         if (code is String && l10n != null) {
+          // A moderation rejection ships the triggering categories alongside
+          // the code. Turning them into a plain-language reason here means
+          // every compose form explains itself without a per-form branch —
+          // and none of them clear the field, so the text survives the error.
+          if (code == 'text_moderation_rejected') {
+            return moderationRejectionMessage(moderationCategories(e), l10n);
+          }
           final localized = localizedApiError(code, l10n);
           if (localized != null) return localized;
         }

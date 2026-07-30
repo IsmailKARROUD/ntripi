@@ -4401,6 +4401,198 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'There is no moderation action to appeal here.'**
   String get apiErrorAppealTargetNotFound;
+
+  /// No description provided for @apiErrorTextModerationRejected.
+  ///
+  /// In en, this message translates to:
+  /// **'This text may violate the community guidelines, so it wasn\'t saved. Please edit it and try again.'**
+  String get apiErrorTextModerationRejected;
+
+  /// No description provided for @apiErrorCannotBlockSelf.
+  ///
+  /// In en, this message translates to:
+  /// **'You can\'t block yourself.'**
+  String get apiErrorCannotBlockSelf;
+
+  /// No description provided for @moderationRejectedBecause.
+  ///
+  /// In en, this message translates to:
+  /// **'This text wasn\'t saved because it may contain {reason}. Please edit it and try again.'**
+  String moderationRejectedBecause(String reason);
+
+  /// No description provided for @moderationCategoryMinors.
+  ///
+  /// In en, this message translates to:
+  /// **'content involving minors'**
+  String get moderationCategoryMinors;
+
+  /// No description provided for @moderationCategorySexual.
+  ///
+  /// In en, this message translates to:
+  /// **'sexual content'**
+  String get moderationCategorySexual;
+
+  /// No description provided for @moderationCategoryHate.
+  ///
+  /// In en, this message translates to:
+  /// **'hate speech'**
+  String get moderationCategoryHate;
+
+  /// No description provided for @moderationCategoryHarassment.
+  ///
+  /// In en, this message translates to:
+  /// **'harassment'**
+  String get moderationCategoryHarassment;
+
+  /// No description provided for @moderationCategoryViolence.
+  ///
+  /// In en, this message translates to:
+  /// **'violent content'**
+  String get moderationCategoryViolence;
+
+  /// No description provided for @moderationCategorySelfHarm.
+  ///
+  /// In en, this message translates to:
+  /// **'content about self-harm'**
+  String get moderationCategorySelfHarm;
+
+  /// No description provided for @moderationCategoryIllicit.
+  ///
+  /// In en, this message translates to:
+  /// **'illegal activity'**
+  String get moderationCategoryIllicit;
+
+  /// No description provided for @reportReasonCsam.
+  ///
+  /// In en, this message translates to:
+  /// **'Child sexual abuse material'**
+  String get reportReasonCsam;
+
+  /// No description provided for @reportReasonSexualContent.
+  ///
+  /// In en, this message translates to:
+  /// **'Nudity or sexual content'**
+  String get reportReasonSexualContent;
+
+  /// No description provided for @reportReasonViolenceThreat.
+  ///
+  /// In en, this message translates to:
+  /// **'Violence or threats'**
+  String get reportReasonViolenceThreat;
+
+  /// No description provided for @reportContent.
+  ///
+  /// In en, this message translates to:
+  /// **'Report'**
+  String get reportContent;
+
+  /// No description provided for @reportUser.
+  ///
+  /// In en, this message translates to:
+  /// **'Report this account'**
+  String get reportUser;
+
+  /// No description provided for @reportStop.
+  ///
+  /// In en, this message translates to:
+  /// **'Report this stop'**
+  String get reportStop;
+
+  /// No description provided for @reportReview.
+  ///
+  /// In en, this message translates to:
+  /// **'Report this review'**
+  String get reportReview;
+
+  /// No description provided for @blockUser.
+  ///
+  /// In en, this message translates to:
+  /// **'Block'**
+  String get blockUser;
+
+  /// No description provided for @unblockUser.
+  ///
+  /// In en, this message translates to:
+  /// **'Unblock'**
+  String get unblockUser;
+
+  /// No description provided for @blockUserTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Block @{username}?'**
+  String blockUserTitle(String username);
+
+  /// No description provided for @blockUserMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'You won\'t see each other\'s trips or profiles, and neither of you can follow the other. They won\'t be told.'**
+  String get blockUserMessage;
+
+  /// No description provided for @blockedUsers.
+  ///
+  /// In en, this message translates to:
+  /// **'Blocked accounts'**
+  String get blockedUsers;
+
+  /// No description provided for @blockedUsersEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'You haven\'t blocked anyone.'**
+  String get blockedUsersEmpty;
+
+  /// No description provided for @blockedUserRemoved.
+  ///
+  /// In en, this message translates to:
+  /// **'Unblocked @{username}.'**
+  String blockedUserRemoved(String username);
+
+  /// No description provided for @blockedUserAdded.
+  ///
+  /// In en, this message translates to:
+  /// **'Blocked @{username}.'**
+  String blockedUserAdded(String username);
+
+  /// No description provided for @abuseContact.
+  ///
+  /// In en, this message translates to:
+  /// **'Report abuse'**
+  String get abuseContact;
+
+  /// No description provided for @abuseContactSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Email us about harmful content'**
+  String get abuseContactSubtitle;
+
+  /// No description provided for @communityGuidelines.
+  ///
+  /// In en, this message translates to:
+  /// **'Community guidelines'**
+  String get communityGuidelines;
+
+  /// No description provided for @moderationHintTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'This might read as offensive'**
+  String get moderationHintTitle;
+
+  /// No description provided for @moderationHintBody.
+  ///
+  /// In en, this message translates to:
+  /// **'You can post it anyway — this is only a heads-up, not a block.'**
+  String get moderationHintBody;
+
+  /// No description provided for @hiddenAppealAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask us to review this'**
+  String get hiddenAppealAction;
+
+  /// No description provided for @hiddenBannerReason.
+  ///
+  /// In en, this message translates to:
+  /// **'Reason: {reason}'**
+  String hiddenBannerReason(String reason);
 }
 
 class _AppLocalizationsDelegate

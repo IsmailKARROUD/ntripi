@@ -16,6 +16,7 @@ import 'package:social_flutter/features/itineraries/domain/my_rating.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/markdown_notes_editor.dart';
 import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
 import 'package:social_flutter/l10n/app_localizations.dart';
+import 'package:social_flutter/shared/widgets/moderation_hint.dart';
 import 'package:social_flutter/shared/widgets/loaders.dart';
 import 'package:social_flutter/shared/widgets/offline_gate.dart';
 import 'package:social_flutter/shared/widgets/saving_overlay.dart';
@@ -229,12 +230,16 @@ class _RateItinerarySheetState extends State<_RateItinerarySheet> {
             clipBehavior: Clip.antiAlias,
             child: Padding(
               padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
-              child: MarkdownNotesEditor(
+              // Advisory only — the hint can never disable Submit.
+              child: ModerationHint(
                 controller: _noteController,
-                readOnly: false,
-                label: l10n.yourImpressionLabel,
-                helpTitle: l10n.yourImpressionLabel,
-                helpMessage: l10n.yourImpressionHelp,
+                child: MarkdownNotesEditor(
+                  controller: _noteController,
+                  readOnly: false,
+                  label: l10n.yourImpressionLabel,
+                  helpTitle: l10n.yourImpressionLabel,
+                  helpMessage: l10n.yourImpressionHelp,
+                ),
               ),
             ),
           ),

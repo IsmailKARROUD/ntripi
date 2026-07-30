@@ -41,6 +41,13 @@
                 {% if r.itinerary.hidden_at %} · hidden{% endif %}
                 {% if r.itinerary.deleted_at %} · removed{% endif %}
               </div>
+            {% elif r.target %}
+              {# A rating or a profile — no cover, no detail page. #}
+              <div>{{ r.label }}</div>
+              <div class="muted">
+                {{ r.report.target_type }}
+                {% if r.target.moderation_status in ('hidden', 'rejected') %} · hidden{% endif %}
+              </div>
             {% else %}
               <span class="muted">Content already gone</span>
             {% endif %}

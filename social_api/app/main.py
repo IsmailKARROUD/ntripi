@@ -17,6 +17,7 @@ Why a separate main.py?
 import asyncio
 import logging
 import re
+from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI
@@ -39,7 +40,8 @@ from app.middleware.etag import ETagMiddleware
 from app.middleware.language import LanguageCookieMiddleware
 from app.middleware.security_headers import SecurityHeadersMiddleware
 from app.routers import (
-    admin, appeals, auth, users, follows, itineraries, share, web, waitlist, reports,
+    admin, appeals, auth, users, follows, internal, itineraries, share, web,
+    waitlist, reports,
 )
 from app.storage.factory import storage
 
@@ -126,9 +128,62 @@ class ContentSizeLimitMiddleware(BaseHTTPMiddleware):
 
 
 # ---------------------------------------------------------------------------
+# In-process moderation sweep (local development only)
+# ---------------------------------------------------------------------------
+# Production triggers the sweep over HTTP from an external scheduler, which keeps
+# the deployment portable. Local dev has no scheduler, so SWEEP_IN_PROCESS=True
+# runs it on a timer inside the app instead. Same code path either way — the
+# advisory lock means both can be enabled without a concurrent run.
+
+async def _sweep_loop() -> None:
+    interval = max(60, get_settings().SWEEP_INTERVAL_MINUTES * 60)
+    while True:
+        await asyncio.sleep(interval)
+        try:
+            # to_thread: the sweep uses a sync Session, which would block the loop.
+            await asyncio.to_thread(_run_sweep_with_own_session)
+        except asyncio.CancelledError:
+            raise  # shutdown — never swallow this (breaks Starlette's lifespan)
+        except Exception:
+            logger.exception("in-process moderation sweep failed")
+
+
+def _run_sweep_with_own_session() -> None:
+    from app.database import SessionLocal
+    from app.services import sweep_service
+
+    db = SessionLocal()
+    try:
+        sweep_service.run_moderation_sweep(db, get_settings())
+    finally:
+        db.close()
+
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    task = None
+    if settings.SWEEP_IN_PROCESS:
+        logger.info(
+            "starting in-process moderation sweep every %s minutes",
+            settings.SWEEP_INTERVAL_MINUTES,
+        )
+        task = asyncio.create_task(_sweep_loop())
+    try:
+        yield
+    finally:
+        if task is not None:
+            task.cancel()
+            try:
+                await task
+            except asyncio.CancelledError:
+                pass  # expected: we just cancelled it
+
+
+# ---------------------------------------------------------------------------
 # FastAPI application
 # ---------------------------------------------------------------------------
 app = FastAPI(
+    lifespan=lifespan,
     title="Ntripi API",
     description=(
         "Social travel backend for Ntripi. "
@@ -210,6 +265,7 @@ app.include_router(waitlist.router) # /waitlist/join — pre-launch waitlist
 app.include_router(reports.router)  # POST /reports — content reporting
 app.include_router(appeals.router)  # /appeals — user appeals against moderation
 app.include_router(admin.router)    # /admin — internal moderation dashboard (HTML)
+app.include_router(internal.router) # /internal/moderation-sweep — scheduler-triggered
 app.include_router(web.router)      # /, /login, /register, /privacy, /terms
 
 # ---------------------------------------------------------------------------
@@ -265,7 +321,7 @@ async def api_error_handler(request: Request, exc: ApiError) -> JSONResponse:
     # so the Flutter client can localize without string-matching the message.
     return JSONResponse(
         status_code=exc.status_code,
-        content={"detail": exc.detail, "code": exc.code},
+        content={"detail": exc.detail, "code": exc.code, **exc.extra},
         headers=exc.headers,
     )
 

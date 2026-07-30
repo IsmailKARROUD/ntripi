@@ -31,11 +31,13 @@ from app.dependencies import get_current_user, require_verified_email
 from app.models.follow import Follow, FollowStatus
 from app.models.user import User
 from app.schemas.follow import FollowRequestItem, FollowResponse, FollowerListItem
+from app.services import block_service
 from app.services.user_service import (
     bump_follow_counters,
     get_active_user_or_404,
     get_follow,
     is_accepted_follower,
+    public_profile_text,
 )
 from app.errors import ApiError
 
@@ -54,8 +56,8 @@ def _require_follow_list_access(target_user: User, current_user: User,
             )
 
 
-def _users_as_list_items(user_ids: list[uuid.UUID],
-                         db: Session) -> list[FollowerListItem]:
+def _users_as_list_items(user_ids: list[uuid.UUID], db: Session,
+                         viewer_id: uuid.UUID | None = None) -> list[FollowerListItem]:
     results = []
     for uid in user_ids:
         user = db.get(User, uid)
@@ -64,7 +66,7 @@ def _users_as_list_items(user_ids: list[uuid.UUID],
                 FollowerListItem(
                     id=user.id,
                     username=user.username,
-                    display_name=user.display_name,
+                    display_name=public_profile_text(user, viewer_id)[0],
                     avatar_url=user.avatar_url,
                     is_private=user.is_private,
                 )
@@ -102,6 +104,14 @@ def follow_user(
         )
 
     target_user = get_active_user_or_404(db, user_id)
+
+    # A block hides the target as if the account were gone, so following must
+    # 404 identically — anything else would confirm the block exists.
+    if block_service.is_blocked_either_way(db, current_user.id, user_id):
+        raise ApiError(
+            status_code=status.HTTP_404_NOT_FOUND,
+            code="user_not_found", detail="User not found.",
+        )
 
     # Check if a follow record already exists (either pending or accepted).
     existing = get_follow(db, current_user.id, user_id)
@@ -209,7 +219,7 @@ def list_follow_requests(
                     follow_id=follow.id,
                     follower_id=follow.follower_id,
                     username=follower.username,
-                    display_name=follower.display_name,
+                    display_name=public_profile_text(follower, current_user.id)[0],
                     avatar_url=follower.avatar_url,
                     requested_at=follow.created_at,
                 )
@@ -350,7 +360,7 @@ def list_followers(
         .offset(offset)
     ).scalars().all()
 
-    return _users_as_list_items([f.follower_id for f in follows], db)
+    return _users_as_list_items([f.follower_id for f in follows], db, current_user.id)
 
 
 # ---------------------------------------------------------------------------
@@ -387,4 +397,4 @@ def list_following(
         .offset(offset)
     ).scalars().all()
 
-    return _users_as_list_items([f.following_id for f in follows], db)
+    return _users_as_list_items([f.following_id for f in follows], db, current_user.id)

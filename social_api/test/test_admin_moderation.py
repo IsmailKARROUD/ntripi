@@ -47,7 +47,13 @@ def _itinerary(client: TestClient, token: str, title: str = "Trip") -> str:
 
 
 def _report(client: TestClient, itinerary_id: str, token: str,
-            reason: str = "nsfw") -> str:
+            reason: str = "spam") -> str:
+    """File a report and return its id.
+
+    Defaults to spam (4 distinct reporters needed) so a single report stays
+    pending — the severe categories auto-hide immediately, which would resolve
+    the report before the moderator action under test could run.
+    """
     resp = client.post(
         "/reports",
         json={"itinerary_id": itinerary_id, "reason": reason, "notes": "please look"},

@@ -57,7 +57,8 @@ import 'package:social_flutter/features/itineraries/presentation/widgets/edit_pe
 import 'package:social_flutter/features/itineraries/presentation/widgets/markdown_notes_editor.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/move_stop_to_track_sheet.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/rate_itinerary_dialog.dart';
-import 'package:social_flutter/features/itineraries/presentation/widgets/report_itinerary_sheet.dart';
+import 'package:social_flutter/features/reports/domain/report_target.dart';
+import 'package:social_flutter/features/reports/presentation/report_content_sheet.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/parallel_stop_group.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/segment_card.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/track_reorder_view.dart';
@@ -721,8 +722,11 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                                 : null,
                             onReport: isOwner
                                 ? null
-                                : () => showReportItinerarySheet(
-                                    context, ref, widget.itineraryId),
+                                : () => showReportContentSheet(
+                                    context,
+                                    ref,
+                                    ReportTarget.itinerary(widget.itineraryId),
+                                  ),
                             onEditDetails: isOwner
                                 ? () => context.push(
                                     '/itineraries/${widget.itineraryId}/edit')

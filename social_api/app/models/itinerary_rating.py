@@ -11,7 +11,8 @@ import uuid
 from datetime import datetime
 
 from sqlalchemy import (
-    CheckConstraint, DateTime, ForeignKey, SmallInteger, Text, UniqueConstraint, func,
+    CheckConstraint, DateTime, ForeignKey, SmallInteger, String, Text,
+    UniqueConstraint, func,
 )
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.dialects.postgresql import UUID
@@ -44,6 +45,10 @@ class ItineraryRating(Base):
         CheckConstraint(
             "crowdedness_stars IS NULL OR crowdedness_stars BETWEEN 1 AND 5",
             name="ck_rating_crowdedness_stars",
+        ),
+        CheckConstraint(
+            "moderation_status IN ('approved','pending','flagged','hidden','rejected')",
+            name="ck_rating_moderation_status",
         ),
     )
 
@@ -86,6 +91,14 @@ class ItineraryRating(Base):
     # with link-inert config (no clickable URLs) to keep the surface free of
     # phishing vectors on public itineraries.
     note: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    # Moderation state of `note`. Ratings carry their own status rather than
+    # rolling up to the itinerary: a stranger's abusive review must never take
+    # down the owner's trip. 'hidden'/'rejected' notes are filtered from other
+    # viewers and from the rating averages (visible_rating_criteria).
+    moderation_status: Mapped[str] = mapped_column(
+        String(20), default="approved", server_default="'approved'", nullable=False
+    )
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),

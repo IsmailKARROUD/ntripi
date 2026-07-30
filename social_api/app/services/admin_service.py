@@ -27,8 +27,10 @@ from app.models.appeal import Appeal
 from app.models.content_report import ContentReport
 from app.models.image_moderation_log import ImageModerationLog
 from app.models.itinerary import Itinerary
+from app.models.legal_escalation import LegalEscalation
 from app.models.moderation_log import ModerationLog
 from app.models.stop import Stop
+from app.models.text_moderation_decision import TextModerationDecision
 from app.models.track import Track
 from app.models.user import User
 from app.services import appeal_token, email_service, refresh_token_service
@@ -124,6 +126,13 @@ def _resolve_report(report: ContentReport | None, resolution: str) -> None:
         report.resolved_at = datetime.now(timezone.utc)
 
 
+def report_itinerary_id(report: ContentReport) -> uuid.UUID | None:
+    """The reported itinerary id, or None when the report targets a rating or a
+    profile instead. Reports are polymorphic; the itinerary-specific actions
+    below only apply to itinerary targets."""
+    return report.target_id if report.target_type == TARGET_ITINERARY else None
+
+
 # ---------------------------------------------------------------------------
 # Emails (best-effort, sent after commit)
 # ---------------------------------------------------------------------------
@@ -161,12 +170,12 @@ def _send_moderation_email(
 def dismiss_report(db: Session, admin: User, report: ContentReport, reason: str) -> None:
     """Close a report without touching the content."""
     itinerary = (
-        db.get(Itinerary, report.reported_itinerary_id)
-        if report.reported_itinerary_id else None
+        db.get(Itinerary, report_itinerary_id(report))
+        if report_itinerary_id(report) else None
     )
     _resolve_report(report, "dismissed")
     log_action(
-        db, admin, TARGET_ITINERARY, report.reported_itinerary_id, "dismiss", reason,
+        db, admin, TARGET_ITINERARY, report_itinerary_id(report), "dismiss", reason,
         snapshot_itinerary(itinerary, report) if itinerary else {"report_id": str(report.id)},
     )
     db.commit()
@@ -279,13 +288,13 @@ def bulk_resolve(
     handled = 0
     for report in reports:
         itinerary = (
-            db.get(Itinerary, report.reported_itinerary_id)
-            if report.reported_itinerary_id else None
+            db.get(Itinerary, report_itinerary_id(report))
+            if report_itinerary_id(report) else None
         )
         if action == "dismiss":
             _resolve_report(report, "dismissed")
             log_action(
-                db, admin, TARGET_ITINERARY, report.reported_itinerary_id,
+                db, admin, TARGET_ITINERARY, report_itinerary_id(report),
                 "dismiss", reason,
                 snapshot_itinerary(itinerary, report) if itinerary
                 else {"report_id": str(report.id)},
@@ -407,6 +416,125 @@ def pending_appeals(db: Session) -> list[Appeal]:
     ).scalars().all())
 
 
+def pending_text_flags(db: Session) -> list[TextModerationDecision]:
+    """Text the classifier queued for a human. Self-harm rows carry their own
+    queue_label so the template can render them differently — the appropriate
+    response there is support, not a takedown."""
+    return list(db.execute(
+        select(TextModerationDecision)
+        .where(
+            TextModerationDecision.outcome == "review",
+            TextModerationDecision.reviewed_at.is_(None),
+        )
+        .order_by(TextModerationDecision.created_at.asc())
+    ).scalars().all())
+
+
+def open_legal_escalations(db: Session) -> list[LegalEscalation]:
+    return list(db.execute(
+        select(LegalEscalation)
+        .where(LegalEscalation.closed_at.is_(None))
+        .order_by(LegalEscalation.created_at.asc())
+    ).scalars().all())
+
+
+def resolve_text_flag(
+    db: Session, admin: User, decision: TextModerationDecision,
+    action: str, reason: str,
+) -> None:
+    """Clear a text flag from the queue: approve it, or hide the content.
+
+    Both outcomes mark the decision reviewed — an unreviewed row is a to-do, and
+    leaving it set would keep the item in the queue forever.
+    """
+    # Lazy: moderation_actions imports this module, so a top-level import here
+    # would be circular.
+    from app.services import moderation_actions
+
+    target = moderation_actions.load_target(db, decision.target_type, decision.target_id)
+    decision.reviewed_at = datetime.now(timezone.utc)
+
+    if action == "approve":
+        if target is not None:
+            # The moderator's judgement overrides the classifier's, so this
+            # assigns rather than escalates.
+            moderation_actions.set_status(decision.target_type, target, "approved")
+        log_action(
+            db, admin, decision.target_type, decision.target_id, "dismiss", reason,
+            {"decision_id": str(decision.id)},
+        )
+    elif action == "hide":
+        if target is None:
+            db.commit()
+            return
+        moderation_actions.auto_hide(
+            db, decision.target_type, target, action="hide", reason=reason,
+        )
+        # Re-stamp as an operator action: a human made this call, so the audit
+        # trail must name them rather than reading as another automated hide.
+        log_action(
+            db, admin, decision.target_type, decision.target_id, "hide", reason,
+            {"decision_id": str(decision.id)},
+        )
+    else:
+        raise ValueError(f"unsupported text-flag action: {action}")
+
+    db.commit()
+
+
+def has_open_escalation(db: Session, report: ContentReport) -> bool:
+    """True if this report's target has an unresolved legal escalation."""
+    return db.execute(
+        select(LegalEscalation.id).where(
+            LegalEscalation.target_type == report.target_type,
+            LegalEscalation.target_id == report.target_id,
+            LegalEscalation.closed_at.is_(None),
+        ).limit(1)
+    ).first() is not None
+
+
+def hide_reported_target(
+    db: Session, admin: User, report: ContentReport, target, reason: str,
+) -> None:
+    """Hide a reported rating or profile. Itineraries have their own function
+    (they also carry hidden_at and a soft-delete state)."""
+    from app.services import moderation_actions  # lazy: circular otherwise
+
+    moderation_actions.auto_hide(
+        db, report.target_type, target, action="hide", reason=reason, report=report,
+    )
+    _resolve_report(report, "content_hidden")
+    # Re-stamp as an operator action so the audit trail names the human who
+    # decided, rather than reading as another automated hide.
+    log_action(
+        db, admin, report.target_type, report.target_id, "hide", reason,
+        {"report_id": str(report.id)},
+    )
+    db.commit()
+
+
+def close_escalation(
+    db: Session, admin: User, escalation: LegalEscalation, note: str,
+) -> None:
+    """Close a legal escalation. The note is mandatory — this category cannot be
+    silently closed, which is the whole reason the lane exists."""
+    note = (note or "").strip()
+    if not note:
+        raise ValueError("a closure note is required")
+    if escalation.closed_at is not None:
+        return  # already closed (double submit / second tab)
+
+    escalation.closed_at = datetime.now(timezone.utc)
+    escalation.closed_by = admin.id
+    escalation.closure_note = note
+    log_action(
+        db, admin, escalation.target_type, escalation.target_id, "dismiss",
+        f"Legal escalation closed: {note}",
+        {"escalation_id": str(escalation.id)},
+    )
+    db.commit()
+
+
 def recent_log(db: Session, limit: int = 50, offset: int = 0) -> list[ModerationLog]:
     return list(db.execute(
         select(ModerationLog)
@@ -441,6 +569,18 @@ def overview_counts(db: Session) -> dict:
         ),
         "banned_users": _count(
             select(func.count(User.id)).where(User.is_active.is_(False))
+        ),
+        "text_flags": _count(
+            select(func.count(TextModerationDecision.id)).where(
+                TextModerationDecision.outcome == "review",
+                TextModerationDecision.reviewed_at.is_(None),
+            )
+        ),
+        # Rendered in its own red lane — a non-zero count is not routine.
+        "legal_escalations": _count(
+            select(func.count(LegalEscalation.id)).where(
+                LegalEscalation.closed_at.is_(None)
+            )
         ),
     }
 
@@ -498,7 +638,10 @@ def itinerary_detail(db: Session, itinerary_id: uuid.UUID) -> dict | None:
         # Resolved reports are kept too — repeat offences are the signal.
         "reports": _all(
             select(ContentReport)
-            .where(ContentReport.reported_itinerary_id == itinerary_id)
+            .where(
+                ContentReport.target_type == TARGET_ITINERARY,
+                ContentReport.target_id == itinerary_id,
+            )
             .order_by(ContentReport.created_at.desc())
         ),
         "image_logs": _all(

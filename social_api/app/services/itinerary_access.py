@@ -14,7 +14,7 @@ Visibility rules:
 import uuid
 
 from sqlalchemy.orm import Session
-from sqlalchemy import func, select
+from sqlalchemy import func, or_, select
 
 from app.models.itinerary import Itinerary
 from app.models.itinerary_allowed_user import ItineraryAllowedUser
@@ -23,16 +23,48 @@ from app.models.user import User
 from app.services.user_service import is_accepted_follower
 
 
-def public_listing_criteria() -> list:
+def public_listing_criteria(db: Session | None = None,
+                            viewer_id: uuid.UUID | None = None) -> list:
     """SQLAlchemy WHERE clauses that hide moderator-affected itineraries from
     public/other-user list queries. Caller MUST join `User` (the owner) so the
     banned-owner clause resolves. Keep in lock-step with can_view_itinerary so a
-    row-level check and a query-level filter can never disagree."""
-    return [
+    row-level check and a query-level filter can never disagree.
+
+    Pass `db` and `viewer_id` to also exclude blocked users — omitted only for
+    call sites with no viewer (there are none today; the defaults exist so an
+    older caller cannot silently lose the moderation clauses)."""
+    criteria = [
         Itinerary.deleted_at.is_(None),   # soft-deleted → gone for everyone
         Itinerary.hidden_at.is_(None),    # moderator-hidden → owner-only
         User.is_active.is_(True),         # banned owner → all their content hidden
     ]
+    if db is not None and viewer_id is not None:
+        from app.services.block_service import blocked_user_ids
+
+        hidden_authors = blocked_user_ids(db, viewer_id)
+        if hidden_authors:
+            criteria.append(Itinerary.user_id.notin_(hidden_authors))
+    return criteria
+
+
+# Content states that hide a record from everyone but its author. 'pending' and
+# 'flagged' stay visible on purpose: they are internal states, and announcing a
+# review that may come to nothing helps nobody.
+HIDDEN_STATUSES = ("hidden", "rejected")
+
+
+def visible_rating_criteria(viewer_id: uuid.UUID | None) -> list:
+    """WHERE clauses hiding moderated review notes from everyone but their
+    author. Ratings carry their own status rather than rolling up to the
+    itinerary — a stranger's abusive review must not take down the owner's trip.
+
+    Keep in lock-step with recalculate_rating, which applies the same filter to
+    the averages: a hidden rating is excluded from every read path, aggregates
+    included."""
+    visible = ItineraryRating.moderation_status.notin_(HIDDEN_STATUSES)
+    if viewer_id is None:
+        return [visible]
+    return [or_(visible, ItineraryRating.user_id == viewer_id)]
 
 
 def can_view_itinerary(
@@ -59,6 +91,15 @@ def can_view_itinerary(
 
     # Moderator-hidden → owner-only (handled above); everyone else is denied.
     if itinerary.hidden_at is not None:
+        return False
+
+    # Either party blocking the other hides the content both ways — a one-sided
+    # block would let the blocked user keep reading someone who asked to be left
+    # alone. Imported lazily: block_service imports user_service, which this
+    # module also imports.
+    from app.services.block_service import is_blocked_either_way
+
+    if is_blocked_either_way(db, viewer_id, itinerary.user_id):
         return False
 
     # Banned owner → hide all their content from other viewers until unbanned.
@@ -92,14 +133,23 @@ def recalculate_rating(itinerary: Itinerary, db: Session) -> None:
     Recomputes rating_avg and rating_count from the itinerary_ratings table
     and writes them back to the itinerary row.
 
-    Call this after every ItineraryRating insert, update, or delete.
+    Call this after every ItineraryRating insert, update, or delete — and after
+    any change to a rating's moderation_status, since hidden ratings are
+    excluded here too. The aggregate is a read path, so "hidden content is
+    excluded from all read paths" applies to it.
+
     The caller is responsible for committing the session.
     """
     row = db.execute(
         select(
             func.count(ItineraryRating.id).label("cnt"),
             func.avg(ItineraryRating.stars).label("avg"),
-        ).where(ItineraryRating.itinerary_id == itinerary.id)
+        ).where(
+            ItineraryRating.itinerary_id == itinerary.id,
+            # No viewer here: an aggregate is public, so even the author's own
+            # hidden rating must not move the number others see.
+            *visible_rating_criteria(None),
+        )
     ).one()
 
     itinerary.rating_count = row.cnt or 0

@@ -45,7 +45,9 @@ def _moderate(client: TestClient, itinerary_id: str, reporter_token: str,
     """Run a real dashboard action so a moderation_log row exists to appeal."""
     client.post(
         "/reports",
-        json={"itinerary_id": itinerary_id, "reason": "nsfw"},
+        # spam needs 4 distinct reporters, so one report stays pending and
+        # the moderator path is what gets exercised here.
+        json={"itinerary_id": itinerary_id, "reason": "spam"},
         headers=auth_headers(reporter_token),
     )
     db = TestingSessionLocal()

@@ -82,10 +82,18 @@ class Itinerary(Base):
         String(20), default="only_me", server_default="'only_me'", nullable=False
     )
 
-    # Cover-image moderation state, set by the Rekognition scan on upload:
-    # 'approved' (clean / no cover / moderation off), 'pending' (AWS was down,
-    # stored unscanned), 'flagged' (stored, awaiting operator review),
-    # 'rejected' (operator-set only — hard-rejected uploads store nothing).
+    # Combined moderation state for this itinerary's cover image AND its text
+    # (title, description, and its stops / annotations / transport legs, which
+    # roll up here because hiding is itinerary-level):
+    #   'approved' — clean, or moderation off
+    #   'pending'  — a provider was down; stored unscanned, sweep re-checks
+    #   'flagged'  — stored, sitting in the moderator queue
+    #   'hidden'   — taken down after publication (see hidden_at)
+    #   'rejected' — blocked at write time
+    # Both tiers write this column, so automated writes only ever RAISE severity
+    # (text_moderation_service.apply_moderation_status): a clean caption edit
+    # must not clear an unresolved image flag. Moderator/appeal paths assign
+    # directly to lower it.
     moderation_status: Mapped[str] = mapped_column(
         String(20), default="approved", server_default="'approved'", nullable=False
     )

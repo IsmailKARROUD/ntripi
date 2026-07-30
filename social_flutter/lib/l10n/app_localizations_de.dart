@@ -2523,4 +2523,114 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get apiErrorAppealTargetNotFound =>
       'Hier gibt es keine Moderationsmaßnahme zum Anfechten.';
+
+  @override
+  String get apiErrorTextModerationRejected =>
+      'Dieser Text verstößt möglicherweise gegen die Community-Richtlinien und wurde nicht gespeichert. Bitte bearbeite ihn und versuche es erneut.';
+
+  @override
+  String get apiErrorCannotBlockSelf =>
+      'Du kannst dich nicht selbst blockieren.';
+
+  @override
+  String moderationRejectedBecause(String reason) {
+    return 'Dieser Text wurde nicht gespeichert, weil er möglicherweise $reason enthält. Bitte bearbeite ihn und versuche es erneut.';
+  }
+
+  @override
+  String get moderationCategoryMinors => 'Inhalte mit Minderjährigen';
+
+  @override
+  String get moderationCategorySexual => 'sexuelle Inhalte';
+
+  @override
+  String get moderationCategoryHate => 'Hassrede';
+
+  @override
+  String get moderationCategoryHarassment => 'Belästigung';
+
+  @override
+  String get moderationCategoryViolence => 'gewalttätige Inhalte';
+
+  @override
+  String get moderationCategorySelfHarm => 'Inhalte über Selbstverletzung';
+
+  @override
+  String get moderationCategoryIllicit => 'illegale Aktivitäten';
+
+  @override
+  String get reportReasonCsam => 'Darstellungen sexuellen Kindesmissbrauchs';
+
+  @override
+  String get reportReasonSexualContent => 'Nacktheit oder sexuelle Inhalte';
+
+  @override
+  String get reportReasonViolenceThreat => 'Gewalt oder Drohungen';
+
+  @override
+  String get reportContent => 'Melden';
+
+  @override
+  String get reportUser => 'Dieses Konto melden';
+
+  @override
+  String get reportStop => 'Diesen Stopp melden';
+
+  @override
+  String get reportReview => 'Diese Bewertung melden';
+
+  @override
+  String get blockUser => 'Blockieren';
+
+  @override
+  String get unblockUser => 'Blockierung aufheben';
+
+  @override
+  String blockUserTitle(String username) {
+    return '@$username blockieren?';
+  }
+
+  @override
+  String get blockUserMessage =>
+      'Ihr seht eure Reisen und Profile gegenseitig nicht mehr, und keiner kann dem anderen folgen. Die Person wird nicht benachrichtigt.';
+
+  @override
+  String get blockedUsers => 'Blockierte Konten';
+
+  @override
+  String get blockedUsersEmpty => 'Du hast niemanden blockiert.';
+
+  @override
+  String blockedUserRemoved(String username) {
+    return '@$username entblockt.';
+  }
+
+  @override
+  String blockedUserAdded(String username) {
+    return '@$username blockiert.';
+  }
+
+  @override
+  String get abuseContact => 'Missbrauch melden';
+
+  @override
+  String get abuseContactSubtitle => 'Schreib uns wegen schädlicher Inhalte';
+
+  @override
+  String get communityGuidelines => 'Community-Richtlinien';
+
+  @override
+  String get moderationHintTitle => 'Das könnte beleidigend wirken';
+
+  @override
+  String get moderationHintBody =>
+      'Du kannst es trotzdem posten — das ist nur ein Hinweis, keine Sperre.';
+
+  @override
+  String get hiddenAppealAction => 'Um Überprüfung bitten';
+
+  @override
+  String hiddenBannerReason(String reason) {
+    return 'Grund: $reason';
+  }
 }

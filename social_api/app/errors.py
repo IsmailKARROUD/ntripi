@@ -23,6 +23,11 @@ class ApiError(HTTPException):
         code: str,
         detail: str,
         headers: dict | None = None,
+        extra: dict | None = None,
     ) -> None:
         super().__init__(status_code=status_code, detail=detail, headers=headers)
         self.code = code
+        # Optional machine-readable context merged into the JSON body — e.g. the
+        # moderation categories that triggered a rejection, so the client can
+        # explain *why* in plain language instead of echoing a raw classifier id.
+        self.extra = extra or {}

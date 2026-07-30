@@ -22,6 +22,10 @@ from app.models.content_report import ContentReport
 from app.models.image_moderation_log import ImageModerationLog
 from app.models.moderation_log import ModerationLog
 from app.models.appeal import Appeal
+from app.models.text_moderation_cache import TextModerationCache
+from app.models.text_moderation_decision import TextModerationDecision
+from app.models.legal_escalation import LegalEscalation
+from app.models.user_block import UserBlock
 
 __all__ = [
     "User", "RefreshToken", "EmailToken", "PasswordHistory", "SecurityAuditLog",
@@ -30,4 +34,6 @@ __all__ = [
     "Stop", "Annotation", "ItineraryRating", "ItineraryAnnotation",
     "TransitSegment", "TransportLeg", "WaitlistEntry", "ContentReport",
     "ImageModerationLog", "ModerationLog", "Appeal",
+    "TextModerationCache", "TextModerationDecision", "LegalEscalation",
+    "UserBlock",
 ]

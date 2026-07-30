@@ -24,6 +24,19 @@ def _user_not_found() -> ApiError:
                     code="user_not_found", detail="User not found.")
 
 
+def public_profile_text(user: User, viewer_id: uuid.UUID | None) -> tuple[str | None, str | None]:
+    """(display_name, bio) as `viewer_id` may see them.
+
+    Moderated profile text is blanked for everyone but its author — the client
+    already falls back to @username when display_name is None, so a hidden
+    display name degrades to the handle rather than to an empty header. The
+    account itself is untouched; bans are is_active.
+    """
+    if user.moderation_status in ("hidden", "rejected") and user.id != viewer_id:
+        return None, None
+    return user.display_name, user.bio
+
+
 def get_active_user_or_404(db: Session, user_id: uuid.UUID) -> User:
     user = db.get(User, user_id)
     if not user or not user.is_active:

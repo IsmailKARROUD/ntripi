@@ -61,6 +61,11 @@ class RatingWithUser {
   final DateTime updatedAt;
   final RaterInfo user;
 
+  /// The rating's own id, so a reader can report this individual review.
+  /// Nullable: a cached response from before the field existed has none, and
+  /// the report action is simply hidden for those.
+  final String? id;
+
   const RatingWithUser({
     required this.score,
     this.scoreSafety,
@@ -71,6 +76,7 @@ class RatingWithUser {
     this.note,
     required this.updatedAt,
     required this.user,
+    this.id,
   });
 
   /// Returns the score for the given dimension, or null if not rated.
@@ -103,6 +109,7 @@ class RatingWithUser {
         note: json['note'] as String?,
         updatedAt: DateTime.parse(json['updated_at'] as String),
         user: RaterInfo.fromJson(json['user'] as Map<String, dynamic>),
+        id: json['id'] as String?,
       );
 
   Map<String, dynamic> toJson() => {
@@ -115,6 +122,7 @@ class RatingWithUser {
         if (note != null) 'note': note,
         'updated_at': updatedAt.toIso8601String(),
         'user': user.toJson(),
+        if (id != null) 'id': id,
       };
 }
 

@@ -207,6 +207,49 @@ Optional (image moderation — AWS Rekognition backend tier): `MODERATION_ENABLE
 
 Persistent volume must be mounted at `/app/uploads` or images vanish on redeploy.
 
+Optional (text moderation): `TEXT_MODERATION_PROVIDER=openai|local|disabled` (default `disabled`) · `OPENAI_API_KEY` · `TEXT_MODERATION_MODEL=omni-moderation-latest` · `TEXT_MODERATION_TIMEOUT_SECONDS=5.0` · `TEXT_MODERATION_CACHE_TTL_DAYS=30` · `TEXT_MODERATION_LOG_RETENTION_DAYS=90`. Startup **fails** if `openai` is selected without a key — a silent downgrade to the wordlist is worse than not booting.
+
+Optional (moderation sweep): `MODERATION_SLA_HOURS=20` (≤22, validated) · `SWEEP_TOKEN` (unset ⇒ `/internal/moderation-sweep` 404s) · `SWEEP_IN_PROCESS=False` · `SWEEP_INTERVAL_MINUTES=30`. Production drives it from an external scheduler: `curl -X POST -H "Authorization: Bearer $SWEEP_TOKEN" https://ntripi.app/internal/moderation-sweep` hourly.
+
+Optional (reports/safety): `REPORT_HIDE_THRESHOLDS` (comma `category:count`) · `REPORT_RATE_LIMIT=10/hour` · `ABUSE_CONTACT_EMAIL=abuse@ntripi.app` (must match the in-app address AND the store listing).
+
+---
+
+## Text Moderation
+
+Provider-agnostic by construction — swapping providers is a config change, never a code edit.
+
+- **Policy is ours, not the provider's.** `app/services/moderation_policy.py` holds the 13 categories with Ntripi's own (review, reject) thresholds; the provider's boolean `flagged` verdict is deliberately ignored. `POLICY_VERSION` is part of the cache key, so bumping it invalidates every cached verdict — **bump it whenever you touch a threshold**.
+- **Providers**: `app/services/text_moderation_providers.py`. Chain is `openai → local → pending`. The OpenAI request body carries the text and the model name and **nothing else** — no user id, email, or content id, ever.
+- **Blocking calls are correct here.** Every text write path is a sync `def` endpoint, which FastAPI runs in a threadpool, so a blocking `requests.post` with a timeout never touches the event loop. Do NOT convert these endpoints to `async def` — that would put the sync SQLAlchemy session on the loop, which is the actual hazard.
+- **Call `moderate_or_422` from the endpoint BODY, never as a `Depends`.** Dependencies resolve before the body, so a `Depends` would spend a paid moderation call before `require_etag` could return its 412.
+- **`text_moderation_cache`** holds no raw text and no user reference; `text_moderation_decisions` is the audit trail *and* the moderator queue (`reviewed_at IS NULL` = queued). Retention purges reviewed rows only.
+- **Content state** lives on `itineraries.moderation_status` (shared by the image and text tiers), `itinerary_ratings.moderation_status`, and `users.moderation_status`. Stop / annotation / transport-leg text **rolls up to its parent itinerary** — hiding is itinerary-level, so a per-fragment status would have no read path.
+- **Automated writes only ever RAISE severity** (`apply_moderation_status`, order `approved < pending < flagged < hidden < rejected`): a clean caption edit must not clear an unresolved image flag. Moderator and appeal paths assign directly to lower it.
+- **Any moderation write to an itinerary from outside the owner's own request MUST go through `admin_service.set_preserving_etag` / `moderation_actions.set_status`.** `updated_at` IS the concurrency ETag; moving it 412s the author's open editor over a change they cannot see.
+- Operator gets an email when the provider chain degrades (fallback, or all-down), throttled to one per hour per level.
+
+### Reports, thresholds, escalation
+- `content_reports` is **polymorphic** (`target_type` + `target_id`, no FK on the id — evidence must survive a hard delete). Canonical reasons: `csam, sexual_content, violence_threat, hate_speech, harassment, other, spam`; legacy wire values (`nsfw`, `violence`, `copyright`) are accepted and normalized by `report_service.normalize_reason` so deployed clients keep working.
+- Distinct-reporter counts hide content immediately (`REPORT_HIDE_THRESHOLDS`); the count drops by one (floor 1) when the content is already flagged or a classifier score corroborates the reason. `has_pending_report` idempotency is what makes reporters *distinct*.
+- CSAM signals open a `legal_escalations` row, rendered in its own `/admin/legal` lane. The routine dismiss action refuses escalated reports, and closing one demands a written note. **No automated reporting to authorities** — deliberate.
+- Automated audit rows (`moderation_log`, `admin_user_id IS NULL`) carry `content_snapshot=None` and no raw text, email, or display name. Operator rows keep their snapshot.
+
+### Sweep
+`app/services/sweep_service.py` — SLA auto-hide, post-outage re-check, cache purge. Idempotent by construction; `pg_try_advisory_lock` makes concurrent runs impossible (skipped on SQLite). Invoked by `POST /internal/moderation-sweep` (bearer token, `secrets.compare_digest`, rate-limited, `include_in_schema=False`) or the in-process timer.
+
+### Appeals
+`hide` and every automated action (`auto_hide_reports`, `auto_hide_sla`, `auto_reject`) are **appealable** — an auto-hide is provisional and nobody has judged it. Filing an appeal writes its own `appeal_filed` audit row.
+
+### Blocking
+`user_blocks` (both FKs CASCADE — a block is a preference, not evidence). `block_service.is_blocked_either_way` is consulted inside `can_view_itinerary`; `blocked_user_ids` filters list queries. Visibility is cut in **both** directions, and a blocked profile 404s identically to a deleted one so the blocked user is never told.
+
+### Frontend rules
+- The client filter (`lib/core/moderation/text_precheck.dart`) **warns, never blocks**: any failure returns "clean", the submit control stays enabled, and text is never mutated or cleared.
+- Applied to free prose only — **never to titles or place names**. European place names false-positive on wordlists (Bitche, Condom, Sexbierum, Wank); flagging a real destination teaches users to ignore the warning. The backend still moderates titles, where a context-aware classifier can tell the difference.
+- `ModerationStatus.fromString` degrades unknown values to `approved` — a newer backend must never crash a deployed client.
+- `pending` and `flagged` are internal and are NOT surfaced to the author. Only `hidden` is, with a reason and a one-tap appeal.
+
 ---
 
 ## Alembic Migration Rules (CRITICAL)
@@ -229,6 +272,14 @@ Persistent volume must be mounted at `/app/uploads` or images vanish on redeploy
 - Do NOT use Google Maps SDK — OSM via flutter_map only
 - Do NOT compute rating averages in Python — use SQL `AVG()`
 - Do NOT create new access control logic — reuse `can_view_itinerary()`
+- Do NOT call `moderate_or_422` as a `Depends` — endpoint body only, or a 412 spends a paid moderation call
+- Do NOT convert text write endpoints to `async def` — sync SQLAlchemy on the event loop is the real hazard; the threadpool already keeps blocking provider calls off it
+- Do NOT send anything but the text to a moderation provider — no user id, email, or content id
+- Do NOT write an itinerary's moderation state from outside the owner's request without `set_preserving_etag` — it 412s their open editor
+- Do NOT change a threshold in `moderation_policy.py` without bumping `POLICY_VERSION` — stale verdicts would survive in the cache
+- Do NOT put raw content text, emails, or display names in an automated `moderation_log` row
+- Do NOT apply the client text filter to titles or place names — European place names false-positive
+- Do NOT let a client-side filter block submission, mutate text, or clear a compose field
 - Do NOT hardcode URLs, secrets, or environment values
 - Do NOT use `passlib` — bcrypt direct only
 - Do NOT use `allow_origin_regex=".*"` in CORS — explicit list only

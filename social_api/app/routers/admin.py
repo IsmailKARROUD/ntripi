@@ -38,8 +38,12 @@ from app.models.appeal import Appeal
 from app.models.content_report import ContentReport
 from app.models.image_moderation_log import ImageModerationLog
 from app.models.itinerary import Itinerary
+from app.models.legal_escalation import LegalEscalation
+from app.models.text_moderation_decision import TextModerationDecision
 from app.models.user import User
-from app.services import admin_service, appeal_service, auth_service
+from app.services import (
+    admin_service, appeal_service, auth_service, moderation_actions,
+)
 from app.services.share_service import build_share_url
 from app.templating import templates
 
@@ -255,14 +259,16 @@ def admin_reports(
     reports = admin_service.pending_reports(db)
     rows = []
     for report in reports:
-        itinerary = (
-            db.get(Itinerary, report.reported_itinerary_id)
-            if report.reported_itinerary_id else None
-        )
+        # Reports are polymorphic; only itinerary targets have a cover and a
+        # detail page, so the other kinds render as a plain label.
+        target = moderation_actions.load_target(db, report.target_type, report.target_id)
+        itinerary = target if report.target_type == "itinerary" else None
         rows.append({
             "report": report,
             "itinerary": itinerary,
-            "owner": db.get(User, itinerary.user_id) if itinerary else None,
+            "target": target,
+            "label": moderation_actions.target_label(report.target_type, target),
+            "owner": moderation_actions.target_author(db, report.target_type, target),
             "age": admin_service.humanize_age(report.created_at),
             "sla": admin_service.sla_class(report.created_at),
         })
@@ -294,18 +300,28 @@ def admin_report_action(
         # Another tab (or a double submit) already handled it.
         return _redirect("/admin/reports", notice="That report was already resolved.")
 
-    itinerary = (
-        db.get(Itinerary, report.reported_itinerary_id)
-        if report.reported_itinerary_id else None
-    )
-    owner = db.get(User, itinerary.user_id) if itinerary else None
+    # A CSAM escalation must not be closable from the routine queue — that is
+    # the entire reason the separate lane exists.
+    if action == "dismiss" and admin_service.has_open_escalation(db, report):
+        return _redirect(
+            "/admin/reports",
+            error="This report is legally escalated — close it from the Legal page.",
+        )
+
+    target = moderation_actions.load_target(db, report.target_type, report.target_id)
+    itinerary = target if report.target_type == "itinerary" else None
+    owner = moderation_actions.target_author(db, report.target_type, target)
 
     if action == "dismiss":
         admin_service.dismiss_report(db, admin, report, reason)
     elif action in ("hide", "delete"):
-        if itinerary is None:
+        if target is None:
             return _redirect("/admin/reports", error="The reported content no longer exists.")
-        if action == "hide":
+        if itinerary is None:
+            # Ratings and profiles have no soft-delete state — hide is the only
+            # content penalty available for them.
+            admin_service.hide_reported_target(db, admin, report, target, reason)
+        elif action == "hide":
             admin_service.hide_itinerary(db, admin, itinerary, reason, report)
         else:
             admin_service.soft_delete_itinerary(db, admin, itinerary, reason, report)
@@ -418,6 +434,129 @@ async def admin_flagged_action(
         return _redirect("/admin/flagged", error="Unknown action.")
 
     return _redirect("/admin/flagged", notice="Action applied.")
+
+
+# ---------------------------------------------------------------------------
+# Text-flag queue (classifier said "review", nobody has looked yet)
+# ---------------------------------------------------------------------------
+
+def _decision_target(db: Session, decision) -> dict:
+    """Resolve a polymorphic decision target into something renderable."""
+    target = moderation_actions.load_target(db, decision.target_type, decision.target_id)
+    author = moderation_actions.target_author(db, decision.target_type, target)
+    return {
+        "decision": decision,
+        "target": target,
+        "author": author,
+        "label": moderation_actions.target_label(decision.target_type, target),
+        # Highest-scoring categories first — what the moderator needs to see.
+        "scores": sorted(
+            (decision.scores or {}).items(), key=lambda item: item[1], reverse=True
+        )[:5],
+        "age": admin_service.humanize_age(decision.created_at),
+        "sla": admin_service.sla_class(decision.created_at),
+    }
+
+
+@router.get("/text-flags", response_class=HTMLResponse)
+def admin_text_flags(
+    request: Request,
+    error: str | None = None,
+    notice: str | None = None,
+    db: Session = Depends(get_db),
+    admin: User = Depends(_require_admin_page),
+) -> HTMLResponse:
+    rows = [
+        _decision_target(db, decision)
+        for decision in admin_service.pending_text_flags(db)
+    ]
+    return _page(request, "text_flags.html", {
+        "page_title": "Text flags",
+        "admin": admin,
+        "rows": rows,
+        "error_message": error,
+        "notice_message": notice,
+    })
+
+
+@router.post("/text-flags/{decision_id}/action")
+def admin_text_flag_action(
+    decision_id: uuid.UUID,
+    action: str = Form(...),
+    reason: str = Form(""),
+    db: Session = Depends(get_db),
+    admin: User = Depends(_require_admin_page),
+):
+    decision = db.get(TextModerationDecision, decision_id)
+    if decision is None:
+        raise HTTPException(status_code=404, detail="Decision not found")
+
+    reason = (reason or "").strip()
+    if not reason:
+        return _redirect("/admin/text-flags", error="A reason is required.")
+    if decision.reviewed_at is not None:
+        return _redirect("/admin/text-flags", notice="That flag was already reviewed.")
+    if action not in ("approve", "hide"):
+        return _redirect("/admin/text-flags", error="Unknown action.")
+
+    admin_service.resolve_text_flag(db, admin, decision, action, reason)
+    return _redirect("/admin/text-flags", notice="Action applied.")
+
+
+# ---------------------------------------------------------------------------
+# Legal escalations (CSAM) — cannot be closed as a routine moderation item
+# ---------------------------------------------------------------------------
+
+@router.get("/legal", response_class=HTMLResponse)
+def admin_legal(
+    request: Request,
+    error: str | None = None,
+    notice: str | None = None,
+    db: Session = Depends(get_db),
+    admin: User = Depends(_require_admin_page),
+) -> HTMLResponse:
+    rows = []
+    for escalation in admin_service.open_legal_escalations(db):
+        target = moderation_actions.load_target(
+            db, escalation.target_type, escalation.target_id
+        )
+        rows.append({
+            "escalation": escalation,
+            "target": target,
+            "author": moderation_actions.target_author(db, escalation.target_type, target),
+            "label": moderation_actions.target_label(escalation.target_type, target),
+            "age": admin_service.humanize_age(escalation.created_at),
+        })
+    return _page(request, "legal.html", {
+        "page_title": "Legal escalations",
+        "admin": admin,
+        "rows": rows,
+        "error_message": error,
+        "notice_message": notice,
+    })
+
+
+@router.post("/legal/{escalation_id}/close")
+def admin_legal_close(
+    escalation_id: uuid.UUID,
+    note: str = Form(""),
+    db: Session = Depends(get_db),
+    admin: User = Depends(_require_admin_page),
+):
+    escalation = db.get(LegalEscalation, escalation_id)
+    if escalation is None:
+        raise HTTPException(status_code=404, detail="Escalation not found")
+
+    try:
+        admin_service.close_escalation(db, admin, escalation, note)
+    except ValueError:
+        # The note is the whole point — this category must never be closed with
+        # a single click and no record of the judgement.
+        return _redirect(
+            "/admin/legal",
+            error="A written note is required to close a legal escalation.",
+        )
+    return _redirect("/admin/legal", notice="Escalation closed.")
 
 
 # ---------------------------------------------------------------------------
