@@ -1654,6 +1654,12 @@ abstract class AppLocalizations {
   /// **'Rate this trip'**
   String get rateThisTrip;
 
+  /// No description provided for @editYourItinerary.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit your itinerary'**
+  String get editYourItinerary;
+
   /// No description provided for @deletedUser.
   ///
   /// In en, this message translates to:

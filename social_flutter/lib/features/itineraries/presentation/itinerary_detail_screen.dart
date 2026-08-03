@@ -1097,6 +1097,8 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                               child: _RateCta(
                                 itineraryId: widget.itineraryId,
                                 itinerary: itinerary,
+                                isOwner: isOwner,
+                                onEdit: _enterEditMode,
                               ),
                             ),
                           ),
@@ -1844,15 +1846,38 @@ class _Tab extends StatelessWidget {
 }
 
 // ─── Rate this trip CTA ───────────────────────────────────────────────────────
+// Owners can't rate their own trip — they get the blue "edit" CTA instead.
 class _RateCta extends ConsumerWidget {
   final String itineraryId;
   final Itinerary itinerary;
+  final bool isOwner;
+  final VoidCallback onEdit;
 
-  const _RateCta({required this.itineraryId, required this.itinerary});
+  const _RateCta({
+    required this.itineraryId,
+    required this.itinerary,
+    required this.isOwner,
+    required this.onEdit,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final nt = context.nt;
+    if (isOwner) {
+      return SizedBox(
+        width: double.infinity,
+        child: FilledButton.icon(
+          onPressed: onEdit,
+          icon: const Icon(Icons.edit_rounded, size: 18),
+          label: Text(AppLocalizations.of(context)!.editYourItinerary),
+          style: FilledButton.styleFrom(
+            backgroundColor: nt.editBlue,
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          ),
+        ),
+      );
+    }
     final myRating = ref.watch(myRatingProvider(itineraryId)).value;
     return SizedBox(
       width: double.infinity,

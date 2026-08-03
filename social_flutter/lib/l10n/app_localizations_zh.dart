@@ -847,6 +847,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get rateThisTrip => '评价此行程';
 
   @override
+  String get editYourItinerary => '编辑你的行程';
+
+  @override
   String get deletedUser => '已删除的用户';
 
   @override

@@ -886,6 +886,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get rateThisTrip => 'Valora este viaje';
 
   @override
+  String get editYourItinerary => 'Edita tu itinerario';
+
+  @override
   String get deletedUser => 'Usuario eliminado';
 
   @override

@@ -878,6 +878,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get rateThisTrip => 'Rate this trip';
 
   @override
+  String get editYourItinerary => 'Edit your itinerary';
+
+  @override
   String get deletedUser => 'Deleted User';
 
   @override

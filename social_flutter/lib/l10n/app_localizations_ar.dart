@@ -900,6 +900,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get rateThisTrip => 'قيّم هذه الرحلة';
 
   @override
+  String get editYourItinerary => 'عدّل مسارك';
+
+  @override
   String get deletedUser => 'مستخدم محذوف';
 
   @override

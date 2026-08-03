@@ -895,6 +895,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get rateThisTrip => 'Évaluer ce voyage';
 
   @override
+  String get editYourItinerary => 'Modifier votre itinéraire';
+
+  @override
   String get deletedUser => 'Utilisateur supprimé';
 
   @override
