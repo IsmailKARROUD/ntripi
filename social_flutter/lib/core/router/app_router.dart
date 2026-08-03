@@ -420,8 +420,9 @@ class _AppShellState extends ConsumerState<_AppShell> {
           },
           items: [
             BottomNavigationBarItem(
-              icon: const Icon(Icons.search_outlined),
-              activeIcon: const Icon(Icons.search),
+              // person_search, not plain search: this tab only searches users.
+              icon: const Icon(Icons.person_search_outlined),
+              activeIcon: const Icon(Icons.person_search),
               label: AppLocalizations.of(context)!.navSearch,
             ),
             BottomNavigationBarItem(
