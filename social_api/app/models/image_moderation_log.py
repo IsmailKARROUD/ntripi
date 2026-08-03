@@ -1,11 +1,14 @@
 """
 models/image_moderation_log.py — SQLAlchemy ORM model for image_moderation_logs.
 
-One row per Rekognition scan decision at upload time — the legal-defensibility
-audit trail for automated image moderation. Rows are retained 90 days, then
-deleted opportunistically on the next scan (no cron — same pattern as the
-content-report IP-hash scrub). Only label names + confidences are stored, never
-the raw AWS response (data minimization: cleaner to migrate providers later).
+One row per automated scan decision at upload time — the legal-defensibility
+audit trail for automated image moderation — plus one per operator CSAM takedown
+('rejected_csam'). Rows are retained 90 days, then deleted opportunistically on
+the next scan (no cron — same pattern as the content-report IP-hash scrub);
+'rejected_csam' rows are the exception and are never purged, because the object
+is deleted in the same action and this row is the only surviving evidence. Only
+label names + confidences are stored, never the raw provider response (data
+minimization: cleaner to migrate providers later).
 
 Both FKs are SET NULL + nullable so a log row survives itinerary or account
 deletion. target_kind / action are constrained strings (String + CheckConstraint),
@@ -26,7 +29,15 @@ from app.database import Base
 # Single source of truth for the enum values — kept in sync with the check
 # constraints below and moderation_service.
 MODERATION_TARGET_KINDS = ("itinerary_cover", "avatar", "user_cover")
-MODERATION_ACTIONS = ("approved", "flagged", "rejected", "error_allowed")
+MODERATION_ACTIONS = (
+    "approved", "flagged", "rejected", "error_allowed",
+    # Written by admin_service.csam_takedown, not by a scan. Separate from
+    # 'rejected' because it is exempt from the 90-day purge — once the object is
+    # deleted, this row and its hash are the only surviving evidence.
+    "rejected_csam",
+)
+
+_ACTIONS_SQL = ",".join(f"'{action}'" for action in MODERATION_ACTIONS)
 
 
 class ImageModerationLog(Base):
@@ -37,7 +48,7 @@ class ImageModerationLog(Base):
             name="ck_moderation_target_kind",
         ),
         CheckConstraint(
-            "action IN ('approved','flagged','rejected','error_allowed')",
+            f"action IN ({_ACTIONS_SQL})",
             name="ck_moderation_action",
         ),
     )

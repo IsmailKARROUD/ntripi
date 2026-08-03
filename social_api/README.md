@@ -46,6 +46,9 @@ social_api/
 │       ├── image_service.py      ← Pillow: resize + EXIF strip + 1200×630 crop + JPEG
 │       ├── ordering.py           ← Fractional indexing: key_between / n_keys_between
 │       └── share_service.py      ← OG metadata builder for share pages
+├── docs/
+│   ├── media_pipeline_spec.md    ← upload/serve pipeline: R2 + Cloudflare CSAM scanning + migration checklist
+│   └── csam_response_runbook.md  ← operator procedure for a Cloudflare CSAM notice (read before enabling the scanner)
 ├── alembic/
 │   ├── env.py               ← Alembic config (reads DATABASE_URL from settings)
 │   └── versions/            ← Generated migration scripts go here
@@ -481,23 +484,23 @@ Docs: http://localhost:8000/docs
 | `ALLOWED_ORIGINS` | `https://ntripi.app` — comma-separated list of allowed browser origins |
 | `ALLOWED_HOSTS` | `ntripi.app,*.ntripi.app` — comma-separated; apex + wildcard must both be listed |
 | `SHARE_BASE_URL` | `https://ntripi.app` |
-| `STORAGE_BACKEND` | `filesystem` (default) or `r2` |
+| `STORAGE_BACKEND` | `r2` in production; `filesystem` (default) for local dev |
 | `STORAGE_FILESYSTEM_PATH` | `/app/uploads` (filesystem backend only) |
-| `STORAGE_PUBLIC_URL_PREFIX` | `/uploads` (filesystem backend only) |
+| `STORAGE_PUBLIC_URL_PREFIX` | `/uploads` — keep set under R2 too: legacy relative URLs still validate against it |
 
-**R2 storage** (optional — set when `STORAGE_BACKEND=r2`):
+**R2 storage** (required when `STORAGE_BACKEND=r2` — any missing var fails the boot):
 
 | Variable | Notes |
 |----------|-------|
-| `R2_ACCESS_KEY_ID` | |
+| `R2_ACCESS_KEY_ID` | R2 API token, Object Read & Write |
 | `R2_SECRET_ACCESS_KEY` | |
 | `R2_BUCKET` | |
 | `R2_ENDPOINT` | `https://<account-id>.r2.cloudflarestorage.com` |
-| `R2_PUBLIC_URL` | Public serving URL (r2.dev subdomain or custom domain) |
+| `R2_PUBLIC_URL` | **Proxied custom domain** (`https://images.ntripi.app`). A `pub-*.r2.dev` URL bypasses the Cloudflare zone and disables CSAM scanning — see `docs/media_pipeline_spec.md` |
 
 ### Persistent volume
 
-Mount a Railway persistent volume at `/app/uploads` when using the filesystem storage backend — cover images will be lost on redeploy without it.
+Mount a Railway persistent volume at `/app/uploads` when using the filesystem storage backend — cover images will be lost on redeploy without it. Not needed under R2.
 
 ### Build & deploy
 

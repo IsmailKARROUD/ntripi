@@ -140,6 +140,10 @@ class Settings(BaseSettings):
     MODERATION_REJECT_THRESHOLD: float = 80.0  # hard reject: image not stored, 422
     MODERATION_FLAG_THRESHOLD: float = 50.0  # soft flag: stored + logged + operator email
 
+    # Known-CSAM hash matching is NOT done here: Cloudflare's CSAM Scanning Tool
+    # does it at the edge on served content (dashboard toggle, no app config).
+    # It requires R2 behind a proxied custom domain — see docs/media_pipeline_spec.md.
+
     # Text moderation — scans user prose (titles, descriptions, notes, bios…)
     # before the write. Swapping providers is a config change only:
     #   "openai"   — OpenAI Moderation API, falls back to "local" on failure

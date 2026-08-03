@@ -1,9 +1,11 @@
 """
 models/legal_escalation.py — CSAM signals that cannot be closed as routine.
 
-A row here means content was hidden AND flagged for legal review: either a user
-reported it as `csam`, or the classifier scored above threshold on
-`sexual/minors`. Belgian law imposes obligations beyond taking the content down,
+A row here means content was hidden AND flagged for legal review: a user
+reported it as `csam`, the classifier scored above threshold on `sexual/minors`,
+or an upload matched a known-CSAM hash corpus (in which case the target is the
+uploader's account — the image was rejected, never stored, so there is no
+content row to point at). Belgian law imposes obligations beyond taking the content down,
 so the dashboard renders these in their own lane, visually distinct from the
 routine queue, and the ordinary "dismiss" action refuses to touch them —
 closing one requires the dedicated route and a written note.
@@ -29,7 +31,10 @@ from sqlalchemy.orm import Mapped, mapped_column
 from app.database import Base
 
 ESCALATION_TARGET_TYPES = ("itinerary", "rating", "user")
-ESCALATION_SOURCES = ("report", "score")  # human report vs classifier score
+# human report · classifier score · known-CSAM hash match at upload
+ESCALATION_SOURCES = ("report", "score", "hash_match")
+
+_SOURCES_SQL = ",".join(f"'{source}'" for source in ESCALATION_SOURCES)
 
 
 class LegalEscalation(Base):
@@ -40,7 +45,7 @@ class LegalEscalation(Base):
             name="ck_escalation_target_type",
         ),
         CheckConstraint(
-            "source IN ('report','score')",
+            f"source IN ({_SOURCES_SQL})",
             name="ck_escalation_source",
         ),
     )

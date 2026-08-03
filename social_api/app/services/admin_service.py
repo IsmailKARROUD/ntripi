@@ -15,6 +15,7 @@ stored image files are deliberately left in place — both are legal/safety evid
 
 from __future__ import annotations
 
+import hashlib
 import logging
 import uuid
 from datetime import datetime, timedelta, timezone
@@ -241,16 +242,25 @@ def warn_user(
     )
 
 
+def deactivate_account(db: Session, user: User) -> None:
+    """The suspension mechanics, with no audit row and no commit.
+
+    is_active=False locks every authenticated request out on the spot
+    (dependencies re-read the row per request → 403 account_deactivated), and
+    revoking the refresh tokens stops silent renewal. Shared by ban_user and
+    csam_takedown so every suspension path locks an account identically.
+    """
+    user.is_active = False
+    refresh_token_service.revoke_all_for_user(db, user.id)
+
+
 def ban_user(
     db: Session, admin: User, user: User, reason: str,
     report: ContentReport | None = None,
 ) -> None:
-    """Suspend an account: is_active=False locks every authenticated request out
-    on the spot (dependencies re-read the row per request → 403
-    account_deactivated), and revoking the refresh tokens stops silent renewal."""
+    """Suspend an account by operator decision, then tell the user how to appeal."""
     snapshot = snapshot_user(user, report)
-    user.is_active = False
-    refresh_token_service.revoke_all_for_user(db, user.id)
+    deactivate_account(db, user)
     _resolve_report(report, "user_banned")
     log = log_action(db, admin, TARGET_USER, user.id, "ban", reason, snapshot)
     db.commit()
@@ -533,6 +543,156 @@ def close_escalation(
         {"escalation_id": str(escalation.id)},
     )
     db.commit()
+
+
+# ---------------------------------------------------------------------------
+# CSAM takedown (response to a Cloudflare CSAM Scanning Tool notice)
+# ---------------------------------------------------------------------------
+
+# Every storage key the app writes is derived from an entity UUID, so a path
+# from Cloudflare's digest resolves back to an owner without any lookup table.
+_KEY_FOLDERS = {
+    "avatars": "avatar",
+    "covers": "user_cover",
+    "itineraries": "itinerary_cover",
+}
+
+# image_hash is normally a SHA-256 of the object. When Cloudflare reports a path
+# whose object is already gone we have nothing to hash, and this sentinel says
+# so rather than inventing a digest.
+HASH_UNAVAILABLE = "unavailable"
+
+
+def parse_storage_key(path: str) -> tuple[str, uuid.UUID, str] | None:
+    """Turn a path from a Cloudflare notice into (target_kind, entity id, key).
+
+    Accepts whatever the operator pastes: a full URL, a bare key, a leading
+    slash, a `?v=` cache-bust suffix. Returns None if the path is not one this
+    app could have written — the caller must refuse rather than guess.
+    """
+    candidate = (path or "").strip()
+    if not candidate:
+        return None
+    candidate = candidate.split("?", 1)[0].split("#", 1)[0]
+    if "//" in candidate:  # strip scheme + host of a full URL
+        candidate = candidate.split("//", 1)[1]
+        _, _, candidate = candidate.partition("/")
+    candidate = candidate.lstrip("/")
+    # Tolerate the filesystem era's serving prefix (/uploads/...).
+    if candidate.startswith("uploads/"):
+        candidate = candidate[len("uploads/"):]
+
+    folder, _, stem = candidate.partition("/")
+    kind = _KEY_FOLDERS.get(folder)
+    if kind is None or not stem:
+        return None
+    try:
+        entity_id = uuid.UUID(stem.removesuffix(".jpg"))
+    except ValueError:
+        return None
+    return kind, entity_id, f"{folder}/{entity_id}.jpg"
+
+
+async def csam_takedown(db: Session, admin: User, path: str) -> dict:
+    """Action a Cloudflare CSAM notice: preserve, remove, suspend, escalate.
+
+    Cloudflare hash-matches at the edge on content it serves, so unlike an
+    upload-time scan the object already exists here. The order below is
+    deliberate: the object is hashed BEFORE it is deleted, because afterwards
+    that hash is the only evidence that survives.
+
+    Raises ValueError if the path is unrecognised or its owner is gone —
+    guessing at a path we did not write could suspend an unrelated account.
+    Returns a summary for the operator flash message.
+    """
+    from app.services import moderation_actions  # lazy: circular otherwise
+
+    parsed = parse_storage_key(path)
+    if parsed is None:
+        raise ValueError(
+            "Unrecognised path. Expected avatars/<id>.jpg, covers/<id>.jpg, "
+            "or itineraries/<id>.jpg."
+        )
+    target_kind, entity_id, key = parsed
+
+    itinerary = db.get(Itinerary, entity_id) if target_kind == "itinerary_cover" else None
+    user = (
+        db.get(User, itinerary.user_id) if itinerary is not None
+        else db.get(User, entity_id) if target_kind != "itinerary_cover"
+        else None
+    )
+    if user is None:
+        raise ValueError(f"No account owns {key} — nothing to action.")
+
+    # Evidence first: read and hash while the object still exists.
+    try:
+        raw = await storage().read(key)
+    except Exception:
+        logger.exception("could not read %s for CSAM evidence", key)
+        raw = None
+    image_hash = hashlib.sha256(raw).hexdigest() if raw else HASH_UNAVAILABLE
+
+    db.add(ImageModerationLog(
+        image_hash=image_hash,
+        target_kind=target_kind,
+        target_itinerary_id=itinerary.id if itinerary is not None else None,
+        uploader_user_id=user.id,
+        # Purge-exempt (moderation_service.PRESERVED_ACTION). No raw bytes are
+        # kept anywhere — the hash is the record.
+        action="rejected_csam",
+        labels=[{
+            "name": "csam_hash_match",
+            "provider": "cloudflare",
+            "key": key,
+            "object_present": raw is not None,
+        }],
+        reviewed_at=datetime.now(timezone.utc),  # actioned as it was created
+    ))
+
+    snapshot = snapshot_user(user)
+    snapshot["image_hash"] = image_hash
+    snapshot["storage_key"] = key
+
+    if itinerary is not None:
+        snapshot["cover_image_url"] = itinerary.cover_image_url
+        # updated_at IS the concurrency ETag — a moderation write must not move it.
+        set_preserving_etag(
+            itinerary, cover_image_url=None, moderation_status="rejected"
+        )
+    elif target_kind == "avatar":
+        snapshot["avatar_url"] = user.avatar_url
+        user.avatar_url = None
+    else:
+        snapshot["cover_image_url"] = user.cover_image_url
+        user.cover_image_url = None
+
+    already_suspended = not user.is_active
+    deactivate_account(db, user)
+    log_action(
+        db, admin, TARGET_USER, user.id, "ban",
+        f"CSAM hash match reported by Cloudflare for {key} "
+        f"(sha256: {image_hash}). Account suspended; image removed.",
+        snapshot,
+    )
+    # Same lane as every other CSAM signal, and it still cannot be closed
+    # without a written note naming the CyberTipline report.
+    moderation_actions.escalate(db, TARGET_USER, user, source="hash_match")
+    db.commit()
+
+    # Deliberately no email to the user: a notice would tell someone whose
+    # upload matched a law-enforcement corpus exactly what was detected.
+    try:
+        await storage().delete(key)
+    except Exception:  # storage outage must not undo the committed takedown
+        logger.exception("failed deleting CSAM object %s", key)
+
+    return {
+        "key": key,
+        "username": user.username,
+        "image_hash": image_hash,
+        "object_found": raw is not None,
+        "already_suspended": already_suspended,
+    }
 
 
 def recent_log(db: Session, limit: int = 50, offset: int = 0) -> list[ModerationLog]:

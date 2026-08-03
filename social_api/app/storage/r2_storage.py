@@ -50,6 +50,10 @@ class R2Storage(Storage):
             Key=key,
             Body=data,
             ContentType=content_type,
+            # Keys are stable per entity, so a long TTL would serve a stale image
+            # after a replacement. Avatars and user covers carry a ?v= buster;
+            # an hour bounds the staleness for itinerary covers, which do not.
+            CacheControl="public, max-age=3600",
         )
         try:
             await asyncio.to_thread(put)
@@ -58,6 +62,22 @@ class R2Storage(Storage):
             raise
         logger.info("R2 uploaded key=%r bucket=%r", key, self._bucket)
         return self.public_url(key)
+
+    async def read(self, key: str) -> bytes | None:
+        """Fetch an object's bytes, or None if it is gone."""
+        def _get() -> bytes:
+            # Body.read() streams from the socket, so it must stay in the
+            # worker thread with the get_object call, not run on the loop.
+            response = self._client.get_object(Bucket=self._bucket, Key=key)
+            return response["Body"].read()
+
+        try:
+            return await asyncio.to_thread(_get)
+        except ClientError as exc:
+            if exc.response["Error"]["Code"] in ("404", "NoSuchKey"):
+                return None
+            logger.error("R2 read failed for key %r: %s", key, exc)
+            raise
 
     async def delete(self, key: str) -> None:
         """Remove an object from R2. No-op if the key does not exist."""

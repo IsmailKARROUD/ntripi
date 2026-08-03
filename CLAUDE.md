@@ -199,13 +199,15 @@ When inserting a new track between two adjacent tracks that have a segment conne
 
 Railway (single Dockerfile) + Cloudflare DNS + Let's Encrypt SSL.
 
-Railway env vars: `DATABASE_URL=${{Postgres.DATABASE_URL}}` · `SECRET_KEY` · `ALGORITHM=HS256` · `ACCESS_TOKEN_EXPIRE_MINUTES=1440` · `DEBUG=False` · `SHARE_BASE_URL=https://ntripi.app` · `ALLOWED_ORIGINS=https://ntripi.app` · `STORAGE_BACKEND=filesystem` · `STORAGE_FILESYSTEM_PATH=/app/uploads` · `STORAGE_PUBLIC_URL_PREFIX=/uploads`
+Railway env vars: `DATABASE_URL=${{Postgres.DATABASE_URL}}` · `SECRET_KEY` · `ALGORITHM=HS256` · `ACCESS_TOKEN_EXPIRE_MINUTES=1440` · `DEBUG=False` · `SHARE_BASE_URL=https://ntripi.app` · `ALLOWED_ORIGINS=https://ntripi.app` · `STORAGE_BACKEND=r2` · `R2_ACCESS_KEY_ID` · `R2_SECRET_ACCESS_KEY` · `R2_BUCKET` · `R2_ENDPOINT` · `R2_PUBLIC_URL=https://images.ntripi.app` (proxied custom domain — never `pub-*.r2.dev`) · `STORAGE_PUBLIC_URL_PREFIX=/uploads` (keep set: legacy relative URLs still validate against it). Filesystem fallback for local dev only: `STORAGE_BACKEND=filesystem` + `STORAGE_FILESYSTEM_PATH=/app/uploads`.
 
 Optional: `FEED_TOP_MIN_RATINGS=3` — minimum rating count for an itinerary to appear in the "Top" discovery feed (defaults to 3; lower it while the catalogue is young).
 
 Optional (image moderation — AWS Rekognition backend tier): `MODERATION_ENABLED=True` · `MODERATION_AWS_ACCESS_KEY_ID` · `MODERATION_AWS_SECRET_ACCESS_KEY` · `MODERATION_AWS_REGION` (e.g. `eu-west-1`) · `MODERATION_REJECT_THRESHOLD=80` · `MODERATION_FLAG_THRESHOLD=50`. Disabled (default) or any missing cred = uploads stored unscanned, exactly as before. Scan runs after Pillow processing, before storage: hard-reject (explicit nudity / violence / gore ≥ reject threshold) → 422, nothing stored; soft-flag (any label ≥ flag threshold) → stored + logged + operator-emailed (`OPERATOR_EMAIL`); AWS error → stored as `pending` (fail-open). IAM policy needs only `rekognition:DetectModerationLabels`. Set an AWS Budgets $50/mo alert on Rekognition. Client-side pre-check (NSFWJS web / TFLite mobile) is a UX/cost optimization only — the backend is the authority; its model files are not vendored (see `social_flutter/{assets/models,web/nsfw}/README.md`).
 
-Persistent volume must be mounted at `/app/uploads` or images vanish on redeploy.
+CSAM hash matching has **no app config** — Cloudflare's CSAM Scanning Tool does it at the edge (dashboard toggle: Caching → CSAM Scanning Tool, notification address = `OPERATOR_EMAIL`). It requires `STORAGE_BACKEND=r2` served from a **proxied custom domain**; a `pub-*.r2.dev` `R2_PUBLIC_URL` bypasses the zone and silently disables the whole layer (the storage factory logs a warning). It scans **serve-time, not upload-time**, blocks matched URLs at the edge, and emails a **daily digest** — it does **NOT** file with NCMEC on our behalf. Removal, the CyberTipline filing (24h from the notice), and preservation are ours: `social_api/docs/media_pipeline_spec.md` + `csam_response_runbook.md`.
+
+`STORAGE_BACKEND=r2` with any `R2_*` var missing now **raises at startup** — silently writing to a filesystem path production no longer serves (the `/uploads` mount is filesystem-only) would strand every upload and take images out from behind Cloudflare. Filesystem backend still needs a persistent volume at `/app/uploads` or images vanish on redeploy.
 
 Optional (text moderation): `TEXT_MODERATION_PROVIDER=openai|local|disabled` (default `disabled`) · `OPENAI_API_KEY` · `TEXT_MODERATION_MODEL=omni-moderation-latest` · `TEXT_MODERATION_TIMEOUT_SECONDS=5.0` · `TEXT_MODERATION_CACHE_TTL_DAYS=30` · `TEXT_MODERATION_LOG_RETENTION_DAYS=90`. Startup **fails** if `openai` is selected without a key — a silent downgrade to the wordlist is worse than not booting.
 
@@ -234,6 +236,9 @@ Provider-agnostic by construction — swapping providers is a config change, nev
 - Distinct-reporter counts hide content immediately (`REPORT_HIDE_THRESHOLDS`); the count drops by one (floor 1) when the content is already flagged or a classifier score corroborates the reason. `has_pending_report` idempotency is what makes reporters *distinct*.
 - CSAM signals open a `legal_escalations` row, rendered in its own `/admin/legal` lane. The routine dismiss action refuses escalated reports, and closing one demands a written note. **No automated reporting to authorities** — deliberate.
 - Automated audit rows (`moderation_log`, `admin_user_id IS NULL`) carry `content_snapshot=None` and no raw text, email, or display name. Operator rows keep their snapshot.
+
+### CSAM takedown (response to a Cloudflare notice)
+Detection is Cloudflare's, at serve time; the app's whole job is the response — `admin_service.csam_takedown(db, admin, path)`, driven by the form on `/admin/legal`. `parse_storage_key` normalises whatever the operator pastes (full URL, bare key, `/uploads/` prefix, `?v=` suffix) against the three deterministic key patterns, and **refuses anything it does not recognise** — guessing could suspend an unrelated account. Order is load-bearing: **hash the object before deleting it**, because afterwards the `rejected_csam` row and its SHA-256 are the only evidence (exempt from the 90-day purge via `moderation_service.PRESERVED_ACTION`). Then clear the URL (itineraries via `set_preserving_etag`), `deactivate_account`, one operator `ban` row (so `/admin/log`'s unban still works if a match is ever disputed), `escalate(source='hash_match')` against the **user** (no content row survives to point at), commit — evidence, suspension, and escalation as one transaction — and finally delete the object best-effort. The uploader is never emailed. Procedure and counsel sign-offs: `social_api/docs/csam_response_runbook.md`; pipeline: `media_pipeline_spec.md`.
 
 ### Sweep
 `app/services/sweep_service.py` — SLA auto-hide, post-outage re-check, cache purge. Idempotent by construction; `pg_try_advisory_lock` makes concurrent runs impossible (skipped on SQLite). Invoked by `POST /internal/moderation-sweep` (bearer token, `secrets.compare_digest`, rate-limited, `include_in_schema=False`) or the in-process timer.
@@ -278,6 +283,10 @@ Provider-agnostic by construction — swapping providers is a config change, nev
 - Do NOT write an itinerary's moderation state from outside the owner's request without `set_preserving_etag` — it 412s their open editor
 - Do NOT change a threshold in `moderation_policy.py` without bumping `POLICY_VERSION` — stale verdicts would survive in the cache
 - Do NOT put raw content text, emails, or display names in an automated `moderation_log` row
+- Do NOT purge, downgrade, or otherwise touch `rejected_csam` rows in `image_moderation_logs` — the object is deleted in the same action, so the row and its hash are the only evidence and their retention is a legal duty
+- Do NOT delete the object before hashing it in `csam_takedown` — the order is the evidence
+- Do NOT email the uploader or surface a CSAM-specific message on a takedown — it tells someone whose upload matched a law-enforcement corpus exactly what was detected
+- Do NOT point `R2_PUBLIC_URL` at a `pub-*.r2.dev` domain in production — it bypasses the Cloudflare zone and silently disables CSAM scanning entirely
 - Do NOT apply the client text filter to titles or place names — European place names false-positive
 - Do NOT let a client-side filter block submission, mutate text, or clear a compose field
 - Do NOT hardcode URLs, secrets, or environment values

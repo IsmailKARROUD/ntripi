@@ -14,6 +14,14 @@ class Storage(ABC):
         """Persist bytes under the given key. Returns the public URL."""
 
     @abstractmethod
+    async def read(self, key: str) -> bytes | None:
+        """Return the stored bytes, or None if the key does not exist.
+
+        Only the CSAM takedown path uses this: it must hash an object before
+        deleting it, because afterwards the hash is the only evidence left.
+        """
+
+    @abstractmethod
     async def delete(self, key: str) -> None:
         """Delete the file at the given key. No-op if the key does not exist."""
 

@@ -1,10 +1,12 @@
 """
 services/moderation_service.py — automated image moderation (AWS Rekognition).
 
-The backend tier of the two-tier moderation pipeline (the client-side NSFW
-pre-check is the fast/free bouncer; this is the un-bypassable vault). Runs a
-Rekognition `DetectModerationLabels` scan on the *processed* JPEG bytes, after
-Pillow processing but before storage, so rejected content is never written.
+The only upload-time scan: the client-side NSFW pre-check is the fast/free
+bouncer, and Cloudflare's CSAM Scanning Tool hash-matches known material at the
+edge but only once content is being *served*, so this is the last gate before
+anything is stored. Runs a Rekognition `DetectModerationLabels` scan on the
+*processed* JPEG bytes, after Pillow processing but before storage, so rejected
+content is never written.
 
 Three outcomes:
   - reject  — an explicit-nudity / violence / gore label ≥ REJECT_THRESHOLD.
@@ -63,6 +65,9 @@ REJECT_CATEGORIES = frozenset({
 
 # Audit rows are kept for legal defensibility, then dropped.
 LOG_RETENTION = timedelta(days=90)
+
+# The one action retention never touches (written by admin_service.csam_takedown).
+PRESERVED_ACTION = "rejected_csam"
 
 
 class ModerationRejectedError(Exception):
@@ -224,7 +229,13 @@ def _log_decision(
         labels=labels,
     ))
     cutoff = datetime.now(timezone.utc) - LOG_RETENTION
-    db.execute(delete(ImageModerationLog).where(ImageModerationLog.created_at < cutoff))
+    db.execute(delete(ImageModerationLog).where(
+        ImageModerationLog.created_at < cutoff,
+        # CSAM hash matches are preserved indefinitely — the image was never
+        # stored, so this row and its hash are the only surviving evidence of a
+        # reportable event. See docs/csam_response_runbook.md.
+        ImageModerationLog.action != PRESERVED_ACTION,
+    ))
 
 
 def _notify_flagged(ctx: ModerationContext, labels: list[dict[str, Any]]) -> None:

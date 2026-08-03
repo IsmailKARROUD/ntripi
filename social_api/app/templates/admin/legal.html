@@ -5,15 +5,35 @@
 
 <div class="card" style="border-left:4px solid #b00020">
   <p>
-    Content reported as CSAM, or scored above threshold on the minors category.
-    It has already been hidden automatically. These items carry obligations
-    beyond taking the content down, so they cannot be closed from the reports
-    queue — closing one here requires a written note recording what was done.
+    Content reported as CSAM, scored above threshold on the minors category, or
+    matched against a known-CSAM hash list by Cloudflare. It has already been
+    hidden automatically. These items carry obligations beyond taking the
+    content down, so they cannot be closed from the reports queue — closing one
+    here requires a written note recording what was done.
   </p>
   <p class="muted">
-    Ntripi does not report to authorities automatically. That decision, and the
-    filing itself, is yours.
+    Neither Ntripi nor Cloudflare reports to authorities on your behalf. That
+    filing is yours, and the clock is 24 hours from the notice: follow
+    <code>docs/csam_response_runbook.md</code> and record the CyberTipline
+    report number in the closure note.
   </p>
+</div>
+
+<div class="card" style="border-left:4px solid #b00020">
+  <h2 style="margin-top:0">Cloudflare CSAM notice</h2>
+  <p class="muted">
+    Paste one matched file path from the Cloudflare digest email. This hashes
+    the object for evidence, deletes it, clears the image from the profile or
+    itinerary, suspends the uploader, and opens an escalation below. The
+    uploader is not notified.
+  </p>
+  <form method="post" action="/admin/legal/takedown">
+    <input type="text" name="path" style="width:100%"
+           placeholder="itineraries/&lt;uuid&gt;.jpg — or the full URL from the email" required>
+    <div class="actions">
+      <button type="submit" class="danger">Take down and suspend</button>
+    </div>
+  </form>
 </div>
 
 {% if rows %}
@@ -50,7 +70,9 @@
           {% endif %}
         </td>
         <td class="muted">
-          {% if r.escalation.source == 'report' %}user report{% else %}classifier score{% endif %}
+          {% if r.escalation.source == 'report' %}user report
+          {%- elif r.escalation.source == 'hash_match' %}Cloudflare hash match — image removed, account suspended
+          {%- else %}classifier score{% endif %}
           <div>{{ r.escalation.created_at.strftime('%Y-%m-%d %H:%M') }} UTC</div>
         </td>
         <td>

@@ -14,9 +14,17 @@ or with all required env vars exported.
 The script:
   1. Walks STORAGE_FILESYSTEM_PATH and uploads every file to R2 under the same
      relative key (e.g. itineraries/abc123.jpg → R2 key itineraries/abc123.jpg).
-  2. Updates any itinerary.cover_image_url that starts with STORAGE_PUBLIC_URL_PREFIX
-     to the corresponding R2 public URL.
+  2. Rewrites every stored image URL — itineraries.cover_image_url,
+     users.avatar_url, users.cover_image_url — from the old serving prefix to
+     the R2 public URL. All three matter: the /uploads static mount only exists
+     while STORAGE_BACKEND=filesystem, so any row this misses 404s the moment
+     the backend flips.
   3. Handles errors per-file — one bad file does not abort the whole migration.
+
+A later domain cutover (e.g. moving off pub-*.r2.dev onto the proxied custom
+domain, which is what puts images behind Cloudflare's CSAM scanning) is the
+same DB rewrite with the old domain passed as --old-base:
+    python scripts/migrate_to_r2.py --dry-run --old-base https://pub-abc123.r2.dev
 
 After running successfully, flip STORAGE_BACKEND=r2 in Railway and redeploy.
 """
@@ -75,8 +83,38 @@ def _guess_content_type(path: Path) -> str:
     }.get(suffix, "application/octet-stream")
 
 
-def migrate(dry_run: bool) -> None:
+# (table, id column, url column) — every place a public image URL is persisted.
+URL_COLUMNS = (
+    ("itineraries", "id", "cover_image_url"),
+    ("users", "id", "avatar_url"),
+    ("users", "id", "cover_image_url"),
+)
+
+
+def rewrite_url(old_url: str, old_bases: list[str], new_base: str) -> str | None:
+    """Re-point a stored URL at `new_base`, or None if it does not need it.
+
+    Avatar and user-cover URLs carry a ?v=<ms> cache-buster appended after the
+    storage key (image_service.process_and_store); it is preserved verbatim, so
+    clients holding the old URL still see the same version identity.
+    """
+    url = (old_url or "").strip()
+    if not url:
+        return None
+    path, sep, query = url.partition("?")
+    for base in old_bases:
+        if not base or not path.startswith(base + "/"):
+            continue
+        key = path[len(base) + 1:]
+        if not key:
+            return None
+        return f"{new_base}/{key}{sep}{query}"
+    return None
+
+
+def migrate(dry_run: bool, extra_old_bases: list[str] | None = None) -> None:
     settings = get_settings()
+    extra_old_bases = extra_old_bases or []
 
     base_dir = Path(settings.STORAGE_FILESYSTEM_PATH)
     if not base_dir.exists():
@@ -114,6 +152,9 @@ def migrate(dry_run: bool) -> None:
                 Key=key,
                 Body=data,
                 ContentType=content_type,
+                # Must match R2Storage.save, or migrated objects would cache
+                # differently from ones uploaded afterwards.
+                CacheControl="public, max-age=3600",
             )
             print(f"  Uploaded {label}")
             uploaded.append(key)
@@ -127,35 +168,43 @@ def migrate(dry_run: bool) -> None:
         for key, err in failed:
             print(f"  {key}: {err}")
 
-    # ---- Update database cover_image_url values ------------------------------
+    # ---- Update every stored image URL ---------------------------------------
+    # Old bases: the filesystem prefix, plus any --old-base the operator names
+    # (a pub-*.r2.dev → custom-domain cutover re-points those rows too).
+    old_bases = [old_prefix] + [
+        base.rstrip("/") for base in extra_old_bases
+        if base.rstrip("/") and base.rstrip("/") != public_url_base
+    ]
+
     engine = create_engine(settings.DATABASE_URL)
     with engine.connect() as conn:
-        rows = conn.execute(
-            text("SELECT id, cover_image_url FROM itineraries WHERE cover_image_url IS NOT NULL")
-        ).fetchall()
+        total = 0
+        for table, id_col, url_col in URL_COLUMNS:
+            rows = conn.execute(text(
+                f"SELECT {id_col}, {url_col} FROM {table} WHERE {url_col} IS NOT NULL"
+            )).fetchall()
 
-        updates: list[tuple[str, str]] = []
-        for row in rows:
-            old_url: str = row[1]
-            if not old_url.startswith(old_prefix + "/"):
-                continue
-            relative_key = old_url[len(old_prefix) + 1:]
-            new_url = f"{public_url_base}/{relative_key}"
-            updates.append((row[0], new_url))
+            updates: list[tuple[str, str]] = []
+            for row_id, old_url in rows:
+                new_url = rewrite_url(old_url, old_bases, public_url_base)
+                if new_url is not None:
+                    updates.append((row_id, new_url))
 
-        print(f"\nFound {len(updates)} DB row(s) to update.")
-        if dry_run:
-            for itin_id, new_url in updates:
-                print(f"  DRY RUN — would update itinerary {itin_id} → {new_url}")
-        else:
-            for itin_id, new_url in updates:
+            total += len(updates)
+            print(f"\n{table}.{url_col}: {len(updates)} row(s) to update.")
+            for row_id, new_url in updates:
+                if dry_run:
+                    print(f"  DRY RUN — would update {table} {row_id} → {new_url}")
+                    continue
                 conn.execute(
-                    text("UPDATE itineraries SET cover_image_url = :url WHERE id = :id"),
-                    {"url": new_url, "id": itin_id},
+                    text(f"UPDATE {table} SET {url_col} = :url WHERE {id_col} = :id"),
+                    {"url": new_url, "id": row_id},
                 )
-                print(f"  Updated itinerary {itin_id} → {new_url}")
+                print(f"  Updated {table} {row_id} → {new_url}")
+
+        if not dry_run:
             conn.commit()
-            print("DB commit done.")
+            print(f"\nDB commit done ({total} row(s)).")
 
     if failed:
         print("\nWARNING: some files failed to upload — review errors above before switching STORAGE_BACKEND=r2.")
@@ -174,5 +223,14 @@ if __name__ == "__main__":
         action="store_true",
         help="Show what would be uploaded/updated without making any changes.",
     )
+    parser.add_argument(
+        "--old-base",
+        action="append",
+        default=[],
+        metavar="URL",
+        help="Additional URL base to re-point at R2_PUBLIC_URL (repeatable), "
+             "e.g. --old-base https://pub-abc123.r2.dev when moving off the "
+             "r2.dev domain onto the proxied custom domain.",
+    )
     args = parser.parse_args()
-    migrate(dry_run=args.dry_run)
+    migrate(dry_run=args.dry_run, extra_old_bases=args.old_base)

@@ -3,8 +3,10 @@ services/moderation_actions.py — automated moderation actions on any target.
 
 The shared machinery behind every action with no human actor: the
 distinct-reporter threshold hide (report_service), the SLA-deadline hide and the
-post-outage re-check (sweep_service), and CSAM escalation. Keeping it in one
-place means all of them agree on the three rules that matter:
+post-outage re-check (sweep_service), and CSAM escalation — including the one
+raised by admin_service.csam_takedown, which has a human actor for the takedown
+but still opens its escalation through here. Keeping it in one place means all
+of them agree on the three rules that matter:
 
   1. An itinerary hidden from outside its owner's own request goes through
      admin_service.set_preserving_etag. Bumping updated_at would 412 the owner's

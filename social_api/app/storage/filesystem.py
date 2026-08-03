@@ -21,6 +21,10 @@ class FilesystemStorage(Storage):
         path.write_bytes(data)
         return self.public_url(key)
 
+    async def read(self, key: str) -> bytes | None:
+        path = self._base / key
+        return path.read_bytes() if path.exists() else None
+
     async def delete(self, key: str) -> None:
         path = self._base / key
         if path.exists():

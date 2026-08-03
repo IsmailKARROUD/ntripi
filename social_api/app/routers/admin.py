@@ -536,6 +536,29 @@ def admin_legal(
     })
 
 
+@router.post("/legal/takedown")
+async def admin_legal_takedown(
+    path: str = Form(""),
+    db: Session = Depends(get_db),
+    admin: User = Depends(_require_admin_page),
+):
+    """Action a path from a Cloudflare CSAM Scanning Tool notice."""
+    try:
+        result = await admin_service.csam_takedown(db, admin, path)
+    except ValueError as exc:
+        return _redirect("/admin/legal", error=str(exc))
+
+    notice = (
+        f"Removed {result['key']} and suspended @{result['username']}. "
+        f"Evidence hash: {result['image_hash']}. "
+        "File the CyberTipline report within 24h, then close the escalation "
+        "below with the report number."
+    )
+    if not result["object_found"]:
+        notice += " (Object was already gone — hash unavailable.)"
+    return _redirect("/admin/legal", notice=notice)
+
+
 @router.post("/legal/{escalation_id}/close")
 def admin_legal_close(
     escalation_id: uuid.UUID,
