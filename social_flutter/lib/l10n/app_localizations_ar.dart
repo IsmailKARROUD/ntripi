@@ -2595,6 +2595,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get reportReview => 'الإبلاغ عن هذه المراجعة';
 
   @override
+  String get reportAnnotation => 'الإبلاغ عن هذا التنويه';
+
+  @override
   String get blockUser => 'حظر';
 
   @override

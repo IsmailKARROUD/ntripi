@@ -31,6 +31,19 @@ String _reasonLabel(String reason, AppLocalizations l10n) {
   };
 }
 
+// Names what is being reported. Stops and annotations are wire-reported as
+// their parent itinerary, so the title is the only place the viewer sees that
+// their report is about the fragment they actually tapped.
+String _targetTitle(ReportTarget target, AppLocalizations l10n) {
+  if (target.isAnnotation) return l10n.reportAnnotation;
+  if (target.isStop) return l10n.reportStop;
+  return switch (target.kind) {
+    ReportTargetKind.rating => l10n.reportReview,
+    ReportTargetKind.user => l10n.reportUser,
+    ReportTargetKind.itinerary => l10n.reportItineraryTitle,
+  };
+}
+
 /// Opens the report bottom sheet and returns when the user submits or dismisses.
 Future<void> showReportContentSheet(
   BuildContext context,
@@ -135,7 +148,7 @@ class _ReportContentSheetState extends State<_ReportContentSheet> {
               Padding(
                 padding: const EdgeInsets.fromLTRB(22, 6, 22, 14),
                 child: Text(
-                  l10n.reportItineraryTitle,
+                  _targetTitle(widget.target, l10n),
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w800,

@@ -19,11 +19,17 @@ class AnnotationChip extends ConsumerWidget {
   final VoidCallback? onEdit;
   final VoidCallback? onDelete;
 
+  /// Long-press to report this note. Null for the author and in edit mode.
+  /// Deliberately without a visible affordance — a flag glyph on a chip this
+  /// small would cost more of the text than it is worth.
+  final VoidCallback? onReport;
+
   const AnnotationChip({
     super.key,
     required this.annotation,
     this.onEdit,
     this.onDelete,
+    this.onReport,
   });
 
   // Compact outline-icon variant; colors come from the shared editorial
@@ -57,44 +63,48 @@ class AnnotationChip extends ConsumerWidget {
       overflow: TextOverflow.ellipsis,
       style: TextStyle(color: config.fg, fontSize: 14),
     );
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: config.bg,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(config.icon, size: 16, color: config.fg),
-          const SizedBox(width: 4),
-          if (onEdit != null)
-            Flexible(
-              child: GestureDetector(
+    // The inner detectors only claim taps, so the long-press reaches this one.
+    return GestureDetector(
+      onLongPress: onReport,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color: config.bg,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(config.icon, size: 16, color: config.fg),
+            const SizedBox(width: 4),
+            if (onEdit != null)
+              Flexible(
+                child: GestureDetector(
+                  onTap: editTap,
+                  child: textWidget,
+                ),
+              )
+            else
+              Flexible(
+                child: Padding(
+                  padding: const EdgeInsets.all(2),
+                  child: textWidget,
+                ),
+              ),
+            if (onEdit != null) ...[
+              const SizedBox(width: 2),
+              GestureDetector(
                 onTap: editTap,
-                child: textWidget,
+                child: Icon(Icons.edit_outlined, size: 16, color: config.fg),
               ),
-            )
-          else
-            Flexible(
-              child: Padding(
-                padding: const EdgeInsets.all(2),
-                child: textWidget,
+            ],
+            if (onDelete != null)
+              GestureDetector(
+                onTap: deleteTap,
+                child: Icon(Icons.close, size: 18, color: config.fg),
               ),
-            ),
-          if (onEdit != null) ...[
-            const SizedBox(width: 2),
-            GestureDetector(
-              onTap: editTap,
-              child: Icon(Icons.edit_outlined, size: 16, color: config.fg),
-            ),
           ],
-          if (onDelete != null)
-            GestureDetector(
-              onTap: deleteTap,
-              child: Icon(Icons.close, size: 18, color: config.fg),
-            ),
-        ],
+        ),
       ),
     );
   }

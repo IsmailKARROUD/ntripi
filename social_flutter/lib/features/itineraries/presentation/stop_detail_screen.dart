@@ -20,6 +20,9 @@ import 'package:social_flutter/features/itineraries/presentation/widgets/link_pr
 import 'package:social_flutter/features/itineraries/presentation/widgets/markdown_notes_editor.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/open_in_maps_sheet.dart';
 import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
+import 'package:social_flutter/features/profile/providers/profile_provider.dart';
+import 'package:social_flutter/features/reports/domain/report_target.dart';
+import 'package:social_flutter/features/reports/presentation/report_content_sheet.dart';
 import 'package:social_flutter/l10n/app_localizations.dart';
 import 'package:social_flutter/shared/utils/duration_format.dart';
 import 'package:social_flutter/shared/widgets/loaders.dart';
@@ -38,6 +41,7 @@ class StopDetailScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final itineraryAsync =
         ref.watch(itineraryDetailProvider(itineraryId));
+    final currentUserId = ref.watch(myProfileProvider).value?.id;
 
     return itineraryAsync.when(
       loading: () => const Scaffold(
@@ -83,6 +87,7 @@ class StopDetailScreen extends ConsumerWidget {
           totalStops: totalStops,
           currency: itinerary.currency,
           itineraryId: itineraryId,
+          isOwner: currentUserId != null && itinerary.userId == currentUserId,
           inboundSegment: inbound,
           outboundSegment: outbound,
           allStops: itinerary.stops,
@@ -98,6 +103,7 @@ class _StopDetailView extends ConsumerWidget {
   final int totalStops;
   final String currency;
   final String itineraryId;
+  final bool isOwner;
   final TransitSegment? inboundSegment;
   final TransitSegment? outboundSegment;
   final List<Stop> allStops;
@@ -108,6 +114,7 @@ class _StopDetailView extends ConsumerWidget {
     required this.totalStops,
     required this.currency,
     required this.itineraryId,
+    required this.isOwner,
     this.inboundSegment,
     this.outboundSegment,
     required this.allStops,
@@ -138,9 +145,20 @@ class _StopDetailView extends ConsumerWidget {
               totalStops: totalStops,
               // A shared/deep link can open this page as the only route.
               onBack: () => context.popOr('/itineraries/$itineraryId'),
-              onEdit: () => context.push(
-                '/itineraries/$itineraryId/stops/${stop.id}/edit',
-              ),
+              onEdit: isOwner
+                  ? () => context.push(
+                        '/itineraries/$itineraryId/stops/${stop.id}/edit',
+                      )
+                  : null,
+              // Wire-reported as the parent itinerary; the stop id rides in
+              // the report notes (hiding is itinerary-level).
+              onReport: isOwner
+                  ? null
+                  : () => showReportContentSheet(
+                        context,
+                        ref,
+                        ReportTarget.stop(itineraryId, stop.id),
+                      ),
               // A saved Google Maps link opens straight in Google Maps (no
               // app picker); a coordinate-only stop still offers the full
               // installed-apps sheet.
@@ -221,7 +239,17 @@ class _StopDetailView extends ConsumerWidget {
                   children: stop.annotations
                       .map((a) => Padding(
                             padding: const EdgeInsets.only(bottom: 8),
-                            child: _AnnotationFullRow(annotation: a),
+                            child: _AnnotationFullRow(
+                              annotation: a,
+                              onReport: isOwner
+                                  ? null
+                                  : () => showReportContentSheet(
+                                        context,
+                                        ref,
+                                        ReportTarget.stopAnnotation(
+                                            itineraryId, stop.id, a.id),
+                                      ),
+                            ),
                           ))
                       .toList(),
                 ),
@@ -290,7 +318,8 @@ class _StopHero extends StatelessWidget {
   final int stopNumber;
   final int totalStops;
   final VoidCallback onBack;
-  final VoidCallback onEdit;
+  final VoidCallback? onEdit; // null for anyone but the owner
+  final VoidCallback? onReport; // null for the owner — you can't report yourself
   final VoidCallback? onOpenInMaps; // null when the stop has no coordinates
 
   const _StopHero({
@@ -298,7 +327,8 @@ class _StopHero extends StatelessWidget {
     required this.stopNumber,
     required this.totalStops,
     required this.onBack,
-    required this.onEdit,
+    this.onEdit,
+    this.onReport,
     this.onOpenInMaps,
   });
 
@@ -338,7 +368,8 @@ class _StopHero extends StatelessWidget {
                 _OpenInMapsButton(onTap: onOpenInMaps!),
                 const SizedBox(width: 8),
               ],
-              EditPencilButton(onTap: onEdit, iconSize: 20),
+              if (onReport != null) _ReportButton(onTap: onReport!),
+              if (onEdit != null) EditPencilButton(onTap: onEdit!, iconSize: 20),
             ],
           ),
           const SizedBox(height: 8),
@@ -481,6 +512,39 @@ class _OpenInMapsButton extends StatelessWidget {
   }
 }
 
+// ─── Report button ────────────────────────────────────────────────────────────
+// Same pill geometry as _OpenInMapsButton but in neutral text tint, so it reads
+// as secondary next to the forest-tinted Directions action.
+class _ReportButton extends StatelessWidget {
+  final VoidCallback onTap;
+
+  const _ReportButton({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final nt = context.nt;
+    return Tooltip(
+      message: AppLocalizations.of(context)!.reportItineraryTooltip,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(10),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: nt.surface,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: nt.border),
+            ),
+            child: Icon(Icons.flag_outlined, size: 20, color: nt.text2),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 // ─── Place type chip ──────────────────────────────────────────────────────────
 class _PlaceTypeChip extends StatelessWidget {
   final PlaceType placeType;
@@ -573,60 +637,68 @@ class _StopStat extends StatelessWidget {
 // ─── Full annotation row (with message body) ──────────────────────────────────
 class _AnnotationFullRow extends StatelessWidget {
   final Annotation annotation;
-  const _AnnotationFullRow({required this.annotation});
+
+  /// Long-press to report. No visible affordance on purpose — the row has no
+  /// menu and a flag glyph on every note would drown the content.
+  final VoidCallback? onReport;
+
+  const _AnnotationFullRow({required this.annotation, this.onReport});
 
   @override
   Widget build(BuildContext context) {
     final nt = context.nt;
     final t = annotation.type;
 
-    return Container(
-      padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
-      decoration: BoxDecoration(
-        color: t.bg(nt),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: t.fg(nt).withValues(alpha: 0.13)),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 28,
-            height: 28,
-            decoration: BoxDecoration(
-              color: t.fg(nt).withValues(alpha: 0.2),
-              borderRadius: BorderRadius.circular(10),
+    return GestureDetector(
+      onLongPress: onReport,
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+        decoration: BoxDecoration(
+          color: t.bg(nt),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: t.fg(nt).withValues(alpha: 0.13)),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: 28,
+              height: 28,
+              decoration: BoxDecoration(
+                color: t.fg(nt).withValues(alpha: 0.2),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              alignment: Alignment.center,
+              child: Icon(t.icon, size: 15, color: t.fg(nt)),
             ),
-            alignment: Alignment.center,
-            child: Icon(t.icon, size: 15, color: t.fg(nt)),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  t.label(AppLocalizations.of(context)!).toUpperCase(),
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    color: t.fg(nt),
-                    letterSpacing: 0.5,
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    t.label(AppLocalizations.of(context)!).toUpperCase(),
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: t.fg(nt),
+                      letterSpacing: 0.5,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  annotation.content,
-                  style: TextStyle(
-                    fontSize: 13.5,
-                    color: nt.bark,
-                    height: 1.5,
+                  const SizedBox(height: 4),
+                  Text(
+                    annotation.content,
+                    style: TextStyle(
+                      fontSize: 13.5,
+                      color: nt.bark,
+                      height: 1.5,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

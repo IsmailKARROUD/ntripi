@@ -2589,6 +2589,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get reportReview => 'Diese Bewertung melden';
 
   @override
+  String get reportAnnotation => 'Diese Anmerkung melden';
+
+  @override
   String get blockUser => 'Blockieren';
 
   @override

@@ -2543,6 +2543,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get reportReview => 'Report this review';
 
   @override
+  String get reportAnnotation => 'Report this annotation';
+
+  @override
   String get blockUser => 'Block';
 
   @override

@@ -2591,6 +2591,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get reportReview => 'Signaler cet avis';
 
   @override
+  String get reportAnnotation => 'Signaler cette annotation';
+
+  @override
   String get blockUser => 'Bloquer';
 
   @override

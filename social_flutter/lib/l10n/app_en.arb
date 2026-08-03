@@ -1132,6 +1132,7 @@
   "reportUser": "Report this account",
   "reportStop": "Report this stop",
   "reportReview": "Report this review",
+  "reportAnnotation": "Report this annotation",
   "blockUser": "Block",
   "unblockUser": "Unblock",
   "blockUserTitle": "Block @{username}?",

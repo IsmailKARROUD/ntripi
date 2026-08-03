@@ -909,6 +909,7 @@
   "reportUser": "Signaler ce compte",
   "reportStop": "Signaler cette étape",
   "reportReview": "Signaler cet avis",
+  "reportAnnotation": "Signaler cette annotation",
   "blockUser": "Bloquer",
   "unblockUser": "Débloquer",
   "blockUserTitle": "Bloquer @{username} ?",

@@ -2412,6 +2412,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get reportReview => '举报该评价';
 
   @override
+  String get reportAnnotation => '举报该注释';
+
+  @override
   String get blockUser => '屏蔽';
 
   @override

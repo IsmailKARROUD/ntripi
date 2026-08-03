@@ -736,6 +736,7 @@
   "reportUser": "举报该账号",
   "reportStop": "举报该地点",
   "reportReview": "举报该评价",
+  "reportAnnotation": "举报该注释",
   "blockUser": "屏蔽",
   "unblockUser": "解除屏蔽",
   "blockUserTitle": "屏蔽 @{username}？",

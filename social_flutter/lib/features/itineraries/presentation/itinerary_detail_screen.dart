@@ -898,6 +898,22 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                                                         _deleteItineraryAnnotation(
                                                             a)
                                                     : null,
+                                                // Built from the outer `a`:
+                                                // the adapted Annotation above
+                                                // carries the itinerary id in
+                                                // its stopId field.
+                                                onReport: isOwner
+                                                    ? null
+                                                    : () =>
+                                                        showReportContentSheet(
+                                                          context,
+                                                          ref,
+                                                          ReportTarget
+                                                              .itineraryAnnotation(
+                                                            widget.itineraryId,
+                                                            a.id,
+                                                          ),
+                                                        ),
                                               ),
                                             )
                                             .toList(),

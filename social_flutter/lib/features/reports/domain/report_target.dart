@@ -3,7 +3,8 @@
 // Stops, annotations and transport legs are reported as their PARENT itinerary
 // with the fragment noted in the report text: hiding is itinerary-level, so a
 // sub-target would have no read path that could act on it. [ReportTarget.stop]
-// exists to build that note, not as a separate backend target type.
+// and the annotation constructors exist to build that note, not as separate
+// backend target types.
 
 /// Backend target types (must match REPORT_TARGET_TYPES in
 /// app/models/content_report.py).
@@ -17,13 +18,30 @@ class ReportTarget {
   /// prefix on the notes so a moderator can find it inside the itinerary.
   final String? stopId;
 
-  const ReportTarget._(this.kind, this.id, {this.stopId});
+  /// An annotation within [id]; stop-level when [stopId] is set too, otherwise
+  /// itinerary-level. Same purpose as [stopId] — it only builds the note.
+  final String? annotationId;
+
+  const ReportTarget._(this.kind, this.id, {this.stopId, this.annotationId});
 
   const ReportTarget.itinerary(String itineraryId)
       : this._(ReportTargetKind.itinerary, itineraryId);
 
   const ReportTarget.stop(String itineraryId, String stopId)
       : this._(ReportTargetKind.itinerary, itineraryId, stopId: stopId);
+
+  const ReportTarget.stopAnnotation(
+    String itineraryId,
+    String stopId,
+    String annotationId,
+  ) : this._(ReportTargetKind.itinerary, itineraryId,
+            stopId: stopId, annotationId: annotationId);
+
+  const ReportTarget.itineraryAnnotation(
+    String itineraryId,
+    String annotationId,
+  ) : this._(ReportTargetKind.itinerary, itineraryId,
+            annotationId: annotationId);
 
   const ReportTarget.rating(String ratingId)
       : this._(ReportTargetKind.rating, ratingId);
@@ -32,11 +50,19 @@ class ReportTarget {
 
   String get wireKind => kind.name;
 
-  /// Prefixes the reporter's notes with the stop reference when there is one.
+  bool get isAnnotation => annotationId != null;
+  bool get isStop => stopId != null && annotationId == null;
+
+  /// Prefixes the reporter's notes with the fragment reference when there is
+  /// one — `[stop:x]`, `[stop:x annotation:y]` or `[annotation:y]`.
   String? notesWithContext(String? notes) {
     final trimmed = notes?.trim();
-    if (stopId == null) return (trimmed?.isEmpty ?? true) ? null : trimmed;
-    return '[stop:$stopId] ${trimmed ?? ''}'.trim();
+    final fragment = [
+      if (stopId != null) 'stop:$stopId',
+      if (annotationId != null) 'annotation:$annotationId',
+    ].join(' ');
+    if (fragment.isEmpty) return (trimmed?.isEmpty ?? true) ? null : trimmed;
+    return '[$fragment] ${trimmed ?? ''}'.trim();
   }
 }
 

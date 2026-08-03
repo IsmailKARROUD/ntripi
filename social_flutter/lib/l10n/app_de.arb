@@ -736,6 +736,7 @@
   "reportUser": "Dieses Konto melden",
   "reportStop": "Diesen Stopp melden",
   "reportReview": "Diese Bewertung melden",
+  "reportAnnotation": "Diese Anmerkung melden",
   "blockUser": "Blockieren",
   "unblockUser": "Blockierung aufheben",
   "blockUserTitle": "@{username} blockieren?",

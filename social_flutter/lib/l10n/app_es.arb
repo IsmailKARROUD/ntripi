@@ -736,6 +736,7 @@
   "reportUser": "Denunciar esta cuenta",
   "reportStop": "Denunciar esta parada",
   "reportReview": "Denunciar esta reseña",
+  "reportAnnotation": "Denunciar esta anotación",
   "blockUser": "Bloquear",
   "unblockUser": "Desbloquear",
   "blockUserTitle": "¿Bloquear a @{username}?",

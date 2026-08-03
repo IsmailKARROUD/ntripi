@@ -2568,6 +2568,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get reportReview => 'Denunciar esta reseña';
 
   @override
+  String get reportAnnotation => 'Denunciar esta anotación';
+
+  @override
   String get blockUser => 'Bloquear';
 
   @override

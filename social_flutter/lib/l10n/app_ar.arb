@@ -1093,6 +1093,7 @@
   "reportUser": "الإبلاغ عن هذا الحساب",
   "reportStop": "الإبلاغ عن هذه المحطة",
   "reportReview": "الإبلاغ عن هذه المراجعة",
+  "reportAnnotation": "الإبلاغ عن هذا التنويه",
   "blockUser": "حظر",
   "unblockUser": "إلغاء الحظر",
   "blockUserTitle": "حظر @{username}؟",

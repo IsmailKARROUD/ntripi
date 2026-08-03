@@ -4522,6 +4522,12 @@ abstract class AppLocalizations {
   /// **'Report this review'**
   String get reportReview;
 
+  /// No description provided for @reportAnnotation.
+  ///
+  /// In en, this message translates to:
+  /// **'Report this annotation'**
+  String get reportAnnotation;
+
   /// No description provided for @blockUser.
   ///
   /// In en, this message translates to:
