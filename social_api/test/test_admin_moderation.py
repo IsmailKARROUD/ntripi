@@ -564,3 +564,226 @@ class TestItineraryDetail:
         _act(client, scenario["report_id"], "hide", "under review")
         assert link in client.get("/admin/log", auth=ADMIN_BASIC).text
         assert link in client.get("/admin", auth=ADMIN_BASIC).text
+
+
+# ---------------------------------------------------------------------------
+# Hidden / removed / suspended lanes
+# ---------------------------------------------------------------------------
+
+@pytest.fixture()
+def auto_hidden(client: TestClient, admin_enabled):
+    """An itinerary taken down by the report threshold, not by an operator.
+
+    Seeded through the real report path on purpose: violence_threat hides on the
+    first report AND resolves that report, so the item lands in no existing
+    queue. Every other admin test seeds via an operator hide, which is exactly
+    why the missing lane went unnoticed.
+    """
+    author = register_user(client, "author", "author@test.com")
+    itinerary_id = _itinerary(client, author["access_token"], title="Kuru trip")
+    reporter = register_user(client, "reporter", "reporter@test.com")
+    resp = client.post(
+        "/reports",
+        json={
+            "target_type": "itinerary", "target_id": itinerary_id,
+            "reason": "violence_threat", "notes": "threats in the notes",
+        },
+        headers=auth_headers(reporter["access_token"]),
+    )
+    assert resp.status_code == 201, resp.json()
+    assert _itinerary_row(itinerary_id).hidden_at is not None, "fixture did not auto-hide"
+    _admin(client)
+    return {"author": author, "itinerary_id": itinerary_id}
+
+
+def _post(client: TestClient, path: str, **data):
+    return client.post(
+        path, data=data, auth=ADMIN_BASIC, follow_redirects=False,
+    )
+
+
+class TestHiddenLane:
+    def test_auto_hidden_item_is_in_no_other_queue(self, client, auto_hidden):
+        """The premise: the triggering report is already resolved, so the
+        reports lane cannot surface it."""
+        assert auto_hidden["itinerary_id"] not in client.get(
+            "/admin/reports", auth=ADMIN_BASIC).text
+
+    def test_lane_lists_it_with_a_detail_link_and_actions(self, client, auto_hidden):
+        page = client.get("/admin/hidden", auth=ADMIN_BASIC).text
+
+        assert f"/admin/itineraries/{auto_hidden['itinerary_id']}" in page
+        assert "Kuru trip" in page
+        assert "auto_hide_reports" in page  # why it went down
+        assert "Restore" in page and "Remove" in page
+
+    def test_dashboard_tile_links_to_the_lane(self, client, auto_hidden):
+        page = client.get("/admin", auth=ADMIN_BASIC).text
+        assert 'href="/admin/hidden"' in page
+        assert 'href="/admin/removed"' in page
+        assert 'href="/admin/suspended"' in page
+
+    def test_restore_clears_the_hide_and_the_status(self, client, auto_hidden):
+        itinerary_id = auto_hidden["itinerary_id"]
+        before = _itinerary_row(itinerary_id).updated_at
+
+        resp = _post(
+            client, f"/admin/itineraries/{itinerary_id}/unhide",
+            reason="false positive", next="/admin/hidden",
+        )
+        assert resp.status_code == 303
+        assert resp.headers["location"].startswith("/admin/hidden")
+
+        row = _itinerary_row(itinerary_id)
+        assert row.hidden_at is None
+        # Left at 'hidden' the record could never be lowered again —
+        # apply_moderation_status only ever raises severity.
+        assert row.moderation_status == "approved"
+        # updated_at IS the concurrency ETag; moving it would 412 the author.
+        assert row.updated_at == before
+        assert len(_logs("unhide")) == 1
+        assert itinerary_id not in client.get("/admin/hidden", auth=ADMIN_BASIC).text
+
+    def test_remove_moves_it_to_the_removed_lane(self, client, auto_hidden):
+        itinerary_id = auto_hidden["itinerary_id"]
+
+        resp = _post(
+            client, f"/admin/itineraries/{itinerary_id}/remove",
+            reason="genuine threat", next="/admin/hidden",
+        )
+        assert resp.status_code == 303
+
+        assert _itinerary_row(itinerary_id).deleted_at is not None
+        assert itinerary_id not in client.get("/admin/hidden", auth=ADMIN_BASIC).text
+        assert itinerary_id in client.get("/admin/removed", auth=ADMIN_BASIC).text
+
+    def test_removed_content_is_not_double_counted_as_hidden(self, client, auto_hidden):
+        """The tile links to the lane, so it must count what the lane lists."""
+        _post(
+            client, f"/admin/itineraries/{auto_hidden['itinerary_id']}/remove",
+            reason="genuine threat", next="/admin/hidden",
+        )
+        from app.services import admin_service
+
+        db = TestingSessionLocal()
+        try:
+            counts = admin_service.overview_counts(db)
+            assert counts["hidden_itineraries"] == len(
+                admin_service.hidden_itineraries(db)) == 0
+            assert counts["deleted_itineraries"] == 1
+        finally:
+            db.close()
+
+    def test_a_reason_is_required(self, client, auto_hidden):
+        itinerary_id = auto_hidden["itinerary_id"]
+        resp = _post(
+            client, f"/admin/itineraries/{itinerary_id}/unhide",
+            reason="   ", next="/admin/hidden",
+        )
+        assert resp.status_code == 303
+        assert "error=" in resp.headers["location"]
+        assert _itinerary_row(itinerary_id).hidden_at is not None
+
+    def test_next_is_allowlisted(self, client, auto_hidden):
+        """`next` arrives in a form post — an arbitrary value would be an open
+        redirect off an authenticated admin session."""
+        resp = _post(
+            client, f"/admin/itineraries/{auto_hidden['itinerary_id']}/unhide",
+            reason="ok", next="https://evil.example.com",
+        )
+        assert resp.headers["location"].startswith("/admin/log")
+
+    def test_lane_requires_an_admin_session(self, client, auto_hidden):
+        client.cookies.clear()
+        resp = client.get("/admin/hidden", auth=ADMIN_BASIC, follow_redirects=False)
+        assert resp.status_code == 303
+        assert resp.headers["location"] == "/admin/login"
+
+
+class TestRemovedAndSuspendedLanes:
+    def test_restore_from_removed_clears_every_takedown_column(self, client, auto_hidden):
+        itinerary_id = auto_hidden["itinerary_id"]
+        _post(
+            client, f"/admin/itineraries/{itinerary_id}/remove",
+            reason="genuine threat", next="/admin/hidden",
+        )
+
+        resp = _post(
+            client, f"/admin/itineraries/{itinerary_id}/restore",
+            reason="appeal upheld offline", next="/admin/removed",
+        )
+        assert resp.status_code == 303
+
+        row = _itinerary_row(itinerary_id)
+        assert row.deleted_at is None
+        assert row.hidden_at is None
+        assert row.moderation_status == "approved"
+        # Named for the column that changed, not folded into 'unhide'.
+        assert len(_logs("undelete")) == 1
+
+    def test_remove_is_rejected_twice(self, client, auto_hidden):
+        itinerary_id = auto_hidden["itinerary_id"]
+        _post(client, f"/admin/itineraries/{itinerary_id}/remove",
+              reason="first", next="/admin/hidden")
+        resp = _post(client, f"/admin/itineraries/{itinerary_id}/remove",
+                     reason="second", next="/admin/removed")
+        assert "error=" in resp.headers["location"]
+        assert len(_logs("delete")) == 1
+
+    def test_suspended_lane_lists_and_reinstates(self, client, scenario):
+        _act(client, scenario["report_id"], "ban", "repeat offender")
+        author_id = str(_user_row("author@test.com").id)
+
+        page = client.get("/admin/suspended", auth=ADMIN_BASIC).text
+        assert "author" in page
+        assert author_id in page
+
+        resp = _post(client, f"/admin/users/{author_id}/unban",
+                     reason="mistaken identity", next="/admin/suspended")
+        assert resp.status_code == 303
+        assert _user_row("author@test.com").is_active is True
+        assert author_id not in client.get("/admin/suspended", auth=ADMIN_BASIC).text
+
+
+class TestLogReversal:
+    def test_log_offers_unhide_for_an_automated_hide(self, client, auto_hidden):
+        """Gating the form on action == 'hide' left every automated takedown
+        with no reversal button anywhere in the UI."""
+        page = client.get("/admin/log", auth=ADMIN_BASIC).text
+        assert f"/admin/itineraries/{auto_hidden['itinerary_id']}/unhide" in page
+
+    def test_a_hidden_rating_does_not_get_an_itinerary_unhide_form(
+        self, client, admin_enabled
+    ):
+        """Ratings and profiles are hidden with the same actions; posting their
+        id to the itinerary endpoint would act on the wrong row."""
+        author = register_user(client, "author", "author@test.com")
+        itinerary_id = _itinerary(client, author["access_token"])
+        rater = register_user(client, "rater", "rater@test.com")
+        resp = client.post(
+            f"/itineraries/{itinerary_id}/ratings",
+            json={"stars": 1, "note": "awful"},
+            headers=auth_headers(rater["access_token"]),
+        )
+        assert resp.status_code in (200, 201), resp.json()
+        # The rating response carries no id — read it back like the threshold
+        # tests do.
+        from app.models.itinerary_rating import ItineraryRating
+
+        db = TestingSessionLocal()
+        try:
+            rating_id = str(db.query(ItineraryRating).one().id)
+        finally:
+            db.close()
+
+        reporter = register_user(client, "reporter", "reporter@test.com")
+        client.post(
+            "/reports",
+            json={"target_type": "rating", "target_id": rating_id,
+                  "reason": "violence_threat", "notes": "threat"},
+            headers=auth_headers(reporter["access_token"]),
+        )
+        _admin(client)
+
+        page = client.get("/admin/log", auth=ADMIN_BASIC).text
+        assert f"/admin/itineraries/{rating_id}/unhide" not in page

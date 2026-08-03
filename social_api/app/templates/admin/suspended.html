@@ -1,0 +1,45 @@
+{% extends "admin/_base.html" %}
+{% block content %}
+<h1>Suspended accounts</h1>
+<p class="sub">
+  Accounts deactivated by a ban or a CSAM takedown. Their content stays
+  unreachable while the account is suspended, so restoring an itinerary owned by
+  someone listed here will not make it public until they are reinstated.
+</p>
+
+{% if rows %}
+<div class="card table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>Suspended</th>
+        <th>User</th>
+        <th>Email</th>
+        <th style="width:340px">Decision</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in rows %}
+      <tr>
+        <td><span class="pill sla-ok">{{ r.age }}</span></td>
+        <td>
+          <div>{{ r.user.username }}</div>
+          {% if r.user.display_name %}<div class="muted">{{ r.user.display_name }}</div>{% endif %}
+        </td>
+        <td class="muted">{{ r.user.email }}</td>
+        <td>
+          <form method="post" action="/admin/users/{{ r.user.id }}/unban">
+            <input type="hidden" name="next" value="/admin/suspended">
+            <input type="text" name="reason" placeholder="Reason (required)" required>
+            <div class="actions"><button type="submit" class="primary">Reinstate</button></div>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="card"><p class="muted">No suspended accounts.</p></div>
+{% endif %}
+{% endblock %}

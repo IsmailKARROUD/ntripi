@@ -1,0 +1,63 @@
+{% extends "admin/_base.html" %}
+{% from "admin/_macros.html" import itinerary_link %}
+{% block content %}
+<h1>Removed itineraries</h1>
+<p class="sub">
+  Invisible to everyone including the author. The row and its stored image are
+  kept deliberately as evidence — removal is never a purge. Restoring clears the
+  removal and the hide together and marks the content approved.
+</p>
+
+{% if rows %}
+<div class="card table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>Removed</th>
+        <th>Author</th>
+        <th>Itinerary</th>
+        <th>Why</th>
+        <th style="width:340px">Decision</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in rows %}
+      <tr>
+        <td><span class="pill {{ r.sla }}">{{ r.age }}</span></td>
+        <td>
+          {% if r.owner %}
+            <div>{{ r.owner.username }}</div>
+            <div class="muted">{% if r.owner.is_active %}active{% else %}suspended{% endif %}</div>
+          {% else %}<span class="muted">—</span>{% endif %}
+        </td>
+        <td>
+          <div>{{ itinerary_link(r.itinerary.id, r.itinerary.title) }}</div>
+          <div class="muted">{{ r.itinerary.visibility }}</div>
+          {% if r.owner_banned %}
+            <div class="pill sla-warn" style="margin-top:4px">
+              Author still suspended — restoring won't make this public
+            </div>
+          {% endif %}
+        </td>
+        <td class="snippet">
+          {% if r.last_action %}
+            <div><span class="pill sla-ok">{{ r.last_action.action }}</span></div>
+            <div>{{ r.last_action.reason }}</div>
+          {% else %}<span class="muted">—</span>{% endif %}
+        </td>
+        <td>
+          <form method="post" action="/admin/itineraries/{{ r.itinerary.id }}/restore">
+            <input type="hidden" name="next" value="/admin/removed">
+            <input type="text" name="reason" placeholder="Reason (required)" required>
+            <div class="actions"><button type="submit" class="primary">Restore</button></div>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="card"><p class="muted">Nothing has been removed.</p></div>
+{% endif %}
+{% endblock %}

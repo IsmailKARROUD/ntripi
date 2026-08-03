@@ -22,7 +22,7 @@ from sqlalchemy.orm import Session
 from app.models.appeal import Appeal
 from app.models.itinerary import Itinerary
 from app.models.itinerary_rating import ItineraryRating
-from app.models.moderation_log import ModerationLog
+from app.models.moderation_log import HIDE_FAMILY, ModerationLog
 from app.models.text_moderation_decision import TextModerationDecision
 from app.models.user import User
 from app.services import admin_service, email_service, moderation_actions
@@ -42,9 +42,6 @@ VISIBLE_ACTIONS = (
     "hide", "delete", "warn", "ban",
     "auto_hide_reports", "auto_hide_sla", "auto_reject",
 )
-
-# Actions whose remedy is "make the content visible again".
-_HIDE_FAMILY = ("hide", "auto_hide_reports", "auto_hide_sla", "auto_reject")
 
 REAPPEAL_COOLDOWN = timedelta(days=30)
 MAX_REASON_LEN = 2000
@@ -299,7 +296,7 @@ def _action_still_active(db: Session, row: ModerationLog, user: User) -> bool:
     if row.action == "delete":
         itinerary = db.get(Itinerary, row.target_id) if row.target_id else None
         return itinerary is not None and itinerary.deleted_at is not None
-    if row.action in _HIDE_FAMILY:
+    if row.action in HIDE_FAMILY:
         if row.target_type == TARGET_ITINERARY:
             itinerary = db.get(Itinerary, row.target_id) if row.target_id else None
             return itinerary is not None and itinerary.hidden_at is not None
@@ -373,7 +370,7 @@ def decide_appeal(
         if original_action == "ban" and user is not None:
             user.is_active = True
             body = "Your suspension was lifted and replaced with a warning."
-        elif original_action in _HIDE_FAMILY:
+        elif original_action in HIDE_FAMILY:
             # Already the lightest content penalty — there is nothing to reduce
             # it to, so the outcome is the same as upholding, said honestly.
             body = ("Your content remains hidden from other users while it is "

@@ -43,7 +43,7 @@ MODERATION_LOG_TARGET_TYPES = ("itinerary", "user", "rating")
 
 # Operator actions taken by a human from the dashboard.
 MODERATION_LOG_OPERATOR_ACTIONS = (
-    "dismiss", "hide", "unhide", "delete", "warn", "ban", "unban",
+    "dismiss", "hide", "unhide", "undelete", "delete", "warn", "ban", "unban",
     "appeal_restore", "appeal_uphold", "appeal_reduce",
 )
 
@@ -57,6 +57,11 @@ MODERATION_LOG_SYSTEM_ACTIONS = (
     "appeal_filed",       # the user asked for a decision to be reviewed
     "legal_escalate",     # CSAM signal — obligations beyond hiding
 )
+
+# Actions whose remedy is "make the content visible again" — the operator hide
+# and every automated one. Shared so the log template's Unhide affordance and
+# appeal_service's reduce/restore logic cannot disagree about what is reversible.
+HIDE_FAMILY = ("hide", "auto_hide_reports", "auto_hide_sla", "auto_reject")
 
 MODERATION_LOG_ACTIONS = (
     MODERATION_LOG_OPERATOR_ACTIONS + MODERATION_LOG_SYSTEM_ACTIONS

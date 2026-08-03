@@ -29,7 +29,7 @@ from app.models.content_report import ContentReport
 from app.models.image_moderation_log import ImageModerationLog
 from app.models.itinerary import Itinerary
 from app.models.legal_escalation import LegalEscalation
-from app.models.moderation_log import ModerationLog
+from app.models.moderation_log import HIDE_FAMILY, ModerationLog
 from app.models.stop import Stop
 from app.models.text_moderation_decision import TextModerationDecision
 from app.models.track import Track
@@ -194,11 +194,33 @@ def hide_itinerary(
     db.commit()
 
 
-def unhide_itinerary(db: Session, admin: User, itinerary: Itinerary, reason: str) -> None:
+def _reverse_takedown(
+    db: Session, admin: User, itinerary: Itinerary, reason: str, action: str,
+) -> None:
+    """Undo a takedown, whichever kind it was.
+
+    Clears both soft-state columns and resets moderation_status in one write —
+    the same triple appeal_service uses to restore (appeal_service.decide_appeal).
+    Resetting the status matters even when only hidden_at was set:
+    apply_moderation_status only ever RAISES severity, so a record left at
+    'hidden' could never be lowered again by a later clean edit.
+    """
     snapshot = snapshot_itinerary(itinerary)
-    set_preserving_etag(itinerary, hidden_at=None)
-    log_action(db, admin, TARGET_ITINERARY, itinerary.id, "unhide", reason, snapshot)
+    set_preserving_etag(
+        itinerary, hidden_at=None, deleted_at=None, moderation_status="approved",
+    )
+    log_action(db, admin, TARGET_ITINERARY, itinerary.id, action, reason, snapshot)
     db.commit()
+
+
+def unhide_itinerary(db: Session, admin: User, itinerary: Itinerary, reason: str) -> None:
+    _reverse_takedown(db, admin, itinerary, reason, "unhide")
+
+
+def restore_itinerary(db: Session, admin: User, itinerary: Itinerary, reason: str) -> None:
+    """Reverse a soft delete. Logged as 'undelete' rather than 'unhide' so the
+    audit trail names the column that actually changed."""
+    _reverse_takedown(db, admin, itinerary, reason, "undelete")
 
 
 def soft_delete_itinerary(
@@ -424,6 +446,52 @@ def pending_appeals(db: Session) -> list[Appeal]:
         .where(Appeal.status == "pending")
         .order_by(Appeal.created_at.asc())
     ).scalars().all())
+
+
+def hidden_itineraries(db: Session) -> list[Itinerary]:
+    """Content taken down but not removed. Newest first, unlike the FIFO queues:
+    these are standing state rather than a backlog, and the recent auto-hides are
+    the ones still awaiting a human.
+
+    Removed itineraries are excluded even though they may also carry hidden_at —
+    they belong to the removed lane, and overlapping lanes would double-count.
+    """
+    return list(db.execute(
+        select(Itinerary)
+        .where(Itinerary.hidden_at.is_not(None), Itinerary.deleted_at.is_(None))
+        .order_by(Itinerary.hidden_at.desc())
+    ).scalars().all())
+
+
+def removed_itineraries(db: Session) -> list[Itinerary]:
+    return list(db.execute(
+        select(Itinerary)
+        .where(Itinerary.deleted_at.is_not(None))
+        .order_by(Itinerary.deleted_at.desc())
+    ).scalars().all())
+
+
+def suspended_users(db: Session) -> list[User]:
+    return list(db.execute(
+        select(User)
+        .where(User.is_active.is_(False))
+        .order_by(User.updated_at.desc())
+    ).scalars().all())
+
+
+def last_takedown_log(db: Session, itinerary_id: uuid.UUID) -> ModerationLog | None:
+    """The action that took this itinerary down — shown in the lane so the
+    operator sees whether a human or the report threshold did it."""
+    return db.execute(
+        select(ModerationLog)
+        .where(
+            ModerationLog.target_type == TARGET_ITINERARY,
+            ModerationLog.target_id == itinerary_id,
+            ModerationLog.action.in_(HIDE_FAMILY + ("delete",)),
+        )
+        .order_by(ModerationLog.created_at.desc())
+        .limit(1)
+    ).scalars().first()
 
 
 def pending_text_flags(db: Session) -> list[TextModerationDecision]:
@@ -721,8 +789,12 @@ def overview_counts(db: Session) -> dict:
         "pending_appeals": _count(
             select(func.count(Appeal.id)).where(Appeal.status == "pending")
         ),
+        # Mirrors hidden_itineraries() exactly — the tile links to that lane, so
+        # a count that included removed content would not match what opens.
         "hidden_itineraries": _count(
-            select(func.count(Itinerary.id)).where(Itinerary.hidden_at.is_not(None))
+            select(func.count(Itinerary.id)).where(
+                Itinerary.hidden_at.is_not(None), Itinerary.deleted_at.is_(None)
+            )
         ),
         "deleted_itineraries": _count(
             select(func.count(Itinerary.id)).where(Itinerary.deleted_at.is_not(None))

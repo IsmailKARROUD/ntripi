@@ -39,6 +39,7 @@ from app.models.content_report import ContentReport
 from app.models.image_moderation_log import ImageModerationLog
 from app.models.itinerary import Itinerary
 from app.models.legal_escalation import LegalEscalation
+from app.models.moderation_log import HIDE_FAMILY
 from app.models.text_moderation_decision import TextModerationDecision
 from app.models.user import User
 from app.services import (
@@ -663,8 +664,101 @@ def admin_log(
         "page_title": "Moderation log",
         "admin": admin,
         "rows": rows[:_LOG_PAGE_SIZE],
+        # Which actions the template may offer to reverse — shared with
+        # appeal_service so the two cannot disagree about what is undoable.
+        "hide_family": HIDE_FAMILY,
         "page": page,
         "has_next": has_next,
+        "error_message": error,
+        "notice_message": notice,
+    })
+
+
+# The lanes an action form may bounce back to. An allowlist rather than an
+# open `next` — the value arrives in a form post and would otherwise be an open
+# redirect off an authenticated admin session.
+_LANES = ("/admin/hidden", "/admin/removed", "/admin/suspended", "/admin/log")
+
+
+def _lane(next_path: str | None) -> str:
+    return next_path if next_path in _LANES else "/admin/log"
+
+
+def _itinerary_lane_rows(db: Session, itineraries) -> list[dict]:
+    """Shared row shape for the hidden and removed lanes."""
+    rows = []
+    for itinerary in itineraries:
+        owner = db.get(User, itinerary.user_id)
+        taken_down = itinerary.deleted_at or itinerary.hidden_at
+        rows.append({
+            "itinerary": itinerary,
+            "owner": owner,
+            # Restoring content owned by a still-banned user won't make it
+            # public again — surface that so the operator can unban too.
+            "owner_banned": owner is not None and not owner.is_active,
+            "last_action": admin_service.last_takedown_log(db, itinerary.id),
+            "age": admin_service.humanize_age(taken_down),
+            "sla": admin_service.sla_class(taken_down),
+        })
+    return rows
+
+
+@router.get("/hidden", response_class=HTMLResponse)
+def admin_hidden(
+    request: Request,
+    error: str | None = None,
+    notice: str | None = None,
+    db: Session = Depends(get_db),
+    admin: User = Depends(_require_admin_page),
+) -> HTMLResponse:
+    """Content that is down but not removed.
+
+    Its own lane because an auto-hide leaves no queue entry anywhere else: the
+    triggering report is resolved as 'auto_hidden' the moment the threshold is
+    crossed, so /admin/reports never shows it and only /admin/log records it.
+    """
+    return _page(request, "hidden.html", {
+        "page_title": "Hidden itineraries",
+        "admin": admin,
+        "rows": _itinerary_lane_rows(db, admin_service.hidden_itineraries(db)),
+        "error_message": error,
+        "notice_message": notice,
+    })
+
+
+@router.get("/removed", response_class=HTMLResponse)
+def admin_removed(
+    request: Request,
+    error: str | None = None,
+    notice: str | None = None,
+    db: Session = Depends(get_db),
+    admin: User = Depends(_require_admin_page),
+) -> HTMLResponse:
+    return _page(request, "removed.html", {
+        "page_title": "Removed itineraries",
+        "admin": admin,
+        "rows": _itinerary_lane_rows(db, admin_service.removed_itineraries(db)),
+        "error_message": error,
+        "notice_message": notice,
+    })
+
+
+@router.get("/suspended", response_class=HTMLResponse)
+def admin_suspended(
+    request: Request,
+    error: str | None = None,
+    notice: str | None = None,
+    db: Session = Depends(get_db),
+    admin: User = Depends(_require_admin_page),
+) -> HTMLResponse:
+    rows = [
+        {"user": user, "age": admin_service.humanize_age(user.updated_at)}
+        for user in admin_service.suspended_users(db)
+    ]
+    return _page(request, "suspended.html", {
+        "page_title": "Suspended accounts",
+        "admin": admin,
+        "rows": rows,
         "error_message": error,
         "notice_message": notice,
     })
@@ -701,33 +795,84 @@ def admin_itinerary_detail(
 def admin_unhide(
     itinerary_id: uuid.UUID,
     reason: str = Form(""),
+    next: str = Form("/admin/log"),
     db: Session = Depends(get_db),
     admin: User = Depends(_require_admin_page),
 ):
+    back = _lane(next)
     reason = (reason or "").strip()
     if not reason:
-        return _redirect("/admin/log", error="A reason is required.")
+        return _redirect(back, error="A reason is required.")
     itinerary = db.get(Itinerary, itinerary_id)
     if itinerary is None:
-        return _redirect("/admin/log", error="That itinerary no longer exists.")
+        return _redirect(back, error="That itinerary no longer exists.")
 
     admin_service.unhide_itinerary(db, admin, itinerary, reason)
-    return _redirect("/admin/log", notice="Itinerary is visible again.")
+    return _redirect(back, notice="Itinerary is visible again.")
+
+
+@router.post("/itineraries/{itinerary_id}/restore")
+def admin_restore(
+    itinerary_id: uuid.UUID,
+    reason: str = Form(""),
+    next: str = Form("/admin/removed"),
+    db: Session = Depends(get_db),
+    admin: User = Depends(_require_admin_page),
+):
+    """Reverse a soft delete. Separate from unhide so the audit row names the
+    column that changed, even though both clear all takedown state."""
+    back = _lane(next)
+    reason = (reason or "").strip()
+    if not reason:
+        return _redirect(back, error="A reason is required.")
+    itinerary = db.get(Itinerary, itinerary_id)
+    if itinerary is None:
+        return _redirect(back, error="That itinerary no longer exists.")
+
+    admin_service.restore_itinerary(db, admin, itinerary, reason)
+    return _redirect(back, notice="Itinerary restored.")
+
+
+@router.post("/itineraries/{itinerary_id}/remove")
+def admin_remove(
+    itinerary_id: uuid.UUID,
+    reason: str = Form(""),
+    next: str = Form("/admin/hidden"),
+    db: Session = Depends(get_db),
+    admin: User = Depends(_require_admin_page),
+):
+    """Remove without a pending report. The reports lane can only reach
+    soft_delete_itinerary through a report, which an auto-hide has already
+    resolved — so this is the only removal path for auto-hidden content."""
+    back = _lane(next)
+    reason = (reason or "").strip()
+    if not reason:
+        return _redirect(back, error="A reason is required.")
+    itinerary = db.get(Itinerary, itinerary_id)
+    if itinerary is None:
+        return _redirect(back, error="That itinerary no longer exists.")
+    if itinerary.deleted_at is not None:
+        return _redirect(back, error="That itinerary is already removed.")
+
+    admin_service.soft_delete_itinerary(db, admin, itinerary, reason)
+    return _redirect(back, notice="Itinerary removed.")
 
 
 @router.post("/users/{user_id}/unban")
 def admin_unban(
     user_id: uuid.UUID,
     reason: str = Form(""),
+    next: str = Form("/admin/log"),
     db: Session = Depends(get_db),
     admin: User = Depends(_require_admin_page),
 ):
+    back = _lane(next)
     reason = (reason or "").strip()
     if not reason:
-        return _redirect("/admin/log", error="A reason is required.")
+        return _redirect(back, error="A reason is required.")
     user = db.get(User, user_id)
     if user is None:
-        return _redirect("/admin/log", error="That user no longer exists.")
+        return _redirect(back, error="That user no longer exists.")
 
     admin_service.unban_user(db, admin, user, reason)
-    return _redirect("/admin/log", notice="Account reinstated.")
+    return _redirect(back, notice="Account reinstated.")

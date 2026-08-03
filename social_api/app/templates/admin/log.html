@@ -38,13 +38,19 @@
         </td>
         <td class="snippet">{{ row.reason }}</td>
         <td>
-          {% if row.action == 'hide' and row.target_id %}
+          {# Every hide-family action is reversible, not just the operator one —
+             gating on 'hide' alone left auto-hides with no button anywhere. The
+             target_type guard matters: ratings and profiles are hidden with the
+             same actions, and their ids must not reach the itinerary endpoint. #}
+          {% if row.action in hide_family and row.target_type == 'itinerary' and row.target_id %}
           <form method="post" action="/admin/itineraries/{{ row.target_id }}/unhide">
+            <input type="hidden" name="next" value="/admin/log">
             <input type="text" name="reason" placeholder="Reason (required)" required>
             <div class="actions"><button type="submit">Unhide</button></div>
           </form>
-          {% elif row.action == 'ban' and row.target_id %}
+          {% elif row.action == 'ban' and row.target_type == 'user' and row.target_id %}
           <form method="post" action="/admin/users/{{ row.target_id }}/unban">
+            <input type="hidden" name="next" value="/admin/log">
             <input type="text" name="reason" placeholder="Reason (required)" required>
             <div class="actions"><button type="submit">Unban</button></div>
           </form>
