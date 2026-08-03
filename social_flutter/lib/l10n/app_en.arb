@@ -973,6 +973,10 @@
   "updateYourRating": "Update your rating",
   "moveActionLabel": "move",
   "reorderActionLabel": "reorder",
+  "addParallelStopLabel": "// stop",
+  "@addParallelStopLabel": {
+    "description": "Label of the side button that adds a parallel stop (alternative) to the same track. The leading '//' is the parallel symbol and must be kept in every locale; only the noun is translated."
+  },
   "aStopFallback": "A stop",
   "locationLabel": "Location",
   "noLocationSet": "No location set",

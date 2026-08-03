@@ -624,6 +624,7 @@
   "updateYourRating": "更新你的评分",
   "moveActionLabel": "移动",
   "reorderActionLabel": "重新排序",
+  "addParallelStopLabel": "// 停靠点",
   "aStopFallback": "一个停靠点",
   "locationLabel": "位置",
   "noLocationSet": "未设置位置",

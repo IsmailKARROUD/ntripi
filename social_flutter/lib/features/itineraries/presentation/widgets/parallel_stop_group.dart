@@ -504,7 +504,7 @@ class _AddParallelButton extends StatelessWidget {
               Icon(Icons.call_split, size: 16, color: nt.editBlue),
               const SizedBox(height: 2),
               Text(
-                '// stop',
+                AppLocalizations.of(context)!.addParallelStopLabel,
                 style: theme.textTheme.labelSmall?.copyWith(
                   color: nt.editBlue,
                   fontWeight: FontWeight.w600,

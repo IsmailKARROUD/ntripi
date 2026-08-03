@@ -624,6 +624,7 @@
   "updateYourRating": "Actualiza tu valoración",
   "moveActionLabel": "mover",
   "reorderActionLabel": "reordenar",
+  "addParallelStopLabel": "// parada",
   "aStopFallback": "Una parada",
   "locationLabel": "Ubicación",
   "noLocationSet": "Sin ubicación definida",

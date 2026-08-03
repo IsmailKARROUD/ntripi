@@ -1785,7 +1785,7 @@ class AppLocalizationsFr extends AppLocalizations {
       'Optionnel. À quel point ce voyage convient aux familles avec enfants.';
 
   @override
-  String get crowdednessLabel => 'Tranquillité';
+  String get crowdednessLabel => 'Peu fréquenté';
 
   @override
   String get crowdednessHelp =>
@@ -2208,6 +2208,9 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get reorderActionLabel => 'réorganiser';
+
+  @override
+  String get addParallelStopLabel => '// étape';
 
   @override
   String get aStopFallback => 'Une étape';

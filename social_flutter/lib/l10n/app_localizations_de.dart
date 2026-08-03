@@ -2205,6 +2205,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get reorderActionLabel => 'neu anordnen';
 
   @override
+  String get addParallelStopLabel => '// Stopp';
+
+  @override
   String get aStopFallback => 'Ein Stopp';
 
   @override

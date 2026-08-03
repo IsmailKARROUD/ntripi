@@ -3850,6 +3850,12 @@ abstract class AppLocalizations {
   /// **'reorder'**
   String get reorderActionLabel;
 
+  /// Label of the side button that adds a parallel stop (alternative) to the same track. The leading '//' is the parallel symbol and must be kept in every locale; only the noun is translated.
+  ///
+  /// In en, this message translates to:
+  /// **'// stop'**
+  String get addParallelStopLabel;
+
   /// No description provided for @aStopFallback.
   ///
   /// In en, this message translates to:

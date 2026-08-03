@@ -2225,6 +2225,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get reorderActionLabel => 'إعادة ترتيب';
 
   @override
+  String get addParallelStopLabel => '// محطة';
+
+  @override
   String get aStopFallback => 'محطة';
 
   @override

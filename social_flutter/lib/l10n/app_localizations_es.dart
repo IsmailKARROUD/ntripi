@@ -2191,6 +2191,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get reorderActionLabel => 'reordenar';
 
   @override
+  String get addParallelStopLabel => '// parada';
+
+  @override
   String get aStopFallback => 'Una parada';
 
   @override

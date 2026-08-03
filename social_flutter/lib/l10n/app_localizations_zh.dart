@@ -2065,6 +2065,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get reorderActionLabel => '重新排序';
 
   @override
+  String get addParallelStopLabel => '// 停靠点';
+
+  @override
   String get aStopFallback => '一个停靠点';
 
   @override

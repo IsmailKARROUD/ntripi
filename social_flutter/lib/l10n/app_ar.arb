@@ -951,6 +951,7 @@
   "updateYourRating": "حدّث تقييمك",
   "moveActionLabel": "نقل",
   "reorderActionLabel": "إعادة ترتيب",
+  "addParallelStopLabel": "// محطة",
   "aStopFallback": "محطة",
   "locationLabel": "الموقع",
   "noLocationSet": "لم يُحدد موقع",
