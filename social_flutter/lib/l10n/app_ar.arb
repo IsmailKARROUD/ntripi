@@ -81,6 +81,7 @@
   "latestTrip": "أحدث رحلة",
   "whereIveBeen": "الأماكن التي زرتها",
   "noStopsYet": "لا توجد محطات بعد",
+  "addFirstStop": "إضافة أول محطة",
   "addStopHintTitle": "أضف محطاتك",
   "addStopHintMessage": "لإضافة محطات، اضغط على تعديل ✎ في الأعلى.",
   "addCoverHintMessage": "لإضافة صورة غلاف، اضغط على هذا الزر في الأعلى.",

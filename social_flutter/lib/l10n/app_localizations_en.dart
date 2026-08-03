@@ -265,6 +265,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get noStopsYet => 'No stops yet';
 
   @override
+  String get addFirstStop => 'Add first stop';
+
+  @override
   String get addStopHintTitle => 'Add your stops';
 
   @override

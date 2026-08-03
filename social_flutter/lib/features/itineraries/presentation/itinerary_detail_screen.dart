@@ -99,10 +99,8 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
   // GlobalKey per track widget so we can call Scrollable.ensureVisible after a
   // cross-track move to scroll the destination track into view.
   final Map<String, GlobalKey> _trackKeys = {};
-  // Anchors the "tap Edit to add stops" popover to the hero's Edit pencil.
-  final GlobalKey _editButtonKey = GlobalKey();
   final GlobalKey _editDetailsButtonKey = GlobalKey();
-  bool _creationHintShown = false; // one-shot guard for the just-created auto-hint
+  bool _firstStopFormOpened = false; // one-shot guard for the just-created auto-open
   //start with map hidden on mobile to avoid unnecessary API calls and improve performance, since the map is less likely to be used on mobile and can be accessed via a button
   bool _mapVisible = false;
 
@@ -132,20 +130,10 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
     );
   }
 
-  // Pops the help card out of the hero's Edit pencil, telling the owner to tap
-  // Edit before they can add stops. currentContext is null unless that pencil is
-  // laid out (owner, read mode) — skip silently if so.
-  void _showAddStopHint() {
-    final ctx = _editButtonKey.currentContext;
-    if (ctx == null) return;
-    final l10n = AppLocalizations.of(context)!;
-    showFieldHelp(
-      ctx,
-      title: l10n.addStopHintTitle,
-      message: l10n.addStopHintMessage,
-      pointer: true, // draw a beak pointing up at the Edit pencil
-    );
-  }
+  // Opens the add-stop form. Adding a stop is not an edit-mode-only action —
+  // the owner reaches it in one tap from the empty state, in either mode.
+  void _openStopForm() =>
+      context.push('/itineraries/${widget.itineraryId}/stops/new');
 
   // Owner tapped the placeholder cover: point them at the Edit details button
   // (which opens the form holding CoverImageField). Anchor is only laid out in
@@ -440,15 +428,19 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                   final tracks = itinerary.tracks;
                   final canEdit = isOwner && _editMode;
 
-                  // Freshly created + still empty → point the owner at Edit once.
+                  // Freshly created + still empty → drop the owner straight into
+                  // the first-stop form. Pushed from here rather than from the
+                  // create form so this screen stays underneath: the stop form's
+                  // save AND discard paths both pop back onto it, and the detail
+                  // provider is already loaded, so addStop's If-Match is not ''.
                   if (widget.justCreated &&
                       isOwner &&
                       tracks.isEmpty &&
                       !_editMode &&
-                      !_creationHintShown) {
-                    _creationHintShown = true; // set now so we schedule exactly once
+                      !_firstStopFormOpened) {
+                    _firstStopFormOpened = true; // set now so we schedule exactly once
                     WidgetsBinding.instance.addPostFrameCallback((_) {
-                      if (mounted) _showAddStopHint(); // hero + key laid out by now
+                      if (mounted) _openStopForm();
                     });
                   }
 
@@ -711,7 +703,6 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                             itinerary: itinerary,
                             isOwner: isOwner,
                             editMode: _editMode,
-                            editButtonKey: _editButtonKey,
                             editDetailsButtonKey: _editDetailsButtonKey,
                             onCoverTap: isOwner ? _showAddCoverHint : null,
                             // Reached via go() after create / stop-delete, so
@@ -1073,25 +1064,13 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                           SliverToBoxAdapter(
                             child: Padding(
                               padding: const EdgeInsets.symmetric(vertical: 48),
-                              child: canEdit
-                                  // Edit mode: tapping the placeholder adds a stop.
-                                  ? GestureDetector(
-                                      onTap: () => context.push(
-                                        '/itineraries/${widget.itineraryId}/stops/new',
-                                      ),
-                                      child: _EmptyStopsPlaceholder(
-                                          text: l10n.noStopsYetTapPlus),
-                                    )
-                                  : isOwner
-                                      // Read mode, owner: tap points them at Edit.
-                                      ? GestureDetector(
-                                          onTap: _showAddStopHint,
-                                          child: _EmptyStopsPlaceholder(
-                                              text: l10n.noStopsYet),
-                                        )
-                                      // Viewers: inert.
-                                      : _EmptyStopsPlaceholder(
-                                          text: l10n.noStopsYet),
+                              child: _EmptyStopsPlaceholder(
+                                text: l10n.noStopsYet,
+                                // Owner in either mode gets the one-tap path;
+                                // viewers get the placeholder alone.
+                                actionLabel: l10n.addFirstStop,
+                                onAction: isOwner ? _openStopForm : null,
+                              ),
                             ),
                           )
                         else
@@ -1209,8 +1188,6 @@ class _CoverHero extends StatefulWidget {
   final Itinerary itinerary;
   final bool isOwner;
   final bool editMode;
-  // Attached to the Edit pencil so the parent can anchor the add-stop hint to it.
-  final GlobalKey editButtonKey;
   // Attached to the Edit details button so the add-cover hint can point at it.
   final GlobalKey editDetailsButtonKey;
   final VoidCallback onBack;
@@ -1228,7 +1205,6 @@ class _CoverHero extends StatefulWidget {
     required this.itinerary,
     required this.isOwner,
     required this.editMode,
-    required this.editButtonKey,
     required this.editDetailsButtonKey,
     required this.onBack,
     this.onShare,
@@ -1347,7 +1323,6 @@ class _CoverHeroState extends State<_CoverHero> {
                     ),
                     const SizedBox(width: 6),
                     EditPencilButton(
-                      key: widget.editButtonKey,
                       onTap: widget.onEnterEdit,
                       iconSize: 22,
                     ),
@@ -1388,10 +1363,17 @@ class _CoverHeroState extends State<_CoverHero> {
 }
 
 // Centered place-pin + caption shown when an itinerary has no stops.
+// [onAction] adds the owner's call-to-action button; null keeps it inert for viewers.
 class _EmptyStopsPlaceholder extends StatelessWidget {
   final String text;
+  final String actionLabel;
+  final VoidCallback? onAction;
 
-  const _EmptyStopsPlaceholder({required this.text});
+  const _EmptyStopsPlaceholder({
+    required this.text,
+    required this.actionLabel,
+    this.onAction,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -1401,6 +1383,20 @@ class _EmptyStopsPlaceholder extends StatelessWidget {
         Icon(Icons.place_outlined, size: 48, color: nt.text3),
         const SizedBox(height: 12),
         Text(text),
+        if (onAction != null) ...[
+          const SizedBox(height: 16),
+          FilledButton.icon(
+            onPressed: onAction,
+            icon: const Icon(Icons.add_location_alt_outlined, size: 18),
+            label: Text(actionLabel),
+            style: FilledButton.styleFrom(
+              backgroundColor: nt.forest,
+              foregroundColor: nt.surface,
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            ),
+          ),
+        ],
       ],
     );
   }

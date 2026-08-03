@@ -592,6 +592,12 @@ abstract class AppLocalizations {
   /// **'No stops yet'**
   String get noStopsYet;
 
+  /// No description provided for @addFirstStop.
+  ///
+  /// In en, this message translates to:
+  /// **'Add first stop'**
+  String get addFirstStop;
+
   /// No description provided for @addStopHintTitle.
   ///
   /// In en, this message translates to:

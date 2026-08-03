@@ -81,6 +81,7 @@
   "latestTrip": "DERNIER VOYAGE",
   "whereIveBeen": "OÙ J'AI ÉTÉ",
   "noStopsYet": "Aucune étape",
+  "addFirstStop": "Ajouter la première étape",
   "addStopHintTitle": "Ajoutez vos étapes",
   "addStopHintMessage": "Pour ajouter des étapes, appuyez sur Modifier ✎ en haut.",
   "addCoverHintMessage": "Pour ajouter une image de couverture, appuyez sur ce bouton en haut.",

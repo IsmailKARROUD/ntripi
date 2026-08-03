@@ -81,6 +81,7 @@
   "latestTrip": "LETZTE REISE",
   "whereIveBeen": "WO ICH WAR",
   "noStopsYet": "Noch keine Stopps",
+  "addFirstStop": "Ersten Stopp hinzufügen",
   "addStopHintTitle": "Füge deine Stopps hinzu",
   "addStopHintMessage": "Um Stopps hinzuzufügen, tippe oben auf Bearbeiten ✎.",
   "addCoverHintMessage": "Um ein Titelbild hinzuzufügen, tippe oben auf diese Schaltfläche.",

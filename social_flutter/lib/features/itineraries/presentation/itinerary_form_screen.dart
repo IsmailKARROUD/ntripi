@@ -261,7 +261,7 @@ class _ItineraryFormScreenState extends ConsumerState<ItineraryFormScreen> {
         }
 
         if (!mounted) return;
-        // justCreated → detail screen auto-shows the "tap Edit to add stops" hint once.
+        // justCreated → detail screen opens the first-stop form on top of itself once.
         context.go('/itineraries/${itinerary.id}', extra: {'justCreated': true});
       } else {
         // Edit flow: image changes are applied BEFORE the header PATCH.

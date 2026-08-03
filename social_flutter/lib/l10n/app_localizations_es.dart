@@ -268,6 +268,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get noStopsYet => 'Aún no hay paradas';
 
   @override
+  String get addFirstStop => 'Añadir la primera parada';
+
+  @override
   String get addStopHintTitle => 'Añade tus paradas';
 
   @override

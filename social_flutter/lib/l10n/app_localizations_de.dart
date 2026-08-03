@@ -271,6 +271,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get noStopsYet => 'Noch keine Stopps';
 
   @override
+  String get addFirstStop => 'Ersten Stopp hinzufügen';
+
+  @override
   String get addStopHintTitle => 'Füge deine Stopps hinzu';
 
   @override

@@ -81,6 +81,7 @@
   "latestTrip": "ÚLTIMO VIAJE",
   "whereIveBeen": "DÓNDE HE ESTADO",
   "noStopsYet": "Aún no hay paradas",
+  "addFirstStop": "Añadir la primera parada",
   "addStopHintTitle": "Añade tus paradas",
   "addStopHintMessage": "Para añadir paradas, toca Editar ✎ en la parte superior.",
   "addCoverHintMessage": "Para añadir una imagen de portada, toca este botón en la parte superior.",

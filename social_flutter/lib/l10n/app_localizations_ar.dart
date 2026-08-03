@@ -264,6 +264,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get noStopsYet => 'لا توجد محطات بعد';
 
   @override
+  String get addFirstStop => 'إضافة أول محطة';
+
+  @override
   String get addStopHintTitle => 'أضف محطاتك';
 
   @override

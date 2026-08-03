@@ -81,6 +81,7 @@
   "latestTrip": "LATEST TRIP",
   "whereIveBeen": "WHERE I'VE BEEN",
   "noStopsYet": "No stops yet",
+  "addFirstStop": "Add first stop",
   "addStopHintTitle": "Add your stops",
   "addStopHintMessage": "To add stops, tap Edit ✎ at the top.",
   "addCoverHintMessage": "To add a cover image, tap this button at the top.",

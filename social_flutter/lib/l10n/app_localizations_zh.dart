@@ -253,6 +253,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get noStopsYet => '还没有停靠点';
 
   @override
+  String get addFirstStop => '添加第一个停靠点';
+
+  @override
   String get addStopHintTitle => '添加你的停靠点';
 
   @override

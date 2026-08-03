@@ -271,6 +271,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get noStopsYet => 'Aucune étape';
 
   @override
+  String get addFirstStop => 'Ajouter la première étape';
+
+  @override
   String get addStopHintTitle => 'Ajoutez vos étapes';
 
   @override
