@@ -80,6 +80,9 @@ class _ReportContentSheetState extends State<_ReportContentSheet> {
   String? _reason;
   final _notesController = TextEditingController();
   bool _saving = false;
+  // Shown inline rather than via a snackbar: the sheet stays open on failure, so
+  // a root-messenger snackbar renders behind the modal barrier and is never seen.
+  String? _error;
 
   @override
   void dispose() {
@@ -93,7 +96,10 @@ class _ReportContentSheetState extends State<_ReportContentSheet> {
     // Capture the messenger before the async gap — this context is disposed
     // once the sheet pops.
     final messenger = ScaffoldMessenger.of(context);
-    setState(() => _saving = true);
+    setState(() {
+      _saving = true;
+      _error = null;
+    });
     try {
       await widget.parentRef.read(reportRepositoryProvider).report(
             target: widget.target,
@@ -104,10 +110,11 @@ class _ReportContentSheetState extends State<_ReportContentSheet> {
       messenger.showSnackBar(SnackBar(content: Text(l10n.reportThanks)));
     } on Exception catch (e) {
       if (!mounted) return;
-      setState(() => _saving = false);
-      messenger.showSnackBar(
-        SnackBar(content: Text(extractErrorMessage(e, l10n))),
-      );
+      // Keep the sheet open with the reason and notes intact so Submit retries.
+      setState(() {
+        _saving = false;
+        _error = extractErrorMessage(e, l10n);
+      });
     }
   }
 
@@ -208,6 +215,25 @@ class _ReportContentSheetState extends State<_ReportContentSheet> {
                   ),
                 ),
               ),
+
+              // ── Failure message ──────────────────────────────────────────
+              if (_error != null)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(Icons.error_outline, size: 18, color: nt.danger),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          _error!,
+                          style: TextStyle(fontSize: 13, color: nt.danger),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
 
               const SizedBox(height: 8),
 

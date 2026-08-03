@@ -17,7 +17,7 @@ from decimal import Decimal
 from datetime import datetime
 
 from sqlalchemy import (
-    DateTime, ForeignKey, Integer,
+    CheckConstraint, DateTime, ForeignKey, Integer,
     Numeric, String, Text, func,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -28,6 +28,17 @@ from app.database import Base
 
 class Itinerary(Base):
     __tablename__ = "itineraries"
+
+    # Declared here so the SQLite test schema enforces the same five values as
+    # Postgres: the migration-only version of this constraint silently drifted
+    # (it never gained 'hidden') and the whole suite stayed green while every
+    # production auto-hide 500'd.
+    __table_args__ = (
+        CheckConstraint(
+            "moderation_status IN ('approved','pending','flagged','hidden','rejected')",
+            name="ck_itinerary_moderation_status",
+        ),
+    )
 
     # UUID primary key, same pattern as User model.
     id: Mapped[uuid.UUID] = mapped_column(
