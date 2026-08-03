@@ -38,6 +38,8 @@ from app.schemas.auth import (
 )
 from app.services import auth_service, refresh_token_service
 from app.services.auth import create_access_token, verify_google_id_token
+from app.services.moderation_actions import escalate_if_flagged
+from app.services.text_moderation_service import attach_target, moderate_or_422
 from app.errors import ApiError
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
@@ -67,6 +69,16 @@ def register(
     payload: RegisterRequest,
     db: Session = Depends(get_db),
 ) -> TokenPair:
+    # Scanned BEFORE create_user, never after: create_user commits, so a
+    # rejection discovered afterwards could not undo the account it just made.
+    # Both fields go in one dict so they cost a single provider call.
+    ctx = moderate_or_422(
+        db, get_settings(),
+        target_type="user",
+        author=None,  # the account does not exist yet
+        fields={"username": payload.username, "display_name": payload.display_name},
+    )
+
     try:
         user, access_token = auth_service.create_user(
             username=payload.username,
@@ -78,6 +90,14 @@ def register(
         )
     except auth_service.AuthError as e:
         raise ApiError(status_code=e.http_status, code=e.code, detail=e.message)
+
+    # Assigned, not escalated, matching PATCH /users/me: this is the account's
+    # first and only text, so there is no earlier flag to preserve.
+    user.moderation_status = ctx.status
+    attach_target(ctx, user.id)  # create_user already committed, so the id is real
+    escalate_if_flagged(
+        db, "user", user, escalate_flag=ctx.escalate, decision_id=ctx.decision_id,
+    )
 
     refresh_raw, refresh_row = refresh_token_service.issue(
         db,

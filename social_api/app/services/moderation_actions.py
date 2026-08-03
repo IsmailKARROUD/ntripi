@@ -232,5 +232,25 @@ def escalate(
     return row
 
 
+def escalate_if_flagged(
+    db: Session,
+    target_type: str,
+    target,
+    *,
+    escalate_flag: bool,
+    decision_id: uuid.UUID | None,
+) -> LegalEscalation | None:
+    """Open the legal escalation a `hide_escalate` text verdict implies.
+
+    The write path has already hidden the content by the time this runs; this is
+    only the record that it needs review beyond a routine takedown. Takes the
+    flag rather than a TextModerationContext so this module stays free of any
+    dependency on text_moderation_service.
+    """
+    if not escalate_flag:
+        return None
+    return escalate(db, target_type, target, source="score", decision_id=decision_id)
+
+
 def _target_id(target_type: str, target) -> uuid.UUID | None:
     return getattr(target, "id", None) if target is not None else None

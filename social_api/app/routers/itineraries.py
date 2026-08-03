@@ -85,6 +85,7 @@ from app.schemas.itinerary import (
 )
 from app.services.image_service import ImageProcessingError, process_and_store, process_cover_image
 from app.services.moderation_service import ModerationContext, ModerationRejectedError
+from app.services.moderation_actions import escalate_if_flagged
 from app.services.itinerary_access import (
     HIDDEN_STATUSES, can_view_itinerary, public_listing_criteria,
     recalculate_rating, visible_rating_criteria,
@@ -189,6 +190,12 @@ def _moderate_itinerary_text(
         # exists for moderation writes that happen outside the owner's request.
         if ctx.escalate and itinerary.hidden_at is None:
             itinerary.hidden_at = datetime.now(timezone.utc)
+        # Hiding alone would leave the signal out of /admin/legal — the sweep's
+        # re-check path has always escalated, and a write must agree with it.
+        escalate_if_flagged(
+            db, "itinerary", itinerary,
+            escalate_flag=ctx.escalate, decision_id=ctx.decision_id,
+        )
     return ctx
 
 
@@ -602,6 +609,11 @@ def create_itinerary(
     db.flush()
     # The scan ran before this row existed, so its decision has no target yet.
     attach_target(ctx, itinerary.id)
+    # Same reason attach_target waits for the flush: escalate needs a real id.
+    escalate_if_flagged(
+        db, "itinerary", itinerary,
+        escalate_flag=ctx.escalate, decision_id=ctx.decision_id,
+    )
     db.commit()
     db.refresh(itinerary)
     return itinerary  # type: ignore[return-value]
@@ -1414,6 +1426,12 @@ def upsert_rating(
     # A first-time rating is scanned before its row exists — point the decision
     # at it now so the moderator queue knows what it refers to.
     attach_target(ctx, rating.id)
+    # A rating has no hidden_at column — HIDDEN_STATUSES already filters it out
+    # of reads, so the status plus this escalation is the whole takedown.
+    escalate_if_flagged(
+        db, "rating", rating,
+        escalate_flag=ctx.escalate, decision_id=ctx.decision_id,
+    )
     recalculate_rating(itinerary, db)
     db.commit()
     db.refresh(rating)

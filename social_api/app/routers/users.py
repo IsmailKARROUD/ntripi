@@ -55,6 +55,7 @@ from app.services.moderation_service import ModerationContext, ModerationRejecte
 from app.services import block_service
 from app.services.itinerary_access import can_view_itinerary
 from app.services.text_moderation_service import moderate_or_422
+from app.services.moderation_actions import escalate_if_flagged
 from app.storage.factory import storage
 from app.errors import ApiError
 
@@ -163,6 +164,10 @@ def update_my_profile(
         # Assigned, not escalated: rewritten profile text is new content, so a
         # cleaned-up bio clears the previous flag.
         current_user.moderation_status = ctx.status
+        escalate_if_flagged(
+            db, "user", current_user,
+            escalate_flag=ctx.escalate, decision_id=ctx.decision_id,
+        )
 
     for field, value in update_data.items():
         setattr(current_user, field, value)

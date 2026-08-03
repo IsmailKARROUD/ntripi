@@ -17,6 +17,11 @@ Four ways out, none of which blocks a user because a vendor is down:
   pending   — no provider answered; publish, sweep re-checks later
   (reject)  — raises TextModerationRejectedError; caller returns 422
 
+The legal escalation belongs to the caller, which is the only party holding the
+row to point at: callers pass ctx.escalate to moderation_actions.escalate_if_flagged
+after their flush. The one exception is a rejected minors verdict, escalated from
+here against the author — nothing was stored, so there is no content row.
+
 Fields written together are scanned together in ONE provider call — a stop's
 name, address and notes are one submission, not three.
 """
@@ -94,7 +99,9 @@ class TextModerationContext:
     db: Session
     settings: "Settings"
     target_type: str  # 'itinerary' | 'rating' | 'user'
-    author: "User"
+    # None for a scan with no account behind it yet (registration) or anymore
+    # (sweep re-check of content whose author deleted their account).
+    author: "User | None"
     target_id: "uuid.UUID | None" = None
     source: str = "write"  # 'write' | 'recheck'
     status: str = field(default="approved")  # OUT param
@@ -200,7 +207,7 @@ def moderate_or_422(
     settings: "Settings",
     *,
     target_type: str,
-    author: "User",
+    author: "User | None",
     fields: dict[str, str | None],
     target_id: "uuid.UUID | None" = None,
     source: str = "write",
@@ -211,6 +218,10 @@ def moderate_or_422(
     itself. Call it from the endpoint BODY, never as a `Depends` — dependencies
     resolve before the body runs, and an If-Match conflict must produce its 412
     without first spending a moderation call.
+
+    `author` is None at registration — the account does not exist yet. Whatever
+    the caller does next must not have added rows to the session: the reject
+    path commits to preserve its audit row, and would commit those too.
 
     The 422 carries category names, never the submitted text.
     """
@@ -245,6 +256,17 @@ def _finalize(
         ctx.status = "rejected"
         _write_decision(ctx, outcome="reject", scores=scores, provider=provider,
                         model=model, hash_key=hash_key, queue_label=None)
+        if moderation_policy.CSAM_CATEGORY in decision.categories and ctx.author is not None:
+            # Nothing was stored, so no content row survives to point at —
+            # escalate against the author, as csam_takedown does for a hash
+            # match. Lazy import: moderation_actions reaches back into the
+            # action layer, which must not be a module-level dependency here.
+            from app.services import moderation_actions
+
+            moderation_actions.escalate_if_flagged(
+                ctx.db, "user", ctx.author,
+                escalate_flag=True, decision_id=ctx.decision_id,
+            )
         # The caller raises 422 next, rolling back its transaction — commit the
         # audit row now so the rejection is never lost.
         ctx.db.commit()

@@ -23,6 +23,7 @@ from app.services import (
     email_token_service,
     pwned_service,
     refresh_token_service,
+    text_moderation_service,
 )
 from app.services.auth import create_access_token, hash_password, verify_password
 from app.validators.username import (
@@ -252,6 +253,24 @@ def login_or_register_google(
         except ValueError:
             display_name = None  # unusual Google name — drop rather than fail signup
 
+    # Scan the Google profile name, but never let it refuse the signup: the name
+    # is Google's, not something the user typed here, so a 422 would lock a real
+    # person out with no way to fix it. On a reject we drop the name exactly as
+    # validate_display_name does above; the decision row is the record.
+    ctx = text_moderation_service.TextModerationContext(
+        db=db, settings=get_settings(), target_type="user", author=None,
+    )
+    if display_name:
+        try:
+            text_moderation_service.moderate_fields_or_raise(
+                {"display_name": display_name}, ctx
+            )
+        except text_moderation_service.TextModerationRejectedError:
+            display_name = None
+            # Nothing offensive is stored, so the profile itself is clean —
+            # flagging it would hide a bio that never existed.
+            ctx.status = "approved"
+
     new_user = User(
         username=username,
         username_lower=normalize_username(username),
@@ -261,12 +280,21 @@ def login_or_register_google(
         email_verified=bool(email_verified),
         display_name=display_name,
         avatar_url=picture,
+        moderation_status=ctx.status,
         tos_accepted_at=datetime.now(timezone.utc),
         # Record WHICH revision was accepted — "they agreed to the terms"
         # is unprovable once the terms change.
         tos_accepted_version=TOS_VERSION,
     )
     db.add(new_user)
+    db.flush()
+    text_moderation_service.attach_target(ctx, new_user.id)
+    # Lazy: moderation_actions pulls in admin_service, which imports this module.
+    from app.services import moderation_actions
+
+    moderation_actions.escalate_if_flagged(
+        db, "user", new_user, escalate_flag=ctx.escalate, decision_id=ctx.decision_id,
+    )
     db.commit()
     db.refresh(new_user)
     return new_user, create_access_token(subject=str(new_user.id))

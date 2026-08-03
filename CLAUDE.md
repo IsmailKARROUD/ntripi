@@ -229,6 +229,9 @@ Provider-agnostic by construction — swapping providers is a config change, nev
 - **Content state** lives on `itineraries.moderation_status` (shared by the image and text tiers), `itinerary_ratings.moderation_status`, and `users.moderation_status`. Stop / annotation / transport-leg text **rolls up to its parent itinerary** — hiding is itinerary-level, so a per-fragment status would have no read path.
 - **Automated writes only ever RAISE severity** (`apply_moderation_status`, order `approved < pending < flagged < hidden < rejected`): a clean caption edit must not clear an unresolved image flag. Moderator and appeal paths assign directly to lower it.
 - **Any moderation write to an itinerary from outside the owner's own request MUST go through `admin_service.set_preserving_etag` / `moderation_actions.set_status`.** `updated_at` IS the concurrency ETag; moving it 412s the author's open editor over a change they cannot see.
+- **Coverage is every stored user string except the moderator-facing ones.** Itinerary title/description, stop name/address/notes, both annotation tables, transport-leg line/direction/notes, rating notes, profile display_name/bio, and the `username` + `display_name` chosen at registration. Deliberately NOT moderated: `content_reports.notes`, `appeals.user_reason`, and admin action reasons — a 422 there would block someone reporting hate speech who quotes it, which is a safety regression, not an improvement.
+- **Account creation scans before it writes.** `create_user` commits, so a rejection found afterwards could not undo the account — `moderate_or_422` runs first, with `author=None`. `POST /auth/google` scans the Google profile name but **never rejects it**: the name is Google's, not something the user typed, so a 422 would lock a real person out with no recourse. A reject there drops the name (as `validate_display_name` already does) and stores `approved` — nothing offensive was persisted.
+- **A `hide_escalate` verdict must open a `legal_escalations` row, on every path.** Callers pass `ctx.escalate` to `moderation_actions.escalate_if_flagged` after their flush — the caller is the only party holding the row to point at. The one exception is a *rejected* minors verdict, escalated from `_finalize` against the **author**: nothing was stored, so there is no content row, exactly as a CSAM hash match escalates against the uploader.
 - Operator gets an email when the provider chain degrades (fallback, or all-down), throttled to one per hour per level.
 
 ### Reports, thresholds, escalation
@@ -282,6 +285,10 @@ Detection is Cloudflare's, at serve time; the app's whole job is the response �
 - Do NOT send anything but the text to a moderation provider — no user id, email, or content id
 - Do NOT write an itinerary's moderation state from outside the owner's request without `set_preserving_etag` — it 412s their open editor
 - Do NOT change a threshold in `moderation_policy.py` without bumping `POLICY_VERSION` — stale verdicts would survive in the cache
+- Do NOT scan account text *after* `create_user` — it commits, so the 422 could not undo the account
+- Do NOT let a moderation verdict reject a Google-supplied profile name — drop the name instead; the user cannot edit what Google sent
+- Do NOT consume `ctx.escalate` without calling `escalate_if_flagged` — hiding without the `legal_escalations` row keeps a CSAM signal out of `/admin/legal`
+- Do NOT moderate report notes, appeal reasons, or admin action reasons — rejecting a report that quotes the abuse it reports is a safety regression
 - Do NOT put raw content text, emails, or display names in an automated `moderation_log` row
 - Do NOT purge, downgrade, or otherwise touch `rejected_csam` rows in `image_moderation_logs` — the object is deleted in the same action, so the row and its hash are the only evidence and their retention is a legal duty
 - Do NOT delete the object before hashing it in `csam_takedown` — the order is the evidence

@@ -21,6 +21,7 @@ from conftest import (
 from app.config import get_settings
 from app.models.itinerary import Itinerary
 from app.models.itinerary_rating import ItineraryRating
+from app.models.legal_escalation import LegalEscalation
 from app.models.text_moderation_decision import TextModerationDecision
 from app.models.user import User
 from app.services import text_moderation_service as tms
@@ -103,6 +104,17 @@ def _decisions() -> list[TextModerationDecision]:
     db = TestingSessionLocal()
     try:
         return db.query(TextModerationDecision).all()
+    finally:
+        db.close()
+
+
+def _escalations(target_type: str | None = None) -> list[LegalEscalation]:
+    db = TestingSessionLocal()
+    try:
+        query = db.query(LegalEscalation)
+        if target_type is not None:
+            query = query.filter(LegalEscalation.target_type == target_type)
+        return query.all()
     finally:
         db.close()
 
@@ -197,6 +209,118 @@ def test_minors_score_publishes_hidden_and_escalated(client, owner, provider):
     row = _itinerary_row(itinerary["id"])
     assert row.moderation_status == "hidden"
     assert row.hidden_at is not None
+
+    # Hiding alone is not the whole action — a minors signal has to reach the
+    # legal lane, or a moderator never learns it happened.
+    escalations = _escalations("itinerary")
+    assert len(escalations) == 1
+    assert escalations[0].target_id == uuid.UUID(itinerary["id"])
+    assert escalations[0].source == "score"
+    assert escalations[0].decision_id is not None
+
+
+def test_minors_score_on_an_edit_escalates_too(client, owner, provider):
+    """Create and update take different code paths to the same rule."""
+    itinerary = _create_itinerary(client, owner["access_token"], description="fine")
+    assert _escalations("itinerary") == []
+
+    provider.scores = MINORS
+    response = client.patch(
+        f"/itineraries/{itinerary['id']}",
+        json={"description": "..."},
+        headers={**auth_headers(owner["access_token"]),
+                 "If-Match": _etag(client, itinerary["id"], owner["access_token"])},
+    )
+    assert response.status_code == 200, response.json()
+    assert len(_escalations("itinerary")) == 1
+
+
+def test_repeated_minors_edits_open_one_escalation(client, owner, provider):
+    """escalate() is idempotent on an open row — a second edit must not stack."""
+    provider.scores = MINORS
+    itinerary = _create_itinerary(client, owner["access_token"], description="...")
+
+    client.patch(
+        f"/itineraries/{itinerary['id']}",
+        json={"description": "still bad"},
+        headers={**auth_headers(owner["access_token"]),
+                 "If-Match": _etag(client, itinerary["id"], owner["access_token"])},
+    )
+
+    assert len(_escalations("itinerary")) == 1
+
+
+def test_minors_review_note_escalates_against_the_rating(client, owner, stranger, provider):
+    """A rating carries its own status and has no hidden_at — the escalation is
+    the only durable record that it was taken down."""
+    itinerary = _create_itinerary(client, owner["access_token"])
+
+    provider.scores = MINORS
+    response = client.post(
+        f"/itineraries/{itinerary['id']}/ratings",
+        json={"stars": 4, "note": "..."},
+        headers=auth_headers(stranger["access_token"]),
+    )
+    assert response.status_code in (200, 201), response.json()
+
+    escalations = _escalations("rating")
+    assert len(escalations) == 1
+    assert escalations[0].source == "score"
+    # The itinerary owner's trip must not be dragged down with the review.
+    assert _escalations("itinerary") == []
+
+
+def test_minors_bio_escalates_against_the_user(client, owner, provider):
+    provider.scores = MINORS
+    response = client.patch(
+        "/users/me", json={"bio": "..."},
+        headers=auth_headers(owner["access_token"]),
+    )
+    assert response.status_code == 200, response.json()
+
+    escalations = _escalations("user")
+    assert len(escalations) == 1
+    assert escalations[0].target_id == uuid.UUID(owner["user_id"])
+
+
+def test_rejected_minors_text_escalates_against_the_author(client, owner, provider):
+    """Nothing is stored on a reject, so there is no content row to point at —
+    the escalation targets the author, as a CSAM hash match does."""
+    provider.scores = {"sexual/minors": 0.9}
+    response = client.post(
+        "/itineraries/",
+        json={"title": "A trip", "description": "...", "currency": "EUR",
+              "visibility": "public"},
+        headers=auth_headers(owner["access_token"]),
+    )
+    assert response.status_code == 422
+
+    # The 422 rolled the write back; the escalation and its audit row survived.
+    escalations = _escalations("user")
+    assert len(escalations) == 1
+    assert escalations[0].target_id == uuid.UUID(owner["user_id"])
+    assert escalations[0].decision_id is not None
+    assert _escalations("itinerary") == []
+
+
+def test_ordinary_rejection_does_not_escalate(client, owner, provider):
+    """Only a minors signal opens a legal escalation — the guard is on the
+    category, not on the outcome."""
+    provider.scores = REJECT
+    response = client.post(
+        "/itineraries/",
+        json={"title": "A trip", "description": "vile", "currency": "EUR",
+              "visibility": "public"},
+        headers=auth_headers(owner["access_token"]),
+    )
+    assert response.status_code == 422
+    assert _escalations() == []
+
+
+def test_flagged_content_does_not_escalate(client, owner, provider):
+    provider.scores = REVIEW
+    _create_itinerary(client, owner["access_token"], description="borderline")
+    assert _escalations() == []
 
 
 def test_provider_outage_publishes_as_pending(client, owner, monkeypatch):
