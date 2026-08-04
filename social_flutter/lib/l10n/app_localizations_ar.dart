@@ -803,6 +803,13 @@ class AppLocalizationsAr extends AppLocalizations {
   String get periodClear => 'مسح';
 
   @override
+  String get periodClearConfirmTitle => 'مسح أفضل وقت للسفر؟';
+
+  @override
+  String get periodClearConfirmMessage =>
+      'ستُزال الأشهر والأيام المحدّدة وأيام الأسبوع والملاحظة التي اخترتها.';
+
+  @override
   String currenciesLoadFailed(String error) {
     return 'فشل تحميل العملات: $error';
   }

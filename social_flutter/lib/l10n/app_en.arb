@@ -308,6 +308,8 @@
   "periodWeekends": "Weekends",
   "periodWhyHint": "e.g. cherry blossom, mild weather, fewer crowds",
   "periodClear": "Clear",
+  "periodClearConfirmTitle": "Clear the best time?",
+  "periodClearConfirmMessage": "The months, exact days, weekdays and note you picked will all be removed.",
   "currenciesLoadFailed": "Failed to load currencies: {error}",
   "@currenciesLoadFailed": {
     "placeholders": {

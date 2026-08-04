@@ -781,6 +781,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get periodClear => 'Clear';
 
   @override
+  String get periodClearConfirmTitle => 'Clear the best time?';
+
+  @override
+  String get periodClearConfirmMessage =>
+      'The months, exact days, weekdays and note you picked will all be removed.';
+
+  @override
   String currenciesLoadFailed(String error) {
     return 'Failed to load currencies: $error';
   }

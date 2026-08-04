@@ -751,6 +751,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get periodClear => '清除';
 
   @override
+  String get periodClearConfirmTitle => '清除最佳出行时间？';
+
+  @override
+  String get periodClearConfirmMessage => '你选择的月份、具体日期、星期和备注都将被移除。';
+
+  @override
   String currenciesLoadFailed(String error) {
     return '加载货币失败：$error';
   }

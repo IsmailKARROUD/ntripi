@@ -230,6 +230,8 @@
   "periodWeekends": "Fines de semana",
   "periodWhyHint": "p. ej. cerezos en flor, clima suave, menos gente",
   "periodClear": "Borrar",
+  "periodClearConfirmTitle": "¿Borrar la mejor época?",
+  "periodClearConfirmMessage": "Se eliminarán los meses, los días exactos, los días de la semana y la nota que elegiste.",
   "currenciesLoadFailed": "No se pudieron cargar las monedas: {error}",
   "deleteItineraryFormTitle": "Eliminar itinerario",
   "deleteItineraryFormMessage": "Esto eliminará permanentemente \"{title}\" y todas sus paradas. Escribe el título para confirmar.",

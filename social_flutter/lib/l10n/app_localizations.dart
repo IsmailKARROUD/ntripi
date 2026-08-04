@@ -1486,6 +1486,18 @@ abstract class AppLocalizations {
   /// **'Clear'**
   String get periodClear;
 
+  /// No description provided for @periodClearConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear the best time?'**
+  String get periodClearConfirmTitle;
+
+  /// No description provided for @periodClearConfirmMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'The months, exact days, weekdays and note you picked will all be removed.'**
+  String get periodClearConfirmMessage;
+
   /// No description provided for @currenciesLoadFailed.
   ///
   /// In en, this message translates to:

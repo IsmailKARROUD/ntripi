@@ -791,6 +791,13 @@ class AppLocalizationsDe extends AppLocalizations {
   String get periodClear => 'Löschen';
 
   @override
+  String get periodClearConfirmTitle => 'Beste Reisezeit löschen?';
+
+  @override
+  String get periodClearConfirmMessage =>
+      'Die gewählten Monate, genauen Tage, Wochentage und die Notiz werden alle entfernt.';
+
+  @override
   String currenciesLoadFailed(String error) {
     return 'Währungen konnten nicht geladen werden: $error';
   }

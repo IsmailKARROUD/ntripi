@@ -15,6 +15,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart' as intl;
 import 'package:social_flutter/core/ui/app_theme.dart';
+import 'package:social_flutter/core/ui/destructive_actions.dart';
 import 'package:social_flutter/features/itineraries/domain/recommended_period.dart';
 import 'package:social_flutter/l10n/app_localizations.dart';
 import 'package:social_flutter/shared/widgets/moderation_hint.dart';
@@ -46,6 +47,15 @@ class _RecommendedPeriodScreenState extends State<RecommendedPeriodScreen> {
   /// dates on screen that they never chose.
   final Map<String, ({int? fromDay, int? toDay})> _dayRefinements = {};
 
+  /// Baseline the unsaved-changes guard compares against. An absent initial
+  /// value and an empty edited one are the same thing, so both normalize here.
+  late final RecommendedPeriod _initial;
+
+  /// Cached because [PopScope.canPop] is read from the tree: a keystroke in the
+  /// note has to keep it fresh, but only a keystroke that actually flips
+  /// dirtiness is worth a rebuild.
+  bool _dirty = false;
+
   static String _key(PeriodWindow window) =>
       '${window.fromMonth}-${window.toMonth}';
 
@@ -53,6 +63,7 @@ class _RecommendedPeriodScreenState extends State<RecommendedPeriodScreen> {
   void initState() {
     super.initState();
     final initial = widget.initial;
+    _initial = initial ?? const RecommendedPeriod();
     _months = monthsFromWindows(initial?.windows ?? const []);
     _weekdays = {...?initial?.weekdays};
     _noteController = TextEditingController(text: initial?.note ?? '');
@@ -62,12 +73,44 @@ class _RecommendedPeriodScreenState extends State<RecommendedPeriodScreen> {
             (fromDay: window.fromDay, toDay: window.toDay);
       }
     }
+    _noteController.addListener(_refreshDirty);
   }
 
   @override
   void dispose() {
+    _noteController.removeListener(_refreshDirty);
     _noteController.dispose();
     super.dispose();
+  }
+
+  /// The value this screen would return right now.
+  RecommendedPeriod get _value {
+    final note = _noteController.text.trim();
+    return RecommendedPeriod(
+      windows: _windows,
+      weekdays: _weekdays.toList()..sort(),
+      note: note.isEmpty ? null : note,
+    );
+  }
+
+  /// Re-evaluates the guard after any edit. Compares by value, so toggling a
+  /// month on and back off again correctly reads as "nothing changed".
+  void _refreshDirty() {
+    final dirty = _value != _initial;
+    if (dirty != _dirty) setState(() => _dirty = dirty);
+  }
+
+  Future<bool> _confirmDiscard() async {
+    if (!_dirty) return true;
+    final l10n = AppLocalizations.of(context)!;
+    return confirmDestructiveAction(
+      context: context,
+      icon: Icons.logout,
+      title: l10n.discardChangesTitle,
+      message: l10n.discardChangesMessage,
+      confirmLabel: l10n.discardButton,
+      cancelLabel: l10n.keepEditingButton,
+    );
   }
 
   /// Windows derived from the grid, with any surviving day refinements applied.
@@ -86,12 +129,14 @@ class _RecommendedPeriodScreenState extends State<RecommendedPeriodScreen> {
       final live = windowsFromMonths(_months).map(_key).toSet();
       _dayRefinements.removeWhere((key, _) => !live.contains(key));
     });
+    _refreshDirty();
   }
 
   void _toggleWeekday(int weekday) {
     setState(() {
       if (!_weekdays.remove(weekday)) _weekdays.add(weekday);
     });
+    _refreshDirty();
   }
 
   void _applyWeekdayPreset(Set<int> preset) {
@@ -100,15 +145,28 @@ class _RecommendedPeriodScreenState extends State<RecommendedPeriodScreen> {
       // rather than a one-way door.
       _weekdays = setEqualsInts(_weekdays, preset) ? <int>{} : {...preset};
     });
+    _refreshDirty();
   }
 
-  void _clearAll() {
+  Future<void> _clearAll() async {
+    final l10n = AppLocalizations.of(context)!;
+    // Wipes months, days, weekdays and the note in one tap with nothing to undo
+    // — Tier 2 territory, so it asks first.
+    final confirmed = await confirmDestructiveAction(
+      context: context,
+      icon: Icons.backspace_outlined,
+      title: l10n.periodClearConfirmTitle,
+      message: l10n.periodClearConfirmMessage,
+      confirmLabel: l10n.periodClear,
+    );
+    if (!confirmed || !mounted) return;
     setState(() {
       _months.clear();
       _weekdays.clear();
       _dayRefinements.clear();
       _noteController.clear();
     });
+    _refreshDirty();
   }
 
   Future<void> _editDays(PeriodWindow window) async {
@@ -128,19 +186,12 @@ class _RecommendedPeriodScreenState extends State<RecommendedPeriodScreen> {
         _dayRefinements[_key(window)] = result;
       }
     });
+    _refreshDirty();
   }
 
-  void _done() {
-    final note = _noteController.text.trim();
-    Navigator.pop(
-      context,
-      RecommendedPeriod(
-        windows: _windows,
-        weekdays: _weekdays.toList()..sort(),
-        note: note.isEmpty ? null : note,
-      ),
-    );
-  }
+  // Navigator.pop is imperative and bypasses PopScope, so Done saves without
+  // ever meeting the discard guard below — which only watches system back.
+  void _done() => Navigator.pop(context, _value);
 
   @override
   Widget build(BuildContext context) {
@@ -149,7 +200,18 @@ class _RecommendedPeriodScreenState extends State<RecommendedPeriodScreen> {
     final localeName = l10n.localeName;
     final windows = _windows;
 
-    return Scaffold(
+    return PopScope(
+      // Block the back gesture/button while there are unsaved edits; the
+      // callback then offers a discard confirmation.
+      canPop: !_dirty,
+      onPopInvokedWithResult: (didPop, _) async {
+        if (didPop) return;
+        if (await _confirmDiscard() && context.mounted) {
+          // Pops with null — the caller reads that as "left untouched".
+          Navigator.pop(context);
+        }
+      },
+      child: Scaffold(
       backgroundColor: nt.sand,
       appBar: AppBar(
         backgroundColor: nt.sand,
@@ -295,7 +357,8 @@ class _RecommendedPeriodScreenState extends State<RecommendedPeriodScreen> {
           const SizedBox(height: 20),
           Center(
             child: TextButton.icon(
-              onPressed: _clearAll,
+              // Nothing to clear, nothing to confirm — don't offer the action.
+              onPressed: _value.isEmpty ? null : _clearAll,
               icon: Icon(Icons.backspace_outlined, size: 16, color: nt.text2),
               label: Text(
                 l10n.periodClear,
@@ -307,7 +370,8 @@ class _RecommendedPeriodScreenState extends State<RecommendedPeriodScreen> {
               ),
             ),
           ),
-        ],
+          ],
+        ),
       ),
     );
   }

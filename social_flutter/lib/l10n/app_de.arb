@@ -230,6 +230,8 @@
   "periodWeekends": "Am Wochenende",
   "periodWhyHint": "z. B. Kirschblüte, mildes Wetter, weniger Andrang",
   "periodClear": "Löschen",
+  "periodClearConfirmTitle": "Beste Reisezeit löschen?",
+  "periodClearConfirmMessage": "Die gewählten Monate, genauen Tage, Wochentage und die Notiz werden alle entfernt.",
   "currenciesLoadFailed": "Währungen konnten nicht geladen werden: {error}",
   "deleteItineraryFormTitle": "Reiseroute löschen",
   "deleteItineraryFormMessage": "Dadurch werden \"{title}\" und alle zugehörigen Stopps dauerhaft gelöscht. Gib den Titel ein, um zu bestätigen.",

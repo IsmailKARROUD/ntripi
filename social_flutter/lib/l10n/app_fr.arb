@@ -237,6 +237,8 @@
   "periodWeekends": "Le week-end",
   "periodWhyHint": "ex. cerisiers en fleurs, temps doux, moins de monde",
   "periodClear": "Effacer",
+  "periodClearConfirmTitle": "Effacer la meilleure période ?",
+  "periodClearConfirmMessage": "Les mois, les dates précises, les jours de la semaine et la note choisis seront tous supprimés.",
   "currenciesLoadFailed": "Échec du chargement des devises : {error}",
   "@currenciesLoadFailed": {
     "placeholders": {

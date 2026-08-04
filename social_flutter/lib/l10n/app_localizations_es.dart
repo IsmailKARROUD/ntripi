@@ -788,6 +788,13 @@ class AppLocalizationsEs extends AppLocalizations {
   String get periodClear => 'Borrar';
 
   @override
+  String get periodClearConfirmTitle => '¿Borrar la mejor época?';
+
+  @override
+  String get periodClearConfirmMessage =>
+      'Se eliminarán los meses, los días exactos, los días de la semana y la nota que elegiste.';
+
+  @override
   String currenciesLoadFailed(String error) {
     return 'No se pudieron cargar las monedas: $error';
   }

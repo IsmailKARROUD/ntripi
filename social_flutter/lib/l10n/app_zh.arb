@@ -230,6 +230,8 @@
   "periodWeekends": "周末",
   "periodWhyHint": "例如：樱花盛开、气候宜人、人少",
   "periodClear": "清除",
+  "periodClearConfirmTitle": "清除最佳出行时间？",
+  "periodClearConfirmMessage": "你选择的月份、具体日期、星期和备注都将被移除。",
   "currenciesLoadFailed": "加载货币失败：{error}",
   "deleteItineraryFormTitle": "删除行程",
   "deleteItineraryFormMessage": "此操作将永久删除“{title}”及其所有停靠点。请输入标题以确认。",

@@ -794,6 +794,13 @@ class AppLocalizationsFr extends AppLocalizations {
   String get periodClear => 'Effacer';
 
   @override
+  String get periodClearConfirmTitle => 'Effacer la meilleure période ?';
+
+  @override
+  String get periodClearConfirmMessage =>
+      'Les mois, les dates précises, les jours de la semaine et la note choisis seront tous supprimés.';
+
+  @override
   String currenciesLoadFailed(String error) {
     return 'Échec du chargement des devises : $error';
   }

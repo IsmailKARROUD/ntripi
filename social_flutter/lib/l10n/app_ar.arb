@@ -300,6 +300,8 @@
   "periodWeekends": "عطلة نهاية الأسبوع",
   "periodWhyHint": "مثال: أزهار الكرز، طقس معتدل، ازدحام أقل",
   "periodClear": "مسح",
+  "periodClearConfirmTitle": "مسح أفضل وقت للسفر؟",
+  "periodClearConfirmMessage": "ستُزال الأشهر والأيام المحدّدة وأيام الأسبوع والملاحظة التي اخترتها.",
   "currenciesLoadFailed": "فشل تحميل العملات: {error}",
   "@currenciesLoadFailed": {
     "placeholders": {
