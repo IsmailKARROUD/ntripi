@@ -703,6 +703,8 @@
   "suspendedBackToLogin": "返回登录",
   "hiddenBannerTitle": "已被管理员隐藏",
   "hiddenBannerMessage": "只有你能看到此行程。它不会出现在动态、搜索或分享页面中。你可以在设置的“账号状态”中申诉。",
+  "hiddenReviewMessage": "只有你能看到此评价。它不会显示在行程中，也不计入行程评分。",
+  "hiddenProfileMessage": "只有你能看到你的昵称和简介。其他人只会看到你的 @用户名。",
   "accountStatusTitle": "账号状态",
   "violationsEmpty": "你的账号没有任何管理操作记录。",
   "violationHidden": "已隐藏",

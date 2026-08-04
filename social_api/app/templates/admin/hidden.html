@@ -1,7 +1,7 @@
 {% extends "admin/_base.html" %}
 {% from "admin/_macros.html" import itinerary_link %}
 {% block content %}
-<h1>Hidden itineraries</h1>
+<h1>Hidden content</h1>
 <p class="sub">
   Content that is down but not removed — visible to its author only. An
   automated hide is provisional: nobody has judged it yet, and the triggering
@@ -11,6 +11,7 @@
   appeal link.
 </p>
 
+<h2>Itineraries</h2>
 {% if rows %}
 <div class="card table-wrap">
   <table>
@@ -66,6 +67,126 @@
   </table>
 </div>
 {% else %}
-<div class="card"><p class="muted">Nothing is hidden right now.</p></div>
+<div class="card"><p class="muted">No itineraries are hidden right now.</p></div>
+{% endif %}
+
+<h2 id="reviews">Reviews</h2>
+<p class="sub">
+  A hidden review is filtered from every other viewer and dropped from the
+  itinerary's averages. There is no remove action: a review carries no
+  soft-delete state, so hiding it is the whole takedown.
+</p>
+{% if rating_rows %}
+<div class="card table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>Hidden</th>
+        <th>Author</th>
+        <th>Review</th>
+        <th>Why</th>
+        <th style="width:340px">Decision</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in rating_rows %}
+      <tr>
+        <td><span class="pill {{ r.sla }}">{{ r.age }}</span></td>
+        <td>
+          {% if r.owner %}
+            <div>{{ r.owner.username }}</div>
+            <div class="muted">{% if r.owner.is_active %}active{% else %}suspended{% endif %}</div>
+          {% else %}<span class="muted">deleted account</span>{% endif %}
+        </td>
+        <td class="snippet">
+          <div class="muted">
+            {{ r.target.score }}★ on
+            {{ itinerary_link(r.target.itinerary_id, 'the itinerary') }}
+          </div>
+          <div>{{ r.target.note or '—' }}</div>
+          <div class="muted">status: {{ r.target.moderation_status }}</div>
+          {% if r.owner_banned %}
+            <div class="pill sla-warn" style="margin-top:4px">
+              Author still suspended — restoring won't make this public
+            </div>
+          {% endif %}
+        </td>
+        <td class="snippet">
+          {% if r.last_action %}
+            <div><span class="pill sla-ok">{{ r.last_action.action }}</span></div>
+            <div>{{ r.last_action.reason }}</div>
+          {% else %}<span class="muted">—</span>{% endif %}
+        </td>
+        <td>
+          <form method="post" action="/admin/ratings/{{ r.target.id }}/unhide">
+            <input type="hidden" name="next" value="/admin/hidden#reviews">
+            <input type="text" name="reason" placeholder="Reason (required)" required>
+            <div class="actions"><button type="submit" class="primary">Restore</button></div>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="card"><p class="muted">No reviews are hidden right now.</p></div>
+{% endif %}
+
+<h2 id="profiles">Profiles</h2>
+<p class="sub">
+  A hidden profile shows the @username fallback and no bio to everyone else. The
+  account itself still works — suspension is a separate action, in its own lane.
+</p>
+{% if profile_rows %}
+<div class="card table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>Hidden</th>
+        <th>Account</th>
+        <th>Profile text</th>
+        <th>Why</th>
+        <th style="width:340px">Decision</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in profile_rows %}
+      <tr>
+        <td><span class="pill {{ r.sla }}">{{ r.age }}</span></td>
+        <td>
+          <div>{{ r.target.username }}</div>
+          <div class="muted">{% if r.target.is_active %}active{% else %}suspended{% endif %}</div>
+        </td>
+        <td class="snippet">
+          <div>{{ r.target.display_name or '—' }}</div>
+          <div class="muted">{{ r.target.bio or 'no bio' }}</div>
+          <div class="muted">status: {{ r.target.moderation_status }}</div>
+          {% if r.owner_banned %}
+            <div class="pill sla-warn" style="margin-top:4px">
+              Account still suspended — restoring the text won't make it public
+            </div>
+          {% endif %}
+        </td>
+        <td class="snippet">
+          {% if r.last_action %}
+            <div><span class="pill sla-ok">{{ r.last_action.action }}</span></div>
+            <div>{{ r.last_action.reason }}</div>
+          {% else %}<span class="muted">—</span>{% endif %}
+        </td>
+        <td>
+          <form method="post" action="/admin/users/{{ r.target.id }}/unhide">
+            <input type="hidden" name="next" value="/admin/hidden#profiles">
+            <input type="text" name="reason" placeholder="Reason (required)" required>
+            <div class="actions"><button type="submit" class="primary">Restore</button></div>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="card"><p class="muted">No profiles are hidden right now.</p></div>
 {% endif %}
 {% endblock %}

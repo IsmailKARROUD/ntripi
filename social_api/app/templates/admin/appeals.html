@@ -37,6 +37,12 @@
             <div class="muted">
               {% if r.itinerary.deleted_at %}removed{% elif r.itinerary.hidden_at %}hidden{% else %}live{% endif %}
             </div>
+          {% elif r.target_missing %}
+            {# target_id carries no FK — a purged target is expected, not an error #}
+            <div class="muted">target no longer exists</div>
+          {% else %}
+            {# Review and profile appeals used to render with no target at all #}
+            <div>{{ r.target_label }}</div>
           {% endif %}
           {% if r.owner_banned and r.appeal.target_type == 'itinerary' %}
             <div class="pill sla-warn" style="margin-top:4px">

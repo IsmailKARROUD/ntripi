@@ -876,6 +876,8 @@
   "suspendedBackToLogin": "Retour à la connexion",
   "hiddenBannerTitle": "Masqué par un modérateur",
   "hiddenBannerMessage": "Vous seul voyez cet itinéraire. Il n'apparaît ni dans le fil, ni dans la recherche, ni sur sa page de partage. Vous pouvez contester depuis État du compte dans les réglages.",
+  "hiddenReviewMessage": "Vous seul voyez cet avis. Il n'apparaît pas sur l'itinéraire et ne compte pas dans sa note.",
+  "hiddenProfileMessage": "Vous seul voyez votre nom affiché et votre bio. Les autres voient votre @nom d'utilisateur à la place.",
   "accountStatusTitle": "État du compte",
   "violationsEmpty": "Aucune action de modération sur votre compte.",
   "violationHidden": "Masqué",

@@ -7,6 +7,7 @@
 // Test naming follows: <method>_<scenario>_<expected result>
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:social_flutter/shared/models/moderation_status.dart';
 import 'package:social_flutter/shared/models/user.dart';
 
 // ---------------------------------------------------------------------------
@@ -242,6 +243,58 @@ void main() {
       expect(afterFollow.followersCount, original.followersCount + 1);
       // Other fields untouched
       expect(afterFollow.username, original.username);
+    });
+  });
+
+  // The profile screen renders its hidden banner off this field, and the
+  // backend only sends it on GET /users/me — every public profile response
+  // omits it, so the absent case is the common one, not the edge case.
+  group('User.moderationStatus', () {
+    test('defaults to approved when the field is absent', () {
+      final user = User.fromJson(_fullJson);
+
+      expect(user.moderationStatus, ModerationStatus.approved);
+      expect(user.moderationStatus.isVisibleToAuthor, false);
+    });
+
+    test('parses hidden and marks it visible to the owner', () {
+      final user = User.fromJson({..._fullJson, 'moderation_status': 'hidden'});
+
+      expect(user.moderationStatus, ModerationStatus.hidden);
+      expect(user.moderationStatus.isVisibleToAuthor, true);
+    });
+
+    test('never surfaces the internal pending/flagged states', () {
+      for (final internal in ['pending', 'flagged']) {
+        final user =
+            User.fromJson({..._fullJson, 'moderation_status': internal});
+
+        expect(user.moderationStatus.isVisibleToAuthor, false,
+            reason: '$internal must stay internal');
+      }
+    });
+
+    test('degrades an unknown value so a newer backend cannot crash us', () {
+      final user =
+          User.fromJson({..._fullJson, 'moderation_status': 'shadowbanned'});
+
+      expect(user.moderationStatus, ModerationStatus.approved);
+    });
+
+    test('survives a toJson round trip', () {
+      final user = User.fromJson({..._fullJson, 'moderation_status': 'rejected'});
+
+      final restored = User.fromJson(user.toJson());
+
+      expect(restored.moderationStatus, ModerationStatus.rejected);
+    });
+
+    test('copyWith preserves it when other fields change', () {
+      final user = User.fromJson({..._fullJson, 'moderation_status': 'hidden'});
+
+      final renamed = user.copyWith(displayName: 'New Name');
+
+      expect(renamed.moderationStatus, ModerationStatus.hidden);
     });
   });
 }

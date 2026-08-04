@@ -4324,6 +4324,18 @@ abstract class AppLocalizations {
   /// **'Only you can see this itinerary. It won\'t appear in the feed, in search, or on its share page. You can appeal from Account status in settings.'**
   String get hiddenBannerMessage;
 
+  /// No description provided for @hiddenReviewMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Only you can see this review. It won\'t appear on the itinerary or count towards its rating.'**
+  String get hiddenReviewMessage;
+
+  /// No description provided for @hiddenProfileMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Only you can see your display name and bio. Other people see your @username instead.'**
+  String get hiddenProfileMessage;
+
   /// No description provided for @accountStatusTitle.
   ///
   /// In en, this message translates to:

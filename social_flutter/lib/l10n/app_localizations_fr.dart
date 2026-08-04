@@ -2485,6 +2485,14 @@ class AppLocalizationsFr extends AppLocalizations {
       'Vous seul voyez cet itinéraire. Il n\'apparaît ni dans le fil, ni dans la recherche, ni sur sa page de partage. Vous pouvez contester depuis État du compte dans les réglages.';
 
   @override
+  String get hiddenReviewMessage =>
+      'Vous seul voyez cet avis. Il n\'apparaît pas sur l\'itinéraire et ne compte pas dans sa note.';
+
+  @override
+  String get hiddenProfileMessage =>
+      'Vous seul voyez votre nom affiché et votre bio. Les autres voient votre @nom d\'utilisateur à la place.';
+
+  @override
   String get accountStatusTitle => 'État du compte';
 
   @override

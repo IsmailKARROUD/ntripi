@@ -111,6 +111,28 @@ def set_status(target_type: str, target, status: str) -> None:
         target.moderation_status = status
 
 
+def restore_target(db: Session, target_type: str, target) -> None:
+    """Un-hide a rating or a profile — the reverse of auto_hide.
+
+    Ratings also need the averages recomputed: restoring one puts its score back
+    into the aggregate, which visible_rating_criteria had excluded while hidden.
+
+    Itineraries are deliberately not fully handled here — their restore must also
+    clear hidden_at/deleted_at, so those callers go through
+    admin_service._reverse_takedown instead.
+    """
+    if target is None:
+        return
+
+    set_status(target_type, target, "approved")
+
+    if target_type == TARGET_RATING:
+        itinerary = db.get(Itinerary, target.itinerary_id)
+        if itinerary is not None:
+            db.flush()  # the status write must be visible to the aggregate query
+            recalculate_rating(itinerary, db)
+
+
 def log_system_action(
     db: Session,
     target_type: str,

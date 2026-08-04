@@ -703,6 +703,8 @@
   "suspendedBackToLogin": "Volver al inicio de sesión",
   "hiddenBannerTitle": "Ocultado por un moderador",
   "hiddenBannerMessage": "Solo tú puedes ver este itinerario. No aparecerá en el feed, en la búsqueda ni en su página para compartir. Puedes apelar desde Estado de la cuenta en los ajustes.",
+  "hiddenReviewMessage": "Solo tú puedes ver esta reseña. No aparecerá en el itinerario ni contará para su valoración.",
+  "hiddenProfileMessage": "Solo tú puedes ver tu nombre visible y tu biografía. Los demás ven tu @nombre de usuario en su lugar.",
   "accountStatusTitle": "Estado de la cuenta",
   "violationsEmpty": "No hay acciones de moderación en tu cuenta.",
   "violationHidden": "Oculto",

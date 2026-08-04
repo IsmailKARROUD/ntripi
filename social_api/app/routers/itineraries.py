@@ -1552,6 +1552,7 @@ def get_ratings_page(
             ItineraryRating.note,
             ItineraryRating.updated_at,
             ItineraryRating.user_id,
+            ItineraryRating.moderation_status.label("rating_moderation_status"),
             User.username,
             User.display_name,
             User.avatar_url,
@@ -1585,6 +1586,12 @@ def get_ratings_page(
             note=row.note,
             updated_at=row.updated_at,
             id=row.id,
+            # Only the author learns their own review's state; everyone else's
+            # row reads 'approved' so no internal status leaks sideways.
+            moderation_status=(
+                row.rating_moderation_status
+                if row.user_id == current_user.id else "approved"
+            ),
             user=RaterInfo(
                 user_id=row.user_id,
                 username=row.username,

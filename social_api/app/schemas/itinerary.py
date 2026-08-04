@@ -404,6 +404,9 @@ class RatingResponse(BaseModel):
     crowdedness_stars: Optional[int]
     note: Optional[str]
     updated_at: datetime
+    # Appended, never inserted — field order is JSON key order, part of the API
+    # contract. Author-scoped endpoint, so the raw value is safe here.
+    moderation_status: str = "approved"
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -429,6 +432,10 @@ class RatingWithUser(BaseModel):
     # Appended, never inserted: field order is JSON key order, which is part of
     # the API contract. Needed so a reader can report an individual review.
     id: uuid.UUID
+    # The viewer's OWN status only — every other row is forced to 'approved' by
+    # the router. A hidden review is already filtered from other viewers, and
+    # 'pending'/'flagged' are internal states that must never reach any client.
+    moderation_status: str = "approved"
 
 
 class RatingDistribution(BaseModel):

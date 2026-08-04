@@ -11,6 +11,8 @@
 //   - All IDs are Strings (UUID strings). We avoid parsing to a UUID class
 //     to keep serialization simple.
 
+import 'package:social_flutter/shared/models/moderation_status.dart';
+
 class User {
   final String id;
   final String username;
@@ -56,6 +58,10 @@ class User {
   /// ISO 639-1 language codes for spoken languages.
   final List<String>? languages;
 
+  /// Moderation state of display_name + bio. Only ever populated on the owner's
+  /// own GET /users/me — a public profile never carries another user's status.
+  final ModerationStatus moderationStatus;
+
   /// Returns displayName if set, else "@username".
   String get nameForDisplay => displayName ?? '@$username';
 
@@ -82,6 +88,7 @@ class User {
     this.passportCountries,
     this.residentCountry,
     this.languages,
+    this.moderationStatus = ModerationStatus.approved,
   });
 
   factory User.fromJson(Map<String, dynamic> json) {
@@ -111,6 +118,8 @@ class User {
       languages: (json['languages'] as List?)
           ?.map((e) => e as String)
           .toList(),
+      moderationStatus:
+          ModerationStatus.fromString(json['moderation_status'] as String?),
     );
   }
 
@@ -135,6 +144,7 @@ class User {
       if (passportCountries != null) 'passport_countries': passportCountries,
       if (residentCountry != null) 'resident_country': residentCountry,
       if (languages != null) 'languages': languages,
+      'moderation_status': moderationStatus.wireValue,
     };
   }
 
@@ -162,6 +172,7 @@ class User {
     List<String>? passportCountries,
     String? residentCountry,
     List<String>? languages,
+    ModerationStatus? moderationStatus,
   }) {
     return User(
       id: id ?? this.id,
@@ -184,6 +195,7 @@ class User {
       passportCountries: passportCountries ?? this.passportCountries,
       residentCountry: residentCountry ?? this.residentCountry,
       languages: languages ?? this.languages,
+      moderationStatus: moderationStatus ?? this.moderationStatus,
     );
   }
 }

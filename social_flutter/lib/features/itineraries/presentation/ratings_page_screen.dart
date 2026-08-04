@@ -20,7 +20,9 @@ import 'package:social_flutter/features/itineraries/domain/ratings_page.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/markdown_notes_editor.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/rate_itinerary_dialog.dart';
 import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
+import 'package:social_flutter/shared/widgets/appeal_sheet.dart';
 import 'package:social_flutter/shared/widgets/loaders.dart';
+import 'package:social_flutter/shared/widgets/moderation_hidden_banner.dart';
 import 'package:social_flutter/shared/widgets/user_avatar.dart';
 import 'package:social_flutter/core/utils/platform_utils.dart';
 import 'package:social_flutter/l10n/app_localizations.dart';
@@ -735,17 +737,37 @@ class _RatingListTile extends ConsumerWidget {
           : () => context.push('/profile/${user.userId}'),
     );
 
-    final Widget body = hasNote
+    // A hidden review is filtered from every other viewer, so if one reaches
+    // here it is the viewer's own — the server only sends the real status back
+    // to the author.
+    final showHiddenBanner = rating.moderationStatus.isVisibleToAuthor;
+
+    final Widget body = hasNote || showHiddenBanner
         ? Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               tile,
-              Padding(
-                padding:
-                    const EdgeInsetsDirectional.only(start: 72, end: 16, bottom: 4),
-                child: _ReviewNote(note: rating.note!),
-              ),
+              if (hasNote)
+                Padding(
+                  padding: const EdgeInsetsDirectional.only(
+                      start: 72, end: 16, bottom: 4),
+                  child: _ReviewNote(note: rating.note!),
+                ),
+              if (showHiddenBanner)
+                ModerationHiddenBanner(
+                  message: l10n.hiddenReviewMessage,
+                  padding:
+                      const EdgeInsetsDirectional.only(start: 16, end: 16, bottom: 8),
+                  onAppeal: rating.id == null
+                      ? null
+                      : () => showAppealSheet(
+                            context,
+                            ref,
+                            targetType: 'rating',
+                            targetId: rating.id!,
+                          ),
+                ),
             ],
           )
         : tile;

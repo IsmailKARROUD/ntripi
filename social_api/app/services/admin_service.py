@@ -28,6 +28,7 @@ from app.models.appeal import Appeal
 from app.models.content_report import ContentReport
 from app.models.image_moderation_log import ImageModerationLog
 from app.models.itinerary import Itinerary
+from app.models.itinerary_rating import ItineraryRating
 from app.models.legal_escalation import LegalEscalation
 from app.models.moderation_log import HIDE_FAMILY, ModerationLog
 from app.models.stop import Stop
@@ -35,11 +36,13 @@ from app.models.text_moderation_decision import TextModerationDecision
 from app.models.track import Track
 from app.models.user import User
 from app.services import appeal_token, email_service, refresh_token_service
+from app.services.itinerary_access import HIDDEN_STATUSES
 from app.storage.factory import storage
 
 logger = logging.getLogger(__name__)
 
 TARGET_ITINERARY = "itinerary"
+TARGET_RATING = "rating"
 TARGET_USER = "user"
 
 # Report-queue SLA thresholds (App Store UGC compliance) — the dashboard paints
@@ -60,6 +63,21 @@ def snapshot_itinerary(itinerary: Itinerary, report: ContentReport | None = None
         "cover_image_url": itinerary.cover_image_url,
         "visibility": itinerary.visibility,
         "owner": {"id": str(itinerary.user_id)},
+    }
+    if report is not None:
+        snap["report_id"] = str(report.id)
+        snap["report_reason"] = report.reason
+    return snap
+
+
+def snapshot_rating(rating: ItineraryRating, report: ContentReport | None = None) -> dict:
+    """Evidence copy of a review. Carries the note text — permitted because every
+    caller here is an operator row; automated rows pass snapshot=None instead."""
+    snap: dict = {
+        "note": rating.note,
+        "stars": rating.stars,
+        "itinerary_id": str(rating.itinerary_id),
+        "author": {"id": str(rating.user_id) if rating.user_id else None},
     }
     if report is not None:
         snap["report_id"] = str(report.id)
@@ -127,13 +145,6 @@ def _resolve_report(report: ContentReport | None, resolution: str) -> None:
         report.resolved_at = datetime.now(timezone.utc)
 
 
-def report_itinerary_id(report: ContentReport) -> uuid.UUID | None:
-    """The reported itinerary id, or None when the report targets a rating or a
-    profile instead. Reports are polymorphic; the itinerary-specific actions
-    below only apply to itinerary targets."""
-    return report.target_id if report.target_type == TARGET_ITINERARY else None
-
-
 # ---------------------------------------------------------------------------
 # Emails (best-effort, sent after commit)
 # ---------------------------------------------------------------------------
@@ -168,16 +179,33 @@ def _send_moderation_email(
 # Report-queue actions
 # ---------------------------------------------------------------------------
 
+def _report_snapshot(db: Session, report: ContentReport) -> dict:
+    """Evidence copy for whichever target a report names.
+
+    Falls back to the bare report id when the target is already gone — target_id
+    carries no FK precisely so evidence outlives a hard delete.
+    """
+    from app.services import moderation_actions  # lazy: circular otherwise
+
+    target = moderation_actions.load_target(db, report.target_type, report.target_id)
+    if target is None:
+        return {"report_id": str(report.id)}
+    if report.target_type == TARGET_ITINERARY:
+        return snapshot_itinerary(target, report)
+    if report.target_type == TARGET_RATING:
+        return snapshot_rating(target, report)
+    return snapshot_user(target, report)
+
+
 def dismiss_report(db: Session, admin: User, report: ContentReport, reason: str) -> None:
     """Close a report without touching the content."""
-    itinerary = (
-        db.get(Itinerary, report_itinerary_id(report))
-        if report_itinerary_id(report) else None
-    )
+    snapshot = _report_snapshot(db, report)
     _resolve_report(report, "dismissed")
+    # Audit the target the report actually names: hardcoding 'itinerary' here
+    # wrote target_id=NULL for rating and profile reports, which left the
+    # dismissal unattributable and invisible to the author's violations feed.
     log_action(
-        db, admin, TARGET_ITINERARY, report_itinerary_id(report), "dismiss", reason,
-        snapshot_itinerary(itinerary, report) if itinerary else {"report_id": str(report.id)},
+        db, admin, report.target_type, report.target_id, "dismiss", reason, snapshot,
     )
     db.commit()
 
@@ -317,26 +345,32 @@ def bulk_resolve(
         )
     ).scalars().all()
 
+    from app.services import moderation_actions  # lazy: circular otherwise
+
     handled = 0
     for report in reports:
-        itinerary = (
-            db.get(Itinerary, report_itinerary_id(report))
-            if report_itinerary_id(report) else None
-        )
+        target = moderation_actions.load_target(db, report.target_type, report.target_id)
+        itinerary = target if report.target_type == TARGET_ITINERARY else None
+
         if action == "dismiss":
+            snapshot = _report_snapshot(db, report)
             _resolve_report(report, "dismissed")
             log_action(
-                db, admin, TARGET_ITINERARY, report_itinerary_id(report),
-                "dismiss", reason,
-                snapshot_itinerary(itinerary, report) if itinerary
-                else {"report_id": str(report.id)},
+                db, admin, report.target_type, report.target_id,
+                "dismiss", reason, snapshot,
             )
+        elif target is None:
+            # Target already gone — still close the report so the queue drains.
+            _resolve_report(report, "content_removed")
+        elif itinerary is None:
+            # Ratings and profiles have no soft-delete state, so hide is the
+            # terminal penalty — the same call the single-report dispatch makes.
+            # Closing these as content_removed without touching the content, as
+            # this branch used to, left the reported review or bio fully visible.
+            hide_reported_target(db, admin, report, target, reason, commit=False)
+        elif itinerary.deleted_at is not None:
+            _resolve_report(report, "content_removed")
         else:
-            if itinerary is None or itinerary.deleted_at is not None:
-                # Target already gone — still close the report so the queue drains.
-                _resolve_report(report, "content_removed")
-                handled += 1
-                continue
             snapshot = snapshot_itinerary(itinerary, report)
             set_preserving_etag(itinerary, deleted_at=datetime.now(timezone.utc))
             _resolve_report(report, "content_removed")
@@ -479,15 +513,63 @@ def suspended_users(db: Session) -> list[User]:
     ).scalars().all())
 
 
-def last_takedown_log(db: Session, itinerary_id: uuid.UUID) -> ModerationLog | None:
-    """The action that took this itinerary down — shown in the lane so the
-    operator sees whether a human or the report threshold did it."""
+def _last_takedown_at(target_type: str, id_column):
+    """Correlated subquery: when this target was last taken down.
+
+    Ratings and profiles have no hidden_at column (deliberately — their status
+    IS the takedown), so the audit log is the only record of *when*. Ordering the
+    lanes by updated_at instead would be wrong: an author editing a hidden review
+    moves updated_at without changing anything a moderator cares about.
+    """
+    return (
+        select(func.max(ModerationLog.created_at))
+        .where(
+            ModerationLog.target_type == target_type,
+            ModerationLog.target_id == id_column,
+            ModerationLog.action.in_(HIDE_FAMILY),
+        )
+        .correlate_except(ModerationLog)
+        .scalar_subquery()
+    )
+
+
+def hidden_ratings(db: Session) -> list[ItineraryRating]:
+    """Reviews hidden by a moderator, a report threshold, or the SLA sweep.
+
+    Without this lane a hidden review could only ever be restored by its author
+    appealing — there is no hidden_at to scan and no queue entry left behind.
+    """
+    taken_down_at = _last_takedown_at(TARGET_RATING, ItineraryRating.id)
+    return list(db.execute(
+        select(ItineraryRating)
+        .where(ItineraryRating.moderation_status.in_(HIDDEN_STATUSES))
+        .order_by(taken_down_at.desc().nullslast())
+    ).scalars().all())
+
+
+def hidden_profiles(db: Session) -> list[User]:
+    """Profiles whose display_name + bio are hidden. Distinct from suspension:
+    the account still works, so this lane must not be folded into /admin/suspended."""
+    taken_down_at = _last_takedown_at(TARGET_USER, User.id)
+    return list(db.execute(
+        select(User)
+        .where(User.moderation_status.in_(HIDDEN_STATUSES))
+        .order_by(taken_down_at.desc().nullslast())
+    ).scalars().all())
+
+
+def last_takedown_log(
+    db: Session, target_id: uuid.UUID, target_type: str = TARGET_ITINERARY,
+) -> ModerationLog | None:
+    """The action that took this target down — shown in the lane so the operator
+    sees whether a human or the report threshold did it."""
+    actions = HIDE_FAMILY + ("delete",) if target_type == TARGET_ITINERARY else HIDE_FAMILY
     return db.execute(
         select(ModerationLog)
         .where(
-            ModerationLog.target_type == TARGET_ITINERARY,
-            ModerationLog.target_id == itinerary_id,
-            ModerationLog.action.in_(HIDE_FAMILY + ("delete",)),
+            ModerationLog.target_type == target_type,
+            ModerationLog.target_id == target_id,
+            ModerationLog.action.in_(actions),
         )
         .order_by(ModerationLog.created_at.desc())
         .limit(1)
@@ -573,13 +655,20 @@ def has_open_escalation(db: Session, report: ContentReport) -> bool:
 
 def hide_reported_target(
     db: Session, admin: User, report: ContentReport, target, reason: str,
+    commit: bool = True,
 ) -> None:
     """Hide a reported rating or profile. Itineraries have their own function
-    (they also carry hidden_at and a soft-delete state)."""
+    (they also carry hidden_at and a soft-delete state).
+
+    commit=False lets bulk_resolve fold many of these into one transaction.
+    """
     from app.services import moderation_actions  # lazy: circular otherwise
 
+    # report=None deliberately: auto_hide would close it as 'auto_hidden', which
+    # would mislabel a human's deliberate call as a threshold trip — and once
+    # resolved, _resolve_report below could no longer correct it.
     moderation_actions.auto_hide(
-        db, report.target_type, target, action="hide", reason=reason, report=report,
+        db, report.target_type, target, action="hide", reason=reason,
     )
     _resolve_report(report, "content_hidden")
     # Re-stamp as an operator action so the audit trail names the human who
@@ -588,6 +677,27 @@ def hide_reported_target(
         db, admin, report.target_type, report.target_id, "hide", reason,
         {"report_id": str(report.id)},
     )
+    if commit:
+        db.commit()
+
+
+def unhide_target(
+    db: Session, admin: User, target_type: str, target, reason: str,
+) -> None:
+    """Operator un-hide for a rating or a profile — the counterpart of
+    unhide_itinerary, which cannot serve them (no hidden_at, and its ETag
+    preservation applies only to itineraries).
+
+    Without this the only way back from a false-positive auto-hide was the
+    author noticing and filing an appeal.
+    """
+    from app.services import moderation_actions  # lazy: circular otherwise
+
+    snapshot = (
+        snapshot_rating(target) if target_type == TARGET_RATING else snapshot_user(target)
+    )
+    moderation_actions.restore_target(db, target_type, target)
+    log_action(db, admin, target_type, target.id, "unhide", reason, snapshot)
     db.commit()
 
 
@@ -799,6 +909,15 @@ def overview_counts(db: Session) -> dict:
         "deleted_itineraries": _count(
             select(func.count(Itinerary.id)).where(Itinerary.deleted_at.is_not(None))
         ),
+        # Mirror hidden_ratings()/hidden_profiles() exactly — the tiles link to
+        # those sections, so a divergent count would not match what opens.
+        "hidden_ratings": _count(
+            select(func.count(ItineraryRating.id))
+            .where(ItineraryRating.moderation_status.in_(HIDDEN_STATUSES))
+        ),
+        "hidden_profiles": _count(
+            select(func.count(User.id)).where(User.moderation_status.in_(HIDDEN_STATUSES))
+        ),
         "banned_users": _count(
             select(func.count(User.id)).where(User.is_active.is_(False))
         ),
@@ -901,8 +1020,15 @@ def itinerary_detail(db: Session, itinerary_id: uuid.UUID) -> dict | None:
     }
 
 
-def sla_class(created_at: datetime) -> str:
-    """CSS class for the report's time-in-queue cell (App Store UGC SLA)."""
+def sla_class(created_at: datetime | None) -> str:
+    """CSS class for the report's time-in-queue cell (App Store UGC SLA).
+
+    None means the age is unknown — a target whose status was set without a
+    hide-family log row (a classifier rejection at write time, say) — so it gets
+    the neutral class rather than reading as freshly actioned.
+    """
+    if created_at is None:
+        return "sla-ok"
     age = datetime.now(timezone.utc) - _as_aware(created_at)
     if age >= SLA_LATE:
         return "sla-late"
@@ -911,7 +1037,9 @@ def sla_class(created_at: datetime) -> str:
     return "sla-ok"
 
 
-def humanize_age(created_at: datetime) -> str:
+def humanize_age(created_at: datetime | None) -> str:
+    if created_at is None:
+        return "—"
     age = datetime.now(timezone.utc) - _as_aware(created_at)
     hours = int(age.total_seconds() // 3600)
     if hours < 1:

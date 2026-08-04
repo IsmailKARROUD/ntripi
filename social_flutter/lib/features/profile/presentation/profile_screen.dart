@@ -34,9 +34,11 @@ import 'package:social_flutter/features/reports/domain/report_target.dart';
 import 'package:social_flutter/features/reports/presentation/ugc_actions.dart';
 import 'package:social_flutter/l10n/app_localizations.dart';
 import 'package:social_flutter/shared/models/user.dart';
+import 'package:social_flutter/shared/widgets/appeal_sheet.dart';
 import 'package:social_flutter/shared/widgets/field_help.dart';
 import 'package:social_flutter/shared/widgets/fullscreen_image_viewer.dart';
 import 'package:social_flutter/shared/widgets/loaders.dart';
+import 'package:social_flutter/shared/widgets/moderation_hidden_banner.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   /// null ⇒ self (signed-in user); non-null ⇒ another user.
@@ -285,6 +287,20 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   Padding(
                     padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
                     child: ProfileIdentityFacts(user: user),
+                  ),
+
+                // Self-only: the profile text is hidden from everyone else.
+                // moderation_status only ships on GET /users/me, so this can
+                // never render on someone else's profile.
+                if (widget.isSelf && user.moderationStatus.isVisibleToAuthor)
+                  ModerationHiddenBanner(
+                    message: l10n.hiddenProfileMessage,
+                    onAppeal: () => showAppealSheet(
+                      context,
+                      ref,
+                      targetType: 'user',
+                      targetId: user.id,
+                    ),
                   ),
 
                 // Self-only: verify-email prompt (gates create/rate/follow).

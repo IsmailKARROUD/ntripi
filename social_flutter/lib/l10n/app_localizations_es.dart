@@ -2463,6 +2463,14 @@ class AppLocalizationsEs extends AppLocalizations {
       'Solo tú puedes ver este itinerario. No aparecerá en el feed, en la búsqueda ni en su página para compartir. Puedes apelar desde Estado de la cuenta en los ajustes.';
 
   @override
+  String get hiddenReviewMessage =>
+      'Solo tú puedes ver esta reseña. No aparecerá en el itinerario ni contará para su valoración.';
+
+  @override
+  String get hiddenProfileMessage =>
+      'Solo tú puedes ver tu nombre visible y tu biografía. Los demás ven tu @nombre de usuario en su lugar.';
+
+  @override
   String get accountStatusTitle => 'Estado de la cuenta';
 
   @override

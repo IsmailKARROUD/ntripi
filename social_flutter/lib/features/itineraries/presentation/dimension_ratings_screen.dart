@@ -15,6 +15,7 @@ import 'package:social_flutter/features/itineraries/domain/dimension_key.dart';
 import 'package:social_flutter/features/itineraries/domain/ratings_page.dart';
 import 'package:social_flutter/features/itineraries/presentation/ratings_page_screen.dart';
 import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
+import 'package:social_flutter/features/profile/providers/profile_provider.dart';
 import 'package:social_flutter/core/utils/platform_utils.dart';
 import 'package:social_flutter/l10n/app_localizations.dart';
 
@@ -54,6 +55,9 @@ class DimensionRatingsScreen extends ConsumerWidget {
     final l10n = AppLocalizations.of(context)!;
     final ratingsAsync = ref.watch(ratingsPageProvider(itineraryId));
     final page = ratingsAsync.value;
+    // Without this the tile offers Report/Block on the viewer's OWN review —
+    // the guard inside compares against it.
+    final viewerId = ref.watch(myProfileProvider).value?.id;
 
     final filtered = page != null ? _filtered(page.ratings) : <RatingWithUser>[];
     final avg = _avg(filtered);
@@ -199,6 +203,7 @@ class DimensionRatingsScreen extends ConsumerWidget {
                   (context, i) => RatingListTile(
                     rating: filtered[i],
                     dimension: dimension,
+                    viewerId: viewerId,
                   ),
                   childCount: filtered.length,
                 ),

@@ -407,23 +407,10 @@ def decide_appeal(
 
 
 def _restore_non_itinerary_target(db: Session, appeal: Appeal) -> None:
-    """Un-hide a rating or a profile. Ratings also need the averages recomputed —
-    restoring one puts its score back into the aggregate."""
-    from app.services.itinerary_access import recalculate_rating
-
-    if appeal.target_type == TARGET_RATING:
-        rating = db.get(ItineraryRating, appeal.target_id)
-        if rating is None:
-            return
-        rating.moderation_status = "approved"
-        itinerary = db.get(Itinerary, rating.itinerary_id)
-        if itinerary is not None:
-            db.flush()
-            recalculate_rating(itinerary, db)
-    elif appeal.target_type == TARGET_USER:
-        target_user = db.get(User, appeal.target_id)
-        if target_user is not None:
-            target_user.moderation_status = "approved"
+    """Un-hide the rating or profile an appeal names. Shares restore_target with
+    the operator un-hide lane so both paths recompute averages identically."""
+    target = moderation_actions.load_target(db, appeal.target_type, appeal.target_id)
+    moderation_actions.restore_target(db, appeal.target_type, target)
 
 
 def _mark_decisions_reviewed(db: Session, target_type: str, target_id) -> None:

@@ -1099,6 +1099,8 @@
   "suspendedBackToLogin": "Back to sign in",
   "hiddenBannerTitle": "Hidden by a moderator",
   "hiddenBannerMessage": "Only you can see this itinerary. It won't appear in the feed, in search, or on its share page. You can appeal from Account status in settings.",
+  "hiddenReviewMessage": "Only you can see this review. It won't appear on the itinerary or count towards its rating.",
+  "hiddenProfileMessage": "Only you can see your display name and bio. Other people see your @username instead.",
   "accountStatusTitle": "Account status",
   "violationsEmpty": "No moderation actions on your account.",
   "violationHidden": "Hidden",

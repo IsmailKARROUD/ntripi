@@ -362,6 +362,22 @@ def test_restoring_a_review_puts_it_back_in_the_average(
     assert _row(Itinerary, itinerary_id).rating_count == 1
 
 
+def test_admin_appeals_page_renders_a_review_appeal_with_context(
+    client, author, reporters, moderator
+):
+    """Rating and profile appeals used to render with no target column at all —
+    the row builder only ever resolved itineraries."""
+    rating_id = _hidden_rating(client, author, reporters)
+    assert _appeal(
+        client, reporters[0]["access_token"], "rating", rating_id
+    ).status_code == 201
+
+    page = client.get("/admin/appeals", auth=ADMIN_BASIC)
+
+    assert page.status_code == 200
+    assert "your review" in page.text
+
+
 def test_a_hidden_profile_is_appealable_by_its_owner(client, author, reporters):
     client.post(
         "/reports",

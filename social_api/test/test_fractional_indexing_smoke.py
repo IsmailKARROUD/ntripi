@@ -1008,3 +1008,87 @@ class TestMoveToNewTrack:
         # Segment still exists in the DB — client is responsible for cleanup.
         r = client.get(f"/itineraries/{itin_id}", headers=hdrs)
         assert any(s["id"] == seg_id for s in r.json()["segments"])
+
+
+# ---------------------------------------------------------------------------
+# Rating moderation status on the ratings page.
+#
+# Lives here rather than in test_itinerary_ratings.py, which is skipped wholesale
+# pending the fractional-indexing rewrite.
+# ---------------------------------------------------------------------------
+
+class TestRatingModerationStatusExposure:
+    """The author of a hidden review needs to learn it is hidden — but nobody
+    else may learn anything about anyone's moderation state."""
+
+    def _setup(self, client: TestClient):
+        """An itinerary owned by alice with one review by bob."""
+        alice = register_user(client, "alice", "alice@example.com")
+        r = client.post(
+            "/itineraries/",
+            json={"title": "Rated Trip", "currency": "EUR", "visibility": "public"},
+            headers=auth_headers(alice["access_token"]),
+        )
+        assert r.status_code == 201, r.text
+        itinerary_id = r.json()["id"]
+
+        bob = register_user(client, "bobby", "bob@example.com")
+        r = client.post(
+            f"/itineraries/{itinerary_id}/ratings",
+            json={"stars": 1, "note": "harsh"},
+            headers=auth_headers(bob["access_token"]),
+        )
+        assert r.status_code in (200, 201), r.text
+        return alice, bob, itinerary_id
+
+    def _set_status(self, status: str) -> None:
+        from app.models.itinerary_rating import ItineraryRating
+        from conftest import TestingSessionLocal
+
+        db = TestingSessionLocal()
+        try:
+            db.query(ItineraryRating).one().moderation_status = status
+            db.commit()
+        finally:
+            db.close()
+
+    def _page(self, client: TestClient, token: str, itinerary_id: str):
+        return client.get(
+            f"/itineraries/{itinerary_id}/ratings", headers=auth_headers(token)
+        )
+
+    def test_author_sees_their_own_hidden_status(self, client: TestClient):
+        _, bob, itinerary_id = self._setup(client)
+        self._set_status("hidden")
+
+        page = self._page(client, bob["access_token"], itinerary_id)
+        assert page.status_code == 200, page.text
+        ratings = page.json()["ratings"]
+        assert len(ratings) == 1
+        assert ratings[0]["moderation_status"] == "hidden"
+
+    def test_other_viewers_never_see_the_hidden_review_at_all(self, client: TestClient):
+        alice, _, itinerary_id = self._setup(client)
+        self._set_status("hidden")
+
+        page = self._page(client, alice["access_token"], itinerary_id)
+        assert page.json()["ratings"] == []
+
+    def test_internal_states_are_not_leaked_to_other_viewers(self, client: TestClient):
+        """A 'flagged' review stays visible, so its status is the one that could
+        actually leak — it must read 'approved' to everyone but its author."""
+        alice, _, itinerary_id = self._setup(client)
+        self._set_status("flagged")
+
+        page = self._page(client, alice["access_token"], itinerary_id)
+        assert page.json()["ratings"][0]["moderation_status"] == "approved"
+
+    def test_moderation_status_is_the_last_json_key(self, client: TestClient):
+        """Field order is JSON key order and part of the API contract — a new
+        field has to be appended, never inserted."""
+        alice, _, itinerary_id = self._setup(client)
+
+        page = self._page(client, alice["access_token"], itinerary_id)
+        keys = list(page.json()["ratings"][0].keys())
+        assert keys[-1] == "moderation_status"
+        assert keys[-2] == "id"

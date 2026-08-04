@@ -48,6 +48,20 @@
             <input type="text" name="reason" placeholder="Reason (required)" required>
             <div class="actions"><button type="submit">Unhide</button></div>
           </form>
+          {% elif row.action in hide_family and row.target_type == 'rating' and row.target_id %}
+          <form method="post" action="/admin/ratings/{{ row.target_id }}/unhide">
+            <input type="hidden" name="next" value="/admin/log">
+            <input type="text" name="reason" placeholder="Reason (required)" required>
+            <div class="actions"><button type="submit">Unhide</button></div>
+          </form>
+          {# Un-hides the profile text only. A ban is reversed by the branch
+             below — the two states are independent, so both can be live. #}
+          {% elif row.action in hide_family and row.target_type == 'user' and row.target_id %}
+          <form method="post" action="/admin/users/{{ row.target_id }}/unhide">
+            <input type="hidden" name="next" value="/admin/log">
+            <input type="text" name="reason" placeholder="Reason (required)" required>
+            <div class="actions"><button type="submit">Unhide</button></div>
+          </form>
           {% elif row.action == 'ban' and row.target_type == 'user' and row.target_id %}
           <form method="post" action="/admin/users/{{ row.target_id }}/unban">
             <input type="hidden" name="next" value="/admin/log">

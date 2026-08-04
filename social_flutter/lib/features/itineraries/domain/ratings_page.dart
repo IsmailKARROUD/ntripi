@@ -3,6 +3,7 @@
 
 import 'package:social_flutter/features/itineraries/domain/dimension_key.dart';
 import 'package:social_flutter/l10n/app_localizations.dart';
+import 'package:social_flutter/shared/models/moderation_status.dart';
 
 /// Identity of someone who rated an itinerary.
 ///
@@ -66,6 +67,10 @@ class RatingWithUser {
   /// the report action is simply hidden for those.
   final String? id;
 
+  /// Moderation state of this review. The server only sends the real value on
+  /// the viewer's own row — every other row arrives as `approved`.
+  final ModerationStatus moderationStatus;
+
   const RatingWithUser({
     required this.score,
     this.scoreSafety,
@@ -77,6 +82,7 @@ class RatingWithUser {
     required this.updatedAt,
     required this.user,
     this.id,
+    this.moderationStatus = ModerationStatus.approved,
   });
 
   /// Returns the score for the given dimension, or null if not rated.
@@ -110,6 +116,8 @@ class RatingWithUser {
         updatedAt: DateTime.parse(json['updated_at'] as String),
         user: RaterInfo.fromJson(json['user'] as Map<String, dynamic>),
         id: json['id'] as String?,
+        moderationStatus:
+            ModerationStatus.fromString(json['moderation_status'] as String?),
       );
 
   Map<String, dynamic> toJson() => {
@@ -123,6 +131,7 @@ class RatingWithUser {
         'updated_at': updatedAt.toIso8601String(),
         'user': user.toJson(),
         if (id != null) 'id': id,
+        'moderation_status': moderationStatus.wireValue,
       };
 }
 

@@ -2490,6 +2490,14 @@ class AppLocalizationsAr extends AppLocalizations {
       'أنت وحدك من يرى هذا المسار. لن يظهر في الموجز ولا في البحث ولا في صفحة المشاركة. يمكنك الاعتراض من حالة الحساب في الإعدادات.';
 
   @override
+  String get hiddenReviewMessage =>
+      'أنت وحدك من يرى هذا التقييم. لن يظهر في المسار ولن يُحتسب ضمن تقييمه.';
+
+  @override
+  String get hiddenProfileMessage =>
+      'أنت وحدك من يرى اسمك المعروض ونبذتك. يرى الآخرون اسم المستخدم الخاص بك بدلاً منهما.';
+
+  @override
   String get accountStatusTitle => 'حالة الحساب';
 
   @override

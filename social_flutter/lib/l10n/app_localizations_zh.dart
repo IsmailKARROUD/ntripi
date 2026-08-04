@@ -2313,6 +2313,12 @@ class AppLocalizationsZh extends AppLocalizations {
       '只有你能看到此行程。它不会出现在动态、搜索或分享页面中。你可以在设置的“账号状态”中申诉。';
 
   @override
+  String get hiddenReviewMessage => '只有你能看到此评价。它不会显示在行程中，也不计入行程评分。';
+
+  @override
+  String get hiddenProfileMessage => '只有你能看到你的昵称和简介。其他人只会看到你的 @用户名。';
+
+  @override
   String get accountStatusTitle => '账号状态';
 
   @override

@@ -68,6 +68,10 @@ class UserPrivateProfile(UserBase):
     has_google: bool
     is_active: bool
     updated_at: datetime
+    # Moderation state of display_name + bio, so the owner can be told their
+    # profile text is hidden. Deliberately absent from UserPublicProfile — this
+    # is the account owner's own read.
+    moderation_status: str = "approved"
 
 
 class UserUpdateRequest(BaseModel):

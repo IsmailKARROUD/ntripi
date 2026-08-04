@@ -2483,6 +2483,14 @@ class AppLocalizationsDe extends AppLocalizations {
       'Nur du siehst diese Reiseroute. Sie erscheint weder im Feed noch in der Suche oder auf ihrer Teilen-Seite. Du kannst sie unter Kontostatus in den Einstellungen anfechten.';
 
   @override
+  String get hiddenReviewMessage =>
+      'Nur du siehst diese Bewertung. Sie erscheint nicht bei der Reiseroute und zählt nicht für deren Bewertung.';
+
+  @override
+  String get hiddenProfileMessage =>
+      'Nur du siehst deinen Anzeigenamen und deine Bio. Andere sehen stattdessen deinen @Benutzernamen.';
+
+  @override
   String get accountStatusTitle => 'Kontostatus';
 
   @override

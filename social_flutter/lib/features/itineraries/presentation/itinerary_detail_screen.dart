@@ -67,6 +67,8 @@ import 'package:social_flutter/shared/widgets/field_help.dart';
 import 'package:social_flutter/shared/widgets/loaders.dart';
 import 'package:social_flutter/core/connectivity/connectivity_service.dart';
 import 'package:social_flutter/shared/widgets/markdown_edit_screen.dart';
+import 'package:social_flutter/shared/widgets/appeal_sheet.dart';
+import 'package:social_flutter/shared/widgets/moderation_hidden_banner.dart';
 import 'package:social_flutter/shared/widgets/offline_gate.dart';
 import 'package:social_flutter/shared/widgets/shadow_divider.dart';
 import 'package:social_flutter/core/utils/platform_utils.dart';
@@ -736,7 +738,17 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                         // The server only sends hidden=true to the owner, so
                         // the isOwner check is defense in depth.
                         if (isOwner && itinerary.hidden)
-                          const SliverToBoxAdapter(child: _HiddenBanner()),
+                          SliverToBoxAdapter(
+                            child: ModerationHiddenBanner(
+                              message: l10n.hiddenBannerMessage,
+                              onAppeal: () => showAppealSheet(
+                                context,
+                                ref,
+                                targetType: 'itinerary',
+                                targetId: itinerary.id,
+                              ),
+                            ),
+                          ),
 
                         // ── Owner row ──────────────────────────────────────
                         if (ownerUserId.isNotEmpty)
@@ -1443,55 +1455,6 @@ class _GlassButton extends StatelessWidget {
         ),
         alignment: Alignment.center,
         child: Icon(icon, color: NtripiBrand.chrome, size: 22),
-      ),
-    );
-  }
-}
-
-// ─── Moderator-hidden banner ─────────────────────────────────────────────────
-// Shown to the author only: the itinerary is still theirs to view and edit, but
-// nobody else can see it. Informational — appeals go through Account status.
-class _HiddenBanner extends StatelessWidget {
-  const _HiddenBanner();
-
-  @override
-  Widget build(BuildContext context) {
-    final nt = context.nt;
-    final l10n = AppLocalizations.of(context)!;
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-      child: Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: nt.cautionBg,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: nt.border),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(Icons.visibility_off_outlined, size: 20, color: nt.cautionFg),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    l10n.hiddenBannerTitle,
-                    style: TextStyle(
-                      fontWeight: FontWeight.w700,
-                      color: nt.cautionFg,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 6),
-            Text(
-              l10n.hiddenBannerMessage,
-              style: TextStyle(fontSize: 13, color: nt.cautionFg),
-            ),
-          ],
-        ),
       ),
     );
   }

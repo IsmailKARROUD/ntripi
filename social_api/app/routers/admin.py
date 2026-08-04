@@ -38,6 +38,7 @@ from app.models.appeal import Appeal
 from app.models.content_report import ContentReport
 from app.models.image_moderation_log import ImageModerationLog
 from app.models.itinerary import Itinerary
+from app.models.itinerary_rating import ItineraryRating
 from app.models.legal_escalation import LegalEscalation
 from app.models.moderation_log import HIDE_FAMILY
 from app.models.text_moderation_decision import TextModerationDecision
@@ -164,12 +165,18 @@ def _page(request: Request, name: str, context: dict, status_code: int = 200) ->
 
 
 def _redirect(path: str, error: str | None = None, notice: str | None = None):
+    # Split any #fragment off first: the query has to sit before it, or the whole
+    # "?notice=..." would be parsed as part of the fragment and never rendered.
+    path, _, fragment = path.partition("#")
     query = ""
     if error:
         query = f"?error={error}"
     elif notice:
         query = f"?notice={notice}"
-    return RedirectResponse(f"{path}{query}", status_code=status.HTTP_303_SEE_OTHER)
+    suffix = f"#{fragment}" if fragment else ""
+    return RedirectResponse(
+        f"{path}{query}{suffix}", status_code=status.HTTP_303_SEE_OTHER,
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -597,15 +604,17 @@ def admin_appeals(
 ) -> HTMLResponse:
     rows = []
     for appeal in admin_service.pending_appeals(db):
-        itinerary = (
-            db.get(Itinerary, appeal.target_id)
-            if appeal.target_type == admin_service.TARGET_ITINERARY else None
-        )
+        target = moderation_actions.load_target(db, appeal.target_type, appeal.target_id)
+        itinerary = target if appeal.target_type == admin_service.TARGET_ITINERARY else None
         owner = db.get(User, appeal.user_id)
         rows.append({
             "appeal": appeal,
             "user": owner,
             "itinerary": itinerary,
+            # Rating and profile appeals used to render with no target at all;
+            # the label is what the template shows when there is no itinerary.
+            "target_label": moderation_actions.target_label(appeal.target_type, target),
+            "target_missing": target is None,
             # Restoring content owned by a still-banned user won't make it public
             # again — surface that so the operator can unban too.
             "owner_banned": owner is not None and not owner.is_active,
@@ -677,7 +686,10 @@ def admin_log(
 # The lanes an action form may bounce back to. An allowlist rather than an
 # open `next` — the value arrives in a form post and would otherwise be an open
 # redirect off an authenticated admin session.
-_LANES = ("/admin/hidden", "/admin/removed", "/admin/suspended", "/admin/log")
+_LANES = (
+    "/admin/hidden", "/admin/hidden#reviews", "/admin/hidden#profiles",
+    "/admin/removed", "/admin/suspended", "/admin/log",
+)
 
 
 def _lane(next_path: str | None) -> str:
@@ -703,6 +715,31 @@ def _itinerary_lane_rows(db: Session, itineraries) -> list[dict]:
     return rows
 
 
+def _status_lane_rows(db: Session, target_type: str, targets) -> list[dict]:
+    """Row shape for the rating and profile sections of the hidden lane.
+
+    These carry no hidden_at, so the takedown log row is the only source of
+    "when" — age and SLA colour both read off it rather than off the target.
+    """
+    rows = []
+    for target in targets:
+        owner = moderation_actions.target_author(db, target_type, target)
+        last_action = admin_service.last_takedown_log(db, target.id, target_type)
+        taken_down = last_action.created_at if last_action else None
+        rows.append({
+            "target": target,
+            "target_type": target_type,
+            "owner": owner,
+            # Restoring content owned by a still-banned user won't make it
+            # public again — surface that so the operator can unban too.
+            "owner_banned": owner is not None and not owner.is_active,
+            "last_action": last_action,
+            "age": admin_service.humanize_age(taken_down),
+            "sla": admin_service.sla_class(taken_down),
+        })
+    return rows
+
+
 @router.get("/hidden", response_class=HTMLResponse)
 def admin_hidden(
     request: Request,
@@ -718,9 +755,18 @@ def admin_hidden(
     crossed, so /admin/reports never shows it and only /admin/log records it.
     """
     return _page(request, "hidden.html", {
-        "page_title": "Hidden itineraries",
+        "page_title": "Hidden content",
         "admin": admin,
         "rows": _itinerary_lane_rows(db, admin_service.hidden_itineraries(db)),
+        # Reviews and profiles share the lane rather than adding two nav entries:
+        # "down but not removed" is the same operator question for all three, and
+        # an auto-hide leaves no queue entry anywhere else for any of them.
+        "rating_rows": _status_lane_rows(
+            db, moderation_actions.TARGET_RATING, admin_service.hidden_ratings(db),
+        ),
+        "profile_rows": _status_lane_rows(
+            db, moderation_actions.TARGET_USER, admin_service.hidden_profiles(db),
+        ),
         "error_message": error,
         "notice_message": notice,
     })
@@ -856,6 +902,50 @@ def admin_remove(
 
     admin_service.soft_delete_itinerary(db, admin, itinerary, reason)
     return _redirect(back, notice="Itinerary removed.")
+
+
+@router.post("/ratings/{rating_id}/unhide")
+def admin_unhide_rating(
+    rating_id: uuid.UUID,
+    reason: str = Form(""),
+    next: str = Form("/admin/hidden"),
+    db: Session = Depends(get_db),
+    admin: User = Depends(_require_admin_page),
+):
+    """Reverse a review takedown. Also puts the score back into the itinerary's
+    average — see moderation_actions.restore_target."""
+    back = _lane(next)
+    reason = (reason or "").strip()
+    if not reason:
+        return _redirect(back, error="A reason is required.")
+    rating = db.get(ItineraryRating, rating_id)
+    if rating is None:
+        return _redirect(back, error="That review no longer exists.")
+
+    admin_service.unhide_target(db, admin, moderation_actions.TARGET_RATING, rating, reason)
+    return _redirect(back, notice="Review is visible again.")
+
+
+@router.post("/users/{user_id}/unhide")
+def admin_unhide_profile(
+    user_id: uuid.UUID,
+    reason: str = Form(""),
+    next: str = Form("/admin/hidden"),
+    db: Session = Depends(get_db),
+    admin: User = Depends(_require_admin_page),
+):
+    """Restore a hidden display_name + bio. Distinct from unban: a hidden profile
+    is a live account, so the two states must stay separately reversible."""
+    back = _lane(next)
+    reason = (reason or "").strip()
+    if not reason:
+        return _redirect(back, error="A reason is required.")
+    user = db.get(User, user_id)
+    if user is None:
+        return _redirect(back, error="That user no longer exists.")
+
+    admin_service.unhide_target(db, admin, moderation_actions.TARGET_USER, user, reason)
+    return _redirect(back, notice="Profile is visible again.")
 
 
 @router.post("/users/{user_id}/unban")

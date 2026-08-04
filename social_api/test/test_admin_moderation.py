@@ -787,3 +787,230 @@ class TestLogReversal:
 
         page = client.get("/admin/log", auth=ADMIN_BASIC).text
         assert f"/admin/itineraries/{rating_id}/unhide" not in page
+
+
+# ---------------------------------------------------------------------------
+# Hidden reviews + profiles: their own lane sections and un-hide routes.
+#
+# Before these existed, a hidden review or profile could only be restored by its
+# author filing an appeal — there is no hidden_at column to scan, and the
+# triggering report is already resolved by the time the auto-hide lands.
+# ---------------------------------------------------------------------------
+
+def _rating_id() -> str:
+    from app.models.itinerary_rating import ItineraryRating
+
+    db = TestingSessionLocal()
+    try:
+        return str(db.query(ItineraryRating).one().id)
+    finally:
+        db.close()
+
+
+def _rating_row(rating_id: str):
+    from app.models.itinerary_rating import ItineraryRating
+
+    db = TestingSessionLocal()
+    try:
+        return db.get(ItineraryRating, __import__("uuid").UUID(rating_id))
+    finally:
+        db.close()
+
+
+@pytest.fixture()
+def hidden_rating(client: TestClient, admin_enabled):
+    """A review auto-hidden by a report, plus the admin session to act on it."""
+    author = register_user(client, "author", "author@test.com")
+    itinerary_id = _itinerary(client, author["access_token"])
+
+    rater = register_user(client, "rater", "rater@test.com")
+    resp = client.post(
+        f"/itineraries/{itinerary_id}/ratings",
+        json={"stars": 1, "note": "abusive review"},
+        headers=auth_headers(rater["access_token"]),
+    )
+    assert resp.status_code in (200, 201), resp.json()
+    rating_id = _rating_id()
+
+    reporter = register_user(client, "reporter", "reporter@test.com")
+    client.post(
+        "/reports",
+        json={"target_type": "rating", "target_id": rating_id,
+              "reason": "sexual_content", "notes": "look"},
+        headers=auth_headers(reporter["access_token"]),
+    )
+    assert _rating_row(rating_id).moderation_status == "hidden"
+    _admin(client)
+    return {"itinerary_id": itinerary_id, "rating_id": rating_id, "rater": rater}
+
+
+@pytest.fixture()
+def hidden_profile(client: TestClient, admin_enabled):
+    """A profile auto-hidden by a report."""
+    target = register_user(client, "target", "target@test.com")
+    client.patch(
+        "/users/me",
+        json={"display_name": "Offensive Name", "bio": "offensive bio"},
+        headers=auth_headers(target["access_token"]),
+    )
+    user_id = str(_user_row("target@test.com").id)
+
+    reporter = register_user(client, "reporter", "reporter@test.com")
+    client.post(
+        "/reports",
+        json={"target_type": "user", "target_id": user_id,
+              "reason": "sexual_content", "notes": "look"},
+        headers=auth_headers(reporter["access_token"]),
+    )
+    assert _user_row("target@test.com").moderation_status == "hidden"
+    _admin(client)
+    return {"user_id": user_id}
+
+
+class TestHiddenReviewLane:
+    def test_hidden_review_appears_in_the_hidden_lane(self, client, hidden_rating):
+        page = client.get("/admin/hidden", auth=ADMIN_BASIC).text
+        assert hidden_rating["rating_id"] in page
+        assert "abusive review" in page
+
+    def test_unhide_restores_the_review_and_its_score(self, client, hidden_rating):
+        """The average is the real regression risk: a restored review has to go
+        back into the aggregate, not just flip its status column."""
+        itinerary = _itinerary_row(hidden_rating["itinerary_id"])
+        assert itinerary.rating_count == 0  # hidden -> excluded
+
+        resp = _post(client, f"/admin/ratings/{hidden_rating['rating_id']}/unhide",
+                     reason="false positive", next="/admin/hidden")
+        assert resp.status_code == 303
+
+        assert _rating_row(hidden_rating["rating_id"]).moderation_status == "approved"
+        itinerary = _itinerary_row(hidden_rating["itinerary_id"])
+        assert itinerary.rating_count == 1
+        assert itinerary.rating_avg == 1
+
+    def test_unhide_audits_against_the_rating_not_the_itinerary(
+        self, client, hidden_rating
+    ):
+        _post(client, f"/admin/ratings/{hidden_rating['rating_id']}/unhide",
+              reason="false positive", next="/admin/hidden")
+
+        rows = _logs("unhide")
+        assert len(rows) == 1
+        assert rows[0].target_type == "rating"
+        assert str(rows[0].target_id) == hidden_rating["rating_id"]
+
+    def test_unhide_requires_a_reason(self, client, hidden_rating):
+        resp = _post(client, f"/admin/ratings/{hidden_rating['rating_id']}/unhide",
+                     reason="  ", next="/admin/hidden")
+        assert resp.status_code == 303
+        assert _rating_row(hidden_rating["rating_id"]).moderation_status == "hidden"
+
+    def test_log_offers_unhide_for_a_hidden_review(self, client, hidden_rating):
+        page = client.get("/admin/log", auth=ADMIN_BASIC).text
+        assert f"/admin/ratings/{hidden_rating['rating_id']}/unhide" in page
+
+
+class TestHiddenProfileLane:
+    def test_hidden_profile_appears_in_the_hidden_lane(self, client, hidden_profile):
+        page = client.get("/admin/hidden", auth=ADMIN_BASIC).text
+        assert hidden_profile["user_id"] in page
+        assert "target" in page
+
+    def test_unhide_restores_the_profile_text(self, client, hidden_profile):
+        resp = _post(client, f"/admin/users/{hidden_profile['user_id']}/unhide",
+                     reason="false positive", next="/admin/hidden")
+        assert resp.status_code == 303
+        assert _user_row("target@test.com").moderation_status == "approved"
+
+    def test_unhide_does_not_reactivate_a_suspended_account(
+        self, client, hidden_profile
+    ):
+        """Hidden profile text and suspension are independent states — restoring
+        one must not silently reverse the other."""
+        db = TestingSessionLocal()
+        try:
+            user = db.get(User, __import__("uuid").UUID(hidden_profile["user_id"]))
+            user.is_active = False
+            db.commit()
+        finally:
+            db.close()
+
+        _post(client, f"/admin/users/{hidden_profile['user_id']}/unhide",
+              reason="text is fine", next="/admin/hidden")
+
+        row = _user_row("target@test.com")
+        assert row.moderation_status == "approved"
+        assert row.is_active is False
+
+    def test_unhide_audits_against_the_user(self, client, hidden_profile):
+        _post(client, f"/admin/users/{hidden_profile['user_id']}/unhide",
+              reason="false positive", next="/admin/hidden")
+
+        rows = _logs("unhide")
+        assert len(rows) == 1
+        assert rows[0].target_type == "user"
+        assert str(rows[0].target_id) == hidden_profile["user_id"]
+
+
+class TestNonItineraryReportAudit:
+    """dismiss/bulk used to hardcode target_type='itinerary', which resolved to
+    target_id=NULL for rating and profile reports — an unattributable audit row
+    that the author's violations feed could never surface."""
+
+    def _pending_rating_report(self, client) -> tuple[str, str]:
+        author = register_user(client, "author", "author@test.com")
+        itinerary_id = _itinerary(client, author["access_token"])
+        rater = register_user(client, "rater", "rater@test.com")
+        client.post(
+            f"/itineraries/{itinerary_id}/ratings",
+            json={"stars": 2, "note": "meh"},
+            headers=auth_headers(rater["access_token"]),
+        )
+        rating_id = _rating_id()
+        reporter = register_user(client, "reporter", "reporter@test.com")
+        # spam needs 4 distinct reporters, so one report stays pending.
+        client.post(
+            "/reports",
+            json={"target_type": "rating", "target_id": rating_id, "reason": "spam"},
+            headers=auth_headers(reporter["access_token"]),
+        )
+        db = TestingSessionLocal()
+        try:
+            report_id = str(db.query(ContentReport).one().id)
+        finally:
+            db.close()
+        _admin(client)
+        return report_id, rating_id
+
+    def test_dismissing_a_rating_report_audits_against_the_rating(self, client,
+                                                                  admin_enabled):
+        report_id, rating_id = self._pending_rating_report(client)
+
+        _act(client, report_id, "dismiss", "not a violation")
+
+        rows = _logs("dismiss")
+        assert len(rows) == 1
+        assert rows[0].target_type == "rating"
+        assert str(rows[0].target_id) == rating_id
+
+    def test_bulk_delete_on_a_rating_report_actually_hides_the_review(
+        self, client, admin_enabled
+    ):
+        """The delete branch used to close these as 'content_removed' while
+        leaving the reported review fully visible."""
+        report_id, rating_id = self._pending_rating_report(client)
+
+        resp = client.post(
+            "/admin/reports/bulk",
+            data={"report_ids": [report_id], "action": "delete",
+                  "reason": "policy violation"},
+            auth=ADMIN_BASIC, follow_redirects=False,
+        )
+        assert resp.status_code == 303
+
+        assert _rating_row(rating_id).moderation_status == "hidden"
+        db = TestingSessionLocal()
+        try:
+            assert db.query(ContentReport).one().resolution == "content_hidden"
+        finally:
+            db.close()

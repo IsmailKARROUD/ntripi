@@ -2439,6 +2439,14 @@ class AppLocalizationsEn extends AppLocalizations {
       'Only you can see this itinerary. It won\'t appear in the feed, in search, or on its share page. You can appeal from Account status in settings.';
 
   @override
+  String get hiddenReviewMessage =>
+      'Only you can see this review. It won\'t appear on the itinerary or count towards its rating.';
+
+  @override
+  String get hiddenProfileMessage =>
+      'Only you can see your display name and bio. Other people see your @username instead.';
+
+  @override
   String get accountStatusTitle => 'Account status';
 
   @override

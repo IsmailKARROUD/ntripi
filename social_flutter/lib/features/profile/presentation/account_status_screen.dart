@@ -7,11 +7,11 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:social_flutter/core/api/api_client.dart';
 import 'package:social_flutter/core/ui/app_theme.dart';
 import 'package:social_flutter/features/profile/domain/violation.dart';
 import 'package:social_flutter/features/profile/providers/profile_provider.dart';
 import 'package:social_flutter/l10n/app_localizations.dart';
+import 'package:social_flutter/shared/widgets/appeal_sheet.dart';
 import 'package:social_flutter/shared/widgets/loaders.dart';
 
 class AccountStatusScreen extends ConsumerWidget {
@@ -109,38 +109,12 @@ class _ViolationCard extends ConsumerWidget {
   }
 
   Future<void> _openAppealSheet(BuildContext context, WidgetRef ref) async {
-    final l10n = AppLocalizations.of(context)!;
-    final controller = TextEditingController();
-    final nt = context.nt;
-
-    final submitted = await showModalBottomSheet<bool>(
-      context: context,
-      isScrollControlled: true,
-      showDragHandle: true,
-      backgroundColor: nt.sand,
-      builder: (sheetContext) => Padding(
-        padding: EdgeInsets.only(
-          left: 20,
-          right: 20,
-          top: 4,
-          bottom: MediaQuery.of(sheetContext).viewInsets.bottom + 20,
-        ),
-        child: _AppealSheet(
-          controller: controller,
-          violation: violation,
-        ),
-      ),
+    await showAppealSheet(
+      context,
+      ref,
+      targetType: violation.targetType,
+      targetId: violation.targetId ?? '',
     );
-
-    controller.dispose();
-    if (submitted == true) {
-      ref.invalidate(myViolationsProvider);
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.appealSubmitted)),
-        );
-      }
-    }
   }
 
   @override
@@ -219,105 +193,5 @@ class _ViolationCard extends ConsumerWidget {
     final local = value.toLocal();
     return '${local.year}-${local.month.toString().padLeft(2, '0')}-'
         '${local.day.toString().padLeft(2, '0')}';
-  }
-}
-
-/// Bottom sheet holding the appeal explanation. Pops `true` once the server
-/// accepts the appeal.
-class _AppealSheet extends ConsumerStatefulWidget {
-  final TextEditingController controller;
-  final Violation violation;
-
-  const _AppealSheet({required this.controller, required this.violation});
-
-  @override
-  ConsumerState<_AppealSheet> createState() => _AppealSheetState();
-}
-
-class _AppealSheetState extends ConsumerState<_AppealSheet> {
-  bool _busy = false;
-  String? _error;
-
-  Future<void> _submit() async {
-    final l10n = AppLocalizations.of(context)!;
-    final reason = widget.controller.text.trim();
-    if (reason.isEmpty) {
-      setState(() => _error = l10n.appealReasonRequired);
-      return;
-    }
-
-    setState(() {
-      _busy = true;
-      _error = null;
-    });
-    try {
-      await ref.read(profileRepositoryProvider).submitAppeal(
-            targetType: widget.violation.targetType,
-            targetId: widget.violation.targetId ?? '',
-            reason: reason,
-          );
-      if (mounted) Navigator.of(context).pop(true);
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          // appeal_already_pending / appeal_cooldown arrive as coded errors —
-          // extractErrorMessage localizes them via api_error_codes.
-          _error = extractErrorMessage(e, l10n);
-          _busy = false;
-        });
-      }
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    final nt = context.nt;
-
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          l10n.appealFormTitle,
-          style: TextStyle(
-            fontSize: 17,
-            fontWeight: FontWeight.w700,
-            color: nt.bark,
-          ),
-        ),
-        const SizedBox(height: 6),
-        Text(
-          l10n.appealFormMessage,
-          style: TextStyle(fontSize: 13, color: nt.text2),
-        ),
-        const SizedBox(height: 14),
-        TextField(
-          controller: widget.controller,
-          maxLines: 5,
-          maxLength: 2000,
-          enabled: !_busy,
-          decoration: InputDecoration(
-            labelText: l10n.appealReasonLabel,
-            border: const OutlineInputBorder(),
-            errorText: _error,
-          ),
-        ),
-        const SizedBox(height: 8),
-        SizedBox(
-          width: double.infinity,
-          child: FilledButton(
-            onPressed: _busy ? null : _submit,
-            child: _busy
-                ? const SizedBox(
-                    height: 20,
-                    width: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : Text(l10n.appealSubmit),
-          ),
-        ),
-      ],
-    );
   }
 }

@@ -435,3 +435,4 @@ class TestRatingsPage:
 
         r = get_ratings_page(client, charlie["access_token"], it["id"])
         assert r.status_code == 403
+
