@@ -1444,6 +1444,24 @@ abstract class AppLocalizations {
   /// **'Keep'**
   String get cancelRequestKeep;
 
+  /// No description provided for @declineRequestTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Decline request?'**
+  String get declineRequestTitle;
+
+  /// No description provided for @declineRequestMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Decline @{username}\'s follow request? They can send a new one later.'**
+  String declineRequestMessage(String username);
+
+  /// No description provided for @declineRequestConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Decline'**
+  String get declineRequestConfirm;
+
   /// No description provided for @undoButton.
   ///
   /// In en, this message translates to:

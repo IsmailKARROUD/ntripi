@@ -321,6 +321,16 @@
   },
   "cancelRequestConfirm": "إلغاء الطلب",
   "cancelRequestKeep": "إبقاء",
+  "declineRequestTitle": "رفض الطلب؟",
+  "declineRequestMessage": "هل تريد رفض طلب متابعة @{username}؟ يمكن لهذا الشخص إرسال طلب جديد لاحقًا.",
+  "@declineRequestMessage": {
+    "placeholders": {
+      "username": {
+        "type": "String"
+      }
+    }
+  },
+  "declineRequestConfirm": "رفض",
   "undoButton": "تراجع",
   "couldNotUndo": "تعذّر التراجع: {error}",
   "@couldNotUndo": {

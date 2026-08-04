@@ -422,9 +422,36 @@ void main() {
 
         await tester.tap(
             find.byKey(const Key('declineRequest_req-1')));
-        await tester.pump();
+        await tester.pumpAndSettle(); // ConfirmDialog entrance is 220ms
+        await tester.tap(find.text('Decline')); // declineRequestConfirm
+        await tester.pumpAndSettle();
 
         expect(find.text('Karim Maalouf'), findsNothing);
+      });
+
+      testWidgets(
+          'Given decline confirmation shown, When cancelled, '
+          'Then request row remains', (tester) async {
+        tester.view.physicalSize = const Size(1080, 1920);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        await tester.pumpWidget(_buildScreen(
+          userId: _ownUserId,
+          type: FollowListType.followers,
+          requests: [_pendingRequest],
+        ));
+        await tester.pump();
+        await tester.pump();
+
+        await tester.tap(
+            find.byKey(const Key('declineRequest_req-1')));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Cancel'));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Karim Maalouf'), findsOneWidget);
       });
     });
 

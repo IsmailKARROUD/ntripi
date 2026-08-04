@@ -767,6 +767,17 @@ class AppLocalizationsEn extends AppLocalizations {
   String get cancelRequestKeep => 'Keep';
 
   @override
+  String get declineRequestTitle => 'Decline request?';
+
+  @override
+  String declineRequestMessage(String username) {
+    return 'Decline @$username\'s follow request? They can send a new one later.';
+  }
+
+  @override
+  String get declineRequestConfirm => 'Decline';
+
+  @override
   String get undoButton => 'UNDO';
 
   @override

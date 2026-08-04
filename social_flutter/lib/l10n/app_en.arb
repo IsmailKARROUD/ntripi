@@ -329,6 +329,16 @@
   },
   "cancelRequestConfirm": "Cancel request",
   "cancelRequestKeep": "Keep",
+  "declineRequestTitle": "Decline request?",
+  "declineRequestMessage": "Decline @{username}'s follow request? They can send a new one later.",
+  "@declineRequestMessage": {
+    "placeholders": {
+      "username": {
+        "type": "String"
+      }
+    }
+  },
+  "declineRequestConfirm": "Decline",
   "undoButton": "UNDO",
   "couldNotUndo": "Could not undo: {error}",
   "@couldNotUndo": {

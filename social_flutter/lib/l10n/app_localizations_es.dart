@@ -773,6 +773,17 @@ class AppLocalizationsEs extends AppLocalizations {
   String get cancelRequestKeep => 'Mantener';
 
   @override
+  String get declineRequestTitle => '¿Rechazar solicitud?';
+
+  @override
+  String declineRequestMessage(String username) {
+    return '¿Rechazar la solicitud de seguimiento de @$username? Esta persona podrá enviar una nueva más tarde.';
+  }
+
+  @override
+  String get declineRequestConfirm => 'Rechazar';
+
+  @override
   String get undoButton => 'DESHACER';
 
   @override

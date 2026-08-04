@@ -20,6 +20,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:social_flutter/core/api/api_client.dart';
 import 'package:social_flutter/core/ui/app_theme.dart';
+import 'package:social_flutter/core/ui/destructive_actions.dart';
 import 'package:social_flutter/features/follows/providers/follow_provider.dart';
 import 'package:social_flutter/features/profile/providers/profile_provider.dart';
 import 'package:social_flutter/shared/models/follow.dart';
@@ -473,6 +474,18 @@ class _PendingRequestRowState
   }
 
   Future<void> _decline() async {
+    final l10n = AppLocalizations.of(context)!;
+    // Tier 2: the requester is never told they were declined, so a mis-tap
+    // can only be fixed by asking them to send a new request.
+    final confirmed = await confirmDestructiveAction(
+      context: context,
+      icon: Icons.person_remove_rounded,
+      title: l10n.declineRequestTitle,
+      message: l10n.declineRequestMessage(widget.request.username),
+      confirmLabel: l10n.declineRequestConfirm,
+    );
+    if (!confirmed || !mounted) return;
+
     setState(() => _loading = true);
     try {
       await ref

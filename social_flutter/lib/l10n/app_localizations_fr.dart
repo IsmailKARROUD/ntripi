@@ -779,6 +779,17 @@ class AppLocalizationsFr extends AppLocalizations {
   String get cancelRequestKeep => 'Conserver';
 
   @override
+  String get declineRequestTitle => 'Refuser la demande ?';
+
+  @override
+  String declineRequestMessage(String username) {
+    return 'Refuser la demande d\'abonnement de @$username ? Cette personne pourra en envoyer une nouvelle plus tard.';
+  }
+
+  @override
+  String get declineRequestConfirm => 'Refuser';
+
+  @override
   String get undoButton => 'ANNULER';
 
   @override

@@ -789,6 +789,17 @@ class AppLocalizationsAr extends AppLocalizations {
   String get cancelRequestKeep => 'إبقاء';
 
   @override
+  String get declineRequestTitle => 'رفض الطلب؟';
+
+  @override
+  String declineRequestMessage(String username) {
+    return 'هل تريد رفض طلب متابعة @$username؟ يمكن لهذا الشخص إرسال طلب جديد لاحقًا.';
+  }
+
+  @override
+  String get declineRequestConfirm => 'رفض';
+
+  @override
   String get undoButton => 'تراجع';
 
   @override

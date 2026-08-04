@@ -738,6 +738,17 @@ class AppLocalizationsZh extends AppLocalizations {
   String get cancelRequestKeep => '保留';
 
   @override
+  String get declineRequestTitle => '拒绝请求？';
+
+  @override
+  String declineRequestMessage(String username) {
+    return '拒绝 @$username 的关注请求？对方之后可以再次发送请求。';
+  }
+
+  @override
+  String get declineRequestConfirm => '拒绝';
+
+  @override
   String get undoButton => '撤销';
 
   @override

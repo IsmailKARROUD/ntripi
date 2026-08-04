@@ -776,6 +776,17 @@ class AppLocalizationsDe extends AppLocalizations {
   String get cancelRequestKeep => 'Behalten';
 
   @override
+  String get declineRequestTitle => 'Anfrage ablehnen?';
+
+  @override
+  String declineRequestMessage(String username) {
+    return 'Follower-Anfrage von @$username ablehnen? Diese Person kann später eine neue senden.';
+  }
+
+  @override
+  String get declineRequestConfirm => 'Ablehnen';
+
+  @override
   String get undoButton => 'RÜCKGÄNGIG';
 
   @override
