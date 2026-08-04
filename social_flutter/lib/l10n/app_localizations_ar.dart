@@ -748,6 +748,61 @@ class AppLocalizationsAr extends AppLocalizations {
   String get currencySearchHint => 'ابحث عن عملة…';
 
   @override
+  String get bestTimeToVisit => 'أفضل وقت للسفر';
+
+  @override
+  String get addBestTimeToVisit => 'إضافة أفضل وقت للسفر';
+
+  @override
+  String get formLabelBestTime => 'أفضل وقت للسفر';
+
+  @override
+  String get periodNotSet => 'غير محدّد';
+
+  @override
+  String get periodSectionMonths => 'أفضل الأشهر';
+
+  @override
+  String get periodSectionWindows => 'الفترات';
+
+  @override
+  String get periodSectionWeekdays => 'أيام الأسبوع';
+
+  @override
+  String get periodSectionWhy => 'لماذا هذا الوقت؟';
+
+  @override
+  String get periodMonthsHelp =>
+      'اختر كل شهر يستحق السفر فيه. تندمج الأشهر المتجاورة في فترة واحدة.';
+
+  @override
+  String get periodNoMonthsSelected => 'لم تختر أي شهر بعد';
+
+  @override
+  String get periodExactDays => 'أيام محدّدة';
+
+  @override
+  String get periodStartsOn => 'يبدأ في';
+
+  @override
+  String get periodEndsOn => 'ينتهي في';
+
+  @override
+  String get periodWholeMonth => 'الشهر كامل';
+
+  @override
+  String get periodWeekdays => 'أيام العمل';
+
+  @override
+  String get periodWeekends => 'عطلة نهاية الأسبوع';
+
+  @override
+  String get periodWhyHint => 'مثال: أزهار الكرز، طقس معتدل، ازدحام أقل';
+
+  @override
+  String get periodClear => 'مسح';
+
+  @override
   String currenciesLoadFailed(String error) {
     return 'فشل تحميل العملات: $error';
   }

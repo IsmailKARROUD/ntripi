@@ -726,6 +726,61 @@ class AppLocalizationsEn extends AppLocalizations {
   String get currencySearchHint => 'Search currency…';
 
   @override
+  String get bestTimeToVisit => 'Best time to visit';
+
+  @override
+  String get addBestTimeToVisit => 'Add the best time to visit';
+
+  @override
+  String get formLabelBestTime => 'BEST TIME TO VISIT';
+
+  @override
+  String get periodNotSet => 'Not set';
+
+  @override
+  String get periodSectionMonths => 'BEST MONTHS';
+
+  @override
+  String get periodSectionWindows => 'WINDOWS';
+
+  @override
+  String get periodSectionWeekdays => 'DAYS OF THE WEEK';
+
+  @override
+  String get periodSectionWhy => 'WHY THIS TIME?';
+
+  @override
+  String get periodMonthsHelp =>
+      'Tap every month worth travelling in. Neighbouring months join into one window.';
+
+  @override
+  String get periodNoMonthsSelected => 'No months picked yet';
+
+  @override
+  String get periodExactDays => 'Exact days';
+
+  @override
+  String get periodStartsOn => 'Starts on';
+
+  @override
+  String get periodEndsOn => 'Ends on';
+
+  @override
+  String get periodWholeMonth => 'Whole month';
+
+  @override
+  String get periodWeekdays => 'Weekdays';
+
+  @override
+  String get periodWeekends => 'Weekends';
+
+  @override
+  String get periodWhyHint => 'e.g. cherry blossom, mild weather, fewer crowds';
+
+  @override
+  String get periodClear => 'Clear';
+
+  @override
   String currenciesLoadFailed(String error) {
     return 'Failed to load currencies: $error';
   }

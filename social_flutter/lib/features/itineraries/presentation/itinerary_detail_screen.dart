@@ -49,7 +49,9 @@ import 'package:social_flutter/features/itineraries/providers/saved_itineraries_
 import 'package:social_flutter/features/itineraries/domain/track.dart';
 import 'package:social_flutter/features/itineraries/domain/itinerary_annotation.dart';
 import 'package:social_flutter/features/itineraries/domain/transit_segment.dart';
+import 'package:social_flutter/features/itineraries/domain/recommended_period.dart';
 import 'package:social_flutter/features/itineraries/presentation/annotation_screen.dart';
+import 'package:social_flutter/features/itineraries/presentation/recommended_period_screen.dart';
 import 'package:social_flutter/features/profile/providers/profile_provider.dart';
 import 'package:social_flutter/shared/models/user.dart';
 import 'package:social_flutter/features/itineraries/domain/stop.dart';
@@ -130,6 +132,19 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
           .read(itineraryDetailProvider(widget.itineraryId).notifier)
           .updateHeader({'description': value.isEmpty ? null : value}),
     );
+  }
+
+  Future<void> _editRecommendedPeriod(RecommendedPeriod? current) async {
+    final picked = await Navigator.push<RecommendedPeriod>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => RecommendedPeriodScreen(initial: current),
+      ),
+    );
+    if (picked == null || !mounted) return;
+    await ref
+        .read(itineraryDetailProvider(widget.itineraryId).notifier)
+        .updateHeader(picked.toPayload());
   }
 
   // Opens the add-stop form. Adding a stop is not an edit-mode-only action —
@@ -790,6 +805,29 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                             ),
                           ),
                         ),
+
+                        // ── Recommended period ─────────────────────────────
+                        // Own row rather than a 4th meta chip: the "why" note
+                        // is the useful half and needs more than a pill.
+                        if (canEdit)
+                          SliverToBoxAdapter(
+                            child: Padding(
+                              padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                              child: _RecommendedPeriodEditRow(
+                                period: itinerary.recommendedPeriod,
+                                onTap: () => _editRecommendedPeriod(
+                                    itinerary.recommendedPeriod),
+                              ),
+                            ),
+                          )
+                        else if (itinerary.recommendedPeriod != null)
+                          SliverToBoxAdapter(
+                            child: Padding(
+                              padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                              child: _RecommendedPeriodRow(
+                                  period: itinerary.recommendedPeriod!),
+                            ),
+                          ),
 
                         // ── Description ────────────────────────────────────
                         // In edit mode the description is a tappable row that
@@ -1632,6 +1670,159 @@ class _OwnerRow extends ConsumerWidget {
                   ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+// ─── Recommended period ───────────────────────────────────────────────────────
+// The author's "best time to visit", between the meta chips and the description.
+// Read-only variant; the owner sees _RecommendedPeriodEditRow instead.
+class _RecommendedPeriodRow extends StatelessWidget {
+  final RecommendedPeriod period;
+
+  const _RecommendedPeriodRow({required this.period});
+
+  @override
+  Widget build(BuildContext context) {
+    final nt = context.nt;
+    final l10n = AppLocalizations.of(context)!;
+    final localeName = l10n.localeName;
+    final dates = period.dateLabel(localeName);
+    final weekdays = period.weekdaysLabel(l10n, localeName);
+    final note = period.note?.trim();
+
+    return Container(
+      padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+      decoration: BoxDecoration(
+        // bark (ink), not shadow: a translucent fill must flip per theme, else
+        // black-on-dark makes the block vanish against the dark surface.
+        color: nt.bark.withValues(alpha: 0.03),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: nt.border),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.event_available_rounded, size: 16, color: nt.forest),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  l10n.bestTimeToVisit,
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: nt.text2,
+                    letterSpacing: 0.4,
+                  ),
+                ),
+                // Dates and weekdays are independent — an author may give only
+                // one, so each line renders on its own terms.
+                if (dates != null) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    dates,
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: nt.bark,
+                    ),
+                  ),
+                ],
+                if (weekdays != null) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    weekdays,
+                    style: TextStyle(fontSize: 12.5, color: nt.text2),
+                  ),
+                ],
+                if (note != null && note.isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    note,
+                    style: TextStyle(fontSize: 12.5, color: nt.text2),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// Edit-mode variant, styled after _DescriptionEditRow. Always rendered for the
+// owner, even with nothing set — otherwise an empty period is invisible and the
+// feature is undiscoverable outside the Edit details form.
+class _RecommendedPeriodEditRow extends StatelessWidget {
+  final RecommendedPeriod? period;
+  final VoidCallback onTap;
+
+  const _RecommendedPeriodEditRow({required this.period, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final nt = context.nt;
+    final l10n = AppLocalizations.of(context)!;
+    final localeName = l10n.localeName;
+    final labelStyle = Theme.of(context).textTheme.bodySmall?.copyWith(
+          color: Theme.of(context).colorScheme.primary,
+          fontWeight: FontWeight.w500,
+        );
+    final dates = period?.dateLabel(localeName);
+    final weekdays = period?.weekdaysLabel(l10n, localeName);
+    final note = period?.note?.trim();
+    final hasAny = period != null && !period!.isEmpty;
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(4),
+        child: Container(
+          decoration: BoxDecoration(
+            border: Border.all(color: Theme.of(context).dividerColor),
+            borderRadius: BorderRadius.circular(4),
+          ),
+          padding: const EdgeInsets.fromLTRB(12, 8, 8, 12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Text(l10n.bestTimeToVisit, style: labelStyle),
+                  const Spacer(),
+                  Icon(Icons.edit_outlined, size: 18, color: nt.forest),
+                ],
+              ),
+              const SizedBox(height: 6),
+              if (!hasAny)
+                Text(
+                  l10n.addBestTimeToVisit,
+                  style: TextStyle(color: Theme.of(context).hintColor),
+                )
+              else ...[
+                if (dates != null)
+                  Text(
+                    dates,
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: nt.bark,
+                    ),
+                  ),
+                if (weekdays != null)
+                  Text(weekdays, style: TextStyle(fontSize: 12.5, color: nt.text2)),
+                if (note != null && note.isNotEmpty)
+                  Text(note, style: TextStyle(fontSize: 12.5, color: nt.text2)),
+              ],
+            ],
+          ),
+        ),
       ),
     );
   }

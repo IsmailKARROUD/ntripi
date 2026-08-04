@@ -4,6 +4,7 @@ import 'package:social_flutter/shared/models/moderation_status.dart';
 import 'package:flutter/material.dart';
 import 'package:social_flutter/core/services/currency.dart';
 import 'package:social_flutter/features/itineraries/domain/itinerary_annotation.dart';
+import 'package:social_flutter/features/itineraries/domain/recommended_period.dart';
 import 'package:social_flutter/features/itineraries/domain/stop.dart';
 import 'package:social_flutter/features/itineraries/domain/track.dart';
 import 'package:social_flutter/features/itineraries/domain/transit_segment.dart';
@@ -83,6 +84,10 @@ class Itinerary {
   /// so a server-side addition can never break a deployed client.
   final ModerationStatus moderationStatus;
 
+  /// The owner's "best time to visit". Null when they never set one — and
+  /// always null in summary views, which do not carry the fields at all.
+  final RecommendedPeriod? recommendedPeriod;
+
   const Itinerary({
     required this.id,
     required this.userId,
@@ -103,6 +108,7 @@ class Itinerary {
     this.stopsCount = 0,
     this.hidden = false,
     this.moderationStatus = ModerationStatus.approved,
+    this.recommendedPeriod,
   });
 
   factory Itinerary.fromJson(Map<String, dynamic> json) {
@@ -139,6 +145,9 @@ class Itinerary {
       moderationStatus: ModerationStatus.fromString(
         json['moderation_status'] as String?,
       ),
+      // Detail-only, like `hidden` — summary payloads never carry these keys,
+      // so this stays null there rather than becoming an empty period.
+      recommendedPeriod: RecommendedPeriod.fromItineraryJson(json),
     );
   }
 
@@ -219,6 +228,7 @@ class Itinerary {
       'updated_at': updatedAt.toIso8601String(),
       'hidden': hidden,
       'moderation_status': moderationStatus.wireValue,
+      if (recommendedPeriod != null) ...recommendedPeriod!.toPayload(),
     };
   }
 
@@ -246,6 +256,9 @@ class Itinerary {
     int? stopsCount,
     bool? hidden,
     ModerationStatus? moderationStatus,
+    RecommendedPeriod? recommendedPeriod,
+    // Explicit clear — the `??` fallback below can't null a field, only replace it.
+    bool clearRecommendedPeriod = false,
   }) {
     return Itinerary(
       id: id ?? this.id,
@@ -268,6 +281,9 @@ class Itinerary {
       stopsCount: stopsCount ?? this.stopsCount,
       hidden: hidden ?? this.hidden,
       moderationStatus: moderationStatus ?? this.moderationStatus,
+      recommendedPeriod: clearRecommendedPeriod
+          ? null
+          : (recommendedPeriod ?? this.recommendedPeriod),
     );
   }
 

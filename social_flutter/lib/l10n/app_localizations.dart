@@ -1378,6 +1378,114 @@ abstract class AppLocalizations {
   /// **'Search currency…'**
   String get currencySearchHint;
 
+  /// No description provided for @bestTimeToVisit.
+  ///
+  /// In en, this message translates to:
+  /// **'Best time to visit'**
+  String get bestTimeToVisit;
+
+  /// No description provided for @addBestTimeToVisit.
+  ///
+  /// In en, this message translates to:
+  /// **'Add the best time to visit'**
+  String get addBestTimeToVisit;
+
+  /// No description provided for @formLabelBestTime.
+  ///
+  /// In en, this message translates to:
+  /// **'BEST TIME TO VISIT'**
+  String get formLabelBestTime;
+
+  /// No description provided for @periodNotSet.
+  ///
+  /// In en, this message translates to:
+  /// **'Not set'**
+  String get periodNotSet;
+
+  /// No description provided for @periodSectionMonths.
+  ///
+  /// In en, this message translates to:
+  /// **'BEST MONTHS'**
+  String get periodSectionMonths;
+
+  /// No description provided for @periodSectionWindows.
+  ///
+  /// In en, this message translates to:
+  /// **'WINDOWS'**
+  String get periodSectionWindows;
+
+  /// No description provided for @periodSectionWeekdays.
+  ///
+  /// In en, this message translates to:
+  /// **'DAYS OF THE WEEK'**
+  String get periodSectionWeekdays;
+
+  /// No description provided for @periodSectionWhy.
+  ///
+  /// In en, this message translates to:
+  /// **'WHY THIS TIME?'**
+  String get periodSectionWhy;
+
+  /// No description provided for @periodMonthsHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap every month worth travelling in. Neighbouring months join into one window.'**
+  String get periodMonthsHelp;
+
+  /// No description provided for @periodNoMonthsSelected.
+  ///
+  /// In en, this message translates to:
+  /// **'No months picked yet'**
+  String get periodNoMonthsSelected;
+
+  /// No description provided for @periodExactDays.
+  ///
+  /// In en, this message translates to:
+  /// **'Exact days'**
+  String get periodExactDays;
+
+  /// No description provided for @periodStartsOn.
+  ///
+  /// In en, this message translates to:
+  /// **'Starts on'**
+  String get periodStartsOn;
+
+  /// No description provided for @periodEndsOn.
+  ///
+  /// In en, this message translates to:
+  /// **'Ends on'**
+  String get periodEndsOn;
+
+  /// No description provided for @periodWholeMonth.
+  ///
+  /// In en, this message translates to:
+  /// **'Whole month'**
+  String get periodWholeMonth;
+
+  /// No description provided for @periodWeekdays.
+  ///
+  /// In en, this message translates to:
+  /// **'Weekdays'**
+  String get periodWeekdays;
+
+  /// No description provided for @periodWeekends.
+  ///
+  /// In en, this message translates to:
+  /// **'Weekends'**
+  String get periodWeekends;
+
+  /// No description provided for @periodWhyHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. cherry blossom, mild weather, fewer crowds'**
+  String get periodWhyHint;
+
+  /// No description provided for @periodClear.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear'**
+  String get periodClear;
+
   /// No description provided for @currenciesLoadFailed.
   ///
   /// In en, this message translates to:

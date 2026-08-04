@@ -19,6 +19,7 @@ import 'package:social_flutter/features/itineraries/domain/allowed_user.dart';
 import 'package:social_flutter/features/itineraries/domain/annotation.dart';
 import 'package:social_flutter/features/itineraries/domain/itinerary.dart';
 import 'package:social_flutter/features/itineraries/domain/my_rating.dart';
+import 'package:social_flutter/features/itineraries/domain/recommended_period.dart';
 import 'package:social_flutter/features/itineraries/domain/ratings_page.dart';
 import 'package:social_flutter/features/itineraries/domain/stop.dart';
 
@@ -202,18 +203,27 @@ class ItineraryDetailNotifier extends AsyncNotifier<Itinerary> {
         .read(itineraryRepositoryProvider)
         .updateItinerary(arg, data);
     state.whenData((current) {
-      // The PATCH response is an ItinerarySummary, which omits `description`, so
-      // `updated.description` is always null — adopt the just-saved value from the
-      // request payload instead (the server stored it verbatim). Absent key means
-      // the caller didn't touch the description, so keep the current one.
+      // The PATCH response is an ItinerarySummary, which omits `description` and
+      // the recommended-period fields alike, so `updated` is always null for
+      // them — adopt the just-saved values from the request payload instead (the
+      // server stored them verbatim). An absent key means the caller didn't
+      // touch that field, so the current value is kept.
       final descProvided = data.containsKey('description');
       final newDescription =
           descProvided ? data['description'] as String? : current.description;
+      // toPayload() always emits all three period keys together, so one is
+      // enough to tell "the caller edited the period" from "it left it alone".
+      final periodProvided = data.containsKey('recommended_period_note');
+      final newPeriod = periodProvided
+          ? RecommendedPeriod.fromItineraryJson(data)
+          : current.recommendedPeriod;
       state = AsyncData(
         current.copyWith(
           title: updated.title,
           description: newDescription,
           clearDescription: descProvided && newDescription == null,
+          recommendedPeriod: newPeriod,
+          clearRecommendedPeriod: periodProvided && newPeriod == null,
           visibility: updated.visibility,
           currency: updated.currency,
           updatedAt: updated.updatedAt,

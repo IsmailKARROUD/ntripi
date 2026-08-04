@@ -17,7 +17,7 @@ from decimal import Decimal
 from datetime import datetime
 
 from sqlalchemy import (
-    CheckConstraint, DateTime, ForeignKey, Integer,
+    JSON, CheckConstraint, DateTime, ForeignKey, Integer,
     Numeric, String, Text, func,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -92,6 +92,25 @@ class Itinerary(Base):
     visibility: Mapped[str] = mapped_column(
         String(20), default="only_me", server_default="'only_me'", nullable=False
     )
+
+    # Author's answer to "when should I go?" — all three parts optional.
+    #
+    # recommended_periods holds a list of {from_month, from_day, to_month, to_day}
+    # windows. There is no year: a window is a RECURRING ANNUAL span, so
+    # from_month=9 to_month=3 is a legitimate wrap-around, not reversed input.
+    # Days are optional refinements of the window's first/last month. A list
+    # rather than one range because the good months are often not contiguous
+    # (Jan–Mar and Sep–Dec). Shape and non-overlap are enforced in
+    # schemas/itinerary.py — JSON columns take no DB constraint here or anywhere
+    # else in this codebase.
+    #
+    # Generic JSON, never JSONB/ARRAY: the test suite builds its schema from this
+    # metadata on SQLite (test/conftest.py).
+    recommended_periods: Mapped[list | None] = mapped_column(JSON, nullable=True)
+    # ISO-8601 weekday numbers, 1 = Monday … 7 = Sunday.
+    recommended_weekdays: Mapped[list | None] = mapped_column(JSON, nullable=True)
+    # The "why" — one line, moderated like any other stored user prose.
+    recommended_period_note: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     # Combined moderation state for this itinerary's cover image AND its text
     # (title, description, and its stops / annotations / transport legs, which

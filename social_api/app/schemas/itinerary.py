@@ -38,6 +38,19 @@ _MAX_STOP_NOTES = 2000
 _MAX_RATING_NOTE = 2000
 _MAX_LEG_DIRECTION = 200
 _MAX_LEG_NOTES = 1000
+# The recommended-period "why" is a one-line justification, not a second
+# description — hence far tighter than _MAX_DESCRIPTION.
+_MAX_PERIOD_NOTE = 200
+# 12 alternating months (Jan, Mar, May, …) is the densest arrangement of
+# disjoint non-adjacent windows, so 6 is the true ceiling, not a guess.
+_MAX_PERIOD_WINDOWS = 6
+
+# Days per month with February at 29: a window carries no year, so a boundary
+# on the leap day is a legitimate choice rather than an off-by-one.
+_DAYS_IN_MONTH = {
+    1: 31, 2: 29, 3: 31, 4: 30, 5: 31, 6: 30,
+    7: 31, 8: 31, 9: 30, 10: 31, 11: 30, 12: 31,
+}
 
 
 # A stop's map_url may only point at Google Maps — OSM's gazetteer is thinner,
@@ -364,17 +377,120 @@ class TransitSegmentResponse(BaseModel):
 
 
 # ---------------------------------------------------------------------------
+# Recommended travel period
+# ---------------------------------------------------------------------------
+
+class RecommendedPeriodWindow(BaseModel):
+    """One recurring annual travel window. No year, by design.
+
+    from_month=9, to_month=3 means "September through March" — a wrap-around,
+    not reversed input. Days are optional refinements of the window's first and
+    last month; null means "the whole of that month".
+
+    One class for requests and the response alike. It is a fresh nested model
+    rather than a shared base of two response classes, so the JSON-key-order
+    hazard documented above the annotation responses does not apply.
+    """
+    from_month: int = Field(..., ge=1, le=12)
+    from_day: Optional[int] = Field(None, ge=1, le=31)
+    to_month: int = Field(..., ge=1, le=12)
+    to_day: Optional[int] = Field(None, ge=1, le=31)
+
+    @model_validator(mode="after")
+    def _check_days(self):
+        for month, day, label in (
+            (self.from_month, self.from_day, "from_day"),
+            (self.to_month, self.to_day, "to_day"),
+        ):
+            if day is not None and day > _DAYS_IN_MONTH[month]:
+                raise ValueError(f"{label} {day} does not exist in month {month}")
+        # Within a single month the days are a plain range. Without this,
+        # "20 Jun → 10 Jun" would silently read as almost the whole year.
+        if (
+            self.from_month == self.to_month
+            and self.from_day is not None
+            and self.to_day is not None
+            and self.from_day > self.to_day
+        ):
+            raise ValueError("from_day must not be after to_day within the same month")
+        return self
+
+    def months_covered(self) -> set[int]:
+        """Every month this window touches, walking forward through a wrap."""
+        months = set()
+        month = self.from_month
+        while True:
+            months.add(month)
+            if month == self.to_month:
+                break
+            month = month % 12 + 1
+        return months
+
+
+class _RecommendedPeriodInput(BaseModel):
+    """Optional annual travel windows. Shared by create and update.
+
+    A mixin only for the request schemas, where key order does not matter —
+    ItineraryDetail declares the same three fields inline, because base-class
+    fields serialize first and inheriting here would reorder its JSON keys.
+    """
+    recommended_periods: Optional[list[RecommendedPeriodWindow]] = None
+    recommended_weekdays: Optional[list[int]] = None
+    recommended_period_note: Optional[str] = Field(None, max_length=_MAX_PERIOD_NOTE)
+
+    @model_validator(mode="after")
+    def _check_period(self):
+        windows = self.recommended_periods
+        if windows is not None:
+            if len(windows) > _MAX_PERIOD_WINDOWS:
+                raise ValueError(
+                    f"at most {_MAX_PERIOD_WINDOWS} recommended periods are allowed"
+                )
+            # Windows must neither overlap nor touch. Two adjacent windows are
+            # really one (Jan–Mar + Apr–Jun IS Jan–Jun), and the month grid the
+            # client edits with can only ever produce separated runs — so this
+            # accepts exactly the shapes that round-trip through the editor.
+            # Reject rather than auto-merge: rewriting Jan–Jun + Mar–Jul into
+            # Jan–Jul would store a span the caller never sent.
+            seen: set[int] = set()
+            for window in windows:
+                covered = window.months_covered()
+                # The month after this window's end is its adjacency guard.
+                covered.add(window.to_month % 12 + 1)
+                if seen & covered:
+                    raise ValueError(
+                        "recommended periods must not overlap or be adjacent"
+                    )
+                seen |= covered
+            # One stored representation for equivalent input.
+            windows.sort(key=lambda w: w.from_month)
+            self.recommended_periods = windows or None
+
+        weekdays = self.recommended_weekdays
+        if weekdays is not None:
+            if any(d < 1 or d > 7 for d in weekdays):
+                raise ValueError("recommended_weekdays must be ISO weekdays 1-7")
+            if len(set(weekdays)) != len(weekdays):
+                raise ValueError("recommended_weekdays must not repeat a day")
+            self.recommended_weekdays = sorted(weekdays) or None
+
+        if self.recommended_period_note is not None:
+            self.recommended_period_note = self.recommended_period_note.strip() or None
+        return self
+
+
+# ---------------------------------------------------------------------------
 # Itinerary schemas
 # ---------------------------------------------------------------------------
 
-class ItineraryCreate(BaseModel):
+class ItineraryCreate(_RecommendedPeriodInput):
     title: str = Field(..., min_length=1, max_length=200)
     description: Optional[str] = Field(None, max_length=_MAX_DESCRIPTION)
     currency: str = Field(default="EUR", max_length=3, min_length=3)
     visibility: _VISIBILITY = 'only_me'
 
 
-class ItineraryUpdate(BaseModel):
+class ItineraryUpdate(_RecommendedPeriodInput):
     title: Optional[str] = Field(None, min_length=1, max_length=200)
     description: Optional[str] = Field(None, max_length=_MAX_DESCRIPTION)
     currency: Optional[str] = Field(None, max_length=3, min_length=3)
@@ -488,6 +604,13 @@ class ItineraryDetail(ItinerarySummary):
     # JSON key order — part of the API contract — is unchanged. Only ever true
     # for the owner: every other viewer is filtered out or 403s before this.
     hidden: bool = False
+    # Recommended travel period. Declared inline rather than by inheriting
+    # _RecommendedPeriodInput: base-class fields serialize first, so the mixin
+    # would push these ahead of `description` and reorder the whole response.
+    # Detail only — summary and feed payloads stay exactly as they were.
+    recommended_periods: Optional[list[RecommendedPeriodWindow]] = None
+    recommended_weekdays: Optional[list[int]] = None
+    recommended_period_note: Optional[str] = None
 
 
 # ---------------------------------------------------------------------------

@@ -732,6 +732,62 @@ class AppLocalizationsEs extends AppLocalizations {
   String get currencySearchHint => 'Buscar moneda…';
 
   @override
+  String get bestTimeToVisit => 'Mejor época para viajar';
+
+  @override
+  String get addBestTimeToVisit => 'Añadir la mejor época para viajar';
+
+  @override
+  String get formLabelBestTime => 'MEJOR ÉPOCA PARA VIAJAR';
+
+  @override
+  String get periodNotSet => 'Sin definir';
+
+  @override
+  String get periodSectionMonths => 'MEJORES MESES';
+
+  @override
+  String get periodSectionWindows => 'PERIODOS';
+
+  @override
+  String get periodSectionWeekdays => 'DÍAS DE LA SEMANA';
+
+  @override
+  String get periodSectionWhy => '¿POR QUÉ ESTA ÉPOCA?';
+
+  @override
+  String get periodMonthsHelp =>
+      'Toca cada mes que merezca el viaje. Los meses contiguos forman un solo periodo.';
+
+  @override
+  String get periodNoMonthsSelected => 'Aún no has elegido meses';
+
+  @override
+  String get periodExactDays => 'Días exactos';
+
+  @override
+  String get periodStartsOn => 'Empieza el';
+
+  @override
+  String get periodEndsOn => 'Termina el';
+
+  @override
+  String get periodWholeMonth => 'Mes completo';
+
+  @override
+  String get periodWeekdays => 'Entre semana';
+
+  @override
+  String get periodWeekends => 'Fines de semana';
+
+  @override
+  String get periodWhyHint =>
+      'p. ej. cerezos en flor, clima suave, menos gente';
+
+  @override
+  String get periodClear => 'Borrar';
+
+  @override
   String currenciesLoadFailed(String error) {
     return 'No se pudieron cargar las monedas: $error';
   }

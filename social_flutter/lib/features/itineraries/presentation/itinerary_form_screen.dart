@@ -30,7 +30,9 @@ import 'package:social_flutter/core/ui/destructive_actions.dart';
 import 'package:social_flutter/core/api/api_endpoints.dart';
 import 'package:social_flutter/features/itineraries/data/itinerary_repository.dart';
 import 'package:social_flutter/features/itineraries/domain/itinerary.dart';
+import 'package:social_flutter/features/itineraries/domain/recommended_period.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/cover_image_field.dart';
+import 'package:social_flutter/features/itineraries/presentation/recommended_period_screen.dart';
 import 'package:social_flutter/features/itineraries/presentation/visibility_screen.dart';
 import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
 import 'package:social_flutter/core/utils/platform_utils.dart';
@@ -75,6 +77,7 @@ class _ItineraryFormScreenState extends ConsumerState<ItineraryFormScreen> {
   String? _currency = 'EUR';
 
   ItineraryVisibility _visibility = ItineraryVisibility.public;
+  RecommendedPeriod? _recommendedPeriod;
   bool _saving = false;
   // Guards _initFromProvider so rebuilds don't overwrite the user's edits.
   bool _initialized = false;
@@ -142,6 +145,8 @@ class _ItineraryFormScreenState extends ConsumerState<ItineraryFormScreen> {
         _titleController.text,
         _currency,
         _visibility,
+        // Compared by value — RecommendedPeriod/PeriodWindow implement ==.
+        _recommendedPeriod,
         _pendingImageBytes != null,
         _removeExistingImage,
       ];
@@ -180,6 +185,7 @@ class _ItineraryFormScreenState extends ConsumerState<ItineraryFormScreen> {
           ? itinerary.currency
           : 'Other';
       _visibility = itinerary.visibility;
+      _recommendedPeriod = itinerary.recommendedPeriod;
       _initialized = true;
     });
     // Capture baseline after fields are populated, so opening to edit and
@@ -223,6 +229,10 @@ class _ItineraryFormScreenState extends ConsumerState<ItineraryFormScreen> {
         // 'Other' is a UI-only placeholder; fall back to EUR for the API.
         'currency': _currency == 'Other' ? 'EUR' : _currency,
         'visibility': _visibilityToString[_visibility],
+        // Unlike the description, the period IS edited in this form, so sending
+        // it is correct. toPayload always emits all three keys, so clearing a
+        // part reaches the server as an explicit null rather than "don't touch".
+        ...(_recommendedPeriod ?? const RecommendedPeriod()).toPayload(),
       };
 
       final repo = ref.read(itineraryRepositoryProvider);
@@ -364,6 +374,19 @@ class _ItineraryFormScreenState extends ConsumerState<ItineraryFormScreen> {
       ),
     );
     if (picked != null && mounted) setState(() => _visibility = picked);
+  }
+
+  Future<void> _showRecommendedPeriodPicker() async {
+    final picked = await Navigator.push<RecommendedPeriod>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => RecommendedPeriodScreen(initial: _recommendedPeriod),
+      ),
+    );
+    if (picked == null || !mounted) return;
+    // An all-empty result means the user cleared it — keep null as the single
+    // "unset" representation so the dirty check and the payload agree.
+    setState(() => _recommendedPeriod = picked.isEmpty ? null : picked);
   }
 
   // ── Build ────────────────────────────────────────────────────────────────────
@@ -567,6 +590,15 @@ class _ItineraryFormScreenState extends ConsumerState<ItineraryFormScreen> {
                           ? l10n.otherOption
                           : (_currency ?? 'EUR'),
                       onTap: _showCurrencyPicker,
+                    ),
+                    const _FieldDivider(),
+                    _PickerRow(
+                      icon: Icons.event_available_rounded,
+                      label: l10n.formLabelBestTime,
+                      value: _recommendedPeriod
+                              ?.shortLabel(l10n, l10n.localeName) ??
+                          l10n.periodNotSet,
+                      onTap: _showRecommendedPeriodPicker,
                     ),
                     const _FieldDivider(),
                     _PickerRow(

@@ -590,7 +590,11 @@ def create_itinerary(
     current_user: User = Depends(require_verified_email),  # high-value: verified email required
 ) -> ItinerarySummary:
     ctx = _moderate_itinerary_text(
-        {"title": body.title, "description": body.description},
+        {
+            "title": body.title,
+            "description": body.description,
+            "recommended_period_note": body.recommended_period_note,
+        },
         None, db, current_user,
     )
     itinerary = Itinerary(
@@ -599,6 +603,13 @@ def create_itinerary(
         description=body.description,
         currency=body.currency,
         visibility=body.visibility,
+        # Dumped to plain dicts — a JSON column cannot store Pydantic instances.
+        recommended_periods=(
+            [w.model_dump() for w in body.recommended_periods]
+            if body.recommended_periods else None
+        ),
+        recommended_weekdays=body.recommended_weekdays,
+        recommended_period_note=body.recommended_period_note,
         total_duration_min=0,
         total_cost=Decimal("0.00"),
         moderation_status=ctx.status,
@@ -781,9 +792,15 @@ def update_itinerary(
     # Only the text actually being submitted is scanned — re-scanning untouched
     # fields would bill for text already cleared on a previous write.
     _moderate_itinerary_text(
-        {key: update_data[key] for key in ("title", "description") if key in update_data},
+        {
+            key: update_data[key]
+            for key in ("title", "description", "recommended_period_note")
+            if key in update_data
+        },
         itinerary, db, current_user,
     )
+    # model_dump already flattened the nested period windows to plain dicts, so
+    # every ItineraryUpdate field whose name matches a column lands as-is here.
     for field, value in update_data.items():
         setattr(itinerary, field, value)
 

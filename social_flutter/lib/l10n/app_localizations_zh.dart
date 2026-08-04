@@ -697,6 +697,60 @@ class AppLocalizationsZh extends AppLocalizations {
   String get currencySearchHint => '搜索货币…';
 
   @override
+  String get bestTimeToVisit => '最佳出行时间';
+
+  @override
+  String get addBestTimeToVisit => '添加最佳出行时间';
+
+  @override
+  String get formLabelBestTime => '最佳出行时间';
+
+  @override
+  String get periodNotSet => '未设置';
+
+  @override
+  String get periodSectionMonths => '最佳月份';
+
+  @override
+  String get periodSectionWindows => '时间段';
+
+  @override
+  String get periodSectionWeekdays => '星期';
+
+  @override
+  String get periodSectionWhy => '为什么是这个时间？';
+
+  @override
+  String get periodMonthsHelp => '点选所有值得前往的月份。相邻的月份会合并为一个时间段。';
+
+  @override
+  String get periodNoMonthsSelected => '尚未选择月份';
+
+  @override
+  String get periodExactDays => '具体日期';
+
+  @override
+  String get periodStartsOn => '开始于';
+
+  @override
+  String get periodEndsOn => '结束于';
+
+  @override
+  String get periodWholeMonth => '整月';
+
+  @override
+  String get periodWeekdays => '工作日';
+
+  @override
+  String get periodWeekends => '周末';
+
+  @override
+  String get periodWhyHint => '例如：樱花盛开、气候宜人、人少';
+
+  @override
+  String get periodClear => '清除';
+
+  @override
   String currenciesLoadFailed(String error) {
     return '加载货币失败：$error';
   }
