@@ -72,7 +72,19 @@ class _FollowButtonState extends ConsumerState<FollowButton> {
   }
 
   Future<void> _handleUnfollow() async {
-    // Tier 1: act immediately then offer undo via snackbar.
+    final l10n = AppLocalizations.of(context)!;
+    // Tier 2: the 5s undo window was the only way back, and for a private
+    // account re-following needs a fresh request + approval.
+    final confirmed = await confirmDestructiveAction(
+      context: context,
+      icon: Icons.person_remove_rounded,
+      title: l10n.unfollowTitle(widget.targetUsername),
+      message: l10n.unfollowMessage,
+      confirmLabel: l10n.unfollowConfirm,
+      cancelLabel: l10n.unfollowKeep,
+    );
+    if (!confirmed || !mounted) return;
+
     setState(() => _isLoading = true);
     try {
       await _repo.unfollowUser(widget.targetUserId);
@@ -83,23 +95,9 @@ class _FollowButtonState extends ConsumerState<FollowButton> {
           SnackBar(content: Text(extractErrorMessage(e, AppLocalizations.of(context)!))),
         );
       }
-      return;
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
-
-    if (!mounted) return;
-    showUndoableActionSnackbar(
-      context: context,
-      message: AppLocalizations.of(context)!.unfollowedSnackbar(widget.targetUsername),
-      onUndo: () async {
-        final result = await _repo.followUser(widget.targetUserId);
-        widget.onChanged(
-          isFollowing: result.status == 'accepted',
-          followIsPending: result.status == 'pending',
-        );
-      },
-    );
   }
 
   Future<void> _handleCancelRequest() async {

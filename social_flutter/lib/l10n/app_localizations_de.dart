@@ -757,6 +757,21 @@ class AppLocalizationsDe extends AppLocalizations {
   String get requestedButton => 'Angefragt';
 
   @override
+  String unfollowTitle(String username) {
+    return '@$username nicht mehr folgen?';
+  }
+
+  @override
+  String get unfollowMessage =>
+      'Du siehst deren Reiserouten dann nicht mehr in deinem Feed.';
+
+  @override
+  String get unfollowConfirm => 'Nicht mehr folgen';
+
+  @override
+  String get unfollowKeep => 'Weiter folgen';
+
+  @override
   String unfollowedSnackbar(String username) {
     return '@$username nicht mehr gefolgt';
   }

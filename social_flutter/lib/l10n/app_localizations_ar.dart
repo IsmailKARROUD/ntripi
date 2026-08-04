@@ -770,6 +770,20 @@ class AppLocalizationsAr extends AppLocalizations {
   String get requestedButton => 'تم الطلب';
 
   @override
+  String unfollowTitle(String username) {
+    return 'إلغاء متابعة @$username؟';
+  }
+
+  @override
+  String get unfollowMessage => 'لن تظهر مسارات هذا الحساب لديك بعد الآن.';
+
+  @override
+  String get unfollowConfirm => 'إلغاء المتابعة';
+
+  @override
+  String get unfollowKeep => 'إبقاء المتابعة';
+
+  @override
   String unfollowedSnackbar(String username) {
     return 'ألغيت متابعة @$username';
   }

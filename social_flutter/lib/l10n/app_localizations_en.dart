@@ -748,6 +748,21 @@ class AppLocalizationsEn extends AppLocalizations {
   String get requestedButton => 'Requested';
 
   @override
+  String unfollowTitle(String username) {
+    return 'Unfollow @$username?';
+  }
+
+  @override
+  String get unfollowMessage =>
+      'You\'ll stop seeing their itineraries in your feed.';
+
+  @override
+  String get unfollowConfirm => 'Unfollow';
+
+  @override
+  String get unfollowKeep => 'Stay following';
+
+  @override
   String unfollowedSnackbar(String username) {
     return 'Unfollowed @$username';
   }

@@ -310,6 +310,17 @@
   "followButton": "Follow",
   "followingButton": "Following",
   "requestedButton": "Requested",
+  "unfollowTitle": "Unfollow @{username}?",
+  "@unfollowTitle": {
+    "placeholders": {
+      "username": {
+        "type": "String"
+      }
+    }
+  },
+  "unfollowMessage": "You'll stop seeing their itineraries in your feed.",
+  "unfollowConfirm": "Unfollow",
+  "unfollowKeep": "Stay following",
   "unfollowedSnackbar": "Unfollowed @{username}",
   "@unfollowedSnackbar": {
     "placeholders": {

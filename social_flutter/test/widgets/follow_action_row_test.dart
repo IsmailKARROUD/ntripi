@@ -71,6 +71,29 @@ void main() {
     });
 
     testWidgets(
+        'Given following, When Following tapped and dismissed, '
+        'Then no unfollow happens', (tester) async {
+      var changed = false;
+      await tester.pumpWidget(_host(
+        user: _makeUser(isFollowing: true),
+        onChanged: ({required isFollowing, required followIsPending}) =>
+            changed = true,
+      ));
+      await tester.pump();
+
+      await tester.tap(find.text('Following'));
+      await tester.pumpAndSettle(); // ConfirmDialog entrance is 220ms
+      expect(find.text('Unfollow @kma?'), findsOneWidget);
+
+      await tester.tap(find.text('Stay following'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Unfollow @kma?'), findsNothing);
+      expect(find.text('Following'), findsOneWidget);
+      expect(changed, isFalse);
+    });
+
+    testWidgets(
         'Given private user with pending request, When widget builds, '
         'Then FollowButton label is "Requested"', (tester) async {
       await tester.pumpWidget(_host(

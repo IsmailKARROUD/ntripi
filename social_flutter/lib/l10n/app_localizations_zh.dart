@@ -719,6 +719,20 @@ class AppLocalizationsZh extends AppLocalizations {
   String get requestedButton => '已请求';
 
   @override
+  String unfollowTitle(String username) {
+    return '取消关注 @$username？';
+  }
+
+  @override
+  String get unfollowMessage => '你将不再在动态中看到对方的行程。';
+
+  @override
+  String get unfollowConfirm => '取消关注';
+
+  @override
+  String get unfollowKeep => '继续关注';
+
+  @override
   String unfollowedSnackbar(String username) {
     return '已取消关注 @$username';
   }

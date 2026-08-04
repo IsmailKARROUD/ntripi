@@ -1414,6 +1414,30 @@ abstract class AppLocalizations {
   /// **'Requested'**
   String get requestedButton;
 
+  /// No description provided for @unfollowTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Unfollow @{username}?'**
+  String unfollowTitle(String username);
+
+  /// No description provided for @unfollowMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'ll stop seeing their itineraries in your feed.'**
+  String get unfollowMessage;
+
+  /// No description provided for @unfollowConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Unfollow'**
+  String get unfollowConfirm;
+
+  /// No description provided for @unfollowKeep.
+  ///
+  /// In en, this message translates to:
+  /// **'Stay following'**
+  String get unfollowKeep;
+
   /// No description provided for @unfollowedSnackbar.
   ///
   /// In en, this message translates to:

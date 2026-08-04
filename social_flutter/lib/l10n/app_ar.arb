@@ -302,6 +302,17 @@
   "followButton": "متابعة",
   "followingButton": "متابَع",
   "requestedButton": "تم الطلب",
+  "unfollowTitle": "إلغاء متابعة @{username}؟",
+  "@unfollowTitle": {
+    "placeholders": {
+      "username": {
+        "type": "String"
+      }
+    }
+  },
+  "unfollowMessage": "لن تظهر مسارات هذا الحساب لديك بعد الآن.",
+  "unfollowConfirm": "إلغاء المتابعة",
+  "unfollowKeep": "إبقاء المتابعة",
   "unfollowedSnackbar": "ألغيت متابعة @{username}",
   "@unfollowedSnackbar": {
     "placeholders": {

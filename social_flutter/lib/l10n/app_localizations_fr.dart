@@ -760,6 +760,21 @@ class AppLocalizationsFr extends AppLocalizations {
   String get requestedButton => 'En attente';
 
   @override
+  String unfollowTitle(String username) {
+    return 'Se désabonner de @$username ?';
+  }
+
+  @override
+  String get unfollowMessage =>
+      'Vous ne verrez plus ses itinéraires dans votre fil.';
+
+  @override
+  String get unfollowConfirm => 'Se désabonner';
+
+  @override
+  String get unfollowKeep => 'Rester abonné';
+
+  @override
   String unfollowedSnackbar(String username) {
     return 'Vous ne suivez plus @$username';
   }
