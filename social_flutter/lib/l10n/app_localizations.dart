@@ -4893,6 +4893,162 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Shake your phone to report a problem'**
   String get settingsShakeToReportDetail;
+
+  /// No description provided for @notificationsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications'**
+  String get notificationsTitle;
+
+  /// No description provided for @notificationsEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing here yet.\nFollows, ratings and saves will show up here.'**
+  String get notificationsEmpty;
+
+  /// No description provided for @notificationsCountLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Recent · {count}'**
+  String notificationsCountLabel(int count);
+
+  /// No description provided for @notificationSomeone.
+  ///
+  /// In en, this message translates to:
+  /// **'Someone'**
+  String get notificationSomeone;
+
+  /// No description provided for @notificationGeneric.
+  ///
+  /// In en, this message translates to:
+  /// **'You have a new notification.'**
+  String get notificationGeneric;
+
+  /// No description provided for @notificationTapForDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap for details and to appeal'**
+  String get notificationTapForDetails;
+
+  /// No description provided for @notificationFollowRequest.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} asked to follow you'**
+  String notificationFollowRequest(String name);
+
+  /// No description provided for @notificationNewFollower.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} started following you'**
+  String notificationNewFollower(String name);
+
+  /// No description provided for @notificationFollowAccepted.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} accepted your follow request'**
+  String notificationFollowAccepted(String name);
+
+  /// No description provided for @notificationRated.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} rated one of your itineraries'**
+  String notificationRated(String name);
+
+  /// No description provided for @notificationSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} saved one of your itineraries'**
+  String notificationSaved(String name);
+
+  /// No description provided for @notificationHidden.
+  ///
+  /// In en, this message translates to:
+  /// **'“{title}” was hidden'**
+  String notificationHidden(String title);
+
+  /// No description provided for @notificationHiddenUntitled.
+  ///
+  /// In en, this message translates to:
+  /// **'One of your itineraries was hidden'**
+  String get notificationHiddenUntitled;
+
+  /// No description provided for @notificationRemoved.
+  ///
+  /// In en, this message translates to:
+  /// **'“{title}” was removed'**
+  String notificationRemoved(String title);
+
+  /// No description provided for @notificationRemovedUntitled.
+  ///
+  /// In en, this message translates to:
+  /// **'One of your itineraries was removed'**
+  String get notificationRemovedUntitled;
+
+  /// No description provided for @notificationSettingsOptionalLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Optional'**
+  String get notificationSettingsOptionalLabel;
+
+  /// No description provided for @notificationSettingsRatings.
+  ///
+  /// In en, this message translates to:
+  /// **'Ratings'**
+  String get notificationSettingsRatings;
+
+  /// No description provided for @notificationSettingsRatingsDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'When someone rates your itinerary'**
+  String get notificationSettingsRatingsDetail;
+
+  /// No description provided for @notificationSettingsSaves.
+  ///
+  /// In en, this message translates to:
+  /// **'Saves'**
+  String get notificationSettingsSaves;
+
+  /// No description provided for @notificationSettingsSavesDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'When someone saves your itinerary'**
+  String get notificationSettingsSavesDetail;
+
+  /// No description provided for @notificationSettingsFollowAccepted.
+  ///
+  /// In en, this message translates to:
+  /// **'Follow accepted'**
+  String get notificationSettingsFollowAccepted;
+
+  /// No description provided for @notificationSettingsFollowAcceptedDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'When someone accepts your follow request'**
+  String get notificationSettingsFollowAcceptedDetail;
+
+  /// No description provided for @notificationSettingsAlwaysOnNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Follow requests and moderation notices are always on. A request you never see can\'t be answered, and you need to know when your content is hidden so you can appeal in time.'**
+  String get notificationSettingsAlwaysOnNote;
+
+  /// No description provided for @settingsNotificationsOnCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} of 3 on'**
+  String settingsNotificationsOnCount(int count);
+
+  /// No description provided for @notificationWarned.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'ve received a moderation warning'**
+  String get notificationWarned;
+
+  /// No description provided for @notificationWarnedDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap to see why and to appeal'**
+  String get notificationWarnedDetail;
 }
 
 class _AppLocalizationsDelegate

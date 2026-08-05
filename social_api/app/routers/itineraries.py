@@ -83,6 +83,7 @@ from app.schemas.itinerary import (
     TransportLegResponse,
     TransportLegUpdate,
 )
+from app.services import notification_service
 from app.services.image_service import ImageProcessingError, process_and_store, process_cover_image
 from app.services.moderation_service import ModerationContext, ModerationRejectedError
 from app.services.moderation_actions import escalate_if_flagged
@@ -1412,6 +1413,10 @@ def upsert_rating(
         target_id=existing.id if existing else None,
     )
 
+    # Only a first rating is news. This endpoint is an upsert, so without this
+    # flag every star correction would re-notify the owner.
+    is_first_rating = existing is None
+
     if existing:
         existing.stars = body.stars
         existing.safety_stars = body.safety_stars
@@ -1450,6 +1455,17 @@ def upsert_rating(
         escalate_flag=ctx.escalate, decision_id=ctx.decision_id,
     )
     recalculate_rating(itinerary, db)
+
+    if is_first_rating:
+        notification_service.notify(
+            db,
+            user_id=itinerary.user_id,
+            type="itinerary_rated",
+            actor=current_user,
+            entity_type="itinerary",
+            entity_id=itinerary.id,
+        )
+
     db.commit()
     db.refresh(rating)
     return rating  # type: ignore[return-value]
@@ -1529,6 +1545,15 @@ def save_itinerary(
         return  # idempotent — re-saving is a no-op so an optimistic UI never errors
 
     db.add(SavedItinerary(itinerary_id=itinerary_id, user_id=current_user.id))
+    # Below the idempotent early-return above, so a re-save never re-notifies.
+    notification_service.notify(
+        db,
+        user_id=itinerary.user_id,
+        type="itinerary_saved",
+        actor=current_user,
+        entity_type="itinerary",
+        entity_id=itinerary.id,
+    )
     db.commit()
 
 

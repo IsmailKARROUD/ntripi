@@ -31,7 +31,7 @@ from app.dependencies import get_current_user, require_verified_email
 from app.models.follow import Follow, FollowStatus
 from app.models.user import User
 from app.schemas.follow import FollowRequestItem, FollowResponse, FollowerListItem
-from app.services import block_service
+from app.services import block_service, notification_service
 from app.services.user_service import (
     bump_follow_counters,
     get_active_user_or_404,
@@ -136,10 +136,26 @@ def follow_user(
         status=initial_status,
     )
     db.add(new_follow)
+    db.flush()  # need new_follow.id for the notification's entity reference
 
     # Only update counters if the follow is immediately accepted.
     if initial_status == FollowStatus.accepted:
         bump_follow_counters(current_user, target_user, 1)
+
+    # Same transaction as the Follow row: a request the recipient is never told
+    # about is a request they can never answer.
+    notification_service.notify(
+        db,
+        user_id=target_user.id,
+        type=(
+            "follow_request"
+            if initial_status == FollowStatus.pending
+            else "new_follower"
+        ),
+        actor=current_user,
+        entity_type="follow",
+        entity_id=new_follow.id,
+    )
 
     db.commit()
     db.refresh(new_follow)
@@ -274,6 +290,15 @@ def accept_follow_request(
     follow.status = FollowStatus.accepted
 
     bump_follow_counters(db.get(User, follow.follower_id), current_user, 1)
+
+    notification_service.notify(
+        db,
+        user_id=follow.follower_id,
+        type="follow_accepted",
+        actor=current_user,
+        entity_type="user",
+        entity_id=current_user.id,
+    )
 
     db.commit()
     db.refresh(follow)

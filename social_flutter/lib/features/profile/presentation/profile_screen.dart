@@ -14,6 +14,7 @@ import 'package:social_flutter/core/ui/destructive_actions.dart';
 import 'package:social_flutter/core/utils/platform_utils.dart';
 import 'package:social_flutter/features/auth/providers/auth_provider.dart';
 import 'package:social_flutter/features/follows/providers/follow_provider.dart';
+import 'package:social_flutter/features/notifications/presentation/widgets/notification_bell.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/itinerary_summary_card.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/markdown_notes_editor.dart';
 import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
@@ -208,6 +209,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                             onLogout: _logout,
                           )
                       : null,
+                  notificationsAction:
+                      widget.isSelf ? const NotificationBell() : null,
                   coverImageUrl: user.coverImageUrl,
                   // Every UGC surface needs a report action; a profile is one.
                   moreActions: widget.isSelf

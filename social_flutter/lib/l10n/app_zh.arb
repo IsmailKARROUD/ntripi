@@ -797,5 +797,94 @@
   "bugReportDraw": "标注",
   "settingsReportBug": "报告错误",
   "settingsShakeToReport": "摇一摇报告",
-  "settingsShakeToReportDetail": "摇动手机即可报告问题"
+  "settingsShakeToReportDetail": "摇动手机即可报告问题",
+  "notificationsTitle": "通知",
+  "notificationsEmpty": "暂时没有内容。\n关注、评分和收藏都会显示在这里。",
+  "notificationsCountLabel": "最近 · {count}",
+  "@notificationsCountLabel": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "notificationSomeone": "某人",
+  "notificationGeneric": "你有一条新通知。",
+  "notificationTapForDetails": "点击查看详情并申诉",
+  "notificationFollowRequest": "{name} 请求关注你",
+  "@notificationFollowRequest": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "notificationNewFollower": "{name} 关注了你",
+  "@notificationNewFollower": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "notificationFollowAccepted": "{name} 接受了你的关注请求",
+  "@notificationFollowAccepted": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "notificationRated": "{name} 评价了你的一条行程",
+  "@notificationRated": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "notificationSaved": "{name} 收藏了你的一条行程",
+  "@notificationSaved": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "notificationHidden": "“{title}”已被隐藏",
+  "@notificationHidden": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "notificationHiddenUntitled": "你的一条行程已被隐藏",
+  "notificationRemoved": "“{title}”已被移除",
+  "@notificationRemoved": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "notificationRemovedUntitled": "你的一条行程已被移除",
+  "notificationSettingsOptionalLabel": "可选",
+  "notificationSettingsRatings": "评分",
+  "notificationSettingsRatingsDetail": "当有人评价你的行程时",
+  "notificationSettingsSaves": "收藏",
+  "notificationSettingsSavesDetail": "当有人收藏你的行程时",
+  "notificationSettingsFollowAccepted": "请求已接受",
+  "notificationSettingsFollowAcceptedDetail": "当有人接受你的关注请求时",
+  "notificationSettingsAlwaysOnNote": "关注请求和审核通知始终开启。你看不到的请求无法处理，而且你需要知道内容何时被隐藏，才能及时申诉。",
+  "settingsNotificationsOnCount": "已开启 {count} / 3",
+  "@settingsNotificationsOnCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "notificationWarned": "你收到了一条审核警告",
+  "notificationWarnedDetail": "点击查看原因并申诉"
 }

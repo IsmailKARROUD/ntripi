@@ -1,0 +1,508 @@
+"""
+test_notifications.py — Tests for the in-app notification feed.
+
+Covers the three suppression rules that only hold because
+notification_service.notify is the single writer (self, muted, blocked), the
+idempotent call sites (re-save, rating edit, repeat auto-hide), the feed and
+badge endpoints, the IDOR guard on marking read, and the retention purge.
+"""
+
+from __future__ import annotations
+
+import uuid
+from datetime import datetime, timedelta, timezone
+
+import pytest
+from fastapi.testclient import TestClient
+
+from conftest import (
+    TestingSessionLocal, auth_headers, make_admin, register_user,
+)
+from app.config import get_settings
+from app.models.notification import Notification
+from app.services import notification_service
+
+
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+
+def _create_itinerary(client, token, *, visibility="public", title="Test Trip"):
+    r = client.post(
+        "/itineraries/",
+        json={"title": title, "visibility": visibility},
+        headers=auth_headers(token),
+    )
+    assert r.status_code == 201, r.json()
+    return r.json()
+
+
+def _set_private(client, token, is_private: bool) -> None:
+    r = client.patch(
+        "/users/me", json={"is_private": is_private}, headers=auth_headers(token),
+    )
+    assert r.status_code == 200, r.json()
+
+
+def _feed(client, token) -> dict:
+    r = client.get("/notifications", headers=auth_headers(token))
+    assert r.status_code == 200, r.json()
+    return r.json()
+
+
+def _types(client, token) -> list[str]:
+    return [n["type"] for n in _feed(client, token)["notifications"]]
+
+
+def _rows() -> list[Notification]:
+    db = TestingSessionLocal()
+    try:
+        return db.query(Notification).all()
+    finally:
+        db.close()
+
+
+# ---------------------------------------------------------------------------
+# Follows
+# ---------------------------------------------------------------------------
+
+def test_follow_request_notifies_the_target_only(client: TestClient):
+    alice = register_user(client, "alice", "alice@x.com")
+    bobby = register_user(client, "bobby", "bob@x.com")
+    _set_private(client, bobby["access_token"], True)
+
+    r = client.post(
+        f"/users/{bobby['user_id']}/follow", headers=auth_headers(alice["access_token"]),
+    )
+    assert r.status_code == 201, r.json()
+
+    assert _types(client, bobby["access_token"]) == ["follow_request"]
+    # The actor is never notified about their own action.
+    assert _types(client, alice["access_token"]) == []
+
+
+def test_public_follow_notifies_new_follower_not_request(client: TestClient):
+    alice = register_user(client, "alice", "alice@x.com")
+    bobby = register_user(client, "bobby", "bob@x.com")
+    _set_private(client, bobby["access_token"], False)
+
+    client.post(
+        f"/users/{bobby['user_id']}/follow", headers=auth_headers(alice["access_token"]),
+    )
+
+    assert _types(client, bobby["access_token"]) == ["new_follower"]
+
+
+def test_accepting_a_request_notifies_the_requester(client: TestClient):
+    alice = register_user(client, "alice", "alice@x.com")
+    bobby = register_user(client, "bobby", "bob@x.com")
+    _set_private(client, bobby["access_token"], True)
+
+    client.post(
+        f"/users/{bobby['user_id']}/follow", headers=auth_headers(alice["access_token"]),
+    )
+    requests = client.get(
+        "/users/me/follow-requests", headers=auth_headers(bobby["access_token"]),
+    ).json()
+    follow_id = requests[0]["follow_id"]
+
+    r = client.post(
+        f"/users/me/follow-requests/{follow_id}/accept",
+        headers=auth_headers(bobby["access_token"]),
+    )
+    assert r.status_code == 200, r.json()
+
+    assert _types(client, alice["access_token"]) == ["follow_accepted"]
+
+
+def test_going_public_notifies_every_pending_requester(client: TestClient):
+    """The bulk auto-accept is a separate code path from the single accept."""
+    owner = register_user(client, "owner", "owner@x.com")
+    _set_private(client, owner["access_token"], True)
+
+    fans = [
+        register_user(client, f"fan{i}", f"fan{i}@x.com") for i in range(3)
+    ]
+    for fan in fans:
+        client.post(
+            f"/users/{owner['user_id']}/follow",
+            headers=auth_headers(fan["access_token"]),
+        )
+
+    _set_private(client, owner["access_token"], False)
+
+    for fan in fans:
+        assert _types(client, fan["access_token"]) == ["follow_accepted"]
+
+
+def test_muted_follow_accepted_writes_no_row(client: TestClient):
+    alice = register_user(client, "alice", "alice@x.com")
+    bobby = register_user(client, "bobby", "bob@x.com")
+    _set_private(client, bobby["access_token"], True)
+
+    r = client.patch(
+        "/users/me", json={"notify_follow_accepted": False},
+        headers=auth_headers(alice["access_token"]),
+    )
+    assert r.status_code == 200
+    assert r.json()["notify_follow_accepted"] is False
+
+    client.post(
+        f"/users/{bobby['user_id']}/follow", headers=auth_headers(alice["access_token"]),
+    )
+    requests = client.get(
+        "/users/me/follow-requests", headers=auth_headers(bobby["access_token"]),
+    ).json()
+    client.post(
+        f"/users/me/follow-requests/{requests[0]['follow_id']}/accept",
+        headers=auth_headers(bobby["access_token"]),
+    )
+
+    assert _types(client, alice["access_token"]) == []
+
+
+def test_blocked_user_generates_no_notification(client: TestClient):
+    alice = register_user(client, "alice", "alice@x.com")
+    bobby = register_user(client, "bobby", "bob@x.com")
+    _set_private(client, bobby["access_token"], False)
+
+    # Bob blocks Alice; visibility is cut in both directions, and that includes
+    # being told the blocked user did something.
+    r = client.post(
+        f"/users/{alice['user_id']}/block", headers=auth_headers(bobby["access_token"]),
+    )
+    assert r.status_code in (200, 201, 204), r.text
+
+    # Driven through notify() directly rather than through the follow endpoint:
+    # a blocked follow is refused upstream, so going via HTTP would pass even if
+    # the block check were missing from the seam.
+    from app.models.user import User
+
+    db = TestingSessionLocal()
+    try:
+        actor = db.get(User, uuid.UUID(alice["user_id"]))
+        assert notification_service.notify(
+            db, user_id=uuid.UUID(bobby["user_id"]),
+            type="new_follower", actor=actor,
+        ) is None
+        db.commit()
+    finally:
+        db.close()
+
+    assert _rows() == []
+    assert _types(client, bobby["access_token"]) == []
+
+
+# ---------------------------------------------------------------------------
+# Itineraries
+# ---------------------------------------------------------------------------
+
+def test_first_rating_notifies_owner_and_edits_do_not(client: TestClient):
+    owner = register_user(client, "owner", "owner@x.com")
+    rater = register_user(client, "rater", "rater@x.com")
+    itinerary = _create_itinerary(client, owner["access_token"])
+
+    for stars in (5, 3):  # POST is an upsert — the second call is an edit
+        r = client.post(
+            f"/itineraries/{itinerary['id']}/ratings",
+            json={"stars": stars}, headers=auth_headers(rater["access_token"]),
+        )
+        assert r.status_code in (200, 201), r.json()
+
+    assert _types(client, owner["access_token"]) == ["itinerary_rated"]
+
+
+def test_muted_ratings_write_no_row_but_the_rating_still_lands(client: TestClient):
+    owner = register_user(client, "owner", "owner@x.com")
+    rater = register_user(client, "rater", "rater@x.com")
+    client.patch(
+        "/users/me", json={"notify_ratings": False},
+        headers=auth_headers(owner["access_token"]),
+    )
+    itinerary = _create_itinerary(client, owner["access_token"])
+
+    r = client.post(
+        f"/itineraries/{itinerary['id']}/ratings",
+        json={"stars": 4}, headers=auth_headers(rater["access_token"]),
+    )
+    assert r.status_code in (200, 201), r.json()
+    # Suppressing the notification must never suppress the write it rode with.
+    assert r.json()["stars"] == 4
+    assert _types(client, owner["access_token"]) == []
+
+
+def test_saving_twice_notifies_once(client: TestClient):
+    owner = register_user(client, "owner", "owner@x.com")
+    saver = register_user(client, "saver", "saver@x.com")
+    itinerary = _create_itinerary(client, owner["access_token"])
+
+    for _ in range(2):  # save is idempotent — the second call early-returns
+        r = client.post(
+            f"/itineraries/{itinerary['id']}/save",
+            headers=auth_headers(saver["access_token"]),
+        )
+        assert r.status_code == 204, r.text
+
+    assert _types(client, owner["access_token"]) == ["itinerary_saved"]
+
+
+def test_feed_resolves_the_entity_title(client: TestClient):
+    owner = register_user(client, "owner", "owner@x.com")
+    saver = register_user(client, "saver", "saver@x.com")
+    itinerary = _create_itinerary(client, owner["access_token"], title="Kyoto 5 days")
+    client.post(
+        f"/itineraries/{itinerary['id']}/save",
+        headers=auth_headers(saver["access_token"]),
+    )
+
+    item = _feed(client, owner["access_token"])["notifications"][0]
+    assert item["entity_title"] == "Kyoto 5 days"
+    assert item["entity_type"] == "itinerary"
+    assert item["actor_username"] == "saver"
+
+
+# ---------------------------------------------------------------------------
+# Moderation
+# ---------------------------------------------------------------------------
+
+def test_auto_hide_notifies_the_author_once(client: TestClient):
+    """The second auto_hide is a no-op, so it must not stack a second notice."""
+    from app.models.itinerary import Itinerary
+    from app.services import moderation_actions
+
+    owner = register_user(client, "owner", "owner@x.com")
+    itinerary = _create_itinerary(client, owner["access_token"])
+
+    db = TestingSessionLocal()
+    try:
+        row = db.get(Itinerary, uuid.UUID(itinerary["id"]))
+        for _ in range(2):
+            moderation_actions.auto_hide(
+                db, "itinerary", row,
+                action="auto_hide_reports", reason="threshold reached",
+            )
+        db.commit()
+    finally:
+        db.close()
+
+    feed = _feed(client, owner["access_token"])["notifications"]
+    assert [n["type"] for n in feed] == ["moderation_action"]
+    # The action name rides in subtype so a new moderation action needs no new type.
+    assert feed[0]["subtype"] == "auto_hide_reports"
+    # System action — naming the reporter would out them.
+    assert feed[0]["actor_id"] is None
+
+
+def _warn(warned_id: str, admin_id: str, reason: str = "be nicer") -> None:
+    """Issue an operator warning straight through the service."""
+    from app.models.user import User
+    from app.services import admin_service
+
+    db = TestingSessionLocal()
+    try:
+        admin_service.warn_user(
+            db,
+            db.get(User, uuid.UUID(admin_id)),
+            db.get(User, uuid.UUID(warned_id)),
+            reason,
+        )
+    finally:
+        db.close()
+
+
+def test_warning_notifies_the_warned_user(client: TestClient):
+    warned = register_user(client, "warned", "warned@x.com")
+    operator = register_user(client, "operator", "ops@x.com")
+    make_admin("ops@x.com")
+
+    _warn(warned["user_id"], operator["user_id"])
+
+    feed = _feed(client, warned["access_token"])["notifications"]
+    assert [n["type"] for n in feed] == ["moderation_action"]
+    assert feed[0]["subtype"] == "warn"
+    # The moderator is never named to the person they warned.
+    assert feed[0]["actor_id"] is None
+    # A warning is against the person, so it carries no itinerary to show.
+    assert feed[0]["entity_type"] == "user"
+    assert feed[0]["entity_title"] is None
+
+    # The operator is not notified about the action they took.
+    assert _types(client, operator["access_token"]) == []
+
+
+def test_a_second_warning_is_a_second_notification(client: TestClient):
+    """Unlike auto_hide, warnings are NOT idempotent — escalation is the point,
+    and collapsing the second one would hide that this has happened before."""
+    warned = register_user(client, "warned", "warned@x.com")
+    operator = register_user(client, "operator", "ops@x.com")
+    make_admin("ops@x.com")
+
+    _warn(warned["user_id"], operator["user_id"], "first")
+    _warn(warned["user_id"], operator["user_id"], "second")
+
+    feed = _feed(client, warned["access_token"])["notifications"]
+    assert [n["subtype"] for n in feed] == ["warn", "warn"]
+
+
+def test_warning_is_appealable_from_account_status(client: TestClient):
+    """The notification's whole tap target is the violations feed, so a warning
+    that never lands there would send the user to an empty screen."""
+    warned = register_user(client, "warned", "warned@x.com")
+    operator = register_user(client, "operator", "ops@x.com")
+    make_admin("ops@x.com")
+
+    _warn(warned["user_id"], operator["user_id"])
+
+    violations = client.get(
+        "/appeals/violations", headers=auth_headers(warned["access_token"]),
+    ).json()["violations"]
+    assert [v["action"] for v in violations] == ["warn"]
+    assert violations[0]["appealable"] is True
+
+
+# ---------------------------------------------------------------------------
+# Feed, badge and mark-read
+# ---------------------------------------------------------------------------
+
+def test_unread_count_and_mark_all_read(client: TestClient):
+    owner = register_user(client, "owner", "owner@x.com")
+    itinerary = _create_itinerary(client, owner["access_token"])
+    for i in range(2):
+        saver = register_user(client, f"saver{i}", f"saver{i}@x.com")
+        client.post(
+            f"/itineraries/{itinerary['id']}/save",
+            headers=auth_headers(saver["access_token"]),
+        )
+
+    headers = auth_headers(owner["access_token"])
+    assert client.get("/notifications/unread-count", headers=headers).json() == {
+        "unread_count": 2
+    }
+
+    # Omitting `ids` marks everything read.
+    assert client.post("/notifications/read", json={}, headers=headers).status_code == 204
+    assert client.get("/notifications/unread-count", headers=headers).json() == {
+        "unread_count": 0
+    }
+    assert all(n["read"] for n in _feed(client, owner["access_token"])["notifications"])
+
+
+def test_mark_read_with_explicit_ids(client: TestClient):
+    owner = register_user(client, "owner", "owner@x.com")
+    itinerary = _create_itinerary(client, owner["access_token"])
+    for i in range(2):
+        saver = register_user(client, f"saver{i}", f"saver{i}@x.com")
+        client.post(
+            f"/itineraries/{itinerary['id']}/save",
+            headers=auth_headers(saver["access_token"]),
+        )
+
+    headers = auth_headers(owner["access_token"])
+    first = _feed(client, owner["access_token"])["notifications"][0]["id"]
+    client.post("/notifications/read", json={"ids": [first]}, headers=headers)
+
+    assert client.get("/notifications/unread-count", headers=headers).json() == {
+        "unread_count": 1
+    }
+
+
+def test_cannot_mark_another_users_notifications_read(client: TestClient):
+    owner = register_user(client, "owner", "owner@x.com")
+    saver = register_user(client, "saver", "saver@x.com")
+    itinerary = _create_itinerary(client, owner["access_token"])
+    client.post(
+        f"/itineraries/{itinerary['id']}/save",
+        headers=auth_headers(saver["access_token"]),
+    )
+
+    victim_id = _feed(client, owner["access_token"])["notifications"][0]["id"]
+
+    # 204 either way — the response must not reveal whose row that id is.
+    r = client.post(
+        "/notifications/read", json={"ids": [victim_id]},
+        headers=auth_headers(saver["access_token"]),
+    )
+    assert r.status_code == 204
+
+    assert client.get(
+        "/notifications/unread-count", headers=auth_headers(owner["access_token"]),
+    ).json() == {"unread_count": 1}
+
+
+def test_feed_is_scoped_to_the_current_user(client: TestClient):
+    owner = register_user(client, "owner", "owner@x.com")
+    saver = register_user(client, "saver", "saver@x.com")
+    itinerary = _create_itinerary(client, owner["access_token"])
+    client.post(
+        f"/itineraries/{itinerary['id']}/save",
+        headers=auth_headers(saver["access_token"]),
+    )
+
+    assert _feed(client, saver["access_token"])["notifications"] == []
+
+
+def test_feed_requires_auth(client: TestClient):
+    # 403, not 401 — HTTPBearer rejects a missing header before the dependency
+    # runs, which is what every other authenticated endpoint here does too.
+    assert client.get("/notifications").status_code == 403
+
+
+def test_feed_is_newest_first_and_paginates(client: TestClient):
+    owner = register_user(client, "owner", "owner@x.com")
+    itinerary = _create_itinerary(client, owner["access_token"])
+    for i in range(3):
+        saver = register_user(client, f"saver{i}", f"saver{i}@x.com")
+        client.post(
+            f"/itineraries/{itinerary['id']}/save",
+            headers=auth_headers(saver["access_token"]),
+        )
+
+    headers = auth_headers(owner["access_token"])
+    page = client.get("/notifications?limit=2", headers=headers).json()
+    assert len(page["notifications"]) == 2
+    assert page["unread_count"] == 3  # the badge counts all of them, not the page
+
+    rest = client.get("/notifications?limit=2&offset=2", headers=headers).json()
+    assert len(rest["notifications"]) == 1
+
+    ids = [n["id"] for n in page["notifications"]] + [
+        n["id"] for n in rest["notifications"]
+    ]
+    assert len(set(ids)) == 3  # no row appears on two pages
+
+
+# ---------------------------------------------------------------------------
+# Retention
+# ---------------------------------------------------------------------------
+
+@pytest.mark.parametrize("read, expect_purged", [(True, 1), (False, 0)])
+def test_purge_removes_only_stale_read_rows(client: TestClient, read, expect_purged):
+    """An unread notice is the recipient's only record that something happened
+    to them — it is never purged, however old."""
+    owner = register_user(client, "owner", "owner@x.com")
+    saver = register_user(client, "saver", "saver@x.com")
+    itinerary = _create_itinerary(client, owner["access_token"])
+    client.post(
+        f"/itineraries/{itinerary['id']}/save",
+        headers=auth_headers(saver["access_token"]),
+    )
+
+    settings = get_settings()
+    stale = datetime.now(timezone.utc) - timedelta(
+        days=settings.NOTIFICATION_RETENTION_DAYS + 1
+    )
+
+    db = TestingSessionLocal()
+    try:
+        row = db.query(Notification).one()
+        row.created_at = stale
+        if read:
+            row.read_at = stale
+        db.commit()
+
+        assert notification_service.purge_expired(db, settings) == expect_purged
+        db.commit()
+    finally:
+        db.close()
+
+    assert len(_rows()) == (0 if expect_purged else 1)

@@ -797,5 +797,94 @@
   "bugReportDraw": "Dibujar",
   "settingsReportBug": "Informar de un error",
   "settingsShakeToReport": "Agitar para informar",
-  "settingsShakeToReportDetail": "Agita el teléfono para informar de un problema"
+  "settingsShakeToReportDetail": "Agita el teléfono para informar de un problema",
+  "notificationsTitle": "Notificaciones",
+  "notificationsEmpty": "Aún no hay nada.\nSeguidores, valoraciones y guardados aparecerán aquí.",
+  "notificationsCountLabel": "Recientes · {count}",
+  "@notificationsCountLabel": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "notificationSomeone": "Alguien",
+  "notificationGeneric": "Tienes una notificación nueva.",
+  "notificationTapForDetails": "Toca para ver los detalles y apelar",
+  "notificationFollowRequest": "{name} quiere seguirte",
+  "@notificationFollowRequest": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "notificationNewFollower": "{name} empezó a seguirte",
+  "@notificationNewFollower": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "notificationFollowAccepted": "{name} aceptó tu solicitud de seguimiento",
+  "@notificationFollowAccepted": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "notificationRated": "{name} valoró uno de tus itinerarios",
+  "@notificationRated": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "notificationSaved": "{name} guardó uno de tus itinerarios",
+  "@notificationSaved": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "notificationHidden": "«{title}» se ocultó",
+  "@notificationHidden": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "notificationHiddenUntitled": "Uno de tus itinerarios se ocultó",
+  "notificationRemoved": "«{title}» se eliminó",
+  "@notificationRemoved": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "notificationRemovedUntitled": "Uno de tus itinerarios se eliminó",
+  "notificationSettingsOptionalLabel": "Opcionales",
+  "notificationSettingsRatings": "Valoraciones",
+  "notificationSettingsRatingsDetail": "Cuando alguien valora tu itinerario",
+  "notificationSettingsSaves": "Guardados",
+  "notificationSettingsSavesDetail": "Cuando alguien guarda tu itinerario",
+  "notificationSettingsFollowAccepted": "Solicitud aceptada",
+  "notificationSettingsFollowAcceptedDetail": "Cuando alguien acepta tu solicitud de seguimiento",
+  "notificationSettingsAlwaysOnNote": "Las solicitudes de seguimiento y los avisos de moderación siempre están activados. Una solicitud que nunca ves no se puede responder, y necesitas saber cuándo se oculta tu contenido para poder apelar a tiempo.",
+  "settingsNotificationsOnCount": "{count} de 3 activadas",
+  "@settingsNotificationsOnCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "notificationWarned": "Has recibido una advertencia de moderación",
+  "notificationWarnedDetail": "Toca para ver por qué y apelar"
 }

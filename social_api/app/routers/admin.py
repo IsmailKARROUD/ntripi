@@ -93,11 +93,21 @@ def _require_basic(
         raise unauthorized
 
 
+def _stash_session(request: Request, db: Session = Depends(get_db)) -> None:
+    """Make the request's session reachable from _page.
+
+    FastAPI caches dependency results per request, so this is the SAME session
+    the handler gets — not a second one. It exists so nav badge counts can be
+    injected in one place instead of threaded through all thirteen page calls.
+    """
+    request.state.db = db
+
+
 router = APIRouter(
     prefix="/admin",
     tags=["admin"],
     include_in_schema=False,
-    dependencies=[Depends(_require_basic)],
+    dependencies=[Depends(_require_basic), Depends(_stash_session)],
 )
 
 
@@ -161,6 +171,14 @@ def _require_admin_page(
 
 
 def _page(request: Request, name: str, context: dict, status_code: int = 200) -> HTMLResponse:
+    # Badge counts for the header nav. Keyed off "admin" because that is what
+    # every authenticated page passes and the login page does not — the login
+    # form has no nav, so it must not pay for six COUNTs. POST handlers return
+    # redirects and never reach here at all.
+    if "admin" in context:
+        db = getattr(request.state, "db", None)
+        if db is not None:
+            context = {**context, "nav_counts": admin_service.nav_counts(db)}
     return templates.TemplateResponse(
         request, f"admin/{name}", context, status_code=status_code
     )

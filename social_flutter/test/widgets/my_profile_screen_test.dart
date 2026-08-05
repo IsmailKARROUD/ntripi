@@ -87,11 +87,17 @@ class _FakeMyProfile extends MyProfileNotifier {
     bool clearResidentCountry = false,
     List<String>? languages,
     bool languagesChanged = false,
+    bool? notifyRatings,
+    bool? notifySaves,
+    bool? notifyFollowAccepted,
   }) async {
     state = AsyncData(_user.copyWith(
       displayName: displayName,
       bio: bio,
       isPrivate: isPrivate,
+      notifyRatings: notifyRatings,
+      notifySaves: notifySaves,
+      notifyFollowAccepted: notifyFollowAccepted,
     ));
   }
 }

@@ -1235,5 +1235,94 @@
   "bugReportDraw": "Draw",
   "settingsReportBug": "Report a bug",
   "settingsShakeToReport": "Shake to report",
-  "settingsShakeToReportDetail": "Shake your phone to report a problem"
+  "settingsShakeToReportDetail": "Shake your phone to report a problem",
+  "notificationsTitle": "Notifications",
+  "notificationsEmpty": "Nothing here yet.\nFollows, ratings and saves will show up here.",
+  "notificationsCountLabel": "Recent · {count}",
+  "@notificationsCountLabel": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "notificationSomeone": "Someone",
+  "notificationGeneric": "You have a new notification.",
+  "notificationTapForDetails": "Tap for details and to appeal",
+  "notificationFollowRequest": "{name} asked to follow you",
+  "@notificationFollowRequest": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "notificationNewFollower": "{name} started following you",
+  "@notificationNewFollower": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "notificationFollowAccepted": "{name} accepted your follow request",
+  "@notificationFollowAccepted": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "notificationRated": "{name} rated one of your itineraries",
+  "@notificationRated": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "notificationSaved": "{name} saved one of your itineraries",
+  "@notificationSaved": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "notificationHidden": "“{title}” was hidden",
+  "@notificationHidden": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "notificationHiddenUntitled": "One of your itineraries was hidden",
+  "notificationRemoved": "“{title}” was removed",
+  "@notificationRemoved": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "notificationRemovedUntitled": "One of your itineraries was removed",
+  "notificationSettingsOptionalLabel": "Optional",
+  "notificationSettingsRatings": "Ratings",
+  "notificationSettingsRatingsDetail": "When someone rates your itinerary",
+  "notificationSettingsSaves": "Saves",
+  "notificationSettingsSavesDetail": "When someone saves your itinerary",
+  "notificationSettingsFollowAccepted": "Follow accepted",
+  "notificationSettingsFollowAcceptedDetail": "When someone accepts your follow request",
+  "notificationSettingsAlwaysOnNote": "Follow requests and moderation notices are always on. A request you never see can't be answered, and you need to know when your content is hidden so you can appeal in time.",
+  "settingsNotificationsOnCount": "{count} of 3 on",
+  "@settingsNotificationsOnCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "notificationWarned": "You've received a moderation warning",
+  "notificationWarnedDetail": "Tap to see why and to appeal"
 }

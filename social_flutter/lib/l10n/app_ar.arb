@@ -1168,5 +1168,94 @@
   "bugReportDraw": "رسم",
   "settingsReportBug": "الإبلاغ عن خلل",
   "settingsShakeToReport": "الهزّ للإبلاغ",
-  "settingsShakeToReportDetail": "هزّ هاتفك للإبلاغ عن مشكلة"
+  "settingsShakeToReportDetail": "هزّ هاتفك للإبلاغ عن مشكلة",
+  "notificationsTitle": "الإشعارات",
+  "notificationsEmpty": "لا يوجد شيء بعد.\nستظهر هنا المتابعات والتقييمات وعمليات الحفظ.",
+  "notificationsCountLabel": "الأحدث · {count}",
+  "@notificationsCountLabel": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "notificationSomeone": "شخص ما",
+  "notificationGeneric": "لديك إشعار جديد.",
+  "notificationTapForDetails": "اضغط للتفاصيل ولتقديم تظلّم",
+  "notificationFollowRequest": "طلب {name} متابعتك",
+  "@notificationFollowRequest": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "notificationNewFollower": "بدأ {name} بمتابعتك",
+  "@notificationNewFollower": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "notificationFollowAccepted": "قبل {name} طلب متابعتك",
+  "@notificationFollowAccepted": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "notificationRated": "قيّم {name} أحد مسارات رحلاتك",
+  "@notificationRated": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "notificationSaved": "حفظ {name} أحد مسارات رحلاتك",
+  "@notificationSaved": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "notificationHidden": "تم إخفاء «{title}»",
+  "@notificationHidden": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "notificationHiddenUntitled": "تم إخفاء أحد مسارات رحلاتك",
+  "notificationRemoved": "تمت إزالة «{title}»",
+  "@notificationRemoved": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "notificationRemovedUntitled": "تمت إزالة أحد مسارات رحلاتك",
+  "notificationSettingsOptionalLabel": "اختياري",
+  "notificationSettingsRatings": "التقييمات",
+  "notificationSettingsRatingsDetail": "عندما يقيّم أحدهم مسار رحلتك",
+  "notificationSettingsSaves": "الحفظ",
+  "notificationSettingsSavesDetail": "عندما يحفظ أحدهم مسار رحلتك",
+  "notificationSettingsFollowAccepted": "قبول الطلب",
+  "notificationSettingsFollowAcceptedDetail": "عندما يقبل أحدهم طلب متابعتك",
+  "notificationSettingsAlwaysOnNote": "تبقى طلبات المتابعة وإشعارات الإشراف مفعّلة دائمًا. الطلب الذي لا تراه لا يمكن الرد عليه، وتحتاج إلى معرفة وقت إخفاء محتواك لتتمكن من التظلّم في الوقت المناسب.",
+  "settingsNotificationsOnCount": "{count} من 3 مفعّلة",
+  "@settingsNotificationsOnCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "notificationWarned": "لقد تلقيت تحذيرًا من الإشراف",
+  "notificationWarnedDetail": "اضغط لمعرفة السبب ولتقديم تظلّم"
 }

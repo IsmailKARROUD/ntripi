@@ -36,7 +36,7 @@ from app.models.itinerary_rating import ItineraryRating
 from app.models.legal_escalation import LegalEscalation
 from app.models.moderation_log import ModerationLog
 from app.models.user import User
-from app.services import admin_service
+from app.services import admin_service, notification_service
 from app.services.itinerary_access import recalculate_rating
 
 logger = logging.getLogger(__name__)
@@ -205,6 +205,21 @@ def auto_hide(
 
     if report is not None:
         admin_service._resolve_report(report, "auto_hidden")
+
+    # Below the already-hidden early return, so a repeat sweep cannot stack up
+    # duplicate notices. actor stays None — this is the system acting, and
+    # naming the reporter would out them. The client sends the author to
+    # /settings/account-status, where the appeal button already lives.
+    author = target_author(db, target_type, target)
+    if author is not None:
+        notification_service.notify(
+            db,
+            user_id=author.id,
+            type="moderation_action",
+            subtype=action,
+            entity_type=target_type,  # itinerary / rating / user — all valid
+            entity_id=_target_id(target_type, target),
+        )
 
     return log_system_action(db, target_type, _target_id(target_type, target), action, reason)
 

@@ -2796,4 +2796,109 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get settingsShakeToReportDetail =>
       'Schüttle dein Telefon, um ein Problem zu melden';
+
+  @override
+  String get notificationsTitle => 'Benachrichtigungen';
+
+  @override
+  String get notificationsEmpty =>
+      'Noch nichts da.\nFollows, Bewertungen und Merkungen erscheinen hier.';
+
+  @override
+  String notificationsCountLabel(int count) {
+    return 'Neueste · $count';
+  }
+
+  @override
+  String get notificationSomeone => 'Jemand';
+
+  @override
+  String get notificationGeneric => 'Du hast eine neue Benachrichtigung.';
+
+  @override
+  String get notificationTapForDetails => 'Tippen für Details und Einspruch';
+
+  @override
+  String notificationFollowRequest(String name) {
+    return '$name möchte dir folgen';
+  }
+
+  @override
+  String notificationNewFollower(String name) {
+    return '$name folgt dir jetzt';
+  }
+
+  @override
+  String notificationFollowAccepted(String name) {
+    return '$name hat deine Follow-Anfrage angenommen';
+  }
+
+  @override
+  String notificationRated(String name) {
+    return '$name hat eine deiner Reiserouten bewertet';
+  }
+
+  @override
+  String notificationSaved(String name) {
+    return '$name hat eine deiner Reiserouten gespeichert';
+  }
+
+  @override
+  String notificationHidden(String title) {
+    return '„$title“ wurde ausgeblendet';
+  }
+
+  @override
+  String get notificationHiddenUntitled =>
+      'Eine deiner Reiserouten wurde ausgeblendet';
+
+  @override
+  String notificationRemoved(String title) {
+    return '„$title“ wurde entfernt';
+  }
+
+  @override
+  String get notificationRemovedUntitled =>
+      'Eine deiner Reiserouten wurde entfernt';
+
+  @override
+  String get notificationSettingsOptionalLabel => 'Optional';
+
+  @override
+  String get notificationSettingsRatings => 'Bewertungen';
+
+  @override
+  String get notificationSettingsRatingsDetail =>
+      'Wenn jemand deine Reiseroute bewertet';
+
+  @override
+  String get notificationSettingsSaves => 'Gespeichert';
+
+  @override
+  String get notificationSettingsSavesDetail =>
+      'Wenn jemand deine Reiseroute speichert';
+
+  @override
+  String get notificationSettingsFollowAccepted => 'Anfrage angenommen';
+
+  @override
+  String get notificationSettingsFollowAcceptedDetail =>
+      'Wenn jemand deine Follow-Anfrage annimmt';
+
+  @override
+  String get notificationSettingsAlwaysOnNote =>
+      'Follow-Anfragen und Moderationshinweise sind immer aktiv. Eine Anfrage, die du nie siehst, kann nicht beantwortet werden, und du musst wissen, wann deine Inhalte ausgeblendet werden, um rechtzeitig Einspruch einlegen zu können.';
+
+  @override
+  String settingsNotificationsOnCount(int count) {
+    return '$count von 3 aktiv';
+  }
+
+  @override
+  String get notificationWarned =>
+      'Du hast eine Verwarnung der Moderation erhalten';
+
+  @override
+  String get notificationWarnedDetail =>
+      'Tippen, um den Grund zu sehen und Einspruch einzulegen';
 }

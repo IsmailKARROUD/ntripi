@@ -68,6 +68,9 @@ class ProfileRepository {
     bool clearResidentCountry = false,
     List<String>? languages,
     bool languagesChanged = false,
+    bool? notifyRatings,
+    bool? notifySaves,
+    bool? notifyFollowAccepted,
   }) async {
     final data = <String, dynamic>{};
     if (displayName != null) data['display_name'] = displayName;
@@ -80,6 +83,13 @@ class ProfileRepository {
       data['resident_country'] = residentCountry;
     }
     if (languagesChanged) data['languages'] = languages ?? [];
+    // Notification switches ride the same partial update — only the one the
+    // user actually moved is sent.
+    if (notifyRatings != null) data['notify_ratings'] = notifyRatings;
+    if (notifySaves != null) data['notify_saves'] = notifySaves;
+    if (notifyFollowAccepted != null) {
+      data['notify_follow_accepted'] = notifyFollowAccepted;
+    }
 
     final response = await _dio.patch(kMyProfileEndpoint, data: data);
     return User.fromJson(response.data as Map<String, dynamic>);

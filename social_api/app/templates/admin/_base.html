@@ -51,6 +51,19 @@
     header nav { display: flex; gap: 14px; flex-wrap: wrap; }
     header nav a { color: #fff; opacity: .85; text-decoration: none; font-size: 14px; }
     header nav a:hover, header nav a.active { opacity: 1; text-decoration: underline; }
+    /* Badge on a nav link = that lane has work waiting. Only rendered when the
+       count is non-zero, so a quiet panel stays quiet and a lit one means
+       something. Full opacity: a badged link must not read as de-emphasised. */
+    header nav a:has(.badge) { opacity: 1; }
+    header nav .badge {
+      display: inline-block; min-width: 16px; padding: 0 5px;
+      margin-inline-start: 4px; border-radius: 9px;
+      background: #fff; color: var(--forest);
+      font-size: 11px; font-weight: 700; line-height: 16px; text-align: center;
+      vertical-align: 1px;
+    }
+    /* Legal escalations are never routine — same red as the dashboard banner. */
+    header nav .badge.urgent { background: #b3261e; color: #fff; }
     header .spacer { margin-left: auto; }
     header form { display: inline; }
     header button.linklike {
@@ -125,16 +138,19 @@
   <header>
     <span class="brand">Ntripi admin</span>
     <nav>
+      {# Badges are the operator's notification surface: a lane only carries one
+         when it has work waiting. Hidden/Removed/Suspended/Log are outcomes,
+         not queues, so they are deliberately never badged. #}
       <a href="/admin">Overview</a>
-      <a href="/admin/reports">Reports</a>
-      <a href="/admin/flagged">Flagged</a>
-      <a href="/admin/text-flags">Text flags</a>
+      <a href="/admin/reports">Reports{% if nav_counts and nav_counts.reports %}<span class="badge">{{ nav_counts.reports }}</span>{% endif %}</a>
+      <a href="/admin/flagged">Flagged{% if nav_counts and nav_counts.flagged %}<span class="badge">{{ nav_counts.flagged }}</span>{% endif %}</a>
+      <a href="/admin/text-flags">Text flags{% if nav_counts and nav_counts.text_flags %}<span class="badge">{{ nav_counts.text_flags }}</span>{% endif %}</a>
       <a href="/admin/hidden">Hidden</a>
       <a href="/admin/removed">Removed</a>
       <a href="/admin/suspended">Suspended</a>
-      <a href="/admin/appeals">Appeals</a>
-      <a href="/admin/bugs">Bugs</a>
-      <a href="/admin/legal">Legal</a>
+      <a href="/admin/appeals">Appeals{% if nav_counts and nav_counts.appeals %}<span class="badge">{{ nav_counts.appeals }}</span>{% endif %}</a>
+      <a href="/admin/bugs">Bugs{% if nav_counts and nav_counts.bugs %}<span class="badge">{{ nav_counts.bugs }}</span>{% endif %}</a>
+      <a href="/admin/legal">Legal{% if nav_counts and nav_counts.legal %}<span class="badge urgent">{{ nav_counts.legal }}</span>{% endif %}</a>
       <a href="/admin/log">Log</a>
     </nav>
     <span class="spacer"></span>

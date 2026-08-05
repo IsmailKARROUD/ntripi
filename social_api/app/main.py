@@ -41,7 +41,7 @@ from app.middleware.language import LanguageCookieMiddleware
 from app.middleware.security_headers import SecurityHeadersMiddleware
 from app.routers import (
     admin, appeals, auth, bug_reports, users, follows, internal, itineraries,
-    share, web, waitlist, reports,
+    notifications, share, web, waitlist, reports,
 )
 from app.storage.factory import storage
 
@@ -275,6 +275,7 @@ app.include_router(share.router)    # /share/i/{id} — public HTML landing page
 app.include_router(waitlist.router) # /waitlist/join — pre-launch waitlist
 app.include_router(reports.router)  # POST /reports — content reporting
 app.include_router(bug_reports.router)  # POST /bug-reports — in-app bug reports
+app.include_router(notifications.router)  # /notifications — in-app notification feed
 app.include_router(appeals.router)  # /appeals — user appeals against moderation
 app.include_router(admin.router)    # /admin — internal moderation dashboard (HTML)
 app.include_router(internal.router) # /internal/moderation-sweep — scheduler-triggered

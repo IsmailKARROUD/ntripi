@@ -2801,4 +2801,110 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get settingsShakeToReportDetail =>
       'Secouez votre téléphone pour signaler un problème';
+
+  @override
+  String get notificationsTitle => 'Notifications';
+
+  @override
+  String get notificationsEmpty =>
+      'Rien pour l\'instant.\nLes abonnements, notes et enregistrements apparaîtront ici.';
+
+  @override
+  String notificationsCountLabel(int count) {
+    return 'Récentes · $count';
+  }
+
+  @override
+  String get notificationSomeone => 'Quelqu\'un';
+
+  @override
+  String get notificationGeneric => 'Vous avez une nouvelle notification.';
+
+  @override
+  String get notificationTapForDetails =>
+      'Appuyez pour en savoir plus et faire appel';
+
+  @override
+  String notificationFollowRequest(String name) {
+    return '$name demande à vous suivre';
+  }
+
+  @override
+  String notificationNewFollower(String name) {
+    return '$name s\'est abonné(e) à vous';
+  }
+
+  @override
+  String notificationFollowAccepted(String name) {
+    return '$name a accepté votre demande d\'abonnement';
+  }
+
+  @override
+  String notificationRated(String name) {
+    return '$name a noté l\'un de vos itinéraires';
+  }
+
+  @override
+  String notificationSaved(String name) {
+    return '$name a enregistré l\'un de vos itinéraires';
+  }
+
+  @override
+  String notificationHidden(String title) {
+    return '« $title » a été masqué';
+  }
+
+  @override
+  String get notificationHiddenUntitled =>
+      'L\'un de vos itinéraires a été masqué';
+
+  @override
+  String notificationRemoved(String title) {
+    return '« $title » a été supprimé';
+  }
+
+  @override
+  String get notificationRemovedUntitled =>
+      'L\'un de vos itinéraires a été supprimé';
+
+  @override
+  String get notificationSettingsOptionalLabel => 'Facultatif';
+
+  @override
+  String get notificationSettingsRatings => 'Notes';
+
+  @override
+  String get notificationSettingsRatingsDetail =>
+      'Quand quelqu\'un note votre itinéraire';
+
+  @override
+  String get notificationSettingsSaves => 'Enregistrements';
+
+  @override
+  String get notificationSettingsSavesDetail =>
+      'Quand quelqu\'un enregistre votre itinéraire';
+
+  @override
+  String get notificationSettingsFollowAccepted => 'Demande acceptée';
+
+  @override
+  String get notificationSettingsFollowAcceptedDetail =>
+      'Quand quelqu\'un accepte votre demande d\'abonnement';
+
+  @override
+  String get notificationSettingsAlwaysOnNote =>
+      'Les demandes d\'abonnement et les avis de modération restent toujours activés. Une demande que vous ne voyez jamais ne peut pas être acceptée, et vous devez savoir quand votre contenu est masqué pour pouvoir faire appel à temps.';
+
+  @override
+  String settingsNotificationsOnCount(int count) {
+    return '$count sur 3 activées';
+  }
+
+  @override
+  String get notificationWarned =>
+      'Vous avez reçu un avertissement de modération';
+
+  @override
+  String get notificationWarnedDetail =>
+      'Appuyez pour voir pourquoi et faire appel';
 }

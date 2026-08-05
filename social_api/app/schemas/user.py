@@ -72,6 +72,12 @@ class UserPrivateProfile(UserBase):
     # profile text is hidden. Deliberately absent from UserPublicProfile — this
     # is the account owner's own read.
     moderation_status: str = "approved"
+    # Optional notification switches. On UserPrivateProfile only — what someone
+    # chose to be notified about is nobody else's business. Appended, never
+    # inserted: field order is JSON key order and part of the API contract.
+    notify_ratings: bool = True
+    notify_saves: bool = True
+    notify_follow_accepted: bool = True
 
 
 class UserUpdateRequest(BaseModel):
@@ -90,6 +96,11 @@ class UserUpdateRequest(BaseModel):
     passport_countries: list[str] | None = None
     resident_country: str | None = None
     languages: list[str] | None = None
+    # Optional in-app notification types. None = leave as-is (partial update),
+    # so the notification settings screen PATCHes only the switch that moved.
+    notify_ratings: bool | None = None
+    notify_saves: bool | None = None
+    notify_follow_accepted: bool | None = None
 
     @field_validator("display_name")
     @classmethod

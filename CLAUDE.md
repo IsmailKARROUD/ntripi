@@ -278,6 +278,30 @@ Shaking the phone captures the screen, lets the user draw on it, and files a sup
 
 ---
 
+## In-App Notifications
+
+A bell beside the profile settings gear opens `/notifications`; three of the six types can be switched off in `/settings/notifications`. **In-app only** — there is no FCM/APNs, no notification plugin, and no OS permission prompt. Operators keep their `OPERATOR_EMAIL` mail and additionally get badge counts in the `/admin` nav.
+
+| type | trigger | mutable |
+|---|---|---|
+| `follow_request` / `new_follower` | `follow_user` — branches on `is_private` | no |
+| `moderation_action` | `moderation_actions.auto_hide` + `admin_service.hide_itinerary` / `soft_delete_itinerary` / `warn_user` | no |
+| `follow_accepted` | `accept_follow_request` + the bulk auto-accept in `update_me` | **yes** |
+| `itinerary_rated` | `upsert_rating`, **insert branch only** | **yes** |
+| `itinerary_saved` | `save_itinerary`, **below the idempotent early-return** | **yes** |
+
+- **Rows are structured references, never rendered sentences.** `(type, subtype, actor_id, entity_type, entity_id)`; the text is built client-side in `AppNotification.title()` from `AppLocalizations`. A stored English string would be wrong in the other five locales, would freeze a display name moderation later hides, and would need a backfill to reword. The read path resolves the actor through `user_service.public_profile_text`.
+- **`notification_service.notify` is the only writer.** Its three suppression rules — self, muted, blocked — only hold because there is one door. It does `db.add()` and **nothing else**: no commit, no flush. This is the opposite of the email senders' post-commit-and-swallow, deliberately — a mail outage must not fail a user's write, but a notification belongs in the same transaction as the event that caused it.
+- **`moderation_action` carries the action name in `subtype`**, aligned with `ViolationItem.action`, so a new moderation action needs no new notification type. `actor_id` stays null — naming the reporter to the author would out them. Tapping routes to `/settings/account-status`, where the appeal button already lives; appeals must not get a second home.
+- **Preferences are three boolean columns on `users`**, checked at write time, exposed through the existing `PATCH /users/me` and `UserPrivateProfile`. A separate table buys nothing: adding a type alters the `type` CheckConstraint regardless.
+- `moderation_actions.auto_hide` returns `None` when the content was already hidden, so hanging the notify off a non-`None` return makes a repeat sweep idempotent for free. **`warn_user` is the deliberate exception** — a second warning writes a second row, because escalation is the mechanism and collapsing it would hide that this has happened before. Warnings carry `entity_type="user"` and no title (the penalty is against the person), and `_moderationTitle` must branch on `subtype == 'warn'` **before** the hide fallthrough or a warning renders as "your itinerary was hidden". They wear `cautionBg`/`cautionFg`, not `dangerTint` — nothing was taken down.
+- **`ban_user` writes no notification and must not.** `deactivate_account` sets `is_active=False`, which 403s every authenticated request, so a banned account can never load `/notifications`. Suspended users get the email and the public token appeal form in `web.py`.
+- Retention (`NOTIFICATION_RETENTION_DAYS=90`, purged by `sweep_service._purge`) only ever deletes **read** rows — an unread notice is the recipient's only record that something happened to them.
+- Admin badges come from `admin_service.nav_counts` (a narrow slice of `overview_counts`), injected once in `admin.py::_page` off the `"admin"` context key and the session stashed by `_stash_session`. Only queues are badged; Hidden/Removed/Suspended/Log are outcomes and would light permanently.
+- Frontend: `NotificationType.fromString` degrades unknown values to a generic renderable row (same rule as `ModerationStatus.fromString`). Opening the screen clears the badge but **does not** flip the local rows — erasing the unread tint in the frame the user arrived to read it defeats the point.
+
+---
+
 ## Alembic Migration Rules (CRITICAL)
 
 - **Never hand-write a revision ID** — always generate one with `venv/bin/alembic revision -m "description"` (or `--autogenerate` if a DB is reachable). Hand-written placeholder IDs (e.g. `a1b2c3d4e5f6`) silently collide with existing migrations, fork the chain, and crash Railway on `alembic upgrade head`.
@@ -312,6 +336,13 @@ Shaking the phone captures the screen, lets the user draw on it, and files a sup
 - Do NOT run a bug-report screenshot through the cover/avatar processors — they cover-crop a portrait capture and reject anything under 600 px
 - Do NOT purge an **open** bug report — nobody has read it yet; retention only applies once it is closed
 - Do NOT put raw content text, emails, or display names in an automated `moderation_log` row
+- Do NOT store rendered notification text — it is wrong in five of six locales and freezes a display name moderation may later hide
+- Do NOT construct a `Notification` directly or call `notify()` after commit — one writer, one transaction, or the suppression rules and atomicity both break
+- Do NOT notify an actor about their own action, or across a block in either direction
+- Do NOT purge unread notifications — an unread notice is the recipient's only record that something happened to them
+- Do NOT give `moderation_action` an actor or an inline appeal button — it would out the reporter and give appeals a second home away from `/settings/account-status`
+- Do NOT add a switch for follow requests or moderation notices — an unseen request cannot be answered and an unseen takedown cannot be appealed in time
+- Do NOT make `warn_user` notifications idempotent, and do NOT notify on `ban_user` — a repeat warning is the escalation, and a banned account is 403'd out of the feed entirely
 - Do NOT purge, downgrade, or otherwise touch `rejected_csam` rows in `image_moderation_logs` — the object is deleted in the same action, so the row and its hash are the only evidence and their retention is a legal duty
 - Do NOT delete the object before hashing it in `csam_takedown` — the order is the evidence
 - Do NOT email the uploader or surface a CSAM-specific message on a takedown — it tells someone whose upload matched a law-enforcement corpus exactly what was detected

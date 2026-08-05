@@ -797,5 +797,94 @@
   "bugReportDraw": "Zeichnen",
   "settingsReportBug": "Fehler melden",
   "settingsShakeToReport": "Schütteln zum Melden",
-  "settingsShakeToReportDetail": "Schüttle dein Telefon, um ein Problem zu melden"
+  "settingsShakeToReportDetail": "Schüttle dein Telefon, um ein Problem zu melden",
+  "notificationsTitle": "Benachrichtigungen",
+  "notificationsEmpty": "Noch nichts da.\nFollows, Bewertungen und Merkungen erscheinen hier.",
+  "notificationsCountLabel": "Neueste · {count}",
+  "@notificationsCountLabel": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "notificationSomeone": "Jemand",
+  "notificationGeneric": "Du hast eine neue Benachrichtigung.",
+  "notificationTapForDetails": "Tippen für Details und Einspruch",
+  "notificationFollowRequest": "{name} möchte dir folgen",
+  "@notificationFollowRequest": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "notificationNewFollower": "{name} folgt dir jetzt",
+  "@notificationNewFollower": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "notificationFollowAccepted": "{name} hat deine Follow-Anfrage angenommen",
+  "@notificationFollowAccepted": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "notificationRated": "{name} hat eine deiner Reiserouten bewertet",
+  "@notificationRated": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "notificationSaved": "{name} hat eine deiner Reiserouten gespeichert",
+  "@notificationSaved": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "notificationHidden": "„{title}“ wurde ausgeblendet",
+  "@notificationHidden": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "notificationHiddenUntitled": "Eine deiner Reiserouten wurde ausgeblendet",
+  "notificationRemoved": "„{title}“ wurde entfernt",
+  "@notificationRemoved": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "notificationRemovedUntitled": "Eine deiner Reiserouten wurde entfernt",
+  "notificationSettingsOptionalLabel": "Optional",
+  "notificationSettingsRatings": "Bewertungen",
+  "notificationSettingsRatingsDetail": "Wenn jemand deine Reiseroute bewertet",
+  "notificationSettingsSaves": "Gespeichert",
+  "notificationSettingsSavesDetail": "Wenn jemand deine Reiseroute speichert",
+  "notificationSettingsFollowAccepted": "Anfrage angenommen",
+  "notificationSettingsFollowAcceptedDetail": "Wenn jemand deine Follow-Anfrage annimmt",
+  "notificationSettingsAlwaysOnNote": "Follow-Anfragen und Moderationshinweise sind immer aktiv. Eine Anfrage, die du nie siehst, kann nicht beantwortet werden, und du musst wissen, wann deine Inhalte ausgeblendet werden, um rechtzeitig Einspruch einlegen zu können.",
+  "settingsNotificationsOnCount": "{count} von 3 aktiv",
+  "@settingsNotificationsOnCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "notificationWarned": "Du hast eine Verwarnung der Moderation erhalten",
+  "notificationWarnedDetail": "Tippen, um den Grund zu sehen und Einspruch einzulegen"
 }

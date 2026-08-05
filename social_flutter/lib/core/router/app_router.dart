@@ -16,6 +16,8 @@ import 'package:social_flutter/features/auth/presentation/suspended_screen.dart'
 import 'package:social_flutter/features/feed/presentation/feed_screen.dart';
 import 'package:social_flutter/features/follows/presentation/follow_list_screen.dart';
 import 'package:social_flutter/features/follows/presentation/follow_requests_screen.dart';
+import 'package:social_flutter/features/notifications/presentation/notification_settings_screen.dart';
+import 'package:social_flutter/features/notifications/presentation/notifications_screen.dart';
 import 'package:social_flutter/features/itineraries/presentation/itinerary_detail_screen.dart';
 import 'package:social_flutter/features/itineraries/presentation/stop_detail_screen.dart';
 import 'package:social_flutter/features/itineraries/presentation/itinerary_form_screen.dart';
@@ -170,6 +172,14 @@ final appRouter = GoRouter(
             GoRoute(
               path: '/follow-requests',
               builder: (_, __) => const FollowRequestsScreen(),
+            ),
+            GoRoute(
+              path: '/notifications',
+              builder: (_, __) => const NotificationsScreen(),
+            ),
+            GoRoute(
+              path: '/settings/notifications',
+              builder: (_, __) => const NotificationSettingsScreen(),
             ),
           ],
         ),

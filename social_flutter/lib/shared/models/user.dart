@@ -62,6 +62,13 @@ class User {
   /// own GET /users/me — a public profile never carries another user's status.
   final ModerationStatus moderationStatus;
 
+  // ── Optional in-app notification types. Owner's own GET /users/me only; a
+  // public profile never carries them. Default true so an older backend that
+  // omits the fields behaves as "everything on", matching the server default.
+  final bool notifyRatings;
+  final bool notifySaves;
+  final bool notifyFollowAccepted;
+
   /// Returns displayName if set, else "@username".
   String get nameForDisplay => displayName ?? '@$username';
 
@@ -89,6 +96,9 @@ class User {
     this.residentCountry,
     this.languages,
     this.moderationStatus = ModerationStatus.approved,
+    this.notifyRatings = true,
+    this.notifySaves = true,
+    this.notifyFollowAccepted = true,
   });
 
   factory User.fromJson(Map<String, dynamic> json) {
@@ -120,6 +130,11 @@ class User {
           .toList(),
       moderationStatus:
           ModerationStatus.fromString(json['moderation_status'] as String?),
+      // Absent on public profiles and on an older backend — default on, which
+      // is what the server does when it has no opinion either.
+      notifyRatings: json['notify_ratings'] as bool? ?? true,
+      notifySaves: json['notify_saves'] as bool? ?? true,
+      notifyFollowAccepted: json['notify_follow_accepted'] as bool? ?? true,
     );
   }
 
@@ -145,6 +160,9 @@ class User {
       if (residentCountry != null) 'resident_country': residentCountry,
       if (languages != null) 'languages': languages,
       'moderation_status': moderationStatus.wireValue,
+      'notify_ratings': notifyRatings,
+      'notify_saves': notifySaves,
+      'notify_follow_accepted': notifyFollowAccepted,
     };
   }
 
@@ -173,6 +191,9 @@ class User {
     String? residentCountry,
     List<String>? languages,
     ModerationStatus? moderationStatus,
+    bool? notifyRatings,
+    bool? notifySaves,
+    bool? notifyFollowAccepted,
   }) {
     return User(
       id: id ?? this.id,
@@ -196,6 +217,9 @@ class User {
       residentCountry: residentCountry ?? this.residentCountry,
       languages: languages ?? this.languages,
       moderationStatus: moderationStatus ?? this.moderationStatus,
+      notifyRatings: notifyRatings ?? this.notifyRatings,
+      notifySaves: notifySaves ?? this.notifySaves,
+      notifyFollowAccepted: notifyFollowAccepted ?? this.notifyFollowAccepted,
     );
   }
 }

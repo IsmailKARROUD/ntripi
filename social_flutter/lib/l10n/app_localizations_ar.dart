@@ -2799,4 +2799,104 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get settingsShakeToReportDetail => 'هزّ هاتفك للإبلاغ عن مشكلة';
+
+  @override
+  String get notificationsTitle => 'الإشعارات';
+
+  @override
+  String get notificationsEmpty =>
+      'لا يوجد شيء بعد.\nستظهر هنا المتابعات والتقييمات وعمليات الحفظ.';
+
+  @override
+  String notificationsCountLabel(int count) {
+    return 'الأحدث · $count';
+  }
+
+  @override
+  String get notificationSomeone => 'شخص ما';
+
+  @override
+  String get notificationGeneric => 'لديك إشعار جديد.';
+
+  @override
+  String get notificationTapForDetails => 'اضغط للتفاصيل ولتقديم تظلّم';
+
+  @override
+  String notificationFollowRequest(String name) {
+    return 'طلب $name متابعتك';
+  }
+
+  @override
+  String notificationNewFollower(String name) {
+    return 'بدأ $name بمتابعتك';
+  }
+
+  @override
+  String notificationFollowAccepted(String name) {
+    return 'قبل $name طلب متابعتك';
+  }
+
+  @override
+  String notificationRated(String name) {
+    return 'قيّم $name أحد مسارات رحلاتك';
+  }
+
+  @override
+  String notificationSaved(String name) {
+    return 'حفظ $name أحد مسارات رحلاتك';
+  }
+
+  @override
+  String notificationHidden(String title) {
+    return 'تم إخفاء «$title»';
+  }
+
+  @override
+  String get notificationHiddenUntitled => 'تم إخفاء أحد مسارات رحلاتك';
+
+  @override
+  String notificationRemoved(String title) {
+    return 'تمت إزالة «$title»';
+  }
+
+  @override
+  String get notificationRemovedUntitled => 'تمت إزالة أحد مسارات رحلاتك';
+
+  @override
+  String get notificationSettingsOptionalLabel => 'اختياري';
+
+  @override
+  String get notificationSettingsRatings => 'التقييمات';
+
+  @override
+  String get notificationSettingsRatingsDetail =>
+      'عندما يقيّم أحدهم مسار رحلتك';
+
+  @override
+  String get notificationSettingsSaves => 'الحفظ';
+
+  @override
+  String get notificationSettingsSavesDetail => 'عندما يحفظ أحدهم مسار رحلتك';
+
+  @override
+  String get notificationSettingsFollowAccepted => 'قبول الطلب';
+
+  @override
+  String get notificationSettingsFollowAcceptedDetail =>
+      'عندما يقبل أحدهم طلب متابعتك';
+
+  @override
+  String get notificationSettingsAlwaysOnNote =>
+      'تبقى طلبات المتابعة وإشعارات الإشراف مفعّلة دائمًا. الطلب الذي لا تراه لا يمكن الرد عليه، وتحتاج إلى معرفة وقت إخفاء محتواك لتتمكن من التظلّم في الوقت المناسب.';
+
+  @override
+  String settingsNotificationsOnCount(int count) {
+    return '$count من 3 مفعّلة';
+  }
+
+  @override
+  String get notificationWarned => 'لقد تلقيت تحذيرًا من الإشراف';
+
+  @override
+  String get notificationWarnedDetail => 'اضغط لمعرفة السبب ولتقديم تظلّم';
 }

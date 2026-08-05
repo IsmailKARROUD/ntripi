@@ -36,7 +36,9 @@ from app.models.stop import Stop
 from app.models.text_moderation_decision import TextModerationDecision
 from app.models.track import Track
 from app.models.user import User
-from app.services import appeal_token, email_service, refresh_token_service
+from app.services import (
+    appeal_token, email_service, notification_service, refresh_token_service,
+)
 from app.services.itinerary_access import HIDDEN_STATUSES
 from app.storage.factory import storage
 
@@ -220,6 +222,11 @@ def hide_itinerary(
     set_preserving_etag(itinerary, hidden_at=datetime.now(timezone.utc))
     _resolve_report(report, "content_hidden")
     log_action(db, admin, TARGET_ITINERARY, itinerary.id, "hide", reason, snapshot)
+    # actor stays None: the author is owed the notice, not the moderator's name.
+    notification_service.notify(
+        db, user_id=itinerary.user_id, type="moderation_action", subtype="hide",
+        entity_type=TARGET_ITINERARY, entity_id=itinerary.id,
+    )
     db.commit()
 
 
@@ -263,6 +270,12 @@ def soft_delete_itinerary(
     set_preserving_etag(itinerary, deleted_at=datetime.now(timezone.utc))
     _resolve_report(report, "content_removed")
     log = log_action(db, admin, TARGET_ITINERARY, itinerary.id, "delete", reason, snapshot)
+    # This path does not go through moderation_actions.auto_hide, so it needs
+    # its own notify. actor stays None — see hide_itinerary.
+    notification_service.notify(
+        db, user_id=itinerary.user_id, type="moderation_action", subtype="delete",
+        entity_type=TARGET_ITINERARY, entity_id=itinerary.id,
+    )
     db.commit()
 
     if owner is not None:
@@ -282,6 +295,14 @@ def warn_user(
     snapshot = snapshot_user(user, report)
     _resolve_report(report, "user_warned")
     log = log_action(db, admin, TARGET_USER, user.id, "warn", reason, snapshot)
+    # A warning only works if the person sees it — email alone leaves them to
+    # discover it on Account status. Deliberately NOT idempotent: a second
+    # warning is a second row, because escalation is the whole mechanism.
+    # actor stays None and the reason is not stored — see hide_itinerary.
+    notification_service.notify(
+        db, user_id=user.id, type="moderation_action", subtype="warn",
+        entity_type=TARGET_USER, entity_id=user.id,
+    )
     db.commit()
 
     _send_moderation_email(
@@ -891,6 +912,51 @@ def recent_log(db: Session, limit: int = 50, offset: int = 0) -> list[Moderation
         .order_by(ModerationLog.created_at.desc())
         .limit(limit).offset(offset)
     ).scalars().all())
+
+
+def nav_counts(db: Session) -> dict:
+    """Badge counts for the header nav, on every admin page.
+
+    A deliberately narrow slice of overview_counts: only the lanes where a
+    non-zero number means somebody has to DO something. Hidden/removed/banned
+    are outcomes, not queues, and badging them would make the nav permanently
+    lit and therefore unreadable.
+
+    This is the operator's notification surface. Email (OPERATOR_EMAIL) is
+    still the real-time channel; these are the at-a-glance backlog.
+    """
+    def _count(stmt) -> int:
+        return db.execute(stmt).scalar_one() or 0
+
+    return {
+        "reports": _count(
+            select(func.count(ContentReport.id))
+            .where(ContentReport.resolution == "pending")
+        ),
+        "flagged": _count(
+            select(func.count(ImageModerationLog.id)).where(
+                ImageModerationLog.action == "flagged",
+                ImageModerationLog.reviewed_at.is_(None),
+            )
+        ),
+        "text_flags": _count(
+            select(func.count(TextModerationDecision.id)).where(
+                TextModerationDecision.outcome == "review",
+                TextModerationDecision.reviewed_at.is_(None),
+            )
+        ),
+        "appeals": _count(
+            select(func.count(Appeal.id)).where(Appeal.status == "pending")
+        ),
+        "bugs": _count(
+            select(func.count(BugReport.id)).where(BugReport.status == "open")
+        ),
+        "legal": _count(
+            select(func.count(LegalEscalation.id)).where(
+                LegalEscalation.closed_at.is_(None)
+            )
+        ),
+    }
 
 
 def overview_counts(db: Session) -> dict:

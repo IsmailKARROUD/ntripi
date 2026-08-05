@@ -38,7 +38,10 @@ from app.models.itinerary_rating import ItineraryRating
 from app.models.text_moderation_cache import TextModerationCache
 from app.models.text_moderation_decision import TextModerationDecision
 from app.models.user import User
-from app.services import bug_report_service, moderation_actions, text_moderation_service
+from app.services import (
+    bug_report_service, moderation_actions, notification_service,
+    text_moderation_service,
+)
 from app.services.moderation_email_service import build_reason, send_auto_action_email
 
 logger = logging.getLogger(__name__)
@@ -300,6 +303,12 @@ def _purge(db: Session, settings, counters: dict) -> None:
     # Bug-report screenshots can contain a third party's data — retention is a
     # privacy duty, not housekeeping. Only closed reports are eligible.
     counters["bug_reports_purged"] = bug_report_service.purge_expired(db, settings)
+
+    # Read notifications only — an unread one is still the recipient's only
+    # notice that something happened to them.
+    counters["notifications_purged"] = notification_service.purge_expired(
+        db, settings
+    )
 
 
 # ---------------------------------------------------------------------------

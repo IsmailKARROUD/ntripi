@@ -33,6 +33,11 @@ class ProfileHeroAndIdentity extends StatelessWidget {
 
   /// Report / block affordance for someone else's profile. Null on your own.
   final Widget? moreActions;
+
+  /// Notification bell, shown next to Settings on your own profile. Passed in
+  /// rather than built here so this file stays free of feature dependencies —
+  /// same reason moreActions is a Widget and not a callback.
+  final Widget? notificationsAction;
   final List<VisitedLocation> locations;
   final VoidCallback? onHeroTap;
   // Receives the global tap point so the viewer can grow out of it.
@@ -51,6 +56,7 @@ class ProfileHeroAndIdentity extends StatelessWidget {
     this.onSettings,
     this.coverImageUrl,
     this.moreActions,
+    this.notificationsAction,
     this.locations = const [],
     this.onHeroTap,
     this.onAvatarTap,
@@ -86,6 +92,7 @@ class ProfileHeroAndIdentity extends StatelessWidget {
               headerLabel: headerLabel,
               onEdit: onEdit,
               onSettings: onSettings,
+              notificationsAction: notificationsAction,
               coverImageUrl: coverImageUrl,
               locations: locations,
               onHeroTap: onHeroTap,
@@ -162,6 +169,9 @@ class ProfileMapHero extends StatelessWidget {
 
   /// Report / block affordance for someone else's profile. Null on your own.
   final Widget? moreActions;
+
+  /// Notification bell, rendered beside Settings on your own profile.
+  final Widget? notificationsAction;
   final List<VisitedLocation> locations;
   final VoidCallback? onHeroTap;
   final GlobalKey? editButtonKey;
@@ -177,6 +187,7 @@ class ProfileMapHero extends StatelessWidget {
     this.onSettings,
     this.coverImageUrl,
     this.moreActions,
+    this.notificationsAction,
     this.locations = const [],
     this.onHeroTap,
     this.editButtonKey,
@@ -372,10 +383,21 @@ class ProfileMapHero extends StatelessWidget {
                             tooltip: l10n.editProfileTooltip,
                             onTap: onEdit,
                           ),
-                          GlassIconButton(
-                            icon: Icons.settings_outlined,
-                            tooltip: l10n.settingsTooltip,
-                            onTap: onSettings,
+                          // Bell then gear, mirroring the other-user branch's
+                          // trailing Row so both sides of the hero balance.
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              if (notificationsAction != null) ...[
+                                notificationsAction!,
+                                const SizedBox(width: 8),
+                              ],
+                              GlassIconButton(
+                                icon: Icons.settings_outlined,
+                                tooltip: l10n.settingsTooltip,
+                                onTap: onSettings,
+                              ),
+                            ],
                           ),
                         ]
                       : [

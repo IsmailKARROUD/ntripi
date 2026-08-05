@@ -2608,4 +2608,101 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get settingsShakeToReportDetail => '摇动手机即可报告问题';
+
+  @override
+  String get notificationsTitle => '通知';
+
+  @override
+  String get notificationsEmpty => '暂时没有内容。\n关注、评分和收藏都会显示在这里。';
+
+  @override
+  String notificationsCountLabel(int count) {
+    return '最近 · $count';
+  }
+
+  @override
+  String get notificationSomeone => '某人';
+
+  @override
+  String get notificationGeneric => '你有一条新通知。';
+
+  @override
+  String get notificationTapForDetails => '点击查看详情并申诉';
+
+  @override
+  String notificationFollowRequest(String name) {
+    return '$name 请求关注你';
+  }
+
+  @override
+  String notificationNewFollower(String name) {
+    return '$name 关注了你';
+  }
+
+  @override
+  String notificationFollowAccepted(String name) {
+    return '$name 接受了你的关注请求';
+  }
+
+  @override
+  String notificationRated(String name) {
+    return '$name 评价了你的一条行程';
+  }
+
+  @override
+  String notificationSaved(String name) {
+    return '$name 收藏了你的一条行程';
+  }
+
+  @override
+  String notificationHidden(String title) {
+    return '“$title”已被隐藏';
+  }
+
+  @override
+  String get notificationHiddenUntitled => '你的一条行程已被隐藏';
+
+  @override
+  String notificationRemoved(String title) {
+    return '“$title”已被移除';
+  }
+
+  @override
+  String get notificationRemovedUntitled => '你的一条行程已被移除';
+
+  @override
+  String get notificationSettingsOptionalLabel => '可选';
+
+  @override
+  String get notificationSettingsRatings => '评分';
+
+  @override
+  String get notificationSettingsRatingsDetail => '当有人评价你的行程时';
+
+  @override
+  String get notificationSettingsSaves => '收藏';
+
+  @override
+  String get notificationSettingsSavesDetail => '当有人收藏你的行程时';
+
+  @override
+  String get notificationSettingsFollowAccepted => '请求已接受';
+
+  @override
+  String get notificationSettingsFollowAcceptedDetail => '当有人接受你的关注请求时';
+
+  @override
+  String get notificationSettingsAlwaysOnNote =>
+      '关注请求和审核通知始终开启。你看不到的请求无法处理，而且你需要知道内容何时被隐藏，才能及时申诉。';
+
+  @override
+  String settingsNotificationsOnCount(int count) {
+    return '已开启 $count / 3';
+  }
+
+  @override
+  String get notificationWarned => '你收到了一条审核警告';
+
+  @override
+  String get notificationWarnedDetail => '点击查看原因并申诉';
 }

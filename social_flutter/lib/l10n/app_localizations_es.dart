@@ -2774,4 +2774,105 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get settingsShakeToReportDetail =>
       'Agita el teléfono para informar de un problema';
+
+  @override
+  String get notificationsTitle => 'Notificaciones';
+
+  @override
+  String get notificationsEmpty =>
+      'Aún no hay nada.\nSeguidores, valoraciones y guardados aparecerán aquí.';
+
+  @override
+  String notificationsCountLabel(int count) {
+    return 'Recientes · $count';
+  }
+
+  @override
+  String get notificationSomeone => 'Alguien';
+
+  @override
+  String get notificationGeneric => 'Tienes una notificación nueva.';
+
+  @override
+  String get notificationTapForDetails => 'Toca para ver los detalles y apelar';
+
+  @override
+  String notificationFollowRequest(String name) {
+    return '$name quiere seguirte';
+  }
+
+  @override
+  String notificationNewFollower(String name) {
+    return '$name empezó a seguirte';
+  }
+
+  @override
+  String notificationFollowAccepted(String name) {
+    return '$name aceptó tu solicitud de seguimiento';
+  }
+
+  @override
+  String notificationRated(String name) {
+    return '$name valoró uno de tus itinerarios';
+  }
+
+  @override
+  String notificationSaved(String name) {
+    return '$name guardó uno de tus itinerarios';
+  }
+
+  @override
+  String notificationHidden(String title) {
+    return '«$title» se ocultó';
+  }
+
+  @override
+  String get notificationHiddenUntitled => 'Uno de tus itinerarios se ocultó';
+
+  @override
+  String notificationRemoved(String title) {
+    return '«$title» se eliminó';
+  }
+
+  @override
+  String get notificationRemovedUntitled => 'Uno de tus itinerarios se eliminó';
+
+  @override
+  String get notificationSettingsOptionalLabel => 'Opcionales';
+
+  @override
+  String get notificationSettingsRatings => 'Valoraciones';
+
+  @override
+  String get notificationSettingsRatingsDetail =>
+      'Cuando alguien valora tu itinerario';
+
+  @override
+  String get notificationSettingsSaves => 'Guardados';
+
+  @override
+  String get notificationSettingsSavesDetail =>
+      'Cuando alguien guarda tu itinerario';
+
+  @override
+  String get notificationSettingsFollowAccepted => 'Solicitud aceptada';
+
+  @override
+  String get notificationSettingsFollowAcceptedDetail =>
+      'Cuando alguien acepta tu solicitud de seguimiento';
+
+  @override
+  String get notificationSettingsAlwaysOnNote =>
+      'Las solicitudes de seguimiento y los avisos de moderación siempre están activados. Una solicitud que nunca ves no se puede responder, y necesitas saber cuándo se oculta tu contenido para poder apelar a tiempo.';
+
+  @override
+  String settingsNotificationsOnCount(int count) {
+    return '$count de 3 activadas';
+  }
+
+  @override
+  String get notificationWarned => 'Has recibido una advertencia de moderación';
+
+  @override
+  String get notificationWarnedDetail => 'Toca para ver por qué y apelar';
 }

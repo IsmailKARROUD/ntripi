@@ -27,6 +27,7 @@ from app.models.text_moderation_decision import TextModerationDecision
 from app.models.legal_escalation import LegalEscalation
 from app.models.user_block import UserBlock
 from app.models.bug_report import BugReport
+from app.models.notification import Notification
 
 __all__ = [
     "User", "RefreshToken", "EmailToken", "PasswordHistory", "SecurityAuditLog",
@@ -36,5 +37,5 @@ __all__ = [
     "TransitSegment", "TransportLeg", "WaitlistEntry", "ContentReport",
     "ImageModerationLog", "ModerationLog", "Appeal",
     "TextModerationCache", "TextModerationDecision", "LegalEscalation",
-    "UserBlock", "BugReport",
+    "UserBlock", "BugReport", "Notification",
 ]

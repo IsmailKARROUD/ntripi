@@ -244,6 +244,21 @@ String kBlockEndpoint(String userId) => '/users/$userId/block';
 const kMyBlocksEndpoint = '/users/me/blocks';
 
 // ---------------------------------------------------------------------------
+// Notifications
+// ---------------------------------------------------------------------------
+
+/// The in-app notification feed. Returns the page AND the unread count, so
+/// opening the screen does not need a second call for the badge.
+const kNotificationsEndpoint = '/notifications';
+
+/// Badge count on its own. Polled, and cheap: an unchanged count comes back as
+/// a 304 with no body via the ETag middleware.
+const kNotificationsUnreadCountEndpoint = '/notifications/unread-count';
+
+/// Mark notifications read. Omit `ids` in the body to mark all of them.
+const kNotificationsReadEndpoint = '/notifications/read';
+
+// ---------------------------------------------------------------------------
 // Safety / compliance surfaces
 // ---------------------------------------------------------------------------
 

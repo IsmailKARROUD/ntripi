@@ -84,6 +84,9 @@ class MyProfileNotifier extends AsyncNotifier<User> {
     bool clearResidentCountry = false,
     List<String>? languages,
     bool languagesChanged = false,
+    bool? notifyRatings,
+    bool? notifySaves,
+    bool? notifyFollowAccepted,
   }) async {
     state = await AsyncValue.guard(
       () => ref.read(profileRepositoryProvider).updateMyProfile(
@@ -96,6 +99,9 @@ class MyProfileNotifier extends AsyncNotifier<User> {
             clearResidentCountry: clearResidentCountry,
             languages: languages,
             languagesChanged: languagesChanged,
+            notifyRatings: notifyRatings,
+            notifySaves: notifySaves,
+            notifyFollowAccepted: notifyFollowAccepted,
           ),
     );
   }

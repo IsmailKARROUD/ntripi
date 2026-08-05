@@ -2749,4 +2749,106 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get settingsShakeToReportDetail =>
       'Shake your phone to report a problem';
+
+  @override
+  String get notificationsTitle => 'Notifications';
+
+  @override
+  String get notificationsEmpty =>
+      'Nothing here yet.\nFollows, ratings and saves will show up here.';
+
+  @override
+  String notificationsCountLabel(int count) {
+    return 'Recent · $count';
+  }
+
+  @override
+  String get notificationSomeone => 'Someone';
+
+  @override
+  String get notificationGeneric => 'You have a new notification.';
+
+  @override
+  String get notificationTapForDetails => 'Tap for details and to appeal';
+
+  @override
+  String notificationFollowRequest(String name) {
+    return '$name asked to follow you';
+  }
+
+  @override
+  String notificationNewFollower(String name) {
+    return '$name started following you';
+  }
+
+  @override
+  String notificationFollowAccepted(String name) {
+    return '$name accepted your follow request';
+  }
+
+  @override
+  String notificationRated(String name) {
+    return '$name rated one of your itineraries';
+  }
+
+  @override
+  String notificationSaved(String name) {
+    return '$name saved one of your itineraries';
+  }
+
+  @override
+  String notificationHidden(String title) {
+    return '“$title” was hidden';
+  }
+
+  @override
+  String get notificationHiddenUntitled => 'One of your itineraries was hidden';
+
+  @override
+  String notificationRemoved(String title) {
+    return '“$title” was removed';
+  }
+
+  @override
+  String get notificationRemovedUntitled =>
+      'One of your itineraries was removed';
+
+  @override
+  String get notificationSettingsOptionalLabel => 'Optional';
+
+  @override
+  String get notificationSettingsRatings => 'Ratings';
+
+  @override
+  String get notificationSettingsRatingsDetail =>
+      'When someone rates your itinerary';
+
+  @override
+  String get notificationSettingsSaves => 'Saves';
+
+  @override
+  String get notificationSettingsSavesDetail =>
+      'When someone saves your itinerary';
+
+  @override
+  String get notificationSettingsFollowAccepted => 'Follow accepted';
+
+  @override
+  String get notificationSettingsFollowAcceptedDetail =>
+      'When someone accepts your follow request';
+
+  @override
+  String get notificationSettingsAlwaysOnNote =>
+      'Follow requests and moderation notices are always on. A request you never see can\'t be answered, and you need to know when your content is hidden so you can appeal in time.';
+
+  @override
+  String settingsNotificationsOnCount(int count) {
+    return '$count of 3 on';
+  }
+
+  @override
+  String get notificationWarned => 'You\'ve received a moderation warning';
+
+  @override
+  String get notificationWarnedDetail => 'Tap to see why and to appeal';
 }

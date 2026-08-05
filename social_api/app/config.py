@@ -198,6 +198,13 @@ class Settings(BaseSettings):
     # just clutter. Open reports are never purged — they haven't been read yet.
     BUG_REPORT_RETENTION_DAYS: int = 180
 
+    # ── In-app notifications ────────────────────────────────────────────────
+    # How long a READ notification is kept before the sweep purges it. Unread
+    # rows are never purged however old: an author who has not opened the app
+    # since their content was hidden still needs to find out why. No feature
+    # flag — this is core UX, not an optional integration.
+    NOTIFICATION_RETENTION_DAYS: int = 90
+
     # Tell pydantic-settings to look for a .env file in the working directory.
     # extra="ignore" means unknown .env keys don't cause validation errors.
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")

@@ -52,7 +52,7 @@ from app.services.image_service import (
     process_cover_image,
 )
 from app.services.moderation_service import ModerationContext, ModerationRejectedError
-from app.services import block_service
+from app.services import block_service, notification_service
 from app.services.itinerary_access import can_view_itinerary
 from app.services.text_moderation_service import moderate_or_422
 from app.services.moderation_actions import escalate_if_flagged
@@ -185,6 +185,16 @@ def update_my_profile(
         for follow in pending_follows:
             follow.status = FollowStatus.accepted
             bump_follow_counters(db.get(User, follow.follower_id), current_user, 1)
+            # One per requester — going public accepts them all at once, and
+            # each of them is owed the same notice as an individual accept.
+            notification_service.notify(
+                db,
+                user_id=follow.follower_id,
+                type="follow_accepted",
+                actor=current_user,
+                entity_type="user",
+                entity_id=current_user.id,
+            )
 
     db.commit()
     db.refresh(current_user)

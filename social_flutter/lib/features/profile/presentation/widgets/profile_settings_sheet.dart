@@ -7,6 +7,7 @@ import 'package:social_flutter/core/api/api_endpoints.dart';
 import 'package:social_flutter/core/providers/locale_provider.dart';
 import 'package:social_flutter/core/providers/theme_mode_provider.dart';
 import 'package:social_flutter/core/ui/app_theme.dart';
+import 'package:social_flutter/features/profile/providers/profile_provider.dart';
 import 'package:social_flutter/features/bug_report/presentation/bug_report_entry.dart';
 import 'package:social_flutter/features/bug_report/providers/shake_report_enabled_provider.dart';
 import 'package:social_flutter/l10n/app_localizations.dart';
@@ -291,6 +292,16 @@ class _SettingsSheet extends ConsumerWidget {
       ThemeMode.dark => l10n.themeDark,
       ThemeMode.system => l10n.themeSystem,
     };
+    // How many of the three optional types are on. Shows nothing while the
+    // profile is still loading rather than flashing a wrong count.
+    final me = ref.watch(myProfileProvider).value;
+    final notificationsDetail = me == null
+        ? null
+        : l10n.settingsNotificationsOnCount([
+            me.notifyRatings,
+            me.notifySaves,
+            me.notifyFollowAccepted,
+          ].where((on) => on).length);
 
     return Container(
       decoration: BoxDecoration(
@@ -342,8 +353,11 @@ class _SettingsSheet extends ConsumerWidget {
                         iconBg: nt.mist,
                         iconColor: nt.forest,
                         label: l10n.settingsNotifications,
-                        detail: l10n.settingsNotificationsOff,
-                        onTap: () => _comingSoon(context),
+                        detail: notificationsDetail,
+                        onTap: () {
+                          Navigator.pop(context);
+                          context.push('/settings/notifications');
+                        },
                       ),
                       _SheetRow(
                         icon: Icons.language_rounded,

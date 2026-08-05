@@ -970,5 +970,94 @@
   "bugReportDraw": "Dessiner",
   "settingsReportBug": "Signaler un bug",
   "settingsShakeToReport": "Secouer pour signaler",
-  "settingsShakeToReportDetail": "Secouez votre téléphone pour signaler un problème"
+  "settingsShakeToReportDetail": "Secouez votre téléphone pour signaler un problème",
+  "notificationsTitle": "Notifications",
+  "notificationsEmpty": "Rien pour l'instant.\nLes abonnements, notes et enregistrements apparaîtront ici.",
+  "notificationsCountLabel": "Récentes · {count}",
+  "@notificationsCountLabel": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "notificationSomeone": "Quelqu'un",
+  "notificationGeneric": "Vous avez une nouvelle notification.",
+  "notificationTapForDetails": "Appuyez pour en savoir plus et faire appel",
+  "notificationFollowRequest": "{name} demande à vous suivre",
+  "@notificationFollowRequest": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "notificationNewFollower": "{name} s'est abonné(e) à vous",
+  "@notificationNewFollower": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "notificationFollowAccepted": "{name} a accepté votre demande d'abonnement",
+  "@notificationFollowAccepted": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "notificationRated": "{name} a noté l'un de vos itinéraires",
+  "@notificationRated": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "notificationSaved": "{name} a enregistré l'un de vos itinéraires",
+  "@notificationSaved": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "notificationHidden": "« {title} » a été masqué",
+  "@notificationHidden": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "notificationHiddenUntitled": "L'un de vos itinéraires a été masqué",
+  "notificationRemoved": "« {title} » a été supprimé",
+  "@notificationRemoved": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "notificationRemovedUntitled": "L'un de vos itinéraires a été supprimé",
+  "notificationSettingsOptionalLabel": "Facultatif",
+  "notificationSettingsRatings": "Notes",
+  "notificationSettingsRatingsDetail": "Quand quelqu'un note votre itinéraire",
+  "notificationSettingsSaves": "Enregistrements",
+  "notificationSettingsSavesDetail": "Quand quelqu'un enregistre votre itinéraire",
+  "notificationSettingsFollowAccepted": "Demande acceptée",
+  "notificationSettingsFollowAcceptedDetail": "Quand quelqu'un accepte votre demande d'abonnement",
+  "notificationSettingsAlwaysOnNote": "Les demandes d'abonnement et les avis de modération restent toujours activés. Une demande que vous ne voyez jamais ne peut pas être acceptée, et vous devez savoir quand votre contenu est masqué pour pouvoir faire appel à temps.",
+  "settingsNotificationsOnCount": "{count} sur 3 activées",
+  "@settingsNotificationsOnCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "notificationWarned": "Vous avez reçu un avertissement de modération",
+  "notificationWarnedDetail": "Appuyez pour voir pourquoi et faire appel"
 }

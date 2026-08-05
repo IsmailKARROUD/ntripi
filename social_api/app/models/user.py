@@ -3,6 +3,7 @@ from datetime import datetime, timezone
 
 from sqlalchemy import (
     Boolean, CheckConstraint, Integer, JSON, String, Text, DateTime, func, false,
+    true,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.dialects.postgresql import UUID
@@ -80,6 +81,21 @@ class User(Base):
     # there is no API or UI to promote a user (single-operator model).
     is_admin: Mapped[bool] = mapped_column(
         Boolean, nullable=False, server_default=false(), default=False
+    )
+
+    # ── Optional in-app notification types (see models/notification.py).
+    # Checked at WRITE time by notification_service.notify — off means no row is
+    # ever created. Default on: a notification nobody opted into is still the
+    # only way most of these events are discoverable. The mandatory types
+    # (follow requests, moderation actions) deliberately have no switch.
+    notify_ratings: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, server_default=true(), default=True
+    )
+    notify_saves: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, server_default=true(), default=True
+    )
+    notify_follow_accepted: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, server_default=true(), default=True
     )
 
     tos_accepted_at: Mapped[datetime | None] = mapped_column(
