@@ -782,5 +782,20 @@
   "moderationHintTitle": "Esto podría leerse como ofensivo",
   "moderationHintBody": "Puedes publicarlo igualmente: esto es solo un aviso, no un bloqueo.",
   "hiddenAppealAction": "Pedir una revisión",
-  "hiddenBannerReason": "Motivo: {reason}"
+  "hiddenBannerReason": "Motivo: {reason}",
+  "bugReportTitle": "Informar de un problema",
+  "bugReportHint": "¿Qué ha pasado?",
+  "bugReportSubmit": "Enviar informe",
+  "bugReportThanks": "Gracias. Lo revisaremos.",
+  "bugReportAttachmentNotice": "Se adjuntan tu captura de pantalla y los datos del dispositivo.",
+  "bugReportCategoryCrash": "La app se bloqueó o se cerró",
+  "bugReportCategoryVisual": "Algo se ve mal",
+  "bugReportCategoryData": "Información incorrecta o ausente",
+  "bugReportCategorySlow": "Demasiado lento",
+  "bugReportCategoryOther": "Otra cosa",
+  "bugReportNavigate": "Navegar",
+  "bugReportDraw": "Dibujar",
+  "settingsReportBug": "Informar de un error",
+  "settingsShakeToReport": "Agitar para informar",
+  "settingsShakeToReportDetail": "Agita el teléfono para informar de un problema"
 }

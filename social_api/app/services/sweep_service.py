@@ -38,7 +38,7 @@ from app.models.itinerary_rating import ItineraryRating
 from app.models.text_moderation_cache import TextModerationCache
 from app.models.text_moderation_decision import TextModerationDecision
 from app.models.user import User
-from app.services import moderation_actions, text_moderation_service
+from app.services import bug_report_service, moderation_actions, text_moderation_service
 from app.services.moderation_email_service import build_reason, send_auto_action_email
 
 logger = logging.getLogger(__name__)
@@ -71,6 +71,7 @@ def run_moderation_sweep(db: Session, settings) -> dict:
         "recheck_hidden": 0,
         "cache_purged": 0,
         "decisions_purged": 0,
+        "bug_reports_purged": 0,
     }
     try:
         notifications: list[dict] = []
@@ -295,6 +296,10 @@ def _purge(db: Session, settings, counters: dict) -> None:
         )
     )
     counters["decisions_purged"] = result.rowcount or 0
+
+    # Bug-report screenshots can contain a third party's data — retention is a
+    # privacy duty, not housekeeping. Only closed reports are eligible.
+    counters["bug_reports_purged"] = bug_report_service.purge_expired(db, settings)
 
 
 # ---------------------------------------------------------------------------

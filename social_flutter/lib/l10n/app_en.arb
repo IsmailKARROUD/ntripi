@@ -1220,5 +1220,20 @@
         "type": "String"
       }
     }
-  }
+  },
+  "bugReportTitle": "Report a problem",
+  "bugReportHint": "What went wrong?",
+  "bugReportSubmit": "Send report",
+  "bugReportThanks": "Thanks. We'll look into it.",
+  "bugReportAttachmentNotice": "Your screenshot and device details are attached.",
+  "bugReportCategoryCrash": "The app froze or closed",
+  "bugReportCategoryVisual": "Something looks wrong",
+  "bugReportCategoryData": "Wrong or missing information",
+  "bugReportCategorySlow": "Too slow",
+  "bugReportCategoryOther": "Something else",
+  "bugReportNavigate": "Navigate",
+  "bugReportDraw": "Draw",
+  "settingsReportBug": "Report a bug",
+  "settingsShakeToReport": "Shake to report",
+  "settingsShakeToReportDetail": "Shake your phone to report a problem"
 }

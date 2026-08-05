@@ -1,0 +1,76 @@
+{% extends "admin/_base.html" %}
+{% block content %}
+<h1>Open bug reports</h1>
+<p class="sub">
+  Filed from inside the app by shaking the phone. These are support tickets, not
+  moderation items — closing one takes no action against the reporter or their
+  content. Closed reports and their screenshots are purged automatically once
+  they age out.
+</p>
+
+{% if rows %}
+<div class="card table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>Waiting</th>
+        <th>Reporter</th>
+        <th>Environment</th>
+        <th>Report</th>
+        <th>Screen</th>
+        <th style="width:300px">Close</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in rows %}
+      <tr>
+        <td><span class="pill {{ r.sla }}">{{ r.age }}</span></td>
+        <td>
+          {% if r.user %}
+            <div>{{ r.user.username }}</div>
+            <div class="muted">{% if r.user.is_active %}active{% else %}suspended{% endif %}</div>
+          {% else %}
+            {# Either signed out when they filed, or the account is gone — the FK
+               is SET NULL so the report outlives it. #}
+            <span class="muted">signed out</span>
+          {% endif %}
+        </td>
+        <td class="muted">
+          <div>{{ r.report.app_version or '—' }} · {{ r.report.platform or '—' }}</div>
+          <div>{{ r.report.device_model or '—' }}</div>
+          <div>{{ r.report.os_version or '—' }}</div>
+          <div>{{ r.report.locale or '—' }} · {{ r.report.theme_mode or '—' }}</div>
+        </td>
+        <td class="snippet">
+          {% if r.report.category %}
+            <span class="pill sla-ok">{{ r.report.category }}</span>
+          {% endif %}
+          <div style="margin-top:6px">{{ r.report.message }}</div>
+          <div class="muted" style="margin-top:6px">{{ r.report.route or '—' }}</div>
+        </td>
+        <td>
+          {% if r.screenshot_url %}
+            <a href="{{ r.screenshot_url }}" target="_blank" rel="noopener">
+              <img class="thumb-tall" src="{{ r.screenshot_url }}" alt="Screenshot">
+            </a>
+          {% else %}
+            <span class="muted">none</span>
+          {% endif %}
+        </td>
+        <td>
+          <form method="post" action="/admin/bugs/{{ r.report.id }}/close">
+            <input type="text" name="note" placeholder="Resolution note (optional)">
+            <div class="actions">
+              <button type="submit" class="primary">Close</button>
+            </div>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="card"><p class="muted">No open bug reports.</p></div>
+{% endif %}
+{% endblock %}

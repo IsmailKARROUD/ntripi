@@ -96,6 +96,15 @@ dependencies:
   # client tier of image moderation. Web uses NSFWJS via JS interop instead
   # (lib/core/moderation/). Never-block: a missing model disables the check.
   tflite_flutter: ^0.12.1
+  # Shake-to-report-a-bug (lib/features/bug_report/). `shake` is the
+  # accelerometer gesture (pulls sensors_plus); `feedback` supplies the
+  # screenshot capture + draw-over layer only — the compose sheet is ours, via
+  # its feedbackBuilder, so it renders in the Ntripi theme. The two *_info_plus
+  # packages fill in the diagnostics an operator needs to reproduce a report.
+  shake: ^3.0.0
+  feedback: ^3.2.0
+  package_info_plus: ^10.2.1
+  device_info_plus: ^13.2.0
 
 
 

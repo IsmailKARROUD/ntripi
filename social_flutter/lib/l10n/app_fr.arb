@@ -955,5 +955,20 @@
   "moderationHintTitle": "Ce texte pourrait être perçu comme offensant",
   "moderationHintBody": "Vous pouvez tout de même le publier — ceci est un simple avertissement.",
   "hiddenAppealAction": "Demander un réexamen",
-  "hiddenBannerReason": "Motif : {reason}"
+  "hiddenBannerReason": "Motif : {reason}",
+  "bugReportTitle": "Signaler un problème",
+  "bugReportHint": "Que s'est-il passé ?",
+  "bugReportSubmit": "Envoyer le rapport",
+  "bugReportThanks": "Merci. Nous allons examiner cela.",
+  "bugReportAttachmentNotice": "Votre capture d'écran et les détails de votre appareil sont joints.",
+  "bugReportCategoryCrash": "L'application s'est bloquée ou fermée",
+  "bugReportCategoryVisual": "L'affichage est incorrect",
+  "bugReportCategoryData": "Informations erronées ou manquantes",
+  "bugReportCategorySlow": "Trop lent",
+  "bugReportCategoryOther": "Autre chose",
+  "bugReportNavigate": "Naviguer",
+  "bugReportDraw": "Dessiner",
+  "settingsReportBug": "Signaler un bug",
+  "settingsShakeToReport": "Secouer pour signaler",
+  "settingsShakeToReportDetail": "Secouez votre téléphone pour signaler un problème"
 }

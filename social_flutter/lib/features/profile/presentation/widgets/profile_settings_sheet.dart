@@ -1,10 +1,14 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:social_flutter/core/api/api_client.dart';
 import 'package:social_flutter/core/api/api_endpoints.dart';
 import 'package:social_flutter/core/providers/locale_provider.dart';
 import 'package:social_flutter/core/providers/theme_mode_provider.dart';
 import 'package:social_flutter/core/ui/app_theme.dart';
+import 'package:social_flutter/features/bug_report/presentation/bug_report_entry.dart';
+import 'package:social_flutter/features/bug_report/providers/shake_report_enabled_provider.dart';
 import 'package:social_flutter/l10n/app_localizations.dart';
 import 'package:social_flutter/shared/data/app_locales.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -429,11 +433,48 @@ class _SettingsSheet extends ConsumerWidget {
                         iconColor: nt.forest,
                         label: l10n.abuseContact,
                         detail: kAbuseContactEmail,
-                        isLast: true,
                         onTap: () => launchUrl(
                           Uri(scheme: 'mailto', path: kAbuseContactEmail),
                         ),
                       ),
+                      _SheetRow(
+                        icon: Icons.bug_report_outlined,
+                        iconBg: nt.mist,
+                        iconColor: nt.forest,
+                        label: l10n.settingsReportBug,
+                        isLast: kIsWeb,
+                        // Close this sheet first, then open the reporter on the
+                        // next frame — otherwise the screenshot would just be a
+                        // picture of the settings sheet.
+                        onTap: () {
+                          Navigator.pop(context);
+                          WidgetsBinding.instance.addPostFrameCallback((_) {
+                            final root = navigatorKey.currentContext;
+                            if (root != null) startBugReport(root, ref);
+                          });
+                        },
+                      ),
+                      // Hidden on web, where there is no shake to disable.
+                      if (!kIsWeb)
+                        _SheetRow(
+                          icon: Icons.vibration_rounded,
+                          iconBg: nt.mist,
+                          iconColor: nt.forest,
+                          label: l10n.settingsShakeToReport,
+                          subtitle: l10n.settingsShakeToReportDetail,
+                          isLast: true,
+                          trailing: Switch(
+                            value: ref.watch(shakeReportEnabledProvider),
+                            onChanged: (value) => ref
+                                .read(shakeReportEnabledProvider.notifier)
+                                .setEnabled(value),
+                          ),
+                          onTap: () => ref
+                              .read(shakeReportEnabledProvider.notifier)
+                              .setEnabled(
+                                !ref.read(shakeReportEnabledProvider),
+                              ),
+                        ),
                     ],
                   ),
                   Padding(
@@ -515,9 +556,14 @@ class _SheetRow extends StatelessWidget {
   final Color iconColor;
   final String label;
   final String? detail;
+  // Second line under the label. `detail` sits on the trailing edge instead,
+  // which leaves no room once `trailing` is a control rather than a chevron.
+  final String? subtitle;
   final bool showChevron;
   final bool isLast;
   final VoidCallback? onTap;
+  // Replaces the chevron — for rows that toggle in place rather than navigate.
+  final Widget? trailing;
 
   const _SheetRow({
     required this.icon,
@@ -525,9 +571,11 @@ class _SheetRow extends StatelessWidget {
     required this.iconColor,
     required this.label,
     this.detail,
+    this.subtitle,
     this.showChevron = true,
     this.isLast = false,
     this.onTap,
+    this.trailing,
   });
 
   @override
@@ -556,13 +604,30 @@ class _SheetRow extends StatelessWidget {
                 ),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: Text(
-                    label,
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                      color: nt.bark,
-                    ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        label,
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          color: nt.bark,
+                        ),
+                      ),
+                      // Under the label, not beside it — a toggle row has no
+                      // room left for an explanation on the trailing edge.
+                      if (subtitle != null)
+                        Text(
+                          subtitle!,
+                          style: TextStyle(
+                            fontSize: 12.5,
+                            height: 1.3,
+                            color: nt.text2,
+                          ),
+                        ),
+                    ],
                   ),
                 ),
                 if (detail != null) ...[
@@ -572,7 +637,9 @@ class _SheetRow extends StatelessWidget {
                   ),
                   const SizedBox(width: 4),
                 ],
-                if (showChevron)
+                if (trailing != null)
+                  trailing!
+                else if (showChevron)
                   Icon(Icons.chevron_right, size: 20, color: nt.text3),
               ],
             ),

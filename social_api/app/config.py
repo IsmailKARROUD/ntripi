@@ -189,6 +189,15 @@ class Settings(BaseSettings):
     # address, never a personal one.
     ABUSE_CONTACT_EMAIL: str = "abuse@ntripi.app"
 
+    # ── In-app bug reports (shake to report) ────────────────────────────────
+    # slowapi limit string for POST /bug-reports. Lower than the report limit:
+    # each one carries a screenshot upload.
+    BUG_REPORT_RATE_LIMIT: str = "5/hour"
+    # How long a CLOSED bug report and its screenshot are kept. A screenshot can
+    # contain another user's content, so unbounded retention is a liability, not
+    # just clutter. Open reports are never purged — they haven't been read yet.
+    BUG_REPORT_RETENTION_DAYS: int = 180
+
     # Tell pydantic-settings to look for a .env file in the working directory.
     # extra="ignore" means unknown .env keys don't cause validation errors.
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")

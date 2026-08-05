@@ -215,6 +215,8 @@ Moderation sweep — **one of the two drivers is required**, or SLA auto-hide an
 
 Optional (reports/safety): `REPORT_HIDE_THRESHOLDS` (comma `category:count`) · `REPORT_RATE_LIMIT=10/hour` · `ABUSE_CONTACT_EMAIL=abuse@ntripi.app` (must match the in-app address AND the store listing).
 
+Optional (bug reports): `BUG_REPORT_RATE_LIMIT=5/hour` · `BUG_REPORT_RETENTION_DAYS=180`. Both have working defaults — shipping the feature needs no deploy change. `OPERATOR_EMAIL` is what turns the notification email on.
+
 ---
 
 ## Text Moderation
@@ -229,7 +231,7 @@ Provider-agnostic by construction — swapping providers is a config change, nev
 - **Content state** lives on `itineraries.moderation_status` (shared by the image and text tiers), `itinerary_ratings.moderation_status`, and `users.moderation_status`. Stop / annotation / transport-leg text **rolls up to its parent itinerary** — hiding is itinerary-level, so a per-fragment status would have no read path.
 - **Automated writes only ever RAISE severity** (`apply_moderation_status`, order `approved < pending < flagged < hidden < rejected`): a clean caption edit must not clear an unresolved image flag. Moderator and appeal paths assign directly to lower it.
 - **Any moderation write to an itinerary from outside the owner's own request MUST go through `admin_service.set_preserving_etag` / `moderation_actions.set_status`.** `updated_at` IS the concurrency ETag; moving it 412s the author's open editor over a change they cannot see.
-- **Coverage is every stored user string except the moderator-facing ones.** Itinerary title/description, stop name/address/notes, both annotation tables, transport-leg line/direction/notes, rating notes, profile display_name/bio, and the `username` + `display_name` chosen at registration. Deliberately NOT moderated: `content_reports.notes`, `appeals.user_reason`, and admin action reasons — a 422 there would block someone reporting hate speech who quotes it, which is a safety regression, not an improvement.
+- **Coverage is every stored user string except the moderator-facing ones.** Itinerary title/description, stop name/address/notes, both annotation tables, transport-leg line/direction/notes, rating notes, profile display_name/bio, and the `username` + `display_name` chosen at registration. Deliberately NOT moderated: `content_reports.notes`, `appeals.user_reason`, `bug_reports.message`, and admin action reasons — a 422 there would block someone reporting hate speech who quotes it, which is a safety regression, not an improvement.
 - **Account creation scans before it writes.** `create_user` commits, so a rejection found afterwards could not undo the account — `moderate_or_422` runs first, with `author=None`. `POST /auth/google` scans the Google profile name but **never rejects it**: the name is Google's, not something the user typed, so a 422 would lock a real person out with no recourse. A reject there drops the name (as `validate_display_name` already does) and stores `approved` — nothing offensive was persisted.
 - **A `hide_escalate` verdict must open a `legal_escalations` row, on every path.** Callers pass `ctx.escalate` to `moderation_actions.escalate_if_flagged` after their flush — the caller is the only party holding the row to point at. The one exception is a *rejected* minors verdict, escalated from `_finalize` against the **author**: nothing was stored, so there is no content row, exactly as a CSAM hash match escalates against the uploader.
 - Operator gets an email when the provider chain degrades (fallback, or all-down), throttled to one per hour per level.
@@ -257,6 +259,22 @@ Detection is Cloudflare's, at serve time; the app's whole job is the response �
 - Applied to free prose only — **never to titles or place names**. European place names false-positive on wordlists (Bitche, Condom, Sexbierum, Wank); flagging a real destination teaches users to ignore the warning. The backend still moderates titles, where a context-aware classifier can tell the difference.
 - `ModerationStatus.fromString` degrades unknown values to `approved` — a newer backend must never crash a deployed client.
 - `pending` and `flagged` are internal and are NOT surfaced to the author. Only `hidden` is, with a reason and a one-tap appeal.
+
+---
+
+## Bug Reports (shake to report)
+
+Shaking the phone captures the screen, lets the user draw on it, and files a support ticket. Deliberately **not** part of the moderation stack: `content_reports` is evidence about content someone else published, with hide thresholds and escalation paths; `bug_reports` is a ticket about our own app, reviewed at `/admin/bugs` and purged once closed and stale.
+
+- **Two packages, one custom sheet.** `shake` (accelerometer, pulls `sensors_plus`) and `feedback` (screenshot + draw layer). The compose UI is ours via `feedbackBuilder` — `lib/features/bug_report/presentation/bug_report_sheet.dart`, mirroring `report_content_sheet.dart`.
+- **`BetterFeedback` must wrap `MaterialApp`, not sit inside `MaterialApp.builder`.** Its bottom sheet builds a bare `Navigator`; inside MaterialApp that Navigator inherits the app's `HeroController` and Flutter asserts ("a HeroController can not be shared by multiple Navigators"). The consequence is that the sheet renders **outside** MaterialApp, so it gets l10n from the delegates passed to `BetterFeedback` (the app's own are listed there) and its `ThemeData` from `ntripiFeedbackAppTheme` in the `feedbackBuilder`. `localeOverride` is required too — that scope otherwise resolves the *platform* locale and ignores the in-app language picker, and it is what drives `Directionality` for Arabic.
+- `ShakeToReport` stays *inside* `MaterialApp.builder` so the handler has a `ScaffoldMessenger` for the confirmation snackbar; `BetterFeedback.of()` still finds the controller above.
+- **The gesture is opt-out-able** (`shakeReportEnabledProvider`, secure storage, default on) and guarded: `minimumShakeCount: 2`, paused whenever the app is not `resumed`, a 3 s cooldown, and skipped on `/splash`. No-op on web (`kIsWeb`) — the Settings ▸ Support row is the entry point there.
+- **`POST /bug-reports` is one multipart request** carrying the fields and the screenshot. Two requests would orphan the object in R2 whenever the second failed. Auth-optional — someone stuck on the login screen is exactly who needs to report.
+- **Screenshots use `process_screenshot_image`**, not the cover/avatar processors: those cover-crop (destroying a portrait capture) and reject anything under `MIN_DIMENSION=600`. It preserves aspect, downscales to a 1600 px long side, and relaxes the minimum via `_decode_and_validate(min_dimension=…)`.
+- **No Rekognition scan on the screenshot** — it is never served to another user, so a hard-reject could only drop a real bug report because our own UI tripped a classifier. `process_and_store` still strips EXIF.
+- `screenshot_key` stores the **storage key, not a URL**: the retention purge needs it, and it keeps bug screenshots outside `admin_service.parse_storage_key`, whose whole job is refusing to guess.
+- **Retention is a privacy duty**, not housekeeping — a screenshot can contain a third party's data. `bug_report_service.purge_expired` runs from `sweep_service`, deletes the object before the row (so a storage failure retries next sweep), and only ever touches **closed** reports.
 
 ---
 
@@ -288,7 +306,11 @@ Detection is Cloudflare's, at serve time; the app's whole job is the response �
 - Do NOT scan account text *after* `create_user` — it commits, so the 422 could not undo the account
 - Do NOT let a moderation verdict reject a Google-supplied profile name — drop the name instead; the user cannot edit what Google sent
 - Do NOT consume `ctx.escalate` without calling `escalate_if_flagged` — hiding without the `legal_escalations` row keeps a CSAM signal out of `/admin/legal`
-- Do NOT moderate report notes, appeal reasons, or admin action reasons — rejecting a report that quotes the abuse it reports is a safety regression
+- Do NOT moderate report notes, appeal reasons, bug-report messages, or admin action reasons — rejecting a report that quotes the abuse it reports is a safety regression
+- Do NOT move `BetterFeedback` inside `MaterialApp` — its bottom sheet's Navigator would inherit the app's HeroController and assert on every shake
+- Do NOT drop `localeOverride` or the app's own delegates from `BetterFeedback` — the compose sheet renders outside MaterialApp and would fall back to the platform locale, LTR, and Material default styling
+- Do NOT run a bug-report screenshot through the cover/avatar processors — they cover-crop a portrait capture and reject anything under 600 px
+- Do NOT purge an **open** bug report — nobody has read it yet; retention only applies once it is closed
 - Do NOT put raw content text, emails, or display names in an automated `moderation_log` row
 - Do NOT purge, downgrade, or otherwise touch `rejected_csam` rows in `image_moderation_logs` — the object is deleted in the same action, so the row and its hash are the only evidence and their retention is a legal duty
 - Do NOT delete the object before hashing it in `csam_takedown` — the order is the evidence

@@ -16,6 +16,8 @@ TARGET_WIDTH = 1200
 TARGET_HEIGHT = 630
 AVATAR_SIZE = 800  # square; rendered inside a circle on the client
 MIN_DIMENSION = 600
+SCREENSHOT_MAX_SIDE = 1600  # longest side of a stored bug-report screenshot
+SCREENSHOT_MIN_DIMENSION = 200  # a phone screenshot is never legitimately smaller
 MAX_FILE_SIZE = 10 * 1024 * 1024  # 10 MB
 
 
@@ -23,13 +25,19 @@ class ImageProcessingError(Exception):
     pass
 
 
-def _decode_and_validate(raw_bytes: bytes) -> Image.Image:
+def _decode_and_validate(
+    raw_bytes: bytes, *, min_dimension: int = MIN_DIMENSION
+) -> Image.Image:
     """Reject oversized/undersized/unsupported uploads and return an RGB image.
 
     Shared front-half of the cover and avatar pipelines: size guard, decode,
     format check, minimum-dimension check, and RGB conversion (handles RGBA,
     palette-mode PNGs, etc.). Raises ImageProcessingError with a user-readable
     message on any failure.
+
+    min_dimension is relaxed for bug-report screenshots: a small device captured
+    at pixelRatio 2 can be under 600 px wide, and dropping a bug report over
+    that would be absurd.
     """
     if len(raw_bytes) > MAX_FILE_SIZE:
         raise ImageProcessingError(
@@ -46,10 +54,10 @@ def _decode_and_validate(raw_bytes: bytes) -> Image.Image:
             f"Unsupported format '{img.format}'. Upload a JPEG, PNG, or WebP file."
         )
 
-    if img.width < MIN_DIMENSION or img.height < MIN_DIMENSION:
+    if img.width < min_dimension or img.height < min_dimension:
         raise ImageProcessingError(
             f"Image too small ({img.width}×{img.height}). "
-            f"Minimum size is {MIN_DIMENSION}×{MIN_DIMENSION}."
+            f"Minimum size is {min_dimension}×{min_dimension}."
         )
 
     if img.mode != "RGB":
@@ -98,6 +106,19 @@ def process_avatar_image(raw_bytes: bytes) -> bytes:
     img = _decode_and_validate(raw_bytes)
     img = _crop_to_aspect(img, AVATAR_SIZE, AVATAR_SIZE)
     img = img.resize((AVATAR_SIZE, AVATAR_SIZE), Resampling.LANCZOS)
+    return _encode_jpeg(img)
+
+
+def process_screenshot_image(raw_bytes: bytes) -> bytes:
+    """Validate, downscale, strip EXIF, and re-encode a bug-report screenshot.
+
+    Unlike the cover and avatar pipelines this must NOT crop: a phone screenshot
+    is portrait and cropping it to an aspect ratio would throw away the part of
+    the UI the reporter is complaining about. thumbnail() only ever shrinks, so
+    an already-small capture passes through at its original size.
+    """
+    img = _decode_and_validate(raw_bytes, min_dimension=SCREENSHOT_MIN_DIMENSION)
+    img.thumbnail((SCREENSHOT_MAX_SIDE, SCREENSHOT_MAX_SIDE), Resampling.LANCZOS)
     return _encode_jpeg(img)
 
 

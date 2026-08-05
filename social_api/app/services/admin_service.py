@@ -25,6 +25,7 @@ from sqlalchemy.orm import Session, selectinload
 from sqlalchemy.orm.attributes import flag_modified
 
 from app.models.appeal import Appeal
+from app.models.bug_report import BugReport
 from app.models.content_report import ContentReport
 from app.models.image_moderation_log import ImageModerationLog
 from app.models.itinerary import Itinerary
@@ -482,6 +483,17 @@ def pending_appeals(db: Session) -> list[Appeal]:
     ).scalars().all())
 
 
+def open_bug_reports(db: Session, limit: int = 100) -> list[BugReport]:
+    """Untriaged bug reports, oldest first. Bounded: unlike the moderation
+    queues this one has no SLA, so a backlog must not render a 10k-row page."""
+    return list(db.execute(
+        select(BugReport)
+        .where(BugReport.status == "open")
+        .order_by(BugReport.created_at.asc())
+        .limit(limit)
+    ).scalars().all())
+
+
 def hidden_itineraries(db: Session) -> list[Itinerary]:
     """Content taken down but not removed. Newest first, unlike the FIFO queues:
     these are standing state rather than a backlog, and the recent auto-hides are
@@ -932,6 +944,11 @@ def overview_counts(db: Session) -> dict:
             select(func.count(LegalEscalation.id)).where(
                 LegalEscalation.closed_at.is_(None)
             )
+        ),
+        # Unbounded on purpose — the tile shows the true backlog even though
+        # open_bug_reports() caps the page at 100 rows.
+        "open_bug_reports": _count(
+            select(func.count(BugReport.id)).where(BugReport.status == "open")
         ),
     }
 

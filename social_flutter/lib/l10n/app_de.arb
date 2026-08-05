@@ -782,5 +782,20 @@
   "moderationHintTitle": "Das könnte beleidigend wirken",
   "moderationHintBody": "Du kannst es trotzdem posten — das ist nur ein Hinweis, keine Sperre.",
   "hiddenAppealAction": "Um Überprüfung bitten",
-  "hiddenBannerReason": "Grund: {reason}"
+  "hiddenBannerReason": "Grund: {reason}",
+  "bugReportTitle": "Problem melden",
+  "bugReportHint": "Was ist passiert?",
+  "bugReportSubmit": "Bericht senden",
+  "bugReportThanks": "Danke. Wir sehen uns das an.",
+  "bugReportAttachmentNotice": "Dein Screenshot und deine Gerätedaten werden angehängt.",
+  "bugReportCategoryCrash": "Die App hing oder wurde beendet",
+  "bugReportCategoryVisual": "Etwas wird falsch dargestellt",
+  "bugReportCategoryData": "Falsche oder fehlende Informationen",
+  "bugReportCategorySlow": "Zu langsam",
+  "bugReportCategoryOther": "Etwas anderes",
+  "bugReportNavigate": "Navigieren",
+  "bugReportDraw": "Zeichnen",
+  "settingsReportBug": "Fehler melden",
+  "settingsShakeToReport": "Schütteln zum Melden",
+  "settingsShakeToReportDetail": "Schüttle dein Telefon, um ein Problem zu melden"
 }

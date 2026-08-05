@@ -782,5 +782,20 @@
   "moderationHintTitle": "这段文字可能会被视为冒犯",
   "moderationHintBody": "你仍然可以发布——这只是提醒，不会阻止你。",
   "hiddenAppealAction": "申请复核",
-  "hiddenBannerReason": "原因：{reason}"
+  "hiddenBannerReason": "原因：{reason}",
+  "bugReportTitle": "报告问题",
+  "bugReportHint": "出了什么问题？",
+  "bugReportSubmit": "发送报告",
+  "bugReportThanks": "谢谢。我们会跟进处理。",
+  "bugReportAttachmentNotice": "将附上你的屏幕截图和设备信息。",
+  "bugReportCategoryCrash": "应用卡住或闪退",
+  "bugReportCategoryVisual": "显示异常",
+  "bugReportCategoryData": "信息有误或缺失",
+  "bugReportCategorySlow": "太慢了",
+  "bugReportCategoryOther": "其他问题",
+  "bugReportNavigate": "浏览",
+  "bugReportDraw": "标注",
+  "settingsReportBug": "报告错误",
+  "settingsShakeToReport": "摇一摇报告",
+  "settingsShakeToReportDetail": "摇动手机即可报告问题"
 }

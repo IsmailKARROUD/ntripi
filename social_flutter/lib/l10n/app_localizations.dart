@@ -4803,6 +4803,96 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Reason: {reason}'**
   String hiddenBannerReason(String reason);
+
+  /// No description provided for @bugReportTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Report a problem'**
+  String get bugReportTitle;
+
+  /// No description provided for @bugReportHint.
+  ///
+  /// In en, this message translates to:
+  /// **'What went wrong?'**
+  String get bugReportHint;
+
+  /// No description provided for @bugReportSubmit.
+  ///
+  /// In en, this message translates to:
+  /// **'Send report'**
+  String get bugReportSubmit;
+
+  /// No description provided for @bugReportThanks.
+  ///
+  /// In en, this message translates to:
+  /// **'Thanks. We\'ll look into it.'**
+  String get bugReportThanks;
+
+  /// No description provided for @bugReportAttachmentNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'Your screenshot and device details are attached.'**
+  String get bugReportAttachmentNotice;
+
+  /// No description provided for @bugReportCategoryCrash.
+  ///
+  /// In en, this message translates to:
+  /// **'The app froze or closed'**
+  String get bugReportCategoryCrash;
+
+  /// No description provided for @bugReportCategoryVisual.
+  ///
+  /// In en, this message translates to:
+  /// **'Something looks wrong'**
+  String get bugReportCategoryVisual;
+
+  /// No description provided for @bugReportCategoryData.
+  ///
+  /// In en, this message translates to:
+  /// **'Wrong or missing information'**
+  String get bugReportCategoryData;
+
+  /// No description provided for @bugReportCategorySlow.
+  ///
+  /// In en, this message translates to:
+  /// **'Too slow'**
+  String get bugReportCategorySlow;
+
+  /// No description provided for @bugReportCategoryOther.
+  ///
+  /// In en, this message translates to:
+  /// **'Something else'**
+  String get bugReportCategoryOther;
+
+  /// No description provided for @bugReportNavigate.
+  ///
+  /// In en, this message translates to:
+  /// **'Navigate'**
+  String get bugReportNavigate;
+
+  /// No description provided for @bugReportDraw.
+  ///
+  /// In en, this message translates to:
+  /// **'Draw'**
+  String get bugReportDraw;
+
+  /// No description provided for @settingsReportBug.
+  ///
+  /// In en, this message translates to:
+  /// **'Report a bug'**
+  String get settingsReportBug;
+
+  /// No description provided for @settingsShakeToReport.
+  ///
+  /// In en, this message translates to:
+  /// **'Shake to report'**
+  String get settingsShakeToReport;
+
+  /// No description provided for @settingsShakeToReportDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Shake your phone to report a problem'**
+  String get settingsShakeToReportDetail;
 }
 
 class _AppLocalizationsDelegate

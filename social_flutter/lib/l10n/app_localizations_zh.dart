@@ -2563,4 +2563,49 @@ class AppLocalizationsZh extends AppLocalizations {
   String hiddenBannerReason(String reason) {
     return '原因：$reason';
   }
+
+  @override
+  String get bugReportTitle => '报告问题';
+
+  @override
+  String get bugReportHint => '出了什么问题？';
+
+  @override
+  String get bugReportSubmit => '发送报告';
+
+  @override
+  String get bugReportThanks => '谢谢。我们会跟进处理。';
+
+  @override
+  String get bugReportAttachmentNotice => '将附上你的屏幕截图和设备信息。';
+
+  @override
+  String get bugReportCategoryCrash => '应用卡住或闪退';
+
+  @override
+  String get bugReportCategoryVisual => '显示异常';
+
+  @override
+  String get bugReportCategoryData => '信息有误或缺失';
+
+  @override
+  String get bugReportCategorySlow => '太慢了';
+
+  @override
+  String get bugReportCategoryOther => '其他问题';
+
+  @override
+  String get bugReportNavigate => '浏览';
+
+  @override
+  String get bugReportDraw => '标注';
+
+  @override
+  String get settingsReportBug => '报告错误';
+
+  @override
+  String get settingsShakeToReport => '摇一摇报告';
+
+  @override
+  String get settingsShakeToReportDetail => '摇动手机即可报告问题';
 }

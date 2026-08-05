@@ -114,6 +114,9 @@
     .stat .l { font-size: 13px; color: var(--text2); }
 
     .thumb { width: 72px; height: 40px; object-fit: cover; border-radius: 6px; border: 1px solid var(--border); }
+    /* Bug-report screenshots are portrait — the landscape .thumb crop would
+       show only a sliver of the screen the reporter is complaining about. */
+    .thumb-tall { width: 60px; height: 108px; object-fit: cover; object-position: top; border-radius: 6px; border: 1px solid var(--border); }
     .pager { display: flex; gap: 10px; margin-top: 14px; font-size: 14px; }
   </style>
 </head>
@@ -130,6 +133,7 @@
       <a href="/admin/removed">Removed</a>
       <a href="/admin/suspended">Suspended</a>
       <a href="/admin/appeals">Appeals</a>
+      <a href="/admin/bugs">Bugs</a>
       <a href="/admin/legal">Legal</a>
       <a href="/admin/log">Log</a>
     </nav>

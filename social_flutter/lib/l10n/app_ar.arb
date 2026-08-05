@@ -1153,5 +1153,20 @@
   "moderationHintTitle": "قد يُفهم هذا النص على أنه مسيء",
   "moderationHintBody": "يمكنك نشره على أي حال — هذا تنبيه فقط وليس منعًا.",
   "hiddenAppealAction": "طلب إعادة النظر",
-  "hiddenBannerReason": "السبب: {reason}"
+  "hiddenBannerReason": "السبب: {reason}",
+  "bugReportTitle": "الإبلاغ عن مشكلة",
+  "bugReportHint": "ما الذي حدث؟",
+  "bugReportSubmit": "إرسال البلاغ",
+  "bugReportThanks": "شكرًا. سنتحقق من ذلك.",
+  "bugReportAttachmentNotice": "سيتم إرفاق لقطة الشاشة وتفاصيل جهازك.",
+  "bugReportCategoryCrash": "توقف التطبيق أو أُغلق",
+  "bugReportCategoryVisual": "هناك خلل في العرض",
+  "bugReportCategoryData": "معلومات خاطئة أو ناقصة",
+  "bugReportCategorySlow": "بطيء جدًا",
+  "bugReportCategoryOther": "شيء آخر",
+  "bugReportNavigate": "تصفّح",
+  "bugReportDraw": "رسم",
+  "settingsReportBug": "الإبلاغ عن خلل",
+  "settingsShakeToReport": "الهزّ للإبلاغ",
+  "settingsShakeToReportDetail": "هزّ هاتفك للإبلاغ عن مشكلة"
 }

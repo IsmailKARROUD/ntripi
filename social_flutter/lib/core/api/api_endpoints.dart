@@ -225,6 +225,15 @@ String itineraryMyRatingEndpoint(String id) => '/itineraries/$id/ratings/me';
 const kReportsEndpoint = '/reports';
 
 // ---------------------------------------------------------------------------
+// Bug reports
+// ---------------------------------------------------------------------------
+
+/// Submit an in-app bug report (auth optional — someone stuck on the login
+/// screen still needs to be able to report it). Multipart: the screenshot rides
+/// in the same request as the message and diagnostics.
+const kBugReportsEndpoint = '/bug-reports';
+
+// ---------------------------------------------------------------------------
 // Blocking
 // ---------------------------------------------------------------------------
 

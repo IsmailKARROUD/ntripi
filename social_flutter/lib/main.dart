@@ -1,4 +1,5 @@
 import 'package:dio_cache_interceptor_hive_store/dio_cache_interceptor_hive_store.dart';
+import 'package:feedback/feedback.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -10,6 +11,10 @@ import 'package:social_flutter/core/providers/locale_provider.dart';
 import 'package:social_flutter/core/providers/theme_mode_provider.dart';
 import 'package:social_flutter/core/router/app_router.dart';
 import 'package:social_flutter/core/ui/app_theme.dart';
+import 'package:social_flutter/features/bug_report/presentation/bug_report_localizations.dart';
+import 'package:social_flutter/features/bug_report/presentation/bug_report_sheet.dart';
+import 'package:social_flutter/features/bug_report/presentation/bug_report_theme.dart';
+import 'package:social_flutter/features/bug_report/presentation/shake_to_report.dart';
 import 'package:social_flutter/l10n/app_localizations.dart';
 
 Future<void> main() async {
@@ -65,22 +70,61 @@ class NtripiApp extends ConsumerWidget {
     final themeMode = ref.watch(themeModeProvider);
     return GestureDetector(
       onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
-      child: MaterialApp.router(
-        title: 'NTripi',
-        debugShowCheckedModeBanner: false,
-        routerConfig: appRouter,
-        theme: buildNtripiTheme(),
-        darkTheme: buildNtripiDarkTheme(),
+      // Shake-to-report. BetterFeedback must sit ABOVE MaterialApp: its bottom
+      // sheet builds a bare Navigator, and inside MaterialApp that Navigator
+      // would inherit the app's HeroController — which asserts, because a
+      // HeroController cannot be shared by two Navigators.
+      child: BetterFeedback(
+        // Above MaterialApp there is no Theme to read, so both brightnesses are
+        // supplied and BetterFeedback picks one from themeMode, exactly as
+        // MaterialApp does below.
+        theme: ntripiFeedbackTheme(NtripiColors.light),
+        darkTheme: ntripiFeedbackTheme(NtripiColors.dark),
         themeMode: themeMode,
-        locale: locale,
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
-        supportedLocales: AppLocalizations.supportedLocales,
-        // AppBar-less screens still need correct status/nav bar icon
-        // brightness — reuse the style the theme sets on AppBars.
-        builder: (context, child) => AnnotatedRegion<SystemUiOverlayStyle>(
-          value: Theme.of(context).appBarTheme.systemOverlayStyle ??
-              SystemUiOverlayStyle.dark,
-          child: child!,
+        // FeedbackApp builds its own Localizations scope from exactly these
+        // delegates. The app's own are listed so the compose sheet — which
+        // renders in that scope, not MaterialApp's — can still use l10n.
+        localizationsDelegates: [
+          const NtripiFeedbackLocalizationsDelegate(),
+          ...AppLocalizations.localizationsDelegates,
+        ],
+        // That scope otherwise resolves the *platform* locale, ignoring the
+        // in-app language picker. It also drives Directionality, so this is
+        // what makes the sheet lay out RTL in Arabic.
+        localeOverride: locale,
+        feedbackBuilder: (ctx, onSubmit, scrollController) => Theme(
+          // The sheet is outside MaterialApp, so the app theme has to be handed
+          // to it explicitly — see ntripiFeedbackAppTheme.
+          data: ntripiFeedbackAppTheme(ctx, themeMode),
+          child: BugReportSheet(
+            onSubmit: onSubmit,
+            scrollController: scrollController,
+          ),
+        ),
+        // The 3.0 default yields a ~1290×2796 PNG on a modern phone, against a
+        // 10 MB request cap and a mobile uplink. The backend downscales to a
+        // 1600 px long side anyway.
+        pixelRatio: 2.0,
+        child: MaterialApp.router(
+          title: 'NTripi',
+          debugShowCheckedModeBanner: false,
+          routerConfig: appRouter,
+          theme: buildNtripiTheme(),
+          darkTheme: buildNtripiDarkTheme(),
+          themeMode: themeMode,
+          locale: locale,
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          // AppBar-less screens still need correct status/nav bar icon
+          // brightness — reuse the style the theme sets on AppBars.
+          builder: (context, child) => AnnotatedRegion<SystemUiOverlayStyle>(
+            value: Theme.of(context).appBarTheme.systemOverlayStyle ??
+                SystemUiOverlayStyle.dark,
+            // Inside MaterialApp so the shake handler has a ScaffoldMessenger
+            // for the confirmation snackbar; BetterFeedback.of() still finds
+            // the controller above.
+            child: ShakeToReport(child: child!),
+          ),
         ),
       ),
     );

@@ -36,7 +36,19 @@ permanently removes your profile, itineraries, and identifying information.</p>
 user link) to preserve the integrity of community scores. You consent to this
 when you create your account, as described in our Terms of Service.</p>
 
-<h2>5. Cookies</h2>
+<h2>5. Bug Reports</h2>
+<p>If you report a problem from inside the app (by shaking your phone or from
+Settings), we receive a screenshot of the screen you were on, the description you
+write, and basic technical details: app version, platform, device model, operating
+system version, the screen you were on, your language, and your light/dark setting.
+If you were signed in, the report is linked to your account so we can follow up.</p>
+<p>We use this only to reproduce and fix the problem you reported. Please avoid
+sending a screenshot that shows information you would rather not share — the
+screenshot is captured from whatever was on screen. Bug reports and their
+screenshots are deleted once the report has been resolved and has aged out of our
+support records.</p>
+
+<h2>6. Cookies</h2>
 <p>Signing in does not use cookies — your session tokens are stored on your
 device and sent only in request headers.</p>
 <p>Website pages set a single preference cookie (<code>ntripi_lang</code>) to
@@ -47,16 +59,16 @@ sign-in service; those are governed by Google's privacy policy.</p>
 <p>We do not use analytics cookies, advertising cookies, or any third-party
 tracking scripts.</p>
 
-<h2>6. Security</h2>
+<h2>7. Security</h2>
 <p>All data in transit is encrypted with TLS. Passwords are hashed with bcrypt
 before storage. Session tokens are signed JWTs — they cannot be forged without
 our server secret key.</p>
 
-<h2>7. Changes to This Policy</h2>
+<h2>8. Changes to This Policy</h2>
 <p>We will update this page when our practices change. The "Last updated" date
 at the top of this page reflects the most recent revision.</p>
 
-<h2>8. Contact</h2>
+<h2>9. Contact</h2>
 <p>Questions about your data? Email us at
 <a href="mailto:privacy@ntripi.app">privacy@ntripi.app</a>.</p>
 """

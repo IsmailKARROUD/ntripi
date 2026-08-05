@@ -2727,4 +2727,51 @@ class AppLocalizationsEs extends AppLocalizations {
   String hiddenBannerReason(String reason) {
     return 'Motivo: $reason';
   }
+
+  @override
+  String get bugReportTitle => 'Informar de un problema';
+
+  @override
+  String get bugReportHint => '¿Qué ha pasado?';
+
+  @override
+  String get bugReportSubmit => 'Enviar informe';
+
+  @override
+  String get bugReportThanks => 'Gracias. Lo revisaremos.';
+
+  @override
+  String get bugReportAttachmentNotice =>
+      'Se adjuntan tu captura de pantalla y los datos del dispositivo.';
+
+  @override
+  String get bugReportCategoryCrash => 'La app se bloqueó o se cerró';
+
+  @override
+  String get bugReportCategoryVisual => 'Algo se ve mal';
+
+  @override
+  String get bugReportCategoryData => 'Información incorrecta o ausente';
+
+  @override
+  String get bugReportCategorySlow => 'Demasiado lento';
+
+  @override
+  String get bugReportCategoryOther => 'Otra cosa';
+
+  @override
+  String get bugReportNavigate => 'Navegar';
+
+  @override
+  String get bugReportDraw => 'Dibujar';
+
+  @override
+  String get settingsReportBug => 'Informar de un error';
+
+  @override
+  String get settingsShakeToReport => 'Agitar para informar';
+
+  @override
+  String get settingsShakeToReportDetail =>
+      'Agita el teléfono para informar de un problema';
 }

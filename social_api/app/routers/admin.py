@@ -35,6 +35,7 @@ from app.config import Settings, get_settings
 from app.database import get_db
 from app.limiter import limiter
 from app.models.appeal import Appeal
+from app.models.bug_report import BugReport
 from app.models.content_report import ContentReport
 from app.models.image_moderation_log import ImageModerationLog
 from app.models.itinerary import Itinerary
@@ -47,6 +48,7 @@ from app.services import (
     admin_service, appeal_service, auth_service, moderation_actions,
 )
 from app.services.share_service import build_share_url
+from app.storage.factory import storage
 from app.templating import templates
 
 ADMIN_COOKIE = "ntripi_admin_session"
@@ -650,6 +652,64 @@ def admin_appeal_decide(
         return _redirect("/admin/appeals", notice=exc.message)
 
     return _redirect("/admin/appeals", notice="Appeal decided.")
+
+
+# ---------------------------------------------------------------------------
+# Bug reports (shake to report)
+# ---------------------------------------------------------------------------
+
+@router.get("/bugs", response_class=HTMLResponse)
+def admin_bugs(
+    request: Request,
+    error: str | None = None,
+    notice: str | None = None,
+    db: Session = Depends(get_db),
+    admin: User = Depends(_require_admin_page),
+) -> HTMLResponse:
+    rows = []
+    for report in admin_service.open_bug_reports(db):
+        rows.append({
+            "report": report,
+            # None for a signed-out reporter, or one who has since deleted their
+            # account — the FK is SET NULL so the report itself survives.
+            "user": db.get(User, report.user_id) if report.user_id else None,
+            "screenshot_url": (
+                storage().public_url(report.screenshot_key)
+                if report.screenshot_key else None
+            ),
+            "age": admin_service.humanize_age(report.created_at),
+            "sla": admin_service.sla_class(report.created_at),
+        })
+    return _page(request, "bugs.html", {
+        "page_title": "Bug reports",
+        "admin": admin,
+        "rows": rows,
+        "error_message": error,
+        "notice_message": notice,
+    })
+
+
+@router.post("/bugs/{report_id}/close")
+def admin_bug_close(
+    report_id: uuid.UUID,
+    note: str = Form(""),
+    db: Session = Depends(get_db),
+    admin: User = Depends(_require_admin_page),
+):
+    report = db.get(BugReport, report_id)
+    if report is None:
+        raise HTTPException(status_code=404, detail="Bug report not found")
+    if report.status == "closed":
+        return _redirect("/admin/bugs", notice="That report was already closed.")
+
+    report.status = "closed"
+    report.resolution_note = note.strip() or None
+    report.closed_at = datetime.now(timezone.utc)
+    report.closed_by_admin_id = admin.id
+    db.commit()
+    # No moderation_log row: closing a bug report is not an action against a
+    # user or their content, so it does not belong in the moderation audit trail.
+    return _redirect("/admin/bugs", notice="Bug report closed.")
 
 
 # ---------------------------------------------------------------------------

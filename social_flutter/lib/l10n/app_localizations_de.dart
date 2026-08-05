@@ -2749,4 +2749,51 @@ class AppLocalizationsDe extends AppLocalizations {
   String hiddenBannerReason(String reason) {
     return 'Grund: $reason';
   }
+
+  @override
+  String get bugReportTitle => 'Problem melden';
+
+  @override
+  String get bugReportHint => 'Was ist passiert?';
+
+  @override
+  String get bugReportSubmit => 'Bericht senden';
+
+  @override
+  String get bugReportThanks => 'Danke. Wir sehen uns das an.';
+
+  @override
+  String get bugReportAttachmentNotice =>
+      'Dein Screenshot und deine Gerätedaten werden angehängt.';
+
+  @override
+  String get bugReportCategoryCrash => 'Die App hing oder wurde beendet';
+
+  @override
+  String get bugReportCategoryVisual => 'Etwas wird falsch dargestellt';
+
+  @override
+  String get bugReportCategoryData => 'Falsche oder fehlende Informationen';
+
+  @override
+  String get bugReportCategorySlow => 'Zu langsam';
+
+  @override
+  String get bugReportCategoryOther => 'Etwas anderes';
+
+  @override
+  String get bugReportNavigate => 'Navigieren';
+
+  @override
+  String get bugReportDraw => 'Zeichnen';
+
+  @override
+  String get settingsReportBug => 'Fehler melden';
+
+  @override
+  String get settingsShakeToReport => 'Schütteln zum Melden';
+
+  @override
+  String get settingsShakeToReportDetail =>
+      'Schüttle dein Telefon, um ein Problem zu melden';
 }
