@@ -278,6 +278,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'To add a cover image, tap this button at the top.';
 
   @override
+  String get longPressEditHintTitle => 'Press and hold to edit';
+
+  @override
+  String get longPressEditHintMessage =>
+      'Press and hold any part of your trip — the cover, a note, a stop — to edit it straight away.';
+
+  @override
   String get addProfilePhoto => 'Add a profile photo';
 
   @override

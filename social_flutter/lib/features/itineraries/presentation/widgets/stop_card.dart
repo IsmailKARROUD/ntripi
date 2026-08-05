@@ -13,6 +13,7 @@ import 'package:social_flutter/features/itineraries/domain/annotation.dart';
 import 'package:social_flutter/features/itineraries/domain/stop.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/annotation_chip.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/edit_pencil_button.dart';
+import 'package:social_flutter/features/itineraries/presentation/widgets/long_press_to_edit.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/markdown_notes_editor.dart';
 import 'package:social_flutter/l10n/app_localizations.dart';
 
@@ -29,6 +30,10 @@ class StopCard extends StatelessWidget {
   final void Function(Annotation)? onEditAnnotation;
   final void Function(Annotation)? onDeleteAnnotation;
 
+  /// Owner shortcut in read mode: long-press flips the list into edit mode and
+  /// opens this stop's form. Null for viewers and in edit mode.
+  final VoidCallback? onLongPressEdit;
+
   const StopCard({
     super.key,
     required this.stop,
@@ -39,6 +44,7 @@ class StopCard extends StatelessWidget {
     this.onAddAnnotation,
     this.onEditAnnotation,
     this.onDeleteAnnotation,
+    this.onLongPressEdit,
   });
 
   bool get _editMode => onEdit != null;
@@ -49,7 +55,9 @@ class StopCard extends StatelessWidget {
     final hasNotes = stop.notes != null && stop.notes!.trim().isNotEmpty;
     final hasAnnotations = stop.annotations.isNotEmpty;
 
-    return InkWell(
+    return LongPressToEdit(
+      onEdit: onLongPressEdit,
+      child: InkWell(
       onTap: onTap,
       child: Padding(
         padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
@@ -175,6 +183,7 @@ class StopCard extends StatelessWidget {
             ],
           ],
         ),
+      ),
       ),
     );
   }

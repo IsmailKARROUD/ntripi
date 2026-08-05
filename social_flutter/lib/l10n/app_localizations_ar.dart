@@ -277,6 +277,13 @@ class AppLocalizationsAr extends AppLocalizations {
       'لإضافة صورة غلاف، اضغط على هذا الزر في الأعلى.';
 
   @override
+  String get longPressEditHintTitle => 'اضغط مطولًا للتعديل';
+
+  @override
+  String get longPressEditHintMessage =>
+      'اضغط مطولًا على أي جزء من مسارك — الغلاف أو تنويه أو محطة — لتعديله مباشرة.';
+
+  @override
   String get addProfilePhoto => 'أضف صورة الملف الشخصي';
 
   @override

@@ -616,6 +616,18 @@ abstract class AppLocalizations {
   /// **'To add a cover image, tap this button at the top.'**
   String get addCoverHintMessage;
 
+  /// No description provided for @longPressEditHintTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Press and hold to edit'**
+  String get longPressEditHintTitle;
+
+  /// No description provided for @longPressEditHintMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Press and hold any part of your trip — the cover, a note, a stop — to edit it straight away.'**
+  String get longPressEditHintMessage;
+
   /// No description provided for @addProfilePhoto.
   ///
   /// In en, this message translates to:

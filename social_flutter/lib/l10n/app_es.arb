@@ -85,6 +85,8 @@
   "addStopHintTitle": "Añade tus paradas",
   "addStopHintMessage": "Para añadir paradas, toca Editar ✎ en la parte superior.",
   "addCoverHintMessage": "Para añadir una imagen de portada, toca este botón en la parte superior.",
+  "longPressEditHintTitle": "Mantén pulsado para editar",
+  "longPressEditHintMessage": "Mantén pulsada cualquier parte de tu viaje — la portada, una anotación, una parada — para editarla directamente.",
   "addProfilePhoto": "Añade una foto de perfil",
   "addAvatarHintMessage": "Para añadir una foto de perfil, toca este botón en la parte superior.",
   "stopCount": "{count, plural, one{{count} parada} other{{count} paradas}}",

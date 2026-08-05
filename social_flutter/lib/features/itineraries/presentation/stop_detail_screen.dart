@@ -15,8 +15,11 @@ import 'package:social_flutter/features/itineraries/data/link_preview_service.da
 import 'package:social_flutter/features/itineraries/domain/annotation.dart';
 import 'package:social_flutter/features/itineraries/domain/stop.dart';
 import 'package:social_flutter/features/itineraries/domain/transit_segment.dart';
+import 'package:social_flutter/features/itineraries/presentation/annotation_screen.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/edit_pencil_button.dart';
+import 'package:social_flutter/features/itineraries/presentation/widgets/leg_editor.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/link_preview_card.dart';
+import 'package:social_flutter/features/itineraries/presentation/widgets/long_press_to_edit.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/markdown_notes_editor.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/open_in_maps_sheet.dart';
 import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
@@ -119,6 +122,27 @@ class _StopDetailView extends ConsumerWidget {
     this.outboundSegment,
     required this.allStops,
   });
+
+  // Mirrors _editAnnotation in itinerary_detail_screen — this screen has no
+  // edit mode, so the owner's long-press is the only way in from here.
+  Future<void> _editAnnotation(
+    BuildContext context,
+    WidgetRef ref,
+    Annotation annotation,
+  ) =>
+      showAnnotationScreen(
+        context,
+        isEdit: true,
+        initialContent: annotation.content,
+        initialType: annotation.type,
+        stopName:
+            stop.placeName ?? AppLocalizations.of(context)!.stopFallbackName,
+        stopSubtitle: stop.placeAddress,
+        onSaveAsync: (result) => ref
+            .read(itineraryDetailProvider(itineraryId).notifier)
+            .updateAnnotation(stop.id, annotation.id,
+                content: result.content, type: result.type),
+      );
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -249,6 +273,9 @@ class _StopDetailView extends ConsumerWidget {
                                         ReportTarget.stopAnnotation(
                                             itineraryId, stop.id, a.id),
                                       ),
+                              onLongPressEdit: isOwner
+                                  ? () => _editAnnotation(context, ref, a)
+                                  : null,
                             ),
                           ))
                       .toList(),
@@ -273,6 +300,13 @@ class _StopDetailView extends ConsumerWidget {
                         direction: _TransitDirection.inbound,
                         currency: currency,
                         allStops: allStops,
+                        onEditLeg: isOwner
+                            ? (i) => LegEditor(
+                                  ref: ref,
+                                  itineraryId: itineraryId,
+                                  segment: inboundSegment!,
+                                ).editLeg(context, i)
+                            : null,
                       ),
                     if (inboundSegment != null && outboundSegment != null)
                       const Divider(height: 1),
@@ -282,6 +316,13 @@ class _StopDetailView extends ConsumerWidget {
                         direction: _TransitDirection.outbound,
                         currency: currency,
                         allStops: allStops,
+                        onEditLeg: isOwner
+                            ? (i) => LegEditor(
+                                  ref: ref,
+                                  itineraryId: itineraryId,
+                                  segment: outboundSegment!,
+                                ).editLeg(context, i)
+                            : null,
                       ),
                   ],
                 ),
@@ -296,10 +337,18 @@ class _StopDetailView extends ConsumerWidget {
                   icon: Icons.description_rounded, label: l10n.notesLabel),
             ),
             SliverToBoxAdapter(
-              child: _SectionCard(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
-                  child: InertMarkdownBody(data: stop.notes!),
+              child: LongPressToEdit(
+                // Notes live on the stop itself, so the shortcut is the stop
+                // form rather than a dedicated notes editor.
+                onEdit: isOwner
+                    ? () => context.push(
+                        '/itineraries/$itineraryId/stops/${stop.id}/edit')
+                    : null,
+                child: _SectionCard(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+                    child: InertMarkdownBody(data: stop.notes!),
+                  ),
                 ),
               ),
             ),
@@ -347,7 +396,11 @@ class _StopHero extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final nt = context.nt;
-    return Container(
+    // Long-press anywhere on the hero is a shortcut to the same stop form the
+    // pencil opens; onEdit is already owner-only so no extra gate is needed.
+    return LongPressToEdit(
+      onEdit: onEdit,
+      child: Container(
       color: nt.mist,
       padding: EdgeInsets.fromLTRB(
           16, MediaQuery.of(context).padding.top + 12, 16, 20),
@@ -472,6 +525,7 @@ class _StopHero extends StatelessWidget {
             ],
           ),
         ],
+      ),
       ),
     );
   }
@@ -642,14 +696,24 @@ class _AnnotationFullRow extends StatelessWidget {
   /// menu and a flag glyph on every note would drown the content.
   final VoidCallback? onReport;
 
-  const _AnnotationFullRow({required this.annotation, this.onReport});
+  /// Owner's long-press instead opens the editor. Mutually exclusive with
+  /// [onReport] — an author never reports their own note.
+  final VoidCallback? onLongPressEdit;
+
+  const _AnnotationFullRow({
+    required this.annotation,
+    this.onReport,
+    this.onLongPressEdit,
+  });
 
   @override
   Widget build(BuildContext context) {
     final nt = context.nt;
     final t = annotation.type;
 
-    return GestureDetector(
+    return LongPressToEdit(
+      onEdit: onLongPressEdit,
+      child: GestureDetector(
       onLongPress: onReport,
       child: Container(
         padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
@@ -700,6 +764,7 @@ class _AnnotationFullRow extends StatelessWidget {
           ],
         ),
       ),
+      ),
     );
   }
 }
@@ -713,11 +778,15 @@ class _TransitFullRow extends StatelessWidget {
   final String currency;
   final List<Stop> allStops;
 
+  /// Owner shortcut: long-press a leg row to open its form. Null for viewers.
+  final void Function(int legIndex)? onEditLeg;
+
   const _TransitFullRow({
     required this.segment,
     required this.direction,
     required this.currency,
     required this.allStops,
+    this.onEditLeg,
   });
 
 
@@ -793,7 +862,10 @@ class _TransitFullRow extends StatelessWidget {
                   if (i > 0)
                     Divider(
                         height: 1, color: nt.transitBorder, indent: 12),
-                  Padding(
+                  LongPressToEdit(
+                    onEdit:
+                        onEditLeg != null ? () => onEditLeg!(i) : null,
+                    child: Padding(
                     padding: const EdgeInsets.symmetric(
                         horizontal: 12, vertical: 10),
                     child: Row(
@@ -857,6 +929,7 @@ class _TransitFullRow extends StatelessWidget {
                         ),
                       ],
                     ),
+                  ),
                   ),
                 ],
 

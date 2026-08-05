@@ -85,6 +85,8 @@
   "addStopHintTitle": "Füge deine Stopps hinzu",
   "addStopHintMessage": "Um Stopps hinzuzufügen, tippe oben auf Bearbeiten ✎.",
   "addCoverHintMessage": "Um ein Titelbild hinzuzufügen, tippe oben auf diese Schaltfläche.",
+  "longPressEditHintTitle": "Zum Bearbeiten gedrückt halten",
+  "longPressEditHintMessage": "Halte einen beliebigen Teil deiner Reise gedrückt — das Titelbild, eine Anmerkung, einen Stopp — um ihn direkt zu bearbeiten.",
   "addProfilePhoto": "Füge ein Profilfoto hinzu",
   "addAvatarHintMessage": "Um ein Profilfoto hinzuzufügen, tippe oben auf diese Schaltfläche.",
   "stopCount": "{count, plural, one{{count} Stopp} other{{count} Stopps}}",

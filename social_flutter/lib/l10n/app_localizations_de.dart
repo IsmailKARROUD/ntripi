@@ -285,6 +285,13 @@ class AppLocalizationsDe extends AppLocalizations {
       'Um ein Titelbild hinzuzufügen, tippe oben auf diese Schaltfläche.';
 
   @override
+  String get longPressEditHintTitle => 'Zum Bearbeiten gedrückt halten';
+
+  @override
+  String get longPressEditHintMessage =>
+      'Halte einen beliebigen Teil deiner Reise gedrückt — das Titelbild, eine Anmerkung, einen Stopp — um ihn direkt zu bearbeiten.';
+
+  @override
   String get addProfilePhoto => 'Füge ein Profilfoto hinzu';
 
   @override

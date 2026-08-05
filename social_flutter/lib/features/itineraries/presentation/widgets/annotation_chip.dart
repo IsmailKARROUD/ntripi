@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:social_flutter/core/connectivity/connectivity_service.dart';
 import 'package:social_flutter/core/ui/app_theme.dart';
 import 'package:social_flutter/features/itineraries/domain/annotation.dart';
+import 'package:social_flutter/features/itineraries/presentation/widgets/long_press_to_edit.dart';
 import 'package:social_flutter/shared/widgets/offline_gate.dart';
 
 /// Displays an annotation as a compact colored chip.
@@ -24,12 +25,18 @@ class AnnotationChip extends ConsumerWidget {
   /// small would cost more of the text than it is worth.
   final VoidCallback? onReport;
 
+  /// Owner shortcut in read mode: long-press opens the annotation editor.
+  /// Mutually exclusive with [onReport] — an author never reports their own
+  /// note, so the two never contend for the same press.
+  final VoidCallback? onLongPressEdit;
+
   const AnnotationChip({
     super.key,
     required this.annotation,
     this.onEdit,
     this.onDelete,
     this.onReport,
+    this.onLongPressEdit,
   });
 
   // Compact outline-icon variant; colors come from the shared editorial
@@ -64,7 +71,11 @@ class AnnotationChip extends ConsumerWidget {
       style: TextStyle(color: config.fg, fontSize: 14),
     );
     // The inner detectors only claim taps, so the long-press reaches this one.
-    return GestureDetector(
+    // Nesting is safe: onReport is null for the author and onLongPressEdit is
+    // null for viewers, so exactly one of the two detectors is ever live.
+    return LongPressToEdit(
+      onEdit: onLongPressEdit,
+      child: GestureDetector(
       onLongPress: onReport,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -105,6 +116,7 @@ class AnnotationChip extends ConsumerWidget {
               ),
           ],
         ),
+      ),
       ),
     );
   }

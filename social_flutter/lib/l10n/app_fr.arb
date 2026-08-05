@@ -85,6 +85,8 @@
   "addStopHintTitle": "Ajoutez vos étapes",
   "addStopHintMessage": "Pour ajouter des étapes, appuyez sur Modifier ✎ en haut.",
   "addCoverHintMessage": "Pour ajouter une image de couverture, appuyez sur ce bouton en haut.",
+  "longPressEditHintTitle": "Appui long pour modifier",
+  "longPressEditHintMessage": "Appuyez longuement sur n'importe quel élément de votre voyage — la couverture, une annotation, une étape — pour le modifier directement.",
   "addProfilePhoto": "Ajouter une photo de profil",
   "addAvatarHintMessage": "Pour ajouter une photo de profil, appuyez sur ce bouton en haut.",
   "stopCount": "{count, plural, one{{count} étape} other{{count} étapes}}",

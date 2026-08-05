@@ -1,32 +1,31 @@
 // presentation/itinerary_detail_screen.dart — Full itinerary view with map.
 //
 // Layout (CustomScrollView so pull-to-refresh works over the whole page):
-//   AppBar       — title | add-stop + add-segment + reorder icons (edit mode) | share + flag (non-owner) + more_vert
-//   Summary chips — duration, cost, safety rating, stop count, visibility
+//   Cover hero   — 240px full-bleed image + back / share / flag (non-owner) /
+//                  edit-details / edit-pencil chrome; ✓ to leave edit mode
+//   Owner row    — avatar, the viewer's own rating, community average
+//   Meta chips   — duration, cost, stop count
+//   Recommended period — best travel window + why note
 //   Description  — optional free-text
-//   Rating section — community avg + current user's 5-star picker
+//   Itinerary annotations — trip-wide notes as chips
+//   List/Map toggle — reorder-tracks, bookmark and route buttons
 //   Map section  — OSM map with stop markers and polyline (ODbL requires attribution)
 //   Stop list    — interleaved stops + segments (read & edit mode)
-//                  switches to standalone ReorderableListView in reorder mode
-//   Save bar     — full-width FilledButton that slides up from the bottom in edit mode
 //
 // Edit-mode state machine:
-//   _editMode = false          → read-only view
-//   _editMode = true           → interleaved list with inline edit/delete buttons,
-//                                inline separators between stops, save bar visible
-//   _editMode + _reorderMode   → standalone ReorderableListView (stops only)
-//                                drag handles work because there's no outer
-//                                CustomScrollView to steal the gesture
+//   _editMode = false → read-only view; the owner can still long-press any
+//                       section to jump straight to its editor (LongPressToEdit)
+//   _editMode = true  → interleaved list with inline edit/delete buttons and
+//                       inline separators between stops
 //
-// Pending reorder:
-//   Stop reordering is deferred — changes accumulate in _pendingOrder and are
-//   only sent to the server when the user taps Save. All other mutations (stop
-//   edit/delete, segment edit/delete) call the API immediately from sub-screens.
+// Mutations are immediate — every stop/segment/annotation change PATCHes on
+// save from its own form or sheet. Reordering is not deferred either: it runs
+// through showTrackReorderSheet / showReorderParallelsSheet, so there is no
+// save bar and no pending-changes state to guard.
 //
 // Back-button guard (PopScope):
-//   While in edit mode, the system back button is intercepted. If the user has
-//   a pending reorder they're asked to Save / Discard / Stay. If there are no
-//   pending changes they just exit edit mode silently (don't navigate away).
+//   While in edit mode the system back button exits edit mode instead of
+//   navigating away. Nothing is unsaved at that point, so nothing is asked.
 //
 // OSM attribution is required by the ODbL license and is always visible.
 
@@ -39,6 +38,7 @@ import 'package:go_router/go_router.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:social_flutter/core/api/api_client.dart';
 import 'package:social_flutter/core/cache/image_cache.dart';
+import 'package:social_flutter/core/providers/long_press_hint_provider.dart';
 import 'package:social_flutter/core/router/navigation_ext.dart';
 import 'package:social_flutter/core/ui/app_theme.dart';
 import 'package:social_flutter/core/ui/destructive_actions.dart';
@@ -57,6 +57,7 @@ import 'package:social_flutter/shared/models/user.dart';
 import 'package:social_flutter/features/itineraries/domain/stop.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/annotation_chip.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/edit_pencil_button.dart';
+import 'package:social_flutter/features/itineraries/presentation/widgets/long_press_to_edit.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/markdown_notes_editor.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/move_stop_to_track_sheet.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/rate_itinerary_dialog.dart';
@@ -104,6 +105,10 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
   // cross-track move to scroll the destination track into view.
   final Map<String, GlobalKey> _trackKeys = {};
   final GlobalKey _editDetailsButtonKey = GlobalKey();
+  // Anchors the one-time long-press tip at the Edit pencil, the affordance the
+  // gesture shortcuts past.
+  final GlobalKey _enterEditButtonKey = GlobalKey();
+  bool _longPressHintShown = false; // one-shot guard within this screen's life
   bool _firstStopFormOpened = false; // one-shot guard for the just-created auto-open
   //start with map hidden on mobile to avoid unnecessary API calls and improve performance, since the map is less likely to be used on mobile and can be accessed via a button
   bool _mapVisible = false;
@@ -165,6 +170,25 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
       message: l10n.addCoverHintMessage,
       pointer: true, // draw a beak pointing up at the Edit details button
     );
+  }
+
+  // Long-press has no visible affordance, so owners get told about it once.
+  // Anchor is only laid out in read mode — skip silently otherwise, same as
+  // the add-cover hint.
+  void _maybeShowLongPressHint() {
+    if (_longPressHintShown || _editMode) return;
+    if (ref.read(longPressHintSeenProvider)) return;
+    final ctx = _enterEditButtonKey.currentContext;
+    if (ctx == null) return;
+    _longPressHintShown = true;
+    final l10n = AppLocalizations.of(context)!;
+    showFieldHelp(
+      ctx,
+      title: l10n.longPressEditHintTitle,
+      message: l10n.longPressEditHintMessage,
+      pointer: true, // draw a beak pointing up at the Edit pencil
+    );
+    ref.read(longPressHintSeenProvider.notifier).markSeen();
   }
 
   void _exitEditMode() => setState(() => _editMode = false);
@@ -461,6 +485,24 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                     });
                   }
 
+                  // Only teach the gesture once there is something to press —
+                  // on an empty itinerary the tip would point at nothing, and
+                  // it must not pre-empt the add-cover hint on a fresh trip.
+                  final hasLongPressTarget = tracks.isNotEmpty ||
+                      itinerary.annotations.isNotEmpty ||
+                      itinerary.recommendedPeriod != null ||
+                      (itinerary.description?.isNotEmpty ?? false) ||
+                      (itinerary.coverImageUrl?.isNotEmpty ?? false);
+                  // Wait a frame so the Edit pencil the tip points at exists.
+                  if (isOwner &&
+                      !_editMode &&
+                      !_longPressHintShown &&
+                      hasLongPressTarget) {
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      if (mounted) _maybeShowLongPressHint();
+                    });
+                  }
+
                   final segmentByFromStop = {
                     for (final seg in itinerary.segments) seg.fromStopId: seg,
                   };
@@ -509,12 +551,17 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                             : trackStops.first;
                         final inbound = segmentByToStop[activeStop.id];
                         if (inbound != null) {
-                          items.add(SegmentCard(
-                            key: ValueKey('seg-in-${inbound.id}'),
-                            segment: inbound,
-                            currency: itinerary.currency,
-                            itineraryId: widget.itineraryId,
-                            // no onEdit/onDelete → renders as compact _TransitRow
+                          items.add(LongPressToEdit(
+                            // Transit has no standalone form — leg rows only
+                            // become tappable once the list is in edit mode.
+                            onEdit: isOwner ? _enterEditMode : null,
+                            child: SegmentCard(
+                              key: ValueKey('seg-in-${inbound.id}'),
+                              segment: inbound,
+                              currency: itinerary.currency,
+                              itineraryId: widget.itineraryId,
+                              // no onEdit/onDelete → renders as compact _TransitRow
+                            ),
                           ));
                         }
                       }
@@ -570,6 +617,16 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                             ? (stop) => context.push(
                                   '/itineraries/${widget.itineraryId}/stops/${stop.id}/edit',
                                 )
+                            : null,
+                        // Flip the list into edit mode first so returning from
+                        // the form lands on the editable list, not read mode.
+                        onLongPressEditStop: isOwner && !_editMode
+                            ? (stop) {
+                                _enterEditMode();
+                                context.push(
+                                  '/itineraries/${widget.itineraryId}/stops/${stop.id}/edit',
+                                );
+                              }
                             : null,
                         onAddAnnotation:
                             canEdit ? (stop) => _addAnnotation(stop) : null,
@@ -721,6 +778,7 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                             isOwner: isOwner,
                             editMode: _editMode,
                             editDetailsButtonKey: _editDetailsButtonKey,
+                            enterEditButtonKey: _enterEditButtonKey,
                             onCoverTap: isOwner ? _showAddCoverHint : null,
                             // Reached via go() after create / stop-delete, so
                             // there may be nothing on the stack to pop.
@@ -746,6 +804,12 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                                 isOwner && !_editMode ? _enterEditMode : null,
                             onExitEdit:
                                 isOwner && _editMode ? _exitEditMode : null,
+                            // Long-press anywhere on the hero is a shortcut to
+                            // the same screen the tune button opens.
+                            onLongPressEdit: isOwner && !_editMode
+                                ? () => context.push(
+                                    '/itineraries/${widget.itineraryId}/edit')
+                                : null,
                           ),
                         ),
 
@@ -824,8 +888,14 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                           SliverToBoxAdapter(
                             child: Padding(
                               padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-                              child: _RecommendedPeriodRow(
-                                  period: itinerary.recommendedPeriod!),
+                              child: LongPressToEdit(
+                                onEdit: isOwner
+                                    ? () => _editRecommendedPeriod(
+                                        itinerary.recommendedPeriod)
+                                    : null,
+                                child: _RecommendedPeriodRow(
+                                    period: itinerary.recommendedPeriod!),
+                              ),
                             ),
                           ),
 
@@ -848,8 +918,14 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                           SliverToBoxAdapter(
                             child: Padding(
                               padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-                              child: InertMarkdownBody(
-                                  data: itinerary.description!),
+                              child: LongPressToEdit(
+                                onEdit: isOwner
+                                    ? () =>
+                                        _editDescription(itinerary.description)
+                                    : null,
+                                child: InertMarkdownBody(
+                                    data: itinerary.description!),
+                              ),
                             ),
                           ),
 
@@ -964,6 +1040,12 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                                                             a.id,
                                                           ),
                                                         ),
+                                                onLongPressEdit: isOwner &&
+                                                        !_editMode
+                                                    ? () =>
+                                                        _editItineraryAnnotation(
+                                                            a)
+                                                    : null,
                                               ),
                                             )
                                             .toList(),
@@ -1258,6 +1340,8 @@ class _CoverHero extends StatefulWidget {
   final bool editMode;
   // Attached to the Edit details button so the add-cover hint can point at it.
   final GlobalKey editDetailsButtonKey;
+  // Attached to the Edit pencil so the long-press tip can point at it.
+  final GlobalKey enterEditButtonKey;
   final VoidCallback onBack;
   final VoidCallback? onShare;
   // Viewer-only (non-owner) report action; null hides the flag button.
@@ -1267,6 +1351,8 @@ class _CoverHero extends StatefulWidget {
   final VoidCallback? onExitEdit;
   // Owner-only tap on the placeholder cover (null makes it inert for viewers).
   final VoidCallback? onCoverTap;
+  // Owner shortcut in read mode: long-press the hero to open the edit form.
+  final VoidCallback? onLongPressEdit;
 
   const _CoverHero({
     required this.coverUrl,
@@ -1274,6 +1360,7 @@ class _CoverHero extends StatefulWidget {
     required this.isOwner,
     required this.editMode,
     required this.editDetailsButtonKey,
+    required this.enterEditButtonKey,
     required this.onBack,
     this.onShare,
     this.onReport,
@@ -1281,6 +1368,7 @@ class _CoverHero extends StatefulWidget {
     this.onEnterEdit,
     this.onExitEdit,
     this.onCoverTap,
+    this.onLongPressEdit,
   });
 
   @override
@@ -1295,7 +1383,9 @@ class _CoverHeroState extends State<_CoverHero> {
     final topPad = MediaQuery.of(context).padding.top;
     final itinerary = widget.itinerary;
 
-    return SizedBox(
+    return LongPressToEdit(
+      onEdit: widget.onLongPressEdit,
+      child: SizedBox(
       height: 240 + topPad,
       child: Stack(
         fit: StackFit.expand,
@@ -1391,6 +1481,7 @@ class _CoverHeroState extends State<_CoverHero> {
                     ),
                     const SizedBox(width: 6),
                     EditPencilButton(
+                      key: widget.enterEditButtonKey,
                       onTap: widget.onEnterEdit,
                       iconSize: 22,
                     ),
@@ -1425,6 +1516,7 @@ class _CoverHeroState extends State<_CoverHero> {
             ),
           ),
         ],
+      ),
       ),
     );
   }

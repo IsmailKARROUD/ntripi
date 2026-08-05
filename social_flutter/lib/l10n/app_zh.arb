@@ -85,6 +85,8 @@
   "addStopHintTitle": "添加你的停靠点",
   "addStopHintMessage": "要添加停靠点，请点按顶部的编辑 ✎。",
   "addCoverHintMessage": "要添加封面图片，请点按顶部的此按钮。",
+  "longPressEditHintTitle": "长按即可编辑",
+  "longPressEditHintMessage": "长按行程中的任意部分——封面、注释或停靠点——即可直接编辑。",
   "addProfilePhoto": "添加头像",
   "addAvatarHintMessage": "要添加头像，请点按顶部的此按钮。",
   "stopCount": "{count, plural, other{{count} 个停靠点}}",

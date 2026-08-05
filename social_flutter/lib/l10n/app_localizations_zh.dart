@@ -265,6 +265,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get addCoverHintMessage => '要添加封面图片，请点按顶部的此按钮。';
 
   @override
+  String get longPressEditHintTitle => '长按即可编辑';
+
+  @override
+  String get longPressEditHintMessage => '长按行程中的任意部分——封面、注释或停靠点——即可直接编辑。';
+
+  @override
   String get addProfilePhoto => '添加头像';
 
   @override

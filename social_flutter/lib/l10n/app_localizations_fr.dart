@@ -285,6 +285,13 @@ class AppLocalizationsFr extends AppLocalizations {
       'Pour ajouter une image de couverture, appuyez sur ce bouton en haut.';
 
   @override
+  String get longPressEditHintTitle => 'Appui long pour modifier';
+
+  @override
+  String get longPressEditHintMessage =>
+      'Appuyez longuement sur n\'importe quel élément de votre voyage — la couverture, une annotation, une étape — pour le modifier directement.';
+
+  @override
   String get addProfilePhoto => 'Ajouter une photo de profil';
 
   @override

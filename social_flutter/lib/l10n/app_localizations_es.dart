@@ -282,6 +282,13 @@ class AppLocalizationsEs extends AppLocalizations {
       'Para añadir una imagen de portada, toca este botón en la parte superior.';
 
   @override
+  String get longPressEditHintTitle => 'Mantén pulsado para editar';
+
+  @override
+  String get longPressEditHintMessage =>
+      'Mantén pulsada cualquier parte de tu viaje — la portada, una anotación, una parada — para editarla directamente.';
+
+  @override
   String get addProfilePhoto => 'Añade una foto de perfil';
 
   @override

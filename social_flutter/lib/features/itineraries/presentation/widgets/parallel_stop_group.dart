@@ -43,6 +43,10 @@ class ParallelStopGroup extends StatefulWidget {
 
   /// Edit/delete/annotation callbacks forwarded to StopCard.
   final void Function(Stop stop)? onEditStop;
+
+  /// Owner shortcut in read mode: long-press a stop to enter edit mode and open
+  /// its form. Only consulted when [editMode] is false.
+  final void Function(Stop stop)? onLongPressEditStop;
   final void Function(Stop stop)? onAddAnnotation;
   final void Function(Stop stop, Annotation a)? onEditAnnotation;
   final void Function(Stop stop, Annotation a)? onDeleteAnnotation;
@@ -83,6 +87,7 @@ class ParallelStopGroup extends StatefulWidget {
     this.onAddParallel,
     this.onViewStop,
     this.onEditStop,
+    this.onLongPressEditStop,
     this.onAddAnnotation,
     this.onEditAnnotation,
     this.onDeleteAnnotation,
@@ -285,6 +290,9 @@ class _ParallelStopGroupState extends State<ParallelStopGroup> {
       onTap: widget.onViewStop != null ? () => widget.onViewStop!(stop) : null,
       onEdit: widget.editMode && widget.onEditStop != null
           ? () => widget.onEditStop!(stop)
+          : null,
+      onLongPressEdit: !widget.editMode && widget.onLongPressEditStop != null
+          ? () => widget.onLongPressEditStop!(stop)
           : null,
       onAddAnnotation: widget.editMode && widget.onAddAnnotation != null
           ? () => widget.onAddAnnotation!(stop)

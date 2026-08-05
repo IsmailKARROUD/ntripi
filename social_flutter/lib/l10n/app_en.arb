@@ -85,6 +85,8 @@
   "addStopHintTitle": "Add your stops",
   "addStopHintMessage": "To add stops, tap Edit ✎ at the top.",
   "addCoverHintMessage": "To add a cover image, tap this button at the top.",
+  "longPressEditHintTitle": "Press and hold to edit",
+  "longPressEditHintMessage": "Press and hold any part of your trip — the cover, a note, a stop — to edit it straight away.",
   "addProfilePhoto": "Add a profile photo",
   "addAvatarHintMessage": "To add a profile photo, tap this button at the top.",
   "stopCount": "{count, plural, one{{count} stop} other{{count} stops}}",
