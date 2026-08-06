@@ -45,7 +45,7 @@ from app.models.moderation_log import HIDE_FAMILY
 from app.models.text_moderation_decision import TextModerationDecision
 from app.models.user import User
 from app.services import (
-    admin_service, appeal_service, auth_service, moderation_actions,
+    admin_service, appeal_service, auth_service, jira_service, moderation_actions,
 )
 from app.services.share_service import build_share_url
 from app.storage.factory import storage
@@ -683,6 +683,7 @@ def admin_bugs(
     notice: str | None = None,
     db: Session = Depends(get_db),
     admin: User = Depends(_require_admin_page),
+    settings: Settings = Depends(get_settings),
 ) -> HTMLResponse:
     rows = []
     for report in admin_service.open_bug_reports(db):
@@ -691,6 +692,9 @@ def admin_bugs(
             # None for a signed-out reporter, or one who has since deleted their
             # account — the FK is SET NULL so the report itself survives.
             "user": db.get(User, report.user_id) if report.user_id else None,
+            # Relative on filesystem storage, and that is correct here: it feeds
+            # an <img> on this page. The Jira payload builds its own absolute
+            # URL — do not collapse the two.
             "screenshot_url": (
                 storage().public_url(report.screenshot_key)
                 if report.screenshot_key else None
@@ -702,6 +706,8 @@ def admin_bugs(
         "page_title": "Bug reports",
         "admin": admin,
         "rows": rows,
+        "jira_enabled": jira_service.is_enabled(settings),
+        "jira_browse_base": jira_service.browse_base(settings),
         "error_message": error,
         "notice_message": notice,
     })
@@ -728,6 +734,44 @@ def admin_bug_close(
     # No moderation_log row: closing a bug report is not an action against a
     # user or their content, so it does not belong in the moderation audit trail.
     return _redirect("/admin/bugs", notice="Bug report closed.")
+
+
+@router.post("/bugs/{report_id}/jira")
+def admin_bug_create_jira(
+    report_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    admin: User = Depends(_require_admin_page),
+    settings: Settings = Depends(get_settings),
+):
+    """File an open bug report as a Jira issue and record the key.
+
+    Sync def on purpose: FastAPI runs it in a threadpool, so the blocking
+    requests.post never touches the event loop — and async here would put the
+    sync SQLAlchemy session on the loop, which is the real hazard.
+    """
+    report = db.get(BugReport, report_id)
+    if report is None:
+        raise HTTPException(status_code=404, detail="Bug report not found")
+
+    # The duplicate guard, and it has to come before the API call: two operators
+    # working the queue must not be able to file the same report twice.
+    if report.jira_issue_key:
+        return _redirect(
+            "/admin/bugs", notice=f"Already filed as {report.jira_issue_key}."
+        )
+
+    try:
+        key = jira_service.create_issue(report, db.get(User, report.user_id)
+                                        if report.user_id else None, settings)
+    except jira_service.JiraError as exc:
+        # Fails closed: nothing is written and the operator sees why.
+        return _redirect("/admin/bugs", error=str(exc))
+
+    report.jira_issue_key = key
+    db.commit()
+    # No moderation_log row, same reasoning as closing: filing a bug ticket is
+    # not an action against a user or their content.
+    return _redirect("/admin/bugs", notice=f"Created {key}.")
 
 
 # ---------------------------------------------------------------------------

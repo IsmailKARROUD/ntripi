@@ -54,7 +54,7 @@ Extracted in the 2026-07 dedup refactor. Before writing a query/response block i
   - `bump_follow_counters(follower, followed, delta)` — the only way to touch `followers_count`/`following_count` (None-skip, `max(0, …)`). Exception: `delete_my_account`'s bulk UPDATEs.
 - **`app/services/token_util.py`** — `hash_token` / `as_aware_utc` / `new_raw_token` for every opaque-token service (refresh, email). New token types must use these.
 - **`app/services/image_service.py`** — `process_and_store(raw, key, processor, *, cache_bust)` for all image uploads. `cache_bust=True` for user avatar/cover (stable keys need `?v=`), `False` for itinerary covers (never carried `?v=`).
-- **`app/services/share_service.py`** — `build_share_url(itinerary, settings)` for the public share URL; never rebuild the f-string.
+- **`app/services/share_service.py`** — `build_share_url(itinerary, settings)` for the public share URL; never rebuild the f-string. Also `absolute_storage_url(key, settings)` — the only way to turn a storage key into a URL fit to leave the site (emails, Jira tickets, OG crawlers). Filesystem storage returns a relative `/uploads/…`; R2 is already absolute and passes through.
 - **`app/middleware/__init__.py`** — `STATIC_PREFIXES` shared by ETag + security-headers middleware; add new static mounts there, not in each middleware.
 - **`app/routers/itineraries.py` router-private helpers** (keep router-private; don't re-inline):
   - `_etag_json_response(schema_cls, obj, itinerary, status_code)` — every response that carries the concurrency ETag. In `reorder_itinerary`, pass the freshly reloaded detail, not the stale itinerary.
@@ -217,6 +217,8 @@ Optional (reports/safety): `REPORT_HIDE_THRESHOLDS` (comma `category:count`) · 
 
 Optional (bug reports): `BUG_REPORT_RATE_LIMIT=5/hour` · `BUG_REPORT_RETENTION_DAYS=180`. Both have working defaults — shipping the feature needs no deploy change. `OPERATOR_EMAIL` is what turns the notification email on.
 
+Optional (Jira hand-off): `JIRA_BASE_URL` · `JIRA_EMAIL` · `JIRA_API_TOKEN` · `JIRA_PROJECT_KEY` · `JIRA_ISSUE_TYPE=Bug` · `JIRA_TIMEOUT_SECONDS=10`. Any of the first four unset ⇒ the "Create Jira issue" button is not rendered (a partially-set config logs which vars are missing). Free — the Jira Cloud REST API carries no per-call charge; the token comes from id.atlassian.com. `JIRA_PROJECT_KEY` is the board key (`NTRIPI`), not a numeric id, and `JIRA_ISSUE_TYPE` must name a type that exists in that project.
+
 ---
 
 ## Text Moderation
@@ -335,6 +337,11 @@ A bell beside the profile settings gear opens `/notifications`; three of the six
 - Do NOT drop `localeOverride` or the app's own delegates from `BetterFeedback` — the compose sheet renders outside MaterialApp and would fall back to the platform locale, LTR, and Material default styling
 - Do NOT run a bug-report screenshot through the cover/avatar processors — they cover-crop a portrait capture and reject anything under 600 px
 - Do NOT purge an **open** bug report — nobody has read it yet; retention only applies once it is closed
+- Do NOT call Jira before checking `bug_reports.jira_issue_key` — its presence IS the duplicate guard; two operators working the queue would otherwise file the same bug twice
+- Do NOT convert `jira_service.create_issue` or its route to `async def` — same threadpool reasoning as the text-moderation providers; the blocking `requests.post` is correct in a sync endpoint
+- Do NOT make the Jira hand-off fail open like email or image moderation — the operator is waiting on the key, so a swallowed error is worse than a red flash
+- Do NOT put the reporter's email in the Jira payload, or log `JIRA_API_TOKEN` — the operator inbox is one person, a Jira project is a whole team
+- Do NOT send a plain string as a Jira `description` — REST v3 requires ADF (`{"type":"doc","version":1,…}`) and rejects anything else
 - Do NOT put raw content text, emails, or display names in an automated `moderation_log` row
 - Do NOT store rendered notification text — it is wrong in five of six locales and freezes a display name moderation may later hide
 - Do NOT construct a `Notification` directly or call `notify()` after commit — one writer, one transaction, or the suppression rules and atomicity both break

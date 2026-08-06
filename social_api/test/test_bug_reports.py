@@ -300,3 +300,232 @@ def test_admin_lane_lists_and_closes_a_report(
         assert admin_service.overview_counts(db)["open_bug_reports"] == 0
     finally:
         db.close()
+
+
+# ---------------------------------------------------------------------------
+# Jira hand-off
+# ---------------------------------------------------------------------------
+
+JIRA_CONF = {
+    "JIRA_BASE_URL": "https://ntripi.atlassian.net",
+    "JIRA_EMAIL": "ops@ntripi.app",
+    "JIRA_API_TOKEN": "token-abc",
+    "JIRA_PROJECT_KEY": "NTRIPI",
+}
+
+
+class _FakeResponse:
+    def __init__(self, status_code: int, payload: dict | None = None, text: str = ""):
+        self.status_code = status_code
+        self._payload = payload
+        self.text = text or (str(payload) if payload else "")
+
+    def json(self):
+        if self._payload is None:
+            raise ValueError("no json")
+        return self._payload
+
+
+def _configure_jira(monkeypatch, **overrides) -> None:
+    settings = get_settings()
+    for name, value in {**JIRA_CONF, **overrides}.items():
+        monkeypatch.setattr(settings, name, value)
+
+
+def _stub_jira(monkeypatch, response: _FakeResponse | Exception) -> list[dict]:
+    """Intercept the transport. jira_service does a local `import requests`,
+    which resolves the same module object, so patching requests.post works."""
+    calls: list[dict] = []
+
+    def _fake_post(url, **kwargs):
+        calls.append({"url": url, **kwargs})
+        if isinstance(response, Exception):
+            raise response
+        return response
+
+    monkeypatch.setattr("requests.post", _fake_post)
+    return calls
+
+
+def _file_report(client: TestClient) -> None:
+    client.post("/bug-reports", data={
+        "message": "The map goes blank.", "category": "visual", "platform": "ios",
+    })
+
+
+def test_jira_button_hidden_when_unconfigured(
+    client: TestClient, admin_enabled, monkeypatch
+):
+    _set_operator_email(monkeypatch, None)
+    _capture_emails(monkeypatch)
+    _file_report(client)
+    _sign_in_admin(client)
+
+    page = client.get("/admin/bugs", auth=ADMIN_BASIC)
+    assert "Create Jira issue" not in page.text
+
+    # The route still exists but refuses, rather than 500ing on a missing token.
+    calls = _stub_jira(monkeypatch, _FakeResponse(201, {"key": "X-1"}))
+    resp = client.post(
+        f"/admin/bugs/{_only_report().id}/jira",
+        auth=ADMIN_BASIC, follow_redirects=False,
+    )
+    assert resp.status_code == 303
+    assert "error=" in resp.headers["location"]
+    assert calls == []
+
+
+def test_create_jira_stores_key_and_renders_link(
+    client: TestClient, admin_enabled, monkeypatch
+):
+    _set_operator_email(monkeypatch, None)
+    _capture_emails(monkeypatch)
+    _file_report(client)
+    _sign_in_admin(client)
+    _configure_jira(monkeypatch)
+    _stub_jira(monkeypatch, _FakeResponse(201, {"id": "10052", "key": "NTRIPI-6"}))
+
+    report = _only_report()
+    resp = client.post(
+        f"/admin/bugs/{report.id}/jira", auth=ADMIN_BASIC, follow_redirects=False,
+    )
+    assert resp.status_code == 303
+    assert "NTRIPI-6" in resp.headers["location"]
+
+    db = TestingSessionLocal()
+    try:
+        assert db.get(BugReport, report.id).jira_issue_key == "NTRIPI-6"
+    finally:
+        db.close()
+
+    page = client.get("/admin/bugs", auth=ADMIN_BASIC)
+    assert "https://ntripi.atlassian.net/browse/NTRIPI-6" in page.text
+    # Filed already — the button must be gone, not merely disabled.
+    assert "Create Jira issue" not in page.text
+
+
+def test_create_jira_is_idempotent(client: TestClient, admin_enabled, monkeypatch):
+    _set_operator_email(monkeypatch, None)
+    _capture_emails(monkeypatch)
+    _file_report(client)
+    _sign_in_admin(client)
+    _configure_jira(monkeypatch)
+    calls = _stub_jira(monkeypatch, _FakeResponse(201, {"key": "NTRIPI-6"}))
+
+    report_id = _only_report().id
+    for _ in range(2):
+        client.post(
+            f"/admin/bugs/{report_id}/jira", auth=ADMIN_BASIC, follow_redirects=False,
+        )
+
+    # The second POST must not reach Jira at all.
+    assert len(calls) == 1
+
+
+def test_create_jira_surfaces_api_error(
+    client: TestClient, admin_enabled, monkeypatch
+):
+    _set_operator_email(monkeypatch, None)
+    _capture_emails(monkeypatch)
+    _file_report(client)
+    _sign_in_admin(client)
+    _configure_jira(monkeypatch)
+    _stub_jira(monkeypatch, _FakeResponse(
+        400, text='{"errors":{"issuetype":"valid issue type is required"}}',
+    ))
+
+    report_id = _only_report().id
+    resp = client.post(
+        f"/admin/bugs/{report_id}/jira", auth=ADMIN_BASIC, follow_redirects=False,
+    )
+    assert resp.status_code == 303
+    assert "error=" in resp.headers["location"]
+
+    db = TestingSessionLocal()
+    try:
+        row = db.get(BugReport, report_id)
+        assert row.jira_issue_key is None   # fails closed
+        assert row.status == "open"
+    finally:
+        db.close()
+
+
+def test_create_jira_survives_transport_failure(
+    client: TestClient, admin_enabled, monkeypatch
+):
+    _set_operator_email(monkeypatch, None)
+    _capture_emails(monkeypatch)
+    _file_report(client)
+    _sign_in_admin(client)
+    _configure_jira(monkeypatch)
+    _stub_jira(monkeypatch, RuntimeError("connection reset"))
+
+    report_id = _only_report().id
+    resp = client.post(
+        f"/admin/bugs/{report_id}/jira", auth=ADMIN_BASIC, follow_redirects=False,
+    )
+    assert resp.status_code == 303
+    assert "error=" in resp.headers["location"]
+
+    db = TestingSessionLocal()
+    try:
+        assert db.get(BugReport, report_id).jira_issue_key is None
+    finally:
+        db.close()
+
+
+def test_jira_payload_shape(client: TestClient, admin_enabled, monkeypatch):
+    _set_operator_email(monkeypatch, None)
+    _capture_emails(monkeypatch)
+    token = register_user(client, "jirauser", "jira@example.com")["access_token"]
+    client.post(
+        "/bug-reports",
+        data={"message": "Map blank", "category": "visual", "platform": "ios"},
+        files={"screenshot": ("s.png", _png(800, 1400), "image/png")},
+        headers=auth_headers(token),
+    )
+    _sign_in_admin(client)
+    _configure_jira(monkeypatch)
+    calls = _stub_jira(monkeypatch, _FakeResponse(201, {"key": "NTRIPI-7"}))
+
+    client.post(
+        f"/admin/bugs/{_only_report().id}/jira",
+        auth=ADMIN_BASIC, follow_redirects=False,
+    )
+
+    body = calls[0]["json"]["fields"]
+    assert calls[0]["url"] == "https://ntripi.atlassian.net/rest/api/3/issue"
+    assert calls[0]["auth"] == ("ops@ntripi.app", "token-abc")
+    assert body["project"] == {"key": "NTRIPI"}
+    assert body["issuetype"] == {"name": "Bug"}
+    assert body["summary"].startswith("[visual] Map blank")
+    assert len(body["summary"]) <= 255
+
+    # description must be ADF — v3 rejects a plain string.
+    assert body["description"]["type"] == "doc"
+    assert body["description"]["version"] == 1
+    text = " ".join(
+        node["text"]
+        for para in body["description"]["content"]
+        for node in para.get("content", [])
+    )
+    assert "@jirauser" in text
+    # Privacy: username yes, email never.
+    assert "jira@example.com" not in text
+    # Screenshot link must be absolute, not the relative filesystem /uploads path.
+    assert "http" in text.split("Screenshot: ")[1][:8]
+
+
+def test_jira_base_url_trailing_slash(client: TestClient, admin_enabled, monkeypatch):
+    _set_operator_email(monkeypatch, None)
+    _capture_emails(monkeypatch)
+    _file_report(client)
+    _sign_in_admin(client)
+    _configure_jira(monkeypatch, JIRA_BASE_URL="https://ntripi.atlassian.net/")
+    calls = _stub_jira(monkeypatch, _FakeResponse(201, {"key": "NTRIPI-8"}))
+
+    client.post(
+        f"/admin/bugs/{_only_report().id}/jira",
+        auth=ADMIN_BASIC, follow_redirects=False,
+    )
+    assert calls[0]["url"] == "https://ntripi.atlassian.net/rest/api/3/issue"

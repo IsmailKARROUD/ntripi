@@ -5,7 +5,8 @@
   Filed from inside the app by shaking the phone. These are support tickets, not
   moderation items — closing one takes no action against the reporter or their
   content. Closed reports and their screenshots are purged automatically once
-  they age out.
+  they age out. Filing to Jira records the issue key here; closing the report
+  does not close the Jira issue.
 </p>
 
 {% if rows %}
@@ -18,7 +19,7 @@
         <th>Environment</th>
         <th>Report</th>
         <th>Screen</th>
-        <th style="width:300px">Close</th>
+        <th style="width:300px">Actions</th>
       </tr>
     </thead>
     <tbody>
@@ -58,6 +59,20 @@
           {% endif %}
         </td>
         <td>
+          {% if r.report.jira_issue_key %}
+            <div style="margin-bottom:8px">
+              <a href="{{ jira_browse_base }}/browse/{{ r.report.jira_issue_key }}"
+                 target="_blank" rel="noopener">{{ r.report.jira_issue_key }}</a>
+            </div>
+          {% elif jira_enabled %}
+            {# Its own form: a nested form is invalid HTML and the close form
+               carries a text input this action must not submit. #}
+            <form method="post" action="/admin/bugs/{{ r.report.id }}/jira">
+              <div class="actions" style="margin-top:0;margin-bottom:8px">
+                <button type="submit">Create Jira issue</button>
+              </div>
+            </form>
+          {% endif %}
           <form method="post" action="/admin/bugs/{{ r.report.id }}/close">
             <input type="text" name="note" placeholder="Resolution note (optional)">
             <div class="actions">

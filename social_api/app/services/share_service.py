@@ -10,12 +10,29 @@ from __future__ import annotations
 from decimal import Decimal
 from typing import TYPE_CHECKING
 
+from app.storage.factory import storage
+
 if TYPE_CHECKING:
     from app.config import Settings
     from app.models.itinerary import Itinerary
     from app.models.stop import Stop
     from app.models.transit_segment import TransitSegment
     from app.models.user import User
+
+
+def absolute_storage_url(key: str, settings: "Settings") -> str:
+    """Absolute public URL for a stored object.
+
+    The only way to turn a storage key into a URL safe to hand to something
+    outside our own pages (emails, Jira tickets, OG crawlers): filesystem
+    storage returns a relative /uploads/... path, which is dead text anywhere
+    but a browser already on the site, so prefix SHARE_BASE_URL. R2 already
+    returns an absolute URL and is passed through untouched.
+    """
+    url = storage().public_url(key)
+    if url.startswith("/"):
+        return f"{settings.share_base_url}{url}"
+    return url
 
 
 def prepare_share_context(

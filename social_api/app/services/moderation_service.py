@@ -42,7 +42,7 @@ from sqlalchemy.orm import Session
 
 from app.models.image_moderation_log import ImageModerationLog
 from app.services.email_service import send_email
-from app.storage.factory import storage
+from app.services.share_service import absolute_storage_url
 
 if TYPE_CHECKING:
     import uuid
@@ -250,7 +250,7 @@ def _notify_flagged(ctx: ModerationContext, labels: list[dict[str, Any]]) -> Non
         )
         return
 
-    image_url = _absolute_image_url(ctx.storage_key, settings)
+    image_url = absolute_storage_url(ctx.storage_key, settings)
     uploader_line = (
         f"@{html.escape(ctx.uploader.username)} ({html.escape(ctx.uploader.email)})"
     )
@@ -291,13 +291,3 @@ def _notify_flagged(ctx: ModerationContext, labels: list[dict[str, Any]]) -> Non
         subject=f"[Ntripi] Image flagged: {ctx.target_kind}",
         html=body,
     )
-
-
-def _absolute_image_url(key: str, settings: "Settings") -> str:
-    """Absolute URL to the stored image for the flag email. Filesystem storage
-    returns a relative /uploads/... path, so prefix SHARE_BASE_URL (same rule as
-    share_service._resolve_preview_image_url)."""
-    url = storage().public_url(key)
-    if url.startswith("/"):
-        return f"{settings.share_base_url}{url}"
-    return url

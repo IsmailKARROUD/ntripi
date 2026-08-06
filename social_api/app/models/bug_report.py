@@ -106,6 +106,11 @@ class BugReport(Base):
     )
     resolution_note: Mapped[str | None] = mapped_column(Text, nullable=True)
 
+    # Jira issue key (e.g. "NTRIPI-6") once the operator files one from
+    # /admin/bugs. No constraint — project keys are opaque. Its presence IS the
+    # duplicate guard: the route refuses to call Jira again when it is set.
+    jira_issue_key: Mapped[str | None] = mapped_column(String(32), nullable=True)
+
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now(),
     )

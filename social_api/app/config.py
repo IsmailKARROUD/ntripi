@@ -198,6 +198,22 @@ class Settings(BaseSettings):
     # just clutter. Open reports are never purged — they haven't been read yet.
     BUG_REPORT_RETENTION_DAYS: int = 180
 
+    # ── Jira hand-off (/admin/bugs → "Create Jira issue") ───────────────────
+    # Feature is OFF unless all four of BASE_URL/EMAIL/API_TOKEN/PROJECT_KEY are
+    # set — the button is simply not rendered, same "unset = invisible" rule as
+    # ADMIN_BASIC_*. Free to use: the Jira Cloud REST API carries no per-call
+    # charge and the token is minted at id.atlassian.com → API tokens.
+    JIRA_BASE_URL: str | None = None
+    JIRA_EMAIL: str | None = None
+    JIRA_API_TOKEN: str | None = None
+    # The project KEY (e.g. "NTRIPI"), not a numeric id — REST v3 accepts either
+    # but the key is what an operator can read off their own board.
+    JIRA_PROJECT_KEY: str | None = None
+    # Issue type NAME. Must exist in that project; a wrong value is the most
+    # likely first failure and Jira's 400 body names the field.
+    JIRA_ISSUE_TYPE: str = "Bug"
+    JIRA_TIMEOUT_SECONDS: float = 10.0
+
     # ── In-app notifications ────────────────────────────────────────────────
     # How long a READ notification is kept before the sweep purges it. Unread
     # rows are never purged however old: an author who has not opened the app
