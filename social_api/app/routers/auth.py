@@ -22,6 +22,11 @@ from sqlalchemy.orm import Session
 from starlette.requests import Request
 
 from app.config import Settings, get_settings
+from app.constants.guidelines import (
+    GUIDELINES_CONTENT,
+    GUIDELINES_DATE,
+    GUIDELINES_VERSION,
+)
 from app.constants.tos import TOS_DATE, TOS_SUMMARY, TOS_VERSION
 from app.database import get_db
 from app.dependencies import get_current_user
@@ -69,6 +74,15 @@ def register(
     payload: RegisterRequest,
     db: Session = Depends(get_db),
 ) -> TokenPair:
+    # Gated before moderate_or_422, not just inside create_user: a client that
+    # omits the flag would otherwise spend a paid provider call to earn its 400.
+    if not payload.tos_accepted:
+        raise ApiError(
+            status_code=400,
+            code="tos_required",
+            detail="You must accept the Terms of Service to register.",
+        )
+
     # Scanned BEFORE create_user, never after: create_user commits, so a
     # rejection discovered afterwards could not undo the account it just made.
     # Both fields go in one dict so they cost a single provider call.
@@ -327,13 +341,18 @@ def resend_verification(
 
 @router.get(
     "/tos",
-    summary="Get the current Terms of Service",
+    summary="Get the current Terms of Service and Community Guidelines",
 )
 def get_tos(settings: Settings = Depends(get_settings)) -> dict:
     return {
         "version": TOS_VERSION,
         "date": TOS_DATE,
         "summary": TOS_SUMMARY,
+        # Both documents ride one response: the signup screen makes a single
+        # call and shows either without leaving the form.
+        "guidelines": GUIDELINES_CONTENT,
+        "guidelines_version": GUIDELINES_VERSION,
+        "guidelines_date": GUIDELINES_DATE,
         # Served here so the in-app address can never drift from the backend
         # configuration or the store listing.
         "abuse_contact": settings.ABUSE_CONTACT_EMAIL,

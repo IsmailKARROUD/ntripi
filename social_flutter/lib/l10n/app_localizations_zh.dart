@@ -211,19 +211,34 @@ class AppLocalizationsZh extends AppLocalizations {
   String get registerTos => '服务条款';
 
   @override
+  String get registerTosComma => '、';
+
+  @override
+  String get registerGuidelines => '社区准则';
+
+  @override
   String get registerTosAnd => '和';
 
   @override
   String get registerPrivacyPolicy => '隐私政策';
 
   @override
-  String get registerTosHelp => '你必须同意服务条款和隐私政策才能创建账号。点按带下划线的链接即可阅读。';
+  String get registerTosSuffix => '。';
 
   @override
-  String get registerTosRequired => '你必须接受服务条款。';
+  String get registerTosProhibited => '我了解，令人反感的内容和滥用行为一律严禁。';
+
+  @override
+  String get registerTosHelp => '你必须同意服务条款、社区准则和隐私政策才能创建账号。点按高亮的链接即可阅读。';
+
+  @override
+  String get registerTosRequired => '你必须接受服务条款和社区准则。';
 
   @override
   String get registerTosTitle => '服务条款';
+
+  @override
+  String get registerGuidelinesTitle => '社区准则';
 
   @override
   String get registerTosLoading => '加载中…';

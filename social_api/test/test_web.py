@@ -66,6 +66,20 @@ class TestPublicPages:
         assert response.status_code == 200
         assert "Terms" in response.text
 
+    def test_guidelines_page_renders(self, client: TestClient):
+        response = client.get("/guidelines")
+        assert response.status_code == 200
+        assert "Community Guidelines" in response.text
+        # The zero-tolerance statement is what the app stores actually check for.
+        assert "no tolerance" in response.text.lower()
+
+    def test_legal_pages_link_each_other_in_the_footer(self, client: TestClient):
+        """/auth/tos publishes the guidelines URL, so the page must be linked
+        from the site chrome too — an unreachable policy is a review finding."""
+        response = client.get("/terms")
+        assert 'href="/guidelines"' in response.text
+        assert 'href="/privacy"' in response.text
+
 
 class TestFlutterWebMount:
     def test_app_path_returns_html_when_build_exists(self, tmp_path):

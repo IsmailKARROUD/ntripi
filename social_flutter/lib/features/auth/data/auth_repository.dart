@@ -45,7 +45,8 @@ class AuthRepository {
 
   const AuthRepository(this._dio, this._bareDio);
 
-  /// GET /auth/tos — fetch the current Terms of Service text.
+  /// GET /auth/tos — the Terms of Service AND the Community Guidelines, in one
+  /// response so the signup screen can show either without a second call.
   Future<Map<String, dynamic>> fetchTos() async {
     final response = await _dio.get(kTosEndpoint);
     return response.data as Map<String, dynamic>;

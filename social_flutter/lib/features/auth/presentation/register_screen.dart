@@ -46,6 +46,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   bool _obscureConfirm = true;
   bool _tosAccepted = false;
   String? _tosSummary;
+  String? _guidelines;
 
   @override
   void initState() {
@@ -56,11 +57,17 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   Future<void> _loadTos() async {
     try {
       final data = await ref.read(authRepositoryProvider).fetchTos();
-      if (mounted) setState(() => _tosSummary = data['summary'] as String?);
+      // Both documents ride one response, so the guidelines cost no extra call.
+      if (mounted) {
+        setState(() {
+          _tosSummary = data['summary'] as String?;
+          _guidelines = data['guidelines'] as String?;
+        });
+      }
     } catch (_) {}
   }
 
-  void _showTosSheet(AppLocalizations l10n) {
+  void _showLegalSheet(AppLocalizations l10n, String title, String? body) {
     final nt = context.nt;
     showModalBottomSheet(
       context: context,
@@ -88,7 +95,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
             Padding(
               padding: const EdgeInsets.all(16),
               child: Text(
-                l10n.registerTosTitle,
+                title,
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w700,
@@ -101,7 +108,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 controller: sc,
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
                 child: Text(
-                  _tosSummary ?? l10n.registerTosLoading,
+                  body ?? l10n.registerTosLoading,
                   style: TextStyle(fontSize: 14, color: nt.text2, height: 1.6),
                 ),
               ),
@@ -111,6 +118,14 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       ),
     );
   }
+
+  /// The whole agreement as one string — a screen reader announces the row as
+  /// a single labelled checkbox instead of a checkbox and six loose fragments.
+  String _agreementSemanticsLabel(AppLocalizations l10n) =>
+      '${l10n.registerTosAgree}${l10n.registerTos}'
+      '${l10n.registerTosComma}${l10n.registerGuidelines}'
+      '${l10n.registerTosAnd}${l10n.registerPrivacyPolicy}'
+      '${l10n.registerTosSuffix}${l10n.registerTosProhibited}';
 
   Future<void> _register(AppLocalizations l10n) async {
     if (!_formKey.currentState!.validate()) return;
@@ -131,7 +146,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
         displayName: _displayNameController.text.trim().isEmpty
             ? null
             : _displayNameController.text.trim(),
-        tosAccepted: true,
+        tosAccepted: _tosAccepted,
       );
       ref.read(authNotifierProvider.notifier).setAuthenticated(result.userId);
       ref.invalidate(myProfileProvider);
@@ -377,71 +392,102 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 ),
                 const SizedBox(height: 20),
 
-                // ToS row
-                GestureDetector(
-                  onTap: () => setState(() => _tosAccepted = !_tosAccepted),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Checkbox(
-                        value: _tosAccepted,
-                        onChanged: (v) =>
-                            setState(() => _tosAccepted = v ?? false),
-                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                        visualDensity: VisualDensity.compact,
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Wrap(
-                          children: [
-                            Text(
-                              l10n.registerTosAgree,
-                              style: TextStyle(
-                                fontSize: 13,
-                                color: nt.text2,
-                              ),
-                            ),
-                            GestureDetector(
-                              onTap: () => _showTosSheet(l10n),
-                              child: Text(
-                                l10n.registerTos,
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w600,
-                                  color: nt.forest,
-                                ),
-                              ),
-                            ),
-                            Text(
-                              l10n.registerTosAnd,
-                              style: TextStyle(
-                                fontSize: 13,
-                                color: nt.text2,
-                              ),
-                            ),
-                            GestureDetector(
-                              onTap: () => launchUrl(
-                                Uri.parse(kPrivacyPolicyUrl),
-                                mode: LaunchMode.externalApplication,
-                              ),
-                              child: Text(
-                                l10n.registerPrivacyPolicy,
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w600,
-                                  color: nt.forest,
-                                ),
-                              ),
-                            ),
-                          ],
+                // ToS row — the app-store UGC agreement gate. The label names
+                // both documents and states the no-tolerance policy, which is
+                // what a reviewer looks for at the point of acceptance.
+                Semantics(
+                  container: true,
+                  checked: _tosAccepted,
+                  label: _agreementSemanticsLabel(l10n),
+                  child: GestureDetector(
+                    onTap: () => setState(() => _tosAccepted = !_tosAccepted),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        ExcludeSemantics(
+                          child: Checkbox(
+                            value: _tosAccepted,
+                            onChanged: (v) =>
+                                setState(() => _tosAccepted = v ?? false),
+                            materialTapTargetSize:
+                                MaterialTapTargetSize.shrinkWrap,
+                            visualDensity: VisualDensity.compact,
+                          ),
                         ),
-                      ),
-                      FieldHelpIcon(
-                        helpTitle: l10n.registerTos,
-                        helpMessage: l10n.registerTosHelp,
-                        color: nt.text2,
-                      ),
-                    ],
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Wrap(
+                            children: [
+                              Text(
+                                l10n.registerTosAgree,
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: nt.text2,
+                                ),
+                              ),
+                              _LegalLink(
+                                label: l10n.registerTos,
+                                onTap: () => _showLegalSheet(
+                                  l10n,
+                                  l10n.registerTosTitle,
+                                  _tosSummary,
+                                ),
+                              ),
+                              Text(
+                                l10n.registerTosComma,
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: nt.text2,
+                                ),
+                              ),
+                              _LegalLink(
+                                label: l10n.registerGuidelines,
+                                onTap: () => _showLegalSheet(
+                                  l10n,
+                                  l10n.registerGuidelinesTitle,
+                                  _guidelines,
+                                ),
+                              ),
+                              Text(
+                                l10n.registerTosAnd,
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: nt.text2,
+                                ),
+                              ),
+                              // Privacy stays an external launch: it is the one
+                              // document the backend serves as HTML, not text.
+                              _LegalLink(
+                                label: l10n.registerPrivacyPolicy,
+                                onTap: () => launchUrl(
+                                  Uri.parse(kPrivacyPolicyUrl),
+                                  mode: LaunchMode.externalApplication,
+                                ),
+                              ),
+                              Text(
+                                l10n.registerTosSuffix,
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: nt.text2,
+                                ),
+                              ),
+                              Text(
+                                l10n.registerTosProhibited,
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: nt.text2,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        FieldHelpIcon(
+                          helpTitle: l10n.registerTos,
+                          helpMessage: l10n.registerTosHelp,
+                          color: nt.text2,
+                        ),
+                      ],
+                    ),
                   ),
                 ),
                 const SizedBox(height: 20),
@@ -499,6 +545,34 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 }
 
 // ── Sub-widgets ───────────────────────────────────────────────────────────────
+
+/// One tappable document name inside the agreement label. Kept as a `Wrap`
+/// segment rather than a `TextSpan` recognizer to match the rest of the app,
+/// and marked `link` so each document stays individually reachable to a screen
+/// reader even though the surrounding row announces as a single checkbox.
+class _LegalLink extends StatelessWidget {
+  final String label;
+  final VoidCallback onTap;
+  const _LegalLink({required this.label, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      link: true,
+      child: GestureDetector(
+        onTap: onTap,
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: context.nt.forest,
+          ),
+        ),
+      ),
+    );
+  }
+}
 
 class _FieldLabel extends StatelessWidget {
   final String text;

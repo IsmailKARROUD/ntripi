@@ -97,11 +97,45 @@ class TestRegistrationToS:
         assert r.status_code == 400
         assert "Terms of Service" in r.json()["detail"]
 
+    def test_register_without_tos_reports_a_stable_code(self, client):
+        r = register(client, "alice", "alice@x.com", tos_accepted=False)
+        assert r.json()["code"] == "tos_required"
+
+    def test_register_without_tos_costs_no_moderation_call(self, client, monkeypatch):
+        """The ToS gate runs before moderate_or_422 — a client that forgets the
+        flag must not spend a paid provider call to earn its 400."""
+        calls = []
+        monkeypatch.setattr(
+            "app.routers.auth.moderate_or_422",
+            lambda *a, **kw: calls.append(1),
+        )
+
+        r = register(client, "alice", "alice@x.com", tos_accepted=False)
+
+        assert r.status_code == 400
+        assert calls == []
+
     def test_register_with_tos_succeeds(self, client):
         r = register(client, "alice", "alice@x.com", tos_accepted=True)
         assert r.status_code == 201
         data = r.json()
         assert "access_token" in data
+
+    def test_tos_endpoint_carries_the_zero_tolerance_clause(self, client):
+        """The agreement the user accepts — not just the guidelines — has to
+        state the no-tolerance policy; that is the App Store 1.2 requirement."""
+        body = client.get("/auth/tos").json()
+        assert "no tolerance" in body["summary"].lower()
+        assert "Community Guidelines" in body["summary"]
+
+    def test_tos_endpoint_returns_the_guidelines_body(self, client):
+        """Both documents ride one response so the signup screen can show
+        either without a second call or leaving the form."""
+        body = client.get("/auth/tos").json()
+        assert len(body["guidelines"]) > 100
+        assert "HATE SPEECH" in body["guidelines"]
+        assert body["guidelines_version"]
+        assert body["guidelines_date"]
 
     def test_tos_endpoint_returns_text(self, client):
         r = client.get("/auth/tos")

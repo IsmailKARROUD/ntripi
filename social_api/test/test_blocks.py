@@ -18,6 +18,8 @@ import uuid
 import pytest
 
 from conftest import TestingSessionLocal, auth_headers, register_user
+
+from app.constants.tos import TOS_VERSION
 from app.models.user import User
 from app.models.user_block import UserBlock
 
@@ -298,6 +300,9 @@ def test_registration_records_the_accepted_tos_version(client, alice):
         user = db.query(User).filter(User.username_lower == "alice").one()
         assert user.tos_accepted_at is not None
         assert user.tos_accepted_version  # which revision, not merely that one existed
+        # Pinned to the live constant: the guidelines were folded into this
+        # revision, so a row stamped with an older version never saw them.
+        assert user.tos_accepted_version == TOS_VERSION
     finally:
         db.close()
 

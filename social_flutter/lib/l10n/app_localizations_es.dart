@@ -225,20 +225,37 @@ class AppLocalizationsEs extends AppLocalizations {
   String get registerTos => 'Términos del servicio';
 
   @override
+  String get registerTosComma => ', las ';
+
+  @override
+  String get registerGuidelines => 'Normas de la comunidad';
+
+  @override
   String get registerTosAnd => ' y la ';
 
   @override
   String get registerPrivacyPolicy => 'Política de privacidad';
 
   @override
-  String get registerTosHelp =>
-      'Debes aceptar los Términos del servicio y la Política de privacidad para crear una cuenta. Toca los enlaces subrayados para leerlos.';
+  String get registerTosSuffix => '. ';
 
   @override
-  String get registerTosRequired => 'Debes aceptar los Términos del servicio.';
+  String get registerTosProhibited =>
+      'Entiendo que el contenido objetable y el comportamiento abusivo están terminantemente prohibidos.';
+
+  @override
+  String get registerTosHelp =>
+      'Debes aceptar los Términos del servicio, las Normas de la comunidad y la Política de privacidad para crear una cuenta. Toca los enlaces destacados para leerlos.';
+
+  @override
+  String get registerTosRequired =>
+      'Debes aceptar los Términos del servicio y las Normas de la comunidad.';
 
   @override
   String get registerTosTitle => 'Términos del servicio';
+
+  @override
+  String get registerGuidelinesTitle => 'Normas de la comunidad';
 
   @override
   String get registerTosLoading => 'Cargando…';

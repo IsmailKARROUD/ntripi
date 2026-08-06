@@ -24,7 +24,7 @@ RESERVED_USERNAMES = frozenset({
     "null", "undefined", "true", "false", "none",
     "static", "assets", "share", "downloads",
     "settings", "profile", "account", "billing",
-    "privacy", "terms", "tos", "about", "home",
+    "privacy", "terms", "tos", "guidelines", "about", "home",
     "search", "explore", "discover", "feed",
 })
 

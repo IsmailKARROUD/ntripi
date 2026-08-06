@@ -27,6 +27,11 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
     # ── Nav / footer chrome (_base.html) ──────────────────────────────────
     "footer_privacy": {"en": "Privacy", "fr": "Confidentialité", "ar": "الخصوصية"},
     "footer_terms": {"en": "Terms", "fr": "Conditions", "ar": "الشروط"},
+    "footer_guidelines": {
+        "en": "Guidelines",
+        "fr": "Règles",
+        "ar": "إرشادات المجتمع",
+    },
     "meta_default_desc": {
         "en": "Travel itineraries, shared.",
         "fr": "Des itinéraires de voyage, partagés.",

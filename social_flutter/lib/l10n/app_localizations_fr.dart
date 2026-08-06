@@ -227,21 +227,37 @@ class AppLocalizationsFr extends AppLocalizations {
   String get registerTos => 'Conditions d\'utilisation';
 
   @override
+  String get registerTosComma => ', les ';
+
+  @override
+  String get registerGuidelines => 'Règles de la communauté';
+
+  @override
   String get registerTosAnd => ' et la ';
 
   @override
   String get registerPrivacyPolicy => 'Politique de confidentialité';
 
   @override
+  String get registerTosSuffix => '. ';
+
+  @override
+  String get registerTosProhibited =>
+      'Je comprends que les contenus répréhensibles et les comportements abusifs sont strictement interdits.';
+
+  @override
   String get registerTosHelp =>
-      'Vous devez accepter les Conditions d\'utilisation et la Politique de confidentialité pour créer un compte.';
+      'Vous devez accepter les Conditions d\'utilisation, les Règles de la communauté et la Politique de confidentialité pour créer un compte.';
 
   @override
   String get registerTosRequired =>
-      'Vous devez accepter les Conditions d\'utilisation.';
+      'Vous devez accepter les Conditions d\'utilisation et les Règles de la communauté.';
 
   @override
   String get registerTosTitle => 'Conditions d\'utilisation';
+
+  @override
+  String get registerGuidelinesTitle => 'Règles de la communauté';
 
   @override
   String get registerTosLoading => 'Chargement…';

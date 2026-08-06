@@ -221,20 +221,36 @@ class AppLocalizationsAr extends AppLocalizations {
   String get registerTos => 'شروط الخدمة';
 
   @override
+  String get registerTosComma => '، و';
+
+  @override
+  String get registerGuidelines => 'إرشادات المجتمع';
+
+  @override
   String get registerTosAnd => ' و';
 
   @override
   String get registerPrivacyPolicy => 'سياسة الخصوصية';
 
   @override
-  String get registerTosHelp =>
-      'يجب أن توافق على شروط الخدمة وسياسة الخصوصية لإنشاء حساب. اضغط على الروابط المسطّرة لقراءتها.';
+  String get registerTosSuffix => '. ';
 
   @override
-  String get registerTosRequired => 'يجب قبول شروط الخدمة.';
+  String get registerTosProhibited =>
+      'أدرك أنّ المحتوى المخالف والسلوك المسيء ممنوعان منعًا باتًّا.';
+
+  @override
+  String get registerTosHelp =>
+      'يجب أن توافق على شروط الخدمة وإرشادات المجتمع وسياسة الخصوصية لإنشاء حساب. اضغط على الروابط المميّزة لقراءتها.';
+
+  @override
+  String get registerTosRequired => 'يجب قبول شروط الخدمة وإرشادات المجتمع.';
 
   @override
   String get registerTosTitle => 'شروط الخدمة';
+
+  @override
+  String get registerGuidelinesTitle => 'إرشادات المجتمع';
 
   @override
   String get registerTosLoading => 'جارٍ التحميل…';

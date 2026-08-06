@@ -508,6 +508,18 @@ abstract class AppLocalizations {
   /// **'Terms of Service'**
   String get registerTos;
 
+  /// No description provided for @registerTosComma.
+  ///
+  /// In en, this message translates to:
+  /// **', '**
+  String get registerTosComma;
+
+  /// No description provided for @registerGuidelines.
+  ///
+  /// In en, this message translates to:
+  /// **'Community Guidelines'**
+  String get registerGuidelines;
+
   /// No description provided for @registerTosAnd.
   ///
   /// In en, this message translates to:
@@ -520,16 +532,28 @@ abstract class AppLocalizations {
   /// **'Privacy Policy'**
   String get registerPrivacyPolicy;
 
+  /// No description provided for @registerTosSuffix.
+  ///
+  /// In en, this message translates to:
+  /// **'. '**
+  String get registerTosSuffix;
+
+  /// No description provided for @registerTosProhibited.
+  ///
+  /// In en, this message translates to:
+  /// **'I understand that objectionable content and abusive behavior are strictly prohibited.'**
+  String get registerTosProhibited;
+
   /// No description provided for @registerTosHelp.
   ///
   /// In en, this message translates to:
-  /// **'You must agree to the Terms of Service and Privacy Policy to create an account. Tap the underlined links to read them.'**
+  /// **'You must agree to the Terms of Service, Community Guidelines and Privacy Policy to create an account. Tap the highlighted links to read them.'**
   String get registerTosHelp;
 
   /// No description provided for @registerTosRequired.
   ///
   /// In en, this message translates to:
-  /// **'You must accept the Terms of Service.'**
+  /// **'You must accept the Terms of Service and Community Guidelines.'**
   String get registerTosRequired;
 
   /// No description provided for @registerTosTitle.
@@ -537,6 +561,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Terms of Service'**
   String get registerTosTitle;
+
+  /// No description provided for @registerGuidelinesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Community Guidelines'**
+  String get registerGuidelinesTitle;
 
   /// No description provided for @registerTosLoading.
   ///

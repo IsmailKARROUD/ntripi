@@ -236,6 +236,7 @@ def login_or_register_google(
         raise AuthError(
             "You must accept the Terms of Service to register.",
             http_status=400,
+            code="tos_required",  # same code as the password path — clients key off it
         )
 
     username = generate_username_from(

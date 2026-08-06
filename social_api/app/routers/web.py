@@ -7,6 +7,7 @@ Routes:
   GET  /register  → 302 → /app/ (auth lives in the Flutter app only)
   GET  /privacy   → Privacy Policy
   GET  /terms     → Terms of Service
+  GET  /guidelines → Community Guidelines
   GET  /reset-password       → Password-reset form (link from email)
   POST /web/reset-password
   GET  /verify-email         → Email-verification landing (link from email)
@@ -33,6 +34,11 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.config import Settings, get_settings
+from app.constants.guidelines import (
+    GUIDELINES_CONTENT,
+    GUIDELINES_DATE,
+    GUIDELINES_VERSION,
+)
 from app.constants.privacy import PRIVACY_CONTENT, PRIVACY_DATE
 from app.constants.tos import TOS_DATE, TOS_SUMMARY, TOS_VERSION
 from app.database import get_db
@@ -102,6 +108,16 @@ def terms_page(request: Request) -> HTMLResponse:
         "content": TOS_SUMMARY,
         "last_updated": TOS_DATE,
         "tos_version": TOS_VERSION,
+    })
+
+
+@router.get("/guidelines", response_class=HTMLResponse)
+def guidelines_page(request: Request) -> HTMLResponse:
+    return templates.TemplateResponse(request, "guidelines.html", {
+        "page_title": "Community Guidelines — Ntripi",
+        "content": GUIDELINES_CONTENT,
+        "last_updated": GUIDELINES_DATE,
+        "guidelines_version": GUIDELINES_VERSION,
     })
 
 
