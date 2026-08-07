@@ -155,6 +155,18 @@ class User(Base):
         return self.google_sub is not None
 
     @property
+    def tos_current(self) -> bool:
+        """True when they have accepted the ToS revision currently in force.
+
+        Imported lazily: app.constants.tos is a leaf module, but importing it
+        at module scope would put a constants import inside the model layer
+        that every other model then pulls in transitively.
+        """
+        from app.constants.tos import TOS_VERSION
+
+        return self.tos_accepted_version == TOS_VERSION
+
+    @property
     def name_for_display(self) -> str:
         """Returns display_name if set, else falls back to @username."""
         return self.display_name or f"@{self.username}"

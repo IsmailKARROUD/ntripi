@@ -241,7 +241,28 @@ class AppLocalizationsZh extends AppLocalizations {
   String get registerGuidelinesTitle => '社区准则';
 
   @override
-  String get registerTosLoading => '加载中…';
+  String get legalDocLoadFailed => '无法加载此文件。请检查网络连接后重试。';
+
+  @override
+  String get legalDocOpenInBrowser => '在浏览器中打开';
+
+  @override
+  String get googleTosTitle => '还差一步';
+
+  @override
+  String get googleTosSubtitle => '您正在创建新的 Ntripi 账户。请接受我们的条款以继续。';
+
+  @override
+  String get googleTosAccept => '接受并继续';
+
+  @override
+  String get acceptTermsTitle => '我们的条款已更新';
+
+  @override
+  String get acceptTermsBody => '我们更新了使用条款、社区准则和隐私政策。请阅读并接受后继续使用 Ntripi。';
+
+  @override
+  String get acceptTermsButton => '接受并继续';
 
   @override
   String get registerCreateAccount => '创建账号';

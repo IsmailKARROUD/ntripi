@@ -67,10 +67,17 @@ class RefreshRequest(BaseModel):
 
 class GoogleAuthRequest(BaseModel):
     """Body for POST /auth/google. `id_token` is the Google ID token obtained
-    by the client SDK. `tos_accepted` defaults True — tapping the Google button
-    implies acceptance (the ToS/Privacy links are shown next to it)."""
+    by the client SDK.
+
+    `tos_accepted` defaults False, so acceptance has to be explicit on this
+    path too. Signing in to an existing account never reads it; only the
+    create-a-new-account branch does, and it 400s `tos_required` there. The
+    client's move is to retry the same ID token with True once the user has
+    accepted, which keeps returning users from being re-prompted at every
+    sign-in.
+    """
     id_token: str
-    tos_accepted: bool = True
+    tos_accepted: bool = False
 
 
 class ForgotPasswordRequest(BaseModel):

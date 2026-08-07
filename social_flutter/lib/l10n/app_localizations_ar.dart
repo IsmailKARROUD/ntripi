@@ -253,7 +253,31 @@ class AppLocalizationsAr extends AppLocalizations {
   String get registerGuidelinesTitle => 'إرشادات المجتمع';
 
   @override
-  String get registerTosLoading => 'جارٍ التحميل…';
+  String get legalDocLoadFailed =>
+      'تعذّر تحميل هذا المستند. تحقق من اتصالك وحاول مجددًا.';
+
+  @override
+  String get legalDocOpenInBrowser => 'افتحه في المتصفح';
+
+  @override
+  String get googleTosTitle => 'خطوة أخيرة';
+
+  @override
+  String get googleTosSubtitle =>
+      'أنت بصدد إنشاء حساب جديد على Ntripi. يرجى قبول شروطنا للاستمرار.';
+
+  @override
+  String get googleTosAccept => 'أوافق وأستمر';
+
+  @override
+  String get acceptTermsTitle => 'تغيّرت شروطنا';
+
+  @override
+  String get acceptTermsBody =>
+      'حدّثنا شروط الاستخدام وإرشادات المجتمع وسياسة الخصوصية. يرجى قراءتها وقبولها لمواصلة استخدام Ntripi.';
+
+  @override
+  String get acceptTermsButton => 'أوافق وأستمر';
 
   @override
   String get registerCreateAccount => 'إنشاء الحساب';

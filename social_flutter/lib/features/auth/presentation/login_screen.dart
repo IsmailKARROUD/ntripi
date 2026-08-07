@@ -9,6 +9,8 @@ import 'package:social_flutter/core/auth/google_signin_service.dart';
 import 'package:social_flutter/core/auth/google_web_button.dart';
 import 'package:social_flutter/core/ui/app_theme.dart';
 import 'package:social_flutter/core/ui/ntripi_logo.dart';
+import 'package:social_flutter/features/auth/data/auth_repository.dart';
+import 'package:social_flutter/features/auth/presentation/widgets/google_tos_consent_sheet.dart';
 import 'package:social_flutter/features/auth/providers/auth_provider.dart';
 import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
 import 'package:social_flutter/features/itineraries/providers/saved_itineraries_provider.dart';
@@ -140,9 +142,23 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   /// Shared tail for both flows: persist tokens (done in the repo) then route in.
+  ///
+  /// A brand-new Google account 400s `tos_required` — the server will not create
+  /// an account for someone who has agreed to nothing. We show the agreement and
+  /// re-post the SAME ID token with the flag set: Google ID tokens live about an
+  /// hour and verification is stateless, so a second post is fine. Signing in to
+  /// an existing account never reaches that branch, so returning users see no
+  /// sheet.
   Future<void> _completeGoogleSignIn(String idToken) async {
     final repo = ref.read(authRepositoryProvider);
-    final result = await repo.loginWithGoogle(idToken: idToken);
+    AuthResult result;
+    try {
+      result = await repo.loginWithGoogle(idToken: idToken);
+    } on DioException catch (e) {
+      if (apiErrorCode(e) != kTosRequiredCode || !mounted) rethrow;
+      if (!await showGoogleTosConsentSheet(context)) return; // user declined
+      result = await repo.loginWithGoogle(idToken: idToken, tosAccepted: true);
+    }
     ref.read(authNotifierProvider.notifier).setAuthenticated(result.userId);
     ref.invalidate(myProfileProvider);
     ref.invalidate(myItinerariesProvider);

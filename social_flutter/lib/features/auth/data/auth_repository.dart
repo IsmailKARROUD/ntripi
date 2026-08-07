@@ -45,10 +45,15 @@ class AuthRepository {
 
   const AuthRepository(this._dio, this._bareDio);
 
-  /// GET /auth/tos — the Terms of Service AND the Community Guidelines, in one
-  /// response so the signup screen can show either without a second call.
-  Future<Map<String, dynamic>> fetchTos() async {
-    final response = await _dio.get(kTosEndpoint);
+  /// GET /auth/tos — the Terms of Service, the Community Guidelines AND the
+  /// Privacy Policy, in one response so the signup screen can show any of them
+  /// without a second call. `lang` picks the translation; the server falls back
+  /// to English for anything it does not have.
+  Future<Map<String, dynamic>> fetchTos({String? lang}) async {
+    final response = await _dio.get(
+      kTosEndpoint,
+      queryParameters: lang == null ? null : {'lang': lang},
+    );
     return response.data as Map<String, dynamic>;
   }
 
@@ -101,10 +106,18 @@ class AuthRepository {
   /// POST /auth/google — exchange a Google ID token for a Ntripi token pair.
   /// Serves sign-in, sign-up, AND verifying an existing account: the backend
   /// links by matching email and returns a fresh pair for the same user.
-  Future<AuthResult> loginWithGoogle({required String idToken}) async {
+  ///
+  /// `tosAccepted` defaults false. Only the create-a-new-account branch reads
+  /// it, and it answers 400 `tos_required` — the caller shows the agreement and
+  /// retries with true. Signing in or linking never consults it, so a returning
+  /// user is not re-prompted.
+  Future<AuthResult> loginWithGoogle({
+    required String idToken,
+    bool tosAccepted = false,
+  }) async {
     final response = await _dio.post(kGoogleAuthEndpoint, data: {
       'id_token': idToken,
-      'tos_accepted': true, // tapping the Google button implies ToS acceptance
+      'tos_accepted': tosAccepted,
     });
 
     final result = AuthResult.fromJson(response.data as Map<String, dynamic>);
@@ -114,6 +127,13 @@ class AuthRepository {
       refreshExpiresAt: result.refreshExpiresAt,
     );
     return result;
+  }
+
+  /// POST /auth/accept-tos — record acceptance of the ToS revision now in
+  /// force. Takes no body: the server stamps its own TOS_VERSION, so a client
+  /// cannot claim acceptance of a document it never rendered.
+  Future<void> acceptTos() async {
+    await _dio.post(kAcceptTosEndpoint);
   }
 
   /// POST /auth/forgot-password — ask the server to email a reset link.

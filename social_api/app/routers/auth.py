@@ -8,7 +8,8 @@ Endpoints:
   POST /auth/login    → log in with identifier + password, returns TokenPair.
   POST /auth/refresh  → exchange a refresh token for a new TokenPair (rotates).
   POST /auth/logout   → revoke a refresh token. Always returns 204.
-  GET  /auth/tos      → current Terms of Service.
+  GET  /auth/tos      → current Terms, Guidelines and Privacy Policy (?lang=).
+  POST /auth/accept-tos → record acceptance of the current TOS_VERSION.
 
 OAuth 2.0 refresh-token pattern: a short-lived JWT access token (15 min)
 is paired with a long-lived opaque refresh token (30 days, rotating).
@@ -17,19 +18,23 @@ Login / register / refresh all flow through this router; the rotation
 chain and theft detection live in services/refresh_token_service.py.
 """
 
+from datetime import datetime, timezone
+
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy.orm import Session
 from starlette.requests import Request
 
 from app.config import Settings, get_settings
 from app.constants.guidelines import (
-    GUIDELINES_CONTENT,
     GUIDELINES_DATE,
     GUIDELINES_VERSION,
+    get_guidelines,
 )
-from app.constants.tos import TOS_DATE, TOS_SUMMARY, TOS_VERSION
+from app.constants.privacy import PRIVACY_DATE, PRIVACY_VERSION, get_privacy
+from app.constants.tos import TOS_DATE, TOS_VERSION, get_tos
 from app.database import get_db
 from app.dependencies import get_current_user
+from app.i18n import resolve_lang, translator
 from app.limiter import limiter
 from app.models.user import User
 from app.schemas.auth import (
@@ -41,6 +46,7 @@ from app.schemas.auth import (
     RegisterRequest,
     TokenPair,
 )
+from app.schemas.user import UserPrivateProfile
 from app.services import auth_service, refresh_token_service
 from app.services.auth import create_access_token, verify_google_id_token
 from app.services.moderation_actions import escalate_if_flagged
@@ -341,20 +347,59 @@ def resend_verification(
 
 @router.get(
     "/tos",
-    summary="Get the current Terms of Service and Community Guidelines",
+    summary="Get the current Terms, Community Guidelines and Privacy Policy",
 )
-def get_tos(settings: Settings = Depends(get_settings)) -> dict:
+def get_legal_documents(
+    request: Request,
+    settings: Settings = Depends(get_settings),
+) -> dict:
+    # Language comes from ?lang= / cookie / Accept-Language via the same
+    # resolver the web pages use, so the in-app sheet and the browser page
+    # can never disagree about which translation the user is reading.
+    lang = resolve_lang(request)
+    t = translator(lang)
     return {
+        "lang": lang,
         "version": TOS_VERSION,
         "date": TOS_DATE,
-        "summary": TOS_SUMMARY,
-        # Both documents ride one response: the signup screen makes a single
-        # call and shows either without leaving the form.
-        "guidelines": GUIDELINES_CONTENT,
+        "summary": get_tos(lang),
+        # All three documents ride one response: the signup screen makes a
+        # single call and shows any of them without leaving the form.
+        "guidelines": get_guidelines(lang),
         "guidelines_version": GUIDELINES_VERSION,
         "guidelines_date": GUIDELINES_DATE,
+        "privacy": get_privacy(lang),
+        "privacy_version": PRIVACY_VERSION,
+        "privacy_date": PRIVACY_DATE,
+        # Empty for English — nothing for the authoritative text to prevail over.
+        "notice_terms": t("legal_notice_terms"),
+        "notice_guidelines": t("legal_notice_guidelines"),
+        "notice_privacy": t("legal_notice_privacy"),
         # Served here so the in-app address can never drift from the backend
         # configuration or the store listing.
         "abuse_contact": settings.ABUSE_CONTACT_EMAIL,
         "community_guidelines_url": f"{settings.share_base_url}/guidelines",
     }
+
+
+@router.post(
+    "/accept-tos",
+    response_model=UserPrivateProfile,
+    summary="Record acceptance of the current Terms of Service revision",
+)
+@limiter.limit("10/hour")
+def accept_tos(
+    request: Request,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> User:
+    """Stamp the current revision so the client gate stops blocking.
+
+    Writes TOS_VERSION rather than echoing a client-supplied version — the
+    client must not be able to claim acceptance of a document it never showed.
+    """
+    current_user.tos_accepted_at = datetime.now(timezone.utc)
+    current_user.tos_accepted_version = TOS_VERSION
+    db.commit()
+    db.refresh(current_user)
+    return current_user

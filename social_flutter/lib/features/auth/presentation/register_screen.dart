@@ -7,11 +7,10 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:social_flutter/core/api/api_client.dart';
-import 'package:social_flutter/core/api/api_endpoints.dart';
 import 'package:social_flutter/core/ui/app_theme.dart';
 import 'package:social_flutter/core/ui/ntripi_logo.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:social_flutter/features/auth/domain/username_validator.dart';
+import 'package:social_flutter/features/auth/presentation/widgets/tos_agreement_row.dart';
 import 'package:social_flutter/features/auth/providers/auth_provider.dart';
 import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
 import 'package:social_flutter/features/itineraries/providers/saved_itineraries_provider.dart';
@@ -45,88 +44,6 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   bool _obscurePassword = true;
   bool _obscureConfirm = true;
   bool _tosAccepted = false;
-  String? _tosSummary;
-  String? _guidelines;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadTos();
-  }
-
-  Future<void> _loadTos() async {
-    try {
-      final data = await ref.read(authRepositoryProvider).fetchTos();
-      // Both documents ride one response, so the guidelines cost no extra call.
-      if (mounted) {
-        setState(() {
-          _tosSummary = data['summary'] as String?;
-          _guidelines = data['guidelines'] as String?;
-        });
-      }
-    } catch (_) {}
-  }
-
-  void _showLegalSheet(AppLocalizations l10n, String title, String? body) {
-    final nt = context.nt;
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: nt.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (ctx) => DraggableScrollableSheet(
-        initialChildSize: 0.6,
-        minChildSize: 0.4,
-        maxChildSize: 0.9,
-        expand: false,
-        builder: (_, sc) => Column(
-          children: [
-            const SizedBox(height: 12),
-            Container(
-              width: 36,
-              height: 4,
-              decoration: BoxDecoration(
-                color: nt.border,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Text(
-                title,
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                  color: nt.bark,
-                ),
-              ),
-            ),
-            Expanded(
-              child: SingleChildScrollView(
-                controller: sc,
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-                child: Text(
-                  body ?? l10n.registerTosLoading,
-                  style: TextStyle(fontSize: 14, color: nt.text2, height: 1.6),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  /// The whole agreement as one string — a screen reader announces the row as
-  /// a single labelled checkbox instead of a checkbox and six loose fragments.
-  String _agreementSemanticsLabel(AppLocalizations l10n) =>
-      '${l10n.registerTosAgree}${l10n.registerTos}'
-      '${l10n.registerTosComma}${l10n.registerGuidelines}'
-      '${l10n.registerTosAnd}${l10n.registerPrivacyPolicy}'
-      '${l10n.registerTosSuffix}${l10n.registerTosProhibited}';
-
   Future<void> _register(AppLocalizations l10n) async {
     if (!_formKey.currentState!.validate()) return;
     if (!_tosAccepted) {
@@ -393,102 +310,11 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 const SizedBox(height: 20),
 
                 // ToS row — the app-store UGC agreement gate. The label names
-                // both documents and states the no-tolerance policy, which is
-                // what a reviewer looks for at the point of acceptance.
-                Semantics(
-                  container: true,
-                  checked: _tosAccepted,
-                  label: _agreementSemanticsLabel(l10n),
-                  child: GestureDetector(
-                    onTap: () => setState(() => _tosAccepted = !_tosAccepted),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        ExcludeSemantics(
-                          child: Checkbox(
-                            value: _tosAccepted,
-                            onChanged: (v) =>
-                                setState(() => _tosAccepted = v ?? false),
-                            materialTapTargetSize:
-                                MaterialTapTargetSize.shrinkWrap,
-                            visualDensity: VisualDensity.compact,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Wrap(
-                            children: [
-                              Text(
-                                l10n.registerTosAgree,
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  color: nt.text2,
-                                ),
-                              ),
-                              _LegalLink(
-                                label: l10n.registerTos,
-                                onTap: () => _showLegalSheet(
-                                  l10n,
-                                  l10n.registerTosTitle,
-                                  _tosSummary,
-                                ),
-                              ),
-                              Text(
-                                l10n.registerTosComma,
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  color: nt.text2,
-                                ),
-                              ),
-                              _LegalLink(
-                                label: l10n.registerGuidelines,
-                                onTap: () => _showLegalSheet(
-                                  l10n,
-                                  l10n.registerGuidelinesTitle,
-                                  _guidelines,
-                                ),
-                              ),
-                              Text(
-                                l10n.registerTosAnd,
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  color: nt.text2,
-                                ),
-                              ),
-                              // Privacy stays an external launch: it is the one
-                              // document the backend serves as HTML, not text.
-                              _LegalLink(
-                                label: l10n.registerPrivacyPolicy,
-                                onTap: () => launchUrl(
-                                  Uri.parse(kPrivacyPolicyUrl),
-                                  mode: LaunchMode.externalApplication,
-                                ),
-                              ),
-                              Text(
-                                l10n.registerTosSuffix,
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  color: nt.text2,
-                                ),
-                              ),
-                              Text(
-                                l10n.registerTosProhibited,
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  color: nt.text2,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        FieldHelpIcon(
-                          helpTitle: l10n.registerTos,
-                          helpMessage: l10n.registerTosHelp,
-                          color: nt.text2,
-                        ),
-                      ],
-                    ),
-                  ),
+                // all three documents and states the no-tolerance policy, which
+                // is what a reviewer looks for at the point of acceptance.
+                TosAgreementRow(
+                  accepted: _tosAccepted,
+                  onChanged: (v) => setState(() => _tosAccepted = v),
                 ),
                 const SizedBox(height: 20),
 
@@ -545,34 +371,6 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 }
 
 // ── Sub-widgets ───────────────────────────────────────────────────────────────
-
-/// One tappable document name inside the agreement label. Kept as a `Wrap`
-/// segment rather than a `TextSpan` recognizer to match the rest of the app,
-/// and marked `link` so each document stays individually reachable to a screen
-/// reader even though the surrounding row announces as a single checkbox.
-class _LegalLink extends StatelessWidget {
-  final String label;
-  final VoidCallback onTap;
-  const _LegalLink({required this.label, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return Semantics(
-      link: true,
-      child: GestureDetector(
-        onTap: onTap,
-        child: Text(
-          label,
-          style: TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-            color: context.nt.forest,
-          ),
-        ),
-      ),
-    );
-  }
-}
 
 class _FieldLabel extends StatelessWidget {
   final String text;

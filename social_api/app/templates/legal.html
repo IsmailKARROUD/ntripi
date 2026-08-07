@@ -1,0 +1,56 @@
+{# One template for all three legal documents — they render identically, and
+   the dir/heading/label fixes below would otherwise have to be made three
+   times. web.py passes heading / content / version / last_updated / notice. #}
+{% extends "_base.html" %}
+{% block content %}
+
+<style>
+  .legal-doc h1 {
+    font-size: 2rem;
+    font-weight: 800;
+    margin-bottom: 8px;
+  }
+
+  .last-updated {
+    font-size: 13px;
+    color: var(--sub);
+    margin-bottom: 36px;
+  }
+
+  .prose {
+    font-size: 15px;
+    color: var(--sub);
+    line-height: 1.8;
+    white-space: pre-wrap;
+  }
+
+  .prose a { color: var(--brand); }
+
+  .version-badge {
+    display: inline-block;
+    background: var(--brand-light);
+    color: var(--brand);
+    font-size: 12px;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 20px;
+    margin-bottom: 24px;
+  }
+</style>
+
+{# Follows the page direction now that the bodies themselves are translated —
+   an Arabic document forced to dir="ltr" renders its punctuation on the wrong
+   side of every line. #}
+<section class="legal-doc" dir="{{ dir }}">
+  <h1>{{ heading }}</h1>
+  <p class="last-updated">{{ _('legal_last_updated') }} {{ last_updated }}</p>
+  {% if version %}
+  <span class="version-badge">{{ _('legal_version') }} {{ version }}</span>
+  {% endif %}
+  {% if notice %}
+  <div class="error-banner" dir="auto">{{ notice }}</div>
+  {% endif %}
+  <div class="prose">{{ content }}</div>
+</section>
+
+{% endblock %}

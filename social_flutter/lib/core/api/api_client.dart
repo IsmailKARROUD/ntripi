@@ -146,6 +146,10 @@ void _goToSuspended() {
 /// Backend code returned on every request from a moderator-suspended account.
 const kAccountDeactivatedCode = 'account_deactivated';
 
+/// Backend code for "this signup needs an explicit ToS acceptance". Returned by
+/// POST /auth/register and, for a brand-new account only, POST /auth/google.
+const kTosRequiredCode = 'tos_required';
+
 bool _isAuthEndpoint(String path) {
   return path == kLoginEndpoint ||
       path == kRegisterEndpoint ||

@@ -258,7 +258,31 @@ class AppLocalizationsEs extends AppLocalizations {
   String get registerGuidelinesTitle => 'Normas de la comunidad';
 
   @override
-  String get registerTosLoading => 'Cargando…';
+  String get legalDocLoadFailed =>
+      'No hemos podido cargar este documento. Comprueba tu conexión e inténtalo de nuevo.';
+
+  @override
+  String get legalDocOpenInBrowser => 'Abrir en el navegador';
+
+  @override
+  String get googleTosTitle => 'Un paso más';
+
+  @override
+  String get googleTosSubtitle =>
+      'Estás creando una cuenta nueva de Ntripi. Acepta nuestras condiciones para continuar.';
+
+  @override
+  String get googleTosAccept => 'Aceptar y continuar';
+
+  @override
+  String get acceptTermsTitle => 'Nuestras condiciones han cambiado';
+
+  @override
+  String get acceptTermsBody =>
+      'Hemos actualizado nuestras Condiciones de uso, Normas de la comunidad y Política de privacidad. Léelas y acéptalas para seguir usando Ntripi.';
+
+  @override
+  String get acceptTermsButton => 'Aceptar y continuar';
 
   @override
   String get registerCreateAccount => 'Crear cuenta';

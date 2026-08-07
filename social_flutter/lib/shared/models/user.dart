@@ -69,6 +69,11 @@ class User {
   final bool notifySaves;
   final bool notifyFollowAccepted;
 
+  /// False once the Terms are revised, until this user accepts again.
+  /// Server-computed (tos_accepted_version == the current TOS_VERSION), so
+  /// the client never has to know which revision is in force.
+  final bool tosCurrent;
+
   /// Returns displayName if set, else "@username".
   String get nameForDisplay => displayName ?? '@$username';
 
@@ -99,6 +104,9 @@ class User {
     this.notifyRatings = true,
     this.notifySaves = true,
     this.notifyFollowAccepted = true,
+    // Defaults true so a public-profile payload, which carries no such
+    // field, never trips the gate for somebody else's account.
+    this.tosCurrent = true,
   });
 
   factory User.fromJson(Map<String, dynamic> json) {
@@ -135,6 +143,7 @@ class User {
       notifyRatings: json['notify_ratings'] as bool? ?? true,
       notifySaves: json['notify_saves'] as bool? ?? true,
       notifyFollowAccepted: json['notify_follow_accepted'] as bool? ?? true,
+      tosCurrent: json['tos_current'] as bool? ?? true,
     );
   }
 
@@ -163,6 +172,7 @@ class User {
       'notify_ratings': notifyRatings,
       'notify_saves': notifySaves,
       'notify_follow_accepted': notifyFollowAccepted,
+      'tos_current': tosCurrent,
     };
   }
 
@@ -194,6 +204,7 @@ class User {
     bool? notifyRatings,
     bool? notifySaves,
     bool? notifyFollowAccepted,
+    bool? tosCurrent,
   }) {
     return User(
       id: id ?? this.id,
@@ -220,6 +231,7 @@ class User {
       notifyRatings: notifyRatings ?? this.notifyRatings,
       notifySaves: notifySaves ?? this.notifySaves,
       notifyFollowAccepted: notifyFollowAccepted ?? this.notifyFollowAccepted,
+      tosCurrent: tosCurrent ?? this.tosCurrent,
     );
   }
 }

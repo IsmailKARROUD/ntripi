@@ -11,6 +11,7 @@
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:social_flutter/core/api/api_client.dart';
+import 'package:social_flutter/core/storage/secure_storage.dart';
 import 'package:social_flutter/features/auth/data/auth_repository.dart';
 import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
 import 'package:social_flutter/features/itineraries/providers/saved_itineraries_provider.dart';
@@ -37,6 +38,9 @@ class AuthNotifier extends Notifier<String?> {
 
   /// Called after a successful login or register.
   void setAuthenticated(String userId) {
+    // The tokens were written before we got here, but hasSessionProvider may
+    // have cached the `false` it read on the login screen.
+    ref.invalidate(hasSessionProvider);
     state = userId;
   }
 
@@ -51,9 +55,26 @@ class AuthNotifier extends Notifier<String?> {
     ref.invalidate(myItinerariesProvider);
     ref.invalidate(savedItinerariesProvider);
     ref.invalidate(searchQueryProvider);
+    // hasSessionProvider caches a storage read; without this it would still
+    // report a live session after the tokens are gone.
+    ref.invalidate(hasSessionProvider);
     state = null;
   }
 }
 
 final authNotifierProvider =
     NotifierProvider<AuthNotifier, String?>(() => AuthNotifier());
+
+/// True when a live refresh token is on the device.
+///
+/// The same signal the router redirect uses, and for the same reason: the
+/// access token is short-lived and may legitimately be expired, while
+/// authNotifierProvider is only set by an explicit login — a session restored
+/// on cold launch leaves it null. Anything that needs "is somebody signed in?"
+/// outside the router has to read storage, not that notifier.
+final hasSessionProvider = FutureProvider<bool>((ref) async {
+  final refresh = await readRefreshToken();
+  if (refresh == null || refresh.isEmpty) return false;
+  final expiry = await readRefreshExpiresAt();
+  return expiry == null || expiry.isAfter(DateTime.now());
+});

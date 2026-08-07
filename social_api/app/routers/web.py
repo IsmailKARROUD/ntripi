@@ -35,12 +35,12 @@ from sqlalchemy.orm import Session
 
 from app.config import Settings, get_settings
 from app.constants.guidelines import (
-    GUIDELINES_CONTENT,
     GUIDELINES_DATE,
     GUIDELINES_VERSION,
+    get_guidelines,
 )
-from app.constants.privacy import PRIVACY_CONTENT, PRIVACY_DATE
-from app.constants.tos import TOS_DATE, TOS_SUMMARY, TOS_VERSION
+from app.constants.privacy import PRIVACY_DATE, PRIVACY_VERSION, get_privacy
+from app.constants.tos import TOS_DATE, TOS_VERSION, get_tos
 from app.database import get_db
 from app.i18n import resolve_lang
 from app.limiter import limiter
@@ -92,33 +92,66 @@ def register_page() -> RedirectResponse:
     return RedirectResponse("/app/", status_code=302)
 
 
+def _legal_page(
+    request: Request,
+    *,
+    heading_key: str,
+    notice_key: str,
+    body: str,
+    date: str,
+    version: str,
+) -> HTMLResponse:
+    """Render one of the three legal documents in the request's language.
+
+    `notice` is the prevailing-language clause — empty for English, which is
+    the authoritative text and so has nothing to prevail over.
+    """
+    t = _t(request)
+    heading = t(heading_key)
+    return templates.TemplateResponse(request, "legal.html", {
+        "page_title": f"{heading} — Ntripi",
+        "heading": heading,
+        "content": body,
+        "last_updated": date,
+        "version": version,
+        "notice": t(notice_key),
+    })
+
+
 @router.get("/privacy", response_class=HTMLResponse)
 def privacy_page(request: Request) -> HTMLResponse:
-    return templates.TemplateResponse(request, "privacy.html", {
-        "page_title": "Privacy Policy — Ntripi",
-        "content": PRIVACY_CONTENT,
-        "last_updated": PRIVACY_DATE,
-    })
+    return _legal_page(
+        request,
+        heading_key="legal_privacy_heading",
+        notice_key="legal_notice_privacy",
+        body=get_privacy(resolve_lang(request)),
+        date=PRIVACY_DATE,
+        version=PRIVACY_VERSION,
+    )
 
 
 @router.get("/terms", response_class=HTMLResponse)
 def terms_page(request: Request) -> HTMLResponse:
-    return templates.TemplateResponse(request, "terms.html", {
-        "page_title": "Terms of Service — Ntripi",
-        "content": TOS_SUMMARY,
-        "last_updated": TOS_DATE,
-        "tos_version": TOS_VERSION,
-    })
+    return _legal_page(
+        request,
+        heading_key="legal_terms_heading",
+        notice_key="legal_notice_terms",
+        body=get_tos(resolve_lang(request)),
+        date=TOS_DATE,
+        version=TOS_VERSION,
+    )
 
 
 @router.get("/guidelines", response_class=HTMLResponse)
 def guidelines_page(request: Request) -> HTMLResponse:
-    return templates.TemplateResponse(request, "guidelines.html", {
-        "page_title": "Community Guidelines — Ntripi",
-        "content": GUIDELINES_CONTENT,
-        "last_updated": GUIDELINES_DATE,
-        "guidelines_version": GUIDELINES_VERSION,
-    })
+    return _legal_page(
+        request,
+        heading_key="legal_guidelines_heading",
+        notice_key="legal_notice_guidelines",
+        body=get_guidelines(resolve_lang(request)),
+        date=GUIDELINES_DATE,
+        version=GUIDELINES_VERSION,
+    )
 
 
 # ---------------------------------------------------------------------------

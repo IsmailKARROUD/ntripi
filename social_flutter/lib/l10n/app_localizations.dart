@@ -568,11 +568,53 @@ abstract class AppLocalizations {
   /// **'Community Guidelines'**
   String get registerGuidelinesTitle;
 
-  /// No description provided for @registerTosLoading.
+  /// No description provided for @legalDocLoadFailed.
   ///
   /// In en, this message translates to:
-  /// **'Loading…'**
-  String get registerTosLoading;
+  /// **'We couldn\'t load this document. Check your connection and try again.'**
+  String get legalDocLoadFailed;
+
+  /// No description provided for @legalDocOpenInBrowser.
+  ///
+  /// In en, this message translates to:
+  /// **'Open in browser'**
+  String get legalDocOpenInBrowser;
+
+  /// No description provided for @googleTosTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'One more step'**
+  String get googleTosTitle;
+
+  /// No description provided for @googleTosSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'re creating a new Ntripi account. Please accept our terms to continue.'**
+  String get googleTosSubtitle;
+
+  /// No description provided for @googleTosAccept.
+  ///
+  /// In en, this message translates to:
+  /// **'Accept and continue'**
+  String get googleTosAccept;
+
+  /// No description provided for @acceptTermsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Our terms have changed'**
+  String get acceptTermsTitle;
+
+  /// No description provided for @acceptTermsBody.
+  ///
+  /// In en, this message translates to:
+  /// **'We\'ve updated our Terms of Service, Community Guidelines and Privacy Policy. Please read and accept them to keep using Ntripi.'**
+  String get acceptTermsBody;
+
+  /// No description provided for @acceptTermsButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Accept and continue'**
+  String get acceptTermsButton;
 
   /// No description provided for @registerCreateAccount.
   ///

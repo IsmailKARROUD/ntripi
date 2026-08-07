@@ -5,9 +5,15 @@
 // and Community Guidelines, and that both are readable at the point of
 // acceptance without leaving the form.
 //
+// Also covers the regression that sent us back here: the document sheet used
+// to capture its body at tap time, so tapping before the fetch resolved (or on
+// any device where it failed) left it on "Loading…" for good.
+//
 // We override authRepositoryProvider with a fake (never mock providers
 // directly). The success path is deliberately not exercised: it calls
 // context.go('/profile/me'), which needs a router.
+
+import 'dart:async';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
@@ -21,20 +27,43 @@ import 'package:social_flutter/l10n/app_localizations.dart';
 
 const _tosBody = 'TERMS BODY — zero tolerance for objectionable content.';
 const _guidelinesBody = 'GUIDELINES BODY — hate speech is prohibited.';
+const _privacyBody = 'PRIVACY BODY — we name every processor.';
 
-/// Serves both documents the way the real GET /auth/tos does. `register` is
-/// recorded rather than performed so the test can assert on the wire value.
+/// Serves all three documents the way the real GET /auth/tos does. `register`
+/// is recorded rather than performed so the test can assert on the wire value.
 class _FakeAuthRepository extends AuthRepository {
-  _FakeAuthRepository() : super(Dio(), Dio());
+  _FakeAuthRepository({this.tosDelay, this.tosFails = false})
+      : super(Dio(), Dio());
+
+  /// Holds the fetch open so a test can tap while it is still pending.
+  final Completer<void>? tosDelay;
+  final bool tosFails;
 
   bool? sentTosAccepted;
+  int fetchCount = 0;
+  String? lastLang;
 
   @override
-  Future<Map<String, dynamic>> fetchTos() async => {
-        'version': '2.0',
-        'summary': _tosBody,
-        'guidelines': _guidelinesBody,
-      };
+  Future<Map<String, dynamic>> fetchTos({String? lang}) async {
+    fetchCount++;
+    lastLang = lang;
+    if (tosDelay != null) await tosDelay!.future;
+    if (tosFails) {
+      throw DioException(
+        requestOptions: RequestOptions(path: '/auth/tos'),
+        type: DioExceptionType.connectionError,
+      );
+    }
+    return {
+      'version': '3.0',
+      'summary': _tosBody,
+      'guidelines': _guidelinesBody,
+      'privacy': _privacyBody,
+      'notice_terms': '',
+      'notice_guidelines': '',
+      'notice_privacy': '',
+    };
+  }
 
   @override
   Future<AuthResult> register({
@@ -108,12 +137,13 @@ void main() {
 
     testWidgets(
         'Given the agreement label, When it renders, '
-        'Then it names both documents and the no-tolerance rule',
+        'Then it names all three documents and the no-tolerance rule',
         (tester) async {
       await _pumpScreen(tester, _FakeAuthRepository());
 
       expect(find.text('Terms of Service'), findsOneWidget);
       expect(find.text('Community Guidelines'), findsOneWidget);
+      expect(find.text('Privacy Policy'), findsOneWidget);
       expect(
         find.text(
           'I understand that objectionable content and abusive behavior '
@@ -123,6 +153,30 @@ void main() {
       );
     });
 
+    testWidgets(
+        'Given a filled form, When submitted, '
+        'Then the accepted flag is sent as the real checkbox value, not a literal',
+        (tester) async {
+      final repo = _FakeAuthRepository();
+      await _pumpScreen(tester, repo);
+
+      await tester.enterText(find.byType(TextFormField).at(1), 'testuser');
+      await tester.enterText(
+          find.byType(TextFormField).at(2), 'test@example.com');
+      await tester.enterText(find.byType(TextFormField).at(3), 'testpass1');
+      await tester.enterText(find.byType(TextFormField).at(4), 'testpass1');
+
+      await tester.tap(find.byType(Checkbox));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.widgetWithText(ElevatedButton, 'Create Account'));
+      await tester.pump();
+
+      expect(repo.sentTosAccepted, isTrue);
+    });
+  });
+
+  group('Legal document sheet', () {
     testWidgets(
         'Given the label links, When Community Guidelines is tapped, '
         'Then the guidelines open in-app without leaving the form',
@@ -149,28 +203,86 @@ void main() {
     });
 
     testWidgets(
-        'Given a filled form, When submitted, '
-        'Then the accepted flag is sent as the real checkbox value, not a literal',
+        'Given the Privacy Policy is now plain text, When it is tapped, '
+        'Then it opens in the same sheet rather than the browser',
         (tester) async {
+      await _pumpScreen(tester, _FakeAuthRepository());
+
+      await tester.tap(find.text('Privacy Policy'));
+      await tester.pumpAndSettle();
+
+      expect(find.text(_privacyBody), findsOneWidget);
+    });
+
+    testWidgets(
+        'Given the fetch has not resolved, When the sheet is opened, '
+        'Then it shows a spinner and then the body — never a frozen label',
+        (tester) async {
+      final gate = Completer<void>();
+      final repo = _FakeAuthRepository(tosDelay: gate);
+      tester.view.physicalSize = const Size(1080, 2400);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      await tester.pumpWidget(_buildScreen(repo));
+      await tester.pump();
+
+      await tester.tap(find.text('Community Guidelines'));
+      await tester.pump();
+      expect(find.text(_guidelinesBody), findsNothing);
+
+      // The sheet subscribes to the provider, so resolving the fetch while it
+      // is already open must fill it in. Capturing the value at tap time is
+      // exactly what left it stuck before.
+      gate.complete();
+      await tester.pumpAndSettle();
+
+      expect(find.text(_guidelinesBody), findsOneWidget);
+    });
+
+    testWidgets(
+        'Given the fetch fails, When the sheet is opened, '
+        'Then it offers a retry instead of silence', (tester) async {
+      await _pumpScreen(tester, _FakeAuthRepository(tosFails: true));
+
+      await tester.tap(find.text('Terms of Service'));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text(
+          "We couldn't load this document. Check your connection and try again.",
+        ),
+        findsOneWidget,
+      );
+      expect(find.widgetWithText(FilledButton, 'Retry'), findsOneWidget);
+      expect(find.text('Open in browser'), findsOneWidget);
+    });
+
+    testWidgets(
+        'Given a failed fetch, When Retry is tapped, '
+        'Then the document is requested again', (tester) async {
+      final repo = _FakeAuthRepository(tosFails: true);
+      await _pumpScreen(tester, repo);
+      await tester.tap(find.text('Terms of Service'));
+      await tester.pumpAndSettle();
+      final before = repo.fetchCount;
+
+      await tester.tap(find.widgetWithText(FilledButton, 'Retry'));
+      await tester.pumpAndSettle();
+
+      expect(repo.fetchCount, greaterThan(before));
+    });
+
+    testWidgets(
+        'Given the app language, When the documents are fetched, '
+        'Then the request asks for that translation', (tester) async {
       final repo = _FakeAuthRepository();
       await _pumpScreen(tester, repo);
 
-      await tester.enterText(
-          find.byType(TextFormField).at(1), 'testuser');
-      await tester.enterText(
-          find.byType(TextFormField).at(2), 'test@example.com');
-      await tester.enterText(
-          find.byType(TextFormField).at(3), 'testpass1');
-      await tester.enterText(
-          find.byType(TextFormField).at(4), 'testpass1');
-
-      await tester.tap(find.byType(Checkbox));
+      await tester.tap(find.text('Terms of Service'));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.widgetWithText(ElevatedButton, 'Create Account'));
-      await tester.pump();
-
-      expect(repo.sentTosAccepted, isTrue);
+      expect(repo.lastLang, isNotNull);
     });
   });
 }

@@ -78,6 +78,10 @@ class UserPrivateProfile(UserBase):
     notify_ratings: bool = True
     notify_saves: bool = True
     notify_follow_accepted: bool = True
+    # False once the ToS are revised, until the user accepts again. Reads
+    # User.tos_current. The client blocks the app on it; the server is still
+    # the source of truth for whether registration was gated at all.
+    tos_current: bool = False
 
 
 class UserUpdateRequest(BaseModel):

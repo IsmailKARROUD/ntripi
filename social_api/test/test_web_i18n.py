@@ -68,10 +68,14 @@ class TestWebI18n:
             "/share/i/00000000-0000-0000-0000-000000000000?lang=ar"
         )
         assert resp.status_code == 404
-        assert "خط السير غير موجود" in resp.text
+        # مسار, not خط سير — the glossary settled on the former for "itinerary"
+        # on 2026-07-26 and i18n.py moved with it.
+        assert "المسار غير موجود" in resp.text
 
     def test_switcher_lists_other_languages(self, client: TestClient):
-        # 3-way switcher: current language absent, the other two linked.
+        # Current language absent from the switcher, every other one linked.
         resp = client.get("/reset-password?lang=ar")
-        assert '?lang=en' in resp.text and '?lang=fr' in resp.text
+        assert '?lang=ar' not in resp.text
+        for code in ("en", "fr", "de", "es", "zh"):
+            assert f'?lang={code}' in resp.text
         assert '?lang=ar' not in resp.text.replace("/reset-password?lang=ar", "")

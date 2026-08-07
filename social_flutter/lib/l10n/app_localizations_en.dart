@@ -255,7 +255,31 @@ class AppLocalizationsEn extends AppLocalizations {
   String get registerGuidelinesTitle => 'Community Guidelines';
 
   @override
-  String get registerTosLoading => 'Loading…';
+  String get legalDocLoadFailed =>
+      'We couldn\'t load this document. Check your connection and try again.';
+
+  @override
+  String get legalDocOpenInBrowser => 'Open in browser';
+
+  @override
+  String get googleTosTitle => 'One more step';
+
+  @override
+  String get googleTosSubtitle =>
+      'You\'re creating a new Ntripi account. Please accept our terms to continue.';
+
+  @override
+  String get googleTosAccept => 'Accept and continue';
+
+  @override
+  String get acceptTermsTitle => 'Our terms have changed';
+
+  @override
+  String get acceptTermsBody =>
+      'We\'ve updated our Terms of Service, Community Guidelines and Privacy Policy. Please read and accept them to keep using Ntripi.';
+
+  @override
+  String get acceptTermsButton => 'Accept and continue';
 
   @override
   String get registerCreateAccount => 'Create Account';

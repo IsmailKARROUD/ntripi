@@ -5,6 +5,8 @@ import 'package:go_router/go_router.dart';
 import 'package:social_flutter/core/api/api_client.dart';
 import 'package:social_flutter/core/api/api_endpoints.dart';
 import 'package:social_flutter/core/providers/locale_provider.dart';
+import 'package:social_flutter/features/auth/presentation/widgets/legal_doc_sheet.dart';
+import 'package:social_flutter/features/auth/providers/legal_provider.dart';
 import 'package:social_flutter/core/providers/theme_mode_provider.dart';
 import 'package:social_flutter/core/ui/app_theme.dart';
 import 'package:social_flutter/features/profile/providers/profile_provider.dart';
@@ -284,6 +286,7 @@ class _SettingsSheet extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
+    final langCode = ref.watch(localeProvider).languageCode;
     final nt = context.nt;
     final currentLocale = ref.watch(localeProvider);
     final langDetail = localeLabel(l10n, currentLocale.languageCode);
@@ -424,8 +427,10 @@ class _SettingsSheet extends ConsumerWidget {
                         iconBg: nt.mist,
                         iconColor: nt.forest,
                         label: l10n.settingsTerms,
+                        // ?lang= so the browser page matches the in-app
+                        // language rather than the device's.
                         onTap: () => launchUrl(
-                          Uri.parse(kTermsUrl),
+                          Uri.parse(legalDocUrl(LegalDoc.terms, langCode)),
                           mode: LaunchMode.externalApplication,
                         ),
                       ),
@@ -435,7 +440,7 @@ class _SettingsSheet extends ConsumerWidget {
                         iconColor: nt.forest,
                         label: l10n.communityGuidelines,
                         onTap: () => launchUrl(
-                          Uri.parse(kGuidelinesUrl),
+                          Uri.parse(legalDocUrl(LegalDoc.guidelines, langCode)),
                           mode: LaunchMode.externalApplication,
                         ),
                       ),

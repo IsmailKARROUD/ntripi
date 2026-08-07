@@ -10,6 +10,7 @@ import 'package:social_flutter/core/auth/token_manager.dart';
 import 'package:social_flutter/core/providers/locale_provider.dart';
 import 'package:social_flutter/core/providers/theme_mode_provider.dart';
 import 'package:social_flutter/core/router/app_router.dart';
+import 'package:social_flutter/features/auth/presentation/widgets/tos_gate.dart';
 import 'package:social_flutter/core/ui/app_theme.dart';
 import 'package:social_flutter/features/bug_report/presentation/bug_report_localizations.dart';
 import 'package:social_flutter/features/bug_report/presentation/bug_report_sheet.dart';
@@ -123,7 +124,9 @@ class NtripiApp extends ConsumerWidget {
             // Inside MaterialApp so the shake handler has a ScaffoldMessenger
             // for the confirmation snackbar; BetterFeedback.of() still finds
             // the controller above.
-            child: ShakeToReport(child: child!),
+            // TosGate wraps everything routed: many screens are declared at
+            // the router's root level and would slip past a shell-mounted gate.
+            child: TosGate(child: ShakeToReport(child: child!)),
           ),
         ),
       ),

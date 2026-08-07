@@ -25,6 +25,9 @@ const kRefreshEndpoint = '/auth/refresh';
 const kLogoutEndpoint = '/auth/logout';
 const kTosEndpoint = '/auth/tos';
 
+/// Record acceptance of the current ToS revision (clears the re-acceptance gate).
+const kAcceptTosEndpoint = '/auth/accept-tos';
+
 /// Exchange a Google ID token for a Ntripi token pair (sign in / up / verify).
 const kGoogleAuthEndpoint = '/auth/google';
 

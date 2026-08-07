@@ -304,6 +304,29 @@ A bell beside the profile settings gear opens `/notifications`; three of the six
 
 ---
 
+## Legal Documents and ToS Acceptance
+
+Three documents — Terms of Service, Privacy Policy, Community Guidelines — in six languages, served through one pipeline to both the website and the app.
+
+- **Bodies live in `app/constants/legal/<lang>.py`**, one module per *language* (not per document), each exporting `TOS` / `PRIVACY` / `GUIDELINES` as **plain text**. Plain text, never HTML: the same string renders on the web page (`white-space: pre-wrap`) and in the Flutter sheet, which is a bare `Text`. HTML would need a renderer package on the client or a second copy of every document.
+- `app/constants/{tos,privacy,guidelines}.py` keep the version/date constants and expose `get_tos(lang)` / `get_privacy(lang)` / `get_guidelines(lang)`, all through `legal.document()`, which falls back to English twice over — unknown language code, and a language module missing that document.
+- **English is authoritative.** Every other language carries a prevailing-language clause from `i18n.py` (`legal_notice_terms` / `_privacy` / `_guidelines`, empty for `en`) — one key per document, not one with a `{document}` placeholder, because Arabic and Chinese put the noun where interpolation cannot reach it.
+- **One template, `legal.html`**, for all three routes. They were three near-identical files, so `dir="{{ dir }}"` (Arabic bodies need RTL — the old `dir="ltr"` predates translation), the translated `<h1>`, and the "Last updated"/"Version" labels each had to be fixed three times.
+- `i18n.py` `SUPPORTED` must stay in step with the app's `kAppLocaleCodes`: the app appends `?lang=<its locale>` when it opens a legal page in the browser, and a code missing there silently serves English.
+- **`GET /auth/tos?lang=` returns all three documents plus their notices** in one response. Three consumers share it — the signup agreement, the Google consent sheet, and the re-acceptance gate.
+
+### Acceptance
+
+- `TOS_VERSION` is written verbatim into `users.tos_accepted_version` at signup, on **both** paths. Bumping it is what makes "which document did this person agree to" answerable; rows are never backfilled.
+- **`GoogleAuthRequest.tos_accepted` defaults `False`.** Only the create-a-new-account branch reads it, answering 400 `tos_required`; sign-in and account-linking never consult it. The client's move is **consent-on-demand**: post the token, and on `tos_required` show the sheet and re-post the *same* ID token with `True` (Google ID tokens live ~1h, verification is stateless). Asking before the picker would re-prompt every returning Google user at every sign-in.
+- **The re-acceptance gate is client-side** — `UserPrivateProfile.tos_current` (reads `User.tos_current`) plus `TosGate` in `main.dart`'s `MaterialApp.router` builder. It sits there, not in `_AppShell`, because many routes are declared at the router's root level and would slip past a shell-mounted gate. It is inert unless `hasSessionProvider` **and** a loaded profile **and** `tos_current == false`, so `/splash` `/login` `/register` `/suspended` need no allowlist. Loading and error fall through — a profile we could not read is not evidence of a stale agreement.
+- `hasSessionProvider` (not `authNotifierProvider`) is the "is somebody signed in?" signal outside the router: splash restores a session without calling `setAuthenticated`, so the notifier is null for exactly the returning users the gate exists for.
+- `POST /auth/accept-tos` takes **no body** — it stamps the server's own `TOS_VERSION`, so a client cannot claim acceptance of a document it never rendered.
+- `AcceptTermsScreen` always carries a sign-out action. A gate with no exit is a lockout, and signing out is also how someone reaches account deletion.
+- **The document sheet subscribes to `legalDocumentsProvider` from inside its own route.** `showModalBottomSheet` builds on a separate route, so a parent `setState` never reaches it — capturing the body at call time is what left it on "Loading…" forever. Three async states: spinner, body, and error with Retry + open-in-browser.
+
+---
+
 ## Alembic Migration Rules (CRITICAL)
 
 - **Never hand-write a revision ID** — always generate one with `venv/bin/alembic revision -m "description"` (or `--autogenerate` if a DB is reachable). Hand-written placeholder IDs (e.g. `a1b2c3d4e5f6`) silently collide with existing migrations, fork the chain, and crash Railway on `alembic upgrade head`.
@@ -354,6 +377,15 @@ A bell beside the profile settings gear opens `/notifications`; three of the six
 - Do NOT delete the object before hashing it in `csam_takedown` — the order is the evidence
 - Do NOT email the uploader or surface a CSAM-specific message on a takedown — it tells someone whose upload matched a law-enforcement corpus exactly what was detected
 - Do NOT point `R2_PUBLIC_URL` at a `pub-*.r2.dev` domain in production — it bypasses the Cloudflare zone and silently disables CSAM scanning entirely
+- Do NOT default `tos_accepted` to `True` anywhere — an account created without an explicit acceptance is the App Store 1.2 / Play UGC violation this was all built to close
+- Do NOT ask for ToS consent *before* the Google picker — only the server knows whether a token means sign-in or signup, and a consent-first sheet re-prompts every returning user forever
+- Do NOT let `POST /auth/accept-tos` take a version from the client — it must stamp the server's `TOS_VERSION`
+- Do NOT hand a legal document body to `showModalBottomSheet` at call time — the sheet is a separate route that no parent `setState` reaches, and a null capture is a permanent "Loading…"
+- Do NOT swallow a failed `/auth/tos` fetch — silence is how the sheet broke; surface it with a retry
+- Do NOT gate on `authNotifierProvider` for "is somebody signed in?" — splash restores sessions without setting it; use `hasSessionProvider`
+- Do NOT ship a legal document in HTML — plain text is what lets one string serve the web page and the in-app sheet without a renderer package
+- Do NOT add a language to the app's locales without adding it to `i18n.py` `SUPPORTED` — the app's `?lang=` would silently fall back to English
+- Do NOT pin a legal page's body to `dir="ltr"` — the bodies are translated now, and Arabic needs RTL
 - Do NOT apply the client text filter to titles or place names — European place names false-positive
 - Do NOT let a client-side filter block submission, mutate text, or clear a compose field
 - Do NOT hardcode URLs, secrets, or environment values
