@@ -7,12 +7,12 @@ TOS = """Al crear una cuenta en Ntripi, aceptas las siguientes condiciones.
 
 Crear una cuenta significa que aceptas estas Condiciones de uso y nuestras Normas de la comunidad, que forman parte de este acuerdo. Si no las aceptas, no crees una cuenta.
 
-Podremos pedirte que aceptes una versión revisada de estas condiciones antes de seguir usando Ntripi. Si no deseas aceptar una revisión, puedes cerrar tu cuenta.
+Podremos pedirte que aceptes una versión revisada de estas condiciones antes de seguir usando Ntripi. Si no deseas aceptar una revisión, puedes eliminar tu cuenta.
 
 
 2. QUIÉN PUEDE USAR NTRIPI
 
-Debes tener al menos 13 años y edad suficiente para celebrar un contrato vinculante en tu país. Si no has alcanzado la mayoría de edad en tu país, solo puedes usar Ntripi con la participación de un padre, madre o tutor.
+Debes tener al menos 16 años y edad suficiente para celebrar un contrato vinculante en tu país. Si no has alcanzado la mayoría de edad en tu país, solo puedes usar Ntripi con la participación de un padre, madre o tutor.
 
 
 3. TUS RESPONSABILIDADES
@@ -57,7 +57,7 @@ Podemos enviarte avisos dentro de la aplicación sobre la actividad de tu cuenta
 
 Podemos eliminar u ocultar contenido, advertirte, restringir tu cuenta o cancelarla si incumples estas condiciones o las Normas de la comunidad. Los incumplimientos graves pueden dar lugar a la cancelación inmediata sin aviso previo.
 
-Cuando tomemos una medida contra ti, te diremos qué hemos hecho y por qué. Puedes cerrar tu cuenta tú mismo en cualquier momento desde la aplicación.
+Cuando tomemos una medida contra ti, te diremos qué hemos hecho y por qué. Puedes eliminar tu cuenta tú mismo en cualquier momento desde la aplicación.
 
 
 8. RECLAMACIONES
@@ -69,11 +69,11 @@ El contenido que involucra a menores es la única excepción: no admite reclamac
 
 9. TUS DATOS Y LA ELIMINACIÓN DE LA CUENTA
 
-1. Tus datos personales (nombre, correo electrónico, perfil) se eliminarán cuando cierres tu cuenta.
+1. Tus datos personales (nombre, correo electrónico, perfil) se eliminarán cuando elimines tu cuenta.
 
 2. Las valoraciones que envíes sobre itinerarios se conservarán de forma anonimizada (solo la puntuación, sin información identificativa) tras la eliminación de la cuenta. Esto preserva la integridad de las puntuaciones de la comunidad para los demás usuarios.
 
-3. Tus itinerarios y su contenido se eliminarán de forma permanente cuando cierres tu cuenta.
+3. Tus itinerarios y su contenido se eliminarán de forma permanente cuando elimines tu cuenta.
 
 Los registros que estamos obligados a conservar por motivos legales o de seguridad se guardan según lo descrito en nuestra Política de privacidad.
 
@@ -256,7 +256,7 @@ No usamos cookies analíticas, cookies publicitarias ni ningún script de rastre
 
 10. CUÁNTO TIEMPO LO CONSERVAMOS
 
-Los datos de tu cuenta y tu contenido se conservan hasta que los elimines o cierres tu cuenta.
+Los datos de tu cuenta y tu contenido se conservan hasta que los elimines o hasta que elimines tu cuenta.
 
 Puedes eliminar tu cuenta en cualquier momento desde los ajustes de la aplicación. La eliminación de la cuenta borra de forma permanente tu perfil, tus itinerarios y tu información identificativa.
 
@@ -275,12 +275,12 @@ Puedes consultar, corregir, exportar o eliminar la mayor parte de tus datos dire
 
 Según dónde residas, puedes tener además derecho a solicitarnos una copia de tus datos, a que se rectifiquen o supriman, a limitar u oponerte a su uso y a presentar una reclamación ante tu autoridad nacional de protección de datos. Escribe a privacy@ntripi.app y te responderemos.
 
-No cerraremos tu cuenta como represalia por ejercer cualquiera de estos derechos.
+No suspenderemos ni cancelaremos tu cuenta como represalia por ejercer cualquiera de estos derechos.
 
 
 12. MENORES
 
-Ntripi no está dirigido a menores de 13 años y no recopilamos conscientemente sus datos. Si crees que un menor de 13 años tiene una cuenta, escribe a privacy@ntripi.app y la eliminaremos.
+Ntripi no está dirigido a menores de 16 años y no recopilamos conscientemente sus datos. Si crees que un menor de 16 años tiene una cuenta, escribe a privacy@ntripi.app y la eliminaremos.
 
 
 13. TRANSFERENCIAS INTERNACIONALES

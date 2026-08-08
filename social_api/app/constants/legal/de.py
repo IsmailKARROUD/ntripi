@@ -7,12 +7,12 @@ TOS = """Mit der Erstellung eines Kontos bei Ntripi stimmen Sie den folgenden Be
 
 Die Erstellung eines Kontos bedeutet, dass Sie diese Nutzungsbedingungen und unsere Community-Richtlinien annehmen, die Bestandteil dieser Vereinbarung sind. Wenn Sie sie nicht annehmen, erstellen Sie kein Konto.
 
-Wir können Sie bitten, eine überarbeitete Fassung dieser Bedingungen anzunehmen, bevor Sie Ntripi weiter nutzen. Möchten Sie eine Überarbeitung nicht annehmen, können Sie stattdessen Ihr Konto schließen.
+Wir können Sie bitten, eine überarbeitete Fassung dieser Bedingungen anzunehmen, bevor Sie Ntripi weiter nutzen. Möchten Sie eine Überarbeitung nicht annehmen, können Sie stattdessen Ihr Konto löschen.
 
 
 2. WER NTRIPI NUTZEN DARF
 
-Sie müssen mindestens 13 Jahre alt und alt genug sein, um an Ihrem Wohnort einen bindenden Vertrag zu schließen. Sind Sie in Ihrem Land noch nicht volljährig, dürfen Sie Ntripi nur unter Beteiligung eines Elternteils oder Erziehungsberechtigten nutzen.
+Sie müssen mindestens 16 Jahre alt und alt genug sein, um an Ihrem Wohnort einen bindenden Vertrag zu schließen. Sind Sie in Ihrem Land noch nicht volljährig, dürfen Sie Ntripi nur unter Beteiligung eines Elternteils oder Erziehungsberechtigten nutzen.
 
 
 3. IHRE PFLICHTEN
@@ -57,7 +57,7 @@ Wir können Ihnen in der App Hinweise zu Aktivitäten in Ihrem Konto und zu Maß
 
 Wir können Inhalte entfernen oder ausblenden, Sie verwarnen, Ihr Konto einschränken oder beenden, wenn Sie gegen diese Bedingungen oder die Community-Richtlinien verstoßen. Schwere Verstöße können zur sofortigen Beendigung ohne Vorwarnung führen.
 
-Wenn wir gegen Sie vorgehen, teilen wir Ihnen mit, was wir getan haben und warum. Sie können Ihr Konto jederzeit selbst in der App schließen.
+Wenn wir gegen Sie vorgehen, teilen wir Ihnen mit, was wir getan haben und warum. Sie können Ihr Konto jederzeit selbst in der App löschen.
 
 
 8. WIDERSPRUCH
@@ -69,11 +69,11 @@ Inhalte, die Minderjährige betreffen, sind die einzige Ausnahme: Gegen sie ist 
 
 9. IHRE DATEN UND DIE LÖSCHUNG DES KONTOS
 
-1. Ihre personenbezogenen Daten (Name, E-Mail-Adresse, Profil) werden gelöscht, wenn Sie Ihr Konto schließen.
+1. Ihre personenbezogenen Daten (Name, E-Mail-Adresse, Profil) werden gelöscht, wenn Sie Ihr Konto löschen.
 
 2. Bewertungen, die Sie zu Reiserouten abgeben, werden nach der Kontolöschung in anonymisierter Form (nur die Punktzahl, keine identifizierenden Angaben) aufbewahrt. Dies erhält die Aussagekraft der Community-Bewertungen für andere Nutzer.
 
-3. Ihre Reiserouten und deren Inhalte werden endgültig gelöscht, wenn Sie Ihr Konto schließen.
+3. Ihre Reiserouten und deren Inhalte werden endgültig gelöscht, wenn Sie Ihr Konto löschen.
 
 Aufzeichnungen, die wir aus rechtlichen oder Sicherheitsgründen aufbewahren müssen, werden wie in unserer Datenschutzerklärung beschrieben gespeichert.
 
@@ -256,7 +256,7 @@ Wir verwenden weder Analyse- noch Werbe-Cookies noch Tracking-Skripte Dritter.
 
 10. SPEICHERDAUER
 
-Ihre Kontodaten und Inhalte bleiben gespeichert, bis Sie sie löschen oder Ihr Konto schließen.
+Ihre Kontodaten und Inhalte bleiben gespeichert, bis Sie sie oder Ihr Konto löschen.
 
 Sie können Ihr Konto jederzeit in den App-Einstellungen löschen. Die Kontolöschung entfernt Ihr Profil, Ihre Reiserouten und Ihre identifizierenden Angaben dauerhaft.
 
@@ -275,12 +275,12 @@ Die meisten Ihrer Daten können Sie direkt in der App einsehen, berichtigen, exp
 
 Je nach Wohnort haben Sie unter Umständen zusätzlich das Recht, eine Kopie Ihrer Daten zu verlangen, sie berichtigen oder löschen zu lassen, ihre Verarbeitung einzuschränken oder ihr zu widersprechen und sich bei Ihrer nationalen Datenschutzbehörde zu beschweren. Schreiben Sie an privacy@ntripi.app, und wir antworten Ihnen.
 
-Wir werden Ihr Konto nicht als Vergeltung für die Ausübung eines dieser Rechte schließen.
+Wir werden Ihr Konto nicht als Vergeltung für die Ausübung eines dieser Rechte sperren oder kündigen.
 
 
 12. KINDER
 
-Ntripi ist nicht für Kinder unter 13 Jahren bestimmt, und wir erheben ihre Daten nicht wissentlich. Wenn Sie glauben, dass ein Kind unter 13 ein Konto hat, schreiben Sie an privacy@ntripi.app, und wir entfernen es.
+Ntripi ist nicht für Kinder unter 16 Jahren bestimmt, und wir erheben ihre Daten nicht wissentlich. Wenn Sie glauben, dass ein Kind unter 16 ein Konto hat, schreiben Sie an privacy@ntripi.app, und wir entfernen es.
 
 
 13. INTERNATIONALE ÜBERMITTLUNGEN

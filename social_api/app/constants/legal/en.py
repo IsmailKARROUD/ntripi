@@ -7,12 +7,12 @@ TOS = """By creating an account on Ntripi, you agree to the following terms.
 
 Creating an account means you accept these Terms of Service and our Community Guidelines, which form part of this agreement. If you do not accept them, do not create an account.
 
-We may ask you to accept a revised version of these terms before you continue using Ntripi. If you do not wish to accept a revision, you can close your account instead.
+We may ask you to accept a revised version of these terms before you continue using Ntripi. If you do not wish to accept a revision, you can delete your account instead.
 
 
 2. WHO MAY USE NTRIPI
 
-You must be at least 13 years old, and old enough to form a binding contract where you live. If you are under the age of majority in your country, you may only use Ntripi with the involvement of a parent or guardian.
+You must be at least 16 years old, and old enough to form a binding contract where you live. If you are under the age of majority in your country, you may only use Ntripi with the involvement of a parent or guardian.
 
 
 3. YOUR RESPONSIBILITIES
@@ -57,7 +57,7 @@ We may send you notices inside the app about activity on your account and about 
 
 We may remove or hide content, warn you, restrict your account, or terminate it, where you breach these terms or the Community Guidelines. Serious breaches can result in immediate termination without warning.
 
-Where we act against you we will tell you what we did and why. You may close your account yourself at any time from the app.
+Where we act against you we will tell you what we did and why. You may delete your account yourself at any time from the app.
 
 
 8. APPEALS
@@ -69,11 +69,11 @@ Content involving minors is the one exception: it is not appealable.
 
 9. YOUR DATA AND ACCOUNT DELETION
 
-1. Your personal data (name, email, profile) will be deleted when you close your account.
+1. Your personal data (name, email, profile) will be deleted when you delete your account.
 
 2. Ratings you submit on itineraries will be retained in anonymized form (score only, no identifying information) after account deletion. This preserves the integrity of community scores for other users.
 
-3. Your itineraries and their content will be permanently deleted when you close your account.
+3. Your itineraries and their content will be permanently deleted when you delete your account.
 
 Records we are required to keep for legal or safety reasons are retained as described in our Privacy Policy.
 
@@ -256,7 +256,7 @@ We do not use analytics cookies, advertising cookies, or any third-party trackin
 
 10. HOW LONG WE KEEP IT
 
-Your account data and content are kept until you delete them or close your account.
+Your account data and content are kept until you delete them, or until you delete your account.
 
 You may delete your account at any time from the app settings. Account deletion permanently removes your profile, itineraries, and identifying information.
 
@@ -275,12 +275,12 @@ You can access, correct, export, or delete most of your data directly in the app
 
 Depending on where you live you may also have the right to ask us for a copy of your data, to have it corrected or erased, to restrict or object to how we use it, and to complain to your national data protection authority. Write to privacy@ntripi.app and we will respond.
 
-We will not close your account in retaliation for exercising any of these rights.
+We will not suspend or terminate your account in retaliation for exercising any of these rights.
 
 
 12. CHILDREN
 
-Ntripi is not for children under 13, and we do not knowingly collect data from them. If you believe a child under 13 has an account, write to privacy@ntripi.app and we will remove it.
+Ntripi is not for children under 16, and we do not knowingly collect data from them. If you believe a child under 16 has an account, write to privacy@ntripi.app and we will remove it.
 
 
 13. INTERNATIONAL TRANSFERS

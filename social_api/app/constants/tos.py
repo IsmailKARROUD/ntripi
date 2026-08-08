@@ -17,8 +17,8 @@ and every other language is served with a prevailing-language notice.
 
 from app.constants import legal
 
-TOS_VERSION = "3.0"
-TOS_DATE = "2026-08-06"
+TOS_VERSION = "3.1"
+TOS_DATE = "2026-08-08"
 
 
 def get_tos(lang: str = "en") -> str:
