@@ -152,9 +152,15 @@ def client():
 # Helper factories — reusable functions for creating test data
 # ---------------------------------------------------------------------------
 
+# Comfortably over MINIMUM_AGE and not a boundary, so a test that is not about
+# the age gate never trips it. test_age_gate.py builds its own dates relative to
+# date.today() — a fixed literal there would start failing in 2042.
+ADULT_DOB = "2000-01-01"
+
+
 def register_user(client: TestClient, username: str, email: str,
                   password: str = "test1234", display_name: str | None = None,
-                  verified: bool = True) -> dict:
+                  verified: bool = True, date_of_birth: str = ADULT_DOB) -> dict:
     """
     Registers a user and returns the full response body as a dict.
     This includes the access_token, user_id, and username.
@@ -174,6 +180,7 @@ def register_user(client: TestClient, username: str, email: str,
         "password": password,
         "display_name": display_name,
         "tos_accepted": True,
+        "date_of_birth": date_of_birth,
     })
     assert response.status_code == 201, (
         f"Registration failed for {username}: {response.json()}"

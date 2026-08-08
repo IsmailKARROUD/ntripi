@@ -25,6 +25,7 @@ def register(client, username, email, password="test1234", tos_accepted=True):
         "email": email,
         "password": password,
         "tos_accepted": tos_accepted,
+        "date_of_birth": "2000-01-01",
     })
     return r
 
@@ -334,7 +335,7 @@ class TestDeleteCascades:
 
 def google_signin(client, sub="g-1", email="gina@x.com"):
     r = client.post(
-        "/auth/google", json={"id_token": "fake", "tos_accepted": True}
+        "/auth/google", json={"id_token": "fake", "tos_accepted": True, "date_of_birth": "2000-01-01"}
     )
     assert r.status_code == 200, r.json()
     return r.json()
@@ -422,7 +423,7 @@ def link_google(client, monkeypatch, email, sub="g-dual"):
     """Sign in with Google on an EXISTING verified email → links google_sub and
     keeps password_hash, producing a dual-method account. Returns its token."""
     patch_google_verifier(monkeypatch, sub=sub, email=email)
-    r = client.post("/auth/google", json={"id_token": "fake", "tos_accepted": True})
+    r = client.post("/auth/google", json={"id_token": "fake", "tos_accepted": True, "date_of_birth": "2000-01-01"})
     assert r.status_code == 200, r.json()
     return r.json()["access_token"]
 

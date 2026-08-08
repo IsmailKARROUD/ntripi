@@ -14,6 +14,8 @@ Wir können Sie bitten, eine überarbeitete Fassung dieser Bedingungen anzunehme
 
 Sie müssen mindestens 16 Jahre alt und alt genug sein, um an Ihrem Wohnort einen bindenden Vertrag zu schließen. Sind Sie in Ihrem Land noch nicht volljährig, dürfen Sie Ntripi nur unter Beteiligung eines Elternteils oder Erziehungsberechtigten nutzen.
 
+Bei der Kontoerstellung fragen wir nach Ihrem Geburtsdatum und lehnen Konten unter dem Mindestalter ab. Melden Sie sich mit Google an und erteilen uns die Erlaubnis, lesen wir das Geburtsdatum aus Ihrem Google-Profil, statt Sie danach zu fragen. Ein falsches Geburtsdatum anzugeben, um ein Konto zu erhalten, ist ein Verstoß gegen diese Bedingungen, und wir schließen ein Konto, bei dem wir feststellen, dass es das Mindestalter nicht erfüllt.
+
 
 3. IHRE PFLICHTEN
 
@@ -162,7 +164,9 @@ Ntripi ist der Betreiber dieses Dienstes und Verantwortlicher für die hier besc
 
 2. WELCHE DATEN WIR ERHEBEN
 
-Konto: Ihre E-Mail-Adresse, Ihren gewählten Benutzernamen, Ihren Anzeigenamen und — falls Sie ein Passwort festlegen — dessen bcrypt-Hash. Ihr Passwort speichern wir niemals im Klartext. Melden Sie sich mit Google an, speichern wir die Kennung, die Google uns für Ihr Konto gibt, sowie den von Google gelieferten Profilnamen und das Profilbild.
+Konto: Ihre E-Mail-Adresse, Ihren gewählten Benutzernamen, Ihren Anzeigenamen, Ihr Geburtsdatum und — falls Sie ein Passwort festlegen — dessen bcrypt-Hash. Ihr Passwort speichern wir niemals im Klartext. Melden Sie sich mit Google an, speichern wir die Kennung, die Google uns für Ihr Konto gibt, sowie den von Google gelieferten Profilnamen und das Profilbild.
+
+Ihr Geburtsdatum: Wir fragen es einmalig bei der Kontoerstellung ab, um zu prüfen, ob Sie unser Mindestalter erfüllen. Melden Sie sich mit Google an und erteilen die Berechtigung, lesen wir es aus Ihrem Google-Profil; Sie können diese Berechtigung verweigern und es selbst eingeben. Es erscheint nie in Ihrem Profil und ist für andere Nutzer nie sichtbar. Wir halten fest, ob es von Google oder von Ihnen stammt, damit wir Fragen dazu beantworten können, wie das Alter eines Kontos festgestellt wurde.
 
 Von Ihnen erstellte Inhalte: Reiserouten, Stationsnamen, Adressen, Notizen, Anmerkungen, Verkehrsangaben, Bewertungen und Rezensionen sowie hochgeladene Fotos.
 
@@ -176,6 +180,8 @@ Moderations- und Sicherheitsaufzeichnungen: Meldungen, die Sie einreichen oder d
 3. WOFÜR WIR SIE VERWENDEN
 
 Um Ihr Konto zu betreiben und Ihre Inhalte dem von Ihnen gewählten Publikum anzuzeigen.
+
+Um zu prüfen, ob Sie unser Mindestalter erfüllen, und um Konten unter diesem Alter von Ntripi fernzuhalten.
 
 Um Ntripi sicher zu halten: automatische und menschliche Inhaltsprüfung, Bearbeitung von Meldungen, Durchsetzung der Community-Richtlinien und Widersprüche.
 
@@ -260,6 +266,8 @@ Ihre Kontodaten und Inhalte bleiben gespeichert, bis Sie sie oder Ihr Konto lös
 
 Sie können Ihr Konto jederzeit in den App-Einstellungen löschen. Die Kontolöschung entfernt Ihr Profil, Ihre Reiserouten und Ihre identifizierenden Angaben dauerhaft.
 
+Ihr Geburtsdatum wird für die Dauer des Kontos gespeichert und mit ihm gelöscht. Wir speichern es statt nur der Antwort, die es uns gegeben hat, weil sich das Mindestalter im Lauf der Zeit ändert und ein gespeichertes Ja oder Nein unbemerkt veralten würde.
+
 Von Ihnen abgegebene Bewertungen werden in anonymisierter Form (nur die Punktzahl, keine Zuordnung zum Nutzer) aufbewahrt, um die Aussagekraft der Community-Bewertungen zu erhalten. Sie stimmen dem bei der Kontoerstellung zu, wie in unseren Nutzungsbedingungen beschrieben.
 
 Moderationsaufzeichnungen werden 90 Tage nach Abschluss des Vorgangs gelöscht, mit einer Ausnahme: Hat ein Bild mit einer Datenbank bekannter rechtswidriger Bilder übereingestimmt, werden die Aufzeichnung der Übereinstimmung und der Hash des Bildes unbefristet aufbewahrt. Das Bild selbst wird gelöscht; die Aufzeichnung ist der einzige Beleg dafür, dass die Entfernung stattgefunden hat, und ihre Aufbewahrung ist eine gesetzliche Pflicht, auf die wir auf Ihren Wunsch nicht verzichten können.
@@ -280,7 +288,7 @@ Wir werden Ihr Konto nicht als Vergeltung für die Ausübung eines dieser Rechte
 
 12. KINDER
 
-Ntripi ist nicht für Kinder unter 16 Jahren bestimmt, und wir erheben ihre Daten nicht wissentlich. Wenn Sie glauben, dass ein Kind unter 16 ein Konto hat, schreiben Sie an privacy@ntripi.app, und wir entfernen es.
+Ntripi ist nicht für Kinder unter 16 Jahren bestimmt, und wir erheben ihre Daten nicht wissentlich. Wir fragen bei der Registrierung nach einem Geburtsdatum und lehnen Konten unter diesem Alter ab. Wenn Sie glauben, dass ein Kind unter 16 ein Konto hat, schreiben Sie an privacy@ntripi.app, und wir entfernen es.
 
 
 13. INTERNATIONALE ÜBERMITTLUNGEN

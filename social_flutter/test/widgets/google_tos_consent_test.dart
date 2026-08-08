@@ -43,6 +43,8 @@ class _FakeAuthRepository extends AuthRepository {
   Future<AuthResult> loginWithGoogle({
     required String idToken,
     bool tosAccepted = false,
+    DateTime? dateOfBirth,
+    String? googleAccessToken,
   }) async {
     googleCalls.add(tosAccepted);
     if (!tosAccepted) {
@@ -82,8 +84,16 @@ class _HostState extends State<_Host> {
           children: [
             ElevatedButton(
               onPressed: () async {
-                final result = await showGoogleTosConsentSheet(context);
-                setState(() => accepted = result);
+                // Prefilled as the Google path does when the People API
+                // supplied a birthday, so these tests stay about the
+                // agreement rather than the date picker.
+                final result = await showGoogleTosConsentSheet(
+                  context,
+                  prefill: DateTime(2000, 1, 1),
+                );
+                // The sheet now returns a result carrying the date of birth,
+                // or null when declined; this host only records which it was.
+                setState(() => accepted = result != null);
               },
               child: const Text('open'),
             ),

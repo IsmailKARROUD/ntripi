@@ -58,6 +58,7 @@ void main() {
           'password': 'secret123',
           'display_name': 'Alice',
           'tos_accepted': true,
+          'date_of_birth': '2000-01-01',
         },
       );
 
@@ -68,6 +69,7 @@ void main() {
         password: 'secret123',
         displayName: 'Alice',
         tosAccepted: true,
+        dateOfBirth: DateTime(2000, 1, 1),
       );
 
       expect(result.accessToken, 'test-jwt-token');
@@ -87,6 +89,7 @@ void main() {
           'email': 'bob@test.com',
           'password': 'secret456',
           'tos_accepted': true,
+          'date_of_birth': '2000-01-01',
         },
       );
 
@@ -96,6 +99,7 @@ void main() {
         email: 'bob@test.com',
         password: 'secret456',
         tosAccepted: true,
+        dateOfBirth: DateTime(2000, 1, 1),
       );
 
       expect(result.userId, 'user-uuid-123');
@@ -112,6 +116,7 @@ void main() {
           'email': 'alice@test.com',
           'password': 'secret123',
           'tos_accepted': true,
+          'date_of_birth': '2000-01-01',
         },
       );
 
@@ -121,6 +126,7 @@ void main() {
         email: 'alice@test.com',
         password: 'secret123',
         tosAccepted: true,
+        dateOfBirth: DateTime(2000, 1, 1),
       );
 
       const storage = FlutterSecureStorage();
@@ -145,6 +151,7 @@ void main() {
           'email': 'alice@test.com',
           'password': 'secret123',
           'tos_accepted': true,
+          'date_of_birth': '2000-01-01',
         },
       );
 
@@ -155,6 +162,7 @@ void main() {
           email: 'alice@test.com',
           password: 'secret123',
           tosAccepted: true,
+          dateOfBirth: DateTime(2000, 1, 1),
         ),
         throwsA(isA<DioException>()),
       );

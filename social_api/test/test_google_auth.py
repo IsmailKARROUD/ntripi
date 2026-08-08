@@ -32,7 +32,14 @@ def _patch_google(monkeypatch, *, sub, email, email_verified=True,
 
 def _google(client, tos_accepted=True):
     return client.post(
-        "/auth/google", json={"id_token": "fake", "tos_accepted": tos_accepted}
+        "/auth/google",
+        # A date of birth rides along because the create-a-new-account branch
+        # needs one; the sign-in and linking branches ignore it entirely.
+        json={
+            "id_token": "fake",
+            "tos_accepted": tos_accepted,
+            "date_of_birth": "2000-01-01",
+        },
     )
 
 

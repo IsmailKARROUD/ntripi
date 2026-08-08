@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:social_flutter/core/api/api_client.dart';
+import 'package:social_flutter/core/auth/google_people_client.dart';
 import 'package:social_flutter/core/auth/google_signin_service.dart';
 import 'package:social_flutter/core/auth/google_web_button.dart';
 import 'package:social_flutter/core/ui/app_theme.dart';
@@ -149,6 +150,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   /// hour and verification is stateless, so a second post is fine. Signing in to
   /// an existing account never reaches that branch, so returning users see no
   /// sheet.
+  ///
+  /// That 400 is also the ONLY signal that this token means a signup, which is
+  /// why the birthday scope is requested here and not before the picker —
+  /// asking earlier would prompt every returning user for a sensitive scope at
+  /// every sign-in.
   Future<void> _completeGoogleSignIn(String idToken) async {
     final repo = ref.read(authRepositoryProvider);
     AuthResult result;
@@ -156,8 +162,25 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       result = await repo.loginWithGoogle(idToken: idToken);
     } on DioException catch (e) {
       if (apiErrorCode(e) != kTosRequiredCode || !mounted) rethrow;
-      if (!await showGoogleTosConsentSheet(context)) return; // user declined
-      result = await repo.loginWithGoogle(idToken: idToken, tosAccepted: true);
+
+      final accessToken =
+          await GoogleSignInService.instance.obtainBirthdayAccessToken();
+      // Only a hint for the sheet — the server re-reads the People API with
+      // this same token and its answer is the one that gets stored.
+      final prefill = accessToken == null
+          ? null
+          : await GooglePeopleClient.fetchBirthdate(accessToken);
+
+      if (!mounted) return;
+      final consent = await showGoogleTosConsentSheet(context, prefill: prefill);
+      if (consent == null) return; // user declined
+
+      result = await repo.loginWithGoogle(
+        idToken: idToken,
+        tosAccepted: true,
+        dateOfBirth: consent.dateOfBirth,
+        googleAccessToken: accessToken,
+      );
     }
     ref.read(authNotifierProvider.notifier).setAuthenticated(result.userId);
     ref.invalidate(myProfileProvider);

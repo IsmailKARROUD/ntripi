@@ -39,6 +39,7 @@ class TestRegister:
             "password": "test1234",
             "display_name": "Alice",
             "tos_accepted": True,
+            "date_of_birth": "2000-01-01",
         })
 
         assert response.status_code == 201
@@ -70,6 +71,7 @@ class TestRegister:
             "email": "alice2@test.com",
             "password": "test1234",
             "tos_accepted": True,
+            "date_of_birth": "2000-01-01",
         })
 
         assert response.status_code == 409
@@ -88,6 +90,7 @@ class TestRegister:
             "email": "alice@test.com",  # Same email, different username
             "password": "test1234",
             "tos_accepted": True,
+            "date_of_birth": "2000-01-01",
         })
 
         assert response.status_code == 409
@@ -287,62 +290,62 @@ class TestUsernameValidation:
         assert register_user(client, "alice.smith", "a@test.com")["username"] == "alice.smith"
 
     def test_invalid_with_hyphen_rejected(self, client: TestClient):
-        r = client.post("/auth/register", json={"username": "alice-smith", "email": "a@test.com", "password": "test1234", "tos_accepted": True})
+        r = client.post("/auth/register", json={"username": "alice-smith", "email": "a@test.com", "password": "test1234", "tos_accepted": True, "date_of_birth": "2000-01-01"})
         assert r.status_code == 422
 
     def test_invalid_with_space_rejected(self, client: TestClient):
-        r = client.post("/auth/register", json={"username": "alice smith", "email": "a@test.com", "password": "test1234", "tos_accepted": True})
+        r = client.post("/auth/register", json={"username": "alice smith", "email": "a@test.com", "password": "test1234", "tos_accepted": True, "date_of_birth": "2000-01-01"})
         assert r.status_code == 422
 
     def test_invalid_with_emoji_rejected(self, client: TestClient):
-        r = client.post("/auth/register", json={"username": "alice\U0001f389", "email": "a@test.com", "password": "test1234", "tos_accepted": True})
+        r = client.post("/auth/register", json={"username": "alice\U0001f389", "email": "a@test.com", "password": "test1234", "tos_accepted": True, "date_of_birth": "2000-01-01"})
         assert r.status_code == 422
 
     def test_invalid_with_accent_rejected(self, client: TestClient):
-        r = client.post("/auth/register", json={"username": "élise", "email": "a@test.com", "password": "test1234", "tos_accepted": True})
+        r = client.post("/auth/register", json={"username": "élise", "email": "a@test.com", "password": "test1234", "tos_accepted": True, "date_of_birth": "2000-01-01"})
         assert r.status_code == 422
 
     def test_starts_with_number_rejected(self, client: TestClient):
-        r = client.post("/auth/register", json={"username": "1alice", "email": "a@test.com", "password": "test1234", "tos_accepted": True})
+        r = client.post("/auth/register", json={"username": "1alice", "email": "a@test.com", "password": "test1234", "tos_accepted": True, "date_of_birth": "2000-01-01"})
         assert r.status_code == 422
 
     def test_starts_with_period_rejected(self, client: TestClient):
-        r = client.post("/auth/register", json={"username": ".alice", "email": "a@test.com", "password": "test1234", "tos_accepted": True})
+        r = client.post("/auth/register", json={"username": ".alice", "email": "a@test.com", "password": "test1234", "tos_accepted": True, "date_of_birth": "2000-01-01"})
         assert r.status_code == 422
 
     def test_starts_with_underscore_rejected(self, client: TestClient):
-        r = client.post("/auth/register", json={"username": "_alice", "email": "a@test.com", "password": "test1234", "tos_accepted": True})
+        r = client.post("/auth/register", json={"username": "_alice", "email": "a@test.com", "password": "test1234", "tos_accepted": True, "date_of_birth": "2000-01-01"})
         assert r.status_code == 422
 
     def test_ends_with_period_rejected(self, client: TestClient):
-        r = client.post("/auth/register", json={"username": "alice.", "email": "a@test.com", "password": "test1234", "tos_accepted": True})
+        r = client.post("/auth/register", json={"username": "alice.", "email": "a@test.com", "password": "test1234", "tos_accepted": True, "date_of_birth": "2000-01-01"})
         assert r.status_code == 422
 
     def test_ends_with_underscore_rejected(self, client: TestClient):
-        r = client.post("/auth/register", json={"username": "alice_", "email": "a@test.com", "password": "test1234", "tos_accepted": True})
+        r = client.post("/auth/register", json={"username": "alice_", "email": "a@test.com", "password": "test1234", "tos_accepted": True, "date_of_birth": "2000-01-01"})
         assert r.status_code == 422
 
     def test_consecutive_periods_rejected(self, client: TestClient):
-        r = client.post("/auth/register", json={"username": "ali..ce", "email": "a@test.com", "password": "test1234", "tos_accepted": True})
+        r = client.post("/auth/register", json={"username": "ali..ce", "email": "a@test.com", "password": "test1234", "tos_accepted": True, "date_of_birth": "2000-01-01"})
         assert r.status_code == 422
 
     def test_consecutive_underscores_rejected(self, client: TestClient):
-        r = client.post("/auth/register", json={"username": "ali__ce", "email": "a@test.com", "password": "test1234", "tos_accepted": True})
+        r = client.post("/auth/register", json={"username": "ali__ce", "email": "a@test.com", "password": "test1234", "tos_accepted": True, "date_of_birth": "2000-01-01"})
         assert r.status_code == 422
 
     def test_period_underscore_adjacent_rejected(self, client: TestClient):
-        r = client.post("/auth/register", json={"username": "ali._ce", "email": "a@test.com", "password": "test1234", "tos_accepted": True})
+        r = client.post("/auth/register", json={"username": "ali._ce", "email": "a@test.com", "password": "test1234", "tos_accepted": True, "date_of_birth": "2000-01-01"})
         assert r.status_code == 422
 
     def test_too_short_3_chars_rejected(self, client: TestClient):
-        r = client.post("/auth/register", json={"username": "ali", "email": "a@test.com", "password": "test1234", "tos_accepted": True})
+        r = client.post("/auth/register", json={"username": "ali", "email": "a@test.com", "password": "test1234", "tos_accepted": True, "date_of_birth": "2000-01-01"})
         assert r.status_code == 422
 
     def test_minimum_4_chars_succeeds(self, client: TestClient):
         assert register_user(client, "alic", "a@test.com")["username"] == "alic"
 
     def test_too_long_31_chars_rejected(self, client: TestClient):
-        r = client.post("/auth/register", json={"username": "a" * 31, "email": "a@test.com", "password": "test1234", "tos_accepted": True})
+        r = client.post("/auth/register", json={"username": "a" * 31, "email": "a@test.com", "password": "test1234", "tos_accepted": True, "date_of_birth": "2000-01-01"})
         assert r.status_code == 422
 
     def test_max_30_chars_succeeds(self, client: TestClient):
@@ -350,11 +353,11 @@ class TestUsernameValidation:
         assert register_user(client, name, "a@test.com")["username"] == name
 
     def test_reserved_username_rejected(self, client: TestClient):
-        r = client.post("/auth/register", json={"username": "admin", "email": "a@test.com", "password": "test1234", "tos_accepted": True})
+        r = client.post("/auth/register", json={"username": "admin", "email": "a@test.com", "password": "test1234", "tos_accepted": True, "date_of_birth": "2000-01-01"})
         assert r.status_code == 422
 
     def test_reserved_username_case_insensitive(self, client: TestClient):
-        r = client.post("/auth/register", json={"username": "ADMIN", "email": "a@test.com", "password": "test1234", "tos_accepted": True})
+        r = client.post("/auth/register", json={"username": "ADMIN", "email": "a@test.com", "password": "test1234", "tos_accepted": True, "date_of_birth": "2000-01-01"})
         assert r.status_code == 422
 
 
@@ -371,6 +374,7 @@ class TestPasswordCharsetAndLength:
             "email": "alice@test.com",
             "password": password,
             "tos_accepted": True,
+            "date_of_birth": "2000-01-01",
         })
 
     def test_register_73_char_ascii_password_rejected(self, client: TestClient):
@@ -434,11 +438,11 @@ class TestEmailAsciiOnly:
     """
 
     def test_register_arabic_local_part_rejected(self, client: TestClient):
-        r = client.post("/auth/register", json={"username": "alice1", "email": "مثال@example.com", "password": "test1234", "tos_accepted": True})
+        r = client.post("/auth/register", json={"username": "alice1", "email": "مثال@example.com", "password": "test1234", "tos_accepted": True, "date_of_birth": "2000-01-01"})
         assert r.status_code == 422
 
     def test_register_arabic_domain_rejected(self, client: TestClient):
-        r = client.post("/auth/register", json={"username": "alice1", "email": "user@مثال.com", "password": "test1234", "tos_accepted": True})
+        r = client.post("/auth/register", json={"username": "alice1", "email": "user@مثال.com", "password": "test1234", "tos_accepted": True, "date_of_birth": "2000-01-01"})
         assert r.status_code == 422
 
     def test_forgot_password_arabic_email_rejected(self, client: TestClient):
@@ -450,17 +454,17 @@ class TestCaseInsensitiveUsername:
 
     def test_register_uppercase_then_lowercase_rejected(self, client: TestClient):
         register_user(client, "Ismail", "first@test.com")
-        r = client.post("/auth/register", json={"username": "ismail", "email": "second@test.com", "password": "test1234", "tos_accepted": True})
+        r = client.post("/auth/register", json={"username": "ismail", "email": "second@test.com", "password": "test1234", "tos_accepted": True, "date_of_birth": "2000-01-01"})
         assert r.status_code == 409
 
     def test_register_lowercase_then_uppercase_rejected(self, client: TestClient):
         register_user(client, "ismail", "first@test.com")
-        r = client.post("/auth/register", json={"username": "ISMAIL", "email": "second@test.com", "password": "test1234", "tos_accepted": True})
+        r = client.post("/auth/register", json={"username": "ISMAIL", "email": "second@test.com", "password": "test1234", "tos_accepted": True, "date_of_birth": "2000-01-01"})
         assert r.status_code == 409
 
     def test_register_mixed_case_rejected(self, client: TestClient):
         register_user(client, "Ismail", "first@test.com")
-        r = client.post("/auth/register", json={"username": "iSmAiL", "email": "second@test.com", "password": "test1234", "tos_accepted": True})
+        r = client.post("/auth/register", json={"username": "iSmAiL", "email": "second@test.com", "password": "test1234", "tos_accepted": True, "date_of_birth": "2000-01-01"})
         assert r.status_code == 409
 
     def test_username_display_form_preserved(self, client: TestClient):
@@ -517,15 +521,15 @@ class TestDisplayName:
         assert me["display_name"] == "إسماعيل"
 
     def test_display_name_too_long_rejected(self, client: TestClient):
-        r = client.post("/auth/register", json={"username": "alice1", "email": "a@test.com", "password": "test1234", "tos_accepted": True, "display_name": "x" * 51})
+        r = client.post("/auth/register", json={"username": "alice1", "email": "a@test.com", "password": "test1234", "tos_accepted": True, "display_name": "x" * 51, "date_of_birth": "2000-01-01"})
         assert r.status_code == 422
 
     def test_display_name_with_control_chars_rejected(self, client: TestClient):
-        r = client.post("/auth/register", json={"username": "alice1", "email": "a@test.com", "password": "test1234", "tos_accepted": True, "display_name": "Alice\x00Smith"})
+        r = client.post("/auth/register", json={"username": "alice1", "email": "a@test.com", "password": "test1234", "tos_accepted": True, "display_name": "Alice\x00Smith", "date_of_birth": "2000-01-01"})
         assert r.status_code == 422
 
     def test_display_name_with_zero_width_chars_rejected(self, client: TestClient):
-        r = client.post("/auth/register", json={"username": "alice1", "email": "a@test.com", "password": "test1234", "tos_accepted": True, "display_name": "Alice​Smith"})
+        r = client.post("/auth/register", json={"username": "alice1", "email": "a@test.com", "password": "test1234", "tos_accepted": True, "display_name": "Alice​Smith", "date_of_birth": "2000-01-01"})
         assert r.status_code == 422
 
     def test_empty_display_name_becomes_none(self, client: TestClient):

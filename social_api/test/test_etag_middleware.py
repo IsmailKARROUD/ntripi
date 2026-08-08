@@ -101,6 +101,7 @@ class TestETagMiddleware:
                 "email": "charlie@test.com",
                 "password": "test1234",
                 "tos_accepted": True,
+                "date_of_birth": "2000-01-01",
             },
         )
         assert r.status_code == 201

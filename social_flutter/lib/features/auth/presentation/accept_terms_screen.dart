@@ -19,6 +19,7 @@ import 'package:social_flutter/features/auth/presentation/widgets/tos_agreement_
 import 'package:social_flutter/features/auth/providers/auth_provider.dart';
 import 'package:social_flutter/features/profile/providers/profile_provider.dart';
 import 'package:social_flutter/l10n/app_localizations.dart';
+import 'package:social_flutter/shared/widgets/date_of_birth_field.dart';
 import 'package:social_flutter/shared/widgets/locale_picker_button.dart';
 import 'package:social_flutter/shared/widgets/saving_overlay.dart';
 import 'package:social_flutter/shared/widgets/theme_picker_button.dart';
@@ -34,6 +35,7 @@ class _AcceptTermsScreenState extends ConsumerState<AcceptTermsScreen> {
   bool _accepted = false;
   bool _isLoading = false;
   String? _errorMessage;
+  DateTime? _dateOfBirth;
 
   Future<void> _accept(AppLocalizations l10n) async {
     setState(() {
@@ -41,7 +43,9 @@ class _AcceptTermsScreenState extends ConsumerState<AcceptTermsScreen> {
       _errorMessage = null;
     });
     try {
-      await ref.read(authRepositoryProvider).acceptTos();
+      await ref.read(authRepositoryProvider).acceptTos(
+            dateOfBirth: _dateOfBirth,
+          );
       // Refreshing the profile is what lowers the gate: TosGate watches
       // myProfileProvider, so the new tos_current releases the whole app.
       ref.invalidate(myProfileProvider);
@@ -56,6 +60,13 @@ class _AcceptTermsScreenState extends ConsumerState<AcceptTermsScreen> {
   Widget build(BuildContext context) {
     final nt = context.nt;
     final l10n = AppLocalizations.of(context)!;
+    // A profile we could not read is not evidence of a missing birthdate, so
+    // loading and error both fall through to "don't ask" — the server still
+    // refuses the acceptance, which is the authoritative check.
+    final needsDob = ref.watch(myProfileProvider).maybeWhen(
+          data: (user) => user?.dateOfBirth == null,
+          orElse: () => false,
+        );
 
     return SavingOverlay(
       saving: _isLoading,
@@ -101,6 +112,25 @@ class _AcceptTermsScreenState extends ConsumerState<AcceptTermsScreen> {
                       style: TextStyle(fontSize: 14, color: nt.text2, height: 1.6),
                     ),
                     const SizedBox(height: 28),
+                    // Only for accounts predating the age gate. Everyone else
+                    // already declared one and must not be asked twice — the
+                    // server refuses to overwrite it in any case.
+                    if (needsDob) ...[
+                      Text(
+                        l10n.acceptTermsDobPrompt,
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: nt.text2,
+                          height: 1.6,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      DateOfBirthField(
+                        value: _dateOfBirth,
+                        onChanged: (v) => setState(() => _dateOfBirth = v),
+                      ),
+                      const SizedBox(height: 20),
+                    ],
                     TosAgreementRow(
                       accepted: _accepted,
                       onChanged: (v) => setState(() => _accepted = v),
@@ -122,8 +152,11 @@ class _AcceptTermsScreenState extends ConsumerState<AcceptTermsScreen> {
                       const SizedBox(height: 16),
                     ],
                     ElevatedButton(
-                      onPressed:
-                          (_accepted && !_isLoading) ? () => _accept(l10n) : null,
+                      onPressed: (_accepted &&
+                              !_isLoading &&
+                              (!needsDob || _dateOfBirth != null))
+                          ? () => _accept(l10n)
+                          : null,
                       child: Text(l10n.acceptTermsButton),
                     ),
                     const SizedBox(height: 8),

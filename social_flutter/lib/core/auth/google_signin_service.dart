@@ -10,6 +10,13 @@ import 'package:google_sign_in/google_sign_in.dart';
 
 import 'package:social_flutter/core/api/api_endpoints.dart';
 
+/// Google's sensitive scope for reading the profile birthday. Sensitive means
+/// the OAuth client must pass Google's verification review before non-test
+/// users can grant it; until then this call fails and the consent sheet is
+/// what collects the date.
+const String kGoogleBirthdayScope =
+    'https://www.googleapis.com/auth/user.birthday.read';
+
 class GoogleSignInService {
   GoogleSignInService._();
   static final GoogleSignInService instance = GoogleSignInService._();
@@ -47,11 +54,43 @@ class GoogleSignInService {
     await ensureInitialized();
     try {
       final account = await GoogleSignIn.instance.authenticate();
+      _lastAccount = account;
       return account.authentication.idToken;
     } on GoogleSignInException catch (e) {
       // Cancellation isn't an error worth surfacing to the user.
       if (e.code == GoogleSignInExceptionCode.canceled) return null;
       rethrow;
+    }
+  }
+
+  /// The account from the most recent authenticate(), kept so the birthday
+  /// scope can be requested against the SAME account. GoogleSignIn.instance
+  /// .authorizationClient is built with a null user, so on a device with
+  /// several Google accounts it can mint a token for the wrong one; the
+  /// account-scoped client cannot.
+  GoogleSignInAccount? _lastAccount;
+
+  /// An OAuth access token for the birthday scope, or null if we cannot get
+  /// one — the user declined the consent screen, the platform has no scoped
+  /// client (web), or the plugin threw.
+  ///
+  /// Null is an ORDINARY outcome, not an error: the caller then asks for the
+  /// date of birth directly. Call this only once the server has said the token
+  /// means a signup — prompting for a sensitive scope on every sign-in would
+  /// nag every returning Google user forever.
+  Future<String?> obtainBirthdayAccessToken() async {
+    await ensureInitialized();
+    final client =
+        _lastAccount?.authorizationClient ?? GoogleSignIn.instance.authorizationClient;
+    try {
+      final authz = await client.authorizeScopes([kGoogleBirthdayScope]);
+      return authz.accessToken;
+    } on GoogleSignInException {
+      return null;
+    } catch (_) {
+      // Web in particular can reject the scoped-token flow outright; the
+      // consent sheet covers it.
+      return null;
     }
   }
 }

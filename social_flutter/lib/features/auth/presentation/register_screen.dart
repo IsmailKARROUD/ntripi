@@ -17,6 +17,7 @@ import 'package:social_flutter/features/itineraries/providers/saved_itineraries_
 import 'package:social_flutter/features/profile/providers/profile_provider.dart';
 import 'package:social_flutter/core/utils/platform_utils.dart';
 import 'package:social_flutter/l10n/app_localizations.dart';
+import 'package:social_flutter/shared/widgets/date_of_birth_field.dart';
 import 'package:social_flutter/shared/widgets/field_help.dart';
 import 'package:social_flutter/shared/widgets/loaders.dart';
 import 'package:social_flutter/shared/widgets/locale_picker_button.dart';
@@ -44,10 +45,18 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   bool _obscurePassword = true;
   bool _obscureConfirm = true;
   bool _tosAccepted = false;
+  DateTime? _dateOfBirth;
+
   Future<void> _register(AppLocalizations l10n) async {
     if (!_formKey.currentState!.validate()) return;
     if (!_tosAccepted) {
       setState(() => _errorMessage = l10n.registerTosRequired);
+      return;
+    }
+    // The FormField already reports both cases inline; this only stops a submit
+    // that slipped through, and keeps the repository call's argument non-null.
+    if (_dateOfBirth == null) {
+      setState(() => _errorMessage = l10n.registerDobRequired);
       return;
     }
     setState(() {
@@ -64,6 +73,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
             ? null
             : _displayNameController.text.trim(),
         tosAccepted: _tosAccepted,
+        dateOfBirth: _dateOfBirth!,
       );
       ref.read(authNotifierProvider.notifier).setAuthenticated(result.userId);
       ref.invalidate(myProfileProvider);
@@ -160,6 +170,19 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     if (v.trim().length > 50) return l10n.displayNameTooLong;
                     return null;
                   },
+                ),
+                const SizedBox(height: 12),
+
+                // Date of birth
+                _FieldLabel(
+                  l10n.registerDob,
+                  helpTitle: l10n.registerDob,
+                  helpMessage: l10n.registerDobHelp,
+                ),
+                const SizedBox(height: 6),
+                DateOfBirthField(
+                  value: _dateOfBirth,
+                  onChanged: (v) => setState(() => _dateOfBirth = v),
                 ),
                 const SizedBox(height: 12),
 

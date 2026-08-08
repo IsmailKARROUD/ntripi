@@ -71,7 +71,7 @@ class TestGoogleSignupRequiresAcceptance:
         patch_google_verifier(monkeypatch, sub="g-new", email="new@x.com")
         assert _google(client, {"id_token": "fake"}).status_code == 400
 
-        r = _google(client, {"id_token": "fake", "tos_accepted": True})
+        r = _google(client, {"id_token": "fake", "tos_accepted": True, "date_of_birth": "2000-01-01"})
 
         assert r.status_code == 200
         user = _find_user("new@x.com")
@@ -83,7 +83,7 @@ class TestGoogleSignupRequiresAcceptance:
         # create-a-new-account branch consults tos_accepted.
         patch_google_verifier(monkeypatch, sub="g-back", email="back@x.com")
         assert _google(
-            client, {"id_token": "fake", "tos_accepted": True}
+            client, {"id_token": "fake", "tos_accepted": True, "date_of_birth": "2000-01-01"}
         ).status_code == 200
 
         r = _google(client, {"id_token": "fake"})
@@ -106,6 +106,7 @@ class TestPasswordSignupRequiresAcceptance:
         r = client.post("/auth/register", json={
             "username": "refused", "email": "refused@x.com",
             "password": "test1234", "tos_accepted": False,
+            "date_of_birth": "2000-01-01",
         })
 
         assert r.status_code == 400
@@ -159,7 +160,8 @@ class TestReacceptanceGate:
 
     def test_the_version_recorded_is_the_servers_not_the_clients(self, client):
         # A client must not be able to claim acceptance of a revision it never
-        # rendered, so the endpoint takes no body at all.
+        # rendered. The body carries a date of birth and nothing else — any
+        # `version` in it is ignored outright.
         token = register_user(client, "liar", "liar@x.com")["access_token"]
         _set_tos_version("liar@x.com", "1.0")
 

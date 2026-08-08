@@ -1,9 +1,9 @@
 import uuid
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 
 from sqlalchemy import (
-    Boolean, CheckConstraint, Integer, JSON, String, Text, DateTime, func, false,
-    true,
+    Boolean, CheckConstraint, Date, Integer, JSON, String, Text, DateTime, func,
+    false, true,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.dialects.postgresql import UUID
@@ -105,6 +105,20 @@ class User(Base):
     # Which ToS revision they agreed to. Without it, "they accepted the terms"
     # is unprovable the moment the terms change.
     tos_accepted_version: Mapped[str | None] = mapped_column(
+        String(16), nullable=True, default=None
+    )
+
+    # Nullable: accounts created before the age gate declared nothing, and are
+    # never backfilled with a date nobody gave us. The 16+ rule lives in
+    # age_service, not a DB constraint, so those NULLs remain storable.
+    date_of_birth: Mapped[date | None] = mapped_column(
+        Date, nullable=True, default=None
+    )
+
+    # 'google' when the People API supplied it, 'self' when the user typed it.
+    # Which source stands behind an account's age is what a store reviewer or a
+    # regulator asks, and it cannot be reconstructed from the date alone.
+    dob_source: Mapped[str | None] = mapped_column(
         String(16), nullable=True, default=None
     )
 

@@ -102,6 +102,7 @@ class TestContentSizeLimit:
             "email": "sizelimit@test.com",
             "password": "test1234",
             "tos_accepted": True,
+            "date_of_birth": "2000-01-01",
         })
         # Handler ran → not 413
         assert r.status_code != 413
@@ -266,6 +267,7 @@ class TestRateLimiting:
                 "email": f"rlreg{i}@test.com",
                 "password": "test1234",
                 "tos_accepted": True,
+                "date_of_birth": "2000-01-01",
             }, headers=headers)
             assert r.status_code != 429, f"Hit rate limit on request {i + 1} (too early)"
 
@@ -274,6 +276,7 @@ class TestRateLimiting:
             "email": "rlreg99@test.com",
             "password": "test1234",
             "tos_accepted": True,
+            "date_of_birth": "2000-01-01",
         }, headers=headers)
         assert r.status_code == 429
 

@@ -400,6 +400,72 @@ abstract class AppLocalizations {
   /// **'yourhandle'**
   String get registerUsernameHint;
 
+  /// No description provided for @registerDob.
+  ///
+  /// In en, this message translates to:
+  /// **'Date of Birth *'**
+  String get registerDob;
+
+  /// No description provided for @registerDobHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Ntripi is for people aged 16 and over. We ask once, we never show it on your profile, and other users never see it.'**
+  String get registerDobHelp;
+
+  /// No description provided for @registerDobHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Select your date of birth'**
+  String get registerDobHint;
+
+  /// No description provided for @registerDobRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Your date of birth is required.'**
+  String get registerDobRequired;
+
+  /// No description provided for @registerDobTooYoung.
+  ///
+  /// In en, this message translates to:
+  /// **'You must be at least {age} to use Ntripi.'**
+  String registerDobTooYoung(int age);
+
+  /// No description provided for @dobPickerHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Select your date of birth'**
+  String get dobPickerHelp;
+
+  /// No description provided for @dobFromGoogle.
+  ///
+  /// In en, this message translates to:
+  /// **'Taken from your Google account'**
+  String get dobFromGoogle;
+
+  /// No description provided for @googleConsentDobLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Date of birth'**
+  String get googleConsentDobLabel;
+
+  /// No description provided for @acceptTermsDobPrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'We also need your date of birth. Ntripi is for people aged 16 and over.'**
+  String get acceptTermsDobPrompt;
+
+  /// No description provided for @errorUnderage.
+  ///
+  /// In en, this message translates to:
+  /// **'You must be at least 16 to use Ntripi.'**
+  String get errorUnderage;
+
+  /// No description provided for @errorDobRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'A date of birth is required to continue.'**
+  String get errorDobRequired;
+
   /// No description provided for @registerEmail.
   ///
   /// In en, this message translates to:

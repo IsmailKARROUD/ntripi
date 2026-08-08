@@ -119,7 +119,7 @@ def test_change_password_google_only_account_is_400(client, monkeypatch):
         lambda t: {"sub": "g-nochange", "email": "gonly@gmail.com",
                    "email_verified": True, "name": "G", "picture": None},
     )
-    g = client.post("/auth/google", json={"id_token": "fake", "tos_accepted": True})
+    g = client.post("/auth/google", json={"id_token": "fake", "tos_accepted": True, "date_of_birth": "2000-01-01"})
     token = g.json()["access_token"]
     r = _change(client, token, "anything1", "newpass456")
     assert r.status_code == 400

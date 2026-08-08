@@ -8,7 +8,7 @@ in one place — no duplication across routes.
 
 from __future__ import annotations
 
-from datetime import datetime, timezone, timedelta
+from datetime import date, datetime, timezone, timedelta
 
 from sqlalchemy import select, or_
 from sqlalchemy.orm import Session
@@ -21,10 +21,12 @@ from app.models.security_audit_log import SecurityAuditLog
 from app.services import (
     email_service,
     email_token_service,
+    google_people,
     pwned_service,
     refresh_token_service,
     text_moderation_service,
 )
+from app.services.age_service import MINIMUM_AGE, is_old_enough
 from app.services.auth import create_access_token, hash_password, verify_password
 from app.validators.username import (
     validate_username,
@@ -99,17 +101,29 @@ def create_user(
     password: str,
     display_name: str | None,
     tos_accepted: bool,
+    date_of_birth: date,
     db: Session,
+    dob_source: str = "self",
 ) -> tuple[User, str]:
     """
     Create a new user account and return (user, JWT token) on success.
-    Raises AuthError on any failure (ToS not accepted, duplicates, etc.).
+    Raises AuthError on any failure (ToS not accepted, underage, duplicates).
     """
     if not tos_accepted:
         raise AuthError(
             "You must accept the Terms of Service to register.",
             http_status=400,
             code="tos_required",
+        )
+
+    # Defense-in-depth, exactly like the tos_accepted re-check above: this
+    # function commits, so an age failure discovered by a caller afterwards
+    # could not undo the account.
+    if not is_old_enough(date_of_birth):
+        raise AuthError(
+            f"You must be at least {MINIMUM_AGE} years old to use Ntripi.",
+            http_status=400,
+            code="underage",
         )
 
     # Defense-in-depth: validate even though Pydantic schema already checked.
@@ -152,6 +166,8 @@ def create_user(
         email=email,
         password_hash=hash_password(password),
         display_name=display_name,
+        date_of_birth=date_of_birth,
+        dob_source=dob_source,
         tos_accepted_at=datetime.now(timezone.utc),
         # Record WHICH revision was accepted — "they agreed to the terms"
         # is unprovable once the terms change.
@@ -176,6 +192,8 @@ def login_or_register_google(
     picture: str | None,
     tos_accepted: bool,
     db: Session,
+    date_of_birth: date | None = None,
+    google_access_token: str | None = None,
 ) -> tuple[User, str]:
     """
     Resolve a verified Google identity to a Ntripi account, returning
@@ -183,6 +201,11 @@ def login_or_register_google(
     Google-verified email to an existing account, else create a new account.
     Raises AuthError on failure. The caller (routers/auth.py) issues the
     refresh token and commits again, mirroring create_user/authenticate_user.
+
+    `date_of_birth` and `google_access_token` are read by the create-a-new-
+    account branch ONLY, exactly like `tos_accepted` — signing in and linking
+    must never demand either, or every returning Google user would be
+    re-prompted at every sign-in.
     """
     email = (email or "").strip().lower()
     if not email:
@@ -239,6 +262,30 @@ def login_or_register_google(
             code="tos_required",  # same code as the password path — clients key off it
         )
 
+    # Google first, the user's own answer second. The People API result is the
+    # more reliable of the two — it is Google's own record rather than a number
+    # typed into our form — so it wins whenever it is usable, and the client's
+    # posted date is the fallback for the many accounts with no birthday, a
+    # hidden year, or a declined scope.
+    dob, dob_source = date_of_birth, "self"
+    if google_access_token:
+        from_google = google_people.fetch_birthdate(google_access_token, google_sub)
+        if from_google is not None:
+            dob, dob_source = from_google, "google"
+
+    if dob is None:
+        raise AuthError(
+            "A date of birth is required to create an account.",
+            http_status=400,
+            code="dob_required",
+        )
+    if not is_old_enough(dob):
+        raise AuthError(
+            f"You must be at least {MINIMUM_AGE} years old to use Ntripi.",
+            http_status=400,
+            code="underage",
+        )
+
     username = generate_username_from(
         email,
         is_taken=lambda lo: db.execute(
@@ -281,6 +328,8 @@ def login_or_register_google(
         email_verified=bool(email_verified),
         display_name=display_name,
         avatar_url=picture,
+        date_of_birth=dob,
+        dob_source=dob_source,
         moderation_status=ctx.status,
         tos_accepted_at=datetime.now(timezone.utc),
         # Record WHICH revision was accepted — "they agreed to the terms"

@@ -49,6 +49,24 @@
   "registerUsername": "اسم المستخدم *",
   "registerUsernameHelp": "معرّفك @ الفريد. أحرف لاتينية صغيرة وأرقام وشرطات سفلية فقط. لا يمكن تغييره لاحقًا.",
   "registerUsernameHint": "yourhandle",
+  "registerDob": "تاريخ الميلاد *",
+  "registerDobHelp": "Ntripi مخصّصة لمن بلغوا 16 عامًا فأكثر. نطلبه مرة واحدة، ولا يظهر إطلاقًا في ملفك الشخصي، ولا يراه المستخدمون الآخرون.",
+  "registerDobHint": "اختر تاريخ ميلادك",
+  "registerDobRequired": "تاريخ ميلادك مطلوب.",
+  "registerDobTooYoung": "يجب ألّا يقل عمرك عن {age} عامًا لاستخدام Ntripi.",
+  "@registerDobTooYoung": {
+    "placeholders": {
+      "age": {
+        "type": "int"
+      }
+    }
+  },
+  "dobPickerHelp": "اختر تاريخ ميلادك",
+  "dobFromGoogle": "مأخوذ من حسابك على Google",
+  "googleConsentDobLabel": "تاريخ الميلاد",
+  "acceptTermsDobPrompt": "نحتاج أيضًا إلى تاريخ ميلادك. Ntripi مخصّصة لمن بلغوا 16 عامًا فأكثر.",
+  "errorUnderage": "يجب ألّا يقل عمرك عن 16 عامًا لاستخدام Ntripi.",
+  "errorDobRequired": "يلزم تاريخ ميلاد للمتابعة.",
   "registerEmail": "البريد الإلكتروني *",
   "registerEmailHelp": "يُستخدم لتسجيل الدخول واستعادة حسابك. لن نعرضه للعامة أبدًا.",
   "registerEmailHint": "you@example.com",

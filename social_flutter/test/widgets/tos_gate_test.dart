@@ -18,11 +18,14 @@ import 'package:social_flutter/features/auth/presentation/widgets/tos_gate.dart'
 import 'package:social_flutter/features/auth/providers/auth_provider.dart';
 import 'package:social_flutter/features/profile/providers/profile_provider.dart';
 import 'package:social_flutter/l10n/app_localizations.dart';
+import 'package:social_flutter/shared/widgets/date_of_birth_field.dart';
 import 'package:social_flutter/shared/models/user.dart';
 
 const _appContent = 'THE APP';
 
-User _user({required bool tosCurrent}) => User(
+// dateOfBirth is passed through as given — null means an account predating
+// the age gate, which is what makes the screen ask for one.
+User _user({required bool tosCurrent, required DateTime? dateOfBirth}) => User(
       id: 'u1',
       username: 'traveller',
       email: 'traveller@example.com',
@@ -31,15 +34,20 @@ User _user({required bool tosCurrent}) => User(
       followersCount: 0,
       followingCount: 0,
       tosCurrent: tosCurrent,
+      dateOfBirth: dateOfBirth,
     );
 
 class _FakeAuthRepository extends AuthRepository {
   _FakeAuthRepository() : super(Dio(), Dio());
 
   int acceptCount = 0;
+  DateTime? sentDateOfBirth;
 
   @override
-  Future<void> acceptTos() async => acceptCount++;
+  Future<void> acceptTos({DateTime? dateOfBirth}) async {
+    sentDateOfBirth = dateOfBirth;
+    acceptCount++;
+  }
 }
 
 /// Stands in for MyProfileNotifier so the gate reads a known tos_current
@@ -58,6 +66,7 @@ Future<void> _pumpGate(
   required bool tosCurrent,
   required bool signedIn,
   AuthRepository? repo,
+  bool hasDob = true,
 }) async {
   FlutterSecureStorage.setMockInitialValues({});
   tester.view.physicalSize = const Size(1080, 2400);
@@ -70,7 +79,10 @@ Future<void> _pumpGate(
       overrides: [
         hasSessionProvider.overrideWith((ref) async => signedIn),
         myProfileProvider.overrideWith(
-          () => _FakeProfileNotifier(_user(tosCurrent: tosCurrent)),
+          () => _FakeProfileNotifier(_user(
+            tosCurrent: tosCurrent,
+            dateOfBirth: hasDob ? DateTime(2000, 1, 1) : null,
+          )),
         ),
         if (repo != null) authRepositoryProvider.overrideWithValue(repo),
       ],
@@ -144,6 +156,57 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(repo.acceptCount, 1);
+    });
+
+    testWidgets(
+        'Given an account that already declared a date of birth, '
+        'When the gate is showing, Then it does not ask again', (tester) async {
+      await _pumpGate(tester, tosCurrent: false, signedIn: true);
+
+      expect(find.byType(DateOfBirthField), findsNothing);
+    });
+
+    testWidgets(
+        'Given an account predating the age gate, When the gate is showing, '
+        'Then it asks for a date of birth and will not accept without one',
+        (tester) async {
+      await _pumpGate(
+        tester, tosCurrent: false, signedIn: true, hasDob: false,
+      );
+
+      expect(find.byType(DateOfBirthField), findsOneWidget);
+
+      await tester.tap(find.byType(Checkbox));
+      await tester.pumpAndSettle();
+
+      // Ticking the agreement is not enough while the date is still missing.
+      final button = tester.widget<ElevatedButton>(
+        find.widgetWithText(ElevatedButton, 'Accept and continue'),
+      );
+      expect(button.onPressed, isNull);
+    });
+
+    testWidgets(
+        'Given an account predating the age gate, When a date is supplied, '
+        'Then it is sent with the acceptance', (tester) async {
+      final repo = _FakeAuthRepository();
+      await _pumpGate(
+        tester, tosCurrent: false, signedIn: true, repo: repo, hasDob: false,
+      );
+
+      await tester.tap(find.byType(Checkbox));
+      await tester.pumpAndSettle();
+      tester
+          .widget<DateOfBirthField>(find.byType(DateOfBirthField))
+          .onChanged(DateTime(1995, 3, 11));
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.widgetWithText(ElevatedButton, 'Accept and continue'),
+      );
+      await tester.pumpAndSettle();
+
+      expect(repo.acceptCount, 1);
+      expect(repo.sentDateOfBirth, DateTime(1995, 3, 11));
     });
 
     testWidgets(

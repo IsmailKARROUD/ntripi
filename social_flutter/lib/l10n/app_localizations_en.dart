@@ -164,6 +164,43 @@ class AppLocalizationsEn extends AppLocalizations {
   String get registerUsernameHint => 'yourhandle';
 
   @override
+  String get registerDob => 'Date of Birth *';
+
+  @override
+  String get registerDobHelp =>
+      'Ntripi is for people aged 16 and over. We ask once, we never show it on your profile, and other users never see it.';
+
+  @override
+  String get registerDobHint => 'Select your date of birth';
+
+  @override
+  String get registerDobRequired => 'Your date of birth is required.';
+
+  @override
+  String registerDobTooYoung(int age) {
+    return 'You must be at least $age to use Ntripi.';
+  }
+
+  @override
+  String get dobPickerHelp => 'Select your date of birth';
+
+  @override
+  String get dobFromGoogle => 'Taken from your Google account';
+
+  @override
+  String get googleConsentDobLabel => 'Date of birth';
+
+  @override
+  String get acceptTermsDobPrompt =>
+      'We also need your date of birth. Ntripi is for people aged 16 and over.';
+
+  @override
+  String get errorUnderage => 'You must be at least 16 to use Ntripi.';
+
+  @override
+  String get errorDobRequired => 'A date of birth is required to continue.';
+
+  @override
   String get registerEmail => 'Email *';
 
   @override

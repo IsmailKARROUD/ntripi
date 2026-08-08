@@ -65,6 +65,7 @@ class AuthRepository {
     required String password,
     String? displayName,
     required bool tosAccepted,
+    required DateTime dateOfBirth,
   }) async {
     final response = await _dio.post(kRegisterEndpoint, data: {
       'username': username,
@@ -73,6 +74,7 @@ class AuthRepository {
       if (displayName != null && displayName.isNotEmpty)
         'display_name': displayName,
       'tos_accepted': tosAccepted,
+      'date_of_birth': _dateOnly(dateOfBirth),
     });
 
     final result = AuthResult.fromJson(response.data as Map<String, dynamic>);
@@ -111,13 +113,22 @@ class AuthRepository {
   /// it, and it answers 400 `tos_required` — the caller shows the agreement and
   /// retries with true. Signing in or linking never consults it, so a returning
   /// user is not re-prompted.
+  ///
+  /// `dateOfBirth` and `googleAccessToken` follow the same rule. The access
+  /// token is for the People API birthday lookup and the server prefers what
+  /// it returns; `dateOfBirth` is the fallback the consent sheet collects when
+  /// Google has no birthday, hides the year, or the scope was declined.
   Future<AuthResult> loginWithGoogle({
     required String idToken,
     bool tosAccepted = false,
+    DateTime? dateOfBirth,
+    String? googleAccessToken,
   }) async {
     final response = await _dio.post(kGoogleAuthEndpoint, data: {
       'id_token': idToken,
       'tos_accepted': tosAccepted,
+      if (dateOfBirth != null) 'date_of_birth': _dateOnly(dateOfBirth),
+      if (googleAccessToken != null) 'google_access_token': googleAccessToken,
     });
 
     final result = AuthResult.fromJson(response.data as Map<String, dynamic>);
@@ -130,11 +141,24 @@ class AuthRepository {
   }
 
   /// POST /auth/accept-tos — record acceptance of the ToS revision now in
-  /// force. Takes no body: the server stamps its own TOS_VERSION, so a client
-  /// cannot claim acceptance of a document it never rendered.
-  Future<void> acceptTos() async {
-    await _dio.post(kAcceptTosEndpoint);
+  /// force. Never sends a version: the server stamps its own TOS_VERSION, so a
+  /// client cannot claim acceptance of a document it never rendered.
+  ///
+  /// `dateOfBirth` is the one thing the client does supply, and only accounts
+  /// created before the age gate need it — the server answers 400 `dob_required`
+  /// when it has none on file.
+  Future<void> acceptTos({DateTime? dateOfBirth}) async {
+    await _dio.post(kAcceptTosEndpoint, data: {
+      if (dateOfBirth != null) 'date_of_birth': _dateOnly(dateOfBirth),
+    });
   }
+
+  /// A bare `YYYY-MM-DD`. toIso8601String() would carry a time and the local
+  /// offset, which can shift the date across midnight for the server.
+  static String _dateOnly(DateTime d) =>
+      '${d.year.toString().padLeft(4, '0')}-'
+      '${d.month.toString().padLeft(2, '0')}-'
+      '${d.day.toString().padLeft(2, '0')}';
 
   /// POST /auth/forgot-password — ask the server to email a reset link.
   /// Enumeration-safe (always succeeds). Uses `_bareDio` since it's called

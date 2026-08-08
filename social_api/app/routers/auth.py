@@ -38,6 +38,7 @@ from app.i18n import resolve_lang, translator
 from app.limiter import limiter
 from app.models.user import User
 from app.schemas.auth import (
+    AcceptTosRequest,
     ChangePasswordRequest,
     ForgotPasswordRequest,
     GoogleAuthRequest,
@@ -48,6 +49,7 @@ from app.schemas.auth import (
 )
 from app.schemas.user import UserPrivateProfile
 from app.services import auth_service, refresh_token_service
+from app.services.age_service import MINIMUM_AGE, is_old_enough
 from app.services.auth import create_access_token, verify_google_id_token
 from app.services.moderation_actions import escalate_if_flagged
 from app.services.text_moderation_service import attach_target, moderate_or_422
@@ -89,6 +91,15 @@ def register(
             detail="You must accept the Terms of Service to register.",
         )
 
+    # Gated here for the same reason as tos_required above: an underage signup
+    # must not spend a paid moderation call to earn its 400.
+    if not is_old_enough(payload.date_of_birth):
+        raise ApiError(
+            status_code=400,
+            code="underage",
+            detail=f"You must be at least {MINIMUM_AGE} years old to use Ntripi.",
+        )
+
     # Scanned BEFORE create_user, never after: create_user commits, so a
     # rejection discovered afterwards could not undo the account it just made.
     # Both fields go in one dict so they cost a single provider call.
@@ -106,6 +117,7 @@ def register(
             password=payload.password,
             display_name=payload.display_name,
             tos_accepted=payload.tos_accepted,
+            date_of_birth=payload.date_of_birth,
             db=db,
         )
     except auth_service.AuthError as e:
@@ -198,6 +210,8 @@ def google_auth(
             picture=claims.get("picture"),
             tos_accepted=payload.tos_accepted,
             db=db,
+            date_of_birth=payload.date_of_birth,
+            google_access_token=payload.google_access_token,
         )
     except auth_service.AuthError as e:
         raise ApiError(status_code=e.http_status, code=e.code, detail=e.message)
@@ -390,6 +404,10 @@ def get_legal_documents(
 @limiter.limit("10/hour")
 def accept_tos(
     request: Request,
+    # Optional so a deployed client that posts no body at all still works —
+    # before the age gate this endpoint took none, and 422-ing those clients
+    # would lock them behind a gate they cannot satisfy.
+    payload: AcceptTosRequest | None = None,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> User:
@@ -397,7 +415,31 @@ def accept_tos(
 
     Writes TOS_VERSION rather than echoing a client-supplied version — the
     client must not be able to claim acceptance of a document it never showed.
+    A date of birth is different: only the account holder knows it, and this
+    gate is where accounts predating the age gate supply theirs.
     """
+    supplied_dob = payload.date_of_birth if payload else None
+    if current_user.date_of_birth is None:
+        if supplied_dob is None:
+            raise ApiError(
+                status_code=400,
+                code="dob_required",
+                detail="A date of birth is required to continue.",
+            )
+        if not is_old_enough(supplied_dob):
+            # The gate stays up and their only exit is sign-out. Deactivating
+            # the account on a self-declaration is a policy call this endpoint
+            # deliberately does not make on its own.
+            raise ApiError(
+                status_code=400,
+                code="underage",
+                detail=f"You must be at least {MINIMUM_AGE} years old to use Ntripi.",
+            )
+        current_user.date_of_birth = supplied_dob
+        current_user.dob_source = "self"
+    # An existing date is never overwritten: it is a declaration of record, and
+    # letting someone re-declare on demand would defeat the gate entirely.
+
     current_user.tos_accepted_at = datetime.now(timezone.utc)
     current_user.tos_accepted_version = TOS_VERSION
     db.commit()

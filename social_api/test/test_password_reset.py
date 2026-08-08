@@ -100,7 +100,7 @@ def test_google_only_account_gets_no_reset_email(client, monkeypatch):
         lambda t: {"sub": "g-noreset", "email": "gonly@gmail.com",
                    "email_verified": True, "name": "G", "picture": None},
     )
-    client.post("/auth/google", json={"id_token": "fake", "tos_accepted": True})
+    client.post("/auth/google", json={"id_token": "fake", "tos_accepted": True, "date_of_birth": "2000-01-01"})
     sent = _capture_emails(monkeypatch)
     r = client.post("/auth/forgot-password", json={"email": "gonly@gmail.com"})
     assert r.status_code == 200

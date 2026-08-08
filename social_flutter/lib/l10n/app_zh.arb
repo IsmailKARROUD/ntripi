@@ -49,6 +49,24 @@
   "registerUsername": "用户名 *",
   "registerUsernameHelp": "你唯一的 @用户名。仅限小写字母、数字和下划线。之后无法更改。",
   "registerUsernameHint": "你的用户名",
+  "registerDob": "出生日期 *",
+  "registerDobHelp": "Ntripi 面向 16 周岁及以上的用户。我们只询问一次，它绝不会显示在你的个人资料中，其他用户也无法看到。",
+  "registerDobHint": "选择你的出生日期",
+  "registerDobRequired": "请填写你的出生日期。",
+  "registerDobTooYoung": "你必须年满 {age} 周岁才能使用 Ntripi。",
+  "@registerDobTooYoung": {
+    "placeholders": {
+      "age": {
+        "type": "int"
+      }
+    }
+  },
+  "dobPickerHelp": "选择你的出生日期",
+  "dobFromGoogle": "取自你的 Google 账户",
+  "googleConsentDobLabel": "出生日期",
+  "acceptTermsDobPrompt": "我们还需要你的出生日期。Ntripi 面向 16 周岁及以上的用户。",
+  "errorUnderage": "你必须年满 16 周岁才能使用 Ntripi。",
+  "errorDobRequired": "需要填写出生日期才能继续。",
   "registerEmail": "邮箱 *",
   "registerEmailHelp": "用于登录和找回账号。我们绝不会公开显示它。",
   "registerEmailHint": "you@example.com",

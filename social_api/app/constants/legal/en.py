@@ -14,6 +14,8 @@ We may ask you to accept a revised version of these terms before you continue us
 
 You must be at least 16 years old, and old enough to form a binding contract where you live. If you are under the age of majority in your country, you may only use Ntripi with the involvement of a parent or guardian.
 
+We ask for your date of birth when you create your account and refuse accounts below the minimum age. If you sign in with Google and give us permission, we read the date of birth from your Google profile instead of asking you for it. Giving a false date of birth to get an account is a breach of these terms, and we will close an account we find to be under age.
+
 
 3. YOUR RESPONSIBILITIES
 
@@ -162,7 +164,9 @@ Ntripi is the operator of this service and the controller of the personal data d
 
 2. INFORMATION WE COLLECT
 
-Account: your email address, your chosen username, your display name, and — if you set a password — a bcrypt hash of it. We never store your password in plain text. If you sign in with Google we store the identifier Google gives us for your account, and the profile name and picture Google supplies.
+Account: your email address, your chosen username, your display name, your date of birth, and — if you set a password — a bcrypt hash of it. We never store your password in plain text. If you sign in with Google we store the identifier Google gives us for your account, and the profile name and picture Google supplies.
+
+Your date of birth: we ask for it once, when you create your account, to check that you meet our minimum age. If you sign in with Google and grant the permission, we read it from your Google profile instead; you can refuse that permission and type it in yourself. It is never shown on your profile and never visible to other users. We record whether it came from Google or from you, so that we can answer questions about how an account's age was established.
 
 Content you create: itineraries, stop names, addresses, notes, annotations, transport details, ratings and reviews, and the photos you upload.
 
@@ -176,6 +180,8 @@ Moderation and safety records: reports you file or that are filed about your con
 3. HOW WE USE IT
 
 To run your account and show your content to the audience you chose.
+
+To check that you meet our minimum age, and to keep under-age accounts off Ntripi.
 
 To keep Ntripi safe: automated and human review of content, handling reports, enforcing the Community Guidelines, and appeals.
 
@@ -260,6 +266,8 @@ Your account data and content are kept until you delete them, or until you delet
 
 You may delete your account at any time from the app settings. Account deletion permanently removes your profile, itineraries, and identifying information.
 
+Your date of birth is kept for as long as the account exists and is deleted with it. We keep it rather than only the answer it gave us, because the minimum age changes with time and a stored yes or no would silently go stale.
+
 Ratings you have submitted are retained in anonymised form (score only, no user link) to preserve the integrity of community scores. You consent to this when you create your account, as described in our Terms of Service.
 
 Moderation records are deleted after 90 days once the matter is closed, with one exception: where an image matched a known-illegal-image database, the record of the match and the hash of the image are retained indefinitely. The image itself is deleted; the record is the only evidence that the removal happened, and keeping it is a legal duty we cannot waive at your request.
@@ -280,7 +288,7 @@ We will not suspend or terminate your account in retaliation for exercising any 
 
 12. CHILDREN
 
-Ntripi is not for children under 16, and we do not knowingly collect data from them. If you believe a child under 16 has an account, write to privacy@ntripi.app and we will remove it.
+Ntripi is not for children under 16, and we do not knowingly collect data from them. We ask for a date of birth at sign-up and refuse accounts below that age. If you believe a child under 16 has an account, write to privacy@ntripi.app and we will remove it.
 
 
 13. INTERNATIONAL TRANSFERS

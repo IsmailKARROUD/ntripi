@@ -321,9 +321,27 @@ Three documents — Terms of Service, Privacy Policy, Community Guidelines — i
 - **`GoogleAuthRequest.tos_accepted` defaults `False`.** Only the create-a-new-account branch reads it, answering 400 `tos_required`; sign-in and account-linking never consult it. The client's move is **consent-on-demand**: post the token, and on `tos_required` show the sheet and re-post the *same* ID token with `True` (Google ID tokens live ~1h, verification is stateless). Asking before the picker would re-prompt every returning Google user at every sign-in.
 - **The re-acceptance gate is client-side** — `UserPrivateProfile.tos_current` (reads `User.tos_current`) plus `TosGate` in `main.dart`'s `MaterialApp.router` builder. It sits there, not in `_AppShell`, because many routes are declared at the router's root level and would slip past a shell-mounted gate. It is inert unless `hasSessionProvider` **and** a loaded profile **and** `tos_current == false`, so `/splash` `/login` `/register` `/suspended` need no allowlist. Loading and error fall through — a profile we could not read is not evidence of a stale agreement.
 - `hasSessionProvider` (not `authNotifierProvider`) is the "is somebody signed in?" signal outside the router: splash restores a session without calling `setAuthenticated`, so the notifier is null for exactly the returning users the gate exists for.
-- `POST /auth/accept-tos` takes **no body** — it stamps the server's own `TOS_VERSION`, so a client cannot claim acceptance of a document it never rendered.
+- `POST /auth/accept-tos` never takes a **version** — it stamps the server's own `TOS_VERSION`, so a client cannot claim acceptance of a document it never rendered. Its body (`AcceptTosRequest`) carries a date of birth and nothing else, and is itself optional so a client deployed before the age gate still works.
 - `AcceptTermsScreen` always carries a sign-out action. A gate with no exit is a lockout, and signing out is also how someone reaches account deletion.
 - **The document sheet subscribes to `legalDocumentsProvider` from inside its own route.** `showModalBottomSheet` builds on a separate route, so a parent `setState` never reaches it — capturing the body at call time is what left it on "Loading…" forever. Three async states: spinner, body, and error with Retry + open-in-browser.
+
+---
+
+## Age Gate (16+)
+
+The ToS asserted a minimum age for a release before anything asked for one. `users.date_of_birth` + `users.dob_source` now back it on all three write paths.
+
+- **`app/services/age_service.py` is the single source of truth** — `MINIMUM_AGE`, `calculate_age`, `is_old_enough`, `is_plausible`. No router re-implements the arithmetic. 16 clears GDPR Art. 8 in every member state, so no parental-consent path is ever needed; it does **not** imply contract capacity, which is why the ToS keeps its separate age-of-majority / guardian clause.
+- The age comparison is a tuple compare (`(today.month, today.day) < (dob.month, dob.day)`), which is what makes a 29 Feb birth turn 16 on 1 March. `DateOfBirthField.isOldEnough` mirrors it on the client and the two must stay in step.
+- **Shape errors are 422, policy refusals are 400.** A future or >120-year date fails `_dob_must_be_plausible` in the schema; a real date under 16 answers 400 `underage` from the router. The client renders a field error for one and a message for the other. New codes: `underage`, `dob_required`.
+- **The age check runs before `moderate_or_422`**, exactly like the `tos_accepted` gate above it — an underage signup must not spend a paid provider call to earn its 400. `create_user` re-checks (it commits, so a later failure could not undo the account).
+- **Only the Google create-a-new-account branch reads `date_of_birth` / `google_access_token`**, the same rule that already governs `tos_accepted`. Sign-in and account-linking must never consult them or every returning user is re-prompted forever.
+- **Google supplies the date when it can; the consent sheet is the guaranteed fallback.** Google ID tokens carry **no birthdate claim** — it needs the People API, the `user.birthday.read` **sensitive scope** (Google verification review before non-test users can grant it), and an access token rather than the ID token. Many accounts have no birthday, many more hide the **year** (`{month, day}` cannot answer an age question), and the scope is refusable. `dob_source` records which source stood behind the account.
+- **`google_people.fetch_birthdate` verifies `resourceName == "people/{sub}"`.** The access token is a separate credential from the ID token, so without this check a caller could pair their own ID token with an access token minted for a different Google account and inherit that account's birthday. It returns `None` for every unusable answer and never raises — the caller falls through to asking.
+- **The client requests the birthday scope only after the server answers `tos_required`.** That 400 is the only signal the token means signup rather than sign-in; prompting before the picker would nag every returning Google user at every login. The client's People API read is a **prefill hint only** — the server re-reads it and its answer is what gets stored.
+- **Existing accounts backfill at the re-acceptance gate.** `date_of_birth` is nullable and never backfilled with a date nobody gave us. `AcceptTermsScreen` shows the field exactly when `UserPrivateProfile.date_of_birth` is null, and `accept-tos` 400s `dob_required` until one arrives. An existing date is **never overwritten** — it is a declaration of record, and re-declaring on demand would defeat the gate.
+- `date_of_birth` is on **`UserPrivateProfile` only** — never a profile another user can read.
+- **Deploy note:** the Google-sourced half is blocked on OAuth verification for `user.birthday.read` (100-test-user cap and an "unverified app" warning until it clears). The sheet fallback means everything else ships without waiting. App Store privacy nutrition label and Play Data safety both need the DOB declared.
 
 ---
 
@@ -377,6 +395,17 @@ Three documents — Terms of Service, Privacy Policy, Community Guidelines — i
 - Do NOT delete the object before hashing it in `csam_takedown` — the order is the evidence
 - Do NOT email the uploader or surface a CSAM-specific message on a takedown — it tells someone whose upload matched a law-enforcement corpus exactly what was detected
 - Do NOT point `R2_PUBLIC_URL` at a `pub-*.r2.dev` domain in production — it bypasses the Cloudflare zone and silently disables CSAM scanning entirely
+- Do NOT re-implement the age arithmetic anywhere but `age_service.py` — three write paths enforce it and a second copy will drift on the leap-year boundary
+- Do NOT run the age check after `moderate_or_422` — an underage signup must not spend a paid provider call to earn its 400
+- Do NOT turn an underage date into a 422 or a malformed date into a 400 — the client shows a field error for one and a message for the other
+- Do NOT read `date_of_birth` or `google_access_token` on the Google sign-in or account-linking branches — same rule as `tos_accepted`, or every returning user is re-prompted forever
+- Do NOT request the `user.birthday.read` scope before the server answers `tos_required` — that 400 is the only signal the token means signup, and prompting earlier nags every returning Google user at every sign-in
+- Do NOT trust a People API result without checking `resourceName == "people/{sub}"` — the access token is a separate credential and could belong to another Google account
+- Do NOT treat a birthday with no `year` as usable, or let a People API failure raise — both must fall through to asking the user
+- Do NOT trust the client's People API read — it is a prefill hint; the server re-reads and stores its own answer
+- Do NOT overwrite an existing `date_of_birth`, and do NOT backfill the column — it is a declaration of record, and inventing one fakes the evidence the gate exists to produce
+- Do NOT put `date_of_birth` on `UserBase` or `UserPublicProfile` — it is owner-only
+- Do NOT make the `accept-tos` body required — clients deployed before the age gate post none and would be locked behind a gate they cannot satisfy
 - Do NOT default `tos_accepted` to `True` anywhere — an account created without an explicit acceptance is the App Store 1.2 / Play UGC violation this was all built to close
 - Do NOT ask for ToS consent *before* the Google picker — only the server knows whether a token means sign-in or signup, and a consent-first sheet re-prompts every returning user forever
 - Do NOT let `POST /auth/accept-tos` take a version from the client — it must stamp the server's `TOS_VERSION`

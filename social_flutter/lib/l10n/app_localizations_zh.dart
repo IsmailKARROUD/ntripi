@@ -157,6 +157,42 @@ class AppLocalizationsZh extends AppLocalizations {
   String get registerUsernameHint => '你的用户名';
 
   @override
+  String get registerDob => '出生日期 *';
+
+  @override
+  String get registerDobHelp =>
+      'Ntripi 面向 16 周岁及以上的用户。我们只询问一次，它绝不会显示在你的个人资料中，其他用户也无法看到。';
+
+  @override
+  String get registerDobHint => '选择你的出生日期';
+
+  @override
+  String get registerDobRequired => '请填写你的出生日期。';
+
+  @override
+  String registerDobTooYoung(int age) {
+    return '你必须年满 $age 周岁才能使用 Ntripi。';
+  }
+
+  @override
+  String get dobPickerHelp => '选择你的出生日期';
+
+  @override
+  String get dobFromGoogle => '取自你的 Google 账户';
+
+  @override
+  String get googleConsentDobLabel => '出生日期';
+
+  @override
+  String get acceptTermsDobPrompt => '我们还需要你的出生日期。Ntripi 面向 16 周岁及以上的用户。';
+
+  @override
+  String get errorUnderage => '你必须年满 16 周岁才能使用 Ntripi。';
+
+  @override
+  String get errorDobRequired => '需要填写出生日期才能继续。';
+
+  @override
   String get registerEmail => '邮箱 *';
 
   @override

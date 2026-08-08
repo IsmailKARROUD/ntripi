@@ -10,7 +10,7 @@ Schema hierarchy:
 """
 
 import uuid
-from datetime import datetime
+from datetime import date, datetime
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 import re
 
@@ -82,6 +82,11 @@ class UserPrivateProfile(UserBase):
     # User.tos_current. The client blocks the app on it; the server is still
     # the source of truth for whether registration was gated at all.
     tos_current: bool = False
+    # Null on accounts that predate the age gate — the client shows the
+    # birthdate field on the re-acceptance screen exactly when this is null.
+    # UserPrivateProfile only: someone's date of birth is not public, and it is
+    # never echoed on a profile another user can read.
+    date_of_birth: date | None = None
 
 
 class UserUpdateRequest(BaseModel):

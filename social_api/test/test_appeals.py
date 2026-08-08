@@ -445,14 +445,14 @@ class TestPublicAppealForm:
         # Link Google onto the password account while it is still active, so the
         # post-ban attempt below takes the google_sub branch.
         linked = client.post(
-            "/auth/google", json={"id_token": "fake", "tos_accepted": True}
+            "/auth/google", json={"id_token": "fake", "tos_accepted": True, "date_of_birth": "2000-01-01"}
         )
         assert linked.status_code == 200, linked.json()
 
         self._ban_and_token(client, world)
 
         resp = client.post(
-            "/auth/google", json={"id_token": "fake", "tos_accepted": True}
+            "/auth/google", json={"id_token": "fake", "tos_accepted": True, "date_of_birth": "2000-01-01"}
         )
         assert resp.status_code == 403
         assert resp.json()["code"] == "account_deactivated"
@@ -469,7 +469,7 @@ class TestPublicAppealForm:
             db.close()
 
         resp = client.post(
-            "/auth/google", json={"id_token": "fake", "tos_accepted": True}
+            "/auth/google", json={"id_token": "fake", "tos_accepted": True, "date_of_birth": "2000-01-01"}
         )
         assert resp.status_code == 403
         assert resp.json()["code"] == "account_deactivated"

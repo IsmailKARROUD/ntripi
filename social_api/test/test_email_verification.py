@@ -28,7 +28,7 @@ def _token_from(html: str) -> str:
 def _register_unverified(client, username, email):
     # Register directly (NOT the verified conftest helper) → user stays unverified.
     r = client.post("/auth/register", json={
-        "username": username, "email": email, "password": "test1234", "tos_accepted": True})
+        "username": username, "email": email, "password": "test1234", "tos_accepted": True, "date_of_birth": "2000-01-01"})
     assert r.status_code == 201, r.json()
     return r.json()
 

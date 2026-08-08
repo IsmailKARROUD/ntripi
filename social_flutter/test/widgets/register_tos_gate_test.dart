@@ -24,6 +24,7 @@ import 'package:social_flutter/features/auth/data/auth_repository.dart';
 import 'package:social_flutter/features/auth/presentation/register_screen.dart';
 import 'package:social_flutter/features/auth/providers/auth_provider.dart';
 import 'package:social_flutter/l10n/app_localizations.dart';
+import 'package:social_flutter/shared/widgets/date_of_birth_field.dart';
 
 const _tosBody = 'TERMS BODY — zero tolerance for objectionable content.';
 const _guidelinesBody = 'GUIDELINES BODY — hate speech is prohibited.';
@@ -40,6 +41,7 @@ class _FakeAuthRepository extends AuthRepository {
   final bool tosFails;
 
   bool? sentTosAccepted;
+  DateTime? sentDateOfBirth;
   int fetchCount = 0;
   String? lastLang;
 
@@ -72,8 +74,10 @@ class _FakeAuthRepository extends AuthRepository {
     required String password,
     String? displayName,
     required bool tosAccepted,
+    required DateTime dateOfBirth,
   }) async {
     sentTosAccepted = tosAccepted;
+    sentDateOfBirth = dateOfBirth;
     // Fail as the network would: _register only catches DioException, and the
     // success path calls context.go('/profile/me'), which needs a router.
     throw DioException(
@@ -169,10 +173,19 @@ void main() {
       await tester.tap(find.byType(Checkbox));
       await tester.pumpAndSettle();
 
+      // Drive the field's callback rather than Material's date picker: the
+      // dialog is Flutter's code, and what this test cares about is that the
+      // screen wires the value through to the request.
+      tester
+          .widget<DateOfBirthField>(find.byType(DateOfBirthField))
+          .onChanged(DateTime(2000, 1, 1));
+      await tester.pumpAndSettle();
+
       await tester.tap(find.widgetWithText(ElevatedButton, 'Create Account'));
       await tester.pump();
 
       expect(repo.sentTosAccepted, isTrue);
+      expect(repo.sentDateOfBirth, DateTime(2000, 1, 1));
     });
   });
 

@@ -74,6 +74,11 @@ class User {
   /// the client never has to know which revision is in force.
   final bool tosCurrent;
 
+  /// Null on accounts created before the age gate, and on every profile that
+  /// is not your own — the server only ever sends it on UserPrivateProfile.
+  /// Its being null is what makes the re-acceptance screen ask for one.
+  final DateTime? dateOfBirth;
+
   /// Returns displayName if set, else "@username".
   String get nameForDisplay => displayName ?? '@$username';
 
@@ -107,6 +112,7 @@ class User {
     // Defaults true so a public-profile payload, which carries no such
     // field, never trips the gate for somebody else's account.
     this.tosCurrent = true,
+    this.dateOfBirth,
   });
 
   factory User.fromJson(Map<String, dynamic> json) {
@@ -144,6 +150,9 @@ class User {
       notifySaves: json['notify_saves'] as bool? ?? true,
       notifyFollowAccepted: json['notify_follow_accepted'] as bool? ?? true,
       tosCurrent: json['tos_current'] as bool? ?? true,
+      dateOfBirth: json['date_of_birth'] == null
+          ? null
+          : DateTime.tryParse(json['date_of_birth'] as String),
     );
   }
 
@@ -173,6 +182,9 @@ class User {
       'notify_saves': notifySaves,
       'notify_follow_accepted': notifyFollowAccepted,
       'tos_current': tosCurrent,
+      if (dateOfBirth != null)
+        'date_of_birth':
+            dateOfBirth!.toIso8601String().split('T').first,
     };
   }
 
@@ -205,6 +217,7 @@ class User {
     bool? notifySaves,
     bool? notifyFollowAccepted,
     bool? tosCurrent,
+    DateTime? dateOfBirth,
   }) {
     return User(
       id: id ?? this.id,
@@ -232,6 +245,7 @@ class User {
       notifySaves: notifySaves ?? this.notifySaves,
       notifyFollowAccepted: notifyFollowAccepted ?? this.notifyFollowAccepted,
       tosCurrent: tosCurrent ?? this.tosCurrent,
+      dateOfBirth: dateOfBirth ?? this.dateOfBirth,
     );
   }
 }

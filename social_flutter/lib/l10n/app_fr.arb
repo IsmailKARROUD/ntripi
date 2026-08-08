@@ -49,6 +49,24 @@
   "registerUsername": "Identifiant *",
   "registerUsernameHelp": "Votre @identifiant unique. Lettres minuscules, chiffres et tirets bas uniquement. Impossible à modifier plus tard.",
   "registerUsernameHint": "votreidentifiant",
+  "registerDob": "Date de naissance *",
+  "registerDobHelp": "Ntripi s'adresse aux personnes de 16 ans et plus. Nous la demandons une seule fois, elle n'apparaît jamais sur votre profil et les autres utilisateurs ne la voient jamais.",
+  "registerDobHint": "Sélectionnez votre date de naissance",
+  "registerDobRequired": "Votre date de naissance est requise.",
+  "registerDobTooYoung": "Vous devez avoir au moins {age} ans pour utiliser Ntripi.",
+  "@registerDobTooYoung": {
+    "placeholders": {
+      "age": {
+        "type": "int"
+      }
+    }
+  },
+  "dobPickerHelp": "Sélectionnez votre date de naissance",
+  "dobFromGoogle": "Provenant de votre compte Google",
+  "googleConsentDobLabel": "Date de naissance",
+  "acceptTermsDobPrompt": "Nous avons également besoin de votre date de naissance. Ntripi s'adresse aux personnes de 16 ans et plus.",
+  "errorUnderage": "Vous devez avoir au moins 16 ans pour utiliser Ntripi.",
+  "errorDobRequired": "Une date de naissance est requise pour continuer.",
   "registerEmail": "E-mail *",
   "registerEmailHelp": "Utilisé pour se connecter et récupérer votre compte. Nous ne l'affichons jamais publiquement.",
   "registerEmailHint": "vous@exemple.com",

@@ -8,16 +8,30 @@
 // the same token with the flag set. Asking before the picker would re-prompt
 // every returning Google user at every sign-in.
 //
-// Returns true when the user accepted.
+// It also collects the date of birth, because a new account needs both and two
+// consecutive sheets for one signup would be worse. When Google's People API
+// supplied a birthday it arrives as `prefill` and the field starts filled —
+// still editable, so it is a prefill rather than a silent assertion.
+//
+// Returns null when the user declined.
 
 import 'package:flutter/material.dart';
 import 'package:social_flutter/core/ui/app_theme.dart';
 import 'package:social_flutter/features/auth/presentation/widgets/tos_agreement_row.dart';
 import 'package:social_flutter/l10n/app_localizations.dart';
+import 'package:social_flutter/shared/widgets/date_of_birth_field.dart';
 
-Future<bool> showGoogleTosConsentSheet(BuildContext context) async {
+class GoogleConsentResult {
+  final DateTime dateOfBirth;
+  const GoogleConsentResult({required this.dateOfBirth});
+}
+
+Future<GoogleConsentResult?> showGoogleTosConsentSheet(
+  BuildContext context, {
+  DateTime? prefill,
+}) async {
   final nt = context.nt;
-  final accepted = await showModalBottomSheet<bool>(
+  return showModalBottomSheet<GoogleConsentResult>(
     context: context,
     isScrollControlled: true,
     // Not dismissible by tapping away: closing it is a decision, and the only
@@ -27,13 +41,13 @@ Future<bool> showGoogleTosConsentSheet(BuildContext context) async {
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
     ),
-    builder: (_) => const _GoogleTosConsentSheet(),
+    builder: (_) => _GoogleTosConsentSheet(prefill: prefill),
   );
-  return accepted ?? false;
 }
 
 class _GoogleTosConsentSheet extends StatefulWidget {
-  const _GoogleTosConsentSheet();
+  final DateTime? prefill;
+  const _GoogleTosConsentSheet({this.prefill});
 
   @override
   State<_GoogleTosConsentSheet> createState() => _GoogleTosConsentSheetState();
@@ -41,6 +55,18 @@ class _GoogleTosConsentSheet extends StatefulWidget {
 
 class _GoogleTosConsentSheetState extends State<_GoogleTosConsentSheet> {
   bool _accepted = false;
+  DateTime? _dateOfBirth;
+
+  @override
+  void initState() {
+    super.initState();
+    _dateOfBirth = widget.prefill;
+  }
+
+  bool get _canSubmit =>
+      _accepted &&
+      _dateOfBirth != null &&
+      DateOfBirthField.isOldEnough(_dateOfBirth!);
 
   @override
   Widget build(BuildContext context) {
@@ -84,6 +110,23 @@ class _GoogleTosConsentSheetState extends State<_GoogleTosConsentSheet> {
               style: TextStyle(fontSize: 14, color: nt.text2, height: 1.5),
             ),
             const SizedBox(height: 20),
+            Text(
+              l10n.googleConsentDobLabel,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: nt.text2,
+              ),
+            ),
+            const SizedBox(height: 6),
+            DateOfBirthField(
+              value: _dateOfBirth,
+              onChanged: (v) => setState(() => _dateOfBirth = v),
+              // Named as Google's when it came from there, so an unexpected
+              // date is attributable rather than mysterious.
+              hintOverride: widget.prefill != null ? l10n.dobFromGoogle : null,
+            ),
+            const SizedBox(height: 16),
             TosAgreementRow(
               accepted: _accepted,
               onChanged: (v) => setState(() => _accepted = v),
@@ -91,13 +134,18 @@ class _GoogleTosConsentSheetState extends State<_GoogleTosConsentSheet> {
             ),
             const SizedBox(height: 24),
             ElevatedButton(
-              onPressed:
-                  _accepted ? () => Navigator.of(context).pop(true) : null,
+              onPressed: _canSubmit
+                  ? () => Navigator.of(context).pop(
+                        GoogleConsentResult(dateOfBirth: _dateOfBirth!),
+                      )
+                  : null,
               child: Text(l10n.googleTosAccept),
             ),
             const SizedBox(height: 8),
             TextButton(
-              onPressed: () => Navigator.of(context).pop(false),
+              // pop(null) — declining and dismissing are the same outcome, and
+              // the caller only ever checks for a result.
+              onPressed: () => Navigator.of(context).pop(),
               child: Text(l10n.cancel),
             ),
           ],

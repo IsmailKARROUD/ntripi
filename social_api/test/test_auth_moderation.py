@@ -64,6 +64,7 @@ def _register(client, username="newbie", email="newbie@example.com",
         "password": password,
         "display_name": display_name,
         "tos_accepted": True,
+        "date_of_birth": "2000-01-01",
     })
 
 
@@ -110,7 +111,7 @@ def _patch_google(monkeypatch, *, sub, email, name=None, email_verified=True):
 
 
 def _google(client):
-    return client.post("/auth/google", json={"id_token": "fake", "tos_accepted": True})
+    return client.post("/auth/google", json={"id_token": "fake", "tos_accepted": True, "date_of_birth": "2000-01-01"})
 
 
 # ---------------------------------------------------------------------------
