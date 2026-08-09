@@ -7,6 +7,11 @@
 //   3. Cropped bytes go to onImageSelected. _originalBytes is kept so "Edit crop"
 //      can re-open the editor without re-picking from the gallery.
 //
+// The editor is an OverlayEntry + LocalHistoryEntry rather than a pushed route,
+// so go_router can never interfere and the system/browser back button still
+// dismisses it. Both the overlay it goes into and its opacity are load-bearing
+// — see openImageCropOverlay.
+//
 // Crop math (_CropScreen._done):
 //   Transform: viewport_point = image_point * scale + offset
 //   Inverting:  image_point  = (viewport_point - offset) / scale
@@ -44,6 +49,14 @@ Future<Uint8List?> openImageCropOverlay(
   required int targetWidth,
   required int targetHeight,
 }) async {
+  // The root Navigator's overlay — NOT Overlay.of(context, rootOverlay: true).
+  // BetterFeedback wraps MaterialApp, so the true root overlay is the feedback
+  // package's, which lives outside MaterialApp: an entry there gets no app
+  // Theme and no app l10n. Resolve it before the await so the crop screen is
+  // guaranteed to land inside the app's own navigator.
+  final overlay = Navigator.of(context, rootNavigator: true).overlay;
+  if (overlay == null) return null;
+
   final completer = Completer<Uint8List?>();
   bool closed = false;
 
@@ -58,7 +71,9 @@ Future<Uint8List?> openImageCropOverlay(
   );
 
   overlayEntry = OverlayEntry(
-    opaque: true,
+    // Deliberately not opaque: an opaque entry makes the Overlay drop every
+    // entry below it that doesn't maintainState, which would unmount the
+    // routes underneath. The crop Scaffold covers the screen by itself.
     builder: (_) => _CropScreen(
       imageBytes: sourceBytes,
       targetWidth: targetWidth,
@@ -75,7 +90,7 @@ Future<Uint8List?> openImageCropOverlay(
   );
 
   ModalRoute.of(context)?.addLocalHistoryEntry(historyEntry);
-  Overlay.of(context, rootOverlay: true).insert(overlayEntry);
+  overlay.insert(overlayEntry);
 
   return completer.future;
 }
@@ -194,44 +209,12 @@ class _CoverImageFieldState extends State<CoverImageField> {
   }
 
   Future<void> _openCrop(Uint8List source, String filename) async {
-    // Use Overlay + LocalHistoryEntry instead of Navigator so go_router can
-    // never interfere. The LocalHistoryEntry intercepts the system/browser
-    // back button and dismisses the overlay cleanly.
-    final completer = Completer<Uint8List?>();
-    bool closed = false;
-
-    late OverlayEntry overlayEntry;
-    final historyEntry = LocalHistoryEntry(
-      onRemove: () {
-        if (closed) return;
-        closed = true;
-        overlayEntry.remove();
-        if (!completer.isCompleted) completer.complete(null);
-      },
+    final cropped = await openImageCropOverlay(
+      context,
+      sourceBytes: source,
+      targetWidth: widget.targetWidth,
+      targetHeight: widget.targetHeight,
     );
-
-    overlayEntry = OverlayEntry(
-      opaque: true,
-      builder: (_) => _CropScreen(
-        imageBytes: source,
-        targetWidth: widget.targetWidth,
-        targetHeight: widget.targetHeight,
-        onDone: (bytes) {
-          if (closed) return;
-          closed = true;
-          historyEntry
-              .remove(); // triggers onRemove, closed=true guards re-entry
-          overlayEntry.remove();
-          if (!completer.isCompleted) completer.complete(bytes);
-        },
-        onCancel: () => historyEntry.remove(),
-      ),
-    );
-
-    ModalRoute.of(context)?.addLocalHistoryEntry(historyEntry);
-    Overlay.of(context, rootOverlay: true).insert(overlayEntry);
-
-    final cropped = await completer.future;
     if (cropped == null || !mounted) return;
     setState(() {
       _originalBytes = source;
