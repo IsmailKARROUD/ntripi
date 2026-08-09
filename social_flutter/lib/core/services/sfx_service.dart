@@ -27,21 +27,26 @@ enum Sfx {
   final String path;
 }
 
-// Below 1.0 so a cue sits under the app rather than announcing itself.
-const _kCueVolume = 0.6;
+// Full scale. The asset is mastered well below 0 dBFS, so anything less than
+// 1.0 here is inaudible over ambient noise — trim the file, not this number.
+const _kCueVolume = 1.0;
 
-// A cue must not behave like media playback.
+// A cue must not *interrupt*, but it must still be audible.
 //   iOS `ambient`: obeys the physical mute switch and never interrupts other
 //     audio. It implies mixing, which is why no `mixWithOthers` option is set —
 //     AudioContextIOS asserts that option is only legal with playback /
 //     playAndRecord / multiRoute.
-//   Android: no audio focus request at all, so a podcast or music app is not
-//     paused or ducked for a 2-second sound.
+//   Android: media usage/content so the cue rides the media volume the user
+//     actually adjusts in-app. The sonification usage types route to
+//     STREAM_SYSTEM, which is separately (and usually lower) capped — that is
+//     an inaudible cue, not a polite one. Not interrupting comes from
+//     audioFocus.none, which asks for no focus at all, so a podcast or music
+//     app is never paused or ducked for a 2-second sound.
 final _cueContext = AudioContext(
   iOS: AudioContextIOS(category: AVAudioSessionCategory.ambient),
   android: const AudioContextAndroid(
-    contentType: AndroidContentType.sonification,
-    usageType: AndroidUsageType.assistanceSonification,
+    contentType: AndroidContentType.music,
+    usageType: AndroidUsageType.media,
     audioFocus: AndroidAudioFocus.none,
   ),
 );

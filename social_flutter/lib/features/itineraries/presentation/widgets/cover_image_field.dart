@@ -256,6 +256,7 @@ class _CoverImageFieldState extends State<CoverImageField> {
                       pickedBytes: _pickedBytes,
                       networkUrl: _removed ? null : widget.initialUrl,
                       onTap: _picking ? null : _pick,
+                      onRemove: _remove,
                     )
                   : _ImagePlaceholder(
                       picking: _picking,
@@ -272,27 +273,23 @@ class _CoverImageFieldState extends State<CoverImageField> {
           ],
           if (_hasImage) ...[
             const SizedBox(height: 8),
-            Row(
+            // Wrap, not Row: translated labels overflow a phone width.
+            // Remove lives as an X on the preview itself.
+            Wrap(
+              spacing: 4,
+              runSpacing: 4,
               children: [
                 TextButton.icon(
                   icon: const Icon(Icons.photo_outlined, size: 16),
                   label: Text(AppLocalizations.of(context)!.coverChangeButton),
                   onPressed: _picking ? null : _pick,
                 ),
-                if (_originalBytes != null) ...[
-                  const SizedBox(width: 4),
+                if (_originalBytes != null)
                   TextButton.icon(
                     icon: const Icon(Icons.crop_outlined, size: 16),
                     label: Text(AppLocalizations.of(context)!.coverEditCropButton),
                     onPressed: _picking ? null : _editCrop,
                   ),
-                ],
-                const SizedBox(width: 4),
-                TextButton.icon(
-                  icon: Icon(Icons.delete_outline, size: 16, color: cs.error),
-                  label: Text(AppLocalizations.of(context)!.removeButton, style: TextStyle(color: cs.error)),
-                  onPressed: _remove,
-                ),
               ],
             ),
           ],
@@ -569,11 +566,13 @@ class _ImagePreview extends StatelessWidget {
   final Uint8List? pickedBytes;
   final String? networkUrl;
   final VoidCallback? onTap;
+  final VoidCallback onRemove;
 
   const _ImagePreview({
     required this.pickedBytes,
     required this.networkUrl,
     required this.onTap,
+    required this.onRemove,
   });
 
   @override
@@ -604,6 +603,28 @@ class _ImagePreview extends StatelessWidget {
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                   colors: [Colors.transparent, Colors.black26],
+                ),
+              ),
+            ),
+          ),
+          // Its own Material so the ink splash paints above the photo, not on
+          // the page Material underneath it.
+          PositionedDirectional(
+            top: 6,
+            end: 6,
+            child: Material(
+              color: context.nt.buttonTransparent,
+              shape: const CircleBorder(),
+              clipBehavior: Clip.antiAlias,
+              child: InkWell(
+                onTap: onRemove,
+                child: Tooltip(
+                  message: AppLocalizations.of(context)!.removeButton,
+                  child: const Padding(
+                    padding: EdgeInsets.all(8),
+                    child: Icon(Icons.close_rounded,
+                        size: 20, color: NtripiBrand.chrome),
+                  ),
                 ),
               ),
             ),
