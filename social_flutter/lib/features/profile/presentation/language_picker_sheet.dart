@@ -95,7 +95,7 @@ class _LanguagePickerSheetState extends State<_LanguagePickerSheet> {
     final langCode = Localizations.localeOf(context).languageCode;
     final filtered = _filtered(langCode);
     final media = MediaQuery.of(context);
-    // 70% of the screen, and never tall enough to push the Done row up under
+    // 50% of the screen, and never tall enough to push the Done row up under
     // the status bar on short devices.
     final sheetHeight = math.min(
       media.size.height * 0.5,

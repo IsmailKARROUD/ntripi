@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -307,16 +309,23 @@ class _SettingsSheet extends ConsumerWidget {
             me.notifyFollowAccepted,
           ].where((on) => on).length);
 
+    final media = MediaQuery.of(context);
+    // A fixed 75% of the screen, not content height: the row list grows over
+    // time and a self-sizing sheet changes height between builds. Capped so the
+    // top edge never slides under the status bar on short devices.
+    final sheetHeight = math.min(
+      media.size.height * 0.75,
+      media.size.height - media.padding.top - 12,
+    );
+
     return Container(
+      height: sheetHeight,
       decoration: BoxDecoration(
         color: nt.surface,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
       ),
-      padding: EdgeInsets.only(
-        bottom: MediaQuery.of(context).padding.bottom + 16,
-      ),
+      padding: EdgeInsets.only(bottom: media.padding.bottom + 16),
       child: Column(
-        mainAxisSize: MainAxisSize.min,
         children: [
           Container(
             margin: const EdgeInsets.only(top: 10, bottom: 6),
