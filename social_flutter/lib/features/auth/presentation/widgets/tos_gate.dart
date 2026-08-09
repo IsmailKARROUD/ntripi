@@ -35,6 +35,19 @@ class TosGate extends ConsumerWidget {
     final profile = ref.watch(myProfileProvider).value;
     if (profile == null || profile.tosCurrent) return child;
 
-    return const AcceptTermsScreen();
+    // Its own Navigator, because raising the gate discards `child` — which is
+    // the Router that builds the app's only Navigator. Without one, the date
+    // picker, the legal-document sheet and both picker menus have nothing to
+    // push onto and throw "context does not include a Navigator".
+    // HeroControllerScope.none: the app's controller belongs to the Router's
+    // Navigator, and two Navigators may not share one.
+    return HeroControllerScope.none(
+      child: Navigator(
+        onGenerateRoute: (settings) => MaterialPageRoute<void>(
+          settings: settings,
+          builder: (_) => const AcceptTermsScreen(),
+        ),
+      ),
+    );
   }
 }
