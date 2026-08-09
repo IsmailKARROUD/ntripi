@@ -80,13 +80,17 @@
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
 
-	<!-- Google Sign-In: replace the three placeholders with your real OAuth ids.
-	     GIDClientID = iOS client id; GIDServerClientID = web client id (forces the
-	     ID token aud to the web client id so the backend verifies it uniformly). -->
+	<!-- Google Sign-In. These are read by the native GIDSignIn SDK, not by Dart:
+	     google_sign_in_ios only builds a GIDConfiguration when it is given a
+	     clientId (from initialize() or GoogleService-Info.plist), and we pass
+	     neither — so the plugin keeps GIDSignIn's default, which comes from here.
+	     That also means the --dart-define GOOGLE_SERVER_CLIENT_ID is ignored on
+	     iOS; GIDServerClientID below is what forces the ID token aud to the web
+	     client id, so the backend verifies Android and iOS tokens uniformly. -->
 	<key>GIDClientID</key>
-	<string>YOUR_IOS_CLIENT_ID.apps.googleusercontent.com</string>
+	<string>29126714665-8n68nlct0m8edp04b6obslteslqtitdq.apps.googleusercontent.com</string>
 	<key>GIDServerClientID</key>
-	<string>YOUR_WEB_CLIENT_ID.apps.googleusercontent.com</string>
+	<string>29126714665-9pgodn1nt1ikf6goo71a6b7634sknna4.apps.googleusercontent.com</string>
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>
@@ -94,8 +98,9 @@
 			<string>Editor</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
-				<!-- REVERSED iOS client id, e.g. com.googleusercontent.apps.1234-abcd -->
-				<string>com.googleusercontent.apps.YOUR_IOS_CLIENT_ID</string>
+				<!-- REVERSED GIDClientID — Google redirects the finished sign-in to
+				     this scheme, and iOS only routes it back to us if it is declared here. -->
+				<string>com.googleusercontent.apps.29126714665-8n68nlct0m8edp04b6obslteslqtitdq</string>
 			</array>
 		</dict>
 	</array>
