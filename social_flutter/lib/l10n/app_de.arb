@@ -172,6 +172,8 @@
   "settingsNotificationsOff": "Aus",
   "settingsLanguage": "Sprache",
   "settingsTheme": "Design",
+  "settingsSoundEffects": "Soundeffekte",
+  "settingsSoundEffectsDetail": "Beim Öffnen einer Route einen Ton abspielen",
   "settingsSupport": "Support",
   "settingsHelpCenter": "Hilfecenter",
   "settingsAbout": "Über Ntripi",

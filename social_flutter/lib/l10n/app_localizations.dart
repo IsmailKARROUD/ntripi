@@ -1096,6 +1096,18 @@ abstract class AppLocalizations {
   /// **'Theme'**
   String get settingsTheme;
 
+  /// No description provided for @settingsSoundEffects.
+  ///
+  /// In en, this message translates to:
+  /// **'Sound effects'**
+  String get settingsSoundEffects;
+
+  /// No description provided for @settingsSoundEffectsDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Play a sound when you open an itinerary'**
+  String get settingsSoundEffectsDetail;
+
   /// No description provided for @settingsSupport.
   ///
   /// In en, this message translates to:

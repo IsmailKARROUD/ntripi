@@ -564,6 +564,13 @@ class AppLocalizationsEs extends AppLocalizations {
   String get settingsTheme => 'Tema';
 
   @override
+  String get settingsSoundEffects => 'Efectos de sonido';
+
+  @override
+  String get settingsSoundEffectsDetail =>
+      'Reproducir un sonido al abrir un itinerario';
+
+  @override
   String get settingsSupport => 'Ayuda';
 
   @override

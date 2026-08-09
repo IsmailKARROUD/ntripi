@@ -172,6 +172,8 @@
   "settingsNotificationsOff": "Desactivadas",
   "settingsLanguage": "Idioma",
   "settingsTheme": "Tema",
+  "settingsSoundEffects": "Efectos de sonido",
+  "settingsSoundEffectsDetail": "Reproducir un sonido al abrir un itinerario",
   "settingsSupport": "Ayuda",
   "settingsHelpCenter": "Centro de ayuda",
   "settingsAbout": "Acerca de Ntripi",

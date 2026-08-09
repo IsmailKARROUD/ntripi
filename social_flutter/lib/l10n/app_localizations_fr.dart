@@ -568,6 +568,13 @@ class AppLocalizationsFr extends AppLocalizations {
   String get settingsTheme => 'Thème';
 
   @override
+  String get settingsSoundEffects => 'Effets sonores';
+
+  @override
+  String get settingsSoundEffectsDetail =>
+      'Jouer un son à l\'ouverture d\'un itinéraire';
+
+  @override
   String get settingsSupport => 'Assistance';
 
   @override

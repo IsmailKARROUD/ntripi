@@ -40,6 +40,7 @@ import 'package:social_flutter/core/api/api_client.dart';
 import 'package:social_flutter/core/cache/image_cache.dart';
 import 'package:social_flutter/core/providers/long_press_hint_provider.dart';
 import 'package:social_flutter/core/router/navigation_ext.dart';
+import 'package:social_flutter/core/services/sfx_service.dart';
 import 'package:social_flutter/core/ui/app_theme.dart';
 import 'package:social_flutter/core/ui/destructive_actions.dart';
 import 'package:social_flutter/features/itineraries/data/maps_launcher_service.dart';
@@ -110,6 +111,7 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
   final GlobalKey _enterEditButtonKey = GlobalKey();
   bool _longPressHintShown = false; // one-shot guard within this screen's life
   bool _firstStopFormOpened = false; // one-shot guard for the just-created auto-open
+  bool _openSoundPlayed = false; // one-shot guard for the open-itinerary cue
   //start with map hidden on mobile to avoid unnecessary API calls and improve performance, since the map is less likely to be used on mobile and can be accessed via a button
   bool _mapVisible = false;
 
@@ -482,6 +484,19 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                     _firstStopFormOpened = true; // set now so we schedule exactly once
                     WidgetsBinding.instance.addPostFrameCallback((_) {
                       if (mounted) _openStopForm();
+                    });
+                  }
+
+                  // Opening cue. The screen always mounts with _editMode =
+                  // false and the pencil that sets it needs a rendered screen,
+                  // so the first successful load IS "opened in view mode" —
+                  // there is no reachable edit-mode case to exclude here.
+                  // Skipped for justCreated: that branch pushes the stop form
+                  // on this same frame, over which a cue would be nonsense.
+                  if (!_openSoundPlayed && !widget.justCreated) {
+                    _openSoundPlayed = true; // set now so we schedule exactly once
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      if (mounted) ref.read(sfxServiceProvider).play(Sfx.openItinerary);
                     });
                   }
 

@@ -200,6 +200,8 @@
   "settingsNotificationsOff": "متوقفة",
   "settingsLanguage": "اللغة",
   "settingsTheme": "المظهر",
+  "settingsSoundEffects": "المؤثرات الصوتية",
+  "settingsSoundEffectsDetail": "تشغيل صوت عند فتح مسار",
   "settingsSupport": "الدعم",
   "settingsHelpCenter": "مركز المساعدة",
   "settingsAbout": "حول Ntripi",

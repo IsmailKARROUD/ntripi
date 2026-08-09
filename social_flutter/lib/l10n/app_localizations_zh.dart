@@ -528,6 +528,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get settingsTheme => '主题';
 
   @override
+  String get settingsSoundEffects => '音效';
+
+  @override
+  String get settingsSoundEffectsDetail => '打开行程时播放提示音';
+
+  @override
   String get settingsSupport => '支持';
 
   @override

@@ -208,6 +208,8 @@
   "settingsNotificationsOff": "Off",
   "settingsLanguage": "Language",
   "settingsTheme": "Theme",
+  "settingsSoundEffects": "Sound effects",
+  "settingsSoundEffectsDetail": "Play a sound when you open an itinerary",
   "settingsSupport": "Support",
   "settingsHelpCenter": "Help center",
   "settingsAbout": "About Ntripi",

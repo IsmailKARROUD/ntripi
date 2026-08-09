@@ -566,6 +566,12 @@ class AppLocalizationsAr extends AppLocalizations {
   String get settingsTheme => 'المظهر';
 
   @override
+  String get settingsSoundEffects => 'المؤثرات الصوتية';
+
+  @override
+  String get settingsSoundEffectsDetail => 'تشغيل صوت عند فتح مسار';
+
+  @override
   String get settingsSupport => 'الدعم';
 
   @override

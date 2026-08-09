@@ -566,6 +566,13 @@ class AppLocalizationsDe extends AppLocalizations {
   String get settingsTheme => 'Design';
 
   @override
+  String get settingsSoundEffects => 'Soundeffekte';
+
+  @override
+  String get settingsSoundEffectsDetail =>
+      'Beim Öffnen einer Route einen Ton abspielen';
+
+  @override
   String get settingsSupport => 'Support';
 
   @override

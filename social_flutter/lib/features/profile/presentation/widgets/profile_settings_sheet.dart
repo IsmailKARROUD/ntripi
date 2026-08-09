@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:social_flutter/core/api/api_client.dart';
 import 'package:social_flutter/core/api/api_endpoints.dart';
 import 'package:social_flutter/core/providers/locale_provider.dart';
+import 'package:social_flutter/core/providers/sound_effects_enabled_provider.dart';
 import 'package:social_flutter/features/auth/presentation/widgets/legal_doc_sheet.dart';
 import 'package:social_flutter/features/auth/providers/legal_provider.dart';
 import 'package:social_flutter/core/providers/theme_mode_provider.dart';
@@ -379,6 +380,26 @@ class _SettingsSheet extends ConsumerWidget {
                         label: l10n.settingsTheme,
                         detail: themeDetail,
                         onTap: () => _showThemePicker(context, ref),
+                      ),
+                      // Not hidden on web, unlike the shake row below —
+                      // audioplayers plays the cue there too.
+                      _SheetRow(
+                        icon: Icons.volume_up_outlined,
+                        iconBg: nt.mist,
+                        iconColor: nt.forest,
+                        label: l10n.settingsSoundEffects,
+                        subtitle: l10n.settingsSoundEffectsDetail,
+                        trailing: Switch(
+                          value: ref.watch(soundEffectsEnabledProvider),
+                          onChanged: (value) => ref
+                              .read(soundEffectsEnabledProvider.notifier)
+                              .setEnabled(value),
+                        ),
+                        onTap: () => ref
+                            .read(soundEffectsEnabledProvider.notifier)
+                            .setEnabled(
+                              !ref.read(soundEffectsEnabledProvider),
+                            ),
                       ),
                       _SheetRow(
                         icon: Icons.shield_outlined,
