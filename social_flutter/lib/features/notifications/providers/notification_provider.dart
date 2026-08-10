@@ -10,6 +10,11 @@
 // off screen and only queues the DELETE, which fires when the undo window
 // closes. Undo is therefore real — nothing was sent — where a server-first
 // delete could only be "undone" by re-creating a row the API cannot re-create.
+//
+// Both notifiers carry two reads: a user-initiated one (refresh) that may show
+// a spinner and may fail loudly, and a background one (poll / silentRefresh)
+// driven by NotificationPoller that may do neither. Nobody asked for the
+// background read, so it must never blank a good badge or a loaded feed.
 
 import 'dart:async';
 
@@ -54,17 +59,66 @@ class NotificationsNotifier extends AsyncNotifier<List<AppNotification>> {
     // about to be deleted anyway.
     await flushPending();
     if (!ref.mounted) return;
-    state = const AsyncLoading();
+    // Only a state with nothing to show swaps in the skeleton. A pull-to-refresh
+    // draws its own spinner over a list the user is still holding, and blanking
+    // it mid-gesture reads as the feed being wiped. (AsyncValue.copyWithPrevious
+    // is package-internal in Riverpod 3, so this is the supported way to say it.)
+    if (!state.hasValue) state = const AsyncLoading();
     final next = await AsyncValue.guard(() async {
       final page = await ref
           .read(notificationRepositoryProvider)
           .getNotifications(forceRefresh: true);
+      // The badge count rides along with every page — spending a second request
+      // on what is already in hand is why pulling here never fixed the bell.
+      _pushCount(page.unreadCount);
       return page.notifications;
     });
     // Assigning state on a disposed notifier throws; a pull-to-refresh the user
     // navigated away from must not take the app down with it.
     if (!ref.mounted) return;
     state = next;
+  }
+
+  /// Reload in the background, leaving the current rows on screen throughout.
+  ///
+  /// The poller's counterpart to [refresh]: nobody asked for this load, so it
+  /// may neither blank the feed with a spinner nor replace it with an error —
+  /// a failed background fetch just leaves the last good data alone.
+  Future<void> silentRefresh() async {
+    if (!isOnlineNowRef(ref)) return;
+    // A queued DELETE means an undo snackbar is still on screen. Reloading now
+    // would put the dismissed row back under the user's finger, and flushing
+    // the queue first would destroy the undo they were offered. The row is
+    // already gone from the server's next answer anyway — wait for the window.
+    if (_pending.isNotEmpty) return;
+
+    final List<AppNotification> rows;
+    try {
+      final page =
+          await ref.read(notificationRepositoryProvider).getNotifications();
+      if (!ref.mounted) return;
+      _pushCount(page.unreadCount);
+      rows = page.notifications;
+    } catch (_) {
+      // Swallowed on purpose — see the doc comment. The next poll retries.
+      return;
+    }
+    if (!ref.mounted) return;
+    state = AsyncData(rows);
+  }
+
+  /// Hand the badge the count that came down with the feed. Never called from
+  /// [build] — writing another provider mid-build is the one thing Riverpod
+  /// forbids outright, and the poller keeps the badge current regardless.
+  void _pushCount(int unread) {
+    if (!ref.mounted) return;
+    // Only into a badge that already exists and has settled. Reading it into
+    // existence here would fire the very request this exists to save, and a
+    // build still in flight would overwrite what we pushed the moment its own
+    // (equally fresh) answer lands.
+    if (!ref.exists(unreadNotificationCountProvider)) return;
+    if (ref.read(unreadNotificationCountProvider).isLoading) return;
+    ref.read(unreadNotificationCountProvider.notifier).setCount(unread);
   }
 
   /// Clear the badge on the server, leaving the rows on screen as they are.
@@ -199,14 +253,54 @@ class UnreadNotificationCountNotifier extends AsyncNotifier<int> {
     return ref.read(notificationRepositoryProvider).getUnreadCount();
   }
 
-  Future<void> refresh() async {
-    if (!isOnlineNowRef(ref)) return;
-    state = await AsyncValue.guard(
-      () => ref
-          .read(notificationRepositoryProvider)
-          .getUnreadCount(forceRefresh: true),
-    );
+  /// The polled read. Returns true when the count went **up**, which is the
+  /// app's only signal that something new arrived.
+  ///
+  /// The only read this notifier needs. There is no forced variant: the three
+  /// user actions that change the count (markAllRead, clearAll, a committed
+  /// delete) invalidate the provider outright, and a feed load hands its count
+  /// over via [setCount] rather than asking for it again.
+  ///
+  /// Deliberately not forced: the conditional GET sends If-None-Match, so an
+  /// unchanged count comes back 304 with no body and the cache interceptor
+  /// replays the value. That is what makes a once-a-minute poll close to free.
+  Future<bool> poll() async {
+    if (!isOnlineNowRef(ref)) return false;
+
+    // The very first poll lands while build() is still in flight — the poller
+    // reads this notifier into existence and immediately asks it to fetch. Wait
+    // for the answer already on the wire instead of racing a second request for
+    // the same integer, and report no arrival: there is no baseline to rise
+    // from, and a cold launch showing three unread is not three that just came.
+    if (!state.hasValue) {
+      try {
+        await future;
+      } catch (_) {
+        // build()'s failure is already the provider's state; nothing to add.
+      }
+      return false;
+    }
+
+    final int next;
+    try {
+      next = await ref.read(notificationRepositoryProvider).getUnreadCount();
+    } catch (_) {
+      // Never written as AsyncError: nobody asked for this read, and blanking a
+      // correct badge because one poll hit a dead tunnel is worse than a count
+      // that is a minute stale. The next poll corrects it.
+      return false;
+    }
+    if (!ref.mounted) return false;
+
+    // hasValue above guarantees a real baseline here, so a rise is genuinely
+    // new rather than the first number this session happened to see.
+    final previous = state.value;
+    state = AsyncData(next);
+    return previous != null && next > previous;
   }
+
+  /// Accept a count that arrived with a feed page instead of spending a request.
+  void setCount(int unread) => state = AsyncData(unread);
 }
 
 final unreadNotificationCountProvider =

@@ -9,6 +9,8 @@
 // These tests pin both halves: teardown must not throw, and the queued DELETE
 // must still be sent on the way out.
 
+import 'dart:async';
+
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -19,13 +21,17 @@ import 'package:social_flutter/features/notifications/domain/app_notification.da
 import 'package:social_flutter/features/notifications/presentation/notifications_screen.dart';
 import 'package:social_flutter/features/notifications/providers/notification_provider.dart';
 import 'package:social_flutter/l10n/app_localizations.dart';
+import 'package:social_flutter/shared/widgets/loaders.dart';
 
 // ── Fakes ─────────────────────────────────────────────────────────────────
 
 class _FakeNotificationRepo extends NotificationRepository {
-  _FakeNotificationRepo() : super(Dio());
+  _FakeNotificationRepo({this.clearAllGate}) : super(Dio());
 
+  /// Held open by a test that needs to observe the in-flight state.
+  final Completer<void>? clearAllGate;
   final List<String> deleted = [];
+  int clearAllCalls = 0;
 
   @override
   Future<NotificationsPage> getNotifications({
@@ -45,7 +51,10 @@ class _FakeNotificationRepo extends NotificationRepository {
   Future<void> deleteNotification(String id) async => deleted.add(id);
 
   @override
-  Future<void> clearAll() async {}
+  Future<void> clearAll() async {
+    clearAllCalls++;
+    await clearAllGate?.future;
+  }
 }
 
 // ── Fixtures ──────────────────────────────────────────────────────────────
@@ -122,6 +131,56 @@ void main() {
 
       expect(tester.takeException(), isNull);
       expect(repo.deleted, ['n1']);
+    });
+  });
+
+  group('NotificationsScreen clear all', () {
+    testWidgets(
+        'Given the confirm dialog was accepted, '
+        'When the request is still in flight, '
+        'Then the button shows the Ntripi ring loader and cannot be re-tapped',
+        (tester) async {
+      final gate = Completer<void>();
+      final repo = _FakeNotificationRepo(clearAllGate: gate);
+      addTearDown(() {
+        if (!gate.isCompleted) gate.complete();
+      });
+
+      await tester.pumpWidget(_buildScreen(repo));
+      await tester.pumpAndSettle();
+
+      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+
+      await tester.tap(find.text(l10n.notificationsClearAll));
+      await tester.pumpAndSettle();
+      // Tier 2 confirm first — the loader must not appear before the user says
+      // yes, and the confirm label matches the button's, hence .last.
+      expect(find.byType(NTripiRingLoader), findsNothing);
+
+      await tester.tap(find.text(l10n.notificationsClearAll).last);
+      await tester.pump();
+      // Fixed pump, not pumpAndSettle: the dialog's exit transition has to
+      // finish (its icon is also backspace_outlined) but the ring loader spins
+      // forever, so settling would time out.
+      await tester.pump(const Duration(milliseconds: 500));
+
+      expect(find.byType(NTripiRingLoader), findsOneWidget);
+      // The backspace icon gave up its slot, so the label still reads.
+      expect(find.byIcon(Icons.backspace_outlined), findsNothing);
+      expect(find.text(l10n.notificationsClearAll), findsOneWidget);
+
+      // Re-tapping while in flight must not fire a second request.
+      await tester.tap(find.text(l10n.notificationsClearAll));
+      await tester.pump();
+      expect(repo.clearAllCalls, 1);
+
+      gate.complete();
+      await tester.pumpAndSettle();
+
+      // Feed emptied: the loader is gone along with the whole button.
+      expect(find.byType(NTripiRingLoader), findsNothing);
+      expect(find.text(l10n.notificationsEmpty), findsOneWidget);
+      expect(tester.takeException(), isNull);
     });
   });
 }

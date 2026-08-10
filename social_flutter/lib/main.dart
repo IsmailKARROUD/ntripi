@@ -16,6 +16,7 @@ import 'package:social_flutter/features/bug_report/presentation/bug_report_local
 import 'package:social_flutter/features/bug_report/presentation/bug_report_sheet.dart';
 import 'package:social_flutter/features/bug_report/presentation/bug_report_theme.dart';
 import 'package:social_flutter/features/bug_report/presentation/shake_to_report.dart';
+import 'package:social_flutter/features/notifications/presentation/widgets/notification_poller.dart';
 import 'package:social_flutter/l10n/app_localizations.dart';
 
 Future<void> main() async {
@@ -126,7 +127,11 @@ class NtripiApp extends ConsumerWidget {
             // the controller above.
             // TosGate wraps everything routed: many screens are declared at
             // the router's root level and would slip past a shell-mounted gate.
-            child: TosGate(child: ShakeToReport(child: child!)),
+            // NotificationPoller sits here for the same reason, and gates
+            // itself on the session so /login and /splash never poll.
+            child: TosGate(
+              child: NotificationPoller(child: ShakeToReport(child: child!)),
+            ),
           ),
         ),
       ),
