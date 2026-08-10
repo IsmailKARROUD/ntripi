@@ -1097,6 +1097,14 @@
       }
     }
   },
+  "shareProfileCaption": "{name} on Ntripi — see where they've been",
+  "@shareProfileCaption": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "apiErrorNotAuthenticated": "You are not signed in.",
   "apiErrorAccountDeactivated": "Your account has been deactivated.",
   "apiErrorEmailUnverified": "Verify your email via Google to do this.",
@@ -1356,5 +1364,10 @@
     }
   },
   "notificationWarned": "You've received a moderation warning",
-  "notificationWarnedDetail": "Tap to see why and to appeal"
+  "notificationWarnedDetail": "Tap to see why and to appeal",
+  "notificationDelete": "Delete notification",
+  "notificationDeleted": "Notification deleted",
+  "notificationsClearAll": "Clear all",
+  "notificationsClearAllTitle": "Clear all notifications?",
+  "notificationsClearAllMessage": "Every notification will be removed from your feed. Moderation notices stay on your Account status page."
 }

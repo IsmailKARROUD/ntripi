@@ -202,6 +202,12 @@ const kPrivacyPolicyUrl = '$kShareBaseUrl/privacy';
 /// Returns the public share URL for a given itinerary ID.
 String shareUrlFor(String itineraryId) => '$kShareBaseUrl/share/i/$itineraryId';
 
+/// Public landing page for a profile. Keyed by username, not id: usernames are
+/// immutable here (PATCH /users/me deliberately excludes them), so the link
+/// cannot rot, and a handle survives being pasted into a chat readably.
+String profileShareUrlFor(String username) =>
+    '$kShareBaseUrl/share/u/$username';
+
 // ---------------------------------------------------------------------------
 // Cover image endpoints
 // ---------------------------------------------------------------------------
@@ -251,8 +257,13 @@ const kMyBlocksEndpoint = '/users/me/blocks';
 // ---------------------------------------------------------------------------
 
 /// The in-app notification feed. Returns the page AND the unread count, so
-/// opening the screen does not need a second call for the badge.
+/// opening the screen does not need a second call for the badge. DELETE on the
+/// same path empties the feed.
 const kNotificationsEndpoint = '/notifications';
+
+/// Delete one notification. Idempotent — a row already gone still answers 204,
+/// which is what lets the client send this only after it has removed the row.
+String notificationEndpoint(String id) => '/notifications/$id';
 
 /// Badge count on its own. Polled, and cheap: an unchanged count comes back as
 /// a 304 with no body via the ETag middleware.

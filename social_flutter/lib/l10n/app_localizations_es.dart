@@ -2429,6 +2429,11 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
+  String shareProfileCaption(String name) {
+    return '$name en Ntripi — mira dónde ha estado';
+  }
+
+  @override
   String get apiErrorNotAuthenticated => 'No has iniciado sesión.';
 
   @override
@@ -2961,4 +2966,20 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get notificationWarnedDetail => 'Toca para ver por qué y apelar';
+
+  @override
+  String get notificationDelete => 'Eliminar notificación';
+
+  @override
+  String get notificationDeleted => 'Notificación eliminada';
+
+  @override
+  String get notificationsClearAll => 'Borrar todo';
+
+  @override
+  String get notificationsClearAllTitle => '¿Borrar todas las notificaciones?';
+
+  @override
+  String get notificationsClearAllMessage =>
+      'Se eliminarán todas las notificaciones de tu lista. Los avisos de moderación permanecen en tu página Estado de la cuenta.';
 }

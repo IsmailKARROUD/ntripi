@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="{{ lang or 'en' }}" dir="{{ dir }}">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ display_name }} — Ntripi</title>
+  <meta name="description" content="{{ bio or display_name ~ ' on Ntripi.' }}">
+
+  <meta property="og:type"        content="profile">
+  <meta property="og:site_name"   content="Ntripi">
+  <meta property="og:title"       content="{{ display_name }}">
+  <meta property="og:description" content="{{ bio or '@' ~ user.username ~ ' on Ntripi.' }}">
+  <meta property="og:url"         content="{{ share_url }}">
+  <meta property="og:image"       content="{{ preview_image_url }}">
+
+  <meta name="twitter:card"        content="summary">
+  <meta name="twitter:title"       content="{{ display_name }}">
+  <meta name="twitter:description" content="{{ bio or '@' ~ user.username ~ ' on Ntripi.' }}">
+  <meta name="twitter:image"       content="{{ preview_image_url }}">
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --brand:  #4F46E5;
+      --text:   #111827;
+      --sub:    #6B7280;
+      --border: #E5E7EB;
+      --bg:     #F9FAFB;
+      --white:  #FFFFFF;
+      --radius: 12px;
+    }
+
+    body {
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    a { color: var(--brand); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    header {
+      background: var(--white);
+      border-bottom: 1px solid var(--border);
+      padding: 14px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .logo {
+      font-size: 20px;
+      font-weight: 800;
+      color: var(--brand);
+      letter-spacing: -0.5px;
+    }
+    .nav-cta {
+      background: var(--brand);
+      color: var(--white);
+      font-size: 14px;
+      font-weight: 700;
+      padding: 8px 16px;
+      border-radius: 8px;
+    }
+    .nav-cta:hover { opacity: .88; text-decoration: none; }
+
+    main { flex: 1; width: 100%; max-width: 720px; margin: 0 auto; padding: 28px 16px 40px; }
+
+    .identity {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 28px 24px;
+      text-align: center;
+    }
+
+    .avatar {
+      width: 104px;
+      height: 104px;
+      border-radius: 50%;
+      object-fit: cover;
+      margin: 0 auto 14px;
+      display: block;
+      background: var(--bg);
+      border: 1px solid var(--border);
+    }
+    .avatar-fallback {
+      width: 104px;
+      height: 104px;
+      border-radius: 50%;
+      margin: 0 auto 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--brand);
+      color: var(--white);
+      font-size: 42px;
+      font-weight: 800;
+    }
+
+    h1 { font-size: 24px; font-weight: 800; letter-spacing: -0.3px; word-break: break-word; }
+    .handle { color: var(--sub); font-size: 14px; margin-top: 2px; }
+    .bio { margin-top: 14px; font-size: 15px; white-space: pre-wrap; word-break: break-word; }
+
+    .tallies {
+      display: flex;
+      justify-content: center;
+      gap: 32px;
+      margin-top: 20px;
+      padding-top: 20px;
+      border-top: 1px solid var(--border);
+    }
+    .tally-n { font-size: 20px; font-weight: 800; }
+    .tally-label { font-size: 12px; color: var(--sub); text-transform: uppercase; letter-spacing: .6px; }
+
+    .section-title {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--sub);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin: 32px 0 12px;
+    }
+
+    .trip {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 12px;
+      margin-bottom: 10px;
+      color: inherit;
+    }
+    .trip:hover { text-decoration: none; border-color: var(--brand); }
+    .trip-cover {
+      width: 72px;
+      height: 72px;
+      border-radius: 8px;
+      object-fit: cover;
+      flex-shrink: 0;
+      background: var(--bg);
+    }
+    .trip-cover-fallback {
+      width: 72px;
+      height: 72px;
+      border-radius: 8px;
+      flex-shrink: 0;
+      background: var(--bg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 26px;
+    }
+    .trip-body { min-width: 0; }
+    .trip-title { font-weight: 700; font-size: 16px; word-break: break-word; }
+    .trip-meta { color: var(--sub); font-size: 13px; margin-top: 2px; }
+
+    .empty {
+      background: var(--white);
+      border: 1px dashed var(--border);
+      border-radius: var(--radius);
+      padding: 28px;
+      text-align: center;
+      color: var(--sub);
+      font-size: 15px;
+    }
+
+    .cta {
+      margin-top: 32px;
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 28px 24px;
+      text-align: center;
+    }
+    .cta-title { font-size: 19px; font-weight: 800; margin-bottom: 6px; }
+    .cta-sub { color: var(--sub); font-size: 14px; margin-bottom: 18px; }
+    .btn-open-app {
+      display: inline-block;
+      background: var(--brand);
+      color: var(--white);
+      font-weight: 700;
+      font-size: 16px;
+      padding: 13px 28px;
+      border-radius: var(--radius);
+    }
+    .btn-open-app:hover { opacity: .88; text-decoration: none; }
+
+    footer {
+      text-align: center;
+      padding: 20px;
+      font-size: 13px;
+      color: var(--sub);
+      border-top: 1px solid var(--border);
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">Ntripi</div>
+  <a href="/app/" class="nav-cta">{{ _('share_get_the_app') }}</a>
+</header>
+
+<main>
+  <section class="identity">
+    {% if avatar_url %}
+      <img class="avatar" src="{{ avatar_url }}" alt="">
+    {% else %}
+      <div class="avatar-fallback">{{ display_name[:1] | upper }}</div>
+    {% endif %}
+
+    <h1>{{ display_name }}</h1>
+    <p class="handle">@{{ user.username }}</p>
+    {% if bio %}<p class="bio">{{ bio }}</p>{% endif %}
+
+    <div class="tallies">
+      <div>
+        <div class="tally-n">{{ user.followers_count }}</div>
+        <div class="tally-label">{{ _('share_profile_followers') }}</div>
+      </div>
+      <div>
+        <div class="tally-n">{{ user.following_count }}</div>
+        <div class="tally-label">{{ _('share_profile_following') }}</div>
+      </div>
+    </div>
+  </section>
+
+  <div class="section-title">{{ _('share_profile_trips') }}</div>
+
+  {% if itineraries %}
+    {% for trip in itineraries %}
+      <a class="trip" href="{{ trip.url }}">
+        {% if trip.cover_image_url %}
+          <img class="trip-cover" src="{{ trip.cover_image_url }}" alt="">
+        {% else %}
+          <div class="trip-cover-fallback">🗺️</div>
+        {% endif %}
+        <div class="trip-body">
+          <div class="trip-title">{{ trip.title }}</div>
+          <div class="trip-meta">
+            {{ trip.stop_count }} {{ _('share_stops') }}
+            {% if trip.rating_avg %} · ★ {{ trip.rating_avg }} ({{ trip.rating_count }}){% endif %}
+          </div>
+        </div>
+      </a>
+    {% endfor %}
+  {% else %}
+    <div class="empty">{{ _('share_profile_no_trips') }}</div>
+  {% endif %}
+
+  <section class="cta">
+    <h2 class="cta-title">{{ _('share_plan_own') }}</h2>
+    <p class="cta-sub">{{ _('share_plan_own_sub') }}</p>
+    <a class="btn-open-app" href="ntripi://user/{{ user.username }}">
+      {{ _('share_open_in_app') }}
+    </a>
+  </section>
+</main>
+
+<footer>
+  <p>{{ _('share_shared_via') }} · <a href="/">ntripi.app</a></p>
+</footer>
+
+</body>
+</html>

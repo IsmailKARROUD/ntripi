@@ -14,11 +14,15 @@ class NotificationTile extends StatelessWidget {
   final bool isLast;
   final VoidCallback? onTap;
 
+  /// Null offline, and on any surface where the row cannot be removed.
+  final VoidCallback? onDelete;
+
   const NotificationTile({
     super.key,
     required this.notification,
     required this.isLast,
     this.onTap,
+    this.onDelete,
   });
 
   @override
@@ -86,7 +90,23 @@ class NotificationTile extends StatelessWidget {
                     ],
                   ),
                 ),
-                if (onTap != null) ...[
+                // The ✕ takes the chevron's place rather than sitting beside it:
+                // two trailing glyphs on a three-line row is noise, the tint and
+                // the ink splash already say the row is tappable, and a control
+                // that deletes has to be the unambiguous one. It is also the
+                // only delete affordance on web, where there is no swipe.
+                if (onDelete != null) ...[
+                  const SizedBox(width: 2),
+                  IconButton(
+                    icon: Icon(Icons.close_rounded, size: 18, color: nt.text3),
+                    tooltip: l10n.notificationDelete,
+                    visualDensity: VisualDensity.compact,
+                    padding: EdgeInsets.zero,
+                    constraints:
+                        const BoxConstraints.tightFor(width: 36, height: 36),
+                    onPressed: onDelete,
+                  ),
+                ] else if (onTap != null) ...[
                   const SizedBox(width: 6),
                   Padding(
                     padding: const EdgeInsets.only(top: 2),

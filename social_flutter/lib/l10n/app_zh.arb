@@ -701,6 +701,7 @@
   "alreadyInItinerary": "{name} 已在此行程中。",
   "stopNumberOfTotal": "第 {n} 个停靠点，共 {total} 个",
   "shareCaption": "在 Ntripi 上查看“{title}” — {stops}，{duration}",
+  "shareProfileCaption": "{name} 在 Ntripi — 看看 TA 去过哪些地方",
   "apiErrorNotAuthenticated": "你尚未登录。",
   "apiErrorAccountDeactivated": "你的账号已被停用。",
   "apiErrorEmailUnverified": "请通过 Google 验证你的邮箱以执行此操作。",
@@ -918,5 +919,10 @@
     }
   },
   "notificationWarned": "你收到了一条审核警告",
-  "notificationWarnedDetail": "点击查看原因并申诉"
+  "notificationWarnedDetail": "点击查看原因并申诉",
+  "notificationDelete": "删除通知",
+  "notificationDeleted": "通知已删除",
+  "notificationsClearAll": "清除全部",
+  "notificationsClearAllTitle": "清除全部通知？",
+  "notificationsClearAllMessage": "你的列表中的所有通知都将被移除。审核通知仍会保留在“账号状态”页面。"
 }

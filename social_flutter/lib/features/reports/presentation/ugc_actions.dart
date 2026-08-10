@@ -33,6 +33,12 @@ class UgcActionsMenu extends ConsumerWidget {
 
   final Color? iconColor;
 
+  /// Custom trigger, replacing the default icon. Lets a caller with its own
+  /// button styling (the profile hero's frosted glass) wear it here — the two
+  /// are mutually exclusive in PopupMenuButton, and only the `child` form
+  /// leaves the widget's own size intact instead of forcing IconButton's.
+  final Widget? child;
+
   const UgcActionsMenu({
     super.key,
     required this.target,
@@ -40,6 +46,7 @@ class UgcActionsMenu extends ConsumerWidget {
     this.authorUsername,
     this.onBlocked,
     this.iconColor,
+    this.child,
   });
 
   @override
@@ -48,7 +55,9 @@ class UgcActionsMenu extends ConsumerWidget {
     final canBlock = authorUserId != null;
 
     return PopupMenuButton<String>(
-      icon: Icon(Icons.more_horiz, color: iconColor ?? context.nt.text2),
+      icon: child == null
+          ? Icon(Icons.more_horiz, color: iconColor ?? context.nt.text2)
+          : null,
       tooltip: l10n.reportContent,
       itemBuilder: (context) => [
         PopupMenuItem(
@@ -85,6 +94,7 @@ class UgcActionsMenu extends ConsumerWidget {
           );
         }
       },
+      child: child,
     );
   }
 }

@@ -13,8 +13,10 @@ import 'package:social_flutter/core/ui/app_theme.dart';
 import 'package:social_flutter/core/ui/destructive_actions.dart';
 import 'package:social_flutter/core/utils/platform_utils.dart';
 import 'package:social_flutter/features/auth/providers/auth_provider.dart';
+import 'package:social_flutter/features/feed/providers/feed_providers.dart';
 import 'package:social_flutter/features/follows/providers/follow_provider.dart';
 import 'package:social_flutter/features/notifications/presentation/widgets/notification_bell.dart';
+import 'package:social_flutter/features/itineraries/data/share_service.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/itinerary_summary_card.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/markdown_notes_editor.dart';
 import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
@@ -219,10 +221,21 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                           target: ReportTarget.user(user.id),
                           authorUserId: user.id,
                           authorUsername: user.username,
-                          iconColor: Colors.white,
-                          // The profile is about to be invisible to us.
-                          onBlocked: () => Navigator.of(context).maybePop(),
+                          onBlocked: () {
+                            // Blocking severs any follow in BOTH directions and
+                            // rewrites both counters server-side, so the
+                            // viewer's own profile and feed are now stale.
+                            ref.invalidate(myProfileProvider);
+                            ref.invalidate(feedProvider);
+                            // The profile is about to be invisible to us.
+                            Navigator.of(context).maybePop();
+                          },
+                          // Wear the hero's frosted glass like Back and Share.
+                          child: const GlassIconChrome(icon: Icons.more_horiz),
                         ),
+                  onShare: widget.isSelf
+                      ? null
+                      : () => ShareService().shareProfile(user, l10n),
                   locations: heroLocations,
                   editButtonKey: _editButtonKey,
                   onHeroTap: isContentHidden

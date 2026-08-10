@@ -2288,6 +2288,11 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
+  String shareProfileCaption(String name) {
+    return '$name 在 Ntripi — 看看 TA 去过哪些地方';
+  }
+
+  @override
   String get apiErrorNotAuthenticated => '你尚未登录。';
 
   @override
@@ -2783,4 +2788,20 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get notificationWarnedDetail => '点击查看原因并申诉';
+
+  @override
+  String get notificationDelete => '删除通知';
+
+  @override
+  String get notificationDeleted => '通知已删除';
+
+  @override
+  String get notificationsClearAll => '清除全部';
+
+  @override
+  String get notificationsClearAllTitle => '清除全部通知？';
+
+  @override
+  String get notificationsClearAllMessage =>
+      '你的列表中的所有通知都将被移除。审核通知仍会保留在“账号状态”页面。';
 }

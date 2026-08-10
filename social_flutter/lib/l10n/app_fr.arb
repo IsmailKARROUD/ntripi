@@ -874,6 +874,7 @@
       }
     }
   },
+  "shareProfileCaption": "{name} sur Ntripi — découvrez les lieux visités",
   "apiErrorNotAuthenticated": "Vous n'êtes pas connecté.",
   "apiErrorAccountDeactivated": "Votre compte a été désactivé.",
   "apiErrorEmailUnverified": "Vérifiez votre e-mail via Google pour effectuer cette action.",
@@ -1091,5 +1092,10 @@
     }
   },
   "notificationWarned": "Vous avez reçu un avertissement de modération",
-  "notificationWarnedDetail": "Appuyez pour voir pourquoi et faire appel"
+  "notificationWarnedDetail": "Appuyez pour voir pourquoi et faire appel",
+  "notificationDelete": "Supprimer la notification",
+  "notificationDeleted": "Notification supprimée",
+  "notificationsClearAll": "Tout effacer",
+  "notificationsClearAllTitle": "Effacer toutes les notifications ?",
+  "notificationsClearAllMessage": "Toutes les notifications seront retirées de votre fil. Les avis de modération restent sur votre page État du compte."
 }
