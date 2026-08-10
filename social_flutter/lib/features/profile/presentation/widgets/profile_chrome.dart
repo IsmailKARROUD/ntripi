@@ -34,6 +34,10 @@ class ProfileHeroAndIdentity extends StatelessWidget {
   /// Report / block affordance for someone else's profile. Null on your own.
   final Widget? moreActions;
 
+  /// Opens the OS share sheet for this profile. A callback rather than a
+  /// Widget so this file keeps no dependency on the share feature.
+  final VoidCallback? onShare;
+
   /// Notification bell, shown next to Settings on your own profile. Passed in
   /// rather than built here so this file stays free of feature dependencies —
   /// same reason moreActions is a Widget and not a callback.
@@ -56,6 +60,7 @@ class ProfileHeroAndIdentity extends StatelessWidget {
     this.onSettings,
     this.coverImageUrl,
     this.moreActions,
+    this.onShare,
     this.notificationsAction,
     this.locations = const [],
     this.onHeroTap,
@@ -92,6 +97,8 @@ class ProfileHeroAndIdentity extends StatelessWidget {
               headerLabel: headerLabel,
               onEdit: onEdit,
               onSettings: onSettings,
+              moreActions: moreActions,
+              onShare: onShare,
               notificationsAction: notificationsAction,
               coverImageUrl: coverImageUrl,
               locations: locations,
@@ -170,6 +177,9 @@ class ProfileMapHero extends StatelessWidget {
   /// Report / block affordance for someone else's profile. Null on your own.
   final Widget? moreActions;
 
+  /// Opens the OS share sheet for this profile. Null disables the button.
+  final VoidCallback? onShare;
+
   /// Notification bell, rendered beside Settings on your own profile.
   final Widget? notificationsAction;
   final List<VisitedLocation> locations;
@@ -187,6 +197,7 @@ class ProfileMapHero extends StatelessWidget {
     this.onSettings,
     this.coverImageUrl,
     this.moreActions,
+    this.onShare,
     this.notificationsAction,
     this.locations = const [],
     this.onHeroTap,
@@ -412,6 +423,7 @@ class ProfileMapHero extends StatelessWidget {
                               GlassIconButton(
                                 icon: Icons.share_outlined,
                                 tooltip: l10n.shareProfileTooltip,
+                                onTap: onShare,
                               ),
                               if (moreActions != null) ...[
                                 const SizedBox(width: 8),
@@ -562,6 +574,38 @@ class AvatarWithBadge extends StatelessWidget {
   }
 }
 
+/// The frosted-glass square, without any gesture of its own.
+///
+/// Split out of [GlassIconButton] so a widget that brings its own tap handling
+/// can still wear the hero chrome — the overflow menu is a PopupMenuButton,
+/// which must own the gesture itself.
+class GlassIconChrome extends StatelessWidget {
+  final IconData icon;
+
+  const GlassIconChrome({super.key, required this.icon});
+
+  @override
+  Widget build(BuildContext context) {
+    final nt = context.nt;
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(12),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+        child: Container(
+          width: 40,
+          height: 40,
+          decoration: BoxDecoration(
+            color: nt.buttonTransparent,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: NtripiBrand.chrome.withValues(alpha: 0.22)),
+          ),
+          child: Icon(icon, color: NtripiBrand.chrome, size: 22),
+        ),
+      ),
+    );
+  }
+}
+
 class GlassIconButton extends StatelessWidget {
   final IconData icon;
   final String tooltip;
@@ -576,28 +620,11 @@ class GlassIconButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final nt = context.nt;
     return Tooltip(
       message: tooltip,
       child: GestureDetector(
         onTap: onTap,
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(12),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
-            child: Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: nt.buttonTransparent,
-                borderRadius: BorderRadius.circular(12),
-                border:
-                    Border.all(color: NtripiBrand.chrome.withValues(alpha: 0.22)),
-              ),
-              child: Icon(icon, color: NtripiBrand.chrome, size: 22),
-            ),
-          ),
-        ),
+        child: GlassIconChrome(icon: icon),
       ),
     );
   }

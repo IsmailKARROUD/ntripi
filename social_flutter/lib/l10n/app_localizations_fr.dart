@@ -2449,6 +2449,11 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
+  String shareProfileCaption(String name) {
+    return '$name sur Ntripi — découvrez les lieux visités';
+  }
+
+  @override
   String get apiErrorNotAuthenticated => 'Vous n\'êtes pas connecté.';
 
   @override
@@ -3120,4 +3125,20 @@ class AppLocalizationsFr extends AppLocalizations {
   String aboutCopyright(int year) {
     return '© $year Ntripi';
   }
+
+  @override
+  String get notificationDelete => 'Supprimer la notification';
+
+  @override
+  String get notificationDeleted => 'Notification supprimée';
+
+  @override
+  String get notificationsClearAll => 'Tout effacer';
+
+  @override
+  String get notificationsClearAllTitle => 'Effacer toutes les notifications ?';
+
+  @override
+  String get notificationsClearAllMessage =>
+      'Toutes les notifications seront retirées de votre fil. Les avis de modération restent sur votre page État du compte.';
 }

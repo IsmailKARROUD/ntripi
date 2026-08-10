@@ -315,6 +315,37 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "zh": "路线",
     },
     "share_free": {"en": "Free", "fr": "Gratuit", "ar": "مجاني", "de": "Kostenlos", "es": "Gratis", "zh": "免费"},
+    # ── Profile landing page (/share/u/{username}) ────────────────────────
+    # Kept free of gendered pronouns: the page renders for any account and the
+    # owner's gender is never known.
+    "share_profile_private_message": {
+        "en": "This account is private. Open the Ntripi app to send a follow request.",
+        "fr": "Ce compte est privé. Ouvrez l'application Ntripi pour envoyer une demande d'abonnement.",
+        "ar": "هذا الحساب خاص. افتح تطبيق Ntripi لإرسال طلب متابعة.",
+        "de": "Dieses Konto ist privat. Öffnen Sie die Ntripi-App, um eine Follower-Anfrage zu senden.",
+        "es": "Esta cuenta es privada. Abre la aplicación Ntripi para enviar una solicitud de seguimiento.",
+        "zh": "此账户为私密账户。请打开 Ntripi 应用发送关注请求。",
+    },
+    "share_profile_followers": {
+        "en": "Followers", "fr": "Abonnés", "ar": "المتابعون",
+        "de": "Follower", "es": "Seguidores", "zh": "粉丝",
+    },
+    "share_profile_following": {
+        "en": "Following", "fr": "Abonnements", "ar": "المتابَعون",
+        "de": "Folgt", "es": "Siguiendo", "zh": "关注",
+    },
+    "share_profile_trips": {
+        "en": "Public itineraries", "fr": "Itinéraires publics", "ar": "المسارات العامة",
+        "de": "Öffentliche Reiserouten", "es": "Itinerarios públicos", "zh": "公开行程",
+    },
+    "share_profile_no_trips": {
+        "en": "No public itineraries yet.",
+        "fr": "Aucun itinéraire public pour l'instant.",
+        "ar": "لا توجد مسارات عامة بعد.",
+        "de": "Noch keine öffentlichen Reiserouten.",
+        "es": "Todavía no hay itinerarios públicos.",
+        "zh": "暂无公开行程。",
+    },
     "share_plan_own": {
         "en": "Plan your own journey",
         "fr": "Planifiez votre propre voyage",

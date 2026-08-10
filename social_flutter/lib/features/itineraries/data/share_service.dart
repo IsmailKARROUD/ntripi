@@ -4,6 +4,7 @@ import 'package:share_plus/share_plus.dart';
 import 'package:social_flutter/core/api/api_endpoints.dart';
 import 'package:social_flutter/features/itineraries/domain/itinerary.dart';
 import 'package:social_flutter/l10n/app_localizations.dart';
+import 'package:social_flutter/shared/models/user.dart';
 
 class ShareService {
   /// Opens the native OS share sheet with the itinerary landing page URL.
@@ -13,6 +14,15 @@ class ShareService {
     // share_plus 13 replaced the top-level Share.share() with the instance API.
     await SharePlus.instance.share(
       ShareParams(text: '$caption\n$url', subject: itinerary.title),
+    );
+  }
+
+  /// Opens the native OS share sheet with the profile landing page URL.
+  Future<void> shareProfile(User user, AppLocalizations l10n) async {
+    final url = profileShareUrlFor(user.username);
+    final caption = l10n.shareProfileCaption(user.nameForDisplay);
+    await SharePlus.instance.share(
+      ShareParams(text: '$caption\n$url', subject: user.nameForDisplay),
     );
   }
 

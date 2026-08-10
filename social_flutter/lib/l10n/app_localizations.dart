@@ -4270,6 +4270,12 @@ abstract class AppLocalizations {
   /// **'Check out \"{title}\" on Ntripi — {stops}, {duration}'**
   String shareCaption(String title, String stops, String duration);
 
+  /// No description provided for @shareProfileCaption.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} on Ntripi — see where they\'ve been'**
+  String shareProfileCaption(String name);
+
   /// No description provided for @apiErrorNotAuthenticated.
   ///
   /// In en, this message translates to:
@@ -5415,6 +5421,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'© {year} Ntripi'**
   String aboutCopyright(int year);
+
+  /// No description provided for @notificationDelete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete notification'**
+  String get notificationDelete;
+
+  /// No description provided for @notificationDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Notification deleted'**
+  String get notificationDeleted;
+
+  /// No description provided for @notificationsClearAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear all'**
+  String get notificationsClearAll;
+
+  /// No description provided for @notificationsClearAllTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear all notifications?'**
+  String get notificationsClearAllTitle;
+
+  /// No description provided for @notificationsClearAllMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Every notification will be removed from your feed. Moderation notices stay on your Account status page.'**
+  String get notificationsClearAllMessage;
 }
 
 class _AppLocalizationsDelegate

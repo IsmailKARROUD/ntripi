@@ -4,7 +4,8 @@ test_notifications.py — Tests for the in-app notification feed.
 Covers the three suppression rules that only hold because
 notification_service.notify is the single writer (self, muted, blocked), the
 idempotent call sites (re-save, rating edit, repeat auto-hide), the feed and
-badge endpoints, the IDOR guard on marking read, and the retention purge.
+badge endpoints, the IDOR guards on marking read and deleting, and the retention
+purge — both its read window and its hard age cap.
 """
 
 from __future__ import annotations
@@ -14,11 +15,12 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 from fastapi.testclient import TestClient
+from pydantic import ValidationError
 
 from conftest import (
     TestingSessionLocal, auth_headers, make_admin, register_user,
 )
-from app.config import get_settings
+from app.config import Settings, get_settings
 from app.models.notification import Notification
 from app.services import notification_service
 
@@ -472,13 +474,114 @@ def test_feed_is_newest_first_and_paginates(client: TestClient):
 
 
 # ---------------------------------------------------------------------------
+# Deleting
+# ---------------------------------------------------------------------------
+
+def _one_notification(client, token) -> str:
+    """Register a saver, have them save `token`'s itinerary, return the row id."""
+    itinerary = _create_itinerary(client, token)
+    saver = register_user(client, "saver", "saver@x.com")
+    client.post(
+        f"/itineraries/{itinerary['id']}/save",
+        headers=auth_headers(saver["access_token"]),
+    )
+    return _feed(client, token)["notifications"][0]["id"]
+
+
+def test_delete_removes_the_row_and_clears_the_badge(client: TestClient):
+    owner = register_user(client, "owner", "owner@x.com")
+    headers = auth_headers(owner["access_token"])
+    notification_id = _one_notification(client, owner["access_token"])
+
+    r = client.delete(f"/notifications/{notification_id}", headers=headers)
+    assert r.status_code == 204
+
+    assert _feed(client, owner["access_token"]) == {
+        "notifications": [], "unread_count": 0
+    }
+    assert _rows() == []
+
+
+def test_delete_is_idempotent(client: TestClient):
+    """The client removes the row on screen first and sends this afterwards, so
+    a retry must not surface an error for something already gone."""
+    owner = register_user(client, "owner", "owner@x.com")
+    headers = auth_headers(owner["access_token"])
+    notification_id = _one_notification(client, owner["access_token"])
+
+    assert client.delete(f"/notifications/{notification_id}", headers=headers).status_code == 204
+    assert client.delete(f"/notifications/{notification_id}", headers=headers).status_code == 204
+    # An id that never existed answers the same — no existence oracle.
+    assert client.delete(f"/notifications/{uuid.uuid4()}", headers=headers).status_code == 204
+
+
+def test_cannot_delete_another_users_notification(client: TestClient):
+    owner = register_user(client, "owner", "owner@x.com")
+    notification_id = _one_notification(client, owner["access_token"])
+    intruder = register_user(client, "intruder", "intruder@x.com")
+
+    # 204 either way — the response must not reveal whose row that id is.
+    r = client.delete(
+        f"/notifications/{notification_id}",
+        headers=auth_headers(intruder["access_token"]),
+    )
+    assert r.status_code == 204
+
+    assert len(_feed(client, owner["access_token"])["notifications"]) == 1
+
+
+def test_clear_all_empties_only_the_callers_feed(client: TestClient):
+    owner = register_user(client, "owner", "owner@x.com")
+    other = register_user(client, "other", "other@x.com")
+    itinerary = _create_itinerary(client, owner["access_token"])
+    others_itinerary = _create_itinerary(client, other["access_token"])
+    for i in range(3):
+        saver = register_user(client, f"saver{i}", f"saver{i}@x.com")
+        client.post(
+            f"/itineraries/{itinerary['id']}/save",
+            headers=auth_headers(saver["access_token"]),
+        )
+        client.post(
+            f"/itineraries/{others_itinerary['id']}/save",
+            headers=auth_headers(saver["access_token"]),
+        )
+
+    r = client.delete("/notifications", headers=auth_headers(owner["access_token"]))
+    assert r.status_code == 204
+
+    assert _feed(client, owner["access_token"]) == {
+        "notifications": [], "unread_count": 0
+    }
+    assert len(_feed(client, other["access_token"])["notifications"]) == 3
+
+
+def test_delete_requires_auth(client: TestClient):
+    # 403, not 401 — HTTPBearer rejects a missing header before the dependency
+    # runs, same as every other authenticated endpoint here.
+    assert client.delete(f"/notifications/{uuid.uuid4()}").status_code == 403
+    assert client.delete("/notifications").status_code == 403
+
+
+# ---------------------------------------------------------------------------
 # Retention
 # ---------------------------------------------------------------------------
 
-@pytest.mark.parametrize("read, expect_purged", [(True, 1), (False, 0)])
-def test_purge_removes_only_stale_read_rows(client: TestClient, read, expect_purged):
-    """An unread notice is the recipient's only record that something happened
-    to them — it is never purged, however old."""
+@pytest.mark.parametrize(
+    "read, age_days, expect_purged",
+    [
+        # Read and past the read window — the normal purge.
+        (True, "read_window", 1),
+        # Read but still inside it.
+        (True, "fresh", 0),
+        # Unread outlives the read window: the recipient still has to find out.
+        (False, "read_window", 0),
+        # …but not the hard cap. A year-old unread notice is not actionable.
+        (False, "cap", 1),
+    ],
+)
+def test_purge_honours_the_read_window_and_the_hard_cap(
+    client: TestClient, read, age_days, expect_purged
+):
     owner = register_user(client, "owner", "owner@x.com")
     saver = register_user(client, "saver", "saver@x.com")
     itinerary = _create_itinerary(client, owner["access_token"])
@@ -488,16 +591,19 @@ def test_purge_removes_only_stale_read_rows(client: TestClient, read, expect_pur
     )
 
     settings = get_settings()
-    stale = datetime.now(timezone.utc) - timedelta(
-        days=settings.NOTIFICATION_RETENTION_DAYS + 1
-    )
+    days = {
+        "fresh": 1,
+        "read_window": settings.NOTIFICATION_RETENTION_DAYS + 1,
+        "cap": settings.NOTIFICATION_MAX_AGE_DAYS + 1,
+    }[age_days]
+    aged = datetime.now(timezone.utc) - timedelta(days=days)
 
     db = TestingSessionLocal()
     try:
         row = db.query(Notification).one()
-        row.created_at = stale
+        row.created_at = aged
         if read:
-            row.read_at = stale
+            row.read_at = aged
         db.commit()
 
         assert notification_service.purge_expired(db, settings) == expect_purged
@@ -506,3 +612,14 @@ def test_purge_removes_only_stale_read_rows(client: TestClient, read, expect_pur
         db.close()
 
     assert len(_rows()) == (0 if expect_purged else 1)
+
+
+def test_max_age_below_the_read_window_refuses_to_boot():
+    """A cap under the read window would silently shorten it — that has to fail
+    at startup, not quietly lose notices early."""
+    with pytest.raises(ValidationError):
+        Settings(
+            SECRET_KEY="x" * 32,
+            NOTIFICATION_RETENTION_DAYS=90,
+            NOTIFICATION_MAX_AGE_DAYS=10,
+        )

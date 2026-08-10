@@ -1072,6 +1072,7 @@
       }
     }
   },
+  "shareProfileCaption": "{name} على Ntripi — اطّلع على الأماكن المُزارة",
   "apiErrorNotAuthenticated": "لم تسجّل الدخول.",
   "apiErrorAccountDeactivated": "تم تعطيل حسابك.",
   "apiErrorEmailUnverified": "أكّد بريدك الإلكتروني عبر Google للقيام بذلك.",
@@ -1332,5 +1333,10 @@
         "type": "int"
       }
     }
-  }
+  },
+  "notificationDelete": "حذف الإشعار",
+  "notificationDeleted": "تم حذف الإشعار",
+  "notificationsClearAll": "مسح الكل",
+  "notificationsClearAllTitle": "مسح كل الإشعارات؟",
+  "notificationsClearAllMessage": "ستُزال كل الإشعارات من قائمتك. تبقى إشعارات الإشراف في صفحة حالة الحساب."
 }

@@ -16,6 +16,7 @@ import 'package:social_flutter/features/itineraries/presentation/widgets/itinera
 import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
 import 'package:social_flutter/features/profile/presentation/profile_screen.dart';
 import 'package:social_flutter/features/profile/providers/profile_provider.dart';
+import 'package:social_flutter/features/reports/presentation/ugc_actions.dart';
 import 'package:social_flutter/l10n/app_localizations.dart';
 import 'package:social_flutter/shared/models/user.dart';
 import 'package:social_flutter/shared/widgets/loaders.dart';
@@ -547,6 +548,47 @@ void main() {
         await tester.pump();
 
         expect(find.textContaining('Storyteller'), findsNothing);
+      });
+    });
+
+    // ── Report / block affordance ────────────────────────────────────────
+    //
+    // Regression: the menu was built by ProfileScreen and declared by
+    // ProfileHeroAndIdentity, but never forwarded to ProfileMapHero — so it
+    // was constructed and silently dropped, leaving Report and Block
+    // unreachable from every profile. The analyzer cannot see that; only
+    // asserting the widget is actually mounted can.
+    group('ugc actions', () {
+      testWidgets(
+          'Given another user, When screen builds, '
+          'Then the overflow menu is mounted', (tester) async {
+        tester.view.physicalSize = const Size(1080, 1920);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        await tester.pumpWidget(_buildScreen());
+        await tester.pump();
+
+        expect(find.byType(UgcActionsMenu), findsOneWidget);
+      });
+
+      testWidgets(
+          'Given another user, When the overflow menu is tapped, '
+          'Then Block is offered', (tester) async {
+        tester.view.physicalSize = const Size(1080, 1920);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        await tester.pumpWidget(_buildScreen());
+        await tester.pump();
+
+        await tester.tap(find.byType(UgcActionsMenu));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Block'), findsOneWidget);
+        expect(find.text('Report'), findsOneWidget);
       });
     });
   });

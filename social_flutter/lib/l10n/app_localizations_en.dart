@@ -2406,6 +2406,11 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String shareProfileCaption(String name) {
+    return '$name on Ntripi — see where they\'ve been';
+  }
+
+  @override
   String get apiErrorNotAuthenticated => 'You are not signed in.';
 
   @override
@@ -3061,4 +3066,20 @@ class AppLocalizationsEn extends AppLocalizations {
   String aboutCopyright(int year) {
     return '© $year Ntripi';
   }
+
+  @override
+  String get notificationDelete => 'Delete notification';
+
+  @override
+  String get notificationDeleted => 'Notification deleted';
+
+  @override
+  String get notificationsClearAll => 'Clear all';
+
+  @override
+  String get notificationsClearAllTitle => 'Clear all notifications?';
+
+  @override
+  String get notificationsClearAllMessage =>
+      'Every notification will be removed from your feed. Moderation notices stay on your Account status page.';
 }

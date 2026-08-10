@@ -701,6 +701,7 @@
   "alreadyInItinerary": "{name} ya está en este itinerario.",
   "stopNumberOfTotal": "Parada {n} de {total}",
   "shareCaption": "Mira \"{title}\" en Ntripi — {stops}, {duration}",
+  "shareProfileCaption": "{name} en Ntripi — mira dónde ha estado",
   "apiErrorNotAuthenticated": "No has iniciado sesión.",
   "apiErrorAccountDeactivated": "Tu cuenta ha sido desactivada.",
   "apiErrorEmailUnverified": "Verifica tu correo con Google para hacer esto.",
@@ -961,5 +962,10 @@
         "type": "int"
       }
     }
-  }
+  },
+  "notificationDelete": "Eliminar notificación",
+  "notificationDeleted": "Notificación eliminada",
+  "notificationsClearAll": "Borrar todo",
+  "notificationsClearAllTitle": "¿Borrar todas las notificaciones?",
+  "notificationsClearAllMessage": "Se eliminarán todas las notificaciones de tu lista. Los avisos de moderación permanecen en tu página Estado de la cuenta."
 }

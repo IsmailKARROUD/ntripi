@@ -2457,6 +2457,11 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
+  String shareProfileCaption(String name) {
+    return '$name على Ntripi — اطّلع على الأماكن المُزارة';
+  }
+
+  @override
   String get apiErrorNotAuthenticated => 'لم تسجّل الدخول.';
 
   @override
@@ -3105,4 +3110,20 @@ class AppLocalizationsAr extends AppLocalizations {
   String aboutCopyright(int year) {
     return '© $year Ntripi';
   }
+
+  @override
+  String get notificationDelete => 'حذف الإشعار';
+
+  @override
+  String get notificationDeleted => 'تم حذف الإشعار';
+
+  @override
+  String get notificationsClearAll => 'مسح الكل';
+
+  @override
+  String get notificationsClearAllTitle => 'مسح كل الإشعارات؟';
+
+  @override
+  String get notificationsClearAllMessage =>
+      'ستُزال كل الإشعارات من قائمتك. تبقى إشعارات الإشراف في صفحة حالة الحساب.';
 }
