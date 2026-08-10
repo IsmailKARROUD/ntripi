@@ -2993,4 +2993,131 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get notificationWarnedDetail =>
       'Appuyez pour voir pourquoi et faire appel';
+
+  @override
+  String get helpCenterFaqLabel => 'Questions fréquentes';
+
+  @override
+  String get helpCenterGetHelpLabel => 'Obtenir de l\'aide';
+
+  @override
+  String get helpCenterLegalLabel => 'Mentions légales';
+
+  @override
+  String get helpCenterContactSupport => 'Contacter le support';
+
+  @override
+  String get helpCenterContactSupportSubtitle =>
+      'Écrivez-nous pour tout le reste';
+
+  @override
+  String get helpCenterAccountStatusSubtitle =>
+      'Consulter les décisions de modération et faire appel';
+
+  @override
+  String get faqItineraryQ => 'Qu\'est-ce qu\'un itinéraire ?';
+
+  @override
+  String get faqItineraryA =>
+      'Un itinéraire est un voyage que vous construisez étape par étape — où manger, dormir, visiter ou simplement passer, dans l\'ordre où vous vous y rendrez. Vous pouvez le garder pour vous, le partager avec vos abonnés, ou le publier pour tout le monde.';
+
+  @override
+  String get faqTracksQ => 'Que sont les étapes parallèles ?';
+
+  @override
+  String get faqTracksA =>
+      'Certaines parties d\'un voyage admettent plusieurs bonnes réponses. Les étapes parallèles se placent côte à côte au même moment du trajet — deux façons de passer le même après-midi. Ajoutez-en une lorsque vous voulez proposer un choix plutôt qu\'un parcours figé.';
+
+  @override
+  String get faqVisibilityQ => 'Qui peut voir mon itinéraire ?';
+
+  @override
+  String get faqVisibilityA =>
+      'C\'est vous qui décidez, pour chaque itinéraire. Moi uniquement le garde privé et c\'est l\'option par défaut. Abonnés le montre aux personnes qui vous suivent. Restreint ne le montre qu\'aux personnes que vous choisissez. Public le place dans la découverte, visible par tous.';
+
+  @override
+  String get faqRatingsQ => 'Comment fonctionnent les notes ?';
+
+  @override
+  String get faqRatingsA =>
+      'Seule une note globale de 1 à 5 est obligatoire. Vous pouvez aussi noter la sécurité, l\'expérience, l\'accessibilité, l\'adaptation aux familles et le niveau de fréquentation. Ces moyennes n\'apparaissent qu\'à partir de trois personnes ayant noté l\'itinéraire, pour qu\'un avis isolé ne passe jamais pour un verdict.';
+
+  @override
+  String get faqSaveQ => 'À quoi sert l\'enregistrement ?';
+
+  @override
+  String get faqSaveA =>
+      'Enregistrer conserve l\'itinéraire de quelqu\'un d\'autre dans votre onglet Enregistrés pour le retrouver facilement. Son auteur est informé que vous l\'avez enregistré, mais personne d\'autre ne voit votre liste.';
+
+  @override
+  String get faqPrivateAccountQ => 'Qu\'est-ce qu\'un compte privé ?';
+
+  @override
+  String get faqPrivateAccountA =>
+      'Avec un compte privé, les gens doivent demander avant de pouvoir vous suivre, et vous acceptez ou refusez chaque demande. Une fois acceptés, ils voient les itinéraires que vous partagez avec vos abonnés.';
+
+  @override
+  String get faqBlockReportQ => 'Comment bloquer ou signaler quelqu\'un ?';
+
+  @override
+  String get faqBlockReportA =>
+      'Ouvrez son profil et utilisez le menu en haut. Le blocage vous rend invisibles l\'un pour l\'autre dans les deux sens, et vous pouvez l\'annuler à tout moment depuis les Réglages. Un signalement transmet le contenu à notre équipe de modération et ne révèle jamais à l\'autre personne qui l\'a signalée.';
+
+  @override
+  String get faqStaleEditQ =>
+      'Pourquoi m\'a-t-on dit que l\'itinéraire avait été modifié ?';
+
+  @override
+  String get faqStaleEditA =>
+      'Quelqu\'un y ayant accès — ou vous-même, depuis un autre appareil — a modifié l\'itinéraire pendant que votre éditeur était ouvert. Rechargez pour récupérer sa version, puis refaites votre modification. C\'est ce qui empêche deux modifications de s\'écraser silencieusement.';
+
+  @override
+  String get reportBugShakeHeadline => 'Secouez votre téléphone';
+
+  @override
+  String get reportBugShakeBody =>
+      'Ne signalez pas un problème depuis ici. Retournez là où il s\'est produit et secouez votre téléphone — nous capturerons cet écran pour que vous puissiez entourer précisément ce qui n\'a pas fonctionné.';
+
+  @override
+  String get reportBugStepsLabel => 'Comment ça marche';
+
+  @override
+  String get reportBugShakeStep1 =>
+      'Retournez à l\'écran où le problème est survenu';
+
+  @override
+  String get reportBugShakeStep2 => 'Secouez votre téléphone';
+
+  @override
+  String get reportBugShakeStep3 =>
+      'Entourez le problème et dites-nous ce qui s\'est passé';
+
+  @override
+  String get reportBugGestureOff =>
+      'Secouer pour signaler est désactivé. Activez-le pour utiliser ce geste.';
+
+  @override
+  String get reportBugWebBody =>
+      'Secouer n\'est pas possible dans un navigateur. Utilisez le bouton ci-dessous pour nous envoyer un signalement concernant cette page.';
+
+  @override
+  String get aboutTagline => 'Des itinéraires de voyage, partagés.';
+
+  @override
+  String get aboutBody =>
+      'Ntripi est l\'endroit où les voyageurs construisent leurs trajets étape par étape et partagent ce qui a vraiment marché. Chaque itinéraire vous appartient jusqu\'à ce que vous en décidiez autrement — gardez-le privé, partagez-le avec les personnes de votre choix, ou publiez-le pour que tout le monde puisse le suivre.';
+
+  @override
+  String get aboutVersion => 'Version';
+
+  @override
+  String get aboutWebsite => 'Site web';
+
+  @override
+  String get aboutLicenses => 'Licences open source';
+
+  @override
+  String aboutCopyright(int year) {
+    return '© $year Ntripi';
+  }
 }

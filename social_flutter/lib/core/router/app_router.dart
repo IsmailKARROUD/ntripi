@@ -16,6 +16,9 @@ import 'package:social_flutter/features/auth/presentation/suspended_screen.dart'
 import 'package:social_flutter/features/feed/presentation/feed_screen.dart';
 import 'package:social_flutter/features/follows/presentation/follow_list_screen.dart';
 import 'package:social_flutter/features/follows/presentation/follow_requests_screen.dart';
+import 'package:social_flutter/features/help/presentation/about_screen.dart';
+import 'package:social_flutter/features/help/presentation/help_center_screen.dart';
+import 'package:social_flutter/features/help/presentation/report_bug_screen.dart';
 import 'package:social_flutter/features/notifications/presentation/notification_settings_screen.dart';
 import 'package:social_flutter/features/notifications/presentation/notifications_screen.dart';
 import 'package:social_flutter/features/itineraries/presentation/itinerary_detail_screen.dart';
@@ -180,6 +183,18 @@ final appRouter = GoRouter(
             GoRoute(
               path: '/settings/notifications',
               builder: (_, __) => const NotificationSettingsScreen(),
+            ),
+            GoRoute(
+              path: '/settings/help',
+              builder: (_, __) => const HelpCenterScreen(),
+            ),
+            GoRoute(
+              path: '/settings/help/report-bug',
+              builder: (_, __) => const ReportBugScreen(),
+            ),
+            GoRoute(
+              path: '/settings/about',
+              builder: (_, __) => const AboutScreen(),
             ),
           ],
         ),

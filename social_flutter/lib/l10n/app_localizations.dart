@@ -5199,6 +5199,222 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Tap to see why and to appeal'**
   String get notificationWarnedDetail;
+
+  /// No description provided for @helpCenterFaqLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Common questions'**
+  String get helpCenterFaqLabel;
+
+  /// No description provided for @helpCenterGetHelpLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Get help'**
+  String get helpCenterGetHelpLabel;
+
+  /// No description provided for @helpCenterLegalLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Legal'**
+  String get helpCenterLegalLabel;
+
+  /// No description provided for @helpCenterContactSupport.
+  ///
+  /// In en, this message translates to:
+  /// **'Contact support'**
+  String get helpCenterContactSupport;
+
+  /// No description provided for @helpCenterContactSupportSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Email us about anything else'**
+  String get helpCenterContactSupportSubtitle;
+
+  /// No description provided for @helpCenterAccountStatusSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'See moderation decisions and appeal'**
+  String get helpCenterAccountStatusSubtitle;
+
+  /// No description provided for @faqItineraryQ.
+  ///
+  /// In en, this message translates to:
+  /// **'What is an itinerary?'**
+  String get faqItineraryQ;
+
+  /// No description provided for @faqItineraryA.
+  ///
+  /// In en, this message translates to:
+  /// **'An itinerary is a trip you build stop by stop — places to eat, sleep, see or pass through, in the order you\'ll visit them. You can keep it to yourself, share it with your followers, or publish it for everyone.'**
+  String get faqItineraryA;
+
+  /// No description provided for @faqTracksQ.
+  ///
+  /// In en, this message translates to:
+  /// **'What are parallel stops?'**
+  String get faqTracksQ;
+
+  /// No description provided for @faqTracksA.
+  ///
+  /// In en, this message translates to:
+  /// **'Some parts of a trip have more than one good answer. Parallel stops sit side by side at the same point in the journey — two ways to spend the same afternoon. Add one when you want to offer a choice rather than a fixed route.'**
+  String get faqTracksA;
+
+  /// No description provided for @faqVisibilityQ.
+  ///
+  /// In en, this message translates to:
+  /// **'Who can see my itinerary?'**
+  String get faqVisibilityQ;
+
+  /// No description provided for @faqVisibilityA.
+  ///
+  /// In en, this message translates to:
+  /// **'You choose, for each itinerary. Only me keeps it private and is the default. Followers shows it to the people who follow you. Restricted shows it only to the people you pick. Public puts it in discovery for everyone.'**
+  String get faqVisibilityA;
+
+  /// No description provided for @faqRatingsQ.
+  ///
+  /// In en, this message translates to:
+  /// **'How do ratings work?'**
+  String get faqRatingsQ;
+
+  /// No description provided for @faqRatingsA.
+  ///
+  /// In en, this message translates to:
+  /// **'An overall score from 1 to 5 is all that\'s required. You can also rate safety, experience, accessibility, how family-friendly it is, and how crowded it felt. Those averages only appear once at least three people have rated an itinerary, so a single opinion never looks like a verdict.'**
+  String get faqRatingsA;
+
+  /// No description provided for @faqSaveQ.
+  ///
+  /// In en, this message translates to:
+  /// **'What does saving do?'**
+  String get faqSaveQ;
+
+  /// No description provided for @faqSaveA.
+  ///
+  /// In en, this message translates to:
+  /// **'Saving keeps someone else\'s itinerary in your Saved tab so you can find it again. The owner is told that you saved it, but nobody else sees your saved list.'**
+  String get faqSaveA;
+
+  /// No description provided for @faqPrivateAccountQ.
+  ///
+  /// In en, this message translates to:
+  /// **'What is a private account?'**
+  String get faqPrivateAccountQ;
+
+  /// No description provided for @faqPrivateAccountA.
+  ///
+  /// In en, this message translates to:
+  /// **'With a private account, people have to ask before they can follow you, and you approve or decline each request. Once approved, they can see the itineraries you share with followers.'**
+  String get faqPrivateAccountA;
+
+  /// No description provided for @faqBlockReportQ.
+  ///
+  /// In en, this message translates to:
+  /// **'How do I block or report someone?'**
+  String get faqBlockReportQ;
+
+  /// No description provided for @faqBlockReportA.
+  ///
+  /// In en, this message translates to:
+  /// **'Open their profile and use the menu in the top corner. Blocking hides you from each other in both directions, and you can undo it any time from Settings. Reporting sends the content to our moderation team and never tells the other person who reported it.'**
+  String get faqBlockReportA;
+
+  /// No description provided for @faqStaleEditQ.
+  ///
+  /// In en, this message translates to:
+  /// **'Why was I told the itinerary was modified?'**
+  String get faqStaleEditQ;
+
+  /// No description provided for @faqStaleEditA.
+  ///
+  /// In en, this message translates to:
+  /// **'Someone with access — or you, on another device — changed the itinerary while your editor was open. Reload to pull in their version, then make your change again. This is what stops two edits from silently overwriting each other.'**
+  String get faqStaleEditA;
+
+  /// No description provided for @reportBugShakeHeadline.
+  ///
+  /// In en, this message translates to:
+  /// **'Shake your phone'**
+  String get reportBugShakeHeadline;
+
+  /// No description provided for @reportBugShakeBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Don\'t report a problem from here. Go back to where it happened and shake your phone — we\'ll capture that screen so you can circle exactly what went wrong.'**
+  String get reportBugShakeBody;
+
+  /// No description provided for @reportBugStepsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'How it works'**
+  String get reportBugStepsLabel;
+
+  /// No description provided for @reportBugShakeStep1.
+  ///
+  /// In en, this message translates to:
+  /// **'Go back to the screen where the problem happened'**
+  String get reportBugShakeStep1;
+
+  /// No description provided for @reportBugShakeStep2.
+  ///
+  /// In en, this message translates to:
+  /// **'Shake your phone'**
+  String get reportBugShakeStep2;
+
+  /// No description provided for @reportBugShakeStep3.
+  ///
+  /// In en, this message translates to:
+  /// **'Circle the problem and tell us what went wrong'**
+  String get reportBugShakeStep3;
+
+  /// No description provided for @reportBugGestureOff.
+  ///
+  /// In en, this message translates to:
+  /// **'Shake to report is off right now. Turn it on to use the gesture.'**
+  String get reportBugGestureOff;
+
+  /// No description provided for @reportBugWebBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Shaking isn\'t available in a browser. Use the button below to send us a report about this page.'**
+  String get reportBugWebBody;
+
+  /// No description provided for @aboutTagline.
+  ///
+  /// In en, this message translates to:
+  /// **'Travel itineraries, shared.'**
+  String get aboutTagline;
+
+  /// No description provided for @aboutBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Ntripi is where travellers build trips stop by stop and share what actually worked. Every itinerary is yours until you decide otherwise — keep it private, share it with the people you choose, or publish it for everyone to follow.'**
+  String get aboutBody;
+
+  /// No description provided for @aboutVersion.
+  ///
+  /// In en, this message translates to:
+  /// **'Version'**
+  String get aboutVersion;
+
+  /// No description provided for @aboutWebsite.
+  ///
+  /// In en, this message translates to:
+  /// **'Website'**
+  String get aboutWebsite;
+
+  /// No description provided for @aboutLicenses.
+  ///
+  /// In en, this message translates to:
+  /// **'Open-source licences'**
+  String get aboutLicenses;
+
+  /// No description provided for @aboutCopyright.
+  ///
+  /// In en, this message translates to:
+  /// **'© {year} Ntripi'**
+  String aboutCopyright(int year);
 }
 
 class _AppLocalizationsDelegate

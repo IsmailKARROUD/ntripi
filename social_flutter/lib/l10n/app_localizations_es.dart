@@ -2961,4 +2961,130 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get notificationWarnedDetail => 'Toca para ver por qué y apelar';
+
+  @override
+  String get helpCenterFaqLabel => 'Preguntas frecuentes';
+
+  @override
+  String get helpCenterGetHelpLabel => 'Obtener ayuda';
+
+  @override
+  String get helpCenterLegalLabel => 'Legal';
+
+  @override
+  String get helpCenterContactSupport => 'Contactar con soporte';
+
+  @override
+  String get helpCenterContactSupportSubtitle =>
+      'Escríbenos sobre cualquier otra cosa';
+
+  @override
+  String get helpCenterAccountStatusSubtitle =>
+      'Ver decisiones de moderación y apelar';
+
+  @override
+  String get faqItineraryQ => '¿Qué es un itinerario?';
+
+  @override
+  String get faqItineraryA =>
+      'Un itinerario es un viaje que construyes parada a parada — sitios para comer, dormir, ver o simplemente pasar, en el orden en que los visitarás. Puedes guardarlo solo para ti, compartirlo con tus seguidores o publicarlo para todo el mundo.';
+
+  @override
+  String get faqTracksQ => '¿Qué son las paradas paralelas?';
+
+  @override
+  String get faqTracksA =>
+      'Algunas partes de un viaje tienen más de una buena respuesta. Las paradas paralelas se colocan una junto a otra en el mismo punto del recorrido — dos maneras de pasar la misma tarde. Añade una cuando quieras ofrecer una elección en lugar de una ruta fija.';
+
+  @override
+  String get faqVisibilityQ => '¿Quién puede ver mi itinerario?';
+
+  @override
+  String get faqVisibilityA =>
+      'Lo decides tú, itinerario a itinerario. Solo yo lo mantiene privado y es la opción por defecto. Seguidores lo muestra a quienes te siguen. Restringido lo muestra solo a las personas que elijas. Público lo pone en descubrimiento para todo el mundo.';
+
+  @override
+  String get faqRatingsQ => '¿Cómo funcionan las valoraciones?';
+
+  @override
+  String get faqRatingsA =>
+      'Solo es obligatoria una puntuación general del 1 al 5. También puedes valorar la seguridad, la experiencia, la accesibilidad, si es apto para familias y cuánta gente había. Esas medias solo aparecen cuando al menos tres personas han valorado el itinerario, para que una sola opinión nunca parezca un veredicto.';
+
+  @override
+  String get faqSaveQ => '¿Para qué sirve guardar?';
+
+  @override
+  String get faqSaveA =>
+      'Guardar conserva el itinerario de otra persona en tu pestaña Guardados para que puedas encontrarlo de nuevo. A su autor se le avisa de que lo has guardado, pero nadie más ve tu lista.';
+
+  @override
+  String get faqPrivateAccountQ => '¿Qué es una cuenta privada?';
+
+  @override
+  String get faqPrivateAccountA =>
+      'Con una cuenta privada, la gente tiene que pedirlo antes de poder seguirte, y tú aceptas o rechazas cada solicitud. Una vez aceptadas, pueden ver los itinerarios que compartes con tus seguidores.';
+
+  @override
+  String get faqBlockReportQ => '¿Cómo bloqueo o denuncio a alguien?';
+
+  @override
+  String get faqBlockReportA =>
+      'Abre su perfil y usa el menú de la esquina superior. Bloquear os oculta mutuamente en ambas direcciones y puedes deshacerlo cuando quieras desde Ajustes. Denunciar envía el contenido a nuestro equipo de moderación y nunca le dice a la otra persona quién la denunció.';
+
+  @override
+  String get faqStaleEditQ =>
+      '¿Por qué me dijo que el itinerario había cambiado?';
+
+  @override
+  String get faqStaleEditA =>
+      'Alguien con acceso — o tú mismo, desde otro dispositivo — modificó el itinerario mientras tu editor estaba abierto. Recarga para traer su versión y vuelve a hacer tu cambio. Esto es lo que evita que dos ediciones se sobrescriban en silencio.';
+
+  @override
+  String get reportBugShakeHeadline => 'Agita tu teléfono';
+
+  @override
+  String get reportBugShakeBody =>
+      'No informes de un problema desde aquí. Vuelve a donde ocurrió y agita tu teléfono — capturaremos esa pantalla para que puedas rodear exactamente lo que falló.';
+
+  @override
+  String get reportBugStepsLabel => 'Cómo funciona';
+
+  @override
+  String get reportBugShakeStep1 =>
+      'Vuelve a la pantalla donde ocurrió el problema';
+
+  @override
+  String get reportBugShakeStep2 => 'Agita tu teléfono';
+
+  @override
+  String get reportBugShakeStep3 => 'Rodea el problema y cuéntanos qué pasó';
+
+  @override
+  String get reportBugGestureOff =>
+      'Agitar para informar está desactivado. Actívalo para usar el gesto.';
+
+  @override
+  String get reportBugWebBody =>
+      'Agitar no está disponible en el navegador. Usa el botón de abajo para enviarnos un informe sobre esta página.';
+
+  @override
+  String get aboutTagline => 'Itinerarios de viaje, compartidos.';
+
+  @override
+  String get aboutBody =>
+      'Ntripi es donde quienes viajan construyen sus rutas parada a parada y comparten lo que de verdad funcionó. Cada itinerario es tuyo hasta que decidas lo contrario — mantenlo privado, compártelo con quien elijas o publícalo para que cualquiera pueda seguirlo.';
+
+  @override
+  String get aboutVersion => 'Versión';
+
+  @override
+  String get aboutWebsite => 'Sitio web';
+
+  @override
+  String get aboutLicenses => 'Licencias de código abierto';
+
+  @override
+  String aboutCopyright(int year) {
+    return '© $year Ntripi';
+  }
 }

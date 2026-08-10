@@ -2783,4 +2783,124 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get notificationWarnedDetail => '点击查看原因并申诉';
+
+  @override
+  String get helpCenterFaqLabel => '常见问题';
+
+  @override
+  String get helpCenterGetHelpLabel => '获取帮助';
+
+  @override
+  String get helpCenterLegalLabel => '法律条款';
+
+  @override
+  String get helpCenterContactSupport => '联系客服';
+
+  @override
+  String get helpCenterContactSupportSubtitle => '其他问题请发邮件给我们';
+
+  @override
+  String get helpCenterAccountStatusSubtitle => '查看审核决定并提出申诉';
+
+  @override
+  String get faqItineraryQ => '什么是行程？';
+
+  @override
+  String get faqItineraryA =>
+      '行程是你一站一站搭建起来的旅行——吃饭、住宿、参观或途经的地点，按你实际前往的顺序排列。你可以只留给自己，分享给关注你的人，或者公开给所有人。';
+
+  @override
+  String get faqTracksQ => '什么是并行站点？';
+
+  @override
+  String get faqTracksA =>
+      '旅行中的某些环节不止一个好答案。并行站点在行程的同一位置并排排列——同一个下午的两种过法。当你想提供选择而不是固定路线时，就添加一个。';
+
+  @override
+  String get faqVisibilityQ => '谁能看到我的行程？';
+
+  @override
+  String get faqVisibilityA =>
+      '每条行程都由你决定。仅自己可见会保持私密，也是默认设置。关注者会展示给关注你的人。受限仅展示给你挑选的人。公开则会放入发现页，所有人都能看到。';
+
+  @override
+  String get faqRatingsQ => '评分是怎么运作的？';
+
+  @override
+  String get faqRatingsA =>
+      '只有 1 到 5 分的总体评分是必填的。你还可以为安全性、体验、无障碍程度、是否适合家庭以及拥挤程度打分。这些平均分只有在至少三个人评过之后才会显示，这样单独一条意见就不会被当成定论。';
+
+  @override
+  String get faqSaveQ => '收藏有什么用？';
+
+  @override
+  String get faqSaveA =>
+      '收藏会把别人的行程放进你的「已收藏」标签页，方便再次找到。行程作者会知道你收藏了它，但其他人看不到你的收藏列表。';
+
+  @override
+  String get faqPrivateAccountQ => '什么是私密账号？';
+
+  @override
+  String get faqPrivateAccountA =>
+      '使用私密账号时，别人必须先申请才能关注你，每条申请由你同意或拒绝。通过之后，他们就能看到你分享给关注者的行程。';
+
+  @override
+  String get faqBlockReportQ => '怎么拉黑或举报某人？';
+
+  @override
+  String get faqBlockReportA =>
+      '打开对方主页，使用右上角的菜单。拉黑会让你们在两个方向上都彼此不可见，随时可以在设置里取消。举报会把内容送交我们的审核团队，且绝不会告诉对方是谁举报的。';
+
+  @override
+  String get faqStaleEditQ => '为什么提示行程已被修改？';
+
+  @override
+  String get faqStaleEditA =>
+      '在你的编辑器打开期间，有访问权限的人——或者你在另一台设备上——修改了这条行程。重新加载以取得对方的版本，然后再做一次你的改动。正是这一点避免了两次编辑悄悄互相覆盖。';
+
+  @override
+  String get reportBugShakeHeadline => '摇一摇手机';
+
+  @override
+  String get reportBugShakeBody =>
+      '不要在这里报告问题。回到问题发生的地方，摇一摇手机——我们会截下那一屏，让你圈出到底哪里出了错。';
+
+  @override
+  String get reportBugStepsLabel => '使用方法';
+
+  @override
+  String get reportBugShakeStep1 => '回到出现问题的那个界面';
+
+  @override
+  String get reportBugShakeStep2 => '摇一摇手机';
+
+  @override
+  String get reportBugShakeStep3 => '圈出问题，并告诉我们发生了什么';
+
+  @override
+  String get reportBugGestureOff => '摇一摇报告目前已关闭。开启后即可使用该手势。';
+
+  @override
+  String get reportBugWebBody => '浏览器中无法使用摇一摇。请用下方按钮就本页面向我们提交反馈。';
+
+  @override
+  String get aboutTagline => '旅行行程，共同分享。';
+
+  @override
+  String get aboutBody =>
+      '在 Ntripi，旅行者一站一站搭建自己的行程，并分享真正好用的那些安排。每条行程都属于你，直到你另有决定——保持私密、只分享给你挑选的人，或者公开让所有人跟着走。';
+
+  @override
+  String get aboutVersion => '版本';
+
+  @override
+  String get aboutWebsite => '官方网站';
+
+  @override
+  String get aboutLicenses => '开源许可';
+
+  @override
+  String aboutCopyright(int year) {
+    return '© $year Ntripi';
+  }
 }

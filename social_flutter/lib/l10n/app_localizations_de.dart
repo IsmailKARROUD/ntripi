@@ -2987,4 +2987,130 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get notificationWarnedDetail =>
       'Tippen, um den Grund zu sehen und Einspruch einzulegen';
+
+  @override
+  String get helpCenterFaqLabel => 'Häufige Fragen';
+
+  @override
+  String get helpCenterGetHelpLabel => 'Hilfe erhalten';
+
+  @override
+  String get helpCenterLegalLabel => 'Rechtliches';
+
+  @override
+  String get helpCenterContactSupport => 'Support kontaktieren';
+
+  @override
+  String get helpCenterContactSupportSubtitle => 'Schreib uns zu allem anderen';
+
+  @override
+  String get helpCenterAccountStatusSubtitle =>
+      'Moderationsentscheidungen ansehen und Einspruch einlegen';
+
+  @override
+  String get faqItineraryQ => 'Was ist eine Reiseroute?';
+
+  @override
+  String get faqItineraryA =>
+      'Eine Reiseroute ist eine Reise, die du Stopp für Stopp aufbaust — Orte zum Essen, Schlafen, Anschauen oder Durchfahren, in der Reihenfolge, in der du sie besuchst. Du kannst sie für dich behalten, mit deinen Followern teilen oder für alle veröffentlichen.';
+
+  @override
+  String get faqTracksQ => 'Was sind parallele Stopps?';
+
+  @override
+  String get faqTracksA =>
+      'Manche Teile einer Reise haben mehr als eine gute Antwort. Parallele Stopps stehen nebeneinander am selben Punkt der Reise — zwei Arten, denselben Nachmittag zu verbringen. Füge einen hinzu, wenn du eine Wahl anbieten willst statt einer festen Route.';
+
+  @override
+  String get faqVisibilityQ => 'Wer kann meine Reiseroute sehen?';
+
+  @override
+  String get faqVisibilityA =>
+      'Das entscheidest du für jede Reiseroute selbst. Nur ich hält sie privat und ist die Voreinstellung. Follower zeigt sie den Leuten, die dir folgen. Eingeschränkt zeigt sie nur den Personen, die du auswählst. Öffentlich stellt sie für alle in die Entdeckung.';
+
+  @override
+  String get faqRatingsQ => 'Wie funktionieren Bewertungen?';
+
+  @override
+  String get faqRatingsA =>
+      'Nötig ist nur eine Gesamtnote von 1 bis 5. Zusätzlich kannst du Sicherheit, Erlebnis, Barrierefreiheit, Familienfreundlichkeit und wie voll es war bewerten. Diese Durchschnittswerte erscheinen erst, wenn mindestens drei Personen bewertet haben — damit eine einzelne Meinung nie wie ein Urteil aussieht.';
+
+  @override
+  String get faqSaveQ => 'Was bewirkt das Speichern?';
+
+  @override
+  String get faqSaveA =>
+      'Speichern legt die Reiseroute einer anderen Person in deinem Tab „Gespeichert“ ab, damit du sie wiederfindest. Die Person erfährt, dass du sie gespeichert hast, aber sonst sieht niemand deine Liste.';
+
+  @override
+  String get faqPrivateAccountQ => 'Was ist ein privates Konto?';
+
+  @override
+  String get faqPrivateAccountA =>
+      'Bei einem privaten Konto müssen Leute erst anfragen, bevor sie dir folgen können, und du nimmst jede Anfrage an oder lehnst sie ab. Nach der Annahme sehen sie die Reiserouten, die du mit Followern teilst.';
+
+  @override
+  String get faqBlockReportQ => 'Wie blockiere oder melde ich jemanden?';
+
+  @override
+  String get faqBlockReportA =>
+      'Öffne das Profil und nutze das Menü oben in der Ecke. Blockieren macht euch in beide Richtungen füreinander unsichtbar und lässt sich jederzeit in den Einstellungen rückgängig machen. Eine Meldung geht an unser Moderationsteam und verrät der anderen Person nie, wer sie gemeldet hat.';
+
+  @override
+  String get faqStaleEditQ =>
+      'Warum hieß es, die Reiseroute sei geändert worden?';
+
+  @override
+  String get faqStaleEditA =>
+      'Jemand mit Zugriff — oder du selbst auf einem anderen Gerät — hat die Reiseroute geändert, während dein Editor offen war. Lade neu, um die andere Fassung zu holen, und mach deine Änderung erneut. Genau das verhindert, dass zwei Änderungen einander stillschweigend überschreiben.';
+
+  @override
+  String get reportBugShakeHeadline => 'Schüttle dein Handy';
+
+  @override
+  String get reportBugShakeBody =>
+      'Melde ein Problem nicht von hier aus. Geh zurück dorthin, wo es passiert ist, und schüttle dein Handy — wir nehmen diesen Bildschirm auf, damit du genau einkreisen kannst, was schiefgelaufen ist.';
+
+  @override
+  String get reportBugStepsLabel => 'So funktioniert\'s';
+
+  @override
+  String get reportBugShakeStep1 =>
+      'Geh zurück zu dem Bildschirm, auf dem das Problem auftrat';
+
+  @override
+  String get reportBugShakeStep2 => 'Schüttle dein Handy';
+
+  @override
+  String get reportBugShakeStep3 =>
+      'Kreise das Problem ein und beschreib uns, was passiert ist';
+
+  @override
+  String get reportBugGestureOff =>
+      'Schütteln zum Melden ist gerade aus. Schalte es ein, um die Geste zu nutzen.';
+
+  @override
+  String get reportBugWebBody =>
+      'Schütteln gibt es im Browser nicht. Nutze den Button unten, um uns eine Meldung zu dieser Seite zu schicken.';
+
+  @override
+  String get aboutTagline => 'Reiserouten, geteilt.';
+
+  @override
+  String get aboutBody =>
+      'Auf Ntripi bauen Reisende ihre Touren Stopp für Stopp auf und teilen, was wirklich funktioniert hat. Jede Reiseroute gehört dir, bis du es anders entscheidest — halte sie privat, teile sie mit ausgewählten Personen oder veröffentliche sie, damit alle ihr folgen können.';
+
+  @override
+  String get aboutVersion => 'Version';
+
+  @override
+  String get aboutWebsite => 'Website';
+
+  @override
+  String get aboutLicenses => 'Open-Source-Lizenzen';
+
+  @override
+  String aboutCopyright(int year) {
+    return '© $year Ntripi';
+  }
 }

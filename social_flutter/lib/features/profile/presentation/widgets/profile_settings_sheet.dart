@@ -4,20 +4,15 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:social_flutter/core/api/api_client.dart';
-import 'package:social_flutter/core/api/api_endpoints.dart';
 import 'package:social_flutter/core/providers/locale_provider.dart';
 import 'package:social_flutter/core/providers/sound_effects_enabled_provider.dart';
-import 'package:social_flutter/features/auth/presentation/widgets/legal_doc_sheet.dart';
-import 'package:social_flutter/features/auth/providers/legal_provider.dart';
 import 'package:social_flutter/core/providers/theme_mode_provider.dart';
 import 'package:social_flutter/core/ui/app_theme.dart';
 import 'package:social_flutter/features/profile/providers/profile_provider.dart';
-import 'package:social_flutter/features/bug_report/presentation/bug_report_entry.dart';
 import 'package:social_flutter/features/bug_report/providers/shake_report_enabled_provider.dart';
 import 'package:social_flutter/l10n/app_localizations.dart';
 import 'package:social_flutter/shared/data/app_locales.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'package:social_flutter/shared/widgets/editorial_widgets.dart';
 
 void showProfileSettingsSheet(
   BuildContext context, {
@@ -289,7 +284,6 @@ class _SettingsSheet extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
-    final langCode = ref.watch(localeProvider).languageCode;
     final nt = context.nt;
     final currentLocale = ref.watch(localeProvider);
     final langDetail = localeLabel(l10n, currentLocale.languageCode);
@@ -361,7 +355,7 @@ class _SettingsSheet extends ConsumerWidget {
                   _SheetSection(
                     label: l10n.settingsAccount,
                     children: [
-                      _SheetRow(
+                      EditorialRow(
                         icon: Icons.notifications_outlined,
                         iconBg: nt.mist,
                         iconColor: nt.forest,
@@ -372,7 +366,7 @@ class _SettingsSheet extends ConsumerWidget {
                           context.push('/settings/notifications');
                         },
                       ),
-                      _SheetRow(
+                      EditorialRow(
                         icon: Icons.language_rounded,
                         iconBg: nt.mist,
                         iconColor: nt.forest,
@@ -380,7 +374,7 @@ class _SettingsSheet extends ConsumerWidget {
                         detail: langDetail,
                         onTap: () => _showLanguagePicker(context, ref),
                       ),
-                      _SheetRow(
+                      EditorialRow(
                         // inverse badge so the theme control stands apart from the
                         // green-tinted rows around it
                         icon: Icons.dark_mode_outlined,
@@ -392,7 +386,7 @@ class _SettingsSheet extends ConsumerWidget {
                       ),
                       // Not hidden on web, unlike the shake row below —
                       // audioplayers plays the cue there too.
-                      _SheetRow(
+                      EditorialRow(
                         icon: Icons.volume_up_outlined,
                         iconBg: nt.mist,
                         iconColor: nt.forest,
@@ -410,7 +404,7 @@ class _SettingsSheet extends ConsumerWidget {
                               !ref.read(soundEffectsEnabledProvider),
                             ),
                       ),
-                      _SheetRow(
+                      EditorialRow(
                         icon: Icons.shield_outlined,
                         iconBg: nt.mist,
                         iconColor: nt.forest,
@@ -422,7 +416,7 @@ class _SettingsSheet extends ConsumerWidget {
                       ),
                       // Reviewers check for a blocked list that can be found
                       // and reversed — a block with no way back is not one.
-                      _SheetRow(
+                      EditorialRow(
                         icon: Icons.block_rounded,
                         iconBg: nt.mist,
                         iconColor: nt.forest,
@@ -435,77 +429,36 @@ class _SettingsSheet extends ConsumerWidget {
                       ),
                     ],
                   ),
+                  // Legal documents, the abuse address and bug reporting all
+                  // moved into the Help Center — this section is now the two
+                  // doors to it, plus the gesture preference.
                   _SheetSection(
                     label: l10n.settingsSupport,
                     children: [
-                      _SheetRow(
+                      EditorialRow(
                         icon: Icons.help_outline_rounded,
                         iconBg: nt.mist,
                         iconColor: nt.forest,
                         label: l10n.settingsHelpCenter,
-                        onTap: () => _comingSoon(context),
+                        onTap: () {
+                          Navigator.pop(context);
+                          context.push('/settings/help');
+                        },
                       ),
-                      _SheetRow(
+                      EditorialRow(
                         icon: Icons.info_outline_rounded,
                         iconBg: nt.mist,
                         iconColor: nt.forest,
                         label: l10n.settingsAbout,
-                        onTap: () => _comingSoon(context),
-                      ),
-                      _SheetRow(
-                        icon: Icons.gavel_rounded,
-                        iconBg: nt.mist,
-                        iconColor: nt.forest,
-                        label: l10n.settingsTerms,
-                        // ?lang= so the browser page matches the in-app
-                        // language rather than the device's.
-                        onTap: () => launchUrl(
-                          Uri.parse(legalDocUrl(LegalDoc.terms, langCode)),
-                          mode: LaunchMode.externalApplication,
-                        ),
-                      ),
-                      _SheetRow(
-                        icon: Icons.menu_book_rounded,
-                        iconBg: nt.mist,
-                        iconColor: nt.forest,
-                        label: l10n.communityGuidelines,
-                        onTap: () => launchUrl(
-                          Uri.parse(legalDocUrl(LegalDoc.guidelines, langCode)),
-                          mode: LaunchMode.externalApplication,
-                        ),
-                      ),
-                      // Must match the backend's ABUSE_CONTACT_EMAIL and the
-                      // store listing — one address, published in one place.
-                      _SheetRow(
-                        icon: Icons.report_gmailerrorred_rounded,
-                        iconBg: nt.mist,
-                        iconColor: nt.forest,
-                        label: l10n.abuseContact,
-                        detail: kAbuseContactEmail,
-                        onTap: () => launchUrl(
-                          Uri(scheme: 'mailto', path: kAbuseContactEmail),
-                        ),
-                      ),
-                      _SheetRow(
-                        icon: Icons.bug_report_outlined,
-                        iconBg: nt.mist,
-                        iconColor: nt.forest,
-                        label: l10n.settingsReportBug,
                         isLast: kIsWeb,
-                        // Close this sheet first, then open the reporter on the
-                        // next frame — otherwise the screenshot would just be a
-                        // picture of the settings sheet.
                         onTap: () {
                           Navigator.pop(context);
-                          WidgetsBinding.instance.addPostFrameCallback((_) {
-                            final root = navigatorKey.currentContext;
-                            if (root != null) startBugReport(root, ref);
-                          });
+                          context.push('/settings/about');
                         },
                       ),
                       // Hidden on web, where there is no shake to disable.
                       if (!kIsWeb)
-                        _SheetRow(
+                        EditorialRow(
                           icon: Icons.vibration_rounded,
                           iconBg: nt.mist,
                           iconColor: nt.forest,
@@ -534,7 +487,7 @@ class _SettingsSheet extends ConsumerWidget {
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(color: nt.border),
                       ),
-                      child: _SheetRow(
+                      child: EditorialRow(
                         // red badge — logout ends the session, not a brand action
                         icon: Icons.logout_rounded,
                         iconBg: nt.dangerTint,
@@ -552,12 +505,6 @@ class _SettingsSheet extends ConsumerWidget {
           ),
         ],
       ),
-    );
-  }
-
-  static void _comingSoon(BuildContext context) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(AppLocalizations.of(context)!.comingSoon)),
     );
   }
 }
@@ -594,112 +541,6 @@ class _SheetSection extends StatelessWidget {
           ),
           child: Column(children: children),
         ),
-      ],
-    );
-  }
-}
-
-class _SheetRow extends StatelessWidget {
-  final IconData icon;
-  final Color iconBg;
-  final Color iconColor;
-  final String label;
-  final String? detail;
-  // Second line under the label. `detail` sits on the trailing edge instead,
-  // which leaves no room once `trailing` is a control rather than a chevron.
-  final String? subtitle;
-  final bool showChevron;
-  final bool isLast;
-  final VoidCallback? onTap;
-  // Replaces the chevron — for rows that toggle in place rather than navigate.
-  final Widget? trailing;
-
-  const _SheetRow({
-    required this.icon,
-    required this.iconBg,
-    required this.iconColor,
-    required this.label,
-    this.detail,
-    this.subtitle,
-    this.showChevron = true,
-    this.isLast = false,
-    this.onTap,
-    this.trailing,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final nt = context.nt;
-    return Column(
-      children: [
-        InkWell(
-          onTap: onTap,
-          borderRadius:
-              isLast
-                  ? const BorderRadius.vertical(bottom: Radius.circular(16))
-                  : BorderRadius.zero,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
-            child: Row(
-              children: [
-                Container(
-                  width: 30,
-                  height: 30,
-                  decoration: BoxDecoration(
-                    color: iconBg,
-                    borderRadius: BorderRadius.circular(9),
-                  ),
-                  child: Icon(icon, size: 16, color: iconColor),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        label,
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w600,
-                          color: nt.bark,
-                        ),
-                      ),
-                      // Under the label, not beside it — a toggle row has no
-                      // room left for an explanation on the trailing edge.
-                      if (subtitle != null)
-                        Text(
-                          subtitle!,
-                          style: TextStyle(
-                            fontSize: 12.5,
-                            height: 1.3,
-                            color: nt.text2,
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-                if (detail != null) ...[
-                  Text(
-                    detail!,
-                    style: TextStyle(fontSize: 13, color: nt.text2),
-                  ),
-                  const SizedBox(width: 4),
-                ],
-                if (trailing != null)
-                  trailing!
-                else if (showChevron)
-                  Icon(Icons.chevron_right, size: 20, color: nt.text3),
-              ],
-            ),
-          ),
-        ),
-        if (!isLast)
-          Container(
-            height: 1,
-            margin: const EdgeInsetsDirectional.only(start: 56),
-            color: nt.border,
-          ),
       ],
     );
   }
