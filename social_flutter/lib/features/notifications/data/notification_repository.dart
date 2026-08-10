@@ -40,4 +40,15 @@ class NotificationRepository {
       data: ids == null ? <String, dynamic>{} : {'ids': ids},
     );
   }
+
+  /// DELETE /notifications/{id} — idempotent, so a resend after the row is
+  /// already gone is not an error.
+  Future<void> deleteNotification(String id) async {
+    await _dio.delete(notificationEndpoint(id));
+  }
+
+  /// DELETE /notifications — empty the feed.
+  Future<void> clearAll() async {
+    await _dio.delete(kNotificationsEndpoint);
+  }
 }

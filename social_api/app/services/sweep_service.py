@@ -75,6 +75,7 @@ def run_moderation_sweep(db: Session, settings) -> dict:
         "cache_purged": 0,
         "decisions_purged": 0,
         "bug_reports_purged": 0,
+        "notifications_purged": 0,
     }
     try:
         notifications: list[dict] = []

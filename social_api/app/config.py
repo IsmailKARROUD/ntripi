@@ -215,11 +215,16 @@ class Settings(BaseSettings):
     JIRA_TIMEOUT_SECONDS: float = 10.0
 
     # ── In-app notifications ────────────────────────────────────────────────
-    # How long a READ notification is kept before the sweep purges it. Unread
-    # rows are never purged however old: an author who has not opened the app
+    # How long a READ notification is kept before the sweep purges it. An unread
+    # row survives this window however old: an author who has not opened the app
     # since their content was hidden still needs to find out why. No feature
     # flag — this is core UX, not an optional integration.
     NOTIFICATION_RETENTION_DAYS: int = 90
+    # Hard ceiling regardless of read state. The read window above is the normal
+    # path; this exists so a feed nobody ever opens cannot grow forever. A
+    # year-old unread notice is not actionable — and the moderation record it
+    # might carry lives permanently on /settings/account-status either way.
+    NOTIFICATION_MAX_AGE_DAYS: int = 365
 
     # Tell pydantic-settings to look for a .env file in the working directory.
     # extra="ignore" means unknown .env keys don't cause validation errors.
@@ -240,6 +245,17 @@ class Settings(BaseSettings):
                 "TEXT_MODERATION_PROVIDER='openai' requires OPENAI_API_KEY"
             )
         self.report_hide_thresholds  # noqa: B018 — parse now so a typo fails at boot
+        return self
+
+    @model_validator(mode="after")
+    def _validate_notification_retention(self) -> "Settings":
+        # A cap below the read window would silently shorten it — a
+        # misconfiguration that looks like working retention right up until
+        # someone loses a notice early.
+        if self.NOTIFICATION_MAX_AGE_DAYS < self.NOTIFICATION_RETENTION_DAYS:
+            raise ValueError(
+                "NOTIFICATION_MAX_AGE_DAYS must be >= NOTIFICATION_RETENTION_DAYS"
+            )
         return self
 
     @property

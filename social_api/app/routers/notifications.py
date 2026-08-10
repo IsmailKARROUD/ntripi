@@ -2,9 +2,15 @@
 routers/notifications.py — the authenticated in-app notification feed.
 
 GET /notifications backs the bell screen; GET /notifications/unread-count backs
-the badge; POST /notifications/read clears them. Notifications are written
-elsewhere — see services/notification_service.notify, the only writer — so
-there is no POST that creates one.
+the badge; POST /notifications/read clears them; the two DELETEs remove one row
+or the whole feed. Notifications are written elsewhere — see
+services/notification_service.notify, the only writer — so there is no POST that
+creates one.
+
+Both DELETEs are idempotent and never 404. The client removes the row on screen
+first and sends the request afterwards (there is an undo window in between), so
+a retry, or a row the sweep purged in the meantime, must not raise an error for
+something the user already watched disappear.
 
 The unread-count endpoint is polled, and is cheap on purpose: ETagMiddleware
 hashes the JSON body, so an unchanged count costs a 304 with no body rather
@@ -156,6 +162,37 @@ def mark_read(
     now = datetime.now(timezone.utc)
     for row in db.execute(stmt).scalars().all():
         row.read_at = now
+    db.commit()
+
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.delete(
+    "",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Delete every notification in the current user's feed",
+)
+def clear_notifications(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> Response:
+    notification_service.delete_all(db, current_user.id)
+    db.commit()
+
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.delete(
+    "/{notification_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Delete one notification",
+)
+def delete_notification(
+    notification_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> Response:
+    notification_service.delete_one(db, current_user.id, notification_id)
     db.commit()
 
     return Response(status_code=status.HTTP_204_NO_CONTENT)

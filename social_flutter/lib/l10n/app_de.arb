@@ -701,6 +701,7 @@
   "alreadyInItinerary": "{name} ist bereits in dieser Reiseroute.",
   "stopNumberOfTotal": "Stopp {n} von {total}",
   "shareCaption": "Schau dir \"{title}\" auf Ntripi an — {stops}, {duration}",
+  "shareProfileCaption": "{name} auf Ntripi — sieh dir die besuchten Orte an",
   "apiErrorNotAuthenticated": "Du bist nicht angemeldet.",
   "apiErrorAccountDeactivated": "Dein Konto wurde deaktiviert.",
   "apiErrorEmailUnverified": "Bestätige deine E-Mail über Google, um dies zu tun.",
@@ -918,5 +919,10 @@
     }
   },
   "notificationWarned": "Du hast eine Verwarnung der Moderation erhalten",
-  "notificationWarnedDetail": "Tippen, um den Grund zu sehen und Einspruch einzulegen"
+  "notificationWarnedDetail": "Tippen, um den Grund zu sehen und Einspruch einzulegen",
+  "notificationDelete": "Benachrichtigung löschen",
+  "notificationDeleted": "Benachrichtigung gelöscht",
+  "notificationsClearAll": "Alle löschen",
+  "notificationsClearAllTitle": "Alle Benachrichtigungen löschen?",
+  "notificationsClearAllMessage": "Alle Benachrichtigungen werden aus deiner Liste entfernt. Moderationshinweise bleiben auf deiner Seite „Kontostatus“."
 }
