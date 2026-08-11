@@ -166,3 +166,40 @@ class SectionCard extends StatelessWidget {
     );
   }
 }
+
+// ── RefreshableCenter ─────────────────────────────────────────────────────────
+// Pull-to-refresh over a state that has nothing to scroll.
+//
+// A RefreshIndicator is normally wrapped around the populated list, which puts
+// it inside the `data` branch behind an isEmpty early return — so the two states
+// where the user most wants to re-check, an empty list and a failed load, are
+// the two with no way to ask again. AlwaysScrollableScrollPhysics is what lets a
+// viewport shorter than its box still register the drag; the LayoutBuilder is
+// what keeps the child vertically centred while remaining scrollable.
+
+class RefreshableCenter extends StatelessWidget {
+  final Widget child;
+  final Future<void> Function() onRefresh;
+
+  const RefreshableCenter({
+    super.key,
+    required this.child,
+    required this.onRefresh,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return RefreshIndicator(
+      onRefresh: onRefresh,
+      child: LayoutBuilder(
+        builder: (context, constraints) => SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: constraints.maxHeight),
+            child: Center(child: child),
+          ),
+        ),
+      ),
+    );
+  }
+}

@@ -113,7 +113,7 @@ class _NotificationPollerState extends ConsumerState<NotificationPoller>
     if (!isOnlineNow(ref)) return;
 
     final arrived =
-        await ref.read(unreadNotificationCountProvider.notifier).poll();
+        await ref.read(notificationBadgeProvider.notifier).poll();
     if (!mounted || !arrived) return;
     // Gated on the user's sound toggle inside SfxService, and swallowed there
     // if the platform refuses — a cue has no failure worth surfacing.

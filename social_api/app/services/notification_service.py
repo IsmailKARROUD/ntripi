@@ -22,7 +22,7 @@ import logging
 import uuid
 from datetime import datetime, timedelta, timezone
 
-from sqlalchemy import and_, delete, func, or_, select
+from sqlalchemy import and_, case, delete, func, or_, select
 from sqlalchemy.orm import Session
 
 from app.models.notification import (
@@ -30,6 +30,7 @@ from app.models.notification import (
 )
 from app.models.user import User
 from app.services import block_service
+from app.services.token_util import as_aware_utc
 
 logger = logging.getLogger(__name__)
 
@@ -82,13 +83,31 @@ def notify(
     return notification
 
 
-def unread_count(db: Session, user_id: uuid.UUID) -> int:
-    return db.execute(
-        select(func.count(Notification.id)).where(
-            Notification.user_id == user_id,
-            Notification.read_at.is_(None),
-        )
-    ).scalar_one() or 0
+def badge_state(
+    db: Session, user_id: uuid.UUID
+) -> tuple[int, datetime | None]:
+    """`(unread count, newest notification's created_at)` for the bell.
+
+    The two travel together because they answer different questions and the
+    client needs both from one request: the count is the number on the badge,
+    while the timestamp is the *arrival* signal. A count cannot serve as one —
+    reading a notification on another device while a new one arrives leaves it
+    unchanged, so an arrival would be silently masked. MAX(created_at) only ever
+    moves forward, and nothing anyone reads anywhere can move it.
+
+    One query, both aggregates. `case` rather than a FILTER clause so SQLite
+    (the test DB) takes it as well as PostgreSQL; both are served by
+    ix_notifications_user_created.
+    """
+    unread, latest = db.execute(
+        select(
+            func.count(case((Notification.read_at.is_(None), 1))),
+            func.max(Notification.created_at),
+        ).where(Notification.user_id == user_id)
+    ).one()
+    # SQLite hands back a naive datetime where PostgreSQL returns an aware one;
+    # the client compares these across polls, so an unanchored value is useless.
+    return unread or 0, as_aware_utc(latest) if latest is not None else None
 
 
 def delete_one(

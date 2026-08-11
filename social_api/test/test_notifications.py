@@ -23,6 +23,7 @@ from conftest import (
 from app.config import Settings, get_settings
 from app.models.notification import Notification
 from app.services import notification_service
+from app.services.token_util import as_aware_utc
 
 
 # ---------------------------------------------------------------------------
@@ -44,6 +45,11 @@ def _set_private(client, token, is_private: bool) -> None:
         "/users/me", json={"is_private": is_private}, headers=auth_headers(token),
     )
     assert r.status_code == 200, r.json()
+
+
+def _instant(value: str) -> datetime:
+    """Parse a wire datetime to an aware instant, naive or not."""
+    return as_aware_utc(datetime.fromisoformat(value))
 
 
 def _feed(client, token) -> dict:
@@ -377,15 +383,15 @@ def test_unread_count_and_mark_all_read(client: TestClient):
         )
 
     headers = auth_headers(owner["access_token"])
-    assert client.get("/notifications/unread-count", headers=headers).json() == {
-        "unread_count": 2
-    }
+    assert client.get(
+        "/notifications/unread-count", headers=headers
+    ).json()["unread_count"] == 2
 
     # Omitting `ids` marks everything read.
     assert client.post("/notifications/read", json={}, headers=headers).status_code == 204
-    assert client.get("/notifications/unread-count", headers=headers).json() == {
-        "unread_count": 0
-    }
+    assert client.get(
+        "/notifications/unread-count", headers=headers
+    ).json()["unread_count"] == 0
     assert all(n["read"] for n in _feed(client, owner["access_token"])["notifications"])
 
 
@@ -403,9 +409,92 @@ def test_mark_read_with_explicit_ids(client: TestClient):
     first = _feed(client, owner["access_token"])["notifications"][0]["id"]
     client.post("/notifications/read", json={"ids": [first]}, headers=headers)
 
-    assert client.get("/notifications/unread-count", headers=headers).json() == {
-        "unread_count": 1
-    }
+    assert client.get(
+        "/notifications/unread-count", headers=headers
+    ).json()["unread_count"] == 1
+
+
+def test_latest_at_is_the_arrival_signal_and_survives_mark_read(
+    client: TestClient,
+):
+    """The count answers "how many"; latest_at answers "has anything arrived".
+
+    They must not be the same signal. Marking everything read drives the count
+    to zero, and if the client keyed its cue off that it would read the drop as
+    news. Worse in the other direction: a read on another device cancelling out
+    an arrival leaves the count unchanged and swallows the arrival entirely.
+    latest_at only ever moves forward, and nothing anyone reads can move it.
+    """
+    owner = register_user(client, "owner", "owner@x.com")
+    itinerary = _create_itinerary(client, owner["access_token"])
+    headers = auth_headers(owner["access_token"])
+
+    saver = register_user(client, "saver", "saver@x.com")
+    client.post(
+        f"/itineraries/{itinerary['id']}/save",
+        headers=auth_headers(saver["access_token"]),
+    )
+
+    badge = client.get("/notifications/unread-count", headers=headers).json()
+    page = _feed(client, owner["access_token"])
+    # Compared as instants, not strings: badge_state normalizes to aware UTC,
+    # while an item's created_at is whatever the driver returned — naive under
+    # SQLite, aware under PostgreSQL. Same moment, two spellings.
+    assert _instant(badge["latest_at"]) == _instant(
+        page["notifications"][0]["created_at"]
+    )
+    # Both endpoints answer with the same value, so a feed load can move the
+    # client's arrival baseline without spending a second request.
+    assert page["latest_at"] == badge["latest_at"]
+
+    client.post("/notifications/read", json={}, headers=headers)
+
+    after = client.get("/notifications/unread-count", headers=headers).json()
+    assert after["unread_count"] == 0
+    assert after["latest_at"] == badge["latest_at"]
+
+
+def test_latest_at_is_null_without_notifications(client: TestClient):
+    user = register_user(client, "lonely", "lonely@x.com")
+
+    assert client.get(
+        "/notifications/unread-count", headers=auth_headers(user["access_token"]),
+    ).json() == {"unread_count": 0, "latest_at": None}
+
+
+def test_latest_at_advances_when_the_count_does_not(client: TestClient):
+    """The aliasing case the timestamp exists for.
+
+    One notification read and one new one arriving between two polls leaves the
+    count exactly where it was. A client watching the count would see nothing
+    happen; latest_at still moves.
+    """
+    owner = register_user(client, "owner", "owner@x.com")
+    itinerary = _create_itinerary(client, owner["access_token"])
+    headers = auth_headers(owner["access_token"])
+
+    for i in range(2):
+        saver = register_user(client, f"saver{i}", f"saver{i}@x.com")
+        client.post(
+            f"/itineraries/{itinerary['id']}/save",
+            headers=auth_headers(saver["access_token"]),
+        )
+
+    before = client.get("/notifications/unread-count", headers=headers).json()
+    assert before["unread_count"] == 2
+
+    # Read one (as another device would) and receive one, between two polls.
+    oldest = _feed(client, owner["access_token"])["notifications"][-1]["id"]
+    client.post("/notifications/read", json={"ids": [oldest]}, headers=headers)
+    late = register_user(client, "late", "late@x.com")
+    client.post(
+        f"/itineraries/{itinerary['id']}/save",
+        headers=auth_headers(late["access_token"]),
+    )
+
+    after = client.get("/notifications/unread-count", headers=headers).json()
+    assert after["unread_count"] == before["unread_count"]  # masked
+    assert after["latest_at"] > before["latest_at"]  # not masked
 
 
 def test_cannot_mark_another_users_notifications_read(client: TestClient):
@@ -428,7 +517,7 @@ def test_cannot_mark_another_users_notifications_read(client: TestClient):
 
     assert client.get(
         "/notifications/unread-count", headers=auth_headers(owner["access_token"]),
-    ).json() == {"unread_count": 1}
+    ).json()["unread_count"] == 1
 
 
 def test_feed_is_scoped_to_the_current_user(client: TestClient):
@@ -496,8 +585,9 @@ def test_delete_removes_the_row_and_clears_the_badge(client: TestClient):
     r = client.delete(f"/notifications/{notification_id}", headers=headers)
     assert r.status_code == 204
 
+    # latest_at goes null along with the rows — there is no newest one left.
     assert _feed(client, owner["access_token"]) == {
-        "notifications": [], "unread_count": 0
+        "notifications": [], "unread_count": 0, "latest_at": None
     }
     assert _rows() == []
 
@@ -549,8 +639,9 @@ def test_clear_all_empties_only_the_callers_feed(client: TestClient):
     r = client.delete("/notifications", headers=auth_headers(owner["access_token"]))
     assert r.status_code == 204
 
+    # latest_at goes null along with the rows — there is no newest one left.
     assert _feed(client, owner["access_token"]) == {
-        "notifications": [], "unread_count": 0
+        "notifications": [], "unread_count": 0, "latest_at": None
     }
     assert len(_feed(client, other["access_token"])["notifications"]) == 3
 

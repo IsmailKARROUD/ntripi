@@ -22,7 +22,7 @@ class NotificationBell extends ConsumerWidget {
     final l10n = AppLocalizations.of(context)!;
     // A failed or pending count renders no badge rather than a zero or an
     // error — the bell still opens, which is the part that matters.
-    final unread = ref.watch(unreadNotificationCountProvider).value ?? 0;
+    final unread = ref.watch(notificationBadgeProvider).value?.unread ?? 0;
 
     return Stack(
       clipBehavior: Clip.none,

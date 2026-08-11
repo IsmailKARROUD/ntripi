@@ -1,10 +1,14 @@
 // features/notifications/providers/notification_provider.dart
 //
-// Feed state plus the bell badge count.
+// Feed state plus the bell badge.
 //
 // The badge is its own provider rather than being derived from the feed: the
 // bell is on the profile screen, where loading the whole feed just to render a
 // dot would be wasted. Both are invalidated together by markAllRead.
+//
+// The badge carries two values, and only one of them is the count — see
+// NotificationBadge. `unread` is the number on the bell; `latestAt` is the
+// arrival signal, because a count cannot be one.
 //
 // Deleting is deferred, not optimistic-with-rollback: dismiss() takes the row
 // off screen and only queues the DELETE, which fires when the undo window
@@ -68,9 +72,9 @@ class NotificationsNotifier extends AsyncNotifier<List<AppNotification>> {
       final page = await ref
           .read(notificationRepositoryProvider)
           .getNotifications(forceRefresh: true);
-      // The badge count rides along with every page — spending a second request
-      // on what is already in hand is why pulling here never fixed the bell.
-      _pushCount(page.unreadCount);
+      // The badge rides along with every page — spending a second request on
+      // what is already in hand is why pulling here never fixed the bell.
+      _pushBadge(page.badge);
       return page.notifications;
     });
     // Assigning state on a disposed notifier throws; a pull-to-refresh the user
@@ -92,12 +96,24 @@ class NotificationsNotifier extends AsyncNotifier<List<AppNotification>> {
     // already gone from the server's next answer anyway — wait for the window.
     if (_pending.isNotEmpty) return;
 
+    // The screen calls this the moment it opens, which on a first launch is
+    // while build() is still fetching the same page. Wait for the answer already
+    // on the wire rather than racing it with an identical second request.
+    if (!state.hasValue) {
+      try {
+        await future;
+      } catch (_) {
+        // build()'s failure is already the provider's state; nothing to add.
+      }
+      return;
+    }
+
     final List<AppNotification> rows;
     try {
       final page =
           await ref.read(notificationRepositoryProvider).getNotifications();
       if (!ref.mounted) return;
-      _pushCount(page.unreadCount);
+      _pushBadge(page.badge);
       rows = page.notifications;
     } catch (_) {
       // Swallowed on purpose — see the doc comment. The next poll retries.
@@ -107,18 +123,18 @@ class NotificationsNotifier extends AsyncNotifier<List<AppNotification>> {
     state = AsyncData(rows);
   }
 
-  /// Hand the badge the count that came down with the feed. Never called from
+  /// Hand the bell the badge that came down with the feed. Never called from
   /// [build] — writing another provider mid-build is the one thing Riverpod
   /// forbids outright, and the poller keeps the badge current regardless.
-  void _pushCount(int unread) {
+  void _pushBadge(NotificationBadge badge) {
     if (!ref.mounted) return;
     // Only into a badge that already exists and has settled. Reading it into
     // existence here would fire the very request this exists to save, and a
     // build still in flight would overwrite what we pushed the moment its own
     // (equally fresh) answer lands.
-    if (!ref.exists(unreadNotificationCountProvider)) return;
-    if (ref.read(unreadNotificationCountProvider).isLoading) return;
-    ref.read(unreadNotificationCountProvider.notifier).setCount(unread);
+    if (!ref.exists(notificationBadgeProvider)) return;
+    if (ref.read(notificationBadgeProvider).isLoading) return;
+    ref.read(notificationBadgeProvider.notifier).setBadge(badge);
   }
 
   /// Clear the badge on the server, leaving the rows on screen as they are.
@@ -138,7 +154,7 @@ class NotificationsNotifier extends AsyncNotifier<List<AppNotification>> {
       // badge recovers from a write that did not land. Guarded because this
       // screen marks read from a post-frame callback, so the provider can be
       // gone by the time the call returns.
-      if (ref.mounted) ref.invalidate(unreadNotificationCountProvider);
+      if (ref.mounted) ref.invalidate(notificationBadgeProvider);
     }
   }
 
@@ -199,7 +215,7 @@ class NotificationsNotifier extends AsyncNotifier<List<AppNotification>> {
     // silence is the right outcome if nobody is left to show the result to.
     if (!ref.mounted) return;
     state = const AsyncData([]);
-    ref.invalidate(unreadNotificationCountProvider);
+    ref.invalidate(notificationBadgeProvider);
   }
 
   Future<void> _commit(String id) async {
@@ -229,7 +245,7 @@ class NotificationsNotifier extends AsyncNotifier<List<AppNotification>> {
     // landed by here, so there is nothing left to do but skip the badge nudge.
     if (!ref.mounted) return;
     // A deleted unread row changes the badge, and this screen can be stale.
-    ref.invalidate(unreadNotificationCountProvider);
+    ref.invalidate(notificationBadgeProvider);
   }
 
   void _cancelPending() {
@@ -245,24 +261,29 @@ final notificationsProvider =
   () => NotificationsNotifier(),
 );
 
-/// Badge count for the bell. Kept separate from the feed so the profile screen
-/// does not have to load the list to draw a dot.
-class UnreadNotificationCountNotifier extends AsyncNotifier<int> {
+/// State for the bell. Kept separate from the feed so the profile screen does
+/// not have to load the whole list to draw a dot.
+class NotificationBadgeNotifier extends AsyncNotifier<NotificationBadge> {
   @override
-  Future<int> build() {
-    return ref.read(notificationRepositoryProvider).getUnreadCount();
+  Future<NotificationBadge> build() {
+    return ref.read(notificationRepositoryProvider).getBadge();
   }
 
-  /// The polled read. Returns true when the count went **up**, which is the
-  /// app's only signal that something new arrived.
+  /// The polled read. Returns true when something **arrived**, which is the
+  /// app's only signal that a new notification exists.
+  ///
+  /// The arrival test is [NotificationBadge.arrivedSince] — the timestamp
+  /// advancing, not the count rising. A count rise looks like the same thing
+  /// and is not: reading one notification elsewhere while another arrives
+  /// leaves the count untouched, and the cue would never fire.
   ///
   /// The only read this notifier needs. There is no forced variant: the three
-  /// user actions that change the count (markAllRead, clearAll, a committed
-  /// delete) invalidate the provider outright, and a feed load hands its count
-  /// over via [setCount] rather than asking for it again.
+  /// user actions that change the badge (markAllRead, clearAll, a committed
+  /// delete) invalidate the provider outright, and a feed load hands its badge
+  /// over via [setBadge] rather than asking for it again.
   ///
   /// Deliberately not forced: the conditional GET sends If-None-Match, so an
-  /// unchanged count comes back 304 with no body and the cache interceptor
+  /// unchanged badge comes back 304 with no body and the cache interceptor
   /// replays the value. That is what makes a once-a-minute poll close to free.
   Future<bool> poll() async {
     if (!isOnlineNowRef(ref)) return false;
@@ -270,8 +291,9 @@ class UnreadNotificationCountNotifier extends AsyncNotifier<int> {
     // The very first poll lands while build() is still in flight — the poller
     // reads this notifier into existence and immediately asks it to fetch. Wait
     // for the answer already on the wire instead of racing a second request for
-    // the same integer, and report no arrival: there is no baseline to rise
-    // from, and a cold launch showing three unread is not three that just came.
+    // the same value, and report no arrival: there is no baseline to compare
+    // against, and a cold launch showing three unread is not three that just
+    // came.
     if (!state.hasValue) {
       try {
         await future;
@@ -281,29 +303,33 @@ class UnreadNotificationCountNotifier extends AsyncNotifier<int> {
       return false;
     }
 
-    final int next;
+    final NotificationBadge next;
     try {
-      next = await ref.read(notificationRepositoryProvider).getUnreadCount();
+      next = await ref.read(notificationRepositoryProvider).getBadge();
     } catch (_) {
       // Never written as AsyncError: nobody asked for this read, and blanking a
-      // correct badge because one poll hit a dead tunnel is worse than a count
+      // correct badge because one poll hit a dead tunnel is worse than a value
       // that is a minute stale. The next poll corrects it.
       return false;
     }
     if (!ref.mounted) return false;
 
-    // hasValue above guarantees a real baseline here, so a rise is genuinely
-    // new rather than the first number this session happened to see.
+    // hasValue above guarantees a real baseline, so an arrival is genuinely new
+    // rather than the first answer this session happened to see.
     final previous = state.value;
     state = AsyncData(next);
-    return previous != null && next > previous;
+    return next.arrivedSince(previous);
   }
 
-  /// Accept a count that arrived with a feed page instead of spending a request.
-  void setCount(int unread) => state = AsyncData(unread);
+  /// Accept a badge that arrived with a feed page instead of spending a request.
+  ///
+  /// Load-bearing for the cue as well as the count: pushing the page's
+  /// timestamp moves the arrival baseline, so the next poll does not announce a
+  /// row the user is already looking at.
+  void setBadge(NotificationBadge badge) => state = AsyncData(badge);
 }
 
-final unreadNotificationCountProvider =
-    AsyncNotifierProvider<UnreadNotificationCountNotifier, int>(
-  () => UnreadNotificationCountNotifier(),
+final notificationBadgeProvider =
+    AsyncNotifierProvider<NotificationBadgeNotifier, NotificationBadge>(
+  () => NotificationBadgeNotifier(),
 );

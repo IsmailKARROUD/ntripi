@@ -34,11 +34,15 @@ class _FakeNotificationRepo extends NotificationRepository {
     int offset = 0,
     bool forceRefresh = false,
   }) async {
-    return NotificationsPage(notifications: _feed(), unreadCount: 3);
+    return NotificationsPage(
+      notifications: _feed(),
+      badge: const NotificationBadge(unread: 3),
+    );
   }
 
   @override
-  Future<int> getUnreadCount({bool forceRefresh = false}) async => 3;
+  Future<NotificationBadge> getBadge({bool forceRefresh = false}) async =>
+      const NotificationBadge(unread: 3);
 
   @override
   Future<void> deleteNotification(String id) async {

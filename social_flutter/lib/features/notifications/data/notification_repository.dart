@@ -24,13 +24,14 @@ class NotificationRepository {
     return NotificationsPage.fromJson(response.data as Map<String, dynamic>);
   }
 
-  /// GET /notifications/unread-count — just the badge.
-  Future<int> getUnreadCount({bool forceRefresh = false}) async {
+  /// GET /notifications/unread-count — just the badge: the count plus the
+  /// arrival timestamp the new-notification cue keys off.
+  Future<NotificationBadge> getBadge({bool forceRefresh = false}) async {
     final response = await _dio.get(
       kNotificationsUnreadCountEndpoint,
       options: forceRefresh ? forceRefreshOptions() : null,
     );
-    return (response.data as Map<String, dynamic>)['unread_count'] as int? ?? 0;
+    return NotificationBadge.fromJson(response.data as Map<String, dynamic>);
   }
 
   /// POST /notifications/read — `ids` null marks every unread notification read.

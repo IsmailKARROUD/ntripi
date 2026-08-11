@@ -46,7 +46,7 @@ class AuthNotifier extends Notifier<String?> {
     // inherits whatever the first one left behind — including its badge count,
     // which the poller would then read as a baseline and never correct upward.
     ref.invalidate(notificationsProvider);
-    ref.invalidate(unreadNotificationCountProvider);
+    ref.invalidate(notificationBadgeProvider);
     state = userId;
   }
 
@@ -62,7 +62,7 @@ class AuthNotifier extends Notifier<String?> {
     ref.invalidate(savedItinerariesProvider);
     ref.invalidate(searchQueryProvider);
     ref.invalidate(notificationsProvider);
-    ref.invalidate(unreadNotificationCountProvider);
+    ref.invalidate(notificationBadgeProvider);
     // hasSessionProvider caches a storage read; without this it would still
     // report a live session after the tokens are gone.
     ref.invalidate(hasSessionProvider);
