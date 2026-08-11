@@ -9,6 +9,8 @@
 //   followRequestsProvider is keep-alive, so the second visit rendered whatever
 //   the first one fetched. A request that arrived in between stayed invisible.
 
+import 'dart:async';
+
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -30,11 +32,15 @@ class _FakeFollowRepo extends FollowRepository {
   bool fail = false;
   int calls = 0;
 
+  /// Held open by a test that needs to observe the in-flight state.
+  Completer<void>? gate;
+
   @override
   Future<List<FollowRequestItem>> getFollowRequests({
     bool forceRefresh = false,
   }) async {
     calls++;
+    if (gate != null) await gate!.future;
     if (fail) throw DioException(requestOptions: RequestOptions());
     return rows;
   }
@@ -149,6 +155,44 @@ void main() {
     await _reopen(tester, container);
 
     expect(find.textContaining('Display grace'), findsOneWidget);
+  });
+
+  testWidgets(
+      'Given the screen is reopened over a cached list, '
+      'When the refetch is in flight, '
+      'Then a progress line shows and the cached rows stay visible',
+      (tester) async {
+    final repo = _FakeFollowRepo(rows: [_request('ada')]);
+    final container = _container(repo);
+    addTearDown(container.dispose);
+    await tester.pumpWidget(_screen(container));
+    await tester.pumpAndSettle();
+
+    // Idle: the divider is a plain hairline, nothing spinning.
+    expect(find.byType(LinearProgressIndicator), findsNothing);
+
+    final gate = Completer<void>();
+    addTearDown(() {
+      if (!gate.isCompleted) gate.complete();
+    });
+    repo.gate = gate;
+
+    await tester.pumpWidget(_screen(container, showScreen: false));
+    await tester.pump();
+    await tester.pumpWidget(_screen(container));
+    // Fixed pumps, not pumpAndSettle: the request is parked and the indicator
+    // animates forever, so settling would time out.
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+
+    expect(find.byType(LinearProgressIndicator), findsOneWidget);
+    // The whole point of the silent reload — the list stays readable meanwhile.
+    expect(find.textContaining('Display ada'), findsOneWidget);
+
+    gate.complete();
+    await tester.pumpAndSettle();
+
+    expect(find.byType(LinearProgressIndicator), findsNothing);
   });
 
   testWidgets(

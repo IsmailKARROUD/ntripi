@@ -35,6 +35,9 @@ class _RecordingRepo extends NotificationRepository {
   final List<String> calls = [];
   bool failFeed = false;
 
+  /// Held open by a test that needs to observe the in-flight state.
+  Completer<void>? feedGate;
+
   @override
   Future<NotificationsPage> getNotifications({
     int limit = 30,
@@ -42,6 +45,7 @@ class _RecordingRepo extends NotificationRepository {
     bool forceRefresh = false,
   }) async {
     calls.add('feed');
+    if (feedGate != null) await feedGate!.future;
     if (failFeed) throw DioException(requestOptions: RequestOptions());
     return NotificationsPage(
       notifications: rows,
@@ -160,6 +164,44 @@ void main() {
     // Clearing the badge over a feed the user was never shown would strand the
     // rows: cleared bell, nothing on screen, no second chance.
     expect(repo.calls, isNot(contains('markRead')));
+  });
+
+  testWidgets(
+      'Given the screen is reopened over a cached feed, '
+      'When the refetch is in flight, '
+      'Then a progress line shows and the cached rows stay visible',
+      (tester) async {
+    final repo = _RecordingRepo(rows: [_old]);
+    final container = _container(repo);
+    addTearDown(container.dispose);
+    await tester.pumpWidget(_screen(container));
+    await tester.pumpAndSettle();
+
+    // Idle: the divider is a plain hairline, nothing spinning.
+    expect(find.byType(LinearProgressIndicator), findsNothing);
+
+    final gate = Completer<void>();
+    addTearDown(() {
+      if (!gate.isCompleted) gate.complete();
+    });
+    repo.feedGate = gate;
+
+    await tester.pumpWidget(_screen(container, showScreen: false));
+    await tester.pump();
+    await tester.pumpWidget(_screen(container));
+    // Fixed pumps, not pumpAndSettle: the request is parked and the indicator
+    // animates forever, so settling would time out.
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+
+    expect(find.byType(LinearProgressIndicator), findsOneWidget);
+    // The whole point of the silent reload — the user keeps reading meanwhile.
+    expect(find.textContaining('Actor n1'), findsOneWidget);
+
+    gate.complete();
+    await tester.pumpAndSettle();
+
+    expect(find.byType(LinearProgressIndicator), findsNothing);
   });
 
   testWidgets(

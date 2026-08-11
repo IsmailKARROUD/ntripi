@@ -104,6 +104,42 @@ class EditorialTopBar extends StatelessWidget {
   }
 }
 
+// ── EditorialDivider ──────────────────────────────────────────────────────────
+// The hairline under an EditorialTopBar, which doubles as the progress bar for
+// a screen that reloads itself on open.
+//
+// That reload deliberately leaves the previous content on screen (see
+// silentRefresh), so without this there is nothing at all to say a request is
+// in flight — the list simply sits there until rows change under the user.
+// A RefreshIndicator can't fill the gap: it only draws for a real drag.
+//
+// The 2 px box is fixed and the idle hairline is top-aligned inside it, so
+// switching between the two never nudges the content below by a pixel.
+
+class EditorialDivider extends StatelessWidget {
+  final bool loading;
+
+  const EditorialDivider({super.key, this.loading = false});
+
+  @override
+  Widget build(BuildContext context) {
+    final nt = context.nt;
+    return SizedBox(
+      height: 2,
+      child: loading
+          ? LinearProgressIndicator(
+              minHeight: 2,
+              backgroundColor: nt.border,
+              color: nt.forest,
+            )
+          : Align(
+              alignment: Alignment.topCenter,
+              child: Container(height: 1, color: nt.border),
+            ),
+    );
+  }
+}
+
 // ── SectionLabel ──────────────────────────────────────────────────────────────
 // Uppercase label row with a small leading icon.  Used as a section header
 // above a SectionCard.

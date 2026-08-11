@@ -30,6 +30,11 @@ class FollowRequestsScreen extends ConsumerStatefulWidget {
 class _FollowRequestsScreenState extends ConsumerState<FollowRequestsScreen> {
   bool _opened = false;
 
+  /// A reload is in flight that the user did not drag for — drives the progress
+  /// line under the top bar, since the rows stay put throughout and would
+  /// otherwise give no sign anything was happening.
+  bool _refreshing = false;
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
@@ -39,7 +44,21 @@ class _FollowRequestsScreenState extends ConsumerState<FollowRequestsScreen> {
     // and a failure leaves it alone.
     if (_opened) return;
     _opened = true;
-    unawaited(ref.read(followRequestsProvider.notifier).silentRefresh());
+    // Deferred a frame: didChangeDependencies runs inside the build pipeline,
+    // and _refetch calls setState to raise the progress line.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) unawaited(_refetch());
+    });
+  }
+
+  Future<void> _refetch() async {
+    setState(() => _refreshing = true);
+    try {
+      await ref.read(followRequestsProvider.notifier).silentRefresh();
+    } finally {
+      // Guarded: the user can leave mid-request, and this runs either way.
+      if (mounted) setState(() => _refreshing = false);
+    }
   }
 
   @override
@@ -61,7 +80,7 @@ class _FollowRequestsScreenState extends ConsumerState<FollowRequestsScreen> {
                 bottom: false,
                 child: EditorialTopBar(title: AppLocalizations.of(context)!.followRequestsTitle),
               ),
-              Container(height: 1, color: nt.border),
+              EditorialDivider(loading: _refreshing),
               Expanded(
                 child: requestsAsync.when(
                   loading: () =>

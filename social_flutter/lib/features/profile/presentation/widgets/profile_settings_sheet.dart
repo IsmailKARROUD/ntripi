@@ -10,6 +10,7 @@ import 'package:social_flutter/core/providers/locale_provider.dart';
 import 'package:social_flutter/core/providers/sound_effects_enabled_provider.dart';
 import 'package:social_flutter/features/auth/presentation/widgets/legal_doc_sheet.dart';
 import 'package:social_flutter/features/auth/providers/legal_provider.dart';
+import 'package:social_flutter/features/follows/providers/follow_provider.dart';
 import 'package:social_flutter/core/providers/theme_mode_provider.dart';
 import 'package:social_flutter/core/ui/app_theme.dart';
 import 'package:social_flutter/features/profile/providers/profile_provider.dart';
@@ -308,6 +309,13 @@ class _SettingsSheet extends ConsumerWidget {
             me.notifySaves,
             me.notifyFollowAccepted,
           ].where((on) => on).length);
+    // Public accounts auto-accept follows, so their pending list is always
+    // empty. The watch sits inside the gate so a public account's settings
+    // sheet never spends a follow-requests fetch on a row it will not draw.
+    final showFollowRequests = me?.isPrivate ?? false;
+    final pendingRequests = showFollowRequests
+        ? ref.watch(followRequestsProvider).value?.length
+        : null;
 
     final media = MediaQuery.of(context);
     // A fixed 75% of the screen, not content height: the row list grows over
@@ -420,6 +428,23 @@ class _SettingsSheet extends ConsumerWidget {
                           context.push('/settings/account-status');
                         },
                       ),
+                      if (showFollowRequests)
+                        _SheetRow(
+                          icon: Icons.person_add_alt_1_outlined,
+                          iconBg: nt.mist,
+                          iconColor: nt.forest,
+                          label: l10n.followRequestsTitle,
+                          // Null, not "0" — a zero is noise, and null is also
+                          // what a list still loading gives, so a wrong number
+                          // can never flash.
+                          detail: (pendingRequests ?? 0) > 0
+                              ? '$pendingRequests'
+                              : null,
+                          onTap: () {
+                            Navigator.pop(context);
+                            context.push('/follow-requests');
+                          },
+                        ),
                       // Reviewers check for a blocked list that can be found
                       // and reversed — a block with no way back is not one.
                       _SheetRow(

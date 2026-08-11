@@ -32,6 +32,11 @@ class NotificationsScreen extends ConsumerStatefulWidget {
 class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
   bool _opened = false;
 
+  /// A reload is in flight that the user did not drag for — drives the progress
+  /// line under the top bar, since the rows stay put throughout and would
+  /// otherwise give no sign anything was happening.
+  bool _refreshing = false;
+
   /// Captured while the widget is still mounted. `ref` is backed by
   /// BuildContext, so touching it in dispose() throws in Riverpod 3 — and this
   /// screen can be torn down by a redirect the user never asked for (an
@@ -52,7 +57,11 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
     // then never surface anywhere. Refresh first, act second.
     if (_opened) return;
     _opened = true;
-    unawaited(_pullInArrivals());
+    // Deferred a frame: didChangeDependencies runs inside the build pipeline,
+    // and _pullInArrivals calls setState to raise the progress line.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) unawaited(_pullInArrivals());
+    });
   }
 
   @override
@@ -75,9 +84,15 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
   /// and markAllRead early-returns on a null value, so a badge is never cleared
   /// over a feed the user was never shown.
   Future<void> _pullInArrivals() async {
-    await _notifier?.silentRefresh();
-    if (!mounted) return;
-    await _notifier?.markAllRead();
+    setState(() => _refreshing = true);
+    try {
+      await _notifier?.silentRefresh();
+      if (!mounted) return;
+      await _notifier?.markAllRead();
+    } finally {
+      // Guarded: the user can leave mid-request, and this runs either way.
+      if (mounted) setState(() => _refreshing = false);
+    }
   }
 
   @override
@@ -120,7 +135,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                   ],
                 ),
               ),
-              Container(height: 1, color: nt.border),
+              EditorialDivider(loading: _refreshing),
               Expanded(
                 child: notificationsAsync.when(
                   loading: () => const Center(child: NTripiSkeleton()),
