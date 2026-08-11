@@ -237,6 +237,13 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                             // The profile is about to be invisible to us.
                             Navigator.of(context).maybePop();
                           },
+                          onUnblocked: () {
+                            // Their content is visible again, so the feed and
+                            // this profile are both stale.
+                            ref.invalidate(feedProvider);
+                            ref.invalidate(
+                                userProfileProvider(widget.userId!));
+                          },
                           // Wear the hero's frosted glass like Back and Share.
                           child: const GlassIconChrome(icon: Icons.more_horiz),
                         ),

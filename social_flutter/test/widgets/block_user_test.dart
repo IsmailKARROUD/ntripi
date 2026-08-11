@@ -12,6 +12,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:social_flutter/features/reports/data/report_repository.dart';
+import 'package:social_flutter/features/reports/domain/report_target.dart';
 import 'package:social_flutter/features/reports/presentation/ugc_actions.dart';
 import 'package:social_flutter/l10n/app_localizations.dart';
 import 'package:social_flutter/shared/models/user.dart';
@@ -21,6 +22,12 @@ import 'package:social_flutter/shared/models/user.dart';
 class _SlowBlockRepository implements ReportRepository {
   final Completer<void> gate = Completer<void>();
   bool called = false;
+  bool unblockCalled = false;
+
+  /// Seeded so blockedUserIdsProvider reports the user as already blocked.
+  final List<User> blocked;
+
+  _SlowBlockRepository({this.blocked = const []});
 
   @override
   Future<void> block(String userId) {
@@ -29,10 +36,12 @@ class _SlowBlockRepository implements ReportRepository {
   }
 
   @override
-  Future<void> unblock(String userId) async {}
+  Future<void> unblock(String userId) async {
+    unblockCalled = true;
+  }
 
   @override
-  Future<List<User>> blockedUsers() async => [];
+  Future<List<User>> blockedUsers() async => blocked;
 
   @override
   Future<void> report({
@@ -74,7 +83,93 @@ Widget _host({
   );
 }
 
+User _blockedUser() => User(
+      id: 'u-1',
+      username: 'aminad',
+      isPrivate: false,
+      followersCount: 0,
+      followingCount: 0,
+      isFollowing: false,
+      followIsPending: false,
+      createdAt: DateTime(2025),
+    );
+
+/// Hosts the real menu widget, which is what decides Block vs Unblock.
+Widget _menuHost({
+  required ReportRepository repo,
+  VoidCallback? onUnblocked,
+}) {
+  return ProviderScope(
+    overrides: [reportRepositoryProvider.overrideWithValue(repo)],
+    child: MaterialApp(
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      home: Scaffold(
+        body: UgcActionsMenu(
+          target: ReportTarget.user('u-1'),
+          authorUserId: 'u-1',
+          authorUsername: 'aminad',
+          onUnblocked: onUnblocked,
+        ),
+      ),
+    ),
+  );
+}
+
 void main() {
+  group('the menu reflects block state', () {
+    testWidgets(
+        'Given the user is not blocked, When the menu opens, '
+        'Then it offers Block', (tester) async {
+      await tester.pumpWidget(_menuHost(repo: _SlowBlockRepository()));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byType(UgcActionsMenu));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Block'), findsOneWidget);
+      expect(find.text('Unblock'), findsNothing);
+    });
+
+    testWidgets(
+        'Given the user is already blocked, When the menu opens, '
+        'Then it offers Unblock instead', (tester) async {
+      await tester.pumpWidget(_menuHost(
+        repo: _SlowBlockRepository(blocked: [_blockedUser()]),
+      ));
+      // Settle so blockedUsersProvider resolves before the menu is read.
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byType(UgcActionsMenu));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Unblock'), findsOneWidget);
+      // Offering both would let someone block an account they already blocked.
+      expect(find.text('Block'), findsNothing);
+    });
+
+    testWidgets(
+        'Given the user is already blocked, When Unblock is chosen, '
+        'Then it unblocks without a confirm dialog', (tester) async {
+      final repo = _SlowBlockRepository(blocked: [_blockedUser()]);
+      var unblockedRan = false;
+
+      await tester.pumpWidget(
+          _menuHost(repo: repo, onUnblocked: () => unblockedRan = true));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byType(UgcActionsMenu));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Unblock'));
+      await tester.pumpAndSettle();
+
+      expect(repo.unblockCalled, isTrue);
+      expect(repo.called, isFalse, reason: 'must not block instead');
+      expect(unblockedRan, isTrue);
+      expect(find.text('Unblocked @aminad.'), findsOneWidget);
+    });
+  });
+
   group('confirmAndBlock', () {
     testWidgets(
         'Given the confirm dialog, When Cancel is chosen, '

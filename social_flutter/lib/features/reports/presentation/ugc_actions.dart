@@ -31,6 +31,10 @@ class UgcActionsMenu extends ConsumerWidget {
   /// refresh its list — the content is about to become invisible.
   final VoidCallback? onBlocked;
 
+  /// Called after a successful unblock — the mirror case, where content the
+  /// viewer could not see becomes visible again.
+  final VoidCallback? onUnblocked;
+
   final Color? iconColor;
 
   /// Custom trigger, replacing the default icon. Lets a caller with its own
@@ -45,6 +49,7 @@ class UgcActionsMenu extends ConsumerWidget {
     this.authorUserId,
     this.authorUsername,
     this.onBlocked,
+    this.onUnblocked,
     this.iconColor,
     this.child,
   });
@@ -53,6 +58,11 @@ class UgcActionsMenu extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
     final canBlock = authorUserId != null;
+    // A menu must not offer an action already taken. This is the first consumer
+    // of blockedUserIdsProvider; watching it is what flips the item the instant
+    // block/unblock invalidates the list, with no manual refresh.
+    final isBlocked =
+        canBlock && ref.watch(blockedUserIdsProvider).contains(authorUserId);
 
     return PopupMenuButton<String>(
       icon: child == null
@@ -75,9 +85,14 @@ class UgcActionsMenu extends ConsumerWidget {
             value: 'block',
             child: Row(
               children: [
-                const Icon(Icons.block_rounded, size: 20),
+                // do_disturb_off is the block glyph struck through — the same
+                // symbol being lifted, rather than a second unrelated one.
+                Icon(
+                  isBlocked ? Icons.do_disturb_off_rounded : Icons.block_rounded,
+                  size: 20,
+                ),
                 const SizedBox(width: 12),
-                Text(l10n.blockUser),
+                Text(isBlocked ? l10n.unblockUser : l10n.blockUser),
               ],
             ),
           ),
@@ -85,6 +100,13 @@ class UgcActionsMenu extends ConsumerWidget {
       onSelected: (value) {
         if (value == 'report') {
           showReportContentSheet(context, ref, target);
+        } else if (isBlocked) {
+          unblockUser(
+            context, ref,
+            userId: authorUserId!,
+            username: authorUsername ?? '',
+            onUnblocked: onUnblocked,
+          );
         } else {
           confirmAndBlock(
             context, ref,
@@ -146,4 +168,45 @@ Future<void> confirmAndBlock(
     SnackBar(content: Text(l10n.blockedUserAdded(username))),
   );
   onBlocked?.call();
+}
+
+/// Lift a block, from wherever the account is still on screen.
+///
+/// No confirmation dialog, unlike [confirmAndBlock]: lifting a block is not
+/// destructive and is itself the undo, which is why the blocked-accounts screen
+/// also unblocks on a single tap. It does not restore a severed follow — the
+/// server never does — so it cannot silently re-expose anything.
+Future<void> unblockUser(
+  BuildContext context,
+  WidgetRef ref, {
+  required String userId,
+  required String username,
+  VoidCallback? onUnblocked,
+}) async {
+  final l10n = AppLocalizations.of(context)!;
+  final messenger = ScaffoldMessenger.of(context);
+  // Captured before the await: the container outlives this widget, so the menu
+  // still flips back to Block if the user leaves mid-request.
+  final container = ProviderScope.containerOf(context, listen: false);
+
+  try {
+    await ref.read(reportRepositoryProvider).unblock(userId);
+  } on Exception catch (e) {
+    if (!context.mounted) return;
+    messenger.showSnackBar(
+      SnackBar(content: Text(extractErrorMessage(e, l10n))),
+    );
+    return;
+  }
+
+  // Server-side state changed regardless of whether we are still on screen.
+  container.invalidate(blockedUsersProvider);
+
+  // Same disposal window as confirmAndBlock — a network round trip on a route
+  // the user can pop.
+  if (!context.mounted) return;
+  messenger.showSnackBar(
+    SnackBar(content: Text(l10n.blockedUserRemoved(username))),
+  );
+  onUnblocked?.call();
 }
