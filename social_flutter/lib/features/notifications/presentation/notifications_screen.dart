@@ -30,7 +30,12 @@ class NotificationsScreen extends ConsumerStatefulWidget {
 }
 
 class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
-  bool _markedRead = false;
+  bool _opened = false;
+
+  /// A reload is in flight that the user did not drag for — drives the progress
+  /// line under the top bar, since the rows stay put throughout and would
+  /// otherwise give no sign anything was happening.
+  bool _refreshing = false;
 
   /// Captured while the widget is still mounted. `ref` is backed by
   /// BuildContext, so touching it in dispose() throws in Riverpod 3 — and this
@@ -48,6 +53,19 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     _notifier = ref.read(notificationsProvider.notifier);
+
+    // Refetch on open, before touching anything. notificationsProvider is
+    // keep-alive, so without this the second visit renders whatever the first
+    // one fetched — and marking that cached feed read would mark a row the user
+    // has never been shown read on the server, badge and all. The row would
+    // then never surface anywhere. Refresh first, act second.
+    if (_opened) return;
+    _opened = true;
+    // Deferred a frame: didChangeDependencies runs inside the build pipeline,
+    // and _pullInArrivals calls setState to raise the progress line.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) unawaited(_pullInArrivals());
+    });
   }
 
   @override
@@ -58,13 +76,27 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
     super.dispose();
   }
 
-  /// A notification landed while this screen was open. Bring it in without a
-  /// spinner, then clear the badge again — the same bargain opening the screen
-  /// makes: the row keeps its unread tint, the bell does not stay lit.
+  /// Bring the feed up to date, then clear the badge — in that order.
+  ///
+  /// Both entry points need the same bargain: the rows keep their unread tint
+  /// (so the user sees what is new), and the bell does not stay lit. The order
+  /// is the load-bearing part. Marking read first would clear the badge for a
+  /// row that is not on screen yet, and since the server is the authority on
+  /// read state, that row would never be surfaced as new anywhere again.
+  ///
+  /// Safe when the first load failed: silentRefresh leaves the error in place
+  /// and markAllRead early-returns on a null value, so a badge is never cleared
+  /// over a feed the user was never shown.
   Future<void> _pullInArrivals() async {
-    await _notifier?.silentRefresh();
-    if (!mounted) return;
-    await _notifier?.markAllRead();
+    setState(() => _refreshing = true);
+    try {
+      await _notifier?.silentRefresh();
+      if (!mounted) return;
+      await _notifier?.markAllRead();
+    } finally {
+      // Guarded: the user can leave mid-request, and this runs either way.
+      if (mounted) setState(() => _refreshing = false);
+    }
   }
 
   @override
@@ -76,23 +108,15 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
     // dispose() must flush the queue that is actually live.
     _notifier = ref.watch(notificationsProvider.notifier);
 
-    // Mark read once the first page has actually arrived — doing it in initState
-    // would clear the badge even when the load failed and the user saw nothing.
-    if (!_markedRead && notificationsAsync.hasValue) {
-      _markedRead = true;
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) ref.read(notificationsProvider.notifier).markAllRead();
-      });
-    }
-
-    // The poller only maintains the badge; a rise in it is this screen's cue
-    // that a row landed while the user was sitting here. No loop: markAllRead
-    // drives the count to 0, and 0 is not a rise.
-    ref.listen(unreadNotificationCountProvider, (previous, next) {
-      final before = previous?.value;
-      final after = next.value;
-      if (before == null || after == null || after <= before) return;
-      unawaited(_pullInArrivals());
+    // The poller only maintains the badge; an arrival in it is this screen's
+    // cue that a row landed while the user was sitting here. Keyed off the
+    // timestamp rather than the count: markAllRead below drives the count to 0
+    // (so a count rise would loop), and a read on another device can cancel out
+    // an arrival and mask it entirely.
+    ref.listen(notificationBadgeProvider, (previous, next) {
+      if (next.value?.arrivedSince(previous?.value) ?? false) {
+        unawaited(_pullInArrivals());
+      }
     });
 
     return Scaffold(
@@ -118,7 +142,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                   ],
                 ),
               ),
-              Container(height: 1, color: nt.border),
+              EditorialDivider(loading: _refreshing),
               Expanded(
                 child: notificationsAsync.when(
                   loading: () => const Center(child: NTripiSkeleton()),
@@ -313,42 +337,15 @@ class _ClearAllButtonState extends ConsumerState<_ClearAllButton> {
   }
 }
 
-/// Pull-to-refresh over a state that has nothing to scroll.
-///
-/// Without this the gesture only existed inside _Feed, so the two states where
-/// the user most wants to re-check — an empty feed and a failed load — were the
-/// two with no way to ask again. AlwaysScrollableScrollPhysics is what lets a
-/// viewport shorter than its box still register the drag.
-class _RefreshableCenter extends ConsumerWidget {
-  final Widget child;
-
-  const _RefreshableCenter({required this.child});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    return RefreshIndicator(
-      onRefresh: () => ref.read(notificationsProvider.notifier).refresh(),
-      child: LayoutBuilder(
-        builder: (context, constraints) => SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          child: ConstrainedBox(
-            constraints: BoxConstraints(minHeight: constraints.maxHeight),
-            child: Center(child: child),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _EmptyView extends StatelessWidget {
+class _EmptyView extends ConsumerWidget {
   const _EmptyView();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final nt = context.nt;
     final l10n = AppLocalizations.of(context)!;
-    return _RefreshableCenter(
+    return RefreshableCenter(
+      onRefresh: () => ref.read(notificationsProvider.notifier).refresh(),
       child: Padding(
         padding: const EdgeInsets.all(24),
         child: Column(
@@ -377,7 +374,8 @@ class _ErrorView extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final nt = context.nt;
     final l10n = AppLocalizations.of(context)!;
-    return _RefreshableCenter(
+    return RefreshableCenter(
+      onRefresh: () => ref.read(notificationsProvider.notifier).refresh(),
       child: Padding(
         padding: const EdgeInsets.all(24),
         child: Column(

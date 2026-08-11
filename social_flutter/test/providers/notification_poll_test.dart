@@ -25,24 +25,26 @@ import 'package:social_flutter/features/notifications/providers/notification_pro
 
 class _FakeNotificationRepo extends NotificationRepository {
   _FakeNotificationRepo({
-    this.counts = const [0],
-    this.feedUnreadCount = 0,
+    this.badges = const [_zero],
+    this.feedBadge = _zero,
   }) : super(Dio());
 
+  static const _zero = NotificationBadge(unread: 0);
+
   /// Consumed one per call; the last entry repeats once exhausted.
-  final List<int> counts;
+  final List<NotificationBadge> badges;
 
   /// Flipped mid-test so a repo can load cleanly and *then* start refusing —
   /// the only interesting case, since a background read is judged by what it
   /// does to state that is already good.
-  bool failCount = false;
+  bool failBadge = false;
   bool failFeed = false;
 
-  /// What `unread_count` the feed page carries — the badge value that already
-  /// rides along with every list response.
-  final int feedUnreadCount;
+  /// What badge the feed page carries — the value that already rides along with
+  /// every list response.
+  final NotificationBadge feedBadge;
 
-  int countCalls = 0;
+  int badgeCalls = 0;
   int feedCalls = 0;
 
   /// When set, getNotifications parks until it completes, so a test can inspect
@@ -50,11 +52,11 @@ class _FakeNotificationRepo extends NotificationRepository {
   Completer<void>? feedGate;
 
   @override
-  Future<int> getUnreadCount({bool forceRefresh = false}) async {
-    countCalls++;
-    if (failCount) throw DioException(requestOptions: RequestOptions());
-    final index = countCalls - 1;
-    return counts[index < counts.length ? index : counts.length - 1];
+  Future<NotificationBadge> getBadge({bool forceRefresh = false}) async {
+    badgeCalls++;
+    if (failBadge) throw DioException(requestOptions: RequestOptions());
+    final index = badgeCalls - 1;
+    return badges[index < badges.length ? index : badges.length - 1];
   }
 
   @override
@@ -66,15 +68,21 @@ class _FakeNotificationRepo extends NotificationRepository {
     feedCalls++;
     if (feedGate != null) await feedGate!.future;
     if (failFeed) throw DioException(requestOptions: RequestOptions());
-    return NotificationsPage(
-      notifications: _feed(),
-      unreadCount: feedUnreadCount,
-    );
+    return NotificationsPage(notifications: _feed(), badge: feedBadge);
   }
 
   @override
   Future<void> deleteNotification(String id) async {}
 }
+
+/// Shorthand for a badge with both halves set — the count and the arrival
+/// timestamp are independent signals, and most tests here vary only one.
+NotificationBadge _badge(int unread, {DateTime? at}) =>
+    NotificationBadge(unread: unread, latestAt: at);
+
+/// Two moments an hour apart: _t2 is "something arrived since _t1".
+final _t1 = DateTime.utc(2026, 8, 3, 10);
+final _t2 = DateTime.utc(2026, 8, 3, 11);
 
 // ---------------------------------------------------------------------------
 // Fixtures
@@ -127,104 +135,173 @@ List<String> _ids(ProviderContainer container) =>
 // ---------------------------------------------------------------------------
 
 void main() {
-  group('UnreadNotificationCountNotifier.poll', () {
+  group('NotificationBadgeNotifier.poll', () {
     test(
         'Given the badge has not loaded yet, '
         'When poll() runs, '
         'Then it waits for build() instead of racing a second request', () async {
-      final repo = _FakeNotificationRepo(counts: [3]);
+      final repo = _FakeNotificationRepo(badges: [_badge(3, at: _t1)]);
       final container = _makeContainer(repo);
       addTearDown(container.dispose);
       await _settleConnectivity(container);
 
       // Exactly what the poller does at launch: read the notifier into
       // existence and immediately ask it to fetch.
-      final notifier = container.read(unreadNotificationCountProvider.notifier);
+      final notifier = container.read(notificationBadgeProvider.notifier);
       final arrived = await notifier.poll();
 
-      // No baseline to rise from — a cold launch showing 3 unread is not 3 that
-      // just came in, and ringing the cue there would be wrong every time.
+      // No baseline to compare against — a cold launch showing 3 unread is not
+      // 3 that just came in, and ringing the cue there would be wrong always.
       expect(arrived, isFalse);
-      expect(container.read(unreadNotificationCountProvider).value, 3);
-      // The whole point: one request for one integer, not two.
-      expect(repo.countCalls, 1);
+      expect(container.read(notificationBadgeProvider).value!.unread, 3);
+      // The whole point: one request for one answer, not two.
+      expect(repo.badgeCalls, 1);
     });
 
     test(
         'Given a loaded badge, '
-        'When the count rises, '
+        'When latest_at advances, '
         'Then poll() reports an arrival and stores the new value', () async {
-      final repo = _FakeNotificationRepo(counts: [1, 4]);
+      final repo = _FakeNotificationRepo(
+        badges: [_badge(1, at: _t1), _badge(4, at: _t2)],
+      );
       final container = _makeContainer(repo);
       addTearDown(container.dispose);
       await _settleConnectivity(container);
 
-      await container.read(unreadNotificationCountProvider.future);
+      await container.read(notificationBadgeProvider.future);
       final arrived =
-          await container.read(unreadNotificationCountProvider.notifier).poll();
+          await container.read(notificationBadgeProvider.notifier).poll();
 
       expect(arrived, isTrue);
-      expect(container.read(unreadNotificationCountProvider).value, 4);
+      expect(container.read(notificationBadgeProvider).value!.unread, 4);
     });
 
     test(
         'Given a loaded badge, '
-        'When the count is unchanged or drops, '
-        'Then poll() reports no arrival', () async {
-      // 2 → 2 (a 304 replay) → 1 (read on another device).
-      final repo = _FakeNotificationRepo(counts: [2, 2, 1]);
+        'When a read on another device cancels out an arrival, '
+        'Then poll() still reports it even though the count never moved',
+        () async {
+      // The aliasing case, and the entire reason latest_at exists. One read
+      // elsewhere plus one arrival between two polls: 2 → 2. A client watching
+      // the count would conclude nothing had happened.
+      final repo = _FakeNotificationRepo(
+        badges: [_badge(2, at: _t1), _badge(2, at: _t2)],
+      );
       final container = _makeContainer(repo);
       addTearDown(container.dispose);
       await _settleConnectivity(container);
 
-      await container.read(unreadNotificationCountProvider.future);
-      final notifier = container.read(unreadNotificationCountProvider.notifier);
+      await container.read(notificationBadgeProvider.future);
+      final arrived =
+          await container.read(notificationBadgeProvider.notifier).poll();
+
+      expect(arrived, isTrue);
+      expect(container.read(notificationBadgeProvider).value!.unread, 2);
+    });
+
+    test(
+        'Given a loaded badge, '
+        'When the count moves but latest_at does not, '
+        'Then poll() reports no arrival', () async {
+      // A count that moves without a newer row is a read or a delete, never an
+      // arrival — the cue must not fire for either.
+      final repo = _FakeNotificationRepo(
+        badges: [_badge(2, at: _t1), _badge(2, at: _t1), _badge(1, at: _t1)],
+      );
+      final container = _makeContainer(repo);
+      addTearDown(container.dispose);
+      await _settleConnectivity(container);
+
+      await container.read(notificationBadgeProvider.future);
+      final notifier = container.read(notificationBadgeProvider.notifier);
 
       expect(await notifier.poll(), isFalse);
       expect(await notifier.poll(), isFalse);
-      // A drop is still stored — that is the badge correcting itself after the
-      // user read something somewhere else.
-      expect(container.read(unreadNotificationCountProvider).value, 1);
+      // The drop is still stored — that is the badge correcting itself after
+      // the user read something somewhere else.
+      expect(container.read(notificationBadgeProvider).value!.unread, 1);
+    });
+
+    test(
+        'Given a user who has never had a notification, '
+        'When the first one arrives, '
+        'Then poll() reports it despite there being no previous timestamp',
+        () async {
+      final repo = _FakeNotificationRepo(
+        badges: [const NotificationBadge(unread: 0), _badge(1, at: _t1)],
+      );
+      final container = _makeContainer(repo);
+      addTearDown(container.dispose);
+      await _settleConnectivity(container);
+
+      await container.read(notificationBadgeProvider.future);
+
+      // A null previous timestamp means "nothing had ever arrived", which is a
+      // real comparison — unlike a missing baseline, which means "unknown".
+      expect(
+        await container.read(notificationBadgeProvider.notifier).poll(),
+        isTrue,
+      );
     });
 
     test(
         'Given a loaded badge, '
         'When the poll request fails, '
         'Then the last good count survives and no error is published', () async {
-      final repo = _FakeNotificationRepo(counts: [5]);
+      final repo = _FakeNotificationRepo(badges: [_badge(5, at: _t1)]);
       final container = _makeContainer(repo);
       addTearDown(container.dispose);
       await _settleConnectivity(container);
 
-      await container.read(unreadNotificationCountProvider.future);
-      final notifier = container.read(unreadNotificationCountProvider.notifier);
+      await container.read(notificationBadgeProvider.future);
+      final notifier = container.read(notificationBadgeProvider.notifier);
 
       // The tunnel dies after the badge is already correct.
-      repo.failCount = true;
+      repo.failBadge = true;
 
       expect(await notifier.poll(), isFalse);
-      expect(container.read(unreadNotificationCountProvider).value, 5);
-      expect(container.read(unreadNotificationCountProvider).hasError, isFalse);
+      expect(container.read(notificationBadgeProvider).value!.unread, 5);
+      expect(container.read(notificationBadgeProvider).hasError, isFalse);
     });
 
     test(
         'Given the device is offline, '
         'When poll() runs, '
         'Then nothing is requested at all', () async {
-      final repo = _FakeNotificationRepo(counts: [7]);
+      final repo = _FakeNotificationRepo(badges: [_badge(7, at: _t1)]);
       final container = _makeContainer(repo, online: false);
       addTearDown(container.dispose);
       await _settleConnectivity(container);
 
-      final notifier = container.read(unreadNotificationCountProvider.notifier);
+      final notifier = container.read(notificationBadgeProvider.notifier);
       // build() still ran, but poll() itself must not add a request.
-      final before = repo.countCalls;
+      final before = repo.badgeCalls;
       expect(await notifier.poll(), isFalse);
-      expect(repo.countCalls, before);
+      expect(repo.badgeCalls, before);
     });
   });
 
   group('NotificationsNotifier.silentRefresh', () {
+    test(
+        'Given the feed has not loaded yet, '
+        'When silentRefresh() runs, '
+        'Then it waits for build() instead of racing a second request',
+        () async {
+      final repo = _FakeNotificationRepo();
+      final container = _makeContainer(repo);
+      addTearDown(container.dispose);
+      await _settleConnectivity(container);
+
+      // What the screen does on a first open: read the notifier into existence
+      // and immediately ask it to refetch.
+      await container.read(notificationsProvider.notifier).silentRefresh();
+
+      expect(_ids(container), ['n1', 'n2', 'n3']);
+      // One request for one page, not two identical ones racing each other.
+      expect(repo.feedCalls, 1);
+    });
+
     test(
         'Given a row is inside its undo window, '
         'When silentRefresh() runs, '
@@ -273,21 +350,21 @@ void main() {
         'Given a settled badge, '
         'When a feed load carries a new unread count, '
         'Then the badge takes it without spending a request', () async {
-      final repo = _FakeNotificationRepo(counts: [0], feedUnreadCount: 6);
+      final repo = _FakeNotificationRepo(badges: [_badge(0, at: _t1)], feedBadge: _badge(6, at: _t2));
       final container = _makeContainer(repo);
       addTearDown(container.dispose);
 
       await container.read(notificationsProvider.future);
-      await container.read(unreadNotificationCountProvider.future);
+      await container.read(notificationBadgeProvider.future);
       await _settleConnectivity(container);
 
-      final countCallsBefore = repo.countCalls;
+      final countCallsBefore = repo.badgeCalls;
       await container.read(notificationsProvider.notifier).silentRefresh();
 
-      expect(container.read(unreadNotificationCountProvider).value, 6);
+      expect(container.read(notificationBadgeProvider).value!.unread, 6);
       // The count rode along with the page — asking again for what is already
       // in hand is exactly the waste this avoids.
-      expect(repo.countCalls, countCallsBefore);
+      expect(repo.badgeCalls, countCallsBefore);
     });
   });
 
@@ -324,19 +401,19 @@ void main() {
         'Given a settled badge, '
         'When refresh() completes, '
         'Then the badge takes the count that came with the page', () async {
-      final repo = _FakeNotificationRepo(counts: [0], feedUnreadCount: 2);
+      final repo = _FakeNotificationRepo(badges: [_badge(0, at: _t1)], feedBadge: _badge(2, at: _t2));
       final container = _makeContainer(repo);
       addTearDown(container.dispose);
 
       await container.read(notificationsProvider.future);
-      await container.read(unreadNotificationCountProvider.future);
+      await container.read(notificationBadgeProvider.future);
       await _settleConnectivity(container);
 
       await container.read(notificationsProvider.notifier).refresh();
 
       // Pulling on the feed used to leave the bell stale — the count was in the
       // response all along and was being thrown away.
-      expect(container.read(unreadNotificationCountProvider).value, 2);
+      expect(container.read(notificationBadgeProvider).value!.unread, 2);
     });
   });
 }

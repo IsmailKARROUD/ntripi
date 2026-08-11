@@ -42,14 +42,24 @@ class NotificationItem(BaseModel):
 
 
 class NotificationsResponse(BaseModel):
-    """The feed page plus the badge count, so opening the screen is one call."""
+    """The feed page plus the badge state, so opening the screen is one call."""
 
     notifications: list[NotificationItem]
     unread_count: int
+    # Appended, never inserted: field-definition order is JSON key order is the
+    # API contract. Carried here as well as on the badge endpoint so a feed load
+    # can move the client's arrival baseline without a second request — and so
+    # the client never has to assume notifications[0] is newest, which only
+    # holds at offset=0.
+    latest_at: datetime | None = None
 
 
 class UnreadCountResponse(BaseModel):
     unread_count: int
+    # The arrival signal. Null when the user has no notifications at all. The
+    # count cannot serve this purpose: a read on another device cancels out an
+    # arrival and leaves it unchanged. See notification_service.badge_state.
+    latest_at: datetime | None = None
 
 
 class MarkReadRequest(BaseModel):

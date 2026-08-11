@@ -104,6 +104,42 @@ class EditorialTopBar extends StatelessWidget {
   }
 }
 
+// ── EditorialDivider ──────────────────────────────────────────────────────────
+// The hairline under an EditorialTopBar, which doubles as the progress bar for
+// a screen that reloads itself on open.
+//
+// That reload deliberately leaves the previous content on screen (see
+// silentRefresh), so without this there is nothing at all to say a request is
+// in flight — the list simply sits there until rows change under the user.
+// A RefreshIndicator can't fill the gap: it only draws for a real drag.
+//
+// The 2 px box is fixed and the idle hairline is top-aligned inside it, so
+// switching between the two never nudges the content below by a pixel.
+
+class EditorialDivider extends StatelessWidget {
+  final bool loading;
+
+  const EditorialDivider({super.key, this.loading = false});
+
+  @override
+  Widget build(BuildContext context) {
+    final nt = context.nt;
+    return SizedBox(
+      height: 2,
+      child: loading
+          ? LinearProgressIndicator(
+              minHeight: 2,
+              backgroundColor: nt.border,
+              color: nt.forest,
+            )
+          : Align(
+              alignment: Alignment.topCenter,
+              child: Container(height: 1, color: nt.border),
+            ),
+    );
+  }
+}
+
 // ── SectionLabel ──────────────────────────────────────────────────────────────
 // Uppercase label row with a small leading icon.  Used as a section header
 // above a SectionCard.
@@ -275,6 +311,43 @@ class EditorialRow extends StatelessWidget {
             color: nt.border,
           ),
       ],
+    );
+  }
+}
+
+// ── RefreshableCenter ─────────────────────────────────────────────────────────
+// Pull-to-refresh over a state that has nothing to scroll.
+//
+// A RefreshIndicator is normally wrapped around the populated list, which puts
+// it inside the `data` branch behind an isEmpty early return — so the two states
+// where the user most wants to re-check, an empty list and a failed load, are
+// the two with no way to ask again. AlwaysScrollableScrollPhysics is what lets a
+// viewport shorter than its box still register the drag; the LayoutBuilder is
+// what keeps the child vertically centred while remaining scrollable.
+
+class RefreshableCenter extends StatelessWidget {
+  final Widget child;
+  final Future<void> Function() onRefresh;
+
+  const RefreshableCenter({
+    super.key,
+    required this.child,
+    required this.onRefresh,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return RefreshIndicator(
+      onRefresh: onRefresh,
+      child: LayoutBuilder(
+        builder: (context, constraints) => SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: constraints.maxHeight),
+            child: Center(child: child),
+          ),
+        ),
+      ),
     );
   }
 }

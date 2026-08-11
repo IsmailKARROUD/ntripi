@@ -13,8 +13,14 @@ a retry, or a row the sweep purged in the meantime, must not raise an error for
 something the user already watched disappear.
 
 The unread-count endpoint is polled, and is cheap on purpose: ETagMiddleware
-hashes the JSON body, so an unchanged count costs a 304 with no body rather
+hashes the JSON body, so an unchanged badge costs a 304 with no body rather
 than a round-trip of data the client already has.
+
+It answers two things, not one. `unread_count` is the number on the badge;
+`latest_at` is the *arrival* signal, and the client keys its new-notification cue
+off that advancing rather than off the count rising. A count cannot carry that
+meaning — reading one notification on another device while a new one arrives
+leaves it unchanged, silently swallowing the arrival.
 
 Actor and entity are resolved here rather than stored on the row, in ONE query
 each per page. Resolution goes through user_service.public_profile_text so a
@@ -120,9 +126,11 @@ def list_notifications(
         .offset(offset)
     ).scalars().all()
 
+    unread, latest_at = notification_service.badge_state(db, current_user.id)
     return NotificationsResponse(
         notifications=_resolve(list(rows), db, current_user.id),
-        unread_count=notification_service.unread_count(db, current_user.id),
+        unread_count=unread,
+        latest_at=latest_at,
     )
 
 
@@ -135,9 +143,8 @@ def get_unread_count(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> UnreadCountResponse:
-    return UnreadCountResponse(
-        unread_count=notification_service.unread_count(db, current_user.id)
-    )
+    unread, latest_at = notification_service.badge_state(db, current_user.id)
+    return UnreadCountResponse(unread_count=unread, latest_at=latest_at)
 
 
 @router.post(

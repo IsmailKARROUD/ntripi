@@ -21,12 +21,49 @@ class FollowRequestsNotifier extends AsyncNotifier<List<FollowRequestItem>> {
   Future<void> refresh() async {
     // Offline: keep cached AsyncData — a forced refresh could only degrade it.
     if (!isOnlineNowRef(ref)) return;
-    state = const AsyncLoading();
+    // Only a state with nothing to show swaps in the skeleton. A pull-to-refresh
+    // draws its own spinner over a list the user is still holding, and blanking
+    // it mid-gesture reads as the requests being wiped.
+    if (!state.hasValue) state = const AsyncLoading();
     state = await AsyncValue.guard(
       () => ref
           .read(followRepositoryProvider)
           .getFollowRequests(forceRefresh: true),
     );
+  }
+
+  /// Reload in the background, leaving the current list on screen throughout.
+  ///
+  /// The screen calls this on open, because this provider is keep-alive: without
+  /// it the second visit renders whatever the first one fetched, so a request
+  /// that arrived in between is invisible until something else invalidates.
+  /// Nobody asked for this load, so it may neither blank the list with a spinner
+  /// nor replace it with an error — a failure just leaves the last good data.
+  Future<void> silentRefresh() async {
+    if (!isOnlineNowRef(ref)) return;
+
+    // Called the moment the screen opens, which on a first visit is while
+    // build() is still fetching the same list. Wait for the answer already on
+    // the wire rather than racing it with an identical second request.
+    if (!state.hasValue) {
+      try {
+        await future;
+      } catch (_) {
+        // build()'s failure is already the provider's state; nothing to add.
+      }
+      return;
+    }
+
+    final List<FollowRequestItem> rows;
+    try {
+      rows = await ref.read(followRepositoryProvider).getFollowRequests();
+    } catch (_) {
+      // Swallowed on purpose — see the doc comment. Pull-to-refresh is the loud
+      // path if the user wants to know.
+      return;
+    }
+    if (!ref.mounted) return;
+    state = AsyncData(rows);
   }
 
   /// Optimistically remove a request from the list after accepting or rejecting.

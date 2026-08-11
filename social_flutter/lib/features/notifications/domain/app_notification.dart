@@ -192,15 +192,55 @@ class AppNotification {
       );
 }
 
-/// GET /notifications — the page plus the badge count, so opening the screen
-/// and refreshing the bell is one call.
+/// What the bell needs to know: how many, and whether anything arrived.
+///
+/// The two are separate signals and only one of them is the count. `unread` is
+/// the number drawn on the badge. `latestAt` is the arrival signal, because a
+/// count cannot be one: read a notification on another device while a new one
+/// arrives and the count lands exactly where it started, silently swallowing
+/// the arrival. MAX(created_at) only ever moves forward, and nothing anyone
+/// reads anywhere can move it.
+class NotificationBadge {
+  final int unread;
+
+  /// Newest notification's timestamp, UTC. Null when the user has none at all.
+  final DateTime? latestAt;
+
+  const NotificationBadge({required this.unread, this.latestAt});
+
+  static const empty = NotificationBadge(unread: 0);
+
+  /// Whether a notification arrived between [previous] and this.
+  ///
+  /// The single comparison the cue and the open-screen live refresh both use —
+  /// written once so the two can never drift apart on the null cases.
+  bool arrivedSince(NotificationBadge? previous) {
+    // No baseline: a first poll has nothing to compare against, and treating it
+    // as an arrival would make every cold launch sound like one.
+    if (previous == null || latestAt == null) return false;
+    // The user's very first notification — nothing before, something now.
+    if (previous.latestAt == null) return true;
+    return latestAt!.isAfter(previous.latestAt!);
+  }
+
+  factory NotificationBadge.fromJson(Map<String, dynamic> json) =>
+      NotificationBadge(
+        unread: json['unread_count'] as int? ?? 0,
+        // toUtc: these are compared against each other across polls, so they
+        // have to be anchored to the same zone.
+        latestAt: DateTime.tryParse(json['latest_at'] as String? ?? '')?.toUtc(),
+      );
+}
+
+/// GET /notifications — the page plus the badge, so opening the screen and
+/// refreshing the bell is one call.
 class NotificationsPage {
   final List<AppNotification> notifications;
-  final int unreadCount;
+  final NotificationBadge badge;
 
   const NotificationsPage({
     required this.notifications,
-    required this.unreadCount,
+    required this.badge,
   });
 
   factory NotificationsPage.fromJson(Map<String, dynamic> json) =>
@@ -208,6 +248,10 @@ class NotificationsPage {
         notifications: ((json['notifications'] as List<dynamic>?) ?? const [])
             .map((e) => AppNotification.fromJson(e as Map<String, dynamic>))
             .toList(),
-        unreadCount: json['unread_count'] as int? ?? 0,
+        // The feed carries the same two fields as the badge endpoint, which is
+        // what lets a feed load move the arrival baseline without a second
+        // request — and avoids assuming notifications[0] is newest, which only
+        // holds at offset=0.
+        badge: NotificationBadge.fromJson(json),
       );
 }

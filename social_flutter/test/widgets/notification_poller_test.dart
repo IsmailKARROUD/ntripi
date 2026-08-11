@@ -18,6 +18,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:social_flutter/core/connectivity/connectivity_service.dart';
 import 'package:social_flutter/features/auth/providers/auth_provider.dart';
 import 'package:social_flutter/features/notifications/data/notification_repository.dart';
+import 'package:social_flutter/features/notifications/domain/app_notification.dart';
 import 'package:social_flutter/features/notifications/presentation/widgets/notification_poller.dart';
 import 'package:social_flutter/features/notifications/providers/notification_provider.dart';
 
@@ -27,10 +28,10 @@ class _CountingRepo extends NotificationRepository {
   int countCalls = 0;
 
   @override
-  Future<int> getUnreadCount({bool forceRefresh = false}) async {
+  Future<NotificationBadge> getBadge({bool forceRefresh = false}) async {
     countCalls++;
-    // Flat on purpose: a rise would reach into SfxService for the cue.
-    return 0;
+    // Flat on purpose: an arrival would reach into SfxService for the cue.
+    return const NotificationBadge(unread: 0);
   }
 }
 
