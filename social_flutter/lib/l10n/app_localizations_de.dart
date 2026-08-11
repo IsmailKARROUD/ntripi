@@ -570,7 +570,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get settingsSoundEffectsDetail =>
-      'Beim Öffnen einer Route einen Ton abspielen';
+      'Kurze Töne bei Aktionen in der App abspielen';
 
   @override
   String get settingsSupport => 'Support';

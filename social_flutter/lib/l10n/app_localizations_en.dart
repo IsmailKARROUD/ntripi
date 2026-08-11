@@ -561,7 +561,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsSoundEffectsDetail =>
-      'Play a sound when you open an itinerary';
+      'Play short sounds for actions in the app';
 
   @override
   String get settingsSupport => 'Support';

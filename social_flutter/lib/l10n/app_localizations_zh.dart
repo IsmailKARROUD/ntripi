@@ -531,7 +531,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get settingsSoundEffects => '音效';
 
   @override
-  String get settingsSoundEffectsDetail => '打开行程时播放提示音';
+  String get settingsSoundEffectsDetail => '在应用内执行操作时播放短提示音';
 
   @override
   String get settingsSupport => '支持';

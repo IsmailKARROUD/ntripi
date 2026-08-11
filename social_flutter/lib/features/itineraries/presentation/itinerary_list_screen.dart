@@ -1,5 +1,7 @@
 // presentation/itinerary_list_screen.dart — Shows the current user's itineraries.
 
+import 'dart:async';
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -7,6 +9,7 @@ import 'package:go_router/go_router.dart';
 import 'package:social_flutter/core/api/api_client.dart';
 import 'package:social_flutter/core/api/api_endpoints.dart';
 import 'package:social_flutter/core/cache/image_cache.dart';
+import 'package:social_flutter/core/services/sfx_service.dart';
 import 'package:social_flutter/core/ui/app_theme.dart';
 import 'package:social_flutter/core/ui/destructive_actions.dart';
 import 'package:social_flutter/features/itineraries/domain/itinerary.dart';
@@ -49,11 +52,15 @@ class _ItineraryListScreenState extends ConsumerState<ItineraryListScreen> {
 
     if (!confirmed || !context.mounted) return;
 
+    final sfx = ref.read(sfxServiceProvider); // read before the await
     setState(() => _deleting = true);
     try {
       await ref
           .read(myItinerariesProvider.notifier)
           .removeItinerary(itinerary.id);
+      // After the network call, never on confirm — a failed delete must not
+      // sound like a successful one.
+      unawaited(sfx.play(Sfx.deleteItinerary));
     } on Exception catch (e) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(

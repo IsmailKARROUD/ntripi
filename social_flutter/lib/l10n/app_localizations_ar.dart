@@ -569,7 +569,8 @@ class AppLocalizationsAr extends AppLocalizations {
   String get settingsSoundEffects => 'المؤثرات الصوتية';
 
   @override
-  String get settingsSoundEffectsDetail => 'تشغيل صوت عند فتح مسار';
+  String get settingsSoundEffectsDetail =>
+      'تشغيل أصوات قصيرة عند تنفيذ الإجراءات في التطبيق';
 
   @override
   String get settingsSupport => 'الدعم';

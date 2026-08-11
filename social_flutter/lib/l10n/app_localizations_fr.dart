@@ -572,7 +572,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get settingsSoundEffectsDetail =>
-      'Jouer un son à l\'ouverture d\'un itinéraire';
+      'Jouer de courts sons lors des actions dans l\'application';
 
   @override
   String get settingsSupport => 'Assistance';

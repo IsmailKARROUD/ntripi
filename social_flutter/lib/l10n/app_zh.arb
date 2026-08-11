@@ -173,7 +173,7 @@
   "settingsLanguage": "语言",
   "settingsTheme": "主题",
   "settingsSoundEffects": "音效",
-  "settingsSoundEffectsDetail": "打开行程时播放提示音",
+  "settingsSoundEffectsDetail": "在应用内执行操作时播放短提示音",
   "settingsSupport": "支持",
   "settingsHelpCenter": "帮助中心",
   "settingsAbout": "关于 Ntripi",

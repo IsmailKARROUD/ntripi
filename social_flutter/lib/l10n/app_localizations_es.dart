@@ -568,7 +568,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get settingsSoundEffectsDetail =>
-      'Reproducir un sonido al abrir un itinerario';
+      'Reproducir sonidos breves en las acciones de la aplicación';
 
   @override
   String get settingsSupport => 'Ayuda';

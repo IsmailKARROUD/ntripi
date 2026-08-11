@@ -1105,7 +1105,7 @@ abstract class AppLocalizations {
   /// No description provided for @settingsSoundEffectsDetail.
   ///
   /// In en, this message translates to:
-  /// **'Play a sound when you open an itinerary'**
+  /// **'Play short sounds for actions in the app'**
   String get settingsSoundEffectsDetail;
 
   /// No description provided for @settingsSupport.

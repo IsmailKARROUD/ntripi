@@ -134,4 +134,6 @@ flutter:
    # UI sound cues. AssetSource paths drop the `assets/` prefix — AudioCache
    # adds it back (see sfx_service.dart).
    - assets/SFX/Open_itinerary.wav
+   - assets/SFX/fold-a-map.wav
+   - assets/SFX/Delete_itinerary.wav
    - assets/SFX/New_notification.wav

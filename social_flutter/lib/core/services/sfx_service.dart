@@ -22,6 +22,8 @@ import 'package:social_flutter/core/providers/sound_effects_enabled_provider.dar
 /// The cues the app can play. `path` is relative to `assets/` — see the header.
 enum Sfx {
   openItinerary('SFX/Open_itinerary.wav'),
+  closeItinerary('SFX/fold-a-map.wav'),
+  deleteItinerary('SFX/Delete_itinerary.wav'),
   newNotification('SFX/New_notification.wav');
 
   const Sfx(this.path);
