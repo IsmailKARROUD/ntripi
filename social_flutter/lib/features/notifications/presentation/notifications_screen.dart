@@ -3,6 +3,8 @@
 // The bell screen. Opening it marks everything read — the badge exists to get
 // the user here, so leaving it lit after they arrived would be noise.
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -30,9 +32,23 @@ class NotificationsScreen extends ConsumerStatefulWidget {
 class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
   bool _markedRead = false;
 
-  /// Held in a field because `ref` is unsafe once the widget is being
-  /// unmounted; the notifier itself outlives the screen (not autoDispose).
+  /// Captured while the widget is still mounted. `ref` is backed by
+  /// BuildContext, so touching it in dispose() throws in Riverpod 3 — and this
+  /// screen can be torn down by a redirect the user never asked for (an
+  /// unfollow elsewhere invalidating the session's profile, say), which is
+  /// exactly when the queue most needs settling. The notifier itself outlives
+  /// the widget: notificationsProvider is keep-alive, not autoDispose.
+  ///
+  /// Seeded here for a teardown that beats the first build, then kept current
+  /// by the watch in [build] — an invalidated provider swaps the instance, and
+  /// dispose() has to flush the queue that is actually live.
   NotificationsNotifier? _notifier;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _notifier = ref.read(notificationsProvider.notifier);
+  }
 
   @override
   void dispose() {
@@ -40,6 +56,15 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
     // watching only widens the window where killing the app resurrects a row.
     _notifier?.flushPending();
     super.dispose();
+  }
+
+  /// A notification landed while this screen was open. Bring it in without a
+  /// spinner, then clear the badge again — the same bargain opening the screen
+  /// makes: the row keeps its unread tint, the bell does not stay lit.
+  Future<void> _pullInArrivals() async {
+    await _notifier?.silentRefresh();
+    if (!mounted) return;
+    await _notifier?.markAllRead();
   }
 
   @override
@@ -59,6 +84,16 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
         if (mounted) ref.read(notificationsProvider.notifier).markAllRead();
       });
     }
+
+    // The poller only maintains the badge; a rise in it is this screen's cue
+    // that a row landed while the user was sitting here. No loop: markAllRead
+    // drives the count to 0, and 0 is not a rise.
+    ref.listen(unreadNotificationCountProvider, (previous, next) {
+      final before = previous?.value;
+      final after = next.value;
+      if (before == null || after == null || after <= before) return;
+      unawaited(_pullInArrivals());
+    });
 
     return Scaffold(
       backgroundColor: nt.surface,
@@ -208,13 +243,20 @@ class _SwipeBackground extends StatelessWidget {
   }
 }
 
-class _ClearAllButton extends ConsumerWidget {
+class _ClearAllButton extends ConsumerStatefulWidget {
   final bool enabled;
 
   const _ClearAllButton({required this.enabled});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_ClearAllButton> createState() => _ClearAllButtonState();
+}
+
+class _ClearAllButtonState extends ConsumerState<_ClearAllButton> {
+  bool _clearing = false;
+
+  @override
+  Widget build(BuildContext context) {
     final nt = context.nt;
     final l10n = AppLocalizations.of(context)!;
 
@@ -222,8 +264,14 @@ class _ClearAllButton extends ConsumerWidget {
       child: OfflineGate(
         builder: (online) => TextButton.icon(
           // Nothing to clear, nothing to confirm — don't offer the action.
-          onPressed: enabled && online ? () => _clearAll(context, ref) : null,
-          icon: Icon(Icons.backspace_outlined, size: 16, color: nt.text2),
+          onPressed:
+              widget.enabled && online && !_clearing ? _clearAll : null,
+          // The loader takes the icon's slot rather than the label's: the
+          // request empties the whole feed, so the word has to stay readable
+          // while it runs or the row reads as a button that lost its purpose.
+          icon: _clearing
+              ? const NTripiRingLoader(size: 16)
+              : Icon(Icons.backspace_outlined, size: 16, color: nt.text2),
           label: Text(
             l10n.notificationsClearAll,
             style: TextStyle(
@@ -237,7 +285,7 @@ class _ClearAllButton extends ConsumerWidget {
     );
   }
 
-  Future<void> _clearAll(BuildContext context, WidgetRef ref) async {
+  Future<void> _clearAll() async {
     final l10n = AppLocalizations.of(context)!;
     // Tier 2: the whole feed goes at once and there is nothing to undo.
     final confirmed = await confirmDestructiveAction(
@@ -247,16 +295,49 @@ class _ClearAllButton extends ConsumerWidget {
       message: l10n.notificationsClearAllMessage,
       confirmLabel: l10n.notificationsClearAll,
     );
-    if (!confirmed || !context.mounted) return;
+    if (!confirmed || !mounted) return;
 
+    setState(() => _clearing = true);
     try {
       await ref.read(notificationsProvider.notifier).clearAll();
     } on Exception catch (e) {
-      if (!context.mounted) return;
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(extractErrorMessage(e as dynamic, l10n))),
       );
+    } finally {
+      // Guarded: on success the feed empties, which swaps _Feed for _EmptyView
+      // and unmounts this button before the finally runs.
+      if (mounted) setState(() => _clearing = false);
     }
+  }
+}
+
+/// Pull-to-refresh over a state that has nothing to scroll.
+///
+/// Without this the gesture only existed inside _Feed, so the two states where
+/// the user most wants to re-check — an empty feed and a failed load — were the
+/// two with no way to ask again. AlwaysScrollableScrollPhysics is what lets a
+/// viewport shorter than its box still register the drag.
+class _RefreshableCenter extends ConsumerWidget {
+  final Widget child;
+
+  const _RefreshableCenter({required this.child});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return RefreshIndicator(
+      onRefresh: () => ref.read(notificationsProvider.notifier).refresh(),
+      child: LayoutBuilder(
+        builder: (context, constraints) => SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: constraints.maxHeight),
+            child: Center(child: child),
+          ),
+        ),
+      ),
+    );
   }
 }
 
@@ -267,7 +348,7 @@ class _EmptyView extends StatelessWidget {
   Widget build(BuildContext context) {
     final nt = context.nt;
     final l10n = AppLocalizations.of(context)!;
-    return Center(
+    return _RefreshableCenter(
       child: Padding(
         padding: const EdgeInsets.all(24),
         child: Column(
@@ -296,7 +377,7 @@ class _ErrorView extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final nt = context.nt;
     final l10n = AppLocalizations.of(context)!;
-    return Center(
+    return _RefreshableCenter(
       child: Padding(
         padding: const EdgeInsets.all(24),
         child: Column(

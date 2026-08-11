@@ -15,6 +15,7 @@ import 'package:social_flutter/core/storage/secure_storage.dart';
 import 'package:social_flutter/features/auth/data/auth_repository.dart';
 import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
 import 'package:social_flutter/features/itineraries/providers/saved_itineraries_provider.dart';
+import 'package:social_flutter/features/notifications/providers/notification_provider.dart';
 import 'package:social_flutter/features/profile/providers/profile_provider.dart';
 import 'package:social_flutter/features/search/providers/search_provider.dart';
 
@@ -41,6 +42,11 @@ class AuthNotifier extends Notifier<String?> {
     // The tokens were written before we got here, but hasSessionProvider may
     // have cached the `false` it read on the login screen.
     ref.invalidate(hasSessionProvider);
+    // Both are keep-alive, so without this a second account on the same device
+    // inherits whatever the first one left behind — including its badge count,
+    // which the poller would then read as a baseline and never correct upward.
+    ref.invalidate(notificationsProvider);
+    ref.invalidate(unreadNotificationCountProvider);
     state = userId;
   }
 
@@ -55,6 +61,8 @@ class AuthNotifier extends Notifier<String?> {
     ref.invalidate(myItinerariesProvider);
     ref.invalidate(savedItinerariesProvider);
     ref.invalidate(searchQueryProvider);
+    ref.invalidate(notificationsProvider);
+    ref.invalidate(unreadNotificationCountProvider);
     // hasSessionProvider caches a storage read; without this it would still
     // report a live session after the tokens are gone.
     ref.invalidate(hasSessionProvider);

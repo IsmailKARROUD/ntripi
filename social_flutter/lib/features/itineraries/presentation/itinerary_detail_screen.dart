@@ -112,6 +112,7 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
   bool _longPressHintShown = false; // one-shot guard within this screen's life
   bool _firstStopFormOpened = false; // one-shot guard for the just-created auto-open
   bool _openSoundPlayed = false; // one-shot guard for the open-itinerary cue
+  bool _closeCuePlayed = false; // one-shot guard: the two close paths overlap
   //start with map hidden on mobile to avoid unnecessary API calls and improve performance, since the map is less likely to be used on mobile and can be accessed via a button
   bool _mapVisible = false;
 
@@ -194,6 +195,22 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
   }
 
   void _exitEditMode() => setState(() => _editMode = false);
+
+  /// Closing cue — the mirror of the open cue above.
+  ///
+  /// Called from both ways out (the header back button and the PopScope), which
+  /// overlap on the ordinary case: the button pops, and the pop then fires the
+  /// PopScope. The latch is what makes that one cue instead of a stutter.
+  ///
+  /// Deliberately NOT in dispose(): the widget ref is backed by BuildContext and
+  /// must not be touched there, and dispose also runs when a router.go() tears
+  /// this screen down — which is exactly what deleting an itinerary does, so the
+  /// fold would play over the delete cue.
+  void _playCloseCue() {
+    if (_closeCuePlayed) return;
+    _closeCuePlayed = true;
+    ref.read(sfxServiceProvider).play(Sfx.closeItinerary);
+  }
 
   /// Scrolls the outer CustomScrollView so that the track with the given ID
   /// becomes visible near the top. The post-frame callback waits for the
@@ -431,7 +448,12 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
     return PopScope(
       canPop: !_editMode,
       onPopInvokedWithResult: (didPop, _) {
-        if (didPop) return;
+        // didPop false means canPop refused it — an edit-mode exit or a
+        // cancelled predictive-back swipe, neither of which is a close.
+        if (didPop) {
+          _playCloseCue();
+          return;
+        }
         _exitEditMode();
       },
       child: Scaffold(
@@ -796,8 +818,13 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                             enterEditButtonKey: _enterEditButtonKey,
                             onCoverTap: isOwner ? _showAddCoverHint : null,
                             // Reached via go() after create / stop-delete, so
-                            // there may be nothing on the stack to pop.
-                            onBack: () => context.popOr('/itineraries'),
+                            // there may be nothing on the stack to pop — and
+                            // popOr's go() branch never reaches the PopScope,
+                            // which is why the cue is fired here too.
+                            onBack: () {
+                              _playCloseCue();
+                              context.popOr('/itineraries');
+                            },
                             onShare: itinerary.visibility !=
                                     ItineraryVisibility.onlyMe
                                 ? () => ref

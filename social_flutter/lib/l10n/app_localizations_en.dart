@@ -561,7 +561,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsSoundEffectsDetail =>
-      'Play a sound when you open an itinerary';
+      'Play short sounds for actions in the app';
 
   @override
   String get settingsSupport => 'Support';
@@ -2948,6 +2948,131 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get notificationWarnedDetail => 'Tap to see why and to appeal';
+
+  @override
+  String get helpCenterFaqLabel => 'Common questions';
+
+  @override
+  String get helpCenterGetHelpLabel => 'Get help';
+
+  @override
+  String get helpCenterLegalLabel => 'Legal';
+
+  @override
+  String get helpCenterContactSupport => 'Contact support';
+
+  @override
+  String get helpCenterContactSupportSubtitle => 'Email us about anything else';
+
+  @override
+  String get helpCenterAccountStatusSubtitle =>
+      'See moderation decisions and appeal';
+
+  @override
+  String get faqItineraryQ => 'What is an itinerary?';
+
+  @override
+  String get faqItineraryA =>
+      'An itinerary is a trip you build stop by stop — places to eat, sleep, see or pass through, in the order you\'ll visit them. You can keep it to yourself, share it with your followers, or publish it for everyone.';
+
+  @override
+  String get faqTracksQ => 'What are parallel stops?';
+
+  @override
+  String get faqTracksA =>
+      'Some parts of a trip have more than one good answer. Parallel stops sit side by side at the same point in the journey — two ways to spend the same afternoon. Add one when you want to offer a choice rather than a fixed route.';
+
+  @override
+  String get faqVisibilityQ => 'Who can see my itinerary?';
+
+  @override
+  String get faqVisibilityA =>
+      'You choose, for each itinerary. Only me keeps it private and is the default. Followers shows it to the people who follow you. Restricted shows it only to the people you pick. Public puts it in discovery for everyone.';
+
+  @override
+  String get faqRatingsQ => 'How do ratings work?';
+
+  @override
+  String get faqRatingsA =>
+      'An overall score from 1 to 5 is all that\'s required. You can also rate safety, experience, accessibility, how family-friendly it is, and how crowded it felt. Those averages only appear once at least three people have rated an itinerary, so a single opinion never looks like a verdict.';
+
+  @override
+  String get faqSaveQ => 'What does saving do?';
+
+  @override
+  String get faqSaveA =>
+      'Saving keeps someone else\'s itinerary in your Saved tab so you can find it again. The owner is told that you saved it, but nobody else sees your saved list.';
+
+  @override
+  String get faqPrivateAccountQ => 'What is a private account?';
+
+  @override
+  String get faqPrivateAccountA =>
+      'With a private account, people have to ask before they can follow you, and you approve or decline each request. Once approved, they can see the itineraries you share with followers.';
+
+  @override
+  String get faqBlockReportQ => 'How do I block or report someone?';
+
+  @override
+  String get faqBlockReportA =>
+      'Open their profile and use the menu in the top corner. Blocking hides you from each other in both directions, and you can undo it any time from Settings. Reporting sends the content to our moderation team and never tells the other person who reported it.';
+
+  @override
+  String get faqStaleEditQ => 'Why was I told the itinerary was modified?';
+
+  @override
+  String get faqStaleEditA =>
+      'Someone with access — or you, on another device — changed the itinerary while your editor was open. Reload to pull in their version, then make your change again. This is what stops two edits from silently overwriting each other.';
+
+  @override
+  String get reportBugShakeHeadline => 'Shake your phone';
+
+  @override
+  String get reportBugShakeBody =>
+      'Don\'t report a problem from here. Go back to where it happened and shake your phone — we\'ll capture that screen so you can circle exactly what went wrong.';
+
+  @override
+  String get reportBugStepsLabel => 'How it works';
+
+  @override
+  String get reportBugShakeStep1 =>
+      'Go back to the screen where the problem happened';
+
+  @override
+  String get reportBugShakeStep2 => 'Shake your phone';
+
+  @override
+  String get reportBugShakeStep3 =>
+      'Circle the problem and tell us what went wrong';
+
+  @override
+  String get reportBugGestureOff =>
+      'Shake to report is off right now. Turn it on to use the gesture.';
+
+  @override
+  String get reportBugWebBody =>
+      'Shaking isn\'t available in a browser. Use the button below to send us a report about this page.';
+
+  @override
+  String get aboutTagline => 'Travel itineraries, shared.';
+
+  @override
+  String get aboutBody =>
+      'Ntripi is where travellers build trips stop by stop and share what actually worked. Every itinerary is yours until you decide otherwise — keep it private, share it with the people you choose, or publish it for everyone to follow.';
+
+  @override
+  String get aboutVersion => 'Version';
+
+  @override
+  String get aboutWebsite => 'Website';
+
+  @override
+  String get aboutLicenses => 'Open-source licences';
+
+  @override
+  String aboutCopyright(int year) {
+    return '© $year Ntripi';
+  }
 
   @override
   String get notificationDelete => 'Delete notification';

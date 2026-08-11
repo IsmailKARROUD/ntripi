@@ -1,8 +1,9 @@
 // features/bug_report/presentation/bug_report_entry.dart
 //
-// The one way into the bug reporter, shared by the shake gesture and the
-// Settings ▸ Support row. Two call sites, one flow — a second entry point that
-// drifted would mean reports arriving without diagnostics.
+// The one way into the bug reporter, shared by the shake gesture and — on web,
+// where there is no accelerometer — the button on the Report-a-bug screen. Two
+// call sites, one flow; a second entry point that drifted would mean reports
+// arriving without diagnostics.
 
 import 'package:feedback/feedback.dart';
 import 'package:flutter/material.dart';
@@ -16,8 +17,8 @@ import 'package:social_flutter/l10n/app_localizations.dart';
 /// [context] must sit below the BetterFeedback mounted in MaterialApp.builder.
 void startBugReport(BuildContext context, WidgetRef ref) {
   final controller = BetterFeedback.of(context);
-  // Guard the caller as well as the shake handler: the settings row and a
-  // shake could otherwise both fire during the same frame.
+  // Guard the caller as well as the shake handler: a button press and a shake
+  // could otherwise both fire during the same frame.
   if (controller.isVisible) return;
 
   // Captured before any await — the feedback UI covers the screen, so this

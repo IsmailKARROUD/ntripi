@@ -283,3 +283,9 @@ const kGuidelinesUrl = '$kShareBaseUrl/guidelines';
 /// Published abuse contact. Must match the backend's ABUSE_CONTACT_EMAIL and
 /// the store listing — reviewers compare them.
 const kAbuseContactEmail = 'abuse@ntripi.app';
+
+/// Ordinary support mail. Kept separate from the abuse address so a "how do I
+/// reorder stops" question never lands in the safety queue, but defaults to it
+/// so nothing is published until a real support inbox exists.
+const kSupportContactEmail =
+    String.fromEnvironment('SUPPORT_EMAIL', defaultValue: kAbuseContactEmail);

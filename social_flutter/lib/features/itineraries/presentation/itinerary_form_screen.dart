@@ -25,6 +25,7 @@ import 'package:go_router/go_router.dart';
 import 'package:social_flutter/core/api/api_client.dart';
 import 'package:social_flutter/core/cache/image_cache.dart';
 import 'package:social_flutter/core/services/currency.dart';
+import 'package:social_flutter/core/services/sfx_service.dart';
 import 'package:social_flutter/core/ui/app_theme.dart';
 import 'package:social_flutter/core/ui/destructive_actions.dart';
 import 'package:social_flutter/core/api/api_endpoints.dart';
@@ -318,6 +319,9 @@ class _ItineraryFormScreenState extends ConsumerState<ItineraryFormScreen> {
         ref.read(itineraryDetailProvider(widget.itineraryId!)).value;
     final router = GoRouter.of(context);
     final messenger = ScaffoldMessenger.of(context);
+    // Captured with the others: this screen unmounts on success, so the widget
+    // ref must not be read after the await.
+    final sfx = ref.read(sfxServiceProvider);
 
     final l10n = AppLocalizations.of(context)!;
     final title = itinerary?.title ?? l10n.thisItineraryFallback;
@@ -336,6 +340,9 @@ class _ItineraryFormScreenState extends ConsumerState<ItineraryFormScreen> {
       await ref
           .read(myItinerariesProvider.notifier)
           .removeItinerary(widget.itineraryId!);
+      // After the network call, never on confirm — a failed delete must not
+      // sound like a successful one. Not awaited: the cue outlives the route.
+      unawaited(sfx.play(Sfx.deleteItinerary));
       if (!mounted) return;
       router.go('/itineraries');
     } on Exception catch (e) {

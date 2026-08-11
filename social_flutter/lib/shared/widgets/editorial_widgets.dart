@@ -166,3 +166,115 @@ class SectionCard extends StatelessWidget {
     );
   }
 }
+
+// ── EditorialRow ──────────────────────────────────────────────────────────────
+// Icon-badge + label row for a SectionCard.  Extracted from the profile
+// settings sheet's private _SheetRow once Help Center and About needed the same
+// row; the sheet and those screens must stay visually identical, and two copies
+// would drift.
+
+class EditorialRow extends StatelessWidget {
+  final IconData icon;
+  final Color iconBg;
+  final Color iconColor;
+  final String label;
+  final String? detail;
+  // Second line under the label. `detail` sits on the trailing edge instead,
+  // which leaves no room once `trailing` is a control rather than a chevron.
+  final String? subtitle;
+  final bool showChevron;
+  final bool isLast;
+  final VoidCallback? onTap;
+  // Replaces the chevron — for rows that toggle in place rather than navigate.
+  final Widget? trailing;
+
+  const EditorialRow({
+    super.key,
+    required this.icon,
+    required this.iconBg,
+    required this.iconColor,
+    required this.label,
+    this.detail,
+    this.subtitle,
+    this.showChevron = true,
+    this.isLast = false,
+    this.onTap,
+    this.trailing,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final nt = context.nt;
+    return Column(
+      children: [
+        InkWell(
+          onTap: onTap,
+          borderRadius: isLast
+              ? const BorderRadius.vertical(bottom: Radius.circular(16))
+              : BorderRadius.zero,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+            child: Row(
+              children: [
+                Container(
+                  width: 30,
+                  height: 30,
+                  decoration: BoxDecoration(
+                    color: iconBg,
+                    borderRadius: BorderRadius.circular(9),
+                  ),
+                  child: Icon(icon, size: 16, color: iconColor),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        label,
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          color: nt.bark,
+                        ),
+                      ),
+                      // Under the label, not beside it — a toggle row has no
+                      // room left for an explanation on the trailing edge.
+                      if (subtitle != null)
+                        Text(
+                          subtitle!,
+                          style: TextStyle(
+                            fontSize: 12.5,
+                            height: 1.3,
+                            color: nt.text2,
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+                if (detail != null) ...[
+                  Text(
+                    detail!,
+                    style: TextStyle(fontSize: 13, color: nt.text2),
+                  ),
+                  const SizedBox(width: 4),
+                ],
+                if (trailing != null)
+                  trailing!
+                else if (showChevron)
+                  Icon(Icons.chevron_right, size: 20, color: nt.text3),
+              ],
+            ),
+          ),
+        ),
+        if (!isLast)
+          Container(
+            height: 1,
+            margin: const EdgeInsetsDirectional.only(start: 56),
+            color: nt.border,
+          ),
+      ],
+    );
+  }
+}

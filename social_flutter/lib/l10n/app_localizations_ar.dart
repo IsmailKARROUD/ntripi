@@ -569,7 +569,8 @@ class AppLocalizationsAr extends AppLocalizations {
   String get settingsSoundEffects => 'المؤثرات الصوتية';
 
   @override
-  String get settingsSoundEffectsDetail => 'تشغيل صوت عند فتح مسار';
+  String get settingsSoundEffectsDetail =>
+      'تشغيل أصوات قصيرة عند تنفيذ الإجراءات في التطبيق';
 
   @override
   String get settingsSupport => 'الدعم';
@@ -2994,6 +2995,129 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get notificationWarnedDetail => 'اضغط لمعرفة السبب ولتقديم تظلّم';
+
+  @override
+  String get helpCenterFaqLabel => 'أسئلة شائعة';
+
+  @override
+  String get helpCenterGetHelpLabel => 'الحصول على مساعدة';
+
+  @override
+  String get helpCenterLegalLabel => 'الشؤون القانونية';
+
+  @override
+  String get helpCenterContactSupport => 'التواصل مع الدعم';
+
+  @override
+  String get helpCenterContactSupportSubtitle => 'راسلنا بشأن أي أمر آخر';
+
+  @override
+  String get helpCenterAccountStatusSubtitle =>
+      'اطّلع على قرارات الإشراف وقدّم تظلّمًا';
+
+  @override
+  String get faqItineraryQ => 'ما هو المسار؟';
+
+  @override
+  String get faqItineraryA =>
+      'المسار رحلة تبنيها محطة بعد محطة — أماكن للأكل والنوم والمشاهدة أو مجرد المرور، بالترتيب الذي ستزورها به. يمكنك الاحتفاظ به لنفسك، أو مشاركته مع متابعيك، أو نشره للجميع.';
+
+  @override
+  String get faqTracksQ => 'ما هي المحطات المتوازية؟';
+
+  @override
+  String get faqTracksA =>
+      'بعض أجزاء الرحلة تحتمل أكثر من إجابة جيدة. المحطات المتوازية تقف جنبًا إلى جنب عند النقطة نفسها من الرحلة — طريقتان لقضاء الظهيرة ذاتها. أضف واحدة عندما تريد تقديم خيار بدلًا من مسار ثابت.';
+
+  @override
+  String get faqVisibilityQ => 'من يمكنه رؤية مساري؟';
+
+  @override
+  String get faqVisibilityA =>
+      'أنت من يقرّر، ولكل مسار على حدة. «أنا فقط» يبقيه خاصًا وهو الخيار الافتراضي. «المتابعون» يعرضه لمن يتابعونك. «مقيّد» يعرضه فقط لمن تختارهم. «عام» يضعه في الاستكشاف أمام الجميع.';
+
+  @override
+  String get faqRatingsQ => 'كيف تعمل التقييمات؟';
+
+  @override
+  String get faqRatingsA =>
+      'المطلوب فقط تقييم عام من 1 إلى 5. ويمكنك أيضًا تقييم الأمان والتجربة وسهولة الوصول ومدى ملاءمته للعائلات ومقدار الازدحام. لا تظهر هذه المتوسطات إلا بعد أن يقيّم المسارَ ثلاثة أشخاص على الأقل، حتى لا يبدو رأي واحد وكأنه حُكم نهائي.';
+
+  @override
+  String get faqSaveQ => 'ما فائدة الحفظ؟';
+
+  @override
+  String get faqSaveA =>
+      'الحفظ يبقي مسار شخص آخر في تبويب «المحفوظات» لديك لتعود إليه لاحقًا. يُبلَّغ صاحب المسار بأنك حفظته، لكن لا أحد غيرك يرى قائمة محفوظاتك.';
+
+  @override
+  String get faqPrivateAccountQ => 'ما هو الحساب الخاص؟';
+
+  @override
+  String get faqPrivateAccountA =>
+      'في الحساب الخاص، على الآخرين أن يطلبوا المتابعة أولًا، وأنت من يقبل كل طلب أو يرفضه. وبعد القبول يمكنهم رؤية المسارات التي تشاركها مع متابعيك.';
+
+  @override
+  String get faqBlockReportQ => 'كيف أحظر شخصًا أو أبلّغ عنه؟';
+
+  @override
+  String get faqBlockReportA =>
+      'افتح ملفه الشخصي واستخدم القائمة في الأعلى. الحظر يُخفيكما عن بعضكما في الاتجاهين، ويمكنك التراجع عنه في أي وقت من الإعدادات. أما الإبلاغ فيُرسل المحتوى إلى فريق الإشراف لدينا، ولا يُخبر الطرف الآخر أبدًا بهوية المُبلِّغ.';
+
+  @override
+  String get faqStaleEditQ => 'لماذا ظهرت لي رسالة بأن المسار قد عُدِّل؟';
+
+  @override
+  String get faqStaleEditA =>
+      'قام شخص لديه صلاحية — أو أنت نفسك من جهاز آخر — بتعديل المسار بينما كان المحرّر مفتوحًا لديك. أعِد التحميل لجلب نسخته، ثم أعِد إجراء تعديلك. هذا ما يمنع تعديلين من إلغاء أحدهما الآخر دون أن يشعر أحد.';
+
+  @override
+  String get reportBugShakeHeadline => 'هُزّ هاتفك';
+
+  @override
+  String get reportBugShakeBody =>
+      'لا تُبلِّغ عن مشكلة من هنا. عُد إلى المكان الذي حدثت فيه وهُزّ هاتفك — سنلتقط تلك الشاشة لتتمكن من تحديد ما اختلّ بالضبط.';
+
+  @override
+  String get reportBugStepsLabel => 'طريقة العمل';
+
+  @override
+  String get reportBugShakeStep1 => 'عُد إلى الشاشة التي حدثت فيها المشكلة';
+
+  @override
+  String get reportBugShakeStep2 => 'هُزّ هاتفك';
+
+  @override
+  String get reportBugShakeStep3 => 'حدِّد المشكلة بدائرة وأخبرنا بما حدث';
+
+  @override
+  String get reportBugGestureOff =>
+      'خاصية الهزّ للإبلاغ مُعطَّلة حاليًا. فعِّلها لاستخدام هذه الإيماءة.';
+
+  @override
+  String get reportBugWebBody =>
+      'الهزّ غير متاح في المتصفح. استخدم الزر أدناه لإرسال بلاغ لنا عن هذه الصفحة.';
+
+  @override
+  String get aboutTagline => 'مسارات سفر، تُشارَك.';
+
+  @override
+  String get aboutBody =>
+      'Ntripi هو المكان الذي يبني فيه المسافرون رحلاتهم محطة بعد محطة ويشاركون ما نجح فعلًا. كل مسار يظل ملكك إلى أن تقرّر غير ذلك — أبقِه خاصًا، أو شاركه مع من تختار، أو انشره ليتبعه الجميع.';
+
+  @override
+  String get aboutVersion => 'الإصدار';
+
+  @override
+  String get aboutWebsite => 'الموقع الإلكتروني';
+
+  @override
+  String get aboutLicenses => 'تراخيص المصادر المفتوحة';
+
+  @override
+  String aboutCopyright(int year) {
+    return '© $year Ntripi';
+  }
 
   @override
   String get notificationDelete => 'حذف الإشعار';
