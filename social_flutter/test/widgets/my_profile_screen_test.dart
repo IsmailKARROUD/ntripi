@@ -25,6 +25,7 @@ import 'package:social_flutter/features/profile/presentation/profile_screen.dart
 import 'package:social_flutter/features/profile/providers/profile_provider.dart';
 import 'package:social_flutter/l10n/app_localizations.dart';
 import 'package:social_flutter/shared/widgets/loaders.dart';
+import 'package:social_flutter/features/reports/presentation/ugc_actions.dart';
 import 'package:social_flutter/shared/models/follow.dart';
 import 'package:social_flutter/shared/models/user.dart';
 
@@ -493,6 +494,22 @@ void main() {
     // ── Layout coverage introduced by the unified ProfileScreen ──────────
 
     group('self-only layout (merged screen)', () {
+      // The other half of the profile ugc-actions invariant: the menu offers
+      // Report and Block, and neither may ever be aimed at yourself.
+      testWidgets(
+          'Given your own profile, When screen builds, '
+          'Then no report/block menu is offered', (tester) async {
+        tester.view.physicalSize = const Size(1080, 1920);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        await tester.pumpWidget(_buildScreen());
+        await tester.pump();
+
+        expect(find.byType(UgcActionsMenu), findsNothing);
+      });
+
       testWidgets(
           'Given itineraries loaded, When screen builds, '
           'Then See all link is visible (self-only conditional)',

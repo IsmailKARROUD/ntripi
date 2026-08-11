@@ -980,6 +980,8 @@
   "blockUserMessage": "Vous ne verrez plus vos itinéraires ni vos profils respectifs, et aucun de vous ne pourra suivre l'autre. Cette personne n'en sera pas informée.",
   "blockedUsers": "Comptes bloqués",
   "blockedUsersEmpty": "Vous n'avez bloqué personne.",
+  "profileUnavailableTitle": "Compte indisponible",
+  "profileUnavailableMessage": "Ce compte n'existe pas ou n'est plus disponible.",
   "blockedUserRemoved": "@{username} débloqué.",
   "blockedUserAdded": "@{username} bloqué.",
   "abuseContact": "Signaler un abus",

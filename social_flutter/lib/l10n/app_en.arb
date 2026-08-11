@@ -1231,6 +1231,8 @@
   "blockUserMessage": "You won't see each other's trips or profiles, and neither of you can follow the other. They won't be told.",
   "blockedUsers": "Blocked accounts",
   "blockedUsersEmpty": "You haven't blocked anyone.",
+  "profileUnavailableTitle": "Account unavailable",
+  "profileUnavailableMessage": "This account doesn't exist or is no longer available.",
   "blockedUserRemoved": "Unblocked @{username}.",
   "@blockedUserRemoved": {
     "placeholders": {

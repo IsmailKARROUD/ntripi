@@ -6,11 +6,13 @@
 //   - Centralized error handling via interceptors.
 //   - FormData support, progress callbacks, and cancellation tokens.
 //
-// Three interceptors are installed, in this registration order:
+// Four interceptors are installed, in this registration order:
 //   1. AuthInterceptor    — attaches Bearer token, refreshes on expiry,
 //                           retries once on 401.
-//   2. DioCacheInterceptor — stores GET responses; serves stale on errors.
-//   3. LogInterceptor     — debug-only.
+//   2. DioCacheInterceptor — stores GET responses; serves stale on errors,
+//                           except for kNeverServeStaleFor.
+//   3. CacheEvictInterceptor — deletes entries the server says are gone.
+//   4. LogInterceptor     — debug-only.
 //
 // The AuthInterceptor delegates ALL token decisions to TokenManager. The
 // interceptor only knows three things: (a) attach a header, (b) what to do
@@ -24,6 +26,7 @@ import 'package:go_router/go_router.dart';
 
 import 'package:social_flutter/core/api/api_endpoints.dart';
 import 'package:social_flutter/core/api/api_error_codes.dart';
+import 'package:social_flutter/core/api/cache_evict_interceptor.dart';
 import 'package:social_flutter/core/auth/token_manager.dart';
 import 'package:social_flutter/core/storage/secure_storage.dart';
 import 'package:social_flutter/l10n/app_localizations.dart';
@@ -45,6 +48,18 @@ late final Dio bareDio;
 /// so future cache logic can read it.
 const kAuthSkippedExtra = 'ntripi_auth_skipped';
 
+/// Status codes that must never be answered from the cache.
+///
+/// dio_cache_interceptor reads this as "hit cache on error EXCEPT these", so an
+/// empty list — the old value — meant a 404 for a blocked or deleted account was
+/// silently replaced by the last profile we cached for that URL. Every code here
+/// is the server saying "you may not see this"; serving the old body back is a
+/// privacy bug, not a resilience feature.
+///
+/// Offline is unaffected: a connection error carries no `Response`, which the
+/// interceptor handles in an earlier branch that always falls back to cache.
+const List<int> kNeverServeStaleFor = [401, 403, 404, 410];
+
 
 /// Per-request override that bypasses the dio_cache_interceptor's conditional
 /// GET validator — used for pull-to-refresh / Retry. See original comments.
@@ -54,8 +69,9 @@ Options forceRefreshOptions() => Options(
         policy: CachePolicy.refresh,
         // Per-request options REPLACE the interceptor's globals — restate the
         // stale-on-error fallback or offline/captive-portal refreshes error
-        // out instead of re-serving the cached response.
-        hitCacheOnErrorExcept: [],
+        // out instead of re-serving the cached response. Keep this list in
+        // step with createDioClient's.
+        hitCacheOnErrorExcept: kNeverServeStaleFor,
         maxStale: Duration(days: 7),
       ).toExtra(),
     );
@@ -102,13 +118,16 @@ Dio createDioClient({
         options: CacheOptions(
           store: cacheStore,
           policy: CachePolicy.request,
-          hitCacheOnErrorExcept: const [],
+          hitCacheOnErrorExcept: kNeverServeStaleFor,
           maxStale: const Duration(days: 7),
           priority: CachePriority.normal,
           keyBuilder: CacheOptions.defaultCacheKeyBuilder,
         ),
       ),
     );
+    // After the cache interceptor, so it only ever sees errors the cache layer
+    // declined to answer.
+    instance.interceptors.add(CacheEvictInterceptor(cacheStore));
   }
 
   assert(() {

@@ -5,6 +5,7 @@
 
 import 'dart:async';
 
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart'; // Riverpod 3 exports the Override type here
@@ -15,6 +16,7 @@ import 'package:social_flutter/features/itineraries/domain/itinerary.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/itinerary_summary_card.dart';
 import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
 import 'package:social_flutter/features/profile/presentation/profile_screen.dart';
+import 'package:social_flutter/features/profile/presentation/widgets/profile_unavailable_view.dart';
 import 'package:social_flutter/features/profile/providers/profile_provider.dart';
 import 'package:social_flutter/features/reports/presentation/ugc_actions.dart';
 import 'package:social_flutter/l10n/app_localizations.dart';
@@ -79,6 +81,24 @@ class _FakeUserProfileError extends UserProfileNotifier {
   @override
   Future<User> build() async =>
       throw Exception('Not found');
+}
+
+/// The shape the repository actually throws when the server answers 404 —
+/// blocked, banned, or deleted, all indistinguishable by design.
+class _FakeUserProfileGone extends UserProfileNotifier {
+  _FakeUserProfileGone() : super('');
+  @override
+  Future<User> build() async {
+    final request = RequestOptions(path: '/users/$_userId');
+    throw DioException(
+      requestOptions: request,
+      response: Response<dynamic>(
+        requestOptions: request,
+        statusCode: 404,
+        data: const {'code': 'user_not_found', 'detail': 'User not found.'},
+      ),
+    );
+  }
 }
 
 class _FakeUserItineraries extends UserItinerariesNotifier {
@@ -438,6 +458,48 @@ void main() {
         await tester.pump();
 
         expect(find.text('Retry'), findsOneWidget);
+      });
+
+      testWidgets(
+          'Given the account is gone (404), When screen builds, '
+          'Then shows the unavailable page with no Retry', (tester) async {
+        tester.view.physicalSize = const Size(1080, 1920);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        await tester.pumpWidget(
+            _buildScreen(profileNotifier: _FakeUserProfileGone.new));
+        await tester.pump();
+
+        expect(find.byType(ProfileUnavailableView), findsOneWidget);
+        // Retrying a gone account answers 404 forever.
+        expect(find.text('Retry'), findsNothing);
+      });
+
+      testWidgets(
+          'Given the account is gone, When the page renders, '
+          'Then the copy never hints at a block', (tester) async {
+        tester.view.physicalSize = const Size(1080, 1920);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        await tester.pumpWidget(
+            _buildScreen(profileNotifier: _FakeUserProfileGone.new));
+        await tester.pump();
+
+        // The backend returns one indistinguishable 404 for blocked, banned and
+        // deleted; wording that named the block here would give that away.
+        final texts = tester
+            .widgetList<Text>(find.byType(Text))
+            .map((t) => (t.data ?? '').toLowerCase());
+        expect(
+          texts.any((t) => t.contains('block') || t.contains('banned')),
+          isFalse,
+          reason: 'a blocked user must not learn why the profile is gone',
+        );
+        expect(find.text('Account unavailable'), findsOneWidget);
       });
     });
 

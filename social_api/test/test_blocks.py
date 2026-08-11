@@ -188,6 +188,115 @@ def test_a_blocked_user_cannot_be_followed(client, alice, bruno):
     assert response.status_code == 404
 
 
+def test_the_blockers_itinerary_list_404s_for_the_blocked_user(client, alice, bruno):
+    """Returning 200 with an empty list would confirm the account exists."""
+    _block(client, alice["access_token"], bruno["user_id"])
+
+    response = client.get(
+        f"/users/{alice['user_id']}/itineraries",
+        headers=auth_headers(bruno["access_token"]),
+    )
+    assert response.status_code == 404
+
+
+def test_the_blockers_locations_404_for_the_blocked_user(client, alice, bruno):
+    _block(client, alice["access_token"], bruno["user_id"])
+
+    response = client.get(
+        f"/users/{alice['user_id']}/locations",
+        headers=auth_headers(bruno["access_token"]),
+    )
+    assert response.status_code == 404
+
+
+# ---------------------------------------------------------------------------
+# Lists: a blocked account is unfindable, not merely unopenable
+# ---------------------------------------------------------------------------
+
+def _search(client, token, q) -> list[str]:
+    response = client.get(f"/users/search?q={q}", headers=auth_headers(token))
+    assert response.status_code == 200, response.json()
+    return [row["username"] for row in response.json()]
+
+
+def test_search_hides_the_blocker_from_the_blocked_user(client, alice, bruno):
+    """Leaving them in the results tells the blocked user the account exists."""
+    _block(client, alice["access_token"], bruno["user_id"])
+
+    assert _search(client, bruno["access_token"], "alice") == []
+
+
+def test_search_hides_the_blocked_user_from_the_blocker(client, alice, bruno):
+    """The block cuts visibility in both directions."""
+    _block(client, alice["access_token"], bruno["user_id"])
+
+    assert _search(client, alice["access_token"], "bruno") == []
+
+
+def test_search_finds_them_again_after_unblocking(client, alice, bruno):
+    _block(client, alice["access_token"], bruno["user_id"])
+    _unblock(client, alice["access_token"], bruno["user_id"])
+
+    assert _search(client, bruno["access_token"], "alice") == ["alice"]
+
+
+def test_the_blockers_follower_list_404s_for_the_blocked_user(client, alice, bruno):
+    _block(client, alice["access_token"], bruno["user_id"])
+    headers = auth_headers(bruno["access_token"])
+
+    assert client.get(
+        f"/users/{alice['user_id']}/followers", headers=headers
+    ).status_code == 404
+    assert client.get(
+        f"/users/{alice['user_id']}/following", headers=headers
+    ).status_code == 404
+
+
+def test_a_third_partys_follower_list_hides_the_blocked_account(client, alice, bruno):
+    """Alice and Bruno both follow Carla. Neither may see the other listed."""
+    carla = register_user(client, "carla", "carla@example.com")
+    _make_public(client, carla["access_token"])
+    for user in (alice, bruno):
+        client.post(
+            f"/users/{carla['user_id']}/follow", headers=auth_headers(user["access_token"])
+        )
+
+    both = client.get(
+        f"/users/{carla['user_id']}/followers", headers=auth_headers(carla["access_token"])
+    ).json()
+    assert sorted(row["username"] for row in both) == ["alice", "bruno"]
+
+    _block(client, alice["access_token"], bruno["user_id"])
+
+    seen_by_bruno = client.get(
+        f"/users/{carla['user_id']}/followers", headers=auth_headers(bruno["access_token"])
+    ).json()
+    assert [row["username"] for row in seen_by_bruno] == ["bruno"]
+
+    seen_by_alice = client.get(
+        f"/users/{carla['user_id']}/followers", headers=auth_headers(alice["access_token"])
+    ).json()
+    assert [row["username"] for row in seen_by_alice] == ["alice"]
+
+
+def test_a_third_partys_following_list_hides_the_blocked_account(client, alice, bruno):
+    """Carla follows both. Alice and Bruno must not see each other in her list."""
+    carla = register_user(client, "carla", "carla@example.com")
+    for user in (alice, bruno):
+        _make_public(client, user["access_token"])
+        client.post(
+            f"/users/{user['user_id']}/follow", headers=auth_headers(carla["access_token"])
+        )
+    _make_public(client, carla["access_token"])
+
+    _block(client, alice["access_token"], bruno["user_id"])
+
+    seen_by_bruno = client.get(
+        f"/users/{carla['user_id']}/following", headers=auth_headers(bruno["access_token"])
+    ).json()
+    assert [row["username"] for row in seen_by_bruno] == ["bruno"]
+
+
 # ---------------------------------------------------------------------------
 # Follows are severed
 # ---------------------------------------------------------------------------

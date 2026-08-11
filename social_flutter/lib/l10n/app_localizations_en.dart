@@ -2760,6 +2760,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get blockedUsersEmpty => 'You haven\'t blocked anyone.';
 
   @override
+  String get profileUnavailableTitle => 'Account unavailable';
+
+  @override
+  String get profileUnavailableMessage =>
+      'This account doesn\'t exist or is no longer available.';
+
+  @override
   String blockedUserRemoved(String username) {
     return 'Unblocked @$username.';
   }

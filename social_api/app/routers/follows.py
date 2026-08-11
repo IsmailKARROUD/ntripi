@@ -372,14 +372,20 @@ def list_followers(
       Everyone else gets 403.
     """
     target_user = get_active_user_or_404(db, user_id)
+    block_service.require_not_blocked_or_404(db, current_user.id, user_id)
 
     _require_follow_list_access(target_user, current_user, db)
+
+    # Blocked accounts must not surface in a third party's list either. Filtered
+    # in the query rather than after, or limit/offset would return short pages.
+    hidden = block_service.blocked_user_ids(db, current_user.id)
 
     # Get accepted followers.
     follows = db.execute(
         select(Follow).where(
             Follow.following_id == user_id,
             Follow.status == FollowStatus.accepted,
+            *([Follow.follower_id.notin_(hidden)] if hidden else []),
         )
         .limit(limit)
         .offset(offset)
@@ -409,14 +415,18 @@ def list_following(
     Same privacy rules as the followers list.
     """
     target_user = get_active_user_or_404(db, user_id)
+    block_service.require_not_blocked_or_404(db, current_user.id, user_id)
 
     # Privacy check: same logic as list_followers.
     _require_follow_list_access(target_user, current_user, db)
+
+    hidden = block_service.blocked_user_ids(db, current_user.id)
 
     follows = db.execute(
         select(Follow).where(
             Follow.follower_id == user_id,
             Follow.status == FollowStatus.accepted,
+            *([Follow.following_id.notin_(hidden)] if hidden else []),
         )
         .limit(limit)
         .offset(offset)

@@ -2809,6 +2809,13 @@ class AppLocalizationsAr extends AppLocalizations {
   String get blockedUsersEmpty => 'لم تحظر أي حساب.';
 
   @override
+  String get profileUnavailableTitle => 'الحساب غير متاح';
+
+  @override
+  String get profileUnavailableMessage =>
+      'هذا الحساب غير موجود أو لم يعد متاحًا.';
+
+  @override
   String blockedUserRemoved(String username) {
     return 'أُلغي حظر @$username.';
   }

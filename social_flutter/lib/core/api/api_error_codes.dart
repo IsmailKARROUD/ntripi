@@ -2,6 +2,7 @@
 // localized messages. Returns null for unknown codes so the caller can fall
 // back to the server-provided `detail` string, then a generic message.
 
+import 'package:dio/dio.dart';
 import 'package:social_flutter/l10n/app_localizations.dart';
 
 String? localizedApiError(String code, AppLocalizations l10n) {
@@ -88,6 +89,18 @@ List<String> moderationCategories(dynamic error) {
   final raw = data is Map ? data['categories'] : null;
   if (raw is List) return raw.whereType<String>().toList();
   return const [];
+}
+
+/// True when the server said the thing is not there — 404 or 410.
+///
+/// Blocked, banned and deleted accounts all answer 404 with the same body on
+/// purpose (see `_require_not_blocked` in the backend), so a caller can only
+/// distinguish "gone" from "broken", never *why* it is gone. Retrying a gone
+/// resource can never succeed, which is what makes this worth branching on.
+bool isGoneError(Object? e) {
+  if (e is! DioException) return false;
+  final status = e.response?.statusCode;
+  return status == 404 || status == 410;
 }
 
 dynamic _responseData(dynamic error) {

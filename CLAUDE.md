@@ -125,6 +125,7 @@ Key rules:
 - Never `ListView` inside `Column` — use `CustomScrollView` + Slivers
 - Owner UI elements via explicit `currentUser?.id == itinerary.ownerId`
 - `ItineraryStaleException` thrown by repository on 412 — presentation catches and shows reload dialog
+- **Never touch `ref` in `State.dispose()`** — `ref` resolves through `BuildContext`, which is already deactivated by then, so `ref.read(...)` throws `StateError: Using "ref" when a widget is about to or has been unmounted is unsafe`. To call a notifier on the way out, hold it in a field: `NotifierType? _notifier;` assigned in `build` via `ref.watch(someProvider.notifier)` (watched, not read once in `initState` — an invalidation swaps the instance and `dispose` must reach the live one), then call `_notifier?.method()` in `dispose`. Safe only because the provider is not `autoDispose`, so the notifier's own `ref` outlives the screen; an `autoDispose` provider needs `ref.keepAlive()` or the work moved into the notifier's `ref.onDispose`. Live example: `notifications_screen.dart` flushing the deferred-delete queue.
 
 ---
 
@@ -447,3 +448,4 @@ The ToS asserted a minimum age for a release before anything asked for one. `use
 - Do NOT add new rate-limited endpoints without importing `limiter` from `app/limiter.py` (not from `app/main.py` — circular import)
 - Do NOT run the container as root — the Dockerfile creates `appuser` and must keep `USER appuser`
 - Do NOT store tokens or sensitive user data in Riverpod provider state — use `flutter_secure_storage` only; call `ref.invalidate()` on user-specific providers in `AuthNotifier.logout()`
+- Do NOT call `ref.read` / `ref.watch` / `ref.invalidate` inside `State.dispose()` — it throws at runtime; capture the notifier in a field from `build` and call it from there

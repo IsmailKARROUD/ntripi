@@ -4906,6 +4906,18 @@ abstract class AppLocalizations {
   /// **'You haven\'t blocked anyone.'**
   String get blockedUsersEmpty;
 
+  /// No description provided for @profileUnavailableTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Account unavailable'**
+  String get profileUnavailableTitle;
+
+  /// No description provided for @profileUnavailableMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'This account doesn\'t exist or is no longer available.'**
+  String get profileUnavailableMessage;
+
   /// No description provided for @blockedUserRemoved.
   ///
   /// In en, this message translates to:

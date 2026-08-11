@@ -807,6 +807,8 @@
   "blockUserMessage": "No veréis los itinerarios ni los perfiles del otro, y ninguno podrá seguir al otro. No se le informará.",
   "blockedUsers": "Cuentas bloqueadas",
   "blockedUsersEmpty": "No has bloqueado a nadie.",
+  "profileUnavailableTitle": "Cuenta no disponible",
+  "profileUnavailableMessage": "Esta cuenta no existe o ya no está disponible.",
   "blockedUserRemoved": "@{username} desbloqueado.",
   "blockedUserAdded": "@{username} bloqueado.",
   "abuseContact": "Denunciar abuso",

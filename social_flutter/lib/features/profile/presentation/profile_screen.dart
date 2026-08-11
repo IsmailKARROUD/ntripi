@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:social_flutter/core/api/api_client.dart';
+import 'package:social_flutter/core/api/api_error_codes.dart';
 import 'package:social_flutter/core/ui/app_theme.dart';
 import 'package:social_flutter/core/ui/destructive_actions.dart';
 import 'package:social_flutter/core/utils/platform_utils.dart';
@@ -31,6 +32,7 @@ import 'package:social_flutter/features/profile/presentation/widgets/locked_prof
 import 'package:social_flutter/features/profile/presentation/widgets/profile_chrome.dart';
 import 'package:social_flutter/features/profile/presentation/widgets/profile_edit_form.dart';
 import 'package:social_flutter/features/profile/presentation/widgets/profile_settings_sheet.dart';
+import 'package:social_flutter/features/profile/presentation/widgets/profile_unavailable_view.dart';
 import 'package:social_flutter/features/profile/providers/profile_provider.dart';
 import 'package:social_flutter/features/profile/providers/user_locations_provider.dart';
 import 'package:social_flutter/features/reports/domain/report_target.dart';
@@ -112,29 +114,34 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           ),
           child: profileAsync.when(
             loading: () => const Center(child: NTripiCompassLoader()),
-            error: (error, _) => Center(
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      extractErrorMessage(
-                          error, AppLocalizations.of(context)!),
-                      textAlign: TextAlign.center,
+            // A 404 means the account is gone — deleted, banned, or blocked in
+            // either direction. Retrying can never change that, so it gets its
+            // own screen instead of the generic message + Retry.
+            error: (error, _) => isGoneError(error)
+                ? const ProfileUnavailableView()
+                : Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            extractErrorMessage(
+                                error, AppLocalizations.of(context)!),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 16),
+                          FilledButton(
+                            onPressed: () => widget.isSelf
+                                ? ref.read(myProfileProvider.notifier).refresh()
+                                : ref.invalidate(
+                                    userProfileProvider(widget.userId!)),
+                            child: Text(AppLocalizations.of(context)!.retry),
+                          ),
+                        ],
+                      ),
                     ),
-                    const SizedBox(height: 16),
-                    FilledButton(
-                      onPressed: () => widget.isSelf
-                          ? ref.read(myProfileProvider.notifier).refresh()
-                          : ref.invalidate(
-                              userProfileProvider(widget.userId!)),
-                      child: Text(AppLocalizations.of(context)!.retry),
-                    ),
-                  ],
-                ),
-              ),
-            ),
+                  ),
             data: (user) => widget.isSelf && _isEditing
                 ? ProfileEditForm(
                     user: user,

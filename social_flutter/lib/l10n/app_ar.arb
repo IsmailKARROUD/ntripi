@@ -1178,6 +1178,8 @@
   "blockUserMessage": "لن يرى أيٌّ منكما خطوط سير الآخر أو ملفه الشخصي، ولن يتمكن أيٌّ منكما من متابعة الآخر. ولن يُبلَّغ بذلك.",
   "blockedUsers": "الحسابات المحظورة",
   "blockedUsersEmpty": "لم تحظر أي حساب.",
+  "profileUnavailableTitle": "الحساب غير متاح",
+  "profileUnavailableMessage": "هذا الحساب غير موجود أو لم يعد متاحًا.",
   "blockedUserRemoved": "أُلغي حظر @{username}.",
   "blockedUserAdded": "حُظر @{username}.",
   "abuseContact": "الإبلاغ عن إساءة",

@@ -94,22 +94,30 @@ class _BlockedRowState extends ConsumerState<_BlockedRow> {
   Future<void> _unblock() async {
     final l10n = AppLocalizations.of(context)!;
     final messenger = ScaffoldMessenger.of(context);
+    // Captured before the await: the container outlives this row, so the list
+    // is refreshed even if the user leaves the screen mid-request.
+    final container = ProviderScope.containerOf(context, listen: false);
     setState(() => _working = true);
     try {
       await ref.read(reportRepositoryProvider).unblock(widget.userId);
-      ref.invalidate(blockedUsersProvider);
-      messenger.showSnackBar(
-        SnackBar(content: Text(l10n.blockedUserRemoved(widget.username))),
-      );
-      // No setState after success — the provider invalidation rebuilds the list
-      // and this row is gone.
     } on Exception catch (e) {
       if (!mounted) return;
       setState(() => _working = false);
       messenger.showSnackBar(
         SnackBar(content: Text(extractErrorMessage(e, l10n))),
       );
+      return;
     }
+
+    container.invalidate(blockedUsersProvider);
+
+    // Leaving the screen while the DELETE is in flight disposes this row's ref.
+    if (!mounted) return;
+    messenger.showSnackBar(
+      SnackBar(content: Text(l10n.blockedUserRemoved(widget.username))),
+    );
+    // No setState after success — the provider invalidation rebuilds the list
+    // and this row is gone.
   }
 
   @override

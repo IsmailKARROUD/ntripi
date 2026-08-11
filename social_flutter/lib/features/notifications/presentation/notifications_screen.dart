@@ -30,11 +30,15 @@ class NotificationsScreen extends ConsumerStatefulWidget {
 class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
   bool _markedRead = false;
 
+  /// Held in a field because `ref` is unsafe once the widget is being
+  /// unmounted; the notifier itself outlives the screen (not autoDispose).
+  NotificationsNotifier? _notifier;
+
   @override
   void dispose() {
     // Leaving the screen settles the delete queue: waiting out a timer nobody is
     // watching only widens the window where killing the app resurrects a row.
-    ref.read(notificationsProvider.notifier).flushPending();
+    _notifier?.flushPending();
     super.dispose();
   }
 
@@ -43,6 +47,9 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
     final nt = context.nt;
     final l10n = AppLocalizations.of(context)!;
     final notificationsAsync = ref.watch(notificationsProvider);
+    // Watched, not read once: an invalidated provider swaps the instance, and
+    // dispose() must flush the queue that is actually live.
+    _notifier = ref.watch(notificationsProvider.notifier);
 
     // Mark read once the first page has actually arrived — doing it in initState
     // would clear the badge even when the load failed and the user saw nothing.

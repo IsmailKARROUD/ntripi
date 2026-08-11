@@ -807,6 +807,8 @@
   "blockUserMessage": "你们将无法看到彼此的行程和主页，也无法互相关注。对方不会收到通知。",
   "blockedUsers": "已屏蔽的账号",
   "blockedUsersEmpty": "你还没有屏蔽任何人。",
+  "profileUnavailableTitle": "账号不可用",
+  "profileUnavailableMessage": "该账号不存在或已不再可用。",
   "blockedUserRemoved": "已解除屏蔽 @{username}。",
   "blockedUserAdded": "已屏蔽 @{username}。",
   "abuseContact": "举报滥用行为",

@@ -19,9 +19,11 @@ from __future__ import annotations
 
 import uuid
 
+from fastapi import status
 from sqlalchemy import delete, or_, select
 from sqlalchemy.orm import Session
 
+from app.errors import ApiError
 from app.models.follow import Follow, FollowStatus
 from app.models.user import User
 from app.models.user_block import UserBlock
@@ -43,6 +45,23 @@ def is_blocked_either_way(
             )
         ).limit(1)
     ).first() is not None
+
+
+def require_not_blocked_or_404(
+    db: Session, viewer_id: uuid.UUID | None, target_id: uuid.UUID | None
+) -> None:
+    """404 when either party has blocked the other.
+
+    Indistinguishable from a deleted account on purpose: the blocked user must
+    not be able to tell they were blocked, and the blocker must not have to see
+    the profile of someone they blocked. Every read path that resolves a single
+    account by id goes through this, so all of them answer with the same body.
+    """
+    if is_blocked_either_way(db, viewer_id, target_id):
+        raise ApiError(
+            status_code=status.HTTP_404_NOT_FOUND,
+            code="user_not_found", detail="User not found.",
+        )
 
 
 def blocked_user_ids(db: Session, viewer_id: uuid.UUID | None) -> list[uuid.UUID]:

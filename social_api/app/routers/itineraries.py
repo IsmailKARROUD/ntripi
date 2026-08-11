@@ -84,6 +84,7 @@ from app.schemas.itinerary import (
     TransportLegUpdate,
 )
 from app.services import notification_service
+from app.services.block_service import require_not_blocked_or_404
 from app.services.image_service import ImageProcessingError, process_and_store, process_cover_image
 from app.services.moderation_service import ModerationContext, ModerationRejectedError
 from app.services.moderation_actions import escalate_if_flagged
@@ -1964,6 +1965,9 @@ def get_user_itineraries(
     current_user: User = Depends(get_current_user),
 ) -> list[ItinerarySummary]:
     get_active_user_or_404(db, user_id)  # 404 if the target doesn't exist
+    # can_view_itinerary would already return an empty list across a block;
+    # 404ing matches the profile endpoint so nothing confirms the account exists.
+    require_not_blocked_or_404(db, current_user.id, user_id)
 
     itineraries = db.execute(
         select(Itinerary)

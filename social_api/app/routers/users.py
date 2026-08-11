@@ -63,17 +63,8 @@ router = APIRouter(prefix="/users", tags=["Users"])
 
 
 def _require_not_blocked(db: Session, viewer: User, target: User) -> None:
-    """404 when either party has blocked the other.
-
-    Indistinguishable from a deleted account on purpose: the blocked user must
-    not be able to tell they were blocked, and the blocker must not have to see
-    the profile of someone they blocked.
-    """
-    if block_service.is_blocked_either_way(db, viewer.id, target.id):
-        raise ApiError(
-            status_code=status.HTTP_404_NOT_FOUND,
-            code="user_not_found", detail="User not found.",
-        )
+    """Thin adapter over the shared helper — see block_service for the why."""
+    block_service.require_not_blocked_or_404(db, viewer.id, target.id)
 
 
 def _build_public_profile(target_user: User, current_user: User,
@@ -378,11 +369,17 @@ def search_users(
     q_lower = q.lower()
     prefix_term = f"{q_lower}%"
 
+    # A blocked account must be unfindable, not merely unopenable — leaving it
+    # in the results tells the blocked user the account still exists. Filtered
+    # in the query, not after, or limit/offset would silently shrink pages.
+    hidden = block_service.blocked_user_ids(db, current_user.id)
+
     results = db.execute(
         select(User)
         .where(
             User.id != current_user.id,
             User.is_active == True,
+            *([User.id.notin_(hidden)] if hidden else []),
             or_(
                 User.username_lower.ilike(search_term.lower()),
                 User.display_name.ilike(search_term),
@@ -546,7 +543,10 @@ def get_user_locations(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> VisitedLocationsResponse:
-    get_active_user_or_404(db, user_id)  # 404 if the target doesn't exist
+    target = get_active_user_or_404(db, user_id)  # 404 if the target doesn't exist
+    # can_view_itinerary already empties the list across a block; 404ing instead
+    # keeps it from confirming the account exists at all.
+    _require_not_blocked(db, current_user, target)
 
     itineraries = db.execute(
         select(Itinerary)

@@ -2615,6 +2615,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get blockedUsersEmpty => '你还没有屏蔽任何人。';
 
   @override
+  String get profileUnavailableTitle => '账号不可用';
+
+  @override
+  String get profileUnavailableMessage => '该账号不存在或已不再可用。';
+
+  @override
   String blockedUserRemoved(String username) {
     return '已解除屏蔽 @$username。';
   }

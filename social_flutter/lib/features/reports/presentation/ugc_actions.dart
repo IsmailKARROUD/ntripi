@@ -113,6 +113,9 @@ Future<void> confirmAndBlock(
 }) async {
   final l10n = AppLocalizations.of(context)!;
   final messenger = ScaffoldMessenger.of(context);
+  // Captured before the awaits: the container outlives this widget, so the
+  // blocked-list cache still gets refreshed if the user leaves mid-request.
+  final container = ProviderScope.containerOf(context, listen: false);
 
   final confirmed = await confirmDestructiveAction(
     context: context,
@@ -121,18 +124,26 @@ Future<void> confirmAndBlock(
     message: l10n.blockUserMessage,
     confirmLabel: l10n.blockUser,
   );
-  if (!confirmed) return;
+  if (!confirmed || !context.mounted) return;
 
   try {
     await ref.read(reportRepositoryProvider).block(userId);
-    ref.invalidate(blockedUsersProvider);
-    messenger.showSnackBar(
-      SnackBar(content: Text(l10n.blockedUserAdded(username))),
-    );
-    onBlocked?.call();
   } on Exception catch (e) {
+    if (!context.mounted) return;
     messenger.showSnackBar(
       SnackBar(content: Text(extractErrorMessage(e, l10n))),
     );
+    return;
   }
+
+  // Server-side state changed regardless of whether we are still on screen.
+  container.invalidate(blockedUsersProvider);
+
+  // The POST is a network round trip and the profile is a pushed route, so the
+  // user can pop it before this lands — disposing both `ref` and `context`.
+  if (!context.mounted) return;
+  messenger.showSnackBar(
+    SnackBar(content: Text(l10n.blockedUserAdded(username))),
+  );
+  onBlocked?.call();
 }

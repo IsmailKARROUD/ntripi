@@ -2810,6 +2810,13 @@ class AppLocalizationsFr extends AppLocalizations {
   String get blockedUsersEmpty => 'Vous n\'avez bloqué personne.';
 
   @override
+  String get profileUnavailableTitle => 'Compte indisponible';
+
+  @override
+  String get profileUnavailableMessage =>
+      'Ce compte n\'existe pas ou n\'est plus disponible.';
+
+  @override
   String blockedUserRemoved(String username) {
     return '@$username débloqué.';
   }
