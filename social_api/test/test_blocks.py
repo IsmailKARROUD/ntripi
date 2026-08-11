@@ -279,6 +279,32 @@ def test_a_third_partys_follower_list_hides_the_blocked_account(client, alice, b
     assert [row["username"] for row in seen_by_alice] == ["alice"]
 
 
+def test_a_third_partys_review_list_hides_the_blocked_account(client, alice, bruno):
+    """A review carries a name, an avatar and free prose — the loudest place a
+    blocked account could still reach someone on a page neither of them owns."""
+    carla = register_user(client, "carla", "carla@example.com")
+    itinerary_id = _itinerary(client, carla["access_token"], "Carla's trip")
+    for user, stars in ((alice, 5), (bruno, 3)):
+        response = client.post(
+            f"/itineraries/{itinerary_id}/ratings",
+            json={"stars": stars},
+            headers=auth_headers(user["access_token"]),
+        )
+        assert response.status_code == 201, response.json()
+
+    _block(client, alice["access_token"], bruno["user_id"])
+
+    page = client.get(
+        f"/itineraries/{itinerary_id}/ratings",
+        headers=auth_headers(bruno["access_token"]),
+    ).json()
+
+    assert [r["user"]["username"] for r in page["ratings"]] == ["bruno"]
+    # The score is a fact about the itinerary — hiding a row must not rewrite it.
+    assert page["rating_count"] == 2
+    assert page["distribution"]["five"] == 1
+
+
 def test_a_third_partys_following_list_hides_the_blocked_account(client, alice, bruno):
     """Carla follows both. Alice and Bruno must not see each other in her list."""
     carla = register_user(client, "carla", "carla@example.com")

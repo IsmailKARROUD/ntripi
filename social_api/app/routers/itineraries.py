@@ -84,7 +84,7 @@ from app.schemas.itinerary import (
     TransportLegUpdate,
 )
 from app.services import notification_service
-from app.services.block_service import require_not_blocked_or_404
+from app.services.block_service import blocked_user_ids, require_not_blocked_or_404
 from app.services.image_service import ImageProcessingError, process_and_store, process_cover_image
 from app.services.moderation_service import ModerationContext, ModerationRejectedError
 from app.services.moderation_actions import escalate_if_flagged
@@ -1610,6 +1610,9 @@ def get_ratings_page(
         .order_by(ItineraryRating.updated_at.desc())
     ).all()
 
+    # Distribution is computed over ALL rows, before the block filter below: the
+    # score is a fact about the itinerary, so hiding a blocked author's row must
+    # not make the histogram (or rating_avg/rating_count) disagree per viewer.
     dist: dict[int, int] = {1: 0, 2: 0, 3: 0, 4: 0, 5: 0}
     for row in rows:
         dist[row.stars] += 1
@@ -1617,6 +1620,10 @@ def get_ratings_page(
     distribution = RatingDistribution(
         five=dist[5], four=dist[4], three=dist[3], two=dist[2], one=dist[1]
     )
+
+    # A review carries its author's name, avatar and prose — the last surface
+    # where a blocked account was still fully visible on a third party's page.
+    hidden_raters = set(blocked_user_ids(db, current_user.id))
 
     ratings = [
         RatingWithUser(
@@ -1648,6 +1655,7 @@ def get_ratings_page(
             ),
         )
         for row in rows
+        if row.user_id not in hidden_raters
     ]
 
     return RatingsPageResponse(
