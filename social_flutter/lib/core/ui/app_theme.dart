@@ -57,6 +57,22 @@ abstract final class NtripiBrand {
   static const chrome40 = Color(0x66FFFFFF); // 40% chrome — splash motto
   static const scrimInk = _bark; // gradient scrim base over photos
   static const backdrop = Colors.black;      // fullscreen photo-viewer bg, over-tile shadows
+
+  // Third-party sign-in buttons. These are the PROVIDER's brand, not ours, and
+  // their guidelines fix the colors — a Google button is white and an Apple
+  // button is black in either theme, so none of these may flip with brightness.
+  static const googleFill = Colors.white;
+  static const googleInk = Color(0xFF1F1F1F);    // Google's button text ink
+  static const googleStroke = Color(0xFF747775); // Google's light-button stroke
+  static const appleFill = Colors.black;
+  static const appleInk = Colors.white;
+
+  // The Google mark's own four colors, drawn only by [GoogleGLogo]. The logo
+  // may not be recolored, so these never vary — not even for a dark button.
+  static const googleMarkRed = Color(0xFFEA4335);
+  static const googleMarkBlue = Color(0xFF4285F4);
+  static const googleMarkYellow = Color(0xFFFBBC05);
+  static const googleMarkGreen = Color(0xFF34A853);
 }
 
 /// Theme-dependent design tokens. Resolve via `context.nt`.

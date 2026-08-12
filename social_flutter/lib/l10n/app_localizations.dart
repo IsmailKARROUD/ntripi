@@ -346,11 +346,17 @@ abstract class AppLocalizations {
   /// **'Sign up'**
   String get loginSignUp;
 
-  /// No description provided for @loginOrContinueWith.
+  /// No description provided for @loginOrWithEmail.
   ///
   /// In en, this message translates to:
-  /// **'or continue with'**
-  String get loginOrContinueWith;
+  /// **'or sign in with email'**
+  String get loginOrWithEmail;
+
+  /// No description provided for @loginContinueWithProvider.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue with {provider}'**
+  String loginContinueWithProvider(String provider);
 
   /// No description provided for @registerTitle.
   ///

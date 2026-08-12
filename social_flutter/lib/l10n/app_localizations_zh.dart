@@ -129,7 +129,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get loginSignUp => '注册';
 
   @override
-  String get loginOrContinueWith => '或使用以下方式继续';
+  String get loginOrWithEmail => '或使用邮箱登录';
+
+  @override
+  String loginContinueWithProvider(String provider) {
+    return '使用 $provider 继续';
+  }
 
   @override
   String get registerTitle => '创建账号';

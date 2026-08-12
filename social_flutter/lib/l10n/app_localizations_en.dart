@@ -135,7 +135,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get loginSignUp => 'Sign up';
 
   @override
-  String get loginOrContinueWith => 'or continue with';
+  String get loginOrWithEmail => 'or sign in with email';
+
+  @override
+  String loginContinueWithProvider(String provider) {
+    return 'Continue with $provider';
+  }
 
   @override
   String get registerTitle => 'Create account';

@@ -363,26 +363,27 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 ),
                 const SizedBox(height: 28),
 
-                // Sign in link
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      l10n.registerAlreadyHaveAccount,
-                      style: TextStyle(fontSize: 14, color: nt.text2),
+                // Sign in — a button, mirroring the login screen's footer
+                Center(
+                  child: Text(
+                    l10n.registerAlreadyHaveAccount,
+                    style: TextStyle(fontSize: 14, color: nt.text2),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                SizedBox(
+                  height: 54,
+                  child: OutlinedButton(
+                    onPressed: () => context.go('/login'),
+                    style: OutlinedButton.styleFrom(
+                      side: BorderSide(color: nt.forest),
                     ),
-                    GestureDetector(
-                      onTap: () => context.go('/login'),
-                      child: Text(
-                        l10n.registerSignIn,
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w700,
-                          color: nt.forest,
-                        ),
-                      ),
+                    child: Text(
+                      l10n.registerSignIn,
+                      style: const TextStyle(
+                          fontSize: 16, fontWeight: FontWeight.w700),
                     ),
-                  ],
+                  ),
                 ),
               ],
             ),

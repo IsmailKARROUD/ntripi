@@ -9,6 +9,7 @@ import 'package:social_flutter/core/auth/google_people_client.dart';
 import 'package:social_flutter/core/auth/google_signin_service.dart';
 import 'package:social_flutter/core/auth/google_web_button.dart';
 import 'package:social_flutter/core/ui/app_theme.dart';
+import 'package:social_flutter/core/ui/google_g_logo.dart';
 import 'package:social_flutter/core/ui/ntripi_logo.dart';
 import 'package:social_flutter/features/auth/data/auth_repository.dart';
 import 'package:social_flutter/features/auth/presentation/widgets/google_tos_consent_sheet.dart';
@@ -45,6 +46,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   /// suspension (the interceptor also routes to /suspended, but the user can
   /// walk back here and retry).
   String? _errorCode;
+
+  /// Which control failed — the banner renders beside it. With the social
+  /// buttons above the form, one fixed slot would report a Google failure a
+  /// scroll away from the button that caused it.
+  bool _errorFromSocial = false;
   bool _obscurePassword = true;
 
   @override
@@ -76,6 +82,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       _isLoading = true;
       _errorMessage = null;
       _errorCode = null;
+      _errorFromSocial = false;
     });
     try {
       final repo = ref.read(authRepositoryProvider);
@@ -102,6 +109,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       _isLoading = true;
       _errorMessage = null;
       _errorCode = null;
+      _errorFromSocial = true;
     });
     try {
       final idToken = await GoogleSignInService.instance.obtainIdToken();
@@ -126,6 +134,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       _isLoading = true;
       _errorMessage = null;
       _errorCode = null;
+      _errorFromSocial = true;
     });
     try {
       await _completeGoogleSignIn(idToken);
@@ -139,7 +148,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   void _onWebGoogleError(Object error) {
-    if (mounted) _showGenericError();
+    if (!mounted) return;
+    setState(() => _errorFromSocial = true);
+    _showGenericError();
   }
 
   /// Shared tail for both flows: persist tokens (done in the repo) then route in.
@@ -250,6 +261,77 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 ),
                 const SizedBox(height: 28),
 
+                // A social failure reports itself here, next to the buttons
+                if (_errorMessage != null && _errorFromSocial) ...[
+                  _ErrorBanner(
+                    _errorMessage!,
+                    onAppeal: _errorCode == kAccountDeactivatedCode
+                        ? openAppealPage
+                        : null,
+                  ),
+                  const SizedBox(height: 16),
+                ],
+
+                // Social sign-in — the fastest way in, so it leads the screen
+                SizedBox(
+                  height: 54,
+                  child: OfflineGate(
+                    // Web can't use authenticate() — render Google's own button,
+                    // centered at its intrinsic width rather than stretched.
+                    builder: (online) => kIsWeb
+                        ? Align(
+                            child: GoogleWebButton(
+                              onIdToken: _onWebGoogleIdToken,
+                              onError: _onWebGoogleError,
+                            ),
+                          )
+                        : _SocialButton(
+                            label: l10n.loginContinueWithProvider('Google'),
+                            fill: NtripiBrand.googleFill,
+                            ink: NtripiBrand.googleInk,
+                            stroke: NtripiBrand.googleStroke,
+                            // The mark keeps its own four colors, so it takes
+                            // only the content color's alpha — that is what
+                            // dims it along with the label when disabled.
+                            iconBuilder: (color) => Opacity(
+                              opacity: color.a,
+                              child: const GoogleGLogo(size: 18),
+                            ),
+                            onPressed: (_isLoading || !online)
+                                ? null
+                                : _loginWithGoogle,
+                          ),
+                  ),
+                ),
+                if (isApplePlatform()) ...[
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    height: 54,
+                    child: _SocialButton(
+                      label: l10n.loginContinueWithProvider('Apple'),
+                      fill: NtripiBrand.appleFill,
+                      ink: NtripiBrand.appleInk,
+                      // White contour, so the black slab still has an edge
+                      // against a dark surface.
+                      stroke: NtripiBrand.appleInk,
+                      iconBuilder: (color) =>
+                          Icon(Icons.apple, size: 20, color: color),
+                      // Explicit handler rather than the old null-onPressed
+                      // fallback: null now means genuinely disabled, which is
+                      // what the Google button uses it for when offline.
+                      onPressed: () =>
+                          ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text(l10n.comingSoon)),
+                      ),
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 24),
+
+                // Divider
+                _OrDivider(label: l10n.loginOrWithEmail),
+                const SizedBox(height: 24),
+
                 // Email or username field
                 _FieldLabel(
                   l10n.loginEmailLabel,
@@ -313,7 +395,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 const SizedBox(height: 4),
 
                 // Error banner — a suspension gets a way out, not a dead end
-                if (_errorMessage != null) ...[
+                if (_errorMessage != null && !_errorFromSocial) ...[
                   _ErrorBanner(
                     _errorMessage!,
                     onAppeal: _errorCode == kAccountDeactivatedCode
@@ -335,73 +417,34 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     ),
                   ),
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 28),
 
-                // Divider
-                _OrDivider(label: l10n.loginOrContinueWith),
-                const SizedBox(height: 20),
-
-                // Social sign-in buttons
-                Row(
-                  children: [
-                    Expanded(
-                      // Web can't use authenticate() — render Google's own button.
-                      child: OfflineGate(
-                        builder: (online) => kIsWeb
-                            ? GoogleWebButton(
-                                onIdToken: _onWebGoogleIdToken,
-                                onError: _onWebGoogleError,
-                              )
-                            : _SocialButton(
-                                label: 'Google',
-                                icon: Text(
-                                  'G',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w700,
-                                    color: nt.bark,
-                                  ),
-                                ),
-                                onPressed: (_isLoading || !online)
-                                    ? null
-                                    : _loginWithGoogle,
-                              ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                   isApplePlatform() ? Expanded(
-                      child: _SocialButton(
-                        label: 'Apple',
-                        icon: Icon(Icons.apple, size: 20, color: nt.bark),
-                      ),
-                    ) : const SizedBox.shrink(),
-                  ],
+                // Register — a button, not a text span: signing up is the whole
+                // point of the screen for anyone who has no account yet.
+                Center(
+                  child: Text(
+                    l10n.loginNoAccount,
+                    style: TextStyle(fontSize: 14, color: nt.text2),
+                  ),
                 ),
-                const SizedBox(height: 32),
-
-                // Register link
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      l10n.loginNoAccount,
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: nt.text2,
-                      ),
+                const SizedBox(height: 10),
+                SizedBox(
+                  height: 54,
+                  child: OutlinedButton(
+                    onPressed: () => context.go('/register'),
+                    // Forest border, unlike the social buttons' hairline —
+                    // three identical outlines would flatten the hierarchy.
+                    style: OutlinedButton.styleFrom(
+                      side: BorderSide(color: nt.forest),
                     ),
-                    GestureDetector(
-                      onTap: () => context.go('/register'),
-                      child: Text(
-                        l10n.loginSignUp,
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w700,
-                          color: nt.forest,
-                        ),
-                      ),
+                    // Size/weight only — merging with the inherited style keeps
+                    // the theme's DM Sans family.
+                    child: Text(
+                      l10n.registerCreateAccount,
+                      style: const TextStyle(
+                          fontSize: 16, fontWeight: FontWeight.w700),
                     ),
-                  ],
+                  ),
                 ),
               ],
             ),
@@ -525,38 +568,63 @@ class _OrDivider extends StatelessWidget {
   }
 }
 
+/// A provider sign-in button in the provider's own colors.
+///
+/// [fill] / [ink] / [stroke] come from [NtripiBrand] and are deliberately
+/// brightness-independent: Google's guidelines fix a white button and Apple's a
+/// black one, so neither may follow the app's light/dark theme.
 class _SocialButton extends StatelessWidget {
   final String label;
-  final Widget icon;
+
+  /// Built with the resolved content color — the icon dims with the label when
+  /// the button is disabled, and it inherits [ink] rather than repeating it.
+  final Widget Function(Color color) iconBuilder;
   final VoidCallback? onPressed;
-  const _SocialButton({required this.label, required this.icon, this.onPressed});
+  final Color fill;
+  final Color ink;
+  final Color stroke;
+  const _SocialButton({
+    required this.label,
+    required this.iconBuilder,
+    required this.fill,
+    required this.ink,
+    required this.stroke,
+    this.onPressed,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final nt = context.nt;
+    // The fill stays brand-correct while disabled (a greyed-out white Google
+    // button is still a white Google button); only the content dims.
+    final enabled = onPressed != null;
+    final content = enabled ? ink : ink.withValues(alpha: 0.45);
     return OutlinedButton(
-      // Default (no onPressed, e.g. the Apple placeholder): "coming soon".
-      onPressed: onPressed ??
-          () => ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text(AppLocalizations.of(context)!.comingSoon)),
-              ),
+      onPressed: onPressed,
       style: OutlinedButton.styleFrom(
         padding: const EdgeInsets.symmetric(vertical: 14),
-        backgroundColor: nt.surface,
-        side: BorderSide(color: nt.border),
+        backgroundColor: fill,
+        disabledBackgroundColor: fill,
+        side: BorderSide(
+            color: enabled ? stroke : stroke.withValues(alpha: 0.45)),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          icon,
+          iconBuilder(content),
           const SizedBox(width: 8),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: nt.bark,
+          // Flexible, not bare Text — "Continue with …" translates long (Arabic
+          // is ~200 px) and the button is one fixed-height line.
+          Flexible(
+            child: Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: content,
+              ),
             ),
           ),
         ],

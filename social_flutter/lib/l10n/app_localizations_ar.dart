@@ -134,7 +134,12 @@ class AppLocalizationsAr extends AppLocalizations {
   String get loginSignUp => 'إنشاء حساب';
 
   @override
-  String get loginOrContinueWith => 'أو سجّل الدخول باستخدام';
+  String get loginOrWithEmail => 'أو بالبريد الإلكتروني';
+
+  @override
+  String loginContinueWithProvider(String provider) {
+    return 'تسجيل الدخول باستخدام $provider';
+  }
 
   @override
   String get registerTitle => 'إنشاء حساب';

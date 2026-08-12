@@ -40,7 +40,15 @@
   "loginSignIn": "Sign In",
   "loginNoAccount": "Don't have an account? ",
   "loginSignUp": "Sign up",
-  "loginOrContinueWith": "or continue with",
+  "loginOrWithEmail": "or sign in with email",
+  "loginContinueWithProvider": "Continue with {provider}",
+  "@loginContinueWithProvider": {
+    "placeholders": {
+      "provider": {
+        "type": "String"
+      }
+    }
+  },
   "registerTitle": "Create account",
   "registerSubtitle": "Join thousands of explorers sharing routes",
   "registerDisplayName": "Display Name",
