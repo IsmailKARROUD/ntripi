@@ -9,7 +9,7 @@ import time
 
 from fastapi.testclient import TestClient
 
-from conftest import register_user, auth_headers
+from conftest import auth_headers, edit_now, register_user
 
 
 def _create_itinerary(client: TestClient, token: str, title: str,
@@ -122,12 +122,14 @@ class TestSavedListBehavior:
 
         # Owner makes it private — it must drop out of Bobby's saved list...
         client.patch(f"/itineraries/{it_id}", json={"visibility": "only_me"},
-                     headers=auth_headers(alice["access_token"]))
+                     headers=edit_now(client, it_id,
+                                      auth_headers(alice["access_token"])))
         assert _saved_ids(client, bobby["access_token"]) == []
 
         # ...but the row is preserved: making it public again restores it.
         client.patch(f"/itineraries/{it_id}", json={"visibility": "public"},
-                     headers=auth_headers(alice["access_token"]))
+                     headers=edit_now(client, it_id,
+                                      auth_headers(alice["access_token"])))
         assert _saved_ids(client, bobby["access_token"]) == [it_id]
 
     def test_delete_itinerary_cascades_saved_row(self, client: TestClient):

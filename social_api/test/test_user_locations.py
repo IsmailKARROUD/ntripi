@@ -9,7 +9,7 @@ non-visible itineraries must never leak.
 import pytest
 from fastapi.testclient import TestClient
 
-from conftest import auth_headers, register_user
+from conftest import auth_headers, locked_headers, register_user
 
 
 # ---------------------------------------------------------------------------
@@ -43,7 +43,7 @@ def _add_stop(client: TestClient, hdrs: dict, itin_id: str, etag: str,
     r = client.post(
         f"/itineraries/{itin_id}/stops",
         json=body,
-        headers={**hdrs, "If-Match": etag},
+        headers=locked_headers(client, itin_id, hdrs, etag),
     )
     assert r.status_code == 201, r.text
     return r.json(), r.headers["etag"]

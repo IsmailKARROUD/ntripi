@@ -93,7 +93,7 @@ void main() {
         _itinId,
         _stopId,
         {'track_id': 't2'},
-        etag: _etag,
+        etag: _etag, lockToken: 'lock-token',
       );
 
       expect(stop.trackId, 't2');
@@ -115,7 +115,7 @@ void main() {
         _itinId,
         _stopId,
         {'after_track_id': 't1', 'before_track_id': 't2'},
-        etag: _etag,
+        etag: _etag, lockToken: 'lock-token',
       );
 
       expect(stop.trackId, 'new-track-id');
@@ -133,7 +133,7 @@ void main() {
       final repo = ItineraryRepository(dio);
 
       await expectLater(
-        repo.updateStop(_itinId, _stopId, {'track_id': 't2'}, etag: _etag),
+        repo.updateStop(_itinId, _stopId, {'track_id': 't2'}, etag: _etag, lockToken: 'lock-token'),
         throwsA(isA<ItineraryStaleException>()),
       );
     });
@@ -153,7 +153,7 @@ void main() {
       // If the header doesn't match, the adapter returns 404 (no route),
       // which would bubble as a DioException. We assert success.
       await expectLater(
-        repo.updateStop(_itinId, _stopId, {'track_id': 't2'}, etag: _etag),
+        repo.updateStop(_itinId, _stopId, {'track_id': 't2'}, etag: _etag, lockToken: 'lock-token'),
         completes,
       );
     });
@@ -182,7 +182,7 @@ void main() {
         stopOrders: {
           't1': ['s2', 's1'],
         },
-        etag: _etag,
+        etag: _etag, lockToken: 'lock-token',
       );
 
       expect(itin.id, _itinId);
@@ -206,7 +206,7 @@ void main() {
         _itinId,
         trackOrder: ['t3', 't1', 't2'],
         segmentIdsToDelete: ['seg-1'],
-        etag: _etag,
+        etag: _etag, lockToken: 'lock-token',
       );
 
       expect(itin.id, _itinId);
@@ -227,7 +227,7 @@ void main() {
       // Don't await — server-side would 422 in real flow; we only care that
       // the *client* sends the empty body it has built.
       await expectLater(
-        repo.reorderItinerary(_itinId, stopOrders: {}, etag: _etag),
+        repo.reorderItinerary(_itinId, stopOrders: {}, etag: _etag, lockToken: 'lock-token'),
         completes,
       );
     });
@@ -252,7 +252,7 @@ void main() {
           stopOrders: {
             't1': ['s1'],
           },
-          etag: _etag,
+          etag: _etag, lockToken: 'lock-token',
         ),
         throwsA(isA<ItineraryStaleException>()),
       );
@@ -278,7 +278,7 @@ void main() {
           stopOrders: {
             't1': ['s1'],
           },
-          etag: _etag,
+          etag: _etag, lockToken: 'lock-token',
         ),
         completes,
       );

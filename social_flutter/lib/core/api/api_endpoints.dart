@@ -151,6 +151,29 @@ String itineraryAllowedUserEndpoint(String id, String userId) =>
     '/itineraries/$id/allowed-users/$userId';
 
 // ---------------------------------------------------------------------------
+// Collaborative editing — editors and the edit lock
+// ---------------------------------------------------------------------------
+
+/// The HTTP header carrying the edit claim on every itinerary mutation.
+/// Must also be listed in the backend's CORS allow_headers, or the browser
+/// preflight fails before the request is ever sent.
+const kEditLockHeader = 'X-Edit-Lock';
+
+/// List or add users who may edit this itinerary.
+String itineraryEditorsEndpoint(String id) => '/itineraries/$id/editors';
+
+/// Revoke a specific user's edit rights.
+String itineraryEditorEndpoint(String id, String userId) =>
+    '/itineraries/$id/editors/$userId';
+
+/// Claim (POST), read (GET), or release (DELETE) the edit lock.
+String itineraryLockEndpoint(String id) => '/itineraries/$id/lock';
+
+/// Keep a claim alive while the user is editing.
+String itineraryLockHeartbeatEndpoint(String id) =>
+    '/itineraries/$id/lock/heartbeat';
+
+// ---------------------------------------------------------------------------
 // User itinerary endpoints
 // ---------------------------------------------------------------------------
 

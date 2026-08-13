@@ -226,6 +226,19 @@ class Settings(BaseSettings):
     # might carry lives permanently on /settings/account-status either way.
     NOTIFICATION_MAX_AGE_DAYS: int = 365
 
+    # ── Collaborative editing: the edit lock ────────────────────────────────
+    # There is no expires_at column — staleness is derived from
+    # last_heartbeat_at against these windows at read time, so raising the TTL
+    # takes effect on claims that already exist.
+    # What the server tells the client to use as its ping interval.
+    EDIT_LOCK_HEARTBEAT_SECONDS: int = 30
+    # Three missed beats and the holder renders to other editors as "inactive".
+    # Purely presentational: nobody may take the claim yet.
+    EDIT_LOCK_IDLE_SECONDS: int = 90
+    # Silence this long and any editor may take the claim over. The owner never
+    # waits for it.
+    EDIT_LOCK_TTL_SECONDS: int = 300
+
     # Tell pydantic-settings to look for a .env file in the working directory.
     # extra="ignore" means unknown .env keys don't cause validation errors.
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
@@ -256,6 +269,24 @@ class Settings(BaseSettings):
             raise ValueError(
                 "NOTIFICATION_MAX_AGE_DAYS must be >= NOTIFICATION_RETENTION_DAYS"
             )
+        return self
+
+    @model_validator(mode="after")
+    def _validate_edit_lock_windows(self) -> "Settings":
+        # A claim that becomes takeable before it even reads as inactive would
+        # be stolen out from under someone the UI still shows as editing.
+        if self.EDIT_LOCK_TTL_SECONDS <= self.EDIT_LOCK_IDLE_SECONDS:
+            raise ValueError(
+                "EDIT_LOCK_TTL_SECONDS must be > EDIT_LOCK_IDLE_SECONDS"
+            )
+        # One dropped ping is normal on mobile; flagging the holder inactive
+        # after a single miss would make the indicator meaningless.
+        if self.EDIT_LOCK_IDLE_SECONDS < 2 * self.EDIT_LOCK_HEARTBEAT_SECONDS:
+            raise ValueError(
+                "EDIT_LOCK_IDLE_SECONDS must be >= 2 * EDIT_LOCK_HEARTBEAT_SECONDS"
+            )
+        if self.EDIT_LOCK_HEARTBEAT_SECONDS < 5:
+            raise ValueError("EDIT_LOCK_HEARTBEAT_SECONDS must be >= 5")
         return self
 
     @property

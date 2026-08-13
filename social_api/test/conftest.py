@@ -294,6 +294,82 @@ def admin_session(client: TestClient, identifier: str, password: str = "test1234
     return token
 
 
+# ---------------------------------------------------------------------------
+# Collaborative-editing helpers
+# ---------------------------------------------------------------------------
+
+def acquire_edit_lock(client: TestClient, itinerary_id: str, headers: dict,
+                      *, takeover: bool = False) -> str:
+    """Claim the edit lock and return the raw token.
+
+    Every itinerary-content mutation requires one, so any test that writes to an
+    itinerary starts here. `takeover=True` is needed to displace an existing
+    claim — including the caller's own claim from another "device".
+    """
+    response = client.post(
+        f"/itineraries/{itinerary_id}/lock",
+        json={"takeover": takeover}, headers=headers,
+    )
+    assert response.status_code == 200, response.text
+    return response.json()["token"]
+
+
+def edit_headers(headers: dict, etag: str, token: str) -> dict:
+    """Auth + the two preconditions every content mutation carries."""
+    return {**headers, "If-Match": etag, "X-Edit-Lock": token}
+
+
+def locked_headers(client: TestClient, itinerary_id: str, headers: dict,
+                   etag: str) -> dict:
+    """Auth + If-Match + a freshly claimed X-Edit-Lock, in one call.
+
+    For the many tests that mutate an itinerary while testing something else
+    entirely. It claims with takeover=True so repeated calls — and calls from a
+    second account — just work, rather than making every unrelated test thread
+    a token through its own helpers. Claiming does not touch updated_at, so an
+    ETag captured beforehand stays valid.
+
+    Tests that are ABOUT the lock use acquire_edit_lock and hold their token:
+    that is the whole point there.
+    """
+    token = acquire_edit_lock(client, itinerary_id, headers, takeover=True)
+    return edit_headers(headers, etag, token)
+
+
+def edit_now(client: TestClient, itinerary_id: str, headers: dict) -> dict:
+    """locked_headers, but it fetches the current ETag for you too.
+
+    For tests that only need to write something on the way to testing something
+    else. Anything actually exercising If-Match must hold its own ETag — reading
+    a fresh one here is exactly what those tests must not do.
+    """
+    response = client.get(f"/itineraries/{itinerary_id}", headers=headers)
+    assert response.status_code == 200, response.text
+    return locked_headers(client, itinerary_id, headers, response.headers["etag"])
+
+
+def backdate_lock_heartbeat(itinerary_id: str, seconds: int) -> None:
+    """Age a claim by `seconds`, straight through the DB.
+
+    There is no way to make a claim go stale through the API, and sleeping for
+    five minutes is not a test. Mirrors _age_report in test_moderation_sweep.py.
+    """
+    import uuid as _uuid
+    from datetime import datetime, timedelta, timezone
+    from app.models.itinerary_edit_lock import ItineraryEditLock
+
+    db = TestingSessionLocal()
+    try:
+        lock = db.get(ItineraryEditLock, _uuid.UUID(itinerary_id))
+        assert lock is not None, "no edit lock to backdate"
+        lock.last_heartbeat_at = (
+            datetime.now(timezone.utc) - timedelta(seconds=seconds)
+        )
+        db.commit()
+    finally:
+        db.close()
+
+
 def etag_from_updated_at(updated_at_iso: str) -> str:
     """
     Derive the wire ETag the server emits for a given `updated_at`.

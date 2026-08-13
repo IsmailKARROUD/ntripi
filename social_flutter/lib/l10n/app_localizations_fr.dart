@@ -3148,4 +3148,140 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get notificationsClearAllMessage =>
       'Toutes les notifications seront retirées de votre fil. Les avis de modération restent sur votre page État du compte.';
+
+  @override
+  String get apiErrorItineraryLocked =>
+      'Quelqu\'un d\'autre modifie cet itinéraire en ce moment.';
+
+  @override
+  String get apiErrorEditLockRequired =>
+      'Passez en mode édition avant d\'enregistrer.';
+
+  @override
+  String get apiErrorEditLockLost =>
+      'Votre session d\'édition a été reprise. Vos modifications n\'ont pas été enregistrées.';
+
+  @override
+  String get apiErrorEditorCannotView =>
+      'Cette personne ne peut pas voir cet itinéraire, elle ne peut donc pas le modifier.';
+
+  @override
+  String get apiErrorEditorExists =>
+      'Cette personne peut déjà modifier cet itinéraire.';
+
+  @override
+  String get apiErrorEditorNotFound =>
+      'Cette personne n\'est pas éditrice de cet itinéraire.';
+
+  @override
+  String get apiErrorEditorIsOwner =>
+      'Vous avez déjà tous les droits de modification.';
+
+  @override
+  String get editorsTitle => 'Qui peut modifier';
+
+  @override
+  String get editorsSubtitle =>
+      'Les éditeurs peuvent changer la description, les étapes et les notes. Vous seul pouvez supprimer le voyage, changer qui peut le voir ou gérer cette liste.';
+
+  @override
+  String get editorsEmpty =>
+      'Personne d\'autre ne peut encore modifier ce voyage.';
+
+  @override
+  String get editorsAdd => 'Ajouter un éditeur';
+
+  @override
+  String get editorsSearchHint => 'Rechercher par nom d\'utilisateur';
+
+  @override
+  String get editorsRemoveTitle => 'Retirer l\'éditeur ?';
+
+  @override
+  String editorsRemoveMessage(Object name) {
+    return '$name ne pourra plus modifier ce voyage. Ce qui a déjà été ajouté reste.';
+  }
+
+  @override
+  String editorsRemoved(Object name) {
+    return '$name ne peut plus modifier';
+  }
+
+  @override
+  String get editorsGrantViewTitle => 'Lui donner l\'accès aussi ?';
+
+  @override
+  String editorsGrantViewMessage(Object name) {
+    return '$name ne peut pas encore voir ce voyage. Ajoutez cette personne aux personnes autorisées à le voir, pour qu\'elle puisse le modifier.';
+  }
+
+  @override
+  String get editorsGrantViewConfirm => 'Ajouter et donner l\'accès';
+
+  @override
+  String editorsChangeVisibilityMessage(Object name) {
+    return '$name ne peut pas voir ce voyage. Changez d\'abord qui peut le voir, puis ajoutez cette personne comme éditrice.';
+  }
+
+  @override
+  String get editorsOpenVisibility => 'Changer la visibilité';
+
+  @override
+  String editLockSomeoneEditing(Object name) {
+    return '$name est en train de modifier';
+  }
+
+  @override
+  String editLockSomeoneEditingIdle(Object name) {
+    return '$name est en train de modifier · absent';
+  }
+
+  @override
+  String editLockAvailableIn(Object time) {
+    return 'Vous pourrez reprendre dans $time';
+  }
+
+  @override
+  String get editLockAvailableNow => 'Vous pouvez reprendre maintenant';
+
+  @override
+  String get editLockTakeOver => 'Reprendre';
+
+  @override
+  String get editLockYouElsewhere => 'Vous modifiez ceci sur un autre appareil';
+
+  @override
+  String get editLockMoveHere => 'Continuer ici';
+
+  @override
+  String get editLockMoveHereMessage =>
+      'Votre autre appareil ne pourra plus enregistrer. Ce qui n\'y est pas enregistré y reste.';
+
+  @override
+  String get editLockLostTitle => 'Votre session d\'édition a été reprise';
+
+  @override
+  String editLockLostMessage(Object name) {
+    return '$name modifie maintenant, cette modification n\'a donc pas été enregistrée. Votre texte est toujours là — copiez ce dont vous avez besoin, ou essayez de reprendre la session.';
+  }
+
+  @override
+  String get editLockLostMessageUnknown =>
+      'Quelqu\'un d\'autre modifie maintenant, cette modification n\'a donc pas été enregistrée. Votre texte est toujours là — copiez ce dont vous avez besoin, ou essayez de reprendre la session.';
+
+  @override
+  String get editLockReclaim => 'Essayer de reprendre';
+
+  @override
+  String get editLockReclaimed => 'Vous modifiez à nouveau';
+
+  @override
+  String get editLockCopyText => 'Copier mon texte';
+
+  @override
+  String get editLockCopied => 'Copié';
+
+  @override
+  String get editLockOwnerCanReclaim =>
+      'Ce voyage est le vôtre — vous pouvez reprendre à tout moment.';
 }

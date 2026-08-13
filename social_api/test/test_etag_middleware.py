@@ -9,7 +9,7 @@ test-only routes so the test reflects production behaviour faithfully.
 
 from fastapi.testclient import TestClient
 
-from conftest import auth_headers, register_user
+from conftest import auth_headers, locked_headers, register_user
 
 
 class TestETagMiddleware:
@@ -197,10 +197,9 @@ class TestETagMiddleware:
         ann = client.post(
             f"/itineraries/{itin_id}/annotations",
             json={"type": "info", "content": "remember sunscreen"},
-            headers={
-                **auth_headers(owner["access_token"]),
-                "If-Match": first_etag,
-            },
+            headers=locked_headers(client, itin_id,
+                                   auth_headers(owner["access_token"]),
+                                   first_etag),
         )
         assert ann.status_code == 201
 

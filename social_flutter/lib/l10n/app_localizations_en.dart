@@ -3089,4 +3089,137 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get notificationsClearAllMessage =>
       'Every notification will be removed from your feed. Moderation notices stay on your Account status page.';
+
+  @override
+  String get apiErrorItineraryLocked =>
+      'Someone else is editing this itinerary right now.';
+
+  @override
+  String get apiErrorEditLockRequired => 'Start editing before saving changes.';
+
+  @override
+  String get apiErrorEditLockLost =>
+      'Your editing session was taken over. Your changes were not saved.';
+
+  @override
+  String get apiErrorEditorCannotView =>
+      'This person can\'t see this itinerary, so they can\'t edit it.';
+
+  @override
+  String get apiErrorEditorExists =>
+      'This person can already edit this itinerary.';
+
+  @override
+  String get apiErrorEditorNotFound =>
+      'This person is not an editor of this itinerary.';
+
+  @override
+  String get apiErrorEditorIsOwner => 'You already have full edit rights.';
+
+  @override
+  String get editorsTitle => 'Who can edit';
+
+  @override
+  String get editorsSubtitle =>
+      'Editors can change the description, stops and notes. Only you can delete the trip, change who can see it, or manage this list.';
+
+  @override
+  String get editorsEmpty => 'Nobody else can edit this trip yet.';
+
+  @override
+  String get editorsAdd => 'Add an editor';
+
+  @override
+  String get editorsSearchHint => 'Search by username';
+
+  @override
+  String get editorsRemoveTitle => 'Remove editor?';
+
+  @override
+  String editorsRemoveMessage(Object name) {
+    return '$name will no longer be able to change this trip. Anything they already added stays.';
+  }
+
+  @override
+  String editorsRemoved(Object name) {
+    return '$name can no longer edit';
+  }
+
+  @override
+  String get editorsGrantViewTitle => 'Give them access too?';
+
+  @override
+  String editorsGrantViewMessage(Object name) {
+    return '$name can\'t see this trip yet. Add them to the people who can view it, so they can edit it.';
+  }
+
+  @override
+  String get editorsGrantViewConfirm => 'Add and give access';
+
+  @override
+  String editorsChangeVisibilityMessage(Object name) {
+    return '$name can\'t see this trip. Change who can see it first, then add them as an editor.';
+  }
+
+  @override
+  String get editorsOpenVisibility => 'Change visibility';
+
+  @override
+  String editLockSomeoneEditing(Object name) {
+    return '$name is editing';
+  }
+
+  @override
+  String editLockSomeoneEditingIdle(Object name) {
+    return '$name is editing · away';
+  }
+
+  @override
+  String editLockAvailableIn(Object time) {
+    return 'You can take over in $time';
+  }
+
+  @override
+  String get editLockAvailableNow => 'You can take over now';
+
+  @override
+  String get editLockTakeOver => 'Take over';
+
+  @override
+  String get editLockYouElsewhere => 'You\'re editing this on another device';
+
+  @override
+  String get editLockMoveHere => 'Continue here';
+
+  @override
+  String get editLockMoveHereMessage =>
+      'Your other device will not be able to save. Anything unsaved there stays on that device.';
+
+  @override
+  String get editLockLostTitle => 'Your editing session was taken over';
+
+  @override
+  String editLockLostMessage(Object name) {
+    return '$name is editing now, so this change wasn\'t saved. Your text is still here — copy anything you need, or try to take the session back.';
+  }
+
+  @override
+  String get editLockLostMessageUnknown =>
+      'Somebody else is editing now, so this change wasn\'t saved. Your text is still here — copy anything you need, or try to take the session back.';
+
+  @override
+  String get editLockReclaim => 'Try to take it back';
+
+  @override
+  String get editLockReclaimed => 'You\'re editing again';
+
+  @override
+  String get editLockCopyText => 'Copy my text';
+
+  @override
+  String get editLockCopied => 'Copied';
+
+  @override
+  String get editLockOwnerCanReclaim =>
+      'You own this trip — you can take over at any time.';
 }

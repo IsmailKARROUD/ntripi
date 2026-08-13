@@ -615,6 +615,19 @@ class _ItineraryFormScreenState extends ConsumerState<ItineraryFormScreen> {
                       iconColor: visColor,
                       onTap: _showVisibilityPicker,
                     ),
+                    // Edit mode only: granting edit rights needs an itinerary
+                    // that exists, and the server rejects an editor who cannot
+                    // yet see it — both of which are unanswerable during create.
+                    if (widget.mode == ItineraryFormMode.edit) ...[
+                      const _FieldDivider(),
+                      _PickerRow(
+                        icon: Icons.edit_note_rounded,
+                        label: l10n.editorsTitle,
+                        value: '',
+                        onTap: () => context
+                            .push('/itineraries/${widget.itineraryId}/editors'),
+                      ),
+                    ],
                   ],
                 ),
               ],

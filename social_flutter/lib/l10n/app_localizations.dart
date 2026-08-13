@@ -5463,6 +5463,222 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Every notification will be removed from your feed. Moderation notices stay on your Account status page.'**
   String get notificationsClearAllMessage;
+
+  /// No description provided for @apiErrorItineraryLocked.
+  ///
+  /// In en, this message translates to:
+  /// **'Someone else is editing this itinerary right now.'**
+  String get apiErrorItineraryLocked;
+
+  /// No description provided for @apiErrorEditLockRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Start editing before saving changes.'**
+  String get apiErrorEditLockRequired;
+
+  /// No description provided for @apiErrorEditLockLost.
+  ///
+  /// In en, this message translates to:
+  /// **'Your editing session was taken over. Your changes were not saved.'**
+  String get apiErrorEditLockLost;
+
+  /// No description provided for @apiErrorEditorCannotView.
+  ///
+  /// In en, this message translates to:
+  /// **'This person can\'t see this itinerary, so they can\'t edit it.'**
+  String get apiErrorEditorCannotView;
+
+  /// No description provided for @apiErrorEditorExists.
+  ///
+  /// In en, this message translates to:
+  /// **'This person can already edit this itinerary.'**
+  String get apiErrorEditorExists;
+
+  /// No description provided for @apiErrorEditorNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'This person is not an editor of this itinerary.'**
+  String get apiErrorEditorNotFound;
+
+  /// No description provided for @apiErrorEditorIsOwner.
+  ///
+  /// In en, this message translates to:
+  /// **'You already have full edit rights.'**
+  String get apiErrorEditorIsOwner;
+
+  /// No description provided for @editorsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Who can edit'**
+  String get editorsTitle;
+
+  /// No description provided for @editorsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Editors can change the description, stops and notes. Only you can delete the trip, change who can see it, or manage this list.'**
+  String get editorsSubtitle;
+
+  /// No description provided for @editorsEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Nobody else can edit this trip yet.'**
+  String get editorsEmpty;
+
+  /// No description provided for @editorsAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Add an editor'**
+  String get editorsAdd;
+
+  /// No description provided for @editorsSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search by username'**
+  String get editorsSearchHint;
+
+  /// No description provided for @editorsRemoveTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove editor?'**
+  String get editorsRemoveTitle;
+
+  /// No description provided for @editorsRemoveMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} will no longer be able to change this trip. Anything they already added stays.'**
+  String editorsRemoveMessage(Object name);
+
+  /// No description provided for @editorsRemoved.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} can no longer edit'**
+  String editorsRemoved(Object name);
+
+  /// No description provided for @editorsGrantViewTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Give them access too?'**
+  String get editorsGrantViewTitle;
+
+  /// No description provided for @editorsGrantViewMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} can\'t see this trip yet. Add them to the people who can view it, so they can edit it.'**
+  String editorsGrantViewMessage(Object name);
+
+  /// No description provided for @editorsGrantViewConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Add and give access'**
+  String get editorsGrantViewConfirm;
+
+  /// No description provided for @editorsChangeVisibilityMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} can\'t see this trip. Change who can see it first, then add them as an editor.'**
+  String editorsChangeVisibilityMessage(Object name);
+
+  /// No description provided for @editorsOpenVisibility.
+  ///
+  /// In en, this message translates to:
+  /// **'Change visibility'**
+  String get editorsOpenVisibility;
+
+  /// No description provided for @editLockSomeoneEditing.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} is editing'**
+  String editLockSomeoneEditing(Object name);
+
+  /// No description provided for @editLockSomeoneEditingIdle.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} is editing · away'**
+  String editLockSomeoneEditingIdle(Object name);
+
+  /// No description provided for @editLockAvailableIn.
+  ///
+  /// In en, this message translates to:
+  /// **'You can take over in {time}'**
+  String editLockAvailableIn(Object time);
+
+  /// No description provided for @editLockAvailableNow.
+  ///
+  /// In en, this message translates to:
+  /// **'You can take over now'**
+  String get editLockAvailableNow;
+
+  /// No description provided for @editLockTakeOver.
+  ///
+  /// In en, this message translates to:
+  /// **'Take over'**
+  String get editLockTakeOver;
+
+  /// No description provided for @editLockYouElsewhere.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'re editing this on another device'**
+  String get editLockYouElsewhere;
+
+  /// No description provided for @editLockMoveHere.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue here'**
+  String get editLockMoveHere;
+
+  /// No description provided for @editLockMoveHereMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Your other device will not be able to save. Anything unsaved there stays on that device.'**
+  String get editLockMoveHereMessage;
+
+  /// No description provided for @editLockLostTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your editing session was taken over'**
+  String get editLockLostTitle;
+
+  /// No description provided for @editLockLostMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} is editing now, so this change wasn\'t saved. Your text is still here — copy anything you need, or try to take the session back.'**
+  String editLockLostMessage(Object name);
+
+  /// No description provided for @editLockLostMessageUnknown.
+  ///
+  /// In en, this message translates to:
+  /// **'Somebody else is editing now, so this change wasn\'t saved. Your text is still here — copy anything you need, or try to take the session back.'**
+  String get editLockLostMessageUnknown;
+
+  /// No description provided for @editLockReclaim.
+  ///
+  /// In en, this message translates to:
+  /// **'Try to take it back'**
+  String get editLockReclaim;
+
+  /// No description provided for @editLockReclaimed.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'re editing again'**
+  String get editLockReclaimed;
+
+  /// No description provided for @editLockCopyText.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy my text'**
+  String get editLockCopyText;
+
+  /// No description provided for @editLockCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Copied'**
+  String get editLockCopied;
+
+  /// No description provided for @editLockOwnerCanReclaim.
+  ///
+  /// In en, this message translates to:
+  /// **'You own this trip — you can take over at any time.'**
+  String get editLockOwnerCanReclaim;
 }
 
 class _AppLocalizationsDelegate

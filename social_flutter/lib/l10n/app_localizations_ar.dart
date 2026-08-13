@@ -3134,4 +3134,133 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get notificationsClearAllMessage =>
       'ستُزال كل الإشعارات من قائمتك. تبقى إشعارات الإشراف في صفحة حالة الحساب.';
+
+  @override
+  String get apiErrorItineraryLocked => 'شخص آخر يحرّر هذا المسار الآن.';
+
+  @override
+  String get apiErrorEditLockRequired => 'ابدأ التحرير قبل حفظ التغييرات.';
+
+  @override
+  String get apiErrorEditLockLost =>
+      'تم الاستيلاء على جلسة التحرير الخاصة بك. لم تُحفَظ تغييراتك.';
+
+  @override
+  String get apiErrorEditorCannotView =>
+      'لا يمكن لهذا الشخص رؤية هذا المسار، لذا لا يمكنه تحريره.';
+
+  @override
+  String get apiErrorEditorExists => 'يمكن لهذا الشخص تحرير هذا المسار بالفعل.';
+
+  @override
+  String get apiErrorEditorNotFound => 'هذا الشخص ليس محرّرًا لهذا المسار.';
+
+  @override
+  String get apiErrorEditorIsOwner => 'لديك بالفعل كامل صلاحيات التحرير.';
+
+  @override
+  String get editorsTitle => 'من يمكنه التحرير';
+
+  @override
+  String get editorsSubtitle =>
+      'يمكن للمحرّرين تغيير الوصف والمحطات والملاحظات. وحدك يمكنك حذف الرحلة أو تغيير من يراها أو إدارة هذه القائمة.';
+
+  @override
+  String get editorsEmpty => 'لا أحد غيرك يمكنه تحرير هذه الرحلة بعد.';
+
+  @override
+  String get editorsAdd => 'إضافة محرّر';
+
+  @override
+  String get editorsSearchHint => 'ابحث باسم المستخدم';
+
+  @override
+  String get editorsRemoveTitle => 'إزالة المحرّر؟';
+
+  @override
+  String editorsRemoveMessage(Object name) {
+    return 'لن يتمكّن $name من تغيير هذه الرحلة بعد الآن. ويبقى ما أضافه سابقًا.';
+  }
+
+  @override
+  String editorsRemoved(Object name) {
+    return 'لم يعد $name قادرًا على التحرير';
+  }
+
+  @override
+  String get editorsGrantViewTitle => 'منحه إمكانية الاطّلاع أيضًا؟';
+
+  @override
+  String editorsGrantViewMessage(Object name) {
+    return 'لا يستطيع $name رؤية هذه الرحلة بعد. أضِفه إلى من يمكنهم الاطّلاع عليها كي يتمكّن من تحريرها.';
+  }
+
+  @override
+  String get editorsGrantViewConfirm => 'إضافة ومنح الاطّلاع';
+
+  @override
+  String editorsChangeVisibilityMessage(Object name) {
+    return 'لا يستطيع $name رؤية هذه الرحلة. غيّر أولًا من يمكنه رؤيتها، ثم أضِفه محرّرًا.';
+  }
+
+  @override
+  String get editorsOpenVisibility => 'تغيير من يمكنه الاطّلاع';
+
+  @override
+  String editLockSomeoneEditing(Object name) {
+    return '$name يحرّر الآن';
+  }
+
+  @override
+  String editLockSomeoneEditingIdle(Object name) {
+    return '$name يحرّر · غير نشِط';
+  }
+
+  @override
+  String editLockAvailableIn(Object time) {
+    return 'يمكنك الاستلام خلال $time';
+  }
+
+  @override
+  String get editLockAvailableNow => 'يمكنك الاستلام الآن';
+
+  @override
+  String get editLockTakeOver => 'استلام التحرير';
+
+  @override
+  String get editLockYouElsewhere => 'أنت تحرّر هذا على جهاز آخر';
+
+  @override
+  String get editLockMoveHere => 'المتابعة هنا';
+
+  @override
+  String get editLockMoveHereMessage =>
+      'لن يتمكّن جهازك الآخر من الحفظ. ويبقى ما لم يُحفَظ هناك على ذلك الجهاز.';
+
+  @override
+  String get editLockLostTitle => 'تم الاستيلاء على جلسة التحرير';
+
+  @override
+  String editLockLostMessage(Object name) {
+    return 'يحرّر $name الآن، لذا لم يُحفَظ هذا التغيير. نصّك ما زال هنا — انسخ ما تحتاجه، أو حاوِل استعادة الجلسة.';
+  }
+
+  @override
+  String get editLockLostMessageUnknown =>
+      'يحرّر شخص آخر الآن، لذا لم يُحفَظ هذا التغيير. نصّك ما زال هنا — انسخ ما تحتاجه، أو حاوِل استعادة الجلسة.';
+
+  @override
+  String get editLockReclaim => 'محاولة الاستعادة';
+
+  @override
+  String get editLockReclaimed => 'عُدتَ إلى التحرير';
+
+  @override
+  String get editLockCopyText => 'نسخ نصّي';
+
+  @override
+  String get editLockCopied => 'تم النسخ';
+
+  @override
+  String get editLockOwnerCanReclaim => 'هذه رحلتك — يمكنك الاستلام في أي وقت.';
 }

@@ -16,7 +16,8 @@ import uuid
 import pytest
 
 from conftest import (
-    TestingSessionLocal, auth_headers, etag_from_updated_at, register_user,
+    TestingSessionLocal, auth_headers, edit_now, etag_from_updated_at, locked_headers,
+    register_user,
 )
 from app.config import get_settings
 from app.models.itinerary import Itinerary
@@ -228,8 +229,9 @@ def test_minors_score_on_an_edit_escalates_too(client, owner, provider):
     response = client.patch(
         f"/itineraries/{itinerary['id']}",
         json={"description": "..."},
-        headers={**auth_headers(owner["access_token"]),
-                 "If-Match": _etag(client, itinerary["id"], owner["access_token"])},
+        headers=locked_headers(
+            client, itinerary["id"], auth_headers(owner["access_token"]),
+            _etag(client, itinerary["id"], owner["access_token"])),
     )
     assert response.status_code == 200, response.json()
     assert len(_escalations("itinerary")) == 1
@@ -243,8 +245,9 @@ def test_repeated_minors_edits_open_one_escalation(client, owner, provider):
     client.patch(
         f"/itineraries/{itinerary['id']}",
         json={"description": "still bad"},
-        headers={**auth_headers(owner["access_token"]),
-                 "If-Match": _etag(client, itinerary["id"], owner["access_token"])},
+        headers=locked_headers(
+            client, itinerary["id"], auth_headers(owner["access_token"]),
+            _etag(client, itinerary["id"], owner["access_token"])),
     )
 
     assert len(_escalations("itinerary")) == 1
@@ -340,14 +343,16 @@ def test_update_only_scans_the_submitted_fields(client, owner, provider):
     client.patch(
         f"/itineraries/{itinerary['id']}",
         json={"visibility": "only_me"},
-        headers=auth_headers(owner["access_token"]),
+        headers=edit_now(client, itinerary["id"],
+                         auth_headers(owner["access_token"])),
     )
     assert provider.calls == []  # no text submitted, no paid call
 
     client.patch(
         f"/itineraries/{itinerary['id']}",
         json={"description": "Second text"},
-        headers=auth_headers(owner["access_token"]),
+        headers=edit_now(client, itinerary["id"],
+                         auth_headers(owner["access_token"])),
     )
     assert len(provider.calls) == 1
 
@@ -380,8 +385,9 @@ def test_stale_if_match_returns_412_without_calling_the_provider(client, owner, 
     response = client.post(
         f"/itineraries/{itinerary['id']}/stops",
         json={"place_name": "Grote Markt", "notes": "Go early"},
-        headers={**auth_headers(owner["access_token"]),
-                 "If-Match": etag_from_updated_at("2020-01-01T00:00:00+00:00")},
+        headers=locked_headers(
+            client, itinerary["id"], auth_headers(owner["access_token"]),
+            etag_from_updated_at("2020-01-01T00:00:00+00:00")),
     )
 
     assert response.status_code == 412
@@ -430,7 +436,8 @@ def test_a_stops_three_text_fields_are_one_provider_call(client, owner, provider
         f"/itineraries/{itinerary['id']}/stops",
         json={"place_name": "Grote Markt", "place_address": "Brussels",
               "notes": "Go early"},
-        headers={**auth_headers(owner["access_token"]), "If-Match": etag},
+        headers=locked_headers(client, itinerary["id"],
+                               auth_headers(owner["access_token"]), etag),
     )
 
     assert response.status_code == 201
@@ -446,7 +453,8 @@ def test_rejected_stop_text_blocks_the_stop(client, owner, provider):
     response = client.post(
         f"/itineraries/{itinerary['id']}/stops",
         json={"place_name": "Somewhere", "notes": "vile"},
-        headers={**auth_headers(owner["access_token"]), "If-Match": etag},
+        headers=locked_headers(client, itinerary["id"],
+                               auth_headers(owner["access_token"]), etag),
     )
 
     assert response.status_code == 422
@@ -463,7 +471,8 @@ def test_stop_text_rolls_its_status_up_to_the_itinerary(client, owner, provider)
     client.post(
         f"/itineraries/{itinerary['id']}/stops",
         json={"place_name": "Somewhere", "notes": "borderline"},
-        headers={**auth_headers(owner["access_token"]), "If-Match": etag},
+        headers=locked_headers(client, itinerary["id"],
+                               auth_headers(owner["access_token"]), etag),
     )
 
     assert _status_of(itinerary["id"]) == "flagged"
@@ -477,7 +486,8 @@ def test_rejected_annotation_is_not_created(client, owner, provider):
     response = client.post(
         f"/itineraries/{itinerary['id']}/annotations",
         json={"type": "advice", "content": "vile"},
-        headers={**auth_headers(owner["access_token"]), "If-Match": etag},
+        headers=locked_headers(client, itinerary["id"],
+                               auth_headers(owner["access_token"]), etag),
     )
 
     assert response.status_code == 422

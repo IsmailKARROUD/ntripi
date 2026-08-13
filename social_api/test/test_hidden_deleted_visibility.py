@@ -18,8 +18,8 @@ import pytest
 from fastapi.testclient import TestClient
 
 from conftest import (
-    ADMIN_BASIC, TestingSessionLocal, admin_session, auth_headers, make_admin,
-    register_user,
+    ADMIN_BASIC, TestingSessionLocal, admin_session, auth_headers, edit_now,
+    locked_headers, make_admin, register_user,
 )
 from app.models.content_report import ContentReport
 from app.models.itinerary import Itinerary
@@ -151,7 +151,8 @@ class TestHidden:
         resp = client.patch(
             f"/itineraries/{world['itinerary_id']}",
             json={"title": "Renamed while hidden"},
-            headers=auth_headers(world["author"]["access_token"]),
+            headers=edit_now(client, world["itinerary_id"],
+                             auth_headers(world["author"]["access_token"])),
         )
         assert resp.status_code == 200
 
@@ -284,7 +285,9 @@ class TestEtagPreservation:
         # And the pre-hide token is still accepted by a real mutation.
         resp = client.post(
             f"/itineraries/{world['itinerary_id']}/stops",
+            # The captured ETag is the point; the claim just gets us past the
+            # guard so the ETag is the thing being tested.
             json={"place_name": "Paris", "is_free": True},
-            headers={**headers, "If-Match": etag},
+            headers=locked_headers(client, world["itinerary_id"], headers, etag),
         )
         assert resp.status_code == 201, resp.text

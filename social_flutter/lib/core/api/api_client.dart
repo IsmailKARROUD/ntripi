@@ -29,6 +29,7 @@ import 'package:social_flutter/core/api/api_error_codes.dart';
 import 'package:social_flutter/core/api/cache_evict_interceptor.dart';
 import 'package:social_flutter/core/auth/token_manager.dart';
 import 'package:social_flutter/core/storage/secure_storage.dart';
+import 'package:social_flutter/features/itineraries/data/itinerary_repository.dart';
 import 'package:social_flutter/l10n/app_localizations.dart';
 
 /// Singleton Dio instance used throughout the app.
@@ -310,6 +311,25 @@ String? apiErrorCode(dynamic e) {
 
 /// Helper: extract a human-readable message from any exception.
 String extractErrorMessage(dynamic e, [AppLocalizations? l10n]) {
+  // The itinerary repository turns the edit guard's rejections into typed
+  // exceptions before they reach here, so the DioException branch below never
+  // sees them. Mapping them here means every compose surface explains itself
+  // without its own branch — the ones that must ALSO protect unsaved input
+  // (stop form, segment form) catch the type instead of relying on this.
+  if (e is EditLockLostException) {
+    return l10n?.apiErrorEditLockLost ??
+        'Your editing session was taken over. Your changes were not saved.';
+  }
+  if (e is ItineraryLockedException) {
+    return l10n?.apiErrorItineraryLocked ??
+        'Someone else is editing this itinerary right now.';
+  }
+  if (e is EditLockRequiredException) {
+    return l10n?.apiErrorEditLockRequired ?? 'Start editing before saving changes.';
+  }
+  if (e is ItineraryStaleException) {
+    return l10n?.apiErrorItineraryStale ?? 'This itinerary changed — please reload.';
+  }
   if (e is DioException) {
     switch (e.type) {
       case DioExceptionType.connectionError:

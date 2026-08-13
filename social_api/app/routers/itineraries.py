@@ -26,6 +26,7 @@ Track lifecycle:
 """
 
 import uuid
+from dataclasses import asdict
 from decimal import Decimal
 from datetime import datetime, timezone
 from typing import Literal
@@ -39,12 +40,15 @@ from sqlalchemy.orm import Session, selectinload
 
 from app.config import Settings, get_settings
 from app.database import get_db
-from app.dependencies import get_current_user, require_etag, require_verified_email
+from app.dependencies import (
+    get_current_user, require_edit_access, require_verified_email,
+)
 from app.limiter import limiter
 from app.models.annotation import Annotation
 from app.models.itinerary import Itinerary
 from app.models.itinerary_annotation import ItineraryAnnotation
 from app.models.itinerary_allowed_user import ItineraryAllowedUser
+from app.models.itinerary_editor import ItineraryEditor
 from app.models.saved_itinerary import SavedItinerary
 from app.models.stop import Stop
 from app.models.track import Track
@@ -58,6 +62,8 @@ from app.schemas.itinerary import (
     AnnotationCreate,
     AnnotationResponse,
     AnnotationUpdate,
+    EditorAdd,
+    EditorResponse,
     ItineraryAnnotationCreate,
     ItineraryAnnotationResponse,
     ItineraryAnnotationUpdate,
@@ -67,6 +73,10 @@ from app.schemas.itinerary import (
     ItineraryImageResponse,
     ItinerarySummary,
     ItineraryUpdate,
+    LockClaimRequest,
+    LockClaimResponse,
+    LockHolder,
+    LockStateResponse,
     RaterInfo,
     RatingDistribution,
     RatingResponse,
@@ -83,14 +93,14 @@ from app.schemas.itinerary import (
     TransportLegResponse,
     TransportLegUpdate,
 )
-from app.services import notification_service
+from app.services import edit_lock_service, notification_service
 from app.services.block_service import blocked_user_ids, require_not_blocked_or_404
 from app.services.image_service import ImageProcessingError, process_and_store, process_cover_image
 from app.services.moderation_service import ModerationContext, ModerationRejectedError
 from app.services.moderation_actions import escalate_if_flagged
 from app.services.itinerary_access import (
-    HIDDEN_STATUSES, can_view_itinerary, public_listing_criteria,
-    recalculate_rating, visible_rating_criteria,
+    HIDDEN_STATUSES, can_edit_itinerary, can_view_itinerary,
+    public_listing_criteria, recalculate_rating, visible_rating_criteria,
 )
 from app.services.ordering import MAX_RANK_LENGTH, key_between, n_keys_between
 from app.services.text_moderation_service import (
@@ -125,10 +135,15 @@ def _touch_itinerary(itinerary: Itinerary) -> None:
 
 
 def _etag_json_response(schema_cls, obj, itinerary: Itinerary,
-                        status_code: int = status.HTTP_200_OK) -> JSONResponse:
+                        status_code: int = status.HTTP_200_OK,
+                        extra: dict | None = None) -> JSONResponse:
     # Endpoint-set ETag reuses the If-Match concurrency token (updated_at),
     # so the ETagMiddleware leaves it alone and 304s against this ISO value.
     data = jsonable_encoder(schema_cls.model_validate(obj))
+    # Viewer-scoped fields the ORM object cannot carry (can_edit). The schema
+    # already declares them, so overwriting here keeps JSON key order intact.
+    if extra:
+        data.update(extra)
     resp = JSONResponse(content=data, status_code=status_code)
     resp.headers["ETag"] = _etag_value(itinerary)
     return resp
@@ -772,7 +787,10 @@ def get_itinerary(
     _require_viewable(itinerary, current_user.id, db,
                       detail="You don't have access to this itinerary")
 
-    return _etag_json_response(ItineraryDetail, itinerary, itinerary)
+    return _etag_json_response(
+        ItineraryDetail, itinerary, itinerary,
+        extra={"can_edit": can_edit_itinerary(itinerary, current_user.id, db)},
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -786,11 +804,17 @@ def update_itinerary(
     body: ItineraryUpdate,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
+    itinerary: Itinerary = Depends(require_edit_access),
 ) -> ItinerarySummary:
-    itinerary = _get_itinerary_or_404(itinerary_id, db)
-    _require_owner(itinerary, current_user)
-
     update_data = body.model_dump(exclude_unset=True)
+
+    # Mixed authority: the guard admits editors, but who may SEE the itinerary
+    # is the owner's decision alone and is not part of editing its content.
+    if "visibility" in update_data and itinerary.user_id != current_user.id:
+        raise ApiError(status_code=status.HTTP_403_FORBIDDEN,
+                       code="itinerary_not_owner",
+                       detail="Only the owner can change who can see this itinerary.")
+
     # Only the text actually being submitted is scanned — re-scanning untouched
     # fields would bill for text already cleared on a previous write.
     _moderate_itinerary_text(
@@ -938,6 +962,274 @@ def remove_allowed_user(
 
 
 # ---------------------------------------------------------------------------
+# Editor endpoints — /itineraries/{id}/editors
+# (Same literal-path-before-/stops placement rule as the allowlist above.)
+#
+# Only the owner grants or revokes. A grant is inert unless the target can also
+# VIEW the itinerary, and that is re-checked on every write by
+# can_edit_itinerary — so this table can never widen visibility, only ride on it.
+# ---------------------------------------------------------------------------
+
+def _editor_row(db: Session, itinerary_id: uuid.UUID,
+                user_id: uuid.UUID) -> ItineraryEditor | None:
+    return db.execute(
+        select(ItineraryEditor).where(
+            ItineraryEditor.itinerary_id == itinerary_id,
+            ItineraryEditor.user_id == user_id,
+        )
+    ).scalar_one_or_none()
+
+
+def _to_editor_response(entry: ItineraryEditor, user: User,
+                        viewer_id: uuid.UUID) -> EditorResponse:
+    # public_profile_text, not user.display_name — a moderated name must not
+    # leak through a list the allowlist endpoints happen to read raw.
+    display_name, _ = public_profile_text(user, viewer_id)
+    return EditorResponse(
+        user_id=entry.user_id,
+        username=user.username,
+        display_name=display_name,
+        avatar_url=user.avatar_url,
+        created_at=entry.created_at,
+    )
+
+
+@router.post("/{itinerary_id}/editors", response_model=EditorResponse,
+             status_code=status.HTTP_201_CREATED,
+             summary="Grant a user permission to edit this itinerary")
+def add_editor(
+    itinerary_id: uuid.UUID,
+    body: EditorAdd,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> EditorResponse:
+    itinerary = _get_itinerary_or_404(itinerary_id, db)
+    _require_owner(itinerary, current_user)
+
+    # get_active_user_or_404, not a bare db.get — the allowlist endpoint's bare
+    # lookup lets a banned account onto the list, which is not worth copying.
+    target = get_active_user_or_404(db, body.user_id)
+
+    if target.id == itinerary.user_id:
+        raise ApiError(status_code=status.HTTP_400_BAD_REQUEST,
+                       code="editor_is_owner",
+                       detail="The owner already has full edit rights.")
+
+    if _editor_row(db, itinerary_id, target.id) is not None:
+        raise ApiError(status_code=status.HTTP_409_CONFLICT,
+                       code="editor_exists", detail="User can already edit this itinerary.")
+
+    if not can_view_itinerary(itinerary, target.id, db):
+        # grant_view only ever adds an allowlist row, and only for 'restricted'.
+        # It must never change `visibility`: followers → restricted would cut off
+        # every follower silently, and only_me → anything is a privacy decision
+        # the owner has to make deliberately on the visibility screen.
+        if body.grant_view and itinerary.visibility == 'restricted':
+            db.add(ItineraryAllowedUser(itinerary_id=itinerary_id, user_id=target.id))
+            db.flush()
+        if not body.grant_view or itinerary.visibility != 'restricted':
+            raise ApiError(
+                status_code=status.HTTP_409_CONFLICT,
+                code="editor_cannot_view",
+                detail="This user cannot see this itinerary, so they cannot edit it.",
+                extra={
+                    "visibility": itinerary.visibility,
+                    # Whether the client can fix this itself, or has to send the
+                    # owner to the visibility screen.
+                    "can_fix_with_allowlist": itinerary.visibility == 'restricted',
+                },
+            )
+
+    entry = ItineraryEditor(
+        itinerary_id=itinerary_id, user_id=target.id, granted_by=current_user.id,
+    )
+    db.add(entry)
+    # can_edit rides in ItineraryDetail, whose ETag is updated_at — without this
+    # a revoked editor's cached detail would keep offering them a pencil.
+    _touch_itinerary(itinerary)
+    notification_service.notify(
+        db, user_id=target.id, type="itinerary_editor_added", actor=current_user,
+        entity_type="itinerary", entity_id=itinerary.id,
+    )
+    db.commit()
+    db.refresh(entry)
+
+    return _to_editor_response(entry, target, current_user.id)
+
+
+@router.get("/{itinerary_id}/editors", response_model=list[EditorResponse],
+            summary="List users who can edit this itinerary")
+def get_editors(
+    itinerary_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> list[EditorResponse]:
+    itinerary = _get_itinerary_or_404(itinerary_id, db)
+    # Editors read this too, not just the owner — someone sharing a document
+    # should be able to see who else is holding a pen.
+    if not can_edit_itinerary(itinerary, current_user.id, db):
+        raise ApiError(status_code=status.HTTP_403_FORBIDDEN,
+                       code="itinerary_not_owner",
+                       detail="You do not have permission to modify this itinerary.")
+
+    results = db.execute(
+        select(ItineraryEditor, User)
+        .join(User, ItineraryEditor.user_id == User.id)
+        .where(ItineraryEditor.itinerary_id == itinerary_id)
+        .order_by(ItineraryEditor.created_at.asc())
+    ).all()
+
+    return [
+        _to_editor_response(entry, user, current_user.id)
+        for entry, user in results
+    ]
+
+
+@router.delete("/{itinerary_id}/editors/{user_id}",
+               status_code=status.HTTP_204_NO_CONTENT,
+               summary="Revoke a user's permission to edit this itinerary")
+def remove_editor(
+    itinerary_id: uuid.UUID,
+    user_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> None:
+    itinerary = _get_itinerary_or_404(itinerary_id, db)
+    _require_owner(itinerary, current_user)
+
+    entry = _editor_row(db, itinerary_id, user_id)
+    if not entry:
+        raise ApiError(status_code=status.HTTP_404_NOT_FOUND,
+                       code="editor_not_found", detail="User is not an editor of this itinerary.")
+
+    db.delete(entry)
+    # Leaving a revoked editor's claim standing would block everyone else until
+    # the TTL ran out, for a person who can no longer use it.
+    edit_lock_service.release_for_user(db, itinerary_id, user_id)
+    _touch_itinerary(itinerary)
+    db.commit()
+
+
+# ---------------------------------------------------------------------------
+# Edit-lock endpoints — /itineraries/{id}/lock
+#
+# The claim is identified by a server-minted token, not by user id: a takeover
+# rotates it, which is the whole reason the displaced device cannot save. These
+# endpoints are the only place the raw token is ever produced.
+# ---------------------------------------------------------------------------
+
+def _lock_holder(db: Session, lock, viewer_id: uuid.UUID) -> LockHolder:
+    return LockHolder(**asdict(
+        edit_lock_service.to_view(db, lock, viewer_id, get_settings())
+    ))
+
+
+def _require_editable(itinerary: Itinerary, current_user: User,
+                      db: Session) -> None:
+    """403 unless this caller may edit. Same code and wording as the non-owner
+    rejection everywhere else — whether they were never granted or lost view
+    access is not something to spell out to them."""
+    if not can_edit_itinerary(itinerary, current_user.id, db):
+        raise ApiError(status_code=status.HTTP_403_FORBIDDEN,
+                       code="itinerary_not_owner",
+                       detail="You do not have permission to modify this itinerary.")
+
+
+@router.post("/{itinerary_id}/lock", response_model=LockClaimResponse,
+             summary="Start an editing session (claim the edit lock)")
+def acquire_lock(
+    itinerary_id: uuid.UUID,
+    body: LockClaimRequest | None = None,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> LockClaimResponse:
+    settings = get_settings()
+    itinerary = _get_itinerary_or_404(itinerary_id, db)
+    _require_editable(itinerary, current_user, db)
+
+    lock, raw = edit_lock_service.claim(
+        db, itinerary, current_user, settings,
+        takeover=body.takeover if body is not None else False,
+    )
+    holder = _lock_holder(db, lock, current_user.id)
+    db.commit()
+
+    return LockClaimResponse(
+        token=raw,
+        lock=holder,
+        heartbeat_interval_seconds=settings.EDIT_LOCK_HEARTBEAT_SECONDS,
+        ttl_seconds=settings.EDIT_LOCK_TTL_SECONDS,
+    )
+
+
+@router.post("/{itinerary_id}/lock/heartbeat", response_model=LockHolder,
+             summary="Keep an editing session alive")
+def heartbeat_lock(
+    request: Request,
+    itinerary_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> LockHolder:
+    settings = get_settings()
+    itinerary = _get_itinerary_or_404(itinerary_id, db)
+    _require_editable(itinerary, current_user, db)
+
+    # Same gate a save goes through — a ping that could not save must not
+    # reassure the client that it still holds the claim.
+    lock = edit_lock_service.heartbeat(
+        db, itinerary, current_user,
+        request.headers.get(edit_lock_service.LOCK_HEADER), settings,
+    )
+    holder = _lock_holder(db, lock, current_user.id)
+    db.commit()
+    return holder
+
+
+@router.delete("/{itinerary_id}/lock", status_code=status.HTTP_204_NO_CONTENT,
+               summary="End an editing session (release the edit lock)")
+def release_lock(
+    request: Request,
+    itinerary_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> None:
+    itinerary = _get_itinerary_or_404(itinerary_id, db)
+    _require_editable(itinerary, current_user, db)
+
+    # Idempotent and never 404: the client fires this from teardown, so a retry,
+    # or a claim the TTL already handed to someone else, must not raise for
+    # something the user has finished with. The owner may release without a
+    # token — that is the "unlock it from my other device" path.
+    edit_lock_service.release(
+        db, itinerary, current_user,
+        request.headers.get(edit_lock_service.LOCK_HEADER), get_settings(),
+    )
+    db.commit()
+
+
+@router.get("/{itinerary_id}/lock", response_model=LockStateResponse,
+            summary="Who, if anyone, is editing this itinerary")
+def get_lock_state(
+    itinerary_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> LockStateResponse:
+    settings = get_settings()
+    itinerary = _get_itinerary_or_404(itinerary_id, db)
+    # View access is enough to read this — the detail screen shows the banner
+    # before it knows whether the reader will ever try to edit.
+    _require_viewable(itinerary, current_user.id, db)
+
+    lock = edit_lock_service.get_lock(db, itinerary_id)
+    return LockStateResponse(
+        can_edit=can_edit_itinerary(itinerary, current_user.id, db),
+        lock=_lock_holder(db, lock, current_user.id) if lock is not None else None,
+        heartbeat_interval_seconds=settings.EDIT_LOCK_HEARTBEAT_SECONDS,
+        ttl_seconds=settings.EDIT_LOCK_TTL_SECONDS,
+    )
+
+
+# ---------------------------------------------------------------------------
 # POST /itineraries/{itinerary_id}/stops — Add a stop
 # ---------------------------------------------------------------------------
 
@@ -949,10 +1241,11 @@ def add_stop(
     request: Request,
     db: Session = Depends(get_db),
     _verified: User = Depends(require_verified_email),  # high-value: verified email required
-    itinerary: Itinerary = Depends(require_etag),
+    itinerary: Itinerary = Depends(require_edit_access),
 ) -> Response:
     """
-    Add a new stop. Requires If-Match header (validated by require_etag dependency).
+    Add a new stop. Requires an edit claim + If-Match (both validated by
+    require_edit_access).
 
     Two modes:
       track_id provided  → add the stop inside that existing track, using
@@ -1039,9 +1332,9 @@ def update_stop(
     body: StopUpdate,
     request: Request,
     db: Session = Depends(get_db),
-    # Same cached instance require_etag already resolved — no extra query.
+    # Same cached instance require_edit_access already resolved — no extra query.
     current_user: User = Depends(get_current_user),
-    itinerary: Itinerary = Depends(require_etag),
+    itinerary: Itinerary = Depends(require_edit_access),
 ) -> Response:
     stop = _get_stop_or_404(stop_id, itinerary_id, db)
     old_track_id = stop.track_id
@@ -1113,7 +1406,7 @@ def delete_stop(
     stop_id: uuid.UUID,
     request: Request,
     db: Session = Depends(get_db),
-    itinerary: Itinerary = Depends(require_etag),
+    itinerary: Itinerary = Depends(require_edit_access),
 ) -> Response:
     stop = db.execute(
         select(Stop).where(Stop.id == stop_id, Stop.itinerary_id == itinerary_id)
@@ -1148,7 +1441,7 @@ def reorder_itinerary(
     body: ReorderRequest,
     request: Request,
     db: Session = Depends(get_db),
-    itinerary: Itinerary = Depends(require_etag),
+    itinerary: Itinerary = Depends(require_edit_access),
 ) -> Response:
     """
     Apply a batch reorder of stops within tracks, a new track order, and/or
@@ -1255,7 +1548,9 @@ def reorder_itinerary(
     detail = _load_itinerary_detail(itinerary_id, db)
 
     # ETag comes from the freshly reloaded detail, not the pre-commit itinerary.
-    return _etag_json_response(ItineraryDetail, detail, detail)
+    # can_edit is True by construction — the guard just let this caller write.
+    return _etag_json_response(ItineraryDetail, detail, detail,
+                               extra={"can_edit": True})
 
 
 # ---------------------------------------------------------------------------
@@ -1270,7 +1565,7 @@ def add_itinerary_annotation(
     request: Request,
     current_user: User = Depends(require_verified_email),  # high-value: verified email required
     db: Session = Depends(get_db),
-    itinerary: Itinerary = Depends(require_etag),
+    itinerary: Itinerary = Depends(require_edit_access),
 ) -> ItineraryAnnotationResponse:
     _moderate_itinerary_text({"content": body.content}, itinerary, db, current_user)
     annotation = ItineraryAnnotation(
@@ -1291,7 +1586,7 @@ def update_itinerary_annotation(
     request: Request,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
-    itinerary: Itinerary = Depends(require_etag),
+    itinerary: Itinerary = Depends(require_edit_access),
 ) -> ItineraryAnnotationResponse:
     annotation = _get_itinerary_annotation_or_404(annotation_id, itinerary_id, db)
     _moderate_itinerary_text({"content": body.content}, itinerary, db, current_user)
@@ -1308,7 +1603,7 @@ def delete_itinerary_annotation(
     request: Request,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
-    itinerary: Itinerary = Depends(require_etag),
+    itinerary: Itinerary = Depends(require_edit_access),
 ) -> None:
     annotation = _get_itinerary_annotation_or_404(annotation_id, itinerary_id, db)
     _delete_annotation(annotation, itinerary, db)
@@ -1328,7 +1623,7 @@ def add_annotation(
     request: Request,
     db: Session = Depends(get_db),
     current_user: User = Depends(require_verified_email),  # high-value: verified email required
-    itinerary: Itinerary = Depends(require_etag),
+    itinerary: Itinerary = Depends(require_edit_access),
 ) -> AnnotationResponse:
     stop = db.execute(
         select(Stop).where(Stop.id == stop_id, Stop.itinerary_id == itinerary_id)
@@ -1353,7 +1648,7 @@ def delete_annotation(
     request: Request,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
-    itinerary: Itinerary = Depends(require_etag),
+    itinerary: Itinerary = Depends(require_edit_access),
 ) -> None:
     annotation = _get_stop_annotation_or_404(annotation_id, stop_id, itinerary_id, db)
     _delete_annotation(annotation, itinerary, db)
@@ -1369,7 +1664,7 @@ def update_annotation(
     request: Request,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
-    itinerary: Itinerary = Depends(require_etag),
+    itinerary: Itinerary = Depends(require_edit_access),
 ) -> AnnotationResponse:
     annotation = _get_stop_annotation_or_404(annotation_id, stop_id, itinerary_id, db)
     _moderate_itinerary_text({"content": body.content}, itinerary, db, current_user)
@@ -1678,10 +1973,8 @@ def create_segment(
     body: TransitSegmentCreate,
     db: Session = Depends(get_db),
     current_user: User = Depends(require_verified_email),  # high-value: verified email required
+    itinerary: Itinerary = Depends(require_edit_access),
 ) -> TransitSegmentResponse:
-    itinerary = _get_itinerary_or_404(itinerary_id, db)
-    _require_owner(itinerary, current_user)
-
     _require_stops_in_itinerary(itinerary_id, body.from_stop_id, body.to_stop_id, db)
 
     _moderate_itinerary_text(_leg_text_fields(body.legs), itinerary, db, current_user)
@@ -1747,10 +2040,8 @@ def update_segment(
     body: TransitSegmentCreate,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
+    itinerary: Itinerary = Depends(require_edit_access),
 ) -> TransitSegmentResponse:
-    itinerary = _get_itinerary_or_404(itinerary_id, db)
-    _require_owner(itinerary, current_user)
-
     segment = _get_segment_or_404(segment_id, itinerary_id, db)
 
     _require_stops_in_itinerary(itinerary_id, body.from_stop_id, body.to_stop_id, db)
@@ -1789,11 +2080,8 @@ def delete_segment(
     itinerary_id: uuid.UUID,
     segment_id: uuid.UUID,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    itinerary: Itinerary = Depends(require_edit_access),
 ) -> None:
-    itinerary = _get_itinerary_or_404(itinerary_id, db)
-    _require_owner(itinerary, current_user)
-
     segment = _get_segment_or_404(segment_id, itinerary_id, db)
 
     db.delete(segment)
@@ -1815,10 +2103,8 @@ def add_leg(
     body: TransportLegCreate,
     db: Session = Depends(get_db),
     current_user: User = Depends(require_verified_email),  # high-value: verified email required
+    itinerary: Itinerary = Depends(require_edit_access),
 ) -> TransportLegResponse:
-    itinerary = _get_itinerary_or_404(itinerary_id, db)
-    _require_owner(itinerary, current_user)
-
     segment = _get_segment_or_404(segment_id, itinerary_id, db)
 
     _moderate_itinerary_text(_leg_text_fields([body]), itinerary, db, current_user)
@@ -1849,10 +2135,8 @@ def update_leg(
     body: TransportLegUpdate,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
+    itinerary: Itinerary = Depends(require_edit_access),
 ) -> TransportLegResponse:
-    itinerary = _get_itinerary_or_404(itinerary_id, db)
-    _require_owner(itinerary, current_user)
-
     segment = _get_segment_or_404(segment_id, itinerary_id, db)
     leg = _get_leg_or_404(leg_id, segment_id, db)
 
@@ -1880,11 +2164,8 @@ def delete_leg(
     segment_id: uuid.UUID,
     leg_id: uuid.UUID,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    itinerary: Itinerary = Depends(require_edit_access),
 ) -> None:
-    itinerary = _get_itinerary_or_404(itinerary_id, db)
-    _require_owner(itinerary, current_user)
-
     segment = _get_segment_or_404(segment_id, itinerary_id, db)
     leg = _get_leg_or_404(leg_id, segment_id, db)
 

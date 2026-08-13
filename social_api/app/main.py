@@ -243,7 +243,11 @@ app.add_middleware(
     allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
-    allow_headers=["Content-Type", "Authorization", "If-Match", "If-None-Match"],
+    # Explicit list, never ["*"]. X-Edit-Lock carries the edit claim on every
+    # itinerary mutation — omitting it here would fail the browser preflight.
+    allow_headers=[
+        "Content-Type", "Authorization", "If-Match", "If-None-Match", "X-Edit-Lock",
+    ],
 )
 
 # Security headers (CSP frame-ancestors, X-Frame-Options, HSTS, etc.)
