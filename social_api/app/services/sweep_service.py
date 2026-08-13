@@ -33,6 +33,7 @@ from sqlalchemy import delete, select, text
 from sqlalchemy.orm import Session
 
 from app.models.content_report import ContentReport
+from app.models.device_token import DeviceToken
 from app.models.itinerary import Itinerary
 from app.models.itinerary_rating import ItineraryRating
 from app.models.text_moderation_cache import TextModerationCache
@@ -76,6 +77,7 @@ def run_moderation_sweep(db: Session, settings) -> dict:
         "decisions_purged": 0,
         "bug_reports_purged": 0,
         "notifications_purged": 0,
+        "device_tokens_purged": 0,
     }
     try:
         notifications: list[dict] = []
@@ -310,6 +312,14 @@ def _purge(db: Session, settings, counters: dict) -> None:
     counters["notifications_purged"] = notification_service.purge_expired(
         db, settings
     )
+
+    # Device tokens that stopped checking in. An uninstall never tells us; the
+    # send path prunes whatever FCM reports dead, and this catches the rest.
+    device_cutoff = now - timedelta(days=settings.DEVICE_TOKEN_RETENTION_DAYS)
+    result = db.execute(
+        delete(DeviceToken).where(DeviceToken.last_seen_at < device_cutoff)
+    )
+    counters["device_tokens_purged"] = result.rowcount or 0
 
 
 # ---------------------------------------------------------------------------

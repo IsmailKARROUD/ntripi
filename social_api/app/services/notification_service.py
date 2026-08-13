@@ -25,12 +25,15 @@ from datetime import datetime, timedelta, timezone
 from sqlalchemy import and_, case, delete, func, or_, select
 from sqlalchemy.orm import Session
 
+from app.config import get_settings
+from app.models.itinerary import Itinerary
 from app.models.notification import (
     MUTABLE_TYPES, PREFERENCE_COLUMNS, Notification,
 )
 from app.models.user import User
-from app.services import block_service
+from app.services import block_service, push_service
 from app.services.token_util import as_aware_utc
+from app.services.user_service import public_profile_text
 
 logger = logging.getLogger(__name__)
 
@@ -80,7 +83,57 @@ def notify(
         entity_id=entity_id,
     )
     db.add(notification)
+    _queue_push(db, notification, actor)
     return notification
+
+
+def _actor_name(actor: User | None, viewer_id: uuid.UUID) -> str | None:
+    """How the actor should be named in a push, or None for a system row."""
+    if actor is None:
+        return None
+    # [0] is display_name, blanked by moderation for everyone but its author.
+    return public_profile_text(actor, viewer_id)[0] or f"@{actor.username}"
+
+
+def _queue_push(
+    db: Session, notification: Notification, actor: User | None
+) -> None:
+    """Stash a rendered-at-send-time snapshot for the after_commit dispatcher.
+
+    Placed here rather than at the nine call sites so push inherits all three
+    suppression rules above for free — anything notify() refused never reaches
+    this line. Still only a queue: nothing is sent until the transaction that
+    created the row actually commits.
+    """
+    settings = get_settings()
+    if not push_service.is_enabled(settings):
+        return
+
+    # Resolved now, inside the transaction, because after commit these
+    # attributes are expired and reading one would fire a lazy reload on a
+    # session that is between transactions.
+    title: str | None = None
+    if notification.entity_type == "itinerary" and notification.entity_id:
+        itinerary = db.get(Itinerary, notification.entity_id)
+        title = itinerary.title if itinerary is not None else None
+
+    db.info.setdefault(push_service.PENDING_KEY, []).append(
+        push_service.PendingPush(
+            user_id=notification.user_id,
+            type=notification.type,
+            subtype=notification.subtype,
+            actor_id=actor.id if actor is not None else None,
+            # Same moderation blanking the feed applies, and the same fallback:
+            # a hidden or unset display name becomes @username, exactly as the
+            # client renders it. push_i18n's localised "Someone" is reserved for
+            # rows with no actor at all — using it here would make an ordinary
+            # user who never set a display name anonymous.
+            actor_name=_actor_name(actor, notification.user_id),
+            entity_type=notification.entity_type,
+            entity_id=notification.entity_id,
+            entity_title=title,
+        )
+    )
 
 
 def badge_state(

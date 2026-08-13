@@ -1,0 +1,46 @@
+{
+  "project_info": {
+    "project_number": "29126714665",
+    "project_id": "ntripi",
+    "storage_bucket": "ntripi.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:29126714665:android:b0ed728a37e63193b9c338",
+        "android_client_info": {
+          "package_name": "com.ismailkarroud.ntripi"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "29126714665-9pgodn1nt1ikf6goo71a6b7634sknna4.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC5mFKLu6gN-M6nl8UqVNkWOBeYrzDMJ3Q"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "29126714665-9pgodn1nt1ikf6goo71a6b7634sknna4.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "29126714665-8n68nlct0m8edp04b6obslteslqtitdq.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.ismailkarroud.ntripi"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

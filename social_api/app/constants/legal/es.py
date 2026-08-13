@@ -225,6 +225,8 @@ Have I Been Pwned — cuando eliges una contraseña, comprobamos si aparece en d
 
 Atlassian (Jira) — cuando trasladamos allí un informe de error que has enviado para hacerle seguimiento y corregirlo. El ticket trasladado contiene tu descripción, la captura de pantalla y los datos técnicos; no contiene tu dirección de correo.
 
+Google (Firebase Cloud Messaging) — las notificaciones push en iOS y Android, si las permites. Tu dispositivo recibe un token de registro que identifica esa instalación; lo guardamos para poder dirigir una notificación a tu dispositivo y lo borramos cuando cierras sesión. El texto de la notificación pasa por Google para llegar a tu teléfono: indica qué ha ocurrido y, cuando procede, nombra a la persona que ha actuado o el título de tu propio itinerario. Los avisos sobre la moderación de tu contenido nunca nombran a quien lo denunció. Si no concedes el permiso de notificaciones, no se crea ningún token y no se envía nada.
+
 También comunicamos datos cuando la ley nos obliga a ello y cuando es necesario para responder a un riesgo inminente para la seguridad de alguien.
 
 

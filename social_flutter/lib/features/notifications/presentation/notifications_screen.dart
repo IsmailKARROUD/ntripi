@@ -10,6 +10,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:social_flutter/core/api/api_client.dart';
 import 'package:social_flutter/core/connectivity/connectivity_service.dart';
+import 'package:social_flutter/core/providers/locale_provider.dart';
+import 'package:social_flutter/core/push/push_service.dart';
 import 'package:social_flutter/core/ui/app_theme.dart';
 import 'package:social_flutter/core/ui/destructive_actions.dart';
 import 'package:social_flutter/core/utils/platform_utils.dart';
@@ -65,7 +67,24 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
     // and _pullInArrivals calls setState to raise the progress line.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) unawaited(_pullInArrivals());
+      // The OS permission prompt is asked HERE and nowhere else. iOS allows
+      // exactly one per install and a denial is only reversible in Settings,
+      // so it has to land at the moment the user has just demonstrated they
+      // want notifications — opening this screen — rather than at launch,
+      // where it is a modal in front of an app they have not seen yet.
+      // No-op on web, when Firebase is unconfigured, and on every visit after
+      // the first grant.
+      if (mounted) unawaited(_offerPush());
     });
+  }
+
+  /// Ask for push permission once the user is looking at their notifications.
+  ///
+  /// Whatever the answer, nothing about this screen changes: push only ever
+  /// makes the badge arrive sooner than NotificationPoller's next tick.
+  Future<void> _offerPush() async {
+    if (!pushAvailable || pushRegistered) return;
+    await registerForPush(locale: ref.read(localeProvider).languageCode);
   }
 
   @override

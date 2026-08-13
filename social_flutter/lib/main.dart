@@ -9,6 +9,8 @@ import 'package:social_flutter/core/api/api_client.dart';
 import 'package:social_flutter/core/auth/token_manager.dart';
 import 'package:social_flutter/core/providers/locale_provider.dart';
 import 'package:social_flutter/core/providers/theme_mode_provider.dart';
+import 'package:social_flutter/core/push/push_gateway.dart';
+import 'package:social_flutter/core/push/push_service.dart';
 import 'package:social_flutter/core/router/app_router.dart';
 import 'package:social_flutter/features/auth/presentation/widgets/tos_gate.dart';
 import 'package:social_flutter/core/ui/app_theme.dart';
@@ -45,6 +47,11 @@ Future<void> main() async {
   bareDio = createBareDio();
   final tokenManager = TokenManager(bareDio);
   dio = createDioClient(tokenManager: tokenManager, cacheStore: cacheStore);
+
+  // Before runApp so the background message handler is registered before any
+  // push can arrive. Never throws — a missing google-services.json leaves the
+  // app fully functional, just without push (NotificationPoller still runs).
+  await initFirebase();
 
   runApp(
     ProviderScope(
@@ -129,8 +136,12 @@ class NtripiApp extends ConsumerWidget {
             // the router's root level and would slip past a shell-mounted gate.
             // NotificationPoller sits here for the same reason, and gates
             // itself on the session so /login and /splash never poll.
+            // PushGateway needs the same placement: it navigates with the
+            // router, so it must be inside MaterialApp.router's builder.
             child: TosGate(
-              child: NotificationPoller(child: ShakeToReport(child: child!)),
+              child: NotificationPoller(
+                child: PushGateway(child: ShakeToReport(child: child!)),
+              ),
             ),
           ),
         ),

@@ -32,6 +32,33 @@ enum NotificationType {
       };
 }
 
+/// Where a notification of this shape taps through to. Null = not tappable.
+///
+/// A free function, not a method, because a push arrives as a bare FCM `data`
+/// map with no AppNotification to hang off — and the tray tap and the feed row
+/// must land on the same screen or the two disagree about what a notification
+/// means.
+///
+/// Moderation always routes to Account status: the appeal button already lives
+/// there, and duplicating it here would give appeals two homes.
+String? notificationRoute({
+  required NotificationType type,
+  String? actorId,
+  String? entityId,
+}) =>
+    switch (type) {
+      NotificationType.moderationAction => '/settings/account-status',
+      NotificationType.followRequest => '/follow-requests',
+      NotificationType.newFollower ||
+      NotificationType.followAccepted =>
+        actorId == null ? null : '/profile/$actorId',
+      NotificationType.itineraryRated =>
+        entityId == null ? null : '/itineraries/$entityId/ratings',
+      NotificationType.itinerarySaved =>
+        entityId == null ? null : '/itineraries/$entityId',
+      NotificationType.unknown => null,
+    };
+
 class AppNotification {
   final String id;
   final NotificationType type;
@@ -131,21 +158,11 @@ class AppNotification {
       };
 
   /// Where tapping goes. Null means the row is not tappable.
-  ///
-  /// Moderation always routes to Account status: the appeal button already
-  /// lives there, and duplicating it here would give appeals two homes.
-  String? route() => switch (type) {
-        NotificationType.moderationAction => '/settings/account-status',
-        NotificationType.followRequest => '/follow-requests',
-        NotificationType.newFollower ||
-        NotificationType.followAccepted =>
-          actorId == null ? null : '/profile/$actorId',
-        NotificationType.itineraryRated =>
-          entityId == null ? null : '/itineraries/$entityId/ratings',
-        NotificationType.itinerarySaved =>
-          entityId == null ? null : '/itineraries/$entityId',
-        NotificationType.unknown => null,
-      };
+  String? route() => notificationRoute(
+        type: type,
+        actorId: actorId,
+        entityId: entityId,
+      );
 
   /// Relative timestamp, reusing the same strings as the ratings list so the
   /// two feeds never drift apart.

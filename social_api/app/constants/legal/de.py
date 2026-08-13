@@ -225,6 +225,8 @@ Have I Been Pwned — bei der Wahl eines Passworts prüfen wir, ob es in bekannt
 
 Atlassian (Jira) — wenn wir einen von Ihnen gesendeten Fehlerbericht dorthin weiterleiten, damit er verfolgt und behoben wird. Das weitergeleitete Ticket enthält Ihre Beschreibung, die Bildschirmaufnahme und die technischen Angaben; Ihre E-Mail-Adresse enthält es nicht.
 
+Google (Firebase Cloud Messaging) — Push-Benachrichtigungen unter iOS und Android, sofern Sie sie zulassen. Ihrem Gerät wird ein Registrierungs-Token zugewiesen, das diese Installation identifiziert; wir speichern es, um eine Benachrichtigung an Ihr Gerät richten zu können, und löschen es, wenn Sie sich abmelden. Der Benachrichtigungstext läuft über Google, um Ihr Telefon zu erreichen: Er nennt, was geschehen ist, und gegebenenfalls die handelnde Person oder den Titel Ihrer eigenen Reiseroute. Hinweise zur Moderation Ihrer Inhalte nennen niemals die Person, die sie gemeldet hat. Erteilen Sie keine Benachrichtigungserlaubnis, wird kein Token erstellt und nichts gesendet.
+
 Außerdem geben wir Daten weiter, wenn wir gesetzlich dazu verpflichtet sind und wenn es erforderlich ist, um auf eine unmittelbare Gefahr für die Sicherheit einer Person zu reagieren.
 
 

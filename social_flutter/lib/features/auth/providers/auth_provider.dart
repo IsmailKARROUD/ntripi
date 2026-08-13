@@ -11,6 +11,7 @@
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:social_flutter/core/api/api_client.dart';
+import 'package:social_flutter/core/push/push_service.dart';
 import 'package:social_flutter/core/storage/secure_storage.dart';
 import 'package:social_flutter/features/auth/data/auth_repository.dart';
 import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
@@ -52,6 +53,11 @@ class AuthNotifier extends Notifier<String?> {
 
   /// Called on logout or when a 401 is received.
   Future<void> logout() async {
+    // BEFORE the repository call, which discards the access token this needs.
+    // Not optional: a device token that outlives the session keeps delivering
+    // this user's notifications — including moderation notices — to whoever
+    // signs in next on the same phone. Never throws.
+    await unregisterForPush();
     await ref.read(authRepositoryProvider).logout();
     // Clear cached user data so a subsequent login as a different account
     // doesn't briefly show the previous user's content.

@@ -225,6 +225,8 @@ Have I Been Pwned — lorsque vous choisissez un mot de passe, nous vérifions s
 
 Atlassian (Jira) — lorsque nous transmettons un rapport de bogue que vous avez envoyé afin qu'il soit suivi et corrigé. Le ticket transmis contient votre description, la capture d'écran et les détails techniques ; il ne contient pas votre adresse e-mail.
 
+Google (Firebase Cloud Messaging) — les notifications push sur iOS et Android, si vous les autorisez. Un jeton d'enregistrement est attribué à votre appareil et identifie cette installation ; nous le conservons afin de pouvoir adresser une notification à votre appareil, et nous le supprimons lorsque vous vous déconnectez. Le texte de la notification transite par Google pour atteindre votre téléphone : il indique ce qui s'est passé et, le cas échéant, nomme la personne à l'origine de l'action ou le titre de votre propre itinéraire. Les avis concernant la modération de vos contenus ne nomment jamais la personne qui les a signalés. Si vous n'accordez pas l'autorisation de notification, aucun jeton n'est créé et rien n'est envoyé.
+
 Nous divulguons également des données lorsque la loi nous y oblige et lorsque cela est nécessaire pour répondre à un risque imminent pour la sécurité d'une personne.
 
 

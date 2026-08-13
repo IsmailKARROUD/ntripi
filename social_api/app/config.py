@@ -226,6 +226,28 @@ class Settings(BaseSettings):
     # might carry lives permanently on /settings/account-status either way.
     NOTIFICATION_MAX_AGE_DAYS: int = 365
 
+    # ── Push notifications (FCM HTTP v1) ────────────────────────────────────
+    # OFF unless BOTH of PROJECT_ID/SERVICE_ACCOUNT_JSON are set — same
+    # "unset = invisible" rule as JIRA_*: nothing is sent, no error is raised,
+    # and the in-app feed plus the client's 60s poll behave exactly as before.
+    # Push is a latency improvement over that poll, never a replacement: FCM
+    # delivery is best-effort and OEM battery managers drop it routinely.
+    FCM_PROJECT_ID: str | None = None
+    # The service-account key as raw JSON, NOT a path — Railway gives us no
+    # filesystem to drop a key file onto. Minted at Firebase → Project settings
+    # → Service accounts → Generate new private key.
+    FCM_SERVICE_ACCOUNT_JSON: str | None = None
+    # Tighter than the other integrations' 10 s: this one runs INLINE in the
+    # user's request, after their commit and before their response. A normal
+    # FCM call is well under a second, and the send loop abandons the whole
+    # notification on the first unreachable device, so this bounds the delay a
+    # slow FCM can add to a follow or a save.
+    FCM_TIMEOUT_SECONDS: float = 5.0
+    # A device that has not checked in for this long is presumed uninstalled.
+    # Tokens are also pruned on-demand whenever FCM answers UNREGISTERED; this
+    # only catches the devices that go quiet without ever telling us.
+    DEVICE_TOKEN_RETENTION_DAYS: int = 180
+
     # Tell pydantic-settings to look for a .env file in the working directory.
     # extra="ignore" means unknown .env keys don't cause validation errors.
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")

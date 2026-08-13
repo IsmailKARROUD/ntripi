@@ -2,9 +2,13 @@
 //
 // Keeps the bell badge honest while the app is open.
 //
-// There is no push channel — no FCM, no APNs, no WebSocket — so the server has
-// no way to tell the client anything. Without this, both notification providers
-// build once per launch and a hot restart is the only way to see a new row.
+// This is the BACKSTOP, not the delivery channel. FCM push (lib/core/push/)
+// makes an arrival show up in seconds, but its delivery is best-effort: OEM
+// battery managers kill background processes, iOS throttles, permission can be
+// denied outright, and web has no push at all here. So the poll stays, and it
+// stays unconditional — anything that made it depend on push would inherit
+// push's failure modes. Without it, both notification providers build once per
+// launch and a hot restart is the only way to see a new row.
 //
 // Polling is cheap by design rather than by luck: GET /notifications/unread-count
 // returns a single integer behind an ETag with `Cache-Control: private, no-cache`,

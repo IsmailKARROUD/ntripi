@@ -111,6 +111,20 @@ dependencies:
   # only player with first-class web support, which the toggle also ships to.
   audioplayers: ^6.8.1
 
+  # Push notifications (lib/core/push/). Mobile only — the entry points are all
+  # kIsWeb-guarded, because web push needs a service worker and a VAPID key
+  # this build deliberately does not ship.
+  #
+  # No flutter_local_notifications: we send FCM `notification` messages, which
+  # the OS renders itself while the app is backgrounded, and Android suppresses
+  # in the foreground — where NotificationPoller's badge and SFX cue already
+  # cover it. Nothing is left for a local-notification plugin to do.
+  #
+  # SETUP: these need `flutterfire configure` to have been run (it writes
+  # firebase_options.dart, android/app/google-services.json and
+  # ios/Runner/GoogleService-Info.plist). See the plan's prerequisites.
+  firebase_core: ^4.13.0
+  firebase_messaging: ^16.5.0
 
 
 dev_dependencies:

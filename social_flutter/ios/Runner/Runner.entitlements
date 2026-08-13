@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- APNs environment. `development` is correct for debug builds and for
+	     TestFlight; Xcode rewrites it to `production` on App Store export, so
+	     this does not need changing before release. One APNs .p8 auth key
+	     covers both environments — there is no separate sandbox key. -->
+	<key>aps-environment</key>
+	<string>development</string>
+</dict>
+</plist>

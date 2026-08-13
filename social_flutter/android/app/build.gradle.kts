@@ -1,6 +1,11 @@
 plugins {
     id("com.android.application")
     id("kotlin-android")
+    // Reads android/app/google-services.json, which `flutterfire configure`
+    // writes. The build FAILS with "File google-services.json is missing" until
+    // it has been run — that is deliberate: the alternative is an app that
+    // builds fine and silently never receives a push.
+    id("com.google.gms.google-services")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
 }

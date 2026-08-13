@@ -225,6 +225,8 @@ Have I Been Pwned — when you choose a password we check whether it appears in 
 
 Atlassian (Jira) — where we forward a bug report you sent so it can be tracked and fixed. The forwarded ticket carries your description, the screenshot, and the technical details; it does not carry your email address.
 
+Google (Firebase Cloud Messaging) — push notifications on iOS and Android, if you allow them. Your device is issued a registration token that identifies that installation; we store it so we can address a notification to your device, and we delete it when you sign out. The notification text passes through Google to reach your phone: it says what happened and, where relevant, names the person who acted or the title of your own itinerary. Notices about moderation of your content never name who reported it. If you do not grant notification permission, no token is created and nothing is sent.
+
 We also disclose data where we are legally required to, and where it is necessary to respond to an imminent risk to someone's safety.
 
 

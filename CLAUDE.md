@@ -218,6 +218,8 @@ Optional (reports/safety): `REPORT_HIDE_THRESHOLDS` (comma `category:count`) · 
 
 Optional (bug reports): `BUG_REPORT_RATE_LIMIT=5/hour` · `BUG_REPORT_RETENTION_DAYS=180`. Both have working defaults — shipping the feature needs no deploy change. `OPERATOR_EMAIL` is what turns the notification email on.
 
+Optional (push notifications): `FCM_PROJECT_ID` · `FCM_SERVICE_ACCOUNT_JSON` (the whole service-account JSON, not a path — Railway has no filesystem for a key file; this one is a real secret) · `FCM_TIMEOUT_SECONDS=10` · `DEVICE_TOKEN_RETENTION_DAYS=180`. Either unset ⇒ push is off and the client's 60 s poll is the only channel, exactly as before. Free — FCM carries no per-message charge — and needs no new Python package, since `google-auth` already mints the bearer. Client side needs `flutterfire configure` to have written `firebase_options.dart` + `google-services.json` + `GoogleService-Info.plist` (the Android build fails loudly without the JSON, deliberately), and iOS needs an APNs `.p8` uploaded to Firebase. Attach Firebase to the **existing** Google Cloud project that holds the Sign-In OAuth clients.
+
 Optional (Jira hand-off): `JIRA_BASE_URL` · `JIRA_EMAIL` · `JIRA_API_TOKEN` · `JIRA_PROJECT_KEY` · `JIRA_ISSUE_TYPE=Bug` · `JIRA_TIMEOUT_SECONDS=10`. Any of the first four unset ⇒ the "Create Jira issue" button is not rendered (a partially-set config logs which vars are missing). Free — the Jira Cloud REST API carries no per-call charge; the token comes from id.atlassian.com. `JIRA_PROJECT_KEY` is the board key (`NTRIPI`), not a numeric id, and `JIRA_ISSUE_TYPE` must name a type that exists in that project.
 
 ---
@@ -284,7 +286,7 @@ Shaking the phone captures the screen, lets the user draw on it, and files a sup
 
 ## In-App Notifications
 
-A bell beside the profile settings gear opens `/notifications`; three of the six types can be switched off in `/settings/notifications`. **In-app only** — there is no FCM/APNs, no notification plugin, and no OS permission prompt. Operators keep their `OPERATOR_EMAIL` mail and additionally get badge counts in the `/admin` nav.
+A bell beside the profile settings gear opens `/notifications`; three of the six types can be switched off in `/settings/notifications`. Delivery is a foreground poll plus **FCM push on iOS and Android** (see Push Notifications below); web is poll-only. Operators keep their `OPERATOR_EMAIL` mail and additionally get badge counts in the `/admin` nav.
 
 | type | trigger | mutable |
 |---|---|---|
@@ -322,6 +324,30 @@ There is no push channel, so nothing reaches a client that does not ask. Both no
 - **The refetch is unconditional.** `GET /notifications` carries the rows *and* the badge and goes through `ETagMiddleware`, so the conditional GET answers 304 with an empty body when nothing changed — it is already conditional where the comparison is exact. Gating it on the badge would skip when the badge is merely stale (up to a full interval), and skip forever after a read on another device drove `unread` to 0.
 - `RefreshableCenter` (`shared/widgets/editorial_widgets.dart`) is how an empty or errored list stays pullable. A `RefreshIndicator` wrapped around the populated list sits behind the `isEmpty` early return, which strands the exact two states where the user most wants to ask again.
 - **`EditorialDivider(loading:)` is the on-open refetch's only visible sign.** The reload deliberately leaves the previous rows on screen, so without it the screen just sits there until content changes under the user — and a `RefreshIndicator` cannot fill in, because it only draws for a real drag. Its 2 px box is fixed with the idle hairline top-aligned inside, so toggling never nudges the content. The screens raise it with `setState` from a **post-frame callback**, since `didChangeDependencies` runs inside the build pipeline.
+
+---
+
+## Push Notifications (FCM)
+
+Delivery for the notification feed above, on iOS and Android. **OFF unless `FCM_PROJECT_ID` and `FCM_SERVICE_ACCOUNT_JSON` are both set** — the same "unset = invisible" rule as `JIRA_*`; unset, nothing is sent, nothing raises, and the poll is the only channel exactly as before.
+
+- **Push is a latency improvement over the poll, never a replacement.** FCM delivery is best-effort: OEM battery managers kill background processes, iOS throttles, a token goes stale silently, permission can be denied. `NotificationPoller` stays, and stays unconditional — gating it on push would inherit push's failure modes. Nothing may be load-bearing on a push arriving.
+- **Zero new backend dependencies.** FCM HTTP v1 wants an OAuth2 bearer from a service account, which is what `google-auth` (already installed for Sign-In) mints. So `push_service.py` is a `requests.post`, shaped like `jira_service.py`, not an SDK. It **fails open** like `email_service` and unlike `jira_service`: nobody is waiting on it, and a Google outage must not 500 a follow.
+- **Push is dispatched `after_commit` and NEVER from inside `notify()`.** `notify()` adds its row to the caller's open transaction, so sending there would push for transactions that later roll back — and a push cannot be un-sent. `notify()` appends a `PendingPush` snapshot to `Session.info["pending_pushes"]`; the `after_commit` listener in `push_service.py` drains it. An `after_soft_rollback` listener clears the queue, or a rolled-back event would ride out on whatever commits next.
+- **The dispatcher uses its OWN session** (`_session_factory`), not the request's. Pruning a dead token needs a commit, and committing on the request session inside `after_commit` would re-enter the very listener that called it.
+- **`PendingPush` is a snapshot, not the ORM row.** After commit the row's attributes are expired and touching one fires a lazy reload on a session between transactions. Resolving actor name and itinerary title inside `notify()` also means the dispatcher queries nothing but `device_tokens`.
+- **Suppression is inherited, not reimplemented.** Because push hangs off `notify()`, the self / muted / blocked rules and the three `notify_*` columns govern it for free. There is no fourth preference column — the OS permission is the master switch, and an in-app toggle would just create a state where the OS says yes and the app says no.
+- **Server-rendered push text does not violate the "no stored rendered text" rule.** The OS draws the tray entry before our code runs, so client-side rendering is impossible; but the payload is transient and the `notifications` table still stores only the structured reference. `app/constants/push_i18n.py` holds the strings, copied **verbatim** from the app's `.arb` files so a tray entry and its feed row read identically — reword one, reword the other in the same commit.
+- **Locale lives on `device_tokens`, not on `users`** — one account can be a phone in French and a tablet in English, and it costs no new user column. Normalised on the way in (`fr-CA` → `fr`, junk → `en`), never 422.
+- **The actor falls back to `@username`, not to "Someone".** Same as the feed. `push_i18n`'s localised "Someone" is only for rows with no actor at all; using it for a user who never set a display name would make an ordinary person anonymous.
+- **`device_tokens.token` is UNIQUE, not `(user_id, token)`.** FCM reassigns a token to whichever account is signed in on that install, so registering is an upsert that MOVES the row. Otherwise two people sharing a phone leave the first still receiving the second's notifications.
+- **Sign-out must `DELETE /devices/{token}`**, before the repository call that discards the access token. A token that outlives the session delivers the previous user's notifications — including moderation notices — to whoever signs in next.
+- **Dead tokens are pruned on `UNREGISTERED` / `INVALID_ARGUMENT` only.** A 500, a 503, or a 401 from a misconfigured key is transient and must never cost a working device its registration — that is unrecoverable without a reinstall. The sweep additionally purges rows idle past `DEVICE_TOKEN_RETENTION_DAYS` (an uninstall never tells us).
+- **Client is mobile-only and fails silent.** Every entry point in `lib/core/push/` is `kIsWeb`-guarded, and `initFirebase()` swallows a missing `google-services.json` so the app still launches without push. `PushGateway` (in `MaterialApp.router`'s builder, beside `NotificationPoller`) owns the router and locale; `push_service.dart` owns the FCM plumbing.
+- **The permission prompt is asked on `/notifications` and nowhere else.** iOS allows exactly one per install and a denial is only reversible in Settings, so it lands when the user has just shown they want notifications — not at launch, in front of an app they have not seen.
+- **A cold start's tap is parked, not navigated.** `getInitialMessage()` resolves before the widget tree (and therefore go_router) exists; `takePendingRoute()` is drained from a post-frame callback. This is the most common real-world path and the easiest to lose.
+- **Tap routing reuses `notificationRoute()`** (`app_notification.dart`), a free function precisely because a push arrives as a bare `data` map with no `AppNotification`. A tray tap and a feed tap must never disagree.
+- Foreground messages are deliberately unhandled: Android suppresses the tray entry while the app is open, and the poller's badge + `Sfx.newNotification` already announce the arrival.
 
 ---
 
@@ -425,6 +451,21 @@ The ToS asserted a minimum age for a release before anything asked for one. `use
 - Do NOT gate the on-open refetch on the badge count — the badge is up to a poll interval stale, and after a read on another device it is 0 while the feed is not
 - Do NOT put a list's only `RefreshIndicator` behind an `isEmpty` early return — an empty list and a failed load are the two states most in need of a pull; use `RefreshableCenter`
 - Do NOT set `state` or call `ref.invalidate` after an `await` in a notifier without checking `ref.mounted` — logout disposes the provider mid-flight and a disposed `Ref` throws
+- Do NOT send a push from inside `notify()` — it adds to an open transaction, and a push sent for a rollback cannot be un-sent; queue on `Session.info` and let the `after_commit` listener dispatch
+- Do NOT let the push dispatcher use the request's session — pruning a dead token commits, and committing there re-enters the `after_commit` hook that called it
+- Do NOT drop the `after_soft_rollback` listener — a stale queued push would ride out on whatever commits next, announcing an event that never happened
+- Do NOT hold an ORM row in a `PendingPush` — its attributes are expired after commit and reading one lazy-loads on a session between transactions; snapshot inside `notify()`
+- Do NOT reimplement the suppression rules for push, and do NOT add a fourth `notify_*` column — push hangs off `notify()` and the OS permission is the master switch
+- Do NOT delete a device token on a 500, a 503, or a 401 — only `UNREGISTERED`/`INVALID_ARGUMENT` mean the token is dead; anything else is transient and dropping it needs a reinstall to undo
+- Do NOT skip `DELETE /devices/{token}` on sign-out, or send it after the access token is discarded — the next user on that phone inherits this user's notifications
+- Do NOT make `device_tokens.token` unique per user — FCM reassigns a token across accounts, and a per-user constraint turns that into a duplicate that misdelivers
+- Do NOT store the push locale on `users` — it is per-device, and one account can be a phone in French and a tablet in English
+- Do NOT reword a `push_i18n` string without rewording its `.arb` twin — a tray entry and its feed row are the same sentence
+- Do NOT name a reporter, a reason, or a report count in push text — the tray entry is visible on a lock screen
+- Do NOT ask for notification permission at launch — iOS grants exactly one prompt per install and a denial is only undoable in Settings
+- Do NOT navigate from `getInitialMessage()` — go_router does not exist yet on a cold start; park the route and drain it post-frame
+- Do NOT let push failures surface to the user or block a write — it fails open like `email_service`, and the poll still corrects the badge within a minute
+- Do NOT make `NotificationPoller` conditional on push — best-effort delivery is exactly why the backstop exists
 - Do NOT give `moderation_action` an actor or an inline appeal button — it would out the reporter and give appeals a second home away from `/settings/account-status`
 - Do NOT add a switch for follow requests or moderation notices — an unseen request cannot be answered and an unseen takedown cannot be appealed in time
 - Do NOT make `warn_user` notifications idempotent, and do NOT notify on `ban_user` — a repeat warning is the escalation, and a banned account is 403'd out of the feed entirely

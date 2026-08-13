@@ -104,5 +104,12 @@
 			</array>
 		</dict>
 	</array>
+	<!-- Lets iOS hand a push to the app while it is backgrounded, which is what
+	     makes firebase_messaging's background handler run. Without it the tray
+	     entry still appears, but the app learns nothing until the user taps. -->
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>remote-notification</string>
+	</array>
 </dict>
 </plist>

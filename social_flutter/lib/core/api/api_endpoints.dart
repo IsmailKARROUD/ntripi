@@ -273,6 +273,20 @@ const kNotificationsUnreadCountEndpoint = '/notifications/unread-count';
 const kNotificationsReadEndpoint = '/notifications/read';
 
 // ---------------------------------------------------------------------------
+// Push notifications (FCM)
+// ---------------------------------------------------------------------------
+
+/// Register or refresh this device's FCM token. Idempotent: the client posts on
+/// every permission grant and every token rotation, and the server upserts.
+const kDevicesEndpoint = '/devices';
+
+/// Unregister one device. Called on sign-out — a token that outlives the
+/// session would deliver the previous user's notifications to the next one.
+/// The token is URL-encoded: FCM tokens are opaque and may carry ':'.
+String deviceEndpoint(String token) =>
+    '/devices/${Uri.encodeComponent(token)}';
+
+// ---------------------------------------------------------------------------
 // Safety / compliance surfaces
 // ---------------------------------------------------------------------------
 
