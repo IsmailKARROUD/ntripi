@@ -143,12 +143,21 @@ class NotificationsNotifier extends AsyncNotifier<List<AppNotification>> {
   /// the unread tint in the same frame the user arrived to look at it. The
   /// badge is what they came to clear; which rows were new is what they came to
   /// see. The next load returns them read.
+  ///
+  /// Never throws. Its only caller opens the screen with `unawaited(...)`, so a
+  /// server error here has no catcher and would surface as an unhandled async
+  /// error — same reasoning as _commit, and the same swallow the background
+  /// reads already make. The badge re-read below is the whole recovery: the
+  /// server stays the authority on read state either way.
   Future<void> markAllRead() async {
     final current = state.value;
     if (current == null || current.every((n) => n.read)) return;
 
     try {
       await ref.read(notificationRepositoryProvider).markRead();
+    } catch (_) {
+      // Nothing to show: nobody asked for this write, and the bell staying lit
+      // is the correct outcome of a badge clear that did not land.
     } finally {
       // Even on failure: the server is the authority, and re-reading is how the
       // badge recovers from a write that did not land. Guarded because this

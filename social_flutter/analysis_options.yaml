@@ -9,6 +9,16 @@
 # packages, and plugins designed to encourage good coding practices.
 include: package:flutter_lints/flutter.yaml
 
+analyzer:
+  exclude:
+    # Build artifacts, not our code. Pods and SwiftPM check out each plugin's
+    # own example app under here, and the IDE analyses those against OUR
+    # dependencies rather than theirs — so every import the example declares
+    # and we don't (flutter_local_notifications, http, its own
+    # firebase_options.dart) reports as a phantom error. `flutter analyze`
+    # already skips build/; this stops the IDE surfacing them on open.
+    - build/**
+
 linter:
   # The lint rules applied to this project can be customized in the
   # section below to disable rules from the `package:flutter_lints/flutter.yaml`
