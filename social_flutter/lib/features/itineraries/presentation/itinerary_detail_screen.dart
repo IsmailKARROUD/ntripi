@@ -932,7 +932,12 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                                     ref,
                                     ReportTarget.itinerary(widget.itineraryId),
                                   ),
-                            onEditDetails: mayEdit
+                            // isOwner, not mayEdit: the form behind this button
+                            // is the trip's settings — cover, visibility, the
+                            // editor list, delete — every one of them
+                            // owner-only server-side. An editor opening it
+                            // could only collect 403s.
+                            onEditDetails: isOwner
                                 ? () => context.push(
                                     '/itineraries/${widget.itineraryId}/edit')
                                 : null,
@@ -941,8 +946,9 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                             onExitEdit:
                                 mayEdit && _editMode ? _exitEditMode : null,
                             // Long-press anywhere on the hero is a shortcut to
-                            // the same screen the tune button opens.
-                            onLongPressEdit: mayEdit && !_editMode
+                            // the same screen the tune button opens — so it
+                            // carries the same owner-only gate.
+                            onLongPressEdit: isOwner && !_editMode
                                 ? () => context.push(
                                     '/itineraries/${widget.itineraryId}/edit')
                                 : null,
@@ -1509,6 +1515,8 @@ class _CoverHero extends StatefulWidget {
   final VoidCallback? onShare;
   // Viewer-only (non-owner) report action; null hides the flag button.
   final VoidCallback? onReport;
+  // Owner-only: opens the settings form (cover, visibility, editors, delete).
+  // Null for a granted editor, which is also what hides the tune button.
   final VoidCallback? onEditDetails;
   final VoidCallback? onEnterEdit;
   final VoidCallback? onExitEdit;
@@ -1639,12 +1647,17 @@ class _CoverHeroState extends State<_CoverHero> {
                     const SizedBox(width: 6),
                   ],
                   if (widget.canEdit) ...[
-                    _GlassButton(
-                      key: widget.editDetailsButtonKey,
-                      icon: Icons.tune_rounded,
-                      onTap: widget.onEditDetails,
-                    ),
-                    const SizedBox(width: 6),
+                    // Owner-only, so keyed off the callback rather than
+                    // canEdit — an editor must not see a button that opens
+                    // nothing.
+                    if (widget.onEditDetails != null) ...[
+                      _GlassButton(
+                        key: widget.editDetailsButtonKey,
+                        icon: Icons.tune_rounded,
+                        onTap: widget.onEditDetails,
+                      ),
+                      const SizedBox(width: 6),
+                    ],
                     EditPencilButton(
                       key: widget.enterEditButtonKey,
                       onTap: widget.onEnterEdit,

@@ -11,6 +11,11 @@
 //   EDIT    — form is pre-filled from itineraryDetailProvider (already cached).
 //             Image upload/delete runs BEFORE the header PATCH so the provider
 //             refresh triggered by updateHeader reflects the final image state.
+//             Owner-only: every setting on this screen — cover, visibility, the
+//             editor list, delete — is owner-gated server-side, so a granted
+//             editor here could only collect 403s. The route is directly
+//             addressable (web URL, deep link), which is why the gate is on the
+//             screen and not only on the button that opens it.
 //
 // Cover image upload is deferred in CREATE mode because the upload endpoint
 // requires an itinerary ID that doesn't exist yet when the form opens.
@@ -36,6 +41,7 @@ import 'package:social_flutter/features/itineraries/presentation/widgets/cover_i
 import 'package:social_flutter/features/itineraries/presentation/recommended_period_screen.dart';
 import 'package:social_flutter/features/itineraries/presentation/visibility_screen.dart';
 import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
+import 'package:social_flutter/features/profile/providers/profile_provider.dart';
 import 'package:social_flutter/core/utils/platform_utils.dart';
 import 'package:social_flutter/l10n/app_localizations.dart';
 import 'package:social_flutter/shared/widgets/loaders.dart';
@@ -411,10 +417,24 @@ class _ItineraryFormScreenState extends ConsumerState<ItineraryFormScreen> {
 
   // ── Build ────────────────────────────────────────────────────────────────────
 
+  /// True only on evidence: an itinerary that has loaded and whose owner is
+  /// somebody else. A profile or a detail still loading falls through to the
+  /// form — refusing on a value we have not read yet would lock the owner out
+  /// of their own trip on a cold deep link.
+  bool get _blockedNonOwner {
+    if (widget.mode != ItineraryFormMode.edit) return false;
+    final currentUserId = ref.watch(myProfileProvider).value?.id;
+    final itinerary =
+        ref.watch(itineraryDetailProvider(widget.itineraryId!)).value;
+    if (currentUserId == null || itinerary == null) return false;
+    return itinerary.userId != currentUserId;
+  }
+
   @override
   Widget build(BuildContext context) {
     final nt = context.nt;
     final l10n = AppLocalizations.of(context)!;
+    if (_blockedNonOwner) return const _OwnerOnlyNotice();
     final visLabel = _visibility.label(l10n);
     final visIcon = _visibilityIcon(_visibility);
     final visColor = _visibilityColor(_visibility, nt);
@@ -675,6 +695,45 @@ class _ItineraryFormScreenState extends ConsumerState<ItineraryFormScreen> {
 }
 
 // ─── Form-level private widgets ───────────────────────────────────────────────
+
+/// Shown instead of the form when a non-owner reaches `/itineraries/{id}/edit`
+/// directly. A plain refusal with a way back, not a silent pop: a screen that
+/// vanishes on arrival reads as a crash.
+class _OwnerOnlyNotice extends StatelessWidget {
+  const _OwnerOnlyNotice();
+
+  @override
+  Widget build(BuildContext context) {
+    final nt = context.nt;
+    final l10n = AppLocalizations.of(context)!;
+    return Scaffold(
+      backgroundColor: nt.sand,
+      appBar: AppBar(
+        backgroundColor: nt.sand,
+        title: Text(l10n.editItinerary),
+      ),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.lock_outline_rounded, size: 40, color: nt.text3),
+              const SizedBox(height: 12),
+              Text(
+                // Reuses the wording the API's own itinerary_not_owner refusal
+                // already carries in all six locales.
+                l10n.apiErrorItineraryNotOwner,
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 15, color: nt.text2),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
 
 class _SectionLabel extends StatelessWidget {
   final String text;

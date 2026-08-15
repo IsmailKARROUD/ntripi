@@ -525,6 +525,18 @@ because those write sibling tables, never itinerary content.
 - **`long_press_to_edit.dart`'s "role-disjoint" invariant is now can-edit vs
   report**, not owner vs report — an editor gets the pencil and never the flag.
   `_CoverHero.canEdit` (renamed from `isOwner`) is what picks that chrome.
+- **`itinerary_form_screen.dart` in edit mode ("Edit Itinerary") is `isOwner`,
+  not `mayEdit`.** It is the trip's settings screen — cover, visibility, the
+  editor list, delete — and every one of those is owner-only server-side, so an
+  editor opening it could only collect 403s. Three gates, because the route is
+  directly addressable on web: the hero's tune button and its long-press
+  shortcut are wired off `isOwner` (the tune button renders only when
+  `onEditDetails != null`, so nobody sees a button that opens nothing), and the
+  screen itself answers `_OwnerOnlyNotice`. That last check fires **only on
+  evidence** — a profile or detail still loading falls through to the form, or a
+  cold deep link would lock the owner out of their own trip. The pencil
+  (`onEnterEdit`, content editing) stays on `mayEdit`. Regression test:
+  `test/widgets/itinerary_edit_form_owner_only_test.dart`.
 - **A lock loss must never pop a route or clear a controller.** The ejected user
   is mid-edit and their unsaved text is now the only copy: `EditLockLostNotice`
   is a persistent banner (not a snackbar — it has to still be visible two minutes
@@ -653,6 +665,7 @@ because those write sibling tables, never itinerary content.
 - Do NOT put a remaining-seconds field in the lock GET body — it would change on every poll and defeat the 304
 - Do NOT let `grant_view` change `visibility` — it may only add an allowlist row, and only for `restricted`
 - Do NOT let an editor grant edit rights, change visibility, delete the itinerary, or replace the cover
+- Do NOT open the "Edit Itinerary" form on `mayEdit` — it holds only owner-only settings, so it gates on `isOwner` at the button, the long-press, and the screen itself
 - Do NOT leave a revoked editor's claim standing — it blocks everyone until the TTL for someone who can no longer use it
 - Do NOT add a mutating itinerary endpoint without classifying it in `test_edit_guard_coverage.py` — the test fails until you do, deliberately
 - Do NOT make `DELETE /lock` 404 — it is called from teardown, same rule as the notification DELETE
