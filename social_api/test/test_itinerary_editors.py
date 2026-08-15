@@ -405,13 +405,74 @@ class TestListAndRevoke:
         assert response.status_code == 404
         assert response.json()["code"] == "editor_not_found"
 
-    def test_only_the_owner_may_revoke(self, client: TestClient):
+    def test_an_editor_may_remove_themselves(self, client: TestClient):
+        """Walking away is the editor's own call — the owner is not a gatekeeper
+        on the way out, only on the way in."""
         owner_hdrs, _, bob_hdrs, bob_id = _cast(client)
         itin_id = _itinerary(client, owner_hdrs)
         _grant(client, itin_id, owner_hdrs, bob_id)
+        token = acquire_edit_lock(client, itin_id, bob_hdrs)
+
+        assert client.delete(f"/itineraries/{itin_id}/editors/{bob_id}",
+                             headers=bob_hdrs).status_code == 204
+
+        response = client.patch(
+            f"/itineraries/{itin_id}", json={"title": "No"},
+            headers={**bob_hdrs, "If-Match": '"whatever"', "X-Edit-Lock": token},
+        )
+        assert response.status_code == 403
+        assert client.get(f"/itineraries/{itin_id}/editors",
+                          headers=owner_hdrs).json() == []
+
+    def test_leaving_keeps_view_access(self, client: TestClient):
+        """Editing is a layer on viewing — peeling it off must not take the
+        allowlist row underneath with it."""
+        owner_hdrs, _, bob_hdrs, bob_id = _cast(client)
+        itin_id = _itinerary(client, owner_hdrs)
+        _grant(client, itin_id, owner_hdrs, bob_id, grant_view=True)
+
+        client.delete(f"/itineraries/{itin_id}/editors/{bob_id}", headers=bob_hdrs)
+
+        response = client.get(f"/itineraries/{itin_id}", headers=bob_hdrs)
+        assert response.status_code == 200
+        assert response.json()["can_edit"] is False
+
+    def test_leaving_releases_your_own_claim(self, client: TestClient):
+        """Same reasoning as a revoke: a claim nobody can use blocks everybody."""
+        owner_hdrs, _, bob_hdrs, bob_id = _cast(client)
+        itin_id = _itinerary(client, owner_hdrs)
+        _grant(client, itin_id, owner_hdrs, bob_id)
+        acquire_edit_lock(client, itin_id, bob_hdrs)
+
+        client.delete(f"/itineraries/{itin_id}/editors/{bob_id}", headers=bob_hdrs)
+
+        state = client.get(f"/itineraries/{itin_id}/lock", headers=owner_hdrs)
+        assert state.json()["lock"] is None
+        # No takeover flag needed — there is nothing left to take over.
+        assert client.post(f"/itineraries/{itin_id}/lock", json={},
+                           headers=owner_hdrs).status_code == 200
+
+    def test_an_editor_may_not_remove_another_editor(self, client: TestClient):
+        """The self-revoke is not a foothold into the owner's editor list."""
+        owner_hdrs, _, bob_hdrs, bob_id = _cast(client)
+        carol = register_user(client, "carol", "carol@example.com")
+        itin_id = _itinerary(client, owner_hdrs)
+        _grant(client, itin_id, owner_hdrs, bob_id)
+        _grant(client, itin_id, owner_hdrs, carol["user_id"])
+
+        response = client.delete(
+            f"/itineraries/{itin_id}/editors/{carol['user_id']}", headers=bob_hdrs)
+
+        assert response.status_code == 403
+
+    def test_a_stranger_may_not_remove_an_editor(self, client: TestClient):
+        owner_hdrs, _, _, bob_id = _cast(client)
+        carol = register_user(client, "carol", "carol@example.com")
+        itin_id = _itinerary(client, owner_hdrs, visibility="public")
+        _grant(client, itin_id, owner_hdrs, bob_id, grant_view=False)
 
         response = client.delete(f"/itineraries/{itin_id}/editors/{bob_id}",
-                                 headers=bob_hdrs)
+                                 headers=auth_headers(carol["access_token"]))
 
         assert response.status_code == 403
 

@@ -5626,6 +5626,42 @@ abstract class AppLocalizations {
   /// **'Change visibility'**
   String get editorsOpenVisibility;
 
+  /// No description provided for @editorsLeaveRowTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'You can edit this trip'**
+  String get editorsLeaveRowTitle;
+
+  /// No description provided for @editorsLeaveAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop editing this trip'**
+  String get editorsLeaveAction;
+
+  /// No description provided for @editorsLeaveTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop editing this trip?'**
+  String get editorsLeaveTitle;
+
+  /// No description provided for @editorsLeaveMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'You won\'t be able to change it any more. Anything you already added stays, and you can still view it. Only the owner can give you access again.'**
+  String get editorsLeaveMessage;
+
+  /// No description provided for @editorsLeaveConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop editing'**
+  String get editorsLeaveConfirm;
+
+  /// No description provided for @editorsLeft.
+  ///
+  /// In en, this message translates to:
+  /// **'You can no longer edit this trip'**
+  String get editorsLeft;
+
   /// No description provided for @editLockSomeoneEditing.
   ///
   /// In en, this message translates to:

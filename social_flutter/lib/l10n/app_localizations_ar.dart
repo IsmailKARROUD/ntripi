@@ -3239,6 +3239,25 @@ class AppLocalizationsAr extends AppLocalizations {
   String get editorsOpenVisibility => 'تغيير من يمكنه الاطّلاع';
 
   @override
+  String get editorsLeaveRowTitle => 'يمكنك تحرير هذه الرحلة';
+
+  @override
+  String get editorsLeaveAction => 'التوقّف عن تحرير هذه الرحلة';
+
+  @override
+  String get editorsLeaveTitle => 'التوقّف عن تحرير هذه الرحلة؟';
+
+  @override
+  String get editorsLeaveMessage =>
+      'لن تتمكّن من تغييرها بعد الآن. ويبقى ما أضفته سابقًا، وسيظل بإمكانك الاطّلاع عليها. وحده المالك يمكنه منحك الإذن من جديد.';
+
+  @override
+  String get editorsLeaveConfirm => 'التوقّف عن التحرير';
+
+  @override
+  String get editorsLeft => 'لم يعد بإمكانك تحرير هذه الرحلة';
+
+  @override
   String editLockSomeoneEditing(Object name) {
     return '$name يحرّر الآن';
   }

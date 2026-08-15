@@ -3224,6 +3224,25 @@ class AppLocalizationsEs extends AppLocalizations {
   String get editorsOpenVisibility => 'Change visibility';
 
   @override
+  String get editorsLeaveRowTitle => 'Puedes editar este itinerario';
+
+  @override
+  String get editorsLeaveAction => 'Dejar de editar este itinerario';
+
+  @override
+  String get editorsLeaveTitle => '¿Dejar de editar este itinerario?';
+
+  @override
+  String get editorsLeaveMessage =>
+      'Ya no podrás modificarlo. Lo que hayas añadido se queda, y podrás seguir viéndolo. Solo el propietario puede volver a darte acceso.';
+
+  @override
+  String get editorsLeaveConfirm => 'Dejar de editar';
+
+  @override
+  String get editorsLeft => 'Ya no puedes editar este itinerario';
+
+  @override
   String editLockSomeoneEditing(Object name) {
     return '$name is editing';
   }

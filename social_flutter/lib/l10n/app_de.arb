@@ -1010,5 +1010,11 @@
   "notificationDeleted": "Benachrichtigung gelöscht",
   "notificationsClearAll": "Alle löschen",
   "notificationsClearAllTitle": "Alle Benachrichtigungen löschen?",
-  "notificationsClearAllMessage": "Alle Benachrichtigungen werden aus deiner Liste entfernt. Moderationshinweise bleiben auf deiner Seite „Kontostatus“."
+  "notificationsClearAllMessage": "Alle Benachrichtigungen werden aus deiner Liste entfernt. Moderationshinweise bleiben auf deiner Seite „Kontostatus“.",
+  "editorsLeaveRowTitle": "Du kannst diese Reiseroute bearbeiten",
+  "editorsLeaveAction": "Diese Reiseroute nicht mehr bearbeiten",
+  "editorsLeaveTitle": "Diese Reiseroute nicht mehr bearbeiten?",
+  "editorsLeaveMessage": "Du kannst sie danach nicht mehr ändern. Was du bereits hinzugefügt hast, bleibt erhalten, und du kannst sie weiterhin ansehen. Nur die Besitzerin oder der Besitzer kann dir den Zugriff wieder geben.",
+  "editorsLeaveConfirm": "Nicht mehr bearbeiten",
+  "editorsLeft": "Du kannst diese Reiseroute nicht mehr bearbeiten"
 }

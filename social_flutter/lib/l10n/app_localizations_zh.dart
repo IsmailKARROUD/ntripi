@@ -3037,6 +3037,25 @@ class AppLocalizationsZh extends AppLocalizations {
   String get editorsOpenVisibility => 'Change visibility';
 
   @override
+  String get editorsLeaveRowTitle => '你可以编辑此行程';
+
+  @override
+  String get editorsLeaveAction => '不再编辑此行程';
+
+  @override
+  String get editorsLeaveTitle => '不再编辑此行程？';
+
+  @override
+  String get editorsLeaveMessage =>
+      '之后你将无法再修改它。你已添加的内容会保留，你仍然可以查看它。只有所有者才能重新授予你权限。';
+
+  @override
+  String get editorsLeaveConfirm => '不再编辑';
+
+  @override
+  String get editorsLeft => '你已无法再编辑此行程';
+
+  @override
   String editLockSomeoneEditing(Object name) {
     return '$name is editing';
   }

@@ -3260,6 +3260,25 @@ class AppLocalizationsFr extends AppLocalizations {
   String get editorsOpenVisibility => 'Changer la visibilité';
 
   @override
+  String get editorsLeaveRowTitle => 'Vous pouvez modifier ce voyage';
+
+  @override
+  String get editorsLeaveAction => 'Ne plus modifier ce voyage';
+
+  @override
+  String get editorsLeaveTitle => 'Ne plus modifier ce voyage ?';
+
+  @override
+  String get editorsLeaveMessage =>
+      'Vous ne pourrez plus y apporter de modifications. Ce que vous avez déjà ajouté reste, et vous pourrez toujours le consulter. Seul le propriétaire peut vous redonner l\'accès.';
+
+  @override
+  String get editorsLeaveConfirm => 'Ne plus modifier';
+
+  @override
+  String get editorsLeft => 'Vous ne pouvez plus modifier ce voyage';
+
+  @override
   String editLockSomeoneEditing(Object name) {
     return '$name est en train de modifier';
   }

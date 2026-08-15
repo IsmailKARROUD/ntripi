@@ -59,6 +59,8 @@ OWNER_ONLY = {
     ("POST", "/itineraries/{itinerary_id}/allowed-users"),
     ("DELETE", "/itineraries/{itinerary_id}/allowed-users/{user_id}"),
     ("POST", "/itineraries/{itinerary_id}/editors"),
+    # Owner-or-self: the owner revokes anyone, an editor may revoke only
+    # themselves. Still lock-free — walking away is not editing content.
     ("DELETE", "/itineraries/{itinerary_id}/editors/{user_id}"),
     ("POST", "/itineraries/{itinerary_id}/image"),
     ("DELETE", "/itineraries/{itinerary_id}/image"),

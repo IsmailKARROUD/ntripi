@@ -62,6 +62,7 @@ import 'package:social_flutter/shared/models/user.dart';
 import 'package:social_flutter/features/itineraries/domain/stop.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/annotation_chip.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/edit_pencil_button.dart';
+import 'package:social_flutter/features/itineraries/presentation/widgets/editor_access_row.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/long_press_to_edit.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/markdown_notes_editor.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/move_stop_to_track_sheet.dart';
@@ -119,6 +120,7 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
   bool _firstStopFormOpened = false; // one-shot guard for the just-created auto-open
   bool _openSoundPlayed = false; // one-shot guard for the open-itinerary cue
   bool _closeCuePlayed = false; // one-shot guard: the two close paths overlap
+  bool _leaving = false; // an editor's self-revoke is in flight
   //start with map hidden on mobile to avoid unnecessary API calls and improve performance, since the map is less likely to be used on mobile and can be accessed via a button
   bool _mapVisible = false;
   // Polls who holds the edit claim. There is no push channel, so a banner that
@@ -440,6 +442,45 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                 e as dynamic, AppLocalizations.of(context)!))),
       );
     }
+  }
+
+  /// Hand back edit rights on somebody else's trip. Owner-driven revoke and
+  /// this share one endpoint, so the server releases our claim for us.
+  Future<void> _leaveAsEditor(String currentUserId) async {
+    final l10n = AppLocalizations.of(context)!;
+    // Tier 2, not Tier 1: an undo snackbar would be a lie — only the owner can
+    // grant edit rights, so the leaver cannot put this back themselves.
+    final confirmed = await confirmDestructiveAction(
+      context: context,
+      title: l10n.editorsLeaveTitle,
+      message: l10n.editorsLeaveMessage,
+      confirmLabel: l10n.editorsLeaveConfirm,
+    );
+    if (!confirmed || !mounted) return;
+
+    setState(() => _leaving = true);
+    try {
+      await ref
+          .read(editorsProvider(widget.itineraryId).notifier)
+          .removeEditor(currentUserId);
+      // The server already dropped any claim of ours; this clears the local
+      // token and stops the heartbeat. A no-op when we were not holding one.
+      await ref.read(editLockProvider(widget.itineraryId).notifier).release();
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _leaving = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(extractErrorMessage(e, l10n))),
+      );
+      return;
+    }
+    if (!mounted) return;
+    setState(() => _leaving = false);
+    // Deliberately no pop: leaving as an editor does not touch view access, so
+    // the trip stays readable and only the pencil goes away.
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(l10n.editorsLeft)),
+    );
   }
 
   Future<void> _addSegmentWithLeg(String fromStopId, String toStopId) async {
@@ -1413,6 +1454,29 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                                 itinerary: itinerary,
                                 isOwner: isOwner,
                                 onEdit: _enterEditMode,
+                              ),
+                            ),
+                          ),
+
+                        // ── Editor's way out (read mode) ───────────────────
+                        // Last thing on the page on purpose: giving up edit
+                        // rights should cost a deliberate scroll, never a
+                        // mis-tap near the hero chrome. currentUserId is
+                        // load-bearing, not defensive — isOwner is false while
+                        // the profile loads and the server sends can_edit:true
+                        // to the owner too, so without it the owner would
+                        // briefly be offered a way out of their own trip.
+                        if (currentUserId != null &&
+                            !isOwner &&
+                            itinerary.canEdit &&
+                            !_editMode)
+                          SliverToBoxAdapter(
+                            child: Padding(
+                              padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                              child: EditorAccessRow(
+                                onLeave: _leaving
+                                    ? null
+                                    : () => _leaveAsEditor(currentUserId),
                               ),
                             ),
                           ),

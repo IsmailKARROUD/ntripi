@@ -973,8 +973,9 @@ def remove_allowed_user(
 # Editor endpoints — /itineraries/{id}/editors
 # (Same literal-path-before-/stops placement rule as the allowlist above.)
 #
-# Only the owner grants or revokes. A grant is inert unless the target can also
-# VIEW the itinerary, and that is re-checked on every write by
+# Only the owner grants, and only the owner revokes somebody else — an editor
+# may revoke themselves and nobody but themselves. A grant is inert unless the
+# target can also VIEW the itinerary, and that is re-checked on every write by
 # can_edit_itinerary — so this table can never widen visibility, only ride on it.
 # ---------------------------------------------------------------------------
 
@@ -1103,7 +1104,12 @@ def remove_editor(
     current_user: User = Depends(get_current_user),
 ) -> None:
     itinerary = _get_itinerary_or_404(itinerary_id, db)
-    _require_owner(itinerary, current_user)
+    # The owner revokes anyone; an editor may only ever remove themselves. Any
+    # other pairing is a stranger reaching into somebody else's editor list.
+    if itinerary.user_id != current_user.id and user_id != current_user.id:
+        raise ApiError(status_code=status.HTTP_403_FORBIDDEN,
+                       code="itinerary_not_owner",
+                       detail="You do not have permission to modify this itinerary.")
 
     entry = _editor_row(db, itinerary_id, user_id)
     if not entry:

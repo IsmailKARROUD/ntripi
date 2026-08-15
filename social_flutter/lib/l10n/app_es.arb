@@ -1010,5 +1010,11 @@
   "notificationDeleted": "Notificación eliminada",
   "notificationsClearAll": "Borrar todo",
   "notificationsClearAllTitle": "¿Borrar todas las notificaciones?",
-  "notificationsClearAllMessage": "Se eliminarán todas las notificaciones de tu lista. Los avisos de moderación permanecen en tu página Estado de la cuenta."
+  "notificationsClearAllMessage": "Se eliminarán todas las notificaciones de tu lista. Los avisos de moderación permanecen en tu página Estado de la cuenta.",
+  "editorsLeaveRowTitle": "Puedes editar este itinerario",
+  "editorsLeaveAction": "Dejar de editar este itinerario",
+  "editorsLeaveTitle": "¿Dejar de editar este itinerario?",
+  "editorsLeaveMessage": "Ya no podrás modificarlo. Lo que hayas añadido se queda, y podrás seguir viéndolo. Solo el propietario puede volver a darte acceso.",
+  "editorsLeaveConfirm": "Dejar de editar",
+  "editorsLeft": "Ya no puedes editar este itinerario"
 }

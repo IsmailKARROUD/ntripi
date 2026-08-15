@@ -3197,6 +3197,25 @@ class AppLocalizationsEn extends AppLocalizations {
   String get editorsOpenVisibility => 'Change visibility';
 
   @override
+  String get editorsLeaveRowTitle => 'You can edit this trip';
+
+  @override
+  String get editorsLeaveAction => 'Stop editing this trip';
+
+  @override
+  String get editorsLeaveTitle => 'Stop editing this trip?';
+
+  @override
+  String get editorsLeaveMessage =>
+      'You won\'t be able to change it any more. Anything you already added stays, and you can still view it. Only the owner can give you access again.';
+
+  @override
+  String get editorsLeaveConfirm => 'Stop editing';
+
+  @override
+  String get editorsLeft => 'You can no longer edit this trip';
+
+  @override
   String editLockSomeoneEditing(Object name) {
     return '$name is editing';
   }
