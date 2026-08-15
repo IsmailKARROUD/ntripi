@@ -3250,23 +3250,23 @@ class AppLocalizationsDe extends AppLocalizations {
   String get editorsOpenVisibility => 'Change visibility';
 
   @override
-  String get editorsLeaveRowTitle => 'Du kannst diese Reiseroute bearbeiten';
+  String get editorsLeaveRowTitle => 'Du bist Bearbeiter dieser Reiseroute';
 
   @override
-  String get editorsLeaveAction => 'Diese Reiseroute nicht mehr bearbeiten';
+  String get editorsLeaveAction => 'Mich als Bearbeiter entfernen';
 
   @override
-  String get editorsLeaveTitle => 'Diese Reiseroute nicht mehr bearbeiten?';
+  String get editorsLeaveTitle => 'Mich als Bearbeiter entfernen?';
 
   @override
   String get editorsLeaveMessage =>
-      'Du kannst sie danach nicht mehr ändern. Was du bereits hinzugefügt hast, bleibt erhalten, und du kannst sie weiterhin ansehen. Nur die Besitzerin oder der Besitzer kann dir den Zugriff wieder geben.';
+      'Du kannst diese Reiseroute danach nicht mehr ändern. Was du bereits hinzugefügt hast, bleibt erhalten, und du kannst sie weiterhin ansehen. Nur die Besitzerin oder der Besitzer kann dich wieder als Bearbeiter hinzufügen.';
 
   @override
-  String get editorsLeaveConfirm => 'Nicht mehr bearbeiten';
+  String get editorsLeaveConfirm => 'Mich entfernen';
 
   @override
-  String get editorsLeft => 'Du kannst diese Reiseroute nicht mehr bearbeiten';
+  String get editorsLeft => 'Du bist nicht mehr Bearbeiter dieser Reiseroute';
 
   @override
   String editLockSomeoneEditing(Object name) {

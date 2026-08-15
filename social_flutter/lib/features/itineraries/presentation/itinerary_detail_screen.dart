@@ -62,7 +62,6 @@ import 'package:social_flutter/shared/models/user.dart';
 import 'package:social_flutter/features/itineraries/domain/stop.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/annotation_chip.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/edit_pencil_button.dart';
-import 'package:social_flutter/features/itineraries/presentation/widgets/editor_access_row.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/long_press_to_edit.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/markdown_notes_editor.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/move_stop_to_track_sheet.dart';
@@ -120,7 +119,6 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
   bool _firstStopFormOpened = false; // one-shot guard for the just-created auto-open
   bool _openSoundPlayed = false; // one-shot guard for the open-itinerary cue
   bool _closeCuePlayed = false; // one-shot guard: the two close paths overlap
-  bool _leaving = false; // an editor's self-revoke is in flight
   //start with map hidden on mobile to avoid unnecessary API calls and improve performance, since the map is less likely to be used on mobile and can be accessed via a button
   bool _mapVisible = false;
   // Polls who holds the edit claim. There is no push channel, so a banner that
@@ -235,10 +233,34 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
         .updateHeader(picked.toPayload());
   }
 
-  // Opens the add-stop form. Adding a stop is not an edit-mode-only action —
-  // the owner reaches it in one tap from the empty state, in either mode.
-  void _openStopForm() =>
-      context.push('/itineraries/${widget.itineraryId}/stops/new');
+  // Opens the add-stop form — but claims the edit lock first, because the form
+  // never claims one itself. Pushed without a claim it looks editable and then
+  // 428s on save, so the round trip has to happen here; if the claim is refused
+  // the banner is the honest answer and no form opens at all.
+  Future<void> _openStopForm() async {
+    if (!_editMode) await _enterEditMode();
+    if (!mounted || !_editMode) return;
+    context.push('/itineraries/${widget.itineraryId}/stops/new');
+  }
+
+  // Opens the Edit Itinerary form. Same reasoning as _openStopForm: the form
+  // never claims a lock itself, and its PATCH needs one exactly as much as a
+  // stop edit does, so the claim has to happen before the push or Save 428s.
+  //
+  // A `true` result means the user removed themselves as an editor in there —
+  // the claim and the pencil are both gone, so leave edit mode and refetch so
+  // can_edit stops saying otherwise.
+  Future<void> _openDetailsForm() async {
+    if (!_editMode) await _enterEditMode();
+    if (!mounted || !_editMode) return;
+    final left =
+        await context.push<bool>('/itineraries/${widget.itineraryId}/edit');
+    if (!mounted || left != true) return;
+    _exitEditMode();
+    await ref
+        .read(itineraryDetailProvider(widget.itineraryId).notifier)
+        .refresh();
+  }
 
   // Owner tapped the placeholder cover: point them at the Edit details button
   // (which opens the form holding CoverImageField). Anchor is only laid out in
@@ -444,45 +466,6 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
     }
   }
 
-  /// Hand back edit rights on somebody else's trip. Owner-driven revoke and
-  /// this share one endpoint, so the server releases our claim for us.
-  Future<void> _leaveAsEditor(String currentUserId) async {
-    final l10n = AppLocalizations.of(context)!;
-    // Tier 2, not Tier 1: an undo snackbar would be a lie — only the owner can
-    // grant edit rights, so the leaver cannot put this back themselves.
-    final confirmed = await confirmDestructiveAction(
-      context: context,
-      title: l10n.editorsLeaveTitle,
-      message: l10n.editorsLeaveMessage,
-      confirmLabel: l10n.editorsLeaveConfirm,
-    );
-    if (!confirmed || !mounted) return;
-
-    setState(() => _leaving = true);
-    try {
-      await ref
-          .read(editorsProvider(widget.itineraryId).notifier)
-          .removeEditor(currentUserId);
-      // The server already dropped any claim of ours; this clears the local
-      // token and stops the heartbeat. A no-op when we were not holding one.
-      await ref.read(editLockProvider(widget.itineraryId).notifier).release();
-    } catch (e) {
-      if (!mounted) return;
-      setState(() => _leaving = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(extractErrorMessage(e, l10n))),
-      );
-      return;
-    }
-    if (!mounted) return;
-    setState(() => _leaving = false);
-    // Deliberately no pop: leaving as an editor does not touch view access, so
-    // the trip stays readable and only the pencil goes away.
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(l10n.editorsLeft)),
-    );
-  }
-
   Future<void> _addSegmentWithLeg(String fromStopId, String toStopId) async {
     final legData = await LegFormDialog.show(context);
     if (!mounted || legData == null) return;
@@ -640,7 +623,7 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                       !_firstStopFormOpened) {
                     _firstStopFormOpened = true; // set now so we schedule exactly once
                     WidgetsBinding.instance.addPostFrameCallback((_) {
-                      if (mounted) _openStopForm();
+                      if (mounted) unawaited(_openStopForm());
                     });
                   }
 
@@ -973,26 +956,21 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                                     ref,
                                     ReportTarget.itinerary(widget.itineraryId),
                                   ),
-                            // isOwner, not mayEdit: the form behind this button
-                            // is the trip's settings — cover, visibility, the
-                            // editor list, delete — every one of them
-                            // owner-only server-side. An editor opening it
-                            // could only collect 403s.
-                            onEditDetails: isOwner
-                                ? () => context.push(
-                                    '/itineraries/${widget.itineraryId}/edit')
-                                : null,
+                            // mayEdit: the form behind this button renders a
+                            // reduced set for an editor — title, currency and
+                            // best time to visit, all of which the server
+                            // already accepts from them — and hides every
+                            // owner-only control rather than the whole screen.
+                            onEditDetails: mayEdit ? _openDetailsForm : null,
                             onEnterEdit:
                                 mayEdit && !_editMode ? _enterEditMode : null,
                             onExitEdit:
                                 mayEdit && _editMode ? _exitEditMode : null,
                             // Long-press anywhere on the hero is a shortcut to
                             // the same screen the tune button opens — so it
-                            // carries the same owner-only gate.
-                            onLongPressEdit: isOwner && !_editMode
-                                ? () => context.push(
-                                    '/itineraries/${widget.itineraryId}/edit')
-                                : null,
+                            // carries the same gate.
+                            onLongPressEdit:
+                                mayEdit && !_editMode ? _openDetailsForm : null,
                           ),
                         ),
 
@@ -1458,29 +1436,6 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                             ),
                           ),
 
-                        // ── Editor's way out (read mode) ───────────────────
-                        // Last thing on the page on purpose: giving up edit
-                        // rights should cost a deliberate scroll, never a
-                        // mis-tap near the hero chrome. currentUserId is
-                        // load-bearing, not defensive — isOwner is false while
-                        // the profile loads and the server sends can_edit:true
-                        // to the owner too, so without it the owner would
-                        // briefly be offered a way out of their own trip.
-                        if (currentUserId != null &&
-                            !isOwner &&
-                            itinerary.canEdit &&
-                            !_editMode)
-                          SliverToBoxAdapter(
-                            child: Padding(
-                              padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-                              child: EditorAccessRow(
-                                onLeave: _leaving
-                                    ? null
-                                    : () => _leaveAsEditor(currentUserId),
-                              ),
-                            ),
-                          ),
-
                         const SliverToBoxAdapter(child: SizedBox(height: 80)),
                       ],
                     ),
@@ -1711,9 +1666,8 @@ class _CoverHeroState extends State<_CoverHero> {
                     const SizedBox(width: 6),
                   ],
                   if (widget.canEdit) ...[
-                    // Owner-only, so keyed off the callback rather than
-                    // canEdit — an editor must not see a button that opens
-                    // nothing.
+                    // Keyed off the callback, not canEdit: this widget renders
+                    // what it is given and never infers who may open what.
                     if (widget.onEditDetails != null) ...[
                       _GlassButton(
                         key: widget.editDetailsButtonKey,

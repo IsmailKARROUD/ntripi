@@ -11,11 +11,17 @@
 //   EDIT    — form is pre-filled from itineraryDetailProvider (already cached).
 //             Image upload/delete runs BEFORE the header PATCH so the provider
 //             refresh triggered by updateHeader reflects the final image state.
-//             Owner-only: every setting on this screen — cover, visibility, the
-//             editor list, delete — is owner-gated server-side, so a granted
-//             editor here could only collect 403s. The route is directly
-//             addressable (web URL, deep link), which is why the gate is on the
-//             screen and not only on the button that opens it.
+//             Open to the owner AND to a granted editor, but they see different
+//             screens. The server accepts title, currency and the recommended
+//             period from an editor; cover, visibility, the editor list and
+//             delete are owner-gated, so those controls are hidden rather than
+//             offered and left to 403. `visibility` must be absent from the
+//             PATCH body for a non-owner — the server rejects the key, not the
+//             value. Where the owner gets the danger zone, an editor gets the
+//             way out that is actually theirs: removing themselves.
+//             The route is directly addressable (web URL, deep link), which is
+//             why the refusal lives on the screen and not only on the button
+//             that opens it.
 //
 // Cover image upload is deferred in CREATE mode because the upload endpoint
 // requires an itinerary ID that doesn't exist yet when the form opens.
@@ -38,8 +44,10 @@ import 'package:social_flutter/features/itineraries/data/itinerary_repository.da
 import 'package:social_flutter/features/itineraries/domain/itinerary.dart';
 import 'package:social_flutter/features/itineraries/domain/recommended_period.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/cover_image_field.dart';
+import 'package:social_flutter/features/itineraries/presentation/widgets/editor_access_row.dart';
 import 'package:social_flutter/features/itineraries/presentation/recommended_period_screen.dart';
 import 'package:social_flutter/features/itineraries/presentation/visibility_screen.dart';
+import 'package:social_flutter/features/itineraries/providers/edit_lock_provider.dart';
 import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
 import 'package:social_flutter/features/profile/providers/profile_provider.dart';
 import 'package:social_flutter/core/utils/platform_utils.dart';
@@ -86,6 +94,12 @@ class _ItineraryFormScreenState extends ConsumerState<ItineraryFormScreen> {
   ItineraryVisibility _visibility = ItineraryVisibility.public;
   RecommendedPeriod? _recommendedPeriod;
   bool _saving = false;
+  // An editor's self-revoke is in flight.
+  bool _leaving = false;
+  // Set once self-removal succeeded. Unsaved edits are edits we are no longer
+  // allowed to save, so the discard guard must not stand between the user and
+  // the exit — and it would swallow the result the detail screen is waiting on.
+  bool _leftAsEditor = false;
   // Guards _initFromProvider so rebuilds don't overwrite the user's edits.
   bool _initialized = false;
   // Create-mode only: collapses cover image + BASICS so the user only sees
@@ -141,6 +155,9 @@ class _ItineraryFormScreenState extends ConsumerState<ItineraryFormScreen> {
     loadCurrencies();
     if (widget.mode == ItineraryFormMode.edit) {
       // postFrameCallback: setState can't be called during initState itself.
+      // Covers the ordinary case, where the detail provider is already loaded
+      // because the user came from the detail screen. The ref.listen in build
+      // covers the other one — see there.
       WidgetsBinding.instance.addPostFrameCallback((_) => _initFromProvider());
     } else {
       _initialSnapshot = _snapshot();
@@ -188,9 +205,12 @@ class _ItineraryFormScreenState extends ConsumerState<ItineraryFormScreen> {
     if (itinerary == null || _initialized) return;
     setState(() {
       _titleController.text = itinerary.title;
-      _currency = _currencies.contains(itinerary.currency)
-          ? itinerary.currency
-          : 'Other';
+      // Straight from the server, never validated against _currencies: that
+      // list loads asynchronously and is usually still empty here, and the
+      // stored value is always a real ISO code anyway. 'Other' is a create-mode
+      // sentinel — seeding it here made every edit save rewrite the currency to
+      // EUR.
+      _currency = itinerary.currency;
       _visibility = itinerary.visibility;
       _recommendedPeriod = itinerary.recommendedPeriod;
       _initialized = true;
@@ -248,7 +268,11 @@ class _ItineraryFormScreenState extends ConsumerState<ItineraryFormScreen> {
         // the form must not send it, or it would clobber it with a stale value.
         // 'Other' is a UI-only placeholder; fall back to EUR for the API.
         'currency': _currency == 'Other' ? 'EUR' : _currency,
-        'visibility': _visibilityToString[_visibility],
+        // Owner-only, and the server refuses the KEY rather than the value —
+        // sending `visibility: null` from an editor 403s exactly as sending a
+        // real one does, so it has to be absent entirely.
+        if (_ownsItinerary(watch: false))
+          'visibility': _visibilityToString[_visibility],
         // Unlike the description, the period IS edited in this form, so sending
         // it is correct. toPayload always emits all three keys, so clearing a
         // part reaches the server as an explicit null rather than "don't touch".
@@ -372,6 +396,59 @@ class _ItineraryFormScreenState extends ConsumerState<ItineraryFormScreen> {
     }
   }
 
+  /// Hand back edit rights on somebody else's trip — the editor's counterpart
+  /// to the owner's delete. The owner-driven revoke and this share one endpoint,
+  /// which is lock-free and needs no If-Match: walking away is not editing.
+  Future<void> _leaveAsEditor() async {
+    final l10n = AppLocalizations.of(context)!;
+    final currentUserId = ref.read(myProfileProvider).value?.id;
+    if (currentUserId == null) return;
+    // Tier 2, not Tier 1: an undo snackbar would be a lie — only the owner can
+    // grant edit rights, so the leaver cannot put this back themselves.
+    final confirmed = await confirmDestructiveAction(
+      context: context,
+      icon: Icons.edit_off_rounded,
+      title: l10n.editorsLeaveTitle,
+      message: l10n.editorsLeaveMessage,
+      confirmLabel: l10n.editorsLeaveConfirm,
+    );
+    if (!confirmed || !mounted) return;
+
+    setState(() => _leaving = true);
+    try {
+      await ref
+          .read(editorsProvider(widget.itineraryId!).notifier)
+          .removeEditor(currentUserId);
+      // The server already dropped any claim of ours; this clears the local
+      // token and stops the heartbeat. A no-op when we were not holding one.
+      await ref.read(editLockProvider(widget.itineraryId!).notifier).release();
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _leaving = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(extractErrorMessage(e, l10n))),
+      );
+      return;
+    }
+    if (!mounted) return;
+    setState(() {
+      _leaving = false;
+      _leftAsEditor = true; // opens the PopScope guard below
+    });
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(l10n.editorsLeft)),
+    );
+    // `true` tells the detail screen underneath to leave edit mode and refetch.
+    // View access is untouched, so the trip itself stays open behind us — and
+    // on a cold entry straight to /edit there is nobody underneath to hand the
+    // result to, so go there instead of letting pop() throw.
+    if (context.canPop()) {
+      context.pop(true);
+    } else {
+      context.go('/itineraries/${widget.itineraryId}');
+    }
+  }
+
   // ── Picker helpers ──────────────────────────────────────────────────────────
 
   Future<void> _showCurrencyPicker() async {
@@ -417,24 +494,59 @@ class _ItineraryFormScreenState extends ConsumerState<ItineraryFormScreen> {
 
   // ── Build ────────────────────────────────────────────────────────────────────
 
-  /// True only on evidence: an itinerary that has loaded and whose owner is
-  /// somebody else. A profile or a detail still loading falls through to the
-  /// form — refusing on a value we have not read yet would lock the owner out
-  /// of their own trip on a cold deep link.
-  bool get _blockedNonOwner {
+  /// Whose trip this is. False while either side is still loading, so every
+  /// owner-only control below is hidden until we can prove ownership — the
+  /// conservative direction: an owner briefly missing their delete button
+  /// costs a rebuild, an editor briefly offered it costs a 403.
+  ///
+  /// [watch] because ref.watch is build-only: the form has to re-render when
+  /// the profile or the detail resolves, and _save has to ask again from a
+  /// callback, where watching would throw.
+  bool _ownsItinerary({required bool watch}) {
+    if (widget.mode == ItineraryFormMode.create) return true;
+    final id = widget.itineraryId!;
+    final profile =
+        watch ? ref.watch(myProfileProvider) : ref.read(myProfileProvider);
+    final detail = watch
+        ? ref.watch(itineraryDetailProvider(id))
+        : ref.read(itineraryDetailProvider(id));
+    final currentUserId = profile.value?.id;
+    final itinerary = detail.value;
+    if (currentUserId == null || itinerary == null) return false;
+    return itinerary.userId == currentUserId;
+  }
+
+  /// True only on evidence: an itinerary that has loaded, owned by somebody
+  /// else, that the server has not granted us edit rights on. A profile or a
+  /// detail still loading falls through to the form — refusing on a value we
+  /// have not read yet would lock the owner out of their own trip on a cold
+  /// deep link.
+  bool get _blockedNonEditor {
     if (widget.mode != ItineraryFormMode.edit) return false;
     final currentUserId = ref.watch(myProfileProvider).value?.id;
     final itinerary =
         ref.watch(itineraryDetailProvider(widget.itineraryId!)).value;
     if (currentUserId == null || itinerary == null) return false;
-    return itinerary.userId != currentUserId;
+    return itinerary.userId != currentUserId && !itinerary.canEdit;
   }
 
   @override
   Widget build(BuildContext context) {
     final nt = context.nt;
     final l10n = AppLocalizations.of(context)!;
-    if (_blockedNonOwner) return const _OwnerOnlyNotice();
+    if (widget.mode == ItineraryFormMode.edit) {
+      // The post-frame seed in initState finds nothing when the detail is still
+      // loading — a cold deep link straight to /edit, where nobody visited the
+      // detail screen first. It is one-shot, so without this the form would sit
+      // on its defaults forever and the first save would overwrite the header
+      // with them. Fires outside the build phase, so _initFromProvider's
+      // setState is safe; _initialized makes the double call a no-op.
+      ref.listen(itineraryDetailProvider(widget.itineraryId!), (_, next) {
+        if (next.hasValue) _initFromProvider();
+      });
+    }
+    if (_blockedNonEditor) return const _CannotEditNotice();
+    final isOwner = _ownsItinerary(watch: true);
     final visLabel = _visibility.label(l10n);
     final visIcon = _visibilityIcon(_visibility);
     final visColor = _visibilityColor(_visibility, nt);
@@ -447,7 +559,7 @@ class _ItineraryFormScreenState extends ConsumerState<ItineraryFormScreen> {
       // Block the back gesture/button while there are unsaved edits; the
       // callback then offers a discard confirmation. The save flow uses
       // context.go/pop directly, so it is unaffected by this guard.
-      canPop: !_isDirty && !_saving,
+      canPop: (!_isDirty && !_saving) || _leftAsEditor,
       onPopInvokedWithResult: (didPop, _) async {
         if (didPop) return;
         if (await _confirmDiscard() && context.mounted) context.pop();
@@ -591,32 +703,36 @@ class _ItineraryFormScreenState extends ConsumerState<ItineraryFormScreen> {
                 ),
               if (!collapseOptional) ...[
                 // ── Cover image slot ────────────────────────────────────────
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-                  child: CoverImageField(
-                    initialUrl: widget.mode == ItineraryFormMode.edit
-                        ? ref
-                            .read(itineraryDetailProvider(widget.itineraryId!))
-                            .value
-                            ?.coverImageUrl
-                        : null,
-                    // Re-seed the field from parent state so the preview
-                    // persists across optional-fields collapse/expand.
-                    initialBytes: _pendingImageBytes,
-                    initialFilename: _pendingImageFilename,
-                    initialRemoved: _removeExistingImage,
-                    onImageSelected: (bytes, filename) => setState(() {
-                      _pendingImageBytes = bytes;
-                      _pendingImageFilename = filename;
-                      _removeExistingImage = false;
-                    }),
-                    onImageRemoved: () => setState(() {
-                      _pendingImageBytes = null;
-                      _pendingImageFilename = null;
-                      _removeExistingImage = true;
-                    }),
+                // Owner-only: POST/DELETE /image is owner-gated server-side,
+                // and every upload spends a paid moderation scan.
+                if (isOwner)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                    child: CoverImageField(
+                      initialUrl: widget.mode == ItineraryFormMode.edit
+                          ? ref
+                              .read(
+                                  itineraryDetailProvider(widget.itineraryId!))
+                              .value
+                              ?.coverImageUrl
+                          : null,
+                      // Re-seed the field from parent state so the preview
+                      // persists across optional-fields collapse/expand.
+                      initialBytes: _pendingImageBytes,
+                      initialFilename: _pendingImageFilename,
+                      initialRemoved: _removeExistingImage,
+                      onImageSelected: (bytes, filename) => setState(() {
+                        _pendingImageBytes = bytes;
+                        _pendingImageFilename = filename;
+                        _removeExistingImage = false;
+                      }),
+                      onImageRemoved: () => setState(() {
+                        _pendingImageBytes = null;
+                        _pendingImageFilename = null;
+                        _removeExistingImage = true;
+                      }),
+                    ),
                   ),
-                ),
 
                 // ── Basics ──────────────────────────────────────────────────
                 _SectionLabel(text: l10n.formSectionBasics),
@@ -640,26 +756,33 @@ class _ItineraryFormScreenState extends ConsumerState<ItineraryFormScreen> {
                           l10n.periodNotSet,
                       onTap: _showRecommendedPeriodPicker,
                     ),
-                    const _FieldDivider(),
-                    _PickerRow(
-                      icon: visIcon,
-                      label: l10n.formLabelWhoCanSee,
-                      value: visLabel,
-                      iconColor: visColor,
-                      onTap: _showVisibilityPicker,
-                    ),
-                    // Edit mode only: granting edit rights needs an itinerary
-                    // that exists, and the server rejects an editor who cannot
-                    // yet see it — both of which are unanswerable during create.
-                    if (widget.mode == ItineraryFormMode.edit) ...[
+                    // Both owner-only, and the last two rows, so an editor's
+                    // Basics card simply ends after best-time — no dangling
+                    // divider. Who can see the trip is the owner's decision and
+                    // is not part of editing its content (the PATCH 403s on the
+                    // key alone); granting edit rights is not delegable.
+                    if (isOwner) ...[
                       const _FieldDivider(),
                       _PickerRow(
-                        icon: Icons.edit_note_rounded,
-                        label: l10n.editorsTitle,
-                        value: '',
-                        onTap: () => context
-                            .push('/itineraries/${widget.itineraryId}/editors'),
+                        icon: visIcon,
+                        label: l10n.formLabelWhoCanSee,
+                        value: visLabel,
+                        iconColor: visColor,
+                        onTap: _showVisibilityPicker,
                       ),
+                      // Edit mode only: granting edit rights needs an itinerary
+                      // that exists, and the server rejects an editor who cannot
+                      // yet see it — both unanswerable during create.
+                      if (widget.mode == ItineraryFormMode.edit) ...[
+                        const _FieldDivider(),
+                        _PickerRow(
+                          icon: Icons.edit_note_rounded,
+                          label: l10n.editorsTitle,
+                          value: '',
+                          onTap: () => context.push(
+                              '/itineraries/${widget.itineraryId}/editors'),
+                        ),
+                      ],
                     ],
                   ],
                 ),
@@ -667,20 +790,37 @@ class _ItineraryFormScreenState extends ConsumerState<ItineraryFormScreen> {
               const SizedBox(height: 48),
               // ── Danger zone (edit mode) ───────────────────────────────────
               if (widget.mode == ItineraryFormMode.edit) ...[
-                _SectionLabel(text: l10n.formSectionDangerZone, tone: nt.ratingRed),
-                _SectionCard(
-                  children: [
-                    OfflineGate(
-                      builder: (online) => _PickerRow(
-                        icon: Icons.delete_outline_rounded,
-                        label: l10n.formLabelDeleteItinerary,
-                        value: l10n.formDeleteItineraryHint,
-                        iconColor: nt.ratingRed,
-                        onTap: (_saving || !online) ? null : _deleteItinerary,
+                if (isOwner) ...[
+                  _SectionLabel(
+                      text: l10n.formSectionDangerZone, tone: nt.ratingRed),
+                  _SectionCard(
+                    children: [
+                      OfflineGate(
+                        builder: (online) => _PickerRow(
+                          icon: Icons.delete_outline_rounded,
+                          label: l10n.formLabelDeleteItinerary,
+                          value: l10n.formDeleteItineraryHint,
+                          iconColor: nt.ratingRed,
+                          onTap: (_saving || !online) ? null : _deleteItinerary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ]
+                else
+                  // An editor cannot delete the trip, so the equivalent way out
+                  // is giving up the pen. Last on the page on purpose: it should
+                  // cost a deliberate scroll, never a mis-tap near Save.
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
+                    child: OfflineGate(
+                      builder: (online) => EditorAccessRow(
+                        onLeave: (_leaving || _saving || !online)
+                            ? null
+                            : _leaveAsEditor,
                       ),
                     ),
-                  ],
-                ),
+                  ),
               ],
 
               //   const SizedBox(height: 16),
@@ -696,11 +836,12 @@ class _ItineraryFormScreenState extends ConsumerState<ItineraryFormScreen> {
 
 // ─── Form-level private widgets ───────────────────────────────────────────────
 
-/// Shown instead of the form when a non-owner reaches `/itineraries/{id}/edit`
-/// directly. A plain refusal with a way back, not a silent pop: a screen that
-/// vanishes on arrival reads as a crash.
-class _OwnerOnlyNotice extends StatelessWidget {
-  const _OwnerOnlyNotice();
+/// Shown instead of the form when somebody who may neither own nor edit this
+/// itinerary reaches `/itineraries/{id}/edit` directly. A plain refusal with a
+/// way back, not a silent pop: a screen that vanishes on arrival reads as a
+/// crash.
+class _CannotEditNotice extends StatelessWidget {
+  const _CannotEditNotice();
 
   @override
   Widget build(BuildContext context) {

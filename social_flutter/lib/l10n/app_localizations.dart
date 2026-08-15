@@ -5629,37 +5629,37 @@ abstract class AppLocalizations {
   /// No description provided for @editorsLeaveRowTitle.
   ///
   /// In en, this message translates to:
-  /// **'You can edit this trip'**
+  /// **'You\'re an editor of this trip'**
   String get editorsLeaveRowTitle;
 
   /// No description provided for @editorsLeaveAction.
   ///
   /// In en, this message translates to:
-  /// **'Stop editing this trip'**
+  /// **'Remove me as editor'**
   String get editorsLeaveAction;
 
   /// No description provided for @editorsLeaveTitle.
   ///
   /// In en, this message translates to:
-  /// **'Stop editing this trip?'**
+  /// **'Remove me as editor?'**
   String get editorsLeaveTitle;
 
   /// No description provided for @editorsLeaveMessage.
   ///
   /// In en, this message translates to:
-  /// **'You won\'t be able to change it any more. Anything you already added stays, and you can still view it. Only the owner can give you access again.'**
+  /// **'You won\'t be able to change this trip any more. Anything you already added stays, and you can still view it. Only the owner can make you an editor again.'**
   String get editorsLeaveMessage;
 
   /// No description provided for @editorsLeaveConfirm.
   ///
   /// In en, this message translates to:
-  /// **'Stop editing'**
+  /// **'Remove me'**
   String get editorsLeaveConfirm;
 
   /// No description provided for @editorsLeft.
   ///
   /// In en, this message translates to:
-  /// **'You can no longer edit this trip'**
+  /// **'You\'re no longer an editor of this trip'**
   String get editorsLeft;
 
   /// No description provided for @editLockSomeoneEditing.

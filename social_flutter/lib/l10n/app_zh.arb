@@ -1011,10 +1011,10 @@
   "notificationsClearAll": "清除全部",
   "notificationsClearAllTitle": "清除全部通知？",
   "notificationsClearAllMessage": "你的列表中的所有通知都将被移除。审核通知仍会保留在“账号状态”页面。",
-  "editorsLeaveRowTitle": "你可以编辑此行程",
-  "editorsLeaveAction": "不再编辑此行程",
-  "editorsLeaveTitle": "不再编辑此行程？",
-  "editorsLeaveMessage": "之后你将无法再修改它。你已添加的内容会保留，你仍然可以查看它。只有所有者才能重新授予你权限。",
-  "editorsLeaveConfirm": "不再编辑",
-  "editorsLeft": "你已无法再编辑此行程"
+  "editorsLeaveRowTitle": "你是此行程的编辑者",
+  "editorsLeaveAction": "将我移出编辑者",
+  "editorsLeaveTitle": "将我移出编辑者？",
+  "editorsLeaveMessage": "之后你将无法再修改此行程。你已添加的内容会保留，你仍然可以查看它。只有所有者才能再次将你设为编辑者。",
+  "editorsLeaveConfirm": "移出",
+  "editorsLeft": "你已不再是此行程的编辑者"
 }

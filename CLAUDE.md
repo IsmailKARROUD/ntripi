@@ -525,18 +525,29 @@ because those write sibling tables, never itinerary content.
 - **`long_press_to_edit.dart`'s "role-disjoint" invariant is now can-edit vs
   report**, not owner vs report — an editor gets the pencil and never the flag.
   `_CoverHero.canEdit` (renamed from `isOwner`) is what picks that chrome.
-- **`itinerary_form_screen.dart` in edit mode ("Edit Itinerary") is `isOwner`,
-  not `mayEdit`.** It is the trip's settings screen — cover, visibility, the
-  editor list, delete — and every one of those is owner-only server-side, so an
-  editor opening it could only collect 403s. Three gates, because the route is
-  directly addressable on web: the hero's tune button and its long-press
-  shortcut are wired off `isOwner` (the tune button renders only when
-  `onEditDetails != null`, so nobody sees a button that opens nothing), and the
-  screen itself answers `_OwnerOnlyNotice`. That last check fires **only on
+- **`itinerary_form_screen.dart` in edit mode ("Edit Itinerary") opens on
+  `mayEdit`; each owner-only CONTROL inside it gates on `isOwner`.** The screen
+  is not one permission — `title`, `currency` and the recommended period are an
+  editor's to change, while cover, visibility, the editor list and delete are
+  not. So the owner-only rows are hidden rather than offered and left to 403,
+  and an editor's `else` branch of the danger zone is `EditorAccessRow`
+  (removing themselves — the way out that *is* theirs). `_CannotEditNotice`
+  refuses only someone who can neither own nor edit, and fires **only on
   evidence** — a profile or detail still loading falls through to the form, or a
-  cold deep link would lock the owner out of their own trip. The pencil
-  (`onEnterEdit`, content editing) stays on `mayEdit`. Regression test:
-  `test/widgets/itinerary_edit_form_owner_only_test.dart`.
+  cold deep link would lock the owner out of their own trip.
+  **`visibility` must be absent from the PATCH body for a non-owner**: the
+  server refuses the key, not the value, so `visibility: null` 403s exactly as a
+  real one does (`_ownsItinerary(watch: false)` — `ref.watch` is build-only, and
+  `_save` runs from a callback). Regression test:
+  `test/widgets/itinerary_edit_form_access_test.dart`.
+- **Any surface that pushes an itinerary editing route claims the lock first.**
+  `require_edit_access` demands `X-Edit-Lock` from the owner too, and no form
+  claims one for itself, so a route pushed without a claim looks editable and
+  then 428s on Save. `_openStopForm` and `_openDetailsForm` both do the round
+  trip before pushing and abandon the push if the claim is refused — the
+  "someone else is editing" banner is the honest answer at that point, not an
+  error after the user has typed. Self-removal pops `true` from the form so the
+  detail screen leaves edit mode and refetches (`can_edit` has just flipped).
 - **A lock loss must never pop a route or clear a controller.** The ejected user
   is mid-edit and their unsaved text is now the only copy: `EditLockLostNotice`
   is a persistent banner (not a snackbar — it has to still be visible two minutes
@@ -665,7 +676,9 @@ because those write sibling tables, never itinerary content.
 - Do NOT put a remaining-seconds field in the lock GET body — it would change on every poll and defeat the 304
 - Do NOT let `grant_view` change `visibility` — it may only add an allowlist row, and only for `restricted`
 - Do NOT let an editor grant edit rights, change visibility, delete the itinerary, or replace the cover
-- Do NOT open the "Edit Itinerary" form on `mayEdit` — it holds only owner-only settings, so it gates on `isOwner` at the button, the long-press, and the screen itself
+- Do NOT gate the whole "Edit Itinerary" form on `isOwner` — it opens on `mayEdit` and hides the owner-only controls individually; refusing the screen would also refuse the title, currency and period an editor may already change
+- Do NOT send `visibility` from a non-owner — the server rejects the key's presence, so an explicit null 403s just like a real value
+- Do NOT push an itinerary editing route without claiming the edit lock first — no form claims one for itself, and the owner needs it as much as an editor does, so the screen looks editable and 428s on Save
 - Do NOT leave a revoked editor's claim standing — it blocks everyone until the TTL for someone who can no longer use it
 - Do NOT add a mutating itinerary endpoint without classifying it in `test_edit_guard_coverage.py` — the test fails until you do, deliberately
 - Do NOT make `DELETE /lock` 404 — it is called from teardown, same rule as the notification DELETE

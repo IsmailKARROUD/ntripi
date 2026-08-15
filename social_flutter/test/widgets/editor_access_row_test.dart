@@ -23,8 +23,8 @@ void main() {
       await tester.pumpWidget(_wrap(EditorAccessRow(onLeave: () {})));
       await tester.pumpAndSettle();
 
-      expect(find.text('You can edit this trip'), findsOneWidget);
-      expect(find.text('Stop editing this trip'), findsOneWidget);
+      expect(find.text("You're an editor of this trip"), findsOneWidget);
+      expect(find.text('Remove me as editor'), findsOneWidget);
     });
 
     testWidgets('Given the exit is tapped, When once, Then onLeave fires exactly once',
@@ -33,7 +33,7 @@ void main() {
       await tester.pumpWidget(_wrap(EditorAccessRow(onLeave: () => leaves++)));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.text('Stop editing this trip'));
+      await tester.tap(find.text('Remove me as editor'));
       await tester.pumpAndSettle();
 
       expect(leaves, 1);
@@ -47,7 +47,7 @@ void main() {
 
       // The card must not be tappable as a whole — the point of this row is
       // that leaving takes a deliberate press on the labelled control.
-      await tester.tap(find.text('You can edit this trip'));
+      await tester.tap(find.text("You're an editor of this trip"));
       await tester.pumpAndSettle();
 
       expect(leaves, 0);

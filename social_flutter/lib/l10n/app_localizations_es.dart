@@ -3224,23 +3224,23 @@ class AppLocalizationsEs extends AppLocalizations {
   String get editorsOpenVisibility => 'Change visibility';
 
   @override
-  String get editorsLeaveRowTitle => 'Puedes editar este itinerario';
+  String get editorsLeaveRowTitle => 'Eres editor de este itinerario';
 
   @override
-  String get editorsLeaveAction => 'Dejar de editar este itinerario';
+  String get editorsLeaveAction => 'Quitarme como editor';
 
   @override
-  String get editorsLeaveTitle => '¿Dejar de editar este itinerario?';
+  String get editorsLeaveTitle => '¿Quitarme como editor?';
 
   @override
   String get editorsLeaveMessage =>
-      'Ya no podrás modificarlo. Lo que hayas añadido se queda, y podrás seguir viéndolo. Solo el propietario puede volver a darte acceso.';
+      'Ya no podrás modificar este itinerario. Lo que hayas añadido se queda, y podrás seguir viéndolo. Solo el propietario puede volver a hacerte editor.';
 
   @override
-  String get editorsLeaveConfirm => 'Dejar de editar';
+  String get editorsLeaveConfirm => 'Quitarme';
 
   @override
-  String get editorsLeft => 'Ya no puedes editar este itinerario';
+  String get editorsLeft => 'Ya no eres editor de este itinerario';
 
   @override
   String editLockSomeoneEditing(Object name) {
