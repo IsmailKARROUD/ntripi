@@ -3253,7 +3253,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get editorsLeaveRowTitle => 'Du bist Bearbeiter dieser Reiseroute';
 
   @override
-  String get editorsLeaveAction => 'Mich als Bearbeiter entfernen';
+  String get editorsLeaveRowLabel => 'MICH ALS BEARBEITER ENTFERNEN';
 
   @override
   String get editorsLeaveTitle => 'Mich als Bearbeiter entfernen?';

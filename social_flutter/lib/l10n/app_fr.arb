@@ -1205,7 +1205,7 @@
   "editorsChangeVisibilityMessage": "{name} ne peut pas voir ce voyage. Changez d'abord qui peut le voir, puis ajoutez cette personne comme éditrice.",
   "editorsOpenVisibility": "Changer la visibilité",
   "editorsLeaveRowTitle": "Vous êtes éditeur de ce voyage",
-  "editorsLeaveAction": "Me retirer des éditeurs",
+  "editorsLeaveRowLabel": "ME RETIRER DES ÉDITEURS",
   "editorsLeaveTitle": "Me retirer des éditeurs ?",
   "editorsLeaveMessage": "Vous ne pourrez plus modifier ce voyage. Ce que vous avez déjà ajouté reste, et vous pourrez toujours le consulter. Seul le propriétaire peut vous ajouter de nouveau comme éditeur.",
   "editorsLeaveConfirm": "Me retirer",

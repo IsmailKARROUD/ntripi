@@ -21,7 +21,6 @@ import 'package:social_flutter/features/itineraries/presentation/itinerary_detai
 import 'package:social_flutter/features/itineraries/presentation/itinerary_form_screen.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/cover_image_field.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/edit_pencil_button.dart';
-import 'package:social_flutter/features/itineraries/presentation/widgets/editor_access_row.dart';
 import 'package:social_flutter/features/profile/providers/profile_provider.dart';
 import 'package:social_flutter/l10n/app_localizations.dart';
 import 'package:social_flutter/shared/models/user.dart';
@@ -172,7 +171,7 @@ void main() {
       expect(find.text('Who can edit'), findsOneWidget);
       expect(find.text('DELETE ITINERARY'), findsOneWidget);
       // The owner's way out is deleting the trip, not resigning from it.
-      expect(find.byType(EditorAccessRow), findsNothing);
+      expect(find.text('REMOVE ME AS EDITOR'), findsNothing);
     });
 
     testWidgets('granted editor gets the reduced form', (tester) async {
@@ -189,9 +188,10 @@ void main() {
       expect(find.text('WHO CAN SEE THIS?'), findsNothing);
       expect(find.text('Who can edit'), findsNothing);
       expect(find.text('DELETE ITINERARY'), findsNothing);
-      expect(find.text('DANGER ZONE'), findsNothing);
-      // …and the way out that IS theirs.
-      expect(find.byType(EditorAccessRow), findsOneWidget);
+      // …and the way out that IS theirs, in the same danger-zone chrome the
+      // owner's delete row wears.
+      expect(find.text('DANGER ZONE'), findsOneWidget);
+      expect(find.text('REMOVE ME AS EDITOR'), findsOneWidget);
     });
 
     testWidgets('someone who can neither own nor edit is refused',

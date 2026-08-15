@@ -3263,7 +3263,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get editorsLeaveRowTitle => 'Vous êtes éditeur de ce voyage';
 
   @override
-  String get editorsLeaveAction => 'Me retirer des éditeurs';
+  String get editorsLeaveRowLabel => 'ME RETIRER DES ÉDITEURS';
 
   @override
   String get editorsLeaveTitle => 'Me retirer des éditeurs ?';

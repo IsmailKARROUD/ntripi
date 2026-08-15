@@ -3040,7 +3040,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get editorsLeaveRowTitle => '你是此行程的编辑者';
 
   @override
-  String get editorsLeaveAction => '将我移出编辑者';
+  String get editorsLeaveRowLabel => '将我移出编辑者';
 
   @override
   String get editorsLeaveTitle => '将我移出编辑者？';

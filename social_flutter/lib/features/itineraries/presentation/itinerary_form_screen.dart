@@ -44,7 +44,6 @@ import 'package:social_flutter/features/itineraries/data/itinerary_repository.da
 import 'package:social_flutter/features/itineraries/domain/itinerary.dart';
 import 'package:social_flutter/features/itineraries/domain/recommended_period.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/cover_image_field.dart';
-import 'package:social_flutter/features/itineraries/presentation/widgets/editor_access_row.dart';
 import 'package:social_flutter/features/itineraries/presentation/recommended_period_screen.dart';
 import 'package:social_flutter/features/itineraries/presentation/visibility_screen.dart';
 import 'package:social_flutter/features/itineraries/providers/edit_lock_provider.dart';
@@ -789,38 +788,37 @@ class _ItineraryFormScreenState extends ConsumerState<ItineraryFormScreen> {
               ],
               const SizedBox(height: 48),
               // ── Danger zone (edit mode) ───────────────────────────────────
+              // Owner and editor get the same chrome — the row inside differs
+              // because an editor cannot delete the trip, so the equivalent way
+              // out is giving up the pen. Last on the page on purpose: it should
+              // cost a deliberate scroll, never a mis-tap near Save.
               if (widget.mode == ItineraryFormMode.edit) ...[
-                if (isOwner) ...[
-                  _SectionLabel(
-                      text: l10n.formSectionDangerZone, tone: nt.ratingRed),
-                  _SectionCard(
-                    children: [
-                      OfflineGate(
-                        builder: (online) => _PickerRow(
-                          icon: Icons.delete_outline_rounded,
-                          label: l10n.formLabelDeleteItinerary,
-                          value: l10n.formDeleteItineraryHint,
-                          iconColor: nt.ratingRed,
-                          onTap: (_saving || !online) ? null : _deleteItinerary,
-                        ),
-                      ),
-                    ],
-                  ),
-                ]
-                else
-                  // An editor cannot delete the trip, so the equivalent way out
-                  // is giving up the pen. Last on the page on purpose: it should
-                  // cost a deliberate scroll, never a mis-tap near Save.
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
-                    child: OfflineGate(
-                      builder: (online) => EditorAccessRow(
-                        onLeave: (_leaving || _saving || !online)
-                            ? null
-                            : _leaveAsEditor,
-                      ),
+                _SectionLabel(
+                    text: l10n.formSectionDangerZone, tone: nt.ratingRed),
+                _SectionCard(
+                  children: [
+                    OfflineGate(
+                      builder: (online) => isOwner
+                          ? _PickerRow(
+                              icon: Icons.delete_outline_rounded,
+                              label: l10n.formLabelDeleteItinerary,
+                              value: l10n.formDeleteItineraryHint,
+                              iconColor: nt.ratingRed,
+                              onTap:
+                                  (_saving || !online) ? null : _deleteItinerary,
+                            )
+                          : _PickerRow(
+                              icon: Icons.edit_off_rounded,
+                              label: l10n.editorsLeaveRowLabel,
+                              value: l10n.editorsLeaveRowTitle,
+                              iconColor: nt.ratingRed,
+                              onTap: (_leaving || _saving || !online)
+                                  ? null
+                                  : _leaveAsEditor,
+                            ),
                     ),
-                  ),
+                  ],
+                ),
               ],
 
               //   const SizedBox(height: 16),

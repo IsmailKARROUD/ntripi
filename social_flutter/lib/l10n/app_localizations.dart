@@ -5632,11 +5632,11 @@ abstract class AppLocalizations {
   /// **'You\'re an editor of this trip'**
   String get editorsLeaveRowTitle;
 
-  /// No description provided for @editorsLeaveAction.
+  /// No description provided for @editorsLeaveRowLabel.
   ///
   /// In en, this message translates to:
-  /// **'Remove me as editor'**
-  String get editorsLeaveAction;
+  /// **'REMOVE ME AS EDITOR'**
+  String get editorsLeaveRowLabel;
 
   /// No description provided for @editorsLeaveTitle.
   ///

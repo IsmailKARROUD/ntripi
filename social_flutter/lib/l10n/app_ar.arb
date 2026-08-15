@@ -1403,7 +1403,7 @@
   "editorsChangeVisibilityMessage": "لا يستطيع {name} رؤية هذه الرحلة. غيّر أولًا من يمكنه رؤيتها، ثم أضِفه محرّرًا.",
   "editorsOpenVisibility": "تغيير من يمكنه الاطّلاع",
   "editorsLeaveRowTitle": "أنت محرّر لهذه الرحلة",
-  "editorsLeaveAction": "إزالتي من المحرّرين",
+  "editorsLeaveRowLabel": "إزالتي من المحرّرين",
   "editorsLeaveTitle": "إزالتي من المحرّرين؟",
   "editorsLeaveMessage": "لن تتمكّن من تغيير هذه الرحلة بعد الآن. ويبقى ما أضفته سابقًا، وسيظل بإمكانك الاطّلاع عليها. وحده المالك يمكنه إعادتك محرّرًا.",
   "editorsLeaveConfirm": "إزالتي",

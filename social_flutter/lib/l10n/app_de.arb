@@ -1012,7 +1012,7 @@
   "notificationsClearAllTitle": "Alle Benachrichtigungen löschen?",
   "notificationsClearAllMessage": "Alle Benachrichtigungen werden aus deiner Liste entfernt. Moderationshinweise bleiben auf deiner Seite „Kontostatus“.",
   "editorsLeaveRowTitle": "Du bist Bearbeiter dieser Reiseroute",
-  "editorsLeaveAction": "Mich als Bearbeiter entfernen",
+  "editorsLeaveRowLabel": "MICH ALS BEARBEITER ENTFERNEN",
   "editorsLeaveTitle": "Mich als Bearbeiter entfernen?",
   "editorsLeaveMessage": "Du kannst diese Reiseroute danach nicht mehr ändern. Was du bereits hinzugefügt hast, bleibt erhalten, und du kannst sie weiterhin ansehen. Nur die Besitzerin oder der Besitzer kann dich wieder als Bearbeiter hinzufügen.",
   "editorsLeaveConfirm": "Mich entfernen",

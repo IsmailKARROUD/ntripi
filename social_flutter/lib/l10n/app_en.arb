@@ -1484,7 +1484,7 @@
   "editorsChangeVisibilityMessage": "{name} can't see this trip. Change who can see it first, then add them as an editor.",
   "editorsOpenVisibility": "Change visibility",
   "editorsLeaveRowTitle": "You're an editor of this trip",
-  "editorsLeaveAction": "Remove me as editor",
+  "editorsLeaveRowLabel": "REMOVE ME AS EDITOR",
   "editorsLeaveTitle": "Remove me as editor?",
   "editorsLeaveMessage": "You won't be able to change this trip any more. Anything you already added stays, and you can still view it. Only the owner can make you an editor again.",
   "editorsLeaveConfirm": "Remove me",

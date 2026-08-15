@@ -3227,7 +3227,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get editorsLeaveRowTitle => 'Eres editor de este itinerario';
 
   @override
-  String get editorsLeaveAction => 'Quitarme como editor';
+  String get editorsLeaveRowLabel => 'QUITARME COMO EDITOR';
 
   @override
   String get editorsLeaveTitle => '¿Quitarme como editor?';

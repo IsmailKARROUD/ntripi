@@ -1012,7 +1012,7 @@
   "notificationsClearAllTitle": "¿Borrar todas las notificaciones?",
   "notificationsClearAllMessage": "Se eliminarán todas las notificaciones de tu lista. Los avisos de moderación permanecen en tu página Estado de la cuenta.",
   "editorsLeaveRowTitle": "Eres editor de este itinerario",
-  "editorsLeaveAction": "Quitarme como editor",
+  "editorsLeaveRowLabel": "QUITARME COMO EDITOR",
   "editorsLeaveTitle": "¿Quitarme como editor?",
   "editorsLeaveMessage": "Ya no podrás modificar este itinerario. Lo que hayas añadido se queda, y podrás seguir viéndolo. Solo el propietario puede volver a hacerte editor.",
   "editorsLeaveConfirm": "Quitarme",

@@ -3242,7 +3242,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get editorsLeaveRowTitle => 'أنت محرّر لهذه الرحلة';
 
   @override
-  String get editorsLeaveAction => 'إزالتي من المحرّرين';
+  String get editorsLeaveRowLabel => 'إزالتي من المحرّرين';
 
   @override
   String get editorsLeaveTitle => 'إزالتي من المحرّرين؟';
