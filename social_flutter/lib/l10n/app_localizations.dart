@@ -5134,6 +5134,42 @@ abstract class AppLocalizations {
   /// **'{name} saved one of your itineraries'**
   String notificationSaved(String name);
 
+  /// No description provided for @notificationEditorAdded.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} added you as an editor of “{title}”'**
+  String notificationEditorAdded(String name, String title);
+
+  /// No description provided for @notificationEditorAddedUntitled.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} added you as an editor of an itinerary'**
+  String notificationEditorAddedUntitled(String name);
+
+  /// No description provided for @notificationEditorAddedDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'You can now edit its stops, description and notes'**
+  String get notificationEditorAddedDetail;
+
+  /// No description provided for @notificationViewerAdded.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} shared “{title}” with you'**
+  String notificationViewerAdded(String name, String title);
+
+  /// No description provided for @notificationViewerAddedUntitled.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} shared an itinerary with you'**
+  String notificationViewerAddedUntitled(String name);
+
+  /// No description provided for @notificationViewerAddedDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'You can now open this itinerary'**
+  String get notificationViewerAddedDetail;
+
   /// No description provided for @notificationHidden.
   ///
   /// In en, this message translates to:

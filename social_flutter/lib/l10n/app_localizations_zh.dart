@@ -2749,6 +2749,32 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
+  String notificationEditorAdded(String name, String title) {
+    return '$name 把你添加为“$title”的编辑者';
+  }
+
+  @override
+  String notificationEditorAddedUntitled(String name) {
+    return '$name 把你添加为一条行程的编辑者';
+  }
+
+  @override
+  String get notificationEditorAddedDetail => '你现在可以修改它的停靠点、简介和备注';
+
+  @override
+  String notificationViewerAdded(String name, String title) {
+    return '$name 与你分享了“$title”';
+  }
+
+  @override
+  String notificationViewerAddedUntitled(String name) {
+    return '$name 与你分享了一条行程';
+  }
+
+  @override
+  String get notificationViewerAddedDetail => '你现在可以打开这条行程';
+
+  @override
   String notificationHidden(String title) {
     return '“$title”已被隐藏';
   }

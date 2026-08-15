@@ -42,12 +42,13 @@ NOTIFICATION_TYPES = (
     "itinerary_saved",    # someone bookmarked one of my itineraries
     "moderation_action",  # my content was hidden / auto-hidden / removed
     "itinerary_editor_added",  # an owner granted me edit rights on their itinerary
+    "itinerary_viewer_added",  # an owner let me see their restricted itinerary
 )
 
 # The three a user may switch off. The rest are mandatory: a follow request the
 # recipient never sees is a request that can never be answered, an author who is
-# not told their content was hidden cannot appeal within the SLA, and edit rights
-# nobody knows they hold are edit rights nobody uses.
+# not told their content was hidden cannot appeal within the SLA, and access
+# nobody knows they hold — to view or to edit — is access nobody uses.
 MUTABLE_TYPES = ("follow_accepted", "itinerary_rated", "itinerary_saved")
 
 # Maps a mutable type to its boolean column on `users`. notify() reads through

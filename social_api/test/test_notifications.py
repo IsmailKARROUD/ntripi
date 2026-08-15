@@ -270,6 +270,56 @@ def test_feed_resolves_the_entity_title(client: TestClient):
 
 
 # ---------------------------------------------------------------------------
+# Access grants
+# ---------------------------------------------------------------------------
+
+def test_allowlisting_a_user_notifies_them_about_that_itinerary(
+    client: TestClient,
+):
+    """A restricted itinerary shows up in no feed and no search, so this row is
+    the only way the person learns they were let in. It has to carry enough for
+    the client to name the trip and the person who shared it."""
+    owner = register_user(client, "owner", "owner@x.com")
+    guest = register_user(client, "bobby", "bobby@x.com")
+    itinerary = _create_itinerary(
+        client, owner["access_token"],
+        visibility="restricted", title="Kyoto 5 days",
+    )
+
+    r = client.post(
+        f"/itineraries/{itinerary['id']}/allowed-users",
+        json={"user_id": guest["user_id"]},
+        headers=auth_headers(owner["access_token"]),
+    )
+    assert r.status_code == 201, r.text
+
+    item = _feed(client, guest["access_token"])["notifications"][0]
+    assert item["type"] == "itinerary_viewer_added"
+    assert item["entity_type"] == "itinerary"
+    assert item["entity_id"] == itinerary["id"]
+    assert item["entity_title"] == "Kyoto 5 days"
+    assert item["actor_username"] == "owner"
+
+
+def test_the_owner_is_not_notified_by_their_own_allowlist_grant(
+    client: TestClient,
+):
+    """Nothing stops an owner adding themselves; notify's self rule does."""
+    owner = register_user(client, "owner", "owner@x.com")
+    itinerary = _create_itinerary(
+        client, owner["access_token"], visibility="restricted",
+    )
+
+    client.post(
+        f"/itineraries/{itinerary['id']}/allowed-users",
+        json={"user_id": owner["user_id"]},
+        headers=auth_headers(owner["access_token"]),
+    )
+
+    assert _types(client, owner["access_token"]) == []
+
+
+# ---------------------------------------------------------------------------
 # Moderation
 # ---------------------------------------------------------------------------
 

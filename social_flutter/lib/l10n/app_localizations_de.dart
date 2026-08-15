@@ -2947,6 +2947,34 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String notificationEditorAdded(String name, String title) {
+    return '$name hat dich als Bearbeiter von „$title“ hinzugefügt';
+  }
+
+  @override
+  String notificationEditorAddedUntitled(String name) {
+    return '$name hat dich als Bearbeiter einer Reiseroute hinzugefügt';
+  }
+
+  @override
+  String get notificationEditorAddedDetail =>
+      'Du kannst jetzt Stopps, Beschreibung und Notizen ändern';
+
+  @override
+  String notificationViewerAdded(String name, String title) {
+    return '$name hat „$title“ mit dir geteilt';
+  }
+
+  @override
+  String notificationViewerAddedUntitled(String name) {
+    return '$name hat eine Reiseroute mit dir geteilt';
+  }
+
+  @override
+  String get notificationViewerAddedDetail =>
+      'Du kannst diese Reiseroute jetzt öffnen';
+
+  @override
   String notificationHidden(String title) {
     return '„$title“ wurde ausgeblendet';
   }

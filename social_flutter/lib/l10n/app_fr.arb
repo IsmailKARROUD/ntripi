@@ -1060,6 +1060,46 @@
       }
     }
   },
+  "notificationEditorAdded": "{name} vous a ajouté comme éditeur de « {title} »",
+  "@notificationEditorAdded": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "notificationEditorAddedUntitled": "{name} vous a ajouté comme éditeur d'un itinéraire",
+  "@notificationEditorAddedUntitled": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "notificationEditorAddedDetail": "Vous pouvez maintenant modifier ses étapes, sa description et ses notes",
+  "notificationViewerAdded": "{name} a partagé « {title} » avec vous",
+  "@notificationViewerAdded": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "notificationViewerAddedUntitled": "{name} a partagé un itinéraire avec vous",
+  "@notificationViewerAddedUntitled": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "notificationViewerAddedDetail": "Vous pouvez maintenant ouvrir cet itinéraire",
   "notificationHidden": "« {title} » a été masqué",
   "@notificationHidden": {
     "placeholders": {

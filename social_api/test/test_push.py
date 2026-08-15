@@ -622,6 +622,34 @@ def test_a_deleted_itinerary_renders_the_untitled_variant():
     assert title == "One of your itineraries was removed"
 
 
+def test_an_access_grant_names_the_trip_and_what_it_allows():
+    """The whole point of the row: which trip, and what the recipient can do
+    with it. A tray entry that says neither is the generic notice again."""
+    title, body = push_i18n.render(
+        type="itinerary_editor_added", subtype=None, actor_name="Alice",
+        entity_title="Kyoto 5 days", locale="en",
+    )
+    assert title == "Alice added you as an editor of “Kyoto 5 days”"
+    assert body == "You can now edit its stops, description and notes"
+
+    title, body = push_i18n.render(
+        type="itinerary_viewer_added", subtype=None, actor_name="Alice",
+        entity_title="Kyoto 5 days", locale="en",
+    )
+    assert title == "Alice shared “Kyoto 5 days” with you"
+    assert body == "You can now open this itinerary"
+
+
+def test_an_access_grant_to_a_deleted_trip_renders_the_untitled_variant():
+    """The itinerary can go between the grant and the send — the actor is still
+    the useful half, so the sentence keeps them."""
+    title, _ = push_i18n.render(
+        type="itinerary_viewer_added", subtype=None, actor_name="Alice",
+        entity_title=None, locale="en",
+    )
+    assert title == "Alice shared an itinerary with you"
+
+
 def test_an_unknown_type_still_renders_something():
     """A newer backend must never produce an empty tray entry."""
     title, body = push_i18n.render(

@@ -887,6 +887,46 @@
       }
     }
   },
+  "notificationEditorAdded": "{name} 把你添加为“{title}”的编辑者",
+  "@notificationEditorAdded": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "notificationEditorAddedUntitled": "{name} 把你添加为一条行程的编辑者",
+  "@notificationEditorAddedUntitled": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "notificationEditorAddedDetail": "你现在可以修改它的停靠点、简介和备注",
+  "notificationViewerAdded": "{name} 与你分享了“{title}”",
+  "@notificationViewerAdded": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "notificationViewerAddedUntitled": "{name} 与你分享了一条行程",
+  "@notificationViewerAddedUntitled": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "notificationViewerAddedDetail": "你现在可以打开这条行程",
   "notificationHidden": "“{title}”已被隐藏",
   "@notificationHidden": {
     "placeholders": {

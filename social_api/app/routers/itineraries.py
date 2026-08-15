@@ -895,6 +895,14 @@ def add_allowed_user(
 
     entry = ItineraryAllowedUser(itinerary_id=itinerary_id, user_id=body.user_id)
     db.add(entry)
+    # Access nobody is told about is access nobody uses — a restricted itinerary
+    # is invisible in every feed, so this row is the only way they learn of it.
+    # No _touch_itinerary: the allowlist changes nothing in ItineraryDetail, and
+    # bumping updated_at would 412 the owner's open editor.
+    notification_service.notify(
+        db, user_id=target_user.id, type="itinerary_viewer_added",
+        actor=current_user, entity_type="itinerary", entity_id=itinerary.id,
+    )
     db.commit()
     db.refresh(entry)
 

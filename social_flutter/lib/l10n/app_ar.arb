@@ -1258,6 +1258,46 @@
       }
     }
   },
+  "notificationEditorAdded": "أضافك {name} كمحرّر لمسار «{title}»",
+  "@notificationEditorAdded": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "notificationEditorAddedUntitled": "أضافك {name} كمحرّر لأحد المسارات",
+  "@notificationEditorAddedUntitled": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "notificationEditorAddedDetail": "يمكنك الآن تعديل محطاته ووصفه وملاحظاته",
+  "notificationViewerAdded": "شارك {name} معك مسار «{title}»",
+  "@notificationViewerAdded": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "notificationViewerAddedUntitled": "شارك {name} معك أحد المسارات",
+  "@notificationViewerAddedUntitled": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "notificationViewerAddedDetail": "يمكنك الآن فتح هذا المسار",
   "notificationHidden": "تم إخفاء «{title}»",
   "@notificationHidden": {
     "placeholders": {

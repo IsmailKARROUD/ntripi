@@ -2948,6 +2948,33 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
+  String notificationEditorAdded(String name, String title) {
+    return 'أضافك $name كمحرّر لمسار «$title»';
+  }
+
+  @override
+  String notificationEditorAddedUntitled(String name) {
+    return 'أضافك $name كمحرّر لأحد المسارات';
+  }
+
+  @override
+  String get notificationEditorAddedDetail =>
+      'يمكنك الآن تعديل محطاته ووصفه وملاحظاته';
+
+  @override
+  String notificationViewerAdded(String name, String title) {
+    return 'شارك $name معك مسار «$title»';
+  }
+
+  @override
+  String notificationViewerAddedUntitled(String name) {
+    return 'شارك $name معك أحد المسارات';
+  }
+
+  @override
+  String get notificationViewerAddedDetail => 'يمكنك الآن فتح هذا المسار';
+
+  @override
   String notificationHidden(String title) {
     return 'تم إخفاء «$title»';
   }

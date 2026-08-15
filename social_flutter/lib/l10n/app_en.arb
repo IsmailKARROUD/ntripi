@@ -1339,6 +1339,46 @@
       }
     }
   },
+  "notificationEditorAdded": "{name} added you as an editor of “{title}”",
+  "@notificationEditorAdded": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "notificationEditorAddedUntitled": "{name} added you as an editor of an itinerary",
+  "@notificationEditorAddedUntitled": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "notificationEditorAddedDetail": "You can now edit its stops, description and notes",
+  "notificationViewerAdded": "{name} shared “{title}” with you",
+  "@notificationViewerAdded": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "notificationViewerAddedUntitled": "{name} shared an itinerary with you",
+  "@notificationViewerAddedUntitled": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "notificationViewerAddedDetail": "You can now open this itinerary",
   "notificationHidden": "“{title}” was hidden",
   "@notificationHidden": {
     "placeholders": {

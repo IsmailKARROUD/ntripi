@@ -2925,6 +2925,34 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
+  String notificationEditorAdded(String name, String title) {
+    return '$name te añadió como editor de «$title»';
+  }
+
+  @override
+  String notificationEditorAddedUntitled(String name) {
+    return '$name te añadió como editor de un itinerario';
+  }
+
+  @override
+  String get notificationEditorAddedDetail =>
+      'Ahora puedes editar sus paradas, su descripción y sus notas';
+
+  @override
+  String notificationViewerAdded(String name, String title) {
+    return '$name compartió «$title» contigo';
+  }
+
+  @override
+  String notificationViewerAddedUntitled(String name) {
+    return '$name compartió un itinerario contigo';
+  }
+
+  @override
+  String get notificationViewerAddedDetail =>
+      'Ahora puedes abrir este itinerario';
+
+  @override
   String notificationHidden(String title) {
     return '«$title» se ocultó';
   }

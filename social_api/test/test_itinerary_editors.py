@@ -121,7 +121,11 @@ class TestGranting:
         assert response.json()["code"] == "editor_exists"
 
     def test_the_new_editor_is_notified(self, client: TestClient):
-        """Otherwise the grant is invisible and nobody ever uses it."""
+        """Otherwise the grant is invisible and nobody ever uses it.
+
+        The row has to name the itinerary too: "you were added as an editor"
+        is not actionable until the reader knows which trip, and a restricted
+        one is in no feed for them to go looking through."""
         owner_hdrs, _, bob_hdrs, bob_id = _cast(client)
         itin_id = _itinerary(client, owner_hdrs)
 
@@ -129,8 +133,24 @@ class TestGranting:
 
         response = client.get("/notifications", headers=bob_hdrs)
         assert response.status_code == 200, response.text
-        types = [row["type"] for row in response.json()["notifications"]]
-        assert "itinerary_editor_added" in types
+        rows = response.json()["notifications"]
+        assert [row["type"] for row in rows] == ["itinerary_editor_added"]
+        assert rows[0]["entity_id"] == itin_id
+        assert rows[0]["entity_title"] == "Shared Trip"
+        assert rows[0]["actor_username"] == "alice"
+
+    def test_granting_view_alongside_edit_notifies_once(self, client: TestClient):
+        """grant_view writes an allowlist row on the way past, and that path has
+        its own viewer notice — two rows for one action would be noise."""
+        owner_hdrs, _, bob_hdrs, bob_id = _cast(client)
+        itin_id = _itinerary(client, owner_hdrs)
+
+        _grant(client, itin_id, owner_hdrs, bob_id, grant_view=True)
+
+        response = client.get("/notifications", headers=bob_hdrs)
+        assert [row["type"] for row in response.json()["notifications"]] == [
+            "itinerary_editor_added"
+        ]
 
 
 # ---------------------------------------------------------------------------

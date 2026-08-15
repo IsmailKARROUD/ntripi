@@ -19,6 +19,8 @@ enum NotificationType {
   itineraryRated,
   itinerarySaved,
   moderationAction,
+  itineraryEditorAdded,
+  itineraryViewerAdded,
   unknown;
 
   static NotificationType fromString(String? value) => switch (value) {
@@ -28,6 +30,8 @@ enum NotificationType {
         'itinerary_rated' => NotificationType.itineraryRated,
         'itinerary_saved' => NotificationType.itinerarySaved,
         'moderation_action' => NotificationType.moderationAction,
+        'itinerary_editor_added' => NotificationType.itineraryEditorAdded,
+        'itinerary_viewer_added' => NotificationType.itineraryViewerAdded,
         _ => NotificationType.unknown,
       };
 }
@@ -54,7 +58,11 @@ String? notificationRoute({
         actorId == null ? null : '/profile/$actorId',
       NotificationType.itineraryRated =>
         entityId == null ? null : '/itineraries/$entityId/ratings',
-      NotificationType.itinerarySaved =>
+      NotificationType.itinerarySaved ||
+      // Straight to the itinerary the grant is about: opening it is both the
+      // proof the access is real and the first thing they came to do.
+      NotificationType.itineraryEditorAdded ||
+      NotificationType.itineraryViewerAdded =>
         entityId == null ? null : '/itineraries/$entityId',
       NotificationType.unknown => null,
     };
@@ -118,6 +126,16 @@ class AppNotification {
       NotificationType.itineraryRated => l10n.notificationRated(actor),
       NotificationType.itinerarySaved => l10n.notificationSaved(actor),
       NotificationType.moderationAction => _moderationTitle(l10n),
+      // Both name the itinerary in the sentence rather than leaving it to the
+      // subtitle: "you were added as an editor" says nothing a user can act on
+      // until they know which trip, and the second line is spent on what the
+      // access actually lets them do.
+      NotificationType.itineraryEditorAdded => entityTitle == null
+          ? l10n.notificationEditorAddedUntitled(actor)
+          : l10n.notificationEditorAdded(actor, entityTitle!),
+      NotificationType.itineraryViewerAdded => entityTitle == null
+          ? l10n.notificationViewerAddedUntitled(actor)
+          : l10n.notificationViewerAdded(actor, entityTitle!),
       // A type this build has never heard of. Still worth a row — it tells the
       // user something happened and the screen keeps working.
       NotificationType.unknown => l10n.notificationGeneric,
@@ -154,6 +172,13 @@ class AppNotification {
         NotificationType.moderationAction => subtype == 'warn'
             ? l10n.notificationWarnedDetail
             : l10n.notificationTapForDetails,
+        // The title already named the trip; this line is what the grant is
+        // worth — the two differ, so an editor is never left guessing whether
+        // they can only look.
+        NotificationType.itineraryEditorAdded =>
+          l10n.notificationEditorAddedDetail,
+        NotificationType.itineraryViewerAdded =>
+          l10n.notificationViewerAddedDetail,
         _ => null,
       };
 

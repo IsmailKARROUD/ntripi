@@ -185,6 +185,8 @@ class _Leading extends StatelessWidget {
         NotificationType.itineraryRated => Icons.star_rounded,
         NotificationType.itinerarySaved => Icons.bookmark_rounded,
         NotificationType.moderationAction => Icons.shield_outlined,
+        NotificationType.itineraryEditorAdded => Icons.edit_note_rounded,
+        NotificationType.itineraryViewerAdded => Icons.visibility_outlined,
         NotificationType.unknown => Icons.notifications_none_rounded,
       };
 }

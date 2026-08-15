@@ -887,6 +887,46 @@
       }
     }
   },
+  "notificationEditorAdded": "{name} hat dich als Bearbeiter von „{title}“ hinzugefügt",
+  "@notificationEditorAdded": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "notificationEditorAddedUntitled": "{name} hat dich als Bearbeiter einer Reiseroute hinzugefügt",
+  "@notificationEditorAddedUntitled": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "notificationEditorAddedDetail": "Du kannst jetzt Stopps, Beschreibung und Notizen ändern",
+  "notificationViewerAdded": "{name} hat „{title}“ mit dir geteilt",
+  "@notificationViewerAdded": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "notificationViewerAddedUntitled": "{name} hat eine Reiseroute mit dir geteilt",
+  "@notificationViewerAddedUntitled": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "notificationViewerAddedDetail": "Du kannst diese Reiseroute jetzt öffnen",
   "notificationHidden": "„{title}“ wurde ausgeblendet",
   "@notificationHidden": {
     "placeholders": {

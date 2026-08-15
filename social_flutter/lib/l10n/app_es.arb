@@ -887,6 +887,46 @@
       }
     }
   },
+  "notificationEditorAdded": "{name} te añadió como editor de «{title}»",
+  "@notificationEditorAdded": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "notificationEditorAddedUntitled": "{name} te añadió como editor de un itinerario",
+  "@notificationEditorAddedUntitled": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "notificationEditorAddedDetail": "Ahora puedes editar sus paradas, su descripción y sus notas",
+  "notificationViewerAdded": "{name} compartió «{title}» contigo",
+  "@notificationViewerAdded": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "notificationViewerAddedUntitled": "{name} compartió un itinerario contigo",
+  "@notificationViewerAddedUntitled": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "notificationViewerAddedDetail": "Ahora puedes abrir este itinerario",
   "notificationHidden": "«{title}» se ocultó",
   "@notificationHidden": {
     "placeholders": {

@@ -33,6 +33,12 @@ _STRINGS: dict[str, dict[str, str]] = {
         "follow_accepted": "{name} accepted your follow request",
         "itinerary_rated": "{name} rated one of your itineraries",
         "itinerary_saved": "{name} saved one of your itineraries",
+        "itinerary_editor_added": "{name} added you as an editor of “{title}”",
+        "itinerary_editor_added_untitled": "{name} added you as an editor of an itinerary",
+        "editor_added_detail": "You can now edit its stops, description and notes",
+        "itinerary_viewer_added": "{name} shared “{title}” with you",
+        "itinerary_viewer_added_untitled": "{name} shared an itinerary with you",
+        "viewer_added_detail": "You can now open this itinerary",
         "hidden": "“{title}” was hidden",
         "hidden_untitled": "One of your itineraries was hidden",
         "removed": "“{title}” was removed",
@@ -49,6 +55,12 @@ _STRINGS: dict[str, dict[str, str]] = {
         "follow_accepted": "{name} a accepté votre demande d'abonnement",
         "itinerary_rated": "{name} a noté l'un de vos itinéraires",
         "itinerary_saved": "{name} a enregistré l'un de vos itinéraires",
+        "itinerary_editor_added": "{name} vous a ajouté comme éditeur de « {title} »",
+        "itinerary_editor_added_untitled": "{name} vous a ajouté comme éditeur d'un itinéraire",
+        "editor_added_detail": "Vous pouvez maintenant modifier ses étapes, sa description et ses notes",
+        "itinerary_viewer_added": "{name} a partagé « {title} » avec vous",
+        "itinerary_viewer_added_untitled": "{name} a partagé un itinéraire avec vous",
+        "viewer_added_detail": "Vous pouvez maintenant ouvrir cet itinéraire",
         "hidden": "« {title} » a été masqué",
         "hidden_untitled": "L'un de vos itinéraires a été masqué",
         "removed": "« {title} » a été supprimé",
@@ -65,6 +77,12 @@ _STRINGS: dict[str, dict[str, str]] = {
         "follow_accepted": "قبل {name} طلب متابعتك",
         "itinerary_rated": "قيّم {name} أحد مسارات رحلاتك",
         "itinerary_saved": "حفظ {name} أحد مسارات رحلاتك",
+        "itinerary_editor_added": "أضافك {name} كمحرّر لمسار «{title}»",
+        "itinerary_editor_added_untitled": "أضافك {name} كمحرّر لأحد المسارات",
+        "editor_added_detail": "يمكنك الآن تعديل محطاته ووصفه وملاحظاته",
+        "itinerary_viewer_added": "شارك {name} معك مسار «{title}»",
+        "itinerary_viewer_added_untitled": "شارك {name} معك أحد المسارات",
+        "viewer_added_detail": "يمكنك الآن فتح هذا المسار",
         "hidden": "تم إخفاء «{title}»",
         "hidden_untitled": "تم إخفاء أحد مسارات رحلاتك",
         "removed": "تمت إزالة «{title}»",
@@ -81,6 +99,12 @@ _STRINGS: dict[str, dict[str, str]] = {
         "follow_accepted": "{name} hat deine Follow-Anfrage angenommen",
         "itinerary_rated": "{name} hat eine deiner Reiserouten bewertet",
         "itinerary_saved": "{name} hat eine deiner Reiserouten gespeichert",
+        "itinerary_editor_added": "{name} hat dich als Bearbeiter von „{title}“ hinzugefügt",
+        "itinerary_editor_added_untitled": "{name} hat dich als Bearbeiter einer Reiseroute hinzugefügt",
+        "editor_added_detail": "Du kannst jetzt Stopps, Beschreibung und Notizen ändern",
+        "itinerary_viewer_added": "{name} hat „{title}“ mit dir geteilt",
+        "itinerary_viewer_added_untitled": "{name} hat eine Reiseroute mit dir geteilt",
+        "viewer_added_detail": "Du kannst diese Reiseroute jetzt öffnen",
         "hidden": "„{title}“ wurde ausgeblendet",
         "hidden_untitled": "Eine deiner Reiserouten wurde ausgeblendet",
         "removed": "„{title}“ wurde entfernt",
@@ -97,6 +121,12 @@ _STRINGS: dict[str, dict[str, str]] = {
         "follow_accepted": "{name} aceptó tu solicitud de seguimiento",
         "itinerary_rated": "{name} valoró uno de tus itinerarios",
         "itinerary_saved": "{name} guardó uno de tus itinerarios",
+        "itinerary_editor_added": "{name} te añadió como editor de «{title}»",
+        "itinerary_editor_added_untitled": "{name} te añadió como editor de un itinerario",
+        "editor_added_detail": "Ahora puedes editar sus paradas, su descripción y sus notas",
+        "itinerary_viewer_added": "{name} compartió «{title}» contigo",
+        "itinerary_viewer_added_untitled": "{name} compartió un itinerario contigo",
+        "viewer_added_detail": "Ahora puedes abrir este itinerario",
         "hidden": "«{title}» se ocultó",
         "hidden_untitled": "Uno de tus itinerarios se ocultó",
         "removed": "«{title}» se eliminó",
@@ -113,6 +143,12 @@ _STRINGS: dict[str, dict[str, str]] = {
         "follow_accepted": "{name} 接受了你的关注请求",
         "itinerary_rated": "{name} 评价了你的一条行程",
         "itinerary_saved": "{name} 收藏了你的一条行程",
+        "itinerary_editor_added": "{name} 把你添加为“{title}”的编辑者",
+        "itinerary_editor_added_untitled": "{name} 把你添加为一条行程的编辑者",
+        "editor_added_detail": "你现在可以修改它的停靠点、简介和备注",
+        "itinerary_viewer_added": "{name} 与你分享了“{title}”",
+        "itinerary_viewer_added_untitled": "{name} 与你分享了一条行程",
+        "viewer_added_detail": "你现在可以打开这条行程",
         "hidden": "“{title}”已被隐藏",
         "hidden_untitled": "你的一条行程已被隐藏",
         "removed": "“{title}”已被移除",
@@ -167,8 +203,28 @@ def render(
         # The itinerary is the recipient's own, so naming it leaks nothing.
         return text(lang, type).format(name=name), entity_title
 
+    if type in ("itinerary_editor_added", "itinerary_viewer_added"):
+        # Naming someone else's itinerary in the tray is safe here and only
+        # here: the grant this notice announces is precisely what gives the
+        # recipient the right to see it.
+        return _access_granted(lang, type, name, entity_title)
+
     # Unknown type: a newer backend must never produce an empty tray entry.
     return text(lang, "generic"), None
+
+
+def _access_granted(
+    lang: str, type: str, name: str, entity_title: str | None
+) -> tuple[str, str | None]:
+    """Editor/viewer grants. The title says who did what to which trip; the body
+    says what the recipient can now do, which is the part they act on."""
+    if entity_title:
+        title = text(lang, type).format(name=name, title=entity_title)
+    else:
+        # The itinerary was deleted between the grant and the send.
+        title = text(lang, f"{type}_untitled").format(name=name)
+    stem = "editor" if type == "itinerary_editor_added" else "viewer"
+    return title, text(lang, f"{stem}_added_detail")
 
 
 def _moderation(
