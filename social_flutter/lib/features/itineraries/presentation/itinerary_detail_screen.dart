@@ -1609,18 +1609,20 @@ class _CoverHeroState extends State<_CoverHero> {
             left: 12,
             right: 12,
             child: Row(
-              children: [ 
+              children: [
                 if (widget.editMode) ...[
-                  const Spacer(),
+                  // Leading edge — the opposite end from the pencil that turned
+                  // edit mode on, so the two never land under the same thumb.
                   _GlassButton(
                     icon: Icons.check_rounded,
                     onTap: widget.onExitEdit,
                   ),
+                  const Spacer(),
                 ] else ...[
-                                  _GlassButton(
-                  icon: Icons.arrow_back_rounded,
-                  onTap: widget.onBack,
-                ),
+                  _GlassButton(
+                    icon: Icons.arrow_back_rounded,
+                    onTap: widget.onBack,
+                  ),
                   const Spacer(),
                   if (widget.onShare != null) ...[
                     _GlassButton(

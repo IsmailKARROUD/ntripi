@@ -221,6 +221,19 @@ class _ItineraryFormScreenState extends ConsumerState<ItineraryFormScreen> {
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
 
+    // Edit mode with an untouched form: the PATCH would write nothing, so
+    // sending it can only fail (lost edit lock, stale ETag) and strand the user
+    // on a screen with no changes to save — and it would bump updated_at, 412ing
+    // every other open client over a no-op. Requires a captured baseline: with
+    // _initialSnapshot still null the form was never populated and _isDirty
+    // reads false even for text the user typed.
+    if (widget.mode == ItineraryFormMode.edit &&
+        _initialSnapshot != null &&
+        !_isDirty) {
+      context.pop();
+      return;
+    }
+
     setState(() => _saving = true);
     try {
       final data = {
