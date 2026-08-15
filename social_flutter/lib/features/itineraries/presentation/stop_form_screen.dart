@@ -30,6 +30,9 @@ import 'package:social_flutter/features/itineraries/presentation/widgets/markdow
 import 'package:social_flutter/features/itineraries/presentation/widgets/link_preview_card.dart';
 import 'package:social_flutter/features/itineraries/data/link_preview_service.dart';
 import 'package:social_flutter/features/itineraries/data/itinerary_repository.dart';
+import 'package:social_flutter/features/itineraries/domain/edit_lock.dart';
+import 'package:social_flutter/features/itineraries/presentation/widgets/edit_lock_lost_notice.dart';
+import 'package:social_flutter/features/itineraries/providers/edit_lock_provider.dart';
 import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
 import 'package:social_flutter/features/profile/providers/profile_provider.dart';
 import 'package:social_flutter/core/ui/app_theme.dart';
@@ -111,6 +114,12 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
   Timer? _debounce;
   bool _initialized = false;
   bool _saving = false;
+  // Set when a save came back 409: the editing claim was taken over. NOTHING is
+  // cleared or popped when this flips — the half-typed form is now the only
+  // copy of the user's work, so it stays on screen with Save disabled.
+  EditLock? _lockLostTo;
+  bool _lockLost = false;
+  bool _reclaiming = false;
 
   PlaceType? _placeType;
   double? _lat;
@@ -826,6 +835,17 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
           );
         },
       );
+    } on EditLockLostException catch (e) {
+      // Deliberately not a snackbar and deliberately not a pop: the user needs
+      // to still see why Save stopped working, and their text has to survive.
+      ref
+          .read(editLockProvider(widget.itineraryId).notifier)
+          .markLost(e.holder);
+      if (!mounted) return;
+      setState(() {
+        _lockLost = true;
+        _lockLostTo = e.holder;
+      });
     } on Exception catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -836,6 +856,35 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
     } finally {
       if (mounted) setState(() => _saving = false);
     }
+  }
+
+  /// Try to get the editing session back after a takeover.
+  ///
+  /// Succeeds once the other party releases or their claim decays — the server
+  /// decides, and a refusal just leaves the notice up. Nothing about the form
+  /// is touched either way.
+  Future<void> _reclaimEditSession() async {
+    setState(() => _reclaiming = true);
+    bool reclaimed = false;
+    try {
+      reclaimed = await ref
+          .read(editLockProvider(widget.itineraryId).notifier)
+          .acquire();
+    } catch (_) {
+      // Offline or a server error: the notice stays, which is the truth.
+    }
+    if (!mounted) return;
+    setState(() {
+      _reclaiming = false;
+      if (reclaimed) {
+        _lockLost = false;
+        _lockLostTo = null;
+      }
+    });
+    if (!reclaimed) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(AppLocalizations.of(context)!.editLockReclaimed)),
+    );
   }
 
   // ---------------------------------------------------------------------------
@@ -1172,7 +1221,7 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                     : OfflineGate(
                       builder:
                           (online) => TextButton(
-                            onPressed: online ? _save : null,
+                            onPressed: (online && !_lockLost) ? _save : null,
                             child: Text(
                               l10n.save,
                               style: TextStyle(
@@ -1198,6 +1247,16 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
+                      if (_lockLost)
+                        EditLockLostNotice(
+                          holder: _lockLostTo,
+                          busy: _reclaiming,
+                          onReclaim: _reclaimEditSession,
+                          // Notes is the only field worth rescuing by hand; a
+                          // place name is retyped in seconds.
+                          copyText: _notesController.text,
+                        ),
+
                       // ── Location-source toggle (Coordinates | Google Maps link) ──
                       if (!readOnly) _buildModeToggle(context, nt, l10n),
 

@@ -26,7 +26,7 @@ from __future__ import annotations
 import pytest
 from fastapi.testclient import TestClient
 
-from conftest import auth_headers, register_user
+from conftest import auth_headers, edit_now, register_user
 from app.config import get_settings
 from app.services import text_moderation_service as tms
 from app.services.text_moderation_providers import ProviderResult
@@ -261,7 +261,7 @@ def test_patch_leaves_untouched_parts_alone(client, owner):
     resp = client.patch(
         f"/itineraries/{itinerary_id}",
         json={"recommended_weekdays": [1, 2, 3, 4, 5]},
-        headers=auth_headers(token),
+        headers=edit_now(client, itinerary_id, auth_headers(token)),
     )
     assert resp.status_code == 200, resp.json()
 
@@ -289,7 +289,7 @@ def test_patch_with_explicit_nulls_clears(client, owner):
             "recommended_weekdays": None,
             "recommended_period_note": None,
         },
-        headers=auth_headers(token),
+        headers=edit_now(client, itinerary_id, auth_headers(token)),
     )
     assert resp.status_code == 200, resp.json()
 
@@ -368,7 +368,7 @@ def test_note_is_scanned_on_update(client, owner, provider):
     resp = client.patch(
         f"/itineraries/{itinerary_id}",
         json={"recommended_period_note": "Avoid the monsoon"},
-        headers=auth_headers(token),
+        headers=edit_now(client, itinerary_id, auth_headers(token)),
     )
     assert resp.status_code == 200, resp.json()
     assert len(provider.calls) == 1
@@ -384,6 +384,6 @@ def test_dates_alone_do_not_bill_a_scan(client, owner, provider):
     client.patch(
         f"/itineraries/{itinerary_id}",
         json={"recommended_periods": [_window(4, 6)], "recommended_weekdays": [6, 7]},
-        headers=auth_headers(token),
+        headers=edit_now(client, itinerary_id, auth_headers(token)),
     )
     assert provider.calls == []

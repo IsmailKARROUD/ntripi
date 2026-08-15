@@ -20,6 +20,10 @@ import 'package:social_flutter/features/itineraries/domain/transit_segment.dart'
 import 'package:social_flutter/features/itineraries/domain/transport_leg.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/leg_form_dialog.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/leg_tile.dart';
+import 'package:social_flutter/features/itineraries/data/itinerary_repository.dart';
+import 'package:social_flutter/features/itineraries/domain/edit_lock.dart';
+import 'package:social_flutter/features/itineraries/presentation/widgets/edit_lock_lost_notice.dart';
+import 'package:social_flutter/features/itineraries/providers/edit_lock_provider.dart';
 import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
 import 'package:social_flutter/core/ui/app_theme.dart';
 import 'package:social_flutter/shared/widgets/field_help.dart';
@@ -51,6 +55,11 @@ class _SegmentFormScreenState extends ConsumerState<SegmentFormScreen> {
   List<Map<String, dynamic>> _legs = [];
   bool _initialized = false;
   bool _saving = false;
+  // The claim was taken over mid-edit. The legs the user has built up are the
+  // only copy — nothing is popped or cleared, only Save goes away.
+  EditLock? _lockLostTo;
+  bool _lockLost = false;
+  bool _reclaiming = false;
   // Set after the user picks Join — triggers update instead of create on next save.
   String? _resolvedSegmentId;
 
@@ -162,6 +171,15 @@ class _SegmentFormScreenState extends ConsumerState<SegmentFormScreen> {
       }
       if (!mounted) return;
       context.pop();
+    } on EditLockLostException catch (e) {
+      ref
+          .read(editLockProvider(widget.itineraryId).notifier)
+          .markLost(e.holder);
+      if (!mounted) return;
+      setState(() {
+        _lockLost = true;
+        _lockLostTo = e.holder;
+      });
     } on Exception catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -170,6 +188,28 @@ class _SegmentFormScreenState extends ConsumerState<SegmentFormScreen> {
     } finally {
       if (mounted) setState(() => _saving = false);
     }
+  }
+
+  /// Try to take the editing session back. The server decides; a refusal just
+  /// leaves the notice up, and the form is untouched either way.
+  Future<void> _reclaimEditSession() async {
+    setState(() => _reclaiming = true);
+    bool reclaimed = false;
+    try {
+      reclaimed = await ref
+          .read(editLockProvider(widget.itineraryId).notifier)
+          .acquire();
+    } catch (_) {
+      // Offline or a server error — the notice stays, which is the truth.
+    }
+    if (!mounted) return;
+    setState(() {
+      _reclaiming = false;
+      if (reclaimed) {
+        _lockLost = false;
+        _lockLostTo = null;
+      }
+    });
   }
 
   Future<_DuplicateAction?> _showDuplicateDialog() {
@@ -294,7 +334,8 @@ class _SegmentFormScreenState extends ConsumerState<SegmentFormScreen> {
                 )
               else
                 TextButton(
-                  onPressed: () => _save(stops),
+                  // A save with no claim would 409; offering it is a lie.
+                  onPressed: _lockLost ? null : () => _save(stops),
                   child: const Text('Save'),
                 ),
             ],
@@ -304,6 +345,12 @@ class _SegmentFormScreenState extends ConsumerState<SegmentFormScreen> {
             child: ListView(
               padding: const EdgeInsets.all(16),
               children: [
+                if (_lockLost)
+                  EditLockLostNotice(
+                    holder: _lockLostTo,
+                    busy: _reclaiming,
+                    onReclaim: _reclaimEditSession,
+                  ),
                 if (_isMergePreview)
                   Container(
                     margin: const EdgeInsets.only(bottom: 16),

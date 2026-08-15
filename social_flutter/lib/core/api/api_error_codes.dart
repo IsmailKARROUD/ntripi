@@ -49,6 +49,13 @@ String? localizedApiError(String code, AppLocalizations l10n) {
       'appeal_target_not_found' => l10n.apiErrorAppealTargetNotFound,
       'text_moderation_rejected' => l10n.apiErrorTextModerationRejected,
       'cannot_block_self' => l10n.apiErrorCannotBlockSelf,
+      'itinerary_locked' => l10n.apiErrorItineraryLocked,
+      'edit_lock_required' => l10n.apiErrorEditLockRequired,
+      'edit_lock_lost' => l10n.apiErrorEditLockLost,
+      'editor_cannot_view' => l10n.apiErrorEditorCannotView,
+      'editor_exists' => l10n.apiErrorEditorExists,
+      'editor_not_found' => l10n.apiErrorEditorNotFound,
+      'editor_is_owner' => l10n.apiErrorEditorIsOwner,
       _ => null,
     };
 }

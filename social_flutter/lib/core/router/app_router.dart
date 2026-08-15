@@ -23,6 +23,7 @@ import 'package:social_flutter/features/notifications/presentation/notification_
 import 'package:social_flutter/features/notifications/presentation/notifications_screen.dart';
 import 'package:social_flutter/features/itineraries/presentation/itinerary_detail_screen.dart';
 import 'package:social_flutter/features/itineraries/presentation/stop_detail_screen.dart';
+import 'package:social_flutter/features/itineraries/presentation/editors_screen.dart';
 import 'package:social_flutter/features/itineraries/presentation/itinerary_form_screen.dart';
 import 'package:social_flutter/features/itineraries/presentation/itinerary_list_screen.dart';
 import 'package:social_flutter/features/itineraries/presentation/map_picker_screen.dart';
@@ -264,6 +265,13 @@ final appRouter = GoRouter(
       parentNavigatorKey: navigatorKey,
       builder:
           (_, s) => ItineraryFormScreen(itineraryId: s.pathParameters['id']!),
+    ),
+    GoRoute(
+      // Owner-only in practice — the screen is only reachable from the owner's
+      // own edit form, and every endpoint behind it is owner-gated server-side.
+      path: '/itineraries/:id/editors',
+      parentNavigatorKey: navigatorKey,
+      builder: (_, s) => EditorsScreen(itineraryId: s.pathParameters['id']!),
     ),
     GoRoute(
       path: '/itineraries/:id/ratings',

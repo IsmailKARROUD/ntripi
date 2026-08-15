@@ -51,6 +51,7 @@ class _FakeRepo extends ItineraryRepository {
     String stopId,
     Map<String, dynamic> data, {
     required String etag,
+    required String? lockToken,
   }) async {
     updateStopCalls.add(_UpdateStopCall(
       itineraryId: itineraryId,
@@ -68,6 +69,7 @@ class _FakeRepo extends ItineraryRepository {
     List<String>? trackOrder,
     List<String>? segmentIdsToDelete,
     required String etag,
+    required String? lockToken,
   }) async {
     reorderCalls.add(_ReorderCall(
       itineraryId: itineraryId,

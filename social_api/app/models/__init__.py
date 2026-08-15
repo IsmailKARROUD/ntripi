@@ -9,6 +9,8 @@ from app.models.security_audit_log import SecurityAuditLog
 from app.models.follow import Follow, FollowStatus
 from app.models.itinerary import Itinerary
 from app.models.itinerary_allowed_user import ItineraryAllowedUser
+from app.models.itinerary_editor import ItineraryEditor
+from app.models.itinerary_edit_lock import ItineraryEditLock
 from app.models.saved_itinerary import SavedItinerary
 from app.models.track import Track
 from app.models.stop import Stop
@@ -33,7 +35,8 @@ from app.models.device_token import DeviceToken
 __all__ = [
     "User", "RefreshToken", "EmailToken", "PasswordHistory", "SecurityAuditLog",
     "Follow", "FollowStatus",
-    "Itinerary", "ItineraryAllowedUser", "SavedItinerary", "Track",
+    "Itinerary", "ItineraryAllowedUser", "ItineraryEditor", "ItineraryEditLock",
+    "SavedItinerary", "Track",
     "Stop", "Annotation", "ItineraryRating", "ItineraryAnnotation",
     "TransitSegment", "TransportLeg", "WaitlistEntry", "ContentReport",
     "ImageModerationLog", "ModerationLog", "Appeal",

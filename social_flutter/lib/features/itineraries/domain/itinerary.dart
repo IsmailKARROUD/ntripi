@@ -88,6 +88,14 @@ class Itinerary {
   /// always null in summary views, which do not carry the fields at all.
   final RecommendedPeriod? recommendedPeriod;
 
+  /// Whether THIS viewer may edit — owner, or someone the owner granted edit
+  /// rights. Detail responses only; false everywhere else, which is the safe
+  /// default for a summary card that has no business offering a pencil.
+  ///
+  /// A rendering hint, never a decision: the server re-derives it on every
+  /// write, so a stale true costs a clean 403 rather than a bad save.
+  final bool canEdit;
+
   const Itinerary({
     required this.id,
     required this.userId,
@@ -109,6 +117,7 @@ class Itinerary {
     this.hidden = false,
     this.moderationStatus = ModerationStatus.approved,
     this.recommendedPeriod,
+    this.canEdit = false,
   });
 
   factory Itinerary.fromJson(Map<String, dynamic> json) {
@@ -148,6 +157,7 @@ class Itinerary {
       // Detail-only, like `hidden` — summary payloads never carry these keys,
       // so this stays null there rather than becoming an empty period.
       recommendedPeriod: RecommendedPeriod.fromItineraryJson(json),
+      canEdit: json['can_edit'] as bool? ?? false,
     );
   }
 
@@ -259,6 +269,7 @@ class Itinerary {
     RecommendedPeriod? recommendedPeriod,
     // Explicit clear — the `??` fallback below can't null a field, only replace it.
     bool clearRecommendedPeriod = false,
+    bool? canEdit,
   }) {
     return Itinerary(
       id: id ?? this.id,
@@ -284,6 +295,7 @@ class Itinerary {
       recommendedPeriod: clearRecommendedPeriod
           ? null
           : (recommendedPeriod ?? this.recommendedPeriod),
+      canEdit: canEdit ?? this.canEdit,
     );
   }
 

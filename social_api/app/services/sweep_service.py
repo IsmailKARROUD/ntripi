@@ -40,8 +40,8 @@ from app.models.text_moderation_cache import TextModerationCache
 from app.models.text_moderation_decision import TextModerationDecision
 from app.models.user import User
 from app.services import (
-    bug_report_service, moderation_actions, notification_service,
-    text_moderation_service,
+    bug_report_service, edit_lock_service, moderation_actions,
+    notification_service, text_moderation_service,
 )
 from app.services.moderation_email_service import build_reason, send_auto_action_email
 
@@ -78,6 +78,7 @@ def run_moderation_sweep(db: Session, settings) -> dict:
         "bug_reports_purged": 0,
         "notifications_purged": 0,
         "device_tokens_purged": 0,
+        "edit_locks_purged": 0,
     }
     try:
         notifications: list[dict] = []
@@ -320,6 +321,11 @@ def _purge(db: Session, settings, counters: dict) -> None:
         delete(DeviceToken).where(DeviceToken.last_seen_at < device_cutoff)
     )
     counters["device_tokens_purged"] = result.rowcount or 0
+
+    # Housekeeping only: a claim that survives this is still correctly reported
+    # as takeable, since staleness is derived from last_heartbeat_at at read
+    # time rather than stored.
+    counters["edit_locks_purged"] = edit_lock_service.purge_expired(db, settings)
 
 
 # ---------------------------------------------------------------------------

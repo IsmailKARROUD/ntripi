@@ -9,6 +9,9 @@ Visibility rules:
   followers   — owner + users who follow the owner (status=accepted)
   restricted  — owner + users explicitly listed in itinerary_allowed_users
   only_me     — owner only
+
+can_edit_itinerary() answers the write-side question and is built on top of
+can_view_itinerary(), so edit rights can never outlive view rights.
 """
 
 import uuid
@@ -18,6 +21,7 @@ from sqlalchemy import func, or_, select
 
 from app.models.itinerary import Itinerary
 from app.models.itinerary_allowed_user import ItineraryAllowedUser
+from app.models.itinerary_editor import ItineraryEditor
 from app.models.itinerary_rating import ItineraryRating
 from app.models.user import User
 from app.services.user_service import is_accepted_follower
@@ -126,6 +130,38 @@ def can_view_itinerary(
 
     # only_me — owner already passed above, so deny everyone else.
     return False
+
+
+def can_edit_itinerary(
+    itinerary: Itinerary,
+    editor_id: uuid.UUID,
+    db: Session,
+) -> bool:
+    """
+    Returns True if editor_id may modify this itinerary and its subcontent.
+
+    Editing is a layer on top of visibility, never a parallel ladder: the view
+    check runs first and unmodified, so a block, a visibility change, a
+    moderator hide, a banned owner or a soft delete revokes editing the moment
+    it revokes viewing — with no rows to clean up. That is why this delegates
+    rather than re-deriving anything; there is one access ladder, not two.
+
+    Holding the edit lock is a separate question answered on the write path —
+    this only answers whether the person is allowed to hold it at all.
+    """
+    if not can_view_itinerary(itinerary, editor_id, db):
+        return False
+
+    if itinerary.user_id == editor_id:
+        return True
+
+    granted = db.execute(
+        select(ItineraryEditor).where(
+            ItineraryEditor.itinerary_id == itinerary.id,
+            ItineraryEditor.user_id == editor_id,
+        )
+    ).scalar_one_or_none()
+    return granted is not None
 
 
 def recalculate_rating(itinerary: Itinerary, db: Session) -> None:

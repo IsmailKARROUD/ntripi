@@ -214,6 +214,8 @@ Optional (text moderation): `TEXT_MODERATION_PROVIDER=openai|local|disabled` (de
 
 Moderation sweep — **one of the two drivers is required**, or SLA auto-hide and post-outage re-checks never run: `SWEEP_IN_PROCESS=True` (timer in the app process; no token, no scheduler — the single-instance default) **or** an external scheduler running `curl -X POST -H "Authorization: Bearer $SWEEP_TOKEN" https://ntripi.app/internal/moderation-sweep` hourly (keeps a wall-clock schedule across deploys, which restart the in-process timer). Both at once is safe — the advisory lock makes the duplicate a no-op. Also: `MODERATION_SLA_HOURS=20` (≤22, validated) · `SWEEP_TOKEN` (unset ⇒ `/internal/moderation-sweep` 404s) · `SWEEP_INTERVAL_MINUTES=30` (in-process only; floored at 60s).
 
+Optional (collaborative editing): `EDIT_LOCK_HEARTBEAT_SECONDS=30` / `EDIT_LOCK_IDLE_SECONDS=90` / `EDIT_LOCK_TTL_SECONDS=300`. All have working defaults — the feature ships with no deploy change. Startup refuses `TTL <= IDLE` or `IDLE < 2 x HEARTBEAT`: a claim that becomes takeable before it even reads as inactive would be stolen out from under someone the UI still shows as editing.
+
 Optional (reports/safety): `REPORT_HIDE_THRESHOLDS` (comma `category:count`) · `REPORT_RATE_LIMIT=10/hour` · `ABUSE_CONTACT_EMAIL=abuse@ntripi.app` (must match the in-app address AND the store listing).
 
 Optional (bug reports): `BUG_REPORT_RATE_LIMIT=5/hour` · `BUG_REPORT_RETENTION_DAYS=180`. Both have working defaults — shipping the feature needs no deploy change. `OPERATOR_EMAIL` is what turns the notification email on.
@@ -392,6 +394,148 @@ The ToS asserted a minimum age for a release before anything asked for one. `use
 
 ---
 
+## Collaborative Editing (editors + edit lock)
+
+An itinerary has one owner and any number of **editors**, plus a server-enforced
+**edit lock** so two people never write at once. Everything is decided
+server-side; the client renders state and may be stale or hostile.
+
+### Editors
+
+- **`itinerary_editors`** mirrors `itinerary_allowed_users` exactly — composite PK
+  `(itinerary_id, user_id)`, both FKs CASCADE, presence means granted, revoke by
+  deleting the row. It adds `granted_by` (SET NULL, audit only) and an
+  `ix_itinerary_editors_user` index, which the allowlist does not need: this table
+  *is* queried by the trailing column ("itineraries I can edit").
+- **`can_edit_itinerary()` in `itinerary_access.py` is the single source of truth**,
+  and it *delegates to `can_view_itinerary()` first*. That is what makes edit
+  rights re-derived rather than stored: a block, a visibility change, a moderator
+  hide, a banned owner or a soft delete revokes editing the moment it revokes
+  viewing, with no rows to clean up and no sweep. There is one access ladder,
+  never two.
+- **Only the owner grants or revokes.** An editor cannot recruit more editors —
+  the grant is the owner's trust decision and does not carry the power to
+  delegate it. `GET /editors` is readable by editors too (someone sharing a
+  document should see who else holds a pen).
+- **Granting to someone who cannot view answers 409 `editor_cannot_view`** with
+  `{visibility, can_fix_with_allowlist}`. That is a question, not an error: the
+  client asks the owner and re-posts with `grant_view: true`. `grant_view` only
+  ever inserts an `ItineraryAllowedUser` row and only for `restricted` — it must
+  never change `visibility`, because `followers` -> `restricted` silently cuts off
+  every follower and `only_me` -> anything is a privacy decision the owner has to
+  make deliberately on the visibility screen.
+- Revoking **also deletes that user's lock row**, in the same transaction —
+  otherwise a removed editor's claim blocks everyone until the TTL runs out.
+- All three editor endpoints call `_touch_itinerary`. Unlike the allowlist, they
+  must: `ItineraryDetail.can_edit` rides in a response whose ETag is
+  `updated_at`, so without the bump a revoked editor's cached detail would keep
+  offering them a pencil.
+- New notification type **`itinerary_editor_added`**, mandatory (not in
+  `MUTABLE_TYPES`, so no new boolean column on `users`) — edit rights nobody
+  knows they hold are edit rights nobody uses.
+
+### Edit lock
+
+- **`itinerary_edit_locks` has `itinerary_id` as its PRIMARY KEY**, so "at most
+  one holder" is a database invariant rather than something app code remembers.
+- **The claim is identified by a rotating opaque token, never by `user_id`.**
+  `token_hash` stores only the SHA-256 (`token_util`, same treatment as refresh
+  and email tokens); the raw token is returned exactly once, by the claim
+  endpoint. Every takeover mints a fresh one, and *that rotation is the entire
+  mechanism* behind "the displaced device cannot save": it still holds the old
+  token, still believes it is editing, and fails closed on its next write. A
+  `user_id` comparison could not express this (the same person on a second device
+  looks identical) and a check at acquire time could not express it at all.
+- **No `expires_at` column.** Staleness is derived from `last_heartbeat_at`
+  against the config windows at read time, so raising the TTL takes effect on
+  claims that already exist.
+- **`state` is computed server-side and shipped as a word** — `active` (heartbeat
+  current) / `idle` (quiet, claim still stands, presentational only) / `takeable`
+  (past the TTL, any editor may take it). The client renders it and counts down
+  against absolute timestamps; it never derives it. The GET body carries
+  **absolute timestamps and no remaining-seconds field**, so it stays
+  byte-identical between polls and `ETagMiddleware` answers 304.
+- **`takeover` defaults `false` on every displacing path** — a takeable claim,
+  your own other device, and the owner's immediate reclaim all need the explicit
+  flag, so a steal is always a deliberate second call the UI confirmed.
+- `DELETE /lock` is **idempotent and never 404s** (same rule as the notification
+  DELETE — the client fires it from teardown). The owner may release without a
+  token: that is the "unlock it from my other device" path.
+- Config: `EDIT_LOCK_HEARTBEAT_SECONDS=30` / `EDIT_LOCK_IDLE_SECONDS=90` /
+  `EDIT_LOCK_TTL_SECONDS=300`. A startup validator refuses `TTL <= IDLE` or
+  `IDLE < 2 x HEARTBEAT`. `sweep_service._purge` deletes long-dead rows
+  (`edit_locks_purged`) — housekeeping only; a surviving row still reads
+  `takeable`.
+
+### The guard
+
+`require_edit_access` in `app/dependencies.py` — the same object as
+`require_etag`, which keeps its name for the ten endpoints and the docs that
+already use it. Order is load-bearing:
+
+```
+1. 404  missing OR deleted_at is not None   (require_etag never checked this)
+2. 403  itinerary_not_owner   - can_edit_itinerary() false
+3. 428  edit_lock_required    - no X-Edit-Lock header
+4. 409  edit_lock_lost        - no lock row, or the token does not match
+5. 428 if_match_required / 412 itinerary_stale
+6. refresh the claim's heartbeat - saving is activity
+```
+
+- **Step 4 sits above step 5** deliberately: after a takeover the ETag has usually
+  moved too, and 412 would send the user to reload into a screen they still
+  cannot save from. "You lost the claim" is the more specific truth and the only
+  actionable one.
+- **409, not 423, on the write path.** 423 means "you asked to claim and cannot"
+  (answerable by waiting or taking over); 409 means "you believed you held it and
+  do not" (protect the unsaved input). The client reacts differently to each.
+- **A matching token past its TTL is honoured** and its heartbeat refreshed —
+  nobody took the claim, so refusing would discard real work to enforce a
+  deadline that was not holding anyone up.
+- **Editor rights are content only.** Owner-only: delete the itinerary,
+  `visibility` (rejected in `update_itinerary`'s body — the guard admits editors,
+  the body does not), the allowlist, the editor list, and the **cover image**
+  (the trip's public face, and every upload spends a paid Rekognition scan).
+- `X-Edit-Lock` must stay in `main.py`'s CORS `allow_headers` or the browser
+  preflight fails before the request is sent.
+
+### `test_edit_guard_coverage.py` — the structural proof
+
+Introspects `app.main.app.routes` and asserts every mutating route under
+`/itineraries/{itinerary_id}` is in **exactly one** of `EDIT_GUARDED` /
+`OWNER_ONLY` / `LOCK_ENDPOINTS` / `VIEWER_WRITE`, that every `EDIT_GUARDED` one
+depends on `require_edit_access`, and that none of the others do. A new endpoint
+fails the suite until somebody classifies it — that is what keeps "no exceptions"
+true for code nobody has written yet. `VIEWER_WRITE` (ratings, saves) is exempt
+because those write sibling tables, never itinerary content.
+
+### Frontend
+
+- `EditLockNotifier` (`providers/edit_lock_provider.dart`, family by itinerary
+  id, **not autoDispose**) owns the token and the heartbeat. It lives in a
+  provider because the claim must survive the detail screen being covered by the
+  stop form. The token is **memory only** — any takeover rotates it, so
+  persisting it would only create a way to resurrect a dead session.
+- `mayEdit = isOwner || itinerary.canEdit`. Ownership is OR-ed in because it is
+  the one case the client can derive itself, and a summary payload (no `can_edit`
+  key) must not take the owner's own pencil away.
+- **`long_press_to_edit.dart`'s "role-disjoint" invariant is now can-edit vs
+  report**, not owner vs report — an editor gets the pencil and never the flag.
+  `_CoverHero.canEdit` (renamed from `isOwner`) is what picks that chrome.
+- **A lock loss must never pop a route or clear a controller.** The ejected user
+  is mid-edit and their unsaved text is now the only copy: `EditLockLostNotice`
+  is a persistent banner (not a snackbar — it has to still be visible two minutes
+  later), Save is disabled, every field stays populated and editable, and there
+  are two ways out that both preserve the work — reclaim, or copy.
+- `extractErrorMessage` maps the three typed lock exceptions, so every compose
+  surface explains itself without its own branch. The forms that must *also*
+  protect unsaved input catch the type instead.
+- `EditLockState.fromString` degrades unknown values to **`active`** — the
+  conservative direction, so a newer backend never makes an older client offer a
+  takeover it does not understand.
+
+---
+
 ## Alembic Migration Rules (CRITICAL)
 
 - **Never hand-write a revision ID** — always generate one with `venv/bin/alembic revision -m "description"` (or `--autogenerate` if a DB is reachable). Hand-written placeholder IDs (e.g. `a1b2c3d4e5f6`) silently collide with existing migrations, fork the chain, and crash Railway on `alembic upgrade head`.
@@ -495,6 +639,23 @@ The ToS asserted a minimum age for a release before anything asked for one. `use
 - Do NOT pin a legal page's body to `dir="ltr"` — the bodies are translated now, and Arabic needs RTL
 - Do NOT apply the client text filter to titles or place names — European place names false-positive
 - Do NOT let a client-side filter block submission, mutate text, or clear a compose field
+- Do NOT create a second access ladder for editing — `can_edit_itinerary` must keep delegating to `can_view_itinerary`, or edit rights outlive view rights
+- Do NOT identify an edit claim by `user_id` — the rotating token is the only thing that can tell a displaced device from the same person on a new one
+- Do NOT check the claim only at acquire time — every mutating request re-checks it, which is the whole point
+- Do NOT put the lock check after the If-Match check — a taken-over client would be told to reload into a screen it still cannot save from
+- Do NOT collapse 409 `edit_lock_lost` and 423 `itinerary_locked` — one says protect unsaved input, the other says offer to wait
+- Do NOT let a heartbeat or a takeover touch `itinerary.updated_at` — that column IS the concurrency ETag and would 412 every open client once a minute
+- Do NOT put lock state on `ItineraryDetail` — it changes every heartbeat while that response's ETag does not
+- Do NOT put a remaining-seconds field in the lock GET body — it would change on every poll and defeat the 304
+- Do NOT let `grant_view` change `visibility` — it may only add an allowlist row, and only for `restricted`
+- Do NOT let an editor grant edit rights, change visibility, delete the itinerary, or replace the cover
+- Do NOT leave a revoked editor's claim standing — it blocks everyone until the TTL for someone who can no longer use it
+- Do NOT add a mutating itinerary endpoint without classifying it in `test_edit_guard_coverage.py` — the test fails until you do, deliberately
+- Do NOT make `DELETE /lock` 404 — it is called from teardown, same rule as the notification DELETE
+- Do NOT pop a route or clear a field when a save returns `edit_lock_lost` — the user's unsaved text is the only copy of it at that moment
+- Do NOT attach `X-Edit-Lock` from a Dio interceptor — a blanket one would send a dead token onto requests that must not carry one
+- Do NOT persist the claim token — a takeover rotates it, so storing it only resurrects a dead session
+- Do NOT drop `X-Edit-Lock` from CORS `allow_headers` — the browser preflight fails before the request is sent
 - Do NOT hardcode URLs, secrets, or environment values
 - Do NOT use `passlib` — bcrypt direct only
 - Do NOT use `allow_origin_regex=".*"` in CORS — explicit list only

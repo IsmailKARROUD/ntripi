@@ -15,7 +15,9 @@ import pytest
 from fastapi.testclient import TestClient
 
 from app.services.ordering import key_between, n_keys_between
-from conftest import register_user, auth_headers, etag_from_updated_at
+from conftest import (
+    auth_headers, etag_from_updated_at, locked_headers, register_user,
+)
 
 
 # ---------------------------------------------------------------------------
@@ -104,7 +106,7 @@ class TestTrackAndStopSmoke:
         r = client.post(
             f"/itineraries/{itin_id}/stops",
             json={"place_name": "Paris", "is_free": True},
-            headers={**hdrs, "If-Match": etag},
+            headers=locked_headers(client, itin_id, hdrs, etag),
         )
         assert r.status_code == 201, r.text
         stop1 = r.json()
@@ -121,7 +123,7 @@ class TestTrackAndStopSmoke:
                 "place_name": "Lyon",
                 "is_free": True,
             },
-            headers={**hdrs, "If-Match": etag},
+            headers=locked_headers(client, itin_id, hdrs, etag),
         )
         assert r.status_code == 201, r.text
         stop2 = r.json()
@@ -138,7 +140,7 @@ class TestTrackAndStopSmoke:
                 "place_name": "Marseille",
                 "is_free": True,
             },
-            headers={**hdrs, "If-Match": etag},
+            headers=locked_headers(client, itin_id, hdrs, etag),
         )
         assert r.status_code == 201, r.text
         stop3 = r.json()
@@ -163,7 +165,7 @@ class TestTrackAndStopSmoke:
         r = client.patch(
             f"/itineraries/{itin_id}/stops/{stop2['id']}",
             json={"track_id": track2_id},
-            headers={**hdrs, "If-Match": etag},
+            headers=locked_headers(client, itin_id, hdrs, etag),
         )
         assert r.status_code == 200, r.text
         etag = r.headers["etag"]
@@ -178,7 +180,7 @@ class TestTrackAndStopSmoke:
         # --- Delete stop1 (track1's last stop → track1 should be deleted) ---
         r = client.delete(
             f"/itineraries/{itin_id}/stops/{stop1['id']}",
-            headers={**hdrs, "If-Match": etag},
+            headers=locked_headers(client, itin_id, hdrs, etag),
         )
         assert r.status_code == 204, r.text
         etag = r.headers["etag"]
@@ -203,7 +205,8 @@ class TestTrackAndStopSmoke:
         r = client.post(
             f"/itineraries/{itin_id}/stops",
             json={"place_name": "Rome", "is_free": True},
-            headers={**hdrs, "If-Match": '"2000-01-01T00:00:00+00:00"'},
+            headers=locked_headers(client, itin_id, hdrs,
+                                   '"2000-01-01T00:00:00+00:00"'),
         )
         assert r.status_code == 412
 
@@ -214,7 +217,7 @@ class TestTrackAndStopSmoke:
         r = client.post(
             f"/itineraries/{itin_id}/stops",
             json={"place_name": "Hidden gem", "map_url": link, "is_free": True},
-            headers={**hdrs, "If-Match": etag},
+            headers=locked_headers(client, itin_id, hdrs, etag),
         )
         assert r.status_code == 201, r.text
         assert r.json()["map_url"] == link  # round-trips through StopResponse
@@ -225,7 +228,7 @@ class TestTrackAndStopSmoke:
         r = client.post(
             f"/itineraries/{itin_id}/stops",
             json={"place_name": "Nope", "map_url": "https://youtube.com/watch?v=x"},
-            headers={**hdrs, "If-Match": etag},
+            headers=locked_headers(client, itin_id, hdrs, etag),
         )
         assert r.status_code == 422, r.text
 
@@ -254,7 +257,8 @@ class TestReorderAndRebalance:
                 payload["track_id"] = track_id  # noqa: F821 — set after first iter
                 payload["after_stop_id"] = prev
             r = client.post(f"/itineraries/{itin['id']}/stops",
-                            json=payload, headers={**hdrs, "If-Match": etag})
+                            json=payload,
+                            headers=locked_headers(client, itin['id'], hdrs, etag))
             assert r.status_code == 201, r.text
             stop = r.json()
             ids.append(stop["id"])
@@ -273,7 +277,7 @@ class TestReorderAndRebalance:
         r = client.patch(
             f"/itineraries/{itin_id}/stops/{c_id}",
             json={"after_stop_id": a_id, "before_stop_id": b_id},
-            headers={**hdrs, "If-Match": etag},
+            headers=locked_headers(client, itin_id, hdrs, etag),
         )
         assert r.status_code == 200, r.text
 
@@ -295,7 +299,7 @@ class TestReorderAndRebalance:
             f"/itineraries/{itin_id}/stops",
             json={"track_id": None, "after_track_id": track1_id,
                   "place_name": "D", "is_free": True},
-            headers={**hdrs, "If-Match": etag},
+            headers=locked_headers(client, itin_id, hdrs, etag),
         )
         assert r.status_code == 201, r.text
         d = r.json()
@@ -306,7 +310,7 @@ class TestReorderAndRebalance:
         r = client.patch(
             f"/itineraries/{itin_id}/stops/{c_id}",
             json={"track_id": track2_id, "after_stop_id": d["id"]},
-            headers={**hdrs, "If-Match": etag},
+            headers=locked_headers(client, itin_id, hdrs, etag),
         )
         assert r.status_code == 200, r.text
 
@@ -356,7 +360,7 @@ class TestReorderAndRebalance:
         r = client.patch(
             f"/itineraries/{itin_id}/stops/{c_id}",
             json={"after_stop_id": a_id, "before_stop_id": b_id},
-            headers={**hdrs, "If-Match": etag},
+            headers=locked_headers(client, itin_id, hdrs, etag),
         )
         assert r.status_code == 200, r.text
 
@@ -396,7 +400,8 @@ class TestBatchReorder:
                 payload["track_id"] = track_id
                 payload["after_stop_id"] = prev
             r = client.post(f"/itineraries/{itin['id']}/stops",
-                            json=payload, headers={**hdrs, "If-Match": etag})
+                            json=payload,
+                            headers=locked_headers(client, itin['id'], hdrs, etag))
             assert r.status_code == 201, r.text
             stop = r.json()
             ids.append(stop["id"])
@@ -415,7 +420,7 @@ class TestBatchReorder:
         r = client.post(
             f"/itineraries/{itin_id}/reorder",
             json={"stop_orders": {track_id: [c_id, b_id, a_id]}},
-            headers={**hdrs, "If-Match": etag},
+            headers=locked_headers(client, itin_id, hdrs, etag),
         )
         assert r.status_code == 200, r.text
 
@@ -442,7 +447,8 @@ class TestBatchReorder:
         r = client.post(
             f"/itineraries/{itin_id}/reorder",
             json={"stop_orders": {track_id: ids[::-1]}},
-            headers={**hdrs, "If-Match": '"2000-01-01T00:00:00+00:00"'},
+            headers=locked_headers(client, itin_id, hdrs,
+                                   '"2000-01-01T00:00:00+00:00"'),
         )
         assert r.status_code == 412
 
@@ -454,6 +460,7 @@ class TestBatchReorder:
         r = client.post(
             f"/itineraries/{itin_id}/reorder",
             json={"stop_orders": {track_id: ids[::-1]}},
+            # No claim: a non-owner cannot obtain one, and the 403 is the point.
             headers={**other_hdrs, "If-Match": etag},
         )
         assert r.status_code == 403
@@ -467,7 +474,7 @@ class TestBatchReorder:
             f"/itineraries/{itin_id}/stops",
             json={"track_id": None, "after_track_id": track_id,
                   "place_name": "D", "is_free": True},
-            headers={**hdrs, "If-Match": etag},
+            headers=locked_headers(client, itin_id, hdrs, etag),
         )
         d = r.json()
         etag = r.headers["etag"]
@@ -476,7 +483,7 @@ class TestBatchReorder:
         r = client.post(
             f"/itineraries/{itin_id}/reorder",
             json={"stop_orders": {track_id: [a_id, b_id, c_id, d["id"]]}},
-            headers={**hdrs, "If-Match": etag},
+            headers=locked_headers(client, itin_id, hdrs, etag),
         )
         assert r.status_code == 422, r.text
 
@@ -487,7 +494,7 @@ class TestBatchReorder:
         r = client.post(
             f"/itineraries/{itin_id}/reorder",
             json={"stop_orders": {track_id: [a_id, b_id]}},
-            headers={**hdrs, "If-Match": etag},
+            headers=locked_headers(client, itin_id, hdrs, etag),
         )
         assert r.status_code == 422, r.text
 
@@ -498,7 +505,7 @@ class TestBatchReorder:
         r = client.post(
             f"/itineraries/{itin_id}/reorder",
             json={"stop_orders": {track_id: [a_id, b_id, b_id]}},
-            headers={**hdrs, "If-Match": etag},
+            headers=locked_headers(client, itin_id, hdrs, etag),
         )
         assert r.status_code == 422, r.text
 
@@ -512,7 +519,7 @@ class TestBatchReorder:
             f"/itineraries/{itin_id}/stops",
             json={"track_id": None, "after_track_id": track1_id,
                   "place_name": "D", "is_free": True},
-            headers={**hdrs, "If-Match": etag},
+            headers=locked_headers(client, itin_id, hdrs, etag),
         )
         d = r.json()
         etag = r.headers["etag"]
@@ -522,7 +529,7 @@ class TestBatchReorder:
             f"/itineraries/{itin_id}/stops",
             json={"track_id": track2_id, "after_stop_id": d["id"],
                   "place_name": "E", "is_free": True},
-            headers={**hdrs, "If-Match": etag},
+            headers=locked_headers(client, itin_id, hdrs, etag),
         )
         e = r.json()
         etag = r.headers["etag"]
@@ -534,7 +541,7 @@ class TestBatchReorder:
                 track1_id: [c_id, a_id, b_id],
                 track2_id: [e["id"], d["id"]],
             }},
-            headers={**hdrs, "If-Match": etag},
+            headers=locked_headers(client, itin_id, hdrs, etag),
         )
         assert r.status_code == 200, r.text
 
@@ -569,7 +576,8 @@ class TestTrackReorder:
             if prev_track is not None:
                 payload["after_track_id"] = prev_track
             r = client.post(f"/itineraries/{itin['id']}/stops",
-                            json=payload, headers={**hdrs, "If-Match": etag})
+                            json=payload,
+                            headers=locked_headers(client, itin['id'], hdrs, etag))
             assert r.status_code == 201, r.text
             stop = r.json()
             track_ids.append(stop["track_id"])
@@ -587,7 +595,7 @@ class TestTrackReorder:
         r = client.post(
             f"/itineraries/{itin_id}/reorder",
             json={"track_order": [c_t, b_t, a_t]},
-            headers={**hdrs, "If-Match": etag},
+            headers=locked_headers(client, itin_id, hdrs, etag),
         )
         assert r.status_code == 200, r.text
 
@@ -601,7 +609,10 @@ class TestTrackReorder:
         a_t, b_t, c_t = track_ids
         a_s, b_s, c_s = stop_ids
 
-        # Create a segment A→B (adjacent today).
+        # Create a segment A→B (adjacent today). Segment writes go through the
+        # same guard as stop writes now, so they carry both preconditions.
+        r = client.get(f"/itineraries/{itin_id}", headers=hdrs)
+        etag = r.headers.get("etag") or r.headers["ETag"]
         r = client.post(
             f"/itineraries/{itin_id}/segments",
             json={
@@ -609,7 +620,7 @@ class TestTrackReorder:
                 "to_stop_id": b_s,
                 "legs": [{"position": 1, "mode": "train"}],
             },
-            headers=hdrs,
+            headers=locked_headers(client, itin_id, hdrs, etag),
         )
         assert r.status_code == 201, r.text
         seg_id = r.json()["id"]
@@ -624,7 +635,7 @@ class TestTrackReorder:
                 "track_order": [a_t, c_t, b_t],
                 "segments_to_delete": [seg_id],
             },
-            headers={**hdrs, "If-Match": etag},
+            headers=locked_headers(client, itin_id, hdrs, etag),
         )
         assert r.status_code == 200, r.text
 
@@ -643,7 +654,7 @@ class TestTrackReorder:
             f"/itineraries/{itin_id}/stops",
             json={"track_id": b_t, "after_stop_id": stop_ids[1],
                   "place_name": "B2", "is_free": True},
-            headers={**hdrs, "If-Match": etag},
+            headers=locked_headers(client, itin_id, hdrs, etag),
         )
         assert r.status_code == 201, r.text
         b2_id = r.json()["id"]
@@ -656,7 +667,7 @@ class TestTrackReorder:
                 "track_order": [c_t, b_t, a_t],
                 "stop_orders": {b_t: [b2_id, stop_ids[1]]},
             },
-            headers={**hdrs, "If-Match": etag},
+            headers=locked_headers(client, itin_id, hdrs, etag),
         )
         assert r.status_code == 200, r.text
 
@@ -672,7 +683,7 @@ class TestTrackReorder:
         r = client.post(
             f"/itineraries/{itin_id}/reorder",
             json={"track_order": [a_t, b_t]},
-            headers={**hdrs, "If-Match": etag},
+            headers=locked_headers(client, itin_id, hdrs, etag),
         )
         assert r.status_code == 422, r.text
 
@@ -683,7 +694,7 @@ class TestTrackReorder:
         r = client.post(
             f"/itineraries/{itin_id}/reorder",
             json={"track_order": [a_t, b_t, b_t]},
-            headers={**hdrs, "If-Match": etag},
+            headers=locked_headers(client, itin_id, hdrs, etag),
         )
         assert r.status_code == 422, r.text
 
@@ -701,7 +712,7 @@ class TestTrackReorder:
         r = client.post(
             f"/itineraries/{other_itin_id}/stops",
             json={"place_name": "X", "is_free": True},
-            headers={**hdrs, "If-Match": other_etag},
+            headers=locked_headers(client, other_itin_id, hdrs, other_etag),
         )
         foreign_track_id = r.json()["track_id"]
 
@@ -709,7 +720,7 @@ class TestTrackReorder:
         r = client.post(
             f"/itineraries/{itin_id}/reorder",
             json={"track_order": [a_t, b_t, foreign_track_id]},
-            headers={**hdrs, "If-Match": etag},
+            headers=locked_headers(client, itin_id, hdrs, etag),
         )
         assert r.status_code == 422, r.text
 
@@ -720,7 +731,7 @@ class TestTrackReorder:
         r = client.post(
             f"/itineraries/{itin_id}/reorder",
             json={"segments_to_delete": [str(_uuid.uuid4())]},
-            headers={**hdrs, "If-Match": etag},
+            headers=locked_headers(client, itin_id, hdrs, etag),
         )
         assert r.status_code == 422, r.text
 
@@ -729,7 +740,7 @@ class TestTrackReorder:
         r = client.post(
             f"/itineraries/{itin_id}/reorder",
             json={},
-            headers={**hdrs, "If-Match": etag},
+            headers=locked_headers(client, itin_id, hdrs, etag),
         )
         assert r.status_code == 422, r.text
 
@@ -744,7 +755,7 @@ class TestTrackReorder:
             f"/itineraries/{itin_id}/stops",
             json={"track_id": a_t, "after_stop_id": a_s,
                   "place_name": "A2", "is_free": True},
-            headers={**hdrs, "If-Match": etag},
+            headers=locked_headers(client, itin_id, hdrs, etag),
         )
         a2 = r.json()["id"]
         etag = r.headers["etag"]
@@ -752,7 +763,7 @@ class TestTrackReorder:
         r = client.post(
             f"/itineraries/{itin_id}/reorder",
             json={"stop_orders": {a_t: [a2, a_s]}},
-            headers={**hdrs, "If-Match": etag},
+            headers=locked_headers(client, itin_id, hdrs, etag),
         )
         assert r.status_code == 200, r.text
         body = r.json()
@@ -787,7 +798,8 @@ class TestMoveToNewTrack:
             if prev_track is not None:
                 payload["after_track_id"] = prev_track
             r = client.post(f"/itineraries/{itin['id']}/stops",
-                            json=payload, headers={**hdrs, "If-Match": etag})
+                            json=payload,
+                            headers=locked_headers(client, itin['id'], hdrs, etag))
             assert r.status_code == 201, r.text
             stop = r.json()
             track_ids.append(stop["track_id"])
@@ -808,7 +820,7 @@ class TestMoveToNewTrack:
             json={"track_id": None,
                   "after_track_id": t_a,
                   "before_track_id": t_b},
-            headers={**hdrs, "If-Match": etag},
+            headers=locked_headers(client, itin_id, hdrs, etag),
         )
         assert r.status_code == 200, r.text
         new_track_id = r.json()["track_id"]
@@ -843,7 +855,8 @@ class TestMoveToNewTrack:
                 payload["track_id"] = track_id
                 payload["after_stop_id"] = prev
             r = client.post(f"/itineraries/{itin['id']}/stops",
-                            json=payload, headers={**hdrs, "If-Match": etag})
+                            json=payload,
+                            headers=locked_headers(client, itin['id'], hdrs, etag))
             stop = r.json()
             ids.append(stop["id"])
             track_id = stop["track_id"]
@@ -856,7 +869,7 @@ class TestMoveToNewTrack:
         r = client.patch(
             f"/itineraries/{itin['id']}/stops/{y_id}",
             json={"track_id": None, "after_track_id": track_id},
-            headers={**hdrs, "If-Match": etag},
+            headers=locked_headers(client, itin['id'], hdrs, etag),
         )
         assert r.status_code == 200, r.text
         new_track_id = r.json()["track_id"]
@@ -881,7 +894,7 @@ class TestMoveToNewTrack:
         r = client.patch(
             f"/itineraries/{itin_id}/stops/{s_c}",
             json={"track_id": None, "before_track_id": t_a},
-            headers={**hdrs, "If-Match": etag},
+            headers=locked_headers(client, itin_id, hdrs, etag),
         )
         assert r.status_code == 200, r.text
         new_track_id = r.json()["track_id"]
@@ -900,7 +913,7 @@ class TestMoveToNewTrack:
         r = client.patch(
             f"/itineraries/{itin_id}/stops/{s_a}",
             json={"track_id": None, "after_track_id": t_c},
-            headers={**hdrs, "If-Match": etag},
+            headers=locked_headers(client, itin_id, hdrs, etag),
         )
         assert r.status_code == 200, r.text
         new_track_id = r.json()["track_id"]
@@ -922,7 +935,7 @@ class TestMoveToNewTrack:
             json={"track_id": None,
                   "after_track_id": t_b,
                   "before_track_id": t_c},
-            headers={**hdrs, "If-Match": etag},
+            headers=locked_headers(client, itin_id, hdrs, etag),
         )
         assert r.status_code == 200, r.text
         new_track_id = r.json()["track_id"]
@@ -941,7 +954,7 @@ class TestMoveToNewTrack:
         r = client.patch(
             f"/itineraries/{itin_id}/stops/{s_c}",
             json={"track_id": str(t_a), "after_track_id": str(t_b)},
-            headers={**hdrs, "If-Match": etag},
+            headers=locked_headers(client, itin_id, hdrs, etag),
         )
         # Pydantic validator → 422 with a clear message.
         assert r.status_code == 422, r.text
@@ -960,14 +973,14 @@ class TestMoveToNewTrack:
         r = client.post(
             f"/itineraries/{other_itin_id}/stops",
             json={"place_name": "X", "is_free": True},
-            headers={**hdrs, "If-Match": other_etag},
+            headers=locked_headers(client, other_itin_id, hdrs, other_etag),
         )
         foreign_track_id = r.json()["track_id"]
 
         r = client.patch(
             f"/itineraries/{itin_id}/stops/{s_c}",
             json={"track_id": None, "after_track_id": foreign_track_id},
-            headers={**hdrs, "If-Match": etag},
+            headers=locked_headers(client, itin_id, hdrs, etag),
         )
         assert r.status_code == 422, r.text
 
@@ -989,7 +1002,7 @@ class TestMoveToNewTrack:
                 "to_stop_id": s_b,
                 "legs": [{"position": 1, "mode": "train"}],
             },
-            headers=hdrs,
+            headers=locked_headers(client, itin_id, hdrs, etag),
         )
         seg_id = r.json()["id"]
         r = client.get(f"/itineraries/{itin_id}", headers=hdrs)
@@ -1001,7 +1014,7 @@ class TestMoveToNewTrack:
             json={"track_id": None,
                   "after_track_id": t_a,
                   "before_track_id": t_b},
-            headers={**hdrs, "If-Match": etag},
+            headers=locked_headers(client, itin_id, hdrs, etag),
         )
         assert r.status_code == 200, r.text
 

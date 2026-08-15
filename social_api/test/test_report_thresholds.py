@@ -18,7 +18,9 @@ from datetime import datetime, timezone
 
 import pytest
 
-from conftest import TestingSessionLocal, auth_headers, register_user
+from conftest import (
+    TestingSessionLocal, auth_headers, locked_headers, register_user,
+)
 from app.config import get_settings
 from app.models.content_report import ContentReport
 from app.models.itinerary import Itinerary
@@ -355,7 +357,8 @@ def test_auto_hide_does_not_bump_the_authors_etag(client, author, reporters):
     response = client.post(
         f"/itineraries/{itinerary}/annotations",
         json={"type": "info", "content": "still editing"},
-        headers={**auth_headers(author["access_token"]), "If-Match": before},
+        headers=locked_headers(client, itinerary,
+                               auth_headers(author["access_token"]), before),
     )
     assert response.status_code == 201
 

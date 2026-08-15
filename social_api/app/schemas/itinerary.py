@@ -9,6 +9,8 @@ Hierarchy:
   TransitSegmentCreate / TransitSegmentResponse
   ItineraryCreate / ItineraryUpdate / ItinerarySummary / ItineraryDetail
   AllowedUserAdd / AllowedUserResponse
+  EditorAdd / EditorResponse
+  LockHolder / LockStateResponse / LockClaimResponse / LockClaimRequest
 """
 
 import uuid
@@ -611,6 +613,13 @@ class ItineraryDetail(ItinerarySummary):
     recommended_periods: Optional[list[RecommendedPeriodWindow]] = None
     recommended_weekdays: Optional[list[int]] = None
     recommended_period_note: Optional[str] = None
+    # Whether THIS viewer may edit — owner or granted editor, from
+    # can_edit_itinerary(). Appended last for the same reason `hidden` was: field
+    # order is JSON key order and that is part of the contract. Only ever a hint
+    # for rendering the edit affordance; the server re-derives it on every write.
+    # The live edit lock is deliberately NOT here — it changes on every heartbeat
+    # while this response's ETag is updated_at, so it gets its own endpoint.
+    can_edit: bool = False
 
 
 # ---------------------------------------------------------------------------
@@ -626,6 +635,72 @@ class AllowedUserResponse(BaseModel):
     username: str
     display_name: Optional[str]
     created_at: datetime
+
+
+# ---------------------------------------------------------------------------
+# Editor schemas — who, besides the owner, may modify the itinerary
+# ---------------------------------------------------------------------------
+
+class EditorAdd(BaseModel):
+    user_id: uuid.UUID
+    # Opt-in, never a default: the owner is agreeing to widen who can SEE the
+    # itinerary, which is a separate decision from who can edit it. The client
+    # only sets this after asking, on the second attempt.
+    grant_view: bool = False
+
+
+class EditorResponse(BaseModel):
+    user_id: uuid.UUID
+    username: str
+    display_name: Optional[str]
+    avatar_url: Optional[str]
+    created_at: datetime
+
+
+# ---------------------------------------------------------------------------
+# Edit-lock schemas
+# ---------------------------------------------------------------------------
+
+class LockHolder(BaseModel):
+    """A claim as any editor is allowed to see it.
+
+    Absolute timestamps only — no remaining-seconds field. The body then stays
+    byte-identical while nothing changes, so polling GET /lock costs a 304
+    through ETagMiddleware. The client subtracts to draw its countdown; `state`
+    is the server's word and the client never re-derives it.
+    """
+    holder_id: uuid.UUID
+    holder_username: str
+    holder_display_name: Optional[str]
+    holder_avatar_url: Optional[str]
+    is_you: bool
+    state: Literal['active', 'idle', 'takeable']
+    acquired_at: datetime
+    last_heartbeat_at: datetime
+    idle_at: datetime
+    takeover_available_at: datetime
+
+
+class LockClaimRequest(BaseModel):
+    # Displacing an existing claim always needs this flag, so a steal is always
+    # a deliberate second call the UI confirmed — never something a retry did.
+    takeover: bool = False
+
+
+class LockStateResponse(BaseModel):
+    can_edit: bool
+    lock: Optional[LockHolder]
+    heartbeat_interval_seconds: int
+    ttl_seconds: int
+
+
+class LockClaimResponse(BaseModel):
+    # The raw claim token, returned here and nowhere else. Every takeover mints
+    # a new one, which is what leaves the displaced device unable to save.
+    token: str
+    lock: LockHolder
+    heartbeat_interval_seconds: int
+    ttl_seconds: int
 
 
 # ---------------------------------------------------------------------------

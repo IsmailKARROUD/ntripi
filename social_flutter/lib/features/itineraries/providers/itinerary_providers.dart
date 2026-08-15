@@ -21,7 +21,9 @@ import 'package:social_flutter/features/itineraries/domain/itinerary.dart';
 import 'package:social_flutter/features/itineraries/domain/my_rating.dart';
 import 'package:social_flutter/features/itineraries/domain/recommended_period.dart';
 import 'package:social_flutter/features/itineraries/domain/ratings_page.dart';
+import 'package:social_flutter/features/itineraries/domain/itinerary_editor.dart';
 import 'package:social_flutter/features/itineraries/domain/stop.dart';
+import 'package:social_flutter/features/itineraries/providers/edit_lock_provider.dart';
 
 // ---------------------------------------------------------------------------
 // MyItinerariesNotifier
@@ -95,6 +97,13 @@ class ItineraryDetailNotifier extends AsyncNotifier<Itinerary> {
   /// a reload — a safe fallback.
   String get _etag => state.value?.eTag ?? '';
 
+  /// The edit claim for the X-Edit-Lock header, from the session this device
+  /// holds. Null when no session was started — the server answers 428 and the
+  /// presentation layer surfaces it, which is the right outcome: a mutation
+  /// fired outside edit mode is a client bug, not something to paper over by
+  /// claiming a lock nobody asked for.
+  String? get _lockToken => ref.read(editLockProvider(arg)).token;
+
   /// Full re-fetch from the server.
   /// Called after every mutation so totals and track structure are up-to-date,
   /// and by RefreshIndicator on the detail screen. Forces a fresh server fetch
@@ -119,7 +128,7 @@ class ItineraryDetailNotifier extends AsyncNotifier<Itinerary> {
   Future<Stop> addStop(Map<String, dynamic> data) async {
     final created = await ref
         .read(itineraryRepositoryProvider)
-        .addStop(arg, data, etag: _etag);
+        .addStop(arg, data, etag: _etag, lockToken: _lockToken);
     await refresh();
     return created;
   }
@@ -128,7 +137,7 @@ class ItineraryDetailNotifier extends AsyncNotifier<Itinerary> {
   Future<void> updateStop(String stopId, Map<String, dynamic> data) async {
     await ref
         .read(itineraryRepositoryProvider)
-        .updateStop(arg, stopId, data, etag: _etag);
+        .updateStop(arg, stopId, data, etag: _etag, lockToken: _lockToken);
     await refresh();
   }
 
@@ -151,7 +160,7 @@ class ItineraryDetailNotifier extends AsyncNotifier<Itinerary> {
           stopOrders: stopOrders,
           trackOrder: trackOrder,
           segmentIdsToDelete: segmentIdsToDelete,
-          etag: _etag,
+          etag: _etag, lockToken: _lockToken,
         );
     await refresh();
   }
@@ -184,7 +193,7 @@ class ItineraryDetailNotifier extends AsyncNotifier<Itinerary> {
     };
     final updated = await ref
         .read(itineraryRepositoryProvider)
-        .updateStop(arg, stopId, body, etag: _etag);
+        .updateStop(arg, stopId, body, etag: _etag, lockToken: _lockToken);
     await refresh();
     return updated;
   }
@@ -193,7 +202,7 @@ class ItineraryDetailNotifier extends AsyncNotifier<Itinerary> {
   Future<void> deleteStop(String stopId) async {
     await ref
         .read(itineraryRepositoryProvider)
-        .deleteStop(arg, stopId, etag: _etag);
+        .deleteStop(arg, stopId, etag: _etag, lockToken: _lockToken);
     await refresh();
   }
 
@@ -201,7 +210,7 @@ class ItineraryDetailNotifier extends AsyncNotifier<Itinerary> {
   Future<Itinerary> updateHeader(Map<String, dynamic> data) async {
     final updated = await ref
         .read(itineraryRepositoryProvider)
-        .updateItinerary(arg, data);
+        .updateItinerary(arg, data, etag: _etag, lockToken: _lockToken);
     state.whenData((current) {
       // The PATCH response is an ItinerarySummary, which omits `description` and
       // the recommended-period fields alike, so `updated` is always null for
@@ -240,7 +249,9 @@ class ItineraryDetailNotifier extends AsyncNotifier<Itinerary> {
 
   /// Create a transit segment and refresh.
   Future<void> createSegment(Map<String, dynamic> data) async {
-    await ref.read(itineraryRepositoryProvider).createSegment(arg, data);
+    await ref
+        .read(itineraryRepositoryProvider)
+        .createSegment(arg, data, etag: _etag, lockToken: _lockToken);
     await refresh();
   }
 
@@ -251,13 +262,16 @@ class ItineraryDetailNotifier extends AsyncNotifier<Itinerary> {
   ) async {
     await ref
         .read(itineraryRepositoryProvider)
-        .updateSegment(arg, segmentId, data);
+        .updateSegment(arg, segmentId, data,
+            etag: _etag, lockToken: _lockToken);
     await refresh();
   }
 
   /// Delete a transit segment and refresh.
   Future<void> deleteSegment(String segmentId) async {
-    await ref.read(itineraryRepositoryProvider).deleteSegment(arg, segmentId);
+    await ref
+        .read(itineraryRepositoryProvider)
+        .deleteSegment(arg, segmentId, etag: _etag, lockToken: _lockToken);
     await refresh();
   }
 
@@ -265,7 +279,7 @@ class ItineraryDetailNotifier extends AsyncNotifier<Itinerary> {
   Future<void> addAnnotation(String stopId, Map<String, dynamic> data) async {
     await ref
         .read(itineraryRepositoryProvider)
-        .addAnnotation(arg, stopId, data, etag: _etag);
+        .addAnnotation(arg, stopId, data, etag: _etag, lockToken: _lockToken);
     await refresh();
   }
 
@@ -284,7 +298,7 @@ class ItineraryDetailNotifier extends AsyncNotifier<Itinerary> {
           annotationId,
           content: content,
           type: type,
-          etag: _etag,
+          etag: _etag, lockToken: _lockToken,
         );
     await refresh();
   }
@@ -293,7 +307,7 @@ class ItineraryDetailNotifier extends AsyncNotifier<Itinerary> {
   Future<void> deleteAnnotation(String stopId, String annotationId) async {
     await ref
         .read(itineraryRepositoryProvider)
-        .deleteAnnotation(arg, stopId, annotationId, etag: _etag);
+        .deleteAnnotation(arg, stopId, annotationId, etag: _etag, lockToken: _lockToken);
     await refresh();
   }
 
@@ -301,7 +315,7 @@ class ItineraryDetailNotifier extends AsyncNotifier<Itinerary> {
   Future<void> addItineraryAnnotation(Map<String, dynamic> data) async {
     await ref
         .read(itineraryRepositoryProvider)
-        .addItineraryAnnotation(arg, data, etag: _etag);
+        .addItineraryAnnotation(arg, data, etag: _etag, lockToken: _lockToken);
     await refresh();
   }
 
@@ -318,7 +332,7 @@ class ItineraryDetailNotifier extends AsyncNotifier<Itinerary> {
           annotationId,
           content: content,
           type: type,
-          etag: _etag,
+          etag: _etag, lockToken: _lockToken,
         );
     await refresh();
   }
@@ -327,7 +341,7 @@ class ItineraryDetailNotifier extends AsyncNotifier<Itinerary> {
   Future<void> deleteItineraryAnnotation(String annotationId) async {
     await ref
         .read(itineraryRepositoryProvider)
-        .deleteItineraryAnnotation(arg, annotationId, etag: _etag);
+        .deleteItineraryAnnotation(arg, annotationId, etag: _etag, lockToken: _lockToken);
     await refresh();
   }
 }
@@ -372,6 +386,51 @@ final allowedUsersProvider = AsyncNotifierProvider.family<
   List<AllowedUser>,
   String
 >(AllowedUsersNotifier.new);
+
+// ---------------------------------------------------------------------------
+// EditorsNotifier — who, besides the owner, may modify one itinerary.
+// Same shape as AllowedUsersNotifier; only the owner ever mutates either.
+// ---------------------------------------------------------------------------
+
+class EditorsNotifier extends AsyncNotifier<List<ItineraryEditor>> {
+  EditorsNotifier(this.arg); // family argument: itinerary id
+  final String arg;
+
+  @override
+  Future<List<ItineraryEditor>> build() {
+    return ref.read(itineraryRepositoryProvider).getEditors(arg);
+  }
+
+  /// Grant edit rights. Rethrows [EditorCannotViewException] untouched — that
+  /// is a question for the owner, not a failure, and the screen is the only
+  /// layer that can ask it.
+  Future<void> addEditor(String userId, {bool grantView = false}) async {
+    final added = await ref
+        .read(itineraryRepositoryProvider)
+        .addEditor(arg, userId, grantView: grantView);
+    state.whenData((list) {
+      state = AsyncData([...list, added]);
+    });
+    // The grant bumps updated_at server-side (can_edit rides in the detail
+    // payload), so a cached detail would keep the stale answer.
+    ref.invalidate(itineraryDetailProvider(arg));
+    if (grantView) ref.invalidate(allowedUsersProvider(arg));
+  }
+
+  Future<void> removeEditor(String userId) async {
+    await ref.read(itineraryRepositoryProvider).removeEditor(arg, userId);
+    state.whenData((list) {
+      state = AsyncData(list.where((e) => e.userId != userId).toList());
+    });
+    ref.invalidate(itineraryDetailProvider(arg));
+  }
+}
+
+final editorsProvider = AsyncNotifierProvider.family<
+  EditorsNotifier,
+  List<ItineraryEditor>,
+  String
+>(EditorsNotifier.new);
 
 // ---------------------------------------------------------------------------
 // UserItinerariesNotifier

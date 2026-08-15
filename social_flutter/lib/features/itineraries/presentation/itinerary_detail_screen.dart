@@ -29,6 +29,8 @@
 //
 // OSM attribution is required by the ODbL license and is always visible.
 
+import 'dart:async';
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
@@ -42,9 +44,11 @@ import 'package:social_flutter/core/providers/long_press_hint_provider.dart';
 import 'package:social_flutter/core/router/navigation_ext.dart';
 import 'package:social_flutter/core/services/sfx_service.dart';
 import 'package:social_flutter/core/ui/app_theme.dart';
+import 'package:social_flutter/core/ui/confirm_dialog.dart';
 import 'package:social_flutter/core/ui/destructive_actions.dart';
 import 'package:social_flutter/features/itineraries/data/maps_launcher_service.dart';
 import 'package:social_flutter/features/itineraries/domain/annotation.dart';
+import 'package:social_flutter/features/itineraries/domain/edit_lock.dart';
 import 'package:social_flutter/features/itineraries/domain/itinerary.dart';
 import 'package:social_flutter/features/itineraries/providers/saved_itineraries_provider.dart';
 import 'package:social_flutter/features/itineraries/domain/track.dart';
@@ -77,6 +81,8 @@ import 'package:social_flutter/shared/widgets/offline_gate.dart';
 import 'package:social_flutter/shared/widgets/shadow_divider.dart';
 import 'package:social_flutter/core/utils/platform_utils.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/leg_form_dialog.dart';
+import 'package:social_flutter/features/itineraries/presentation/widgets/edit_lock_banner.dart';
+import 'package:social_flutter/features/itineraries/providers/edit_lock_provider.dart';
 import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
 import 'package:social_flutter/l10n/app_localizations.dart';
 import 'package:social_flutter/shared/widgets/itinerary_cover_placeholder.dart';
@@ -115,6 +121,40 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
   bool _closeCuePlayed = false; // one-shot guard: the two close paths overlap
   //start with map hidden on mobile to avoid unnecessary API calls and improve performance, since the map is less likely to be used on mobile and can be accessed via a button
   bool _mapVisible = false;
+  // Polls who holds the edit claim. There is no push channel, so a banner that
+  // never re-asks would show a person who finished editing ten minutes ago.
+  Timer? _lockPoll;
+
+  @override
+  void initState() {
+    super.initState();
+    // Immediately, then on an interval: the first read is what makes the
+    // banner correct on arrival, and the interval is only the worst case.
+    unawaited(_pollLock());
+    _lockPoll = Timer.periodic(
+      kEditLockPollInterval,
+      (_) => unawaited(_pollLock()),
+    );
+  }
+
+  @override
+  void dispose() {
+    _lockPoll?.cancel();
+    // The claim is NOT released here. dispose also runs when the stop form
+    // pushes over this screen is torn down by a router.go(), and dropping the
+    // claim on the way into an editor is exactly backwards. Leaving edit mode
+    // releases it; otherwise the heartbeat stops and the TTL takes care of it.
+    super.dispose();
+  }
+
+  /// Ask the server who holds the claim. Silent on failure — a banner that
+  /// could not refresh is better than an error over something nobody asked for.
+  Future<void> _pollLock() async {
+    if (!mounted) return;
+    // Our own heartbeat is fresher than any poll while we hold it.
+    if (ref.read(editLockProvider(widget.itineraryId)).holdsClaim) return;
+    await ref.read(editLockProvider(widget.itineraryId).notifier).peek();
+  }
 
   static Map<StopType, Color> _markerColors(NtripiColors nt) => {
         StopType.origin: nt.forest,
@@ -122,7 +162,45 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
         StopType.arrival: nt.ratingRed,
       };
 
-  void _enterEditMode() => setState(() => _editMode = true);
+  /// Enter edit mode — which means claiming the server-side edit lock first.
+  ///
+  /// Nothing local decides this. If somebody else holds the claim the server
+  /// says so and the banner appears instead; the screen stays in read mode,
+  /// which is the honest state when no write would be accepted.
+  Future<void> _enterEditMode({bool takeover = false}) async {
+    final notifier = ref.read(editLockProvider(widget.itineraryId).notifier);
+    bool claimed;
+    try {
+      claimed = await notifier.acquire(takeover: takeover);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(extractErrorMessage(e, AppLocalizations.of(context)!)),
+        ),
+      );
+      return;
+    }
+    if (!mounted || !claimed) return;
+    setState(() => _editMode = true);
+  }
+
+  /// Ask before displacing a live claim. Takeover is never silent: the other
+  /// device loses the ability to save without being told, so the person doing
+  /// it should at least know that is what they are doing.
+  Future<void> _confirmTakeOver(EditLock holder) async {
+    final l10n = AppLocalizations.of(context)!;
+    final confirmed = await ConfirmDialog.show(
+      context,
+      title: holder.isYou ? l10n.editLockYouElsewhere : l10n.editLockTakeOver,
+      message: holder.isYou
+          ? l10n.editLockMoveHereMessage
+          : l10n.editLockLostMessage(holder.displayLabel),
+      confirmLabel:
+          holder.isYou ? l10n.editLockMoveHere : l10n.editLockTakeOver,
+    );
+    if (confirmed == true && mounted) await _enterEditMode(takeover: true);
+  }
 
   // Opens the shared markdown editor for the description. It persists inline via
   // onSave (showing a spinner and surfacing errors itself), so it only returns
@@ -194,7 +272,12 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
     ref.read(longPressHintSeenProvider.notifier).markSeen();
   }
 
-  void _exitEditMode() => setState(() => _editMode = false);
+  /// Leave edit mode and give the claim back, so the next editor does not wait
+  /// out a timeout for a session that is over.
+  void _exitEditMode() {
+    setState(() => _editMode = false);
+    unawaited(ref.read(editLockProvider(widget.itineraryId).notifier).release());
+  }
 
   /// Closing cue — the mirror of the open cue above.
   ///
@@ -442,6 +525,17 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
     final currentUserId = ref.watch(myProfileProvider).value?.id;
     final isOwner = currentUserId != null &&
         itineraryAsync.value?.userId == currentUserId;
+    // Owner OR a granted editor. `can_edit` is the server's answer; ownership
+    // is OR-ed in because it is the one case the client can derive for itself,
+    // and a payload without the key (a summary, or a backend older than this
+    // feature) must not take the owner's own pencil away.
+    //
+    // A rendering hint either way — the server re-derives it on every write, so
+    // a stale true costs a clean 403 rather than a bad save. isOwner survives
+    // beside it for what editing does NOT include: deleting the trip, who can
+    // see it, the cover, the editor list.
+    final mayEdit = isOwner || (itineraryAsync.value?.canEdit ?? false);
+    final lockSession = ref.watch(editLockProvider(widget.itineraryId));
 
     final ownerUserId = itineraryAsync.value?.userId ?? '';
 
@@ -491,7 +585,7 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                 data: (itinerary) {
                   final allStops = itinerary.stops;
                   final tracks = itinerary.tracks;
-                  final canEdit = isOwner && _editMode;
+                  final canEdit = mayEdit && _editMode;
 
                   // Freshly created + still empty → drop the owner straight into
                   // the first-stop form. Pushed from here rather than from the
@@ -531,7 +625,7 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                       (itinerary.description?.isNotEmpty ?? false) ||
                       (itinerary.coverImageUrl?.isNotEmpty ?? false);
                   // Wait a frame so the Edit pencil the tip points at exists.
-                  if (isOwner &&
+                  if (mayEdit &&
                       !_editMode &&
                       !_longPressHintShown &&
                       hasLongPressTarget) {
@@ -591,7 +685,7 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                           items.add(LongPressToEdit(
                             // Transit has no standalone form — leg rows only
                             // become tappable once the list is in edit mode.
-                            onEdit: isOwner ? _enterEditMode : null,
+                            onEdit: mayEdit ? _enterEditMode : null,
                             child: SegmentCard(
                               key: ValueKey('seg-in-${inbound.id}'),
                               segment: inbound,
@@ -657,7 +751,7 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                             : null,
                         // Flip the list into edit mode first so returning from
                         // the form lands on the editable list, not read mode.
-                        onLongPressEditStop: isOwner && !_editMode
+                        onLongPressEditStop: mayEdit && !_editMode
                             ? (stop) {
                                 _enterEditMode();
                                 context.push(
@@ -812,7 +906,7 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                           child: _CoverHero(
                             coverUrl: coverUrl,
                             itinerary: itinerary,
-                            isOwner: isOwner,
+                            canEdit: mayEdit,
                             editMode: _editMode,
                             editDetailsButtonKey: _editDetailsButtonKey,
                             enterEditButtonKey: _enterEditButtonKey,
@@ -831,29 +925,53 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                                     .read(shareServiceProvider)
                                     .shareItinerary(itinerary, l10n)
                                 : null,
-                            onReport: isOwner
+                            onReport: mayEdit
                                 ? null
                                 : () => showReportContentSheet(
                                     context,
                                     ref,
                                     ReportTarget.itinerary(widget.itineraryId),
                                   ),
-                            onEditDetails: isOwner
+                            onEditDetails: mayEdit
                                 ? () => context.push(
                                     '/itineraries/${widget.itineraryId}/edit')
                                 : null,
                             onEnterEdit:
-                                isOwner && !_editMode ? _enterEditMode : null,
+                                mayEdit && !_editMode ? _enterEditMode : null,
                             onExitEdit:
-                                isOwner && _editMode ? _exitEditMode : null,
+                                mayEdit && _editMode ? _exitEditMode : null,
                             // Long-press anywhere on the hero is a shortcut to
                             // the same screen the tune button opens.
-                            onLongPressEdit: isOwner && !_editMode
+                            onLongPressEdit: mayEdit && !_editMode
                                 ? () => context.push(
                                     '/itineraries/${widget.itineraryId}/edit')
                                 : null,
                           ),
                         ),
+
+                        // ── Someone else is editing ────────────────────────
+                        // Shown to anyone who could edit but currently cannot,
+                        // including this same person on another device. Absent
+                        // while WE hold the claim — the banner is about being
+                        // blocked, and blocking yourself is not information.
+                        if (mayEdit &&
+                            !lockSession.holdsClaim &&
+                            lockSession.lock != null)
+                          SliverToBoxAdapter(
+                            child: Padding(
+                              padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                              child: EditLockBanner(
+                                lock: lockSession.lock!,
+                                // The owner never waits out the timeout.
+                                canTakeOverNow:
+                                    isOwner || lockSession.canTakeOverNow,
+                                isOwner: isOwner,
+                                busy: lockSession.busy,
+                                onTakeOver: () =>
+                                    _confirmTakeOver(lockSession.lock!),
+                              ),
+                            ),
+                          ),
 
                         // ── Moderator-hidden notice (author only) ──────────
                         // The server only sends hidden=true to the owner, so
@@ -931,7 +1049,7 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                             child: Padding(
                               padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
                               child: LongPressToEdit(
-                                onEdit: isOwner
+                                onEdit: mayEdit
                                     ? () => _editRecommendedPeriod(
                                         itinerary.recommendedPeriod)
                                     : null,
@@ -961,7 +1079,7 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                             child: Padding(
                               padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
                               child: LongPressToEdit(
-                                onEdit: isOwner
+                                onEdit: mayEdit
                                     ? () =>
                                         _editDescription(itinerary.description)
                                     : null,
@@ -1070,7 +1188,7 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                                                 // the adapted Annotation above
                                                 // carries the itinerary id in
                                                 // its stopId field.
-                                                onReport: isOwner
+                                                onReport: mayEdit
                                                     ? null
                                                     : () =>
                                                         showReportContentSheet(
@@ -1082,7 +1200,7 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                                                             a.id,
                                                           ),
                                                         ),
-                                                onLongPressEdit: isOwner &&
+                                                onLongPressEdit: mayEdit &&
                                                         !_editMode
                                                     ? () =>
                                                         _editItineraryAnnotation(
@@ -1259,7 +1377,7 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                                 // Owner in either mode gets the one-tap path;
                                 // viewers get the placeholder alone.
                                 actionLabel: l10n.addFirstStop,
-                                onAction: isOwner ? _openStopForm : null,
+                                onAction: mayEdit ? _openStopForm : null,
                               ),
                             ),
                           )
@@ -1378,7 +1496,10 @@ class _DescriptionEditRow extends StatelessWidget {
 class _CoverHero extends StatefulWidget {
   final String? coverUrl;
   final Itinerary itinerary;
-  final bool isOwner;
+  // Whether to render the EDIT chrome (tune + pencil) instead of the viewer's
+  // flag button. Ownership no longer answers this — an editor gets the pencil
+  // and never the flag, which is what keeps the two roles disjoint.
+  final bool canEdit;
   final bool editMode;
   // Attached to the Edit details button so the add-cover hint can point at it.
   final GlobalKey editDetailsButtonKey;
@@ -1399,7 +1520,7 @@ class _CoverHero extends StatefulWidget {
   const _CoverHero({
     required this.coverUrl,
     required this.itinerary,
-    required this.isOwner,
+    required this.canEdit,
     required this.editMode,
     required this.editDetailsButtonKey,
     required this.enterEditButtonKey,
@@ -1508,14 +1629,14 @@ class _CoverHeroState extends State<_CoverHero> {
                     ),
                     const SizedBox(width: 6),
                   ],
-                  if (!widget.isOwner && widget.onReport != null) ...[
+                  if (!widget.canEdit && widget.onReport != null) ...[
                     _GlassButton(
                       icon: Icons.flag_outlined,
                       onTap: widget.onReport,
                     ),
                     const SizedBox(width: 6),
                   ],
-                  if (widget.isOwner) ...[
+                  if (widget.canEdit) ...[
                     _GlassButton(
                       key: widget.editDetailsButtonKey,
                       icon: Icons.tune_rounded,
