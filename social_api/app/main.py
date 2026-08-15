@@ -43,6 +43,7 @@ from app.routers import (
     admin, appeals, auth, bug_reports, devices, users, follows, internal,
     itineraries, notifications, share, web, waitlist, reports,
 )
+from app.services import push_service
 from app.storage.factory import storage
 
 logger = logging.getLogger(__name__)
@@ -307,6 +308,10 @@ if settings.STORAGE_BACKEND == "filesystem":
 # Eagerly initialise the storage singleton so any misconfiguration surfaces
 # at startup rather than on the first upload request.
 storage()
+
+# Same reasoning, one severity down: a broken service-account key is logged and
+# push stays off, rather than taking the deploy with it.
+push_service.validate_credentials(settings)
 
 # Flutter web build served at /app/.
 _flutter_web_dir = Path("/app/web_build")

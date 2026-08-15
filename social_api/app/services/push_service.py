@@ -103,6 +103,53 @@ def is_enabled(settings: "Settings") -> bool:
     return not missing
 
 
+def _service_account_info(settings: "Settings") -> dict[str, Any]:
+    """Parse FCM_SERVICE_ACCOUNT_JSON. The only parser — the startup check and
+    the send path must agree on what counts as readable.
+
+    `strict=False` because the value reaches us through an env var: a paste that
+    turns the private_key's `\\n` escapes into real line breaks is JSON's
+    "Invalid control character" and nothing else. Tolerating those raw newlines
+    yields a byte-identical key to a correctly-escaped parse, which is why this
+    is safe where rewriting the string would not be.
+    """
+    return json.loads(settings.FCM_SERVICE_ACCOUNT_JSON or "{}", strict=False)
+
+
+def validate_credentials(settings: "Settings") -> None:
+    """Log — never raise — if push is configured but the key cannot be used.
+
+    Same rule as is_enabled()'s partial config: push is a best-effort side
+    channel and a bad paste must not cost the whole deploy. But it must not be
+    silent either; unconfigured push is invisible by design, and without this
+    the first sign of broken push is a traceback under someone's first follow.
+    """
+    if not is_enabled(settings):
+        return
+    try:
+        info = _service_account_info(settings)
+    except json.JSONDecodeError as exc:
+        logger.error("FCM_SERVICE_ACCOUNT_JSON is not valid JSON (%s) — push is off", exc)
+        return
+
+    missing = [k for k in ("client_email", "private_key", "token_uri") if not info.get(k)]
+    if missing:
+        logger.error(
+            "FCM_SERVICE_ACCOUNT_JSON is missing %s — push is off", ", ".join(missing)
+        )
+        return
+
+    # The failure strict=False cannot catch: a paste that dropped the escapes
+    # entirely leaves a single-line PEM that parses fine here and only dies
+    # later, inside google-auth, with nothing pointing back at the env var.
+    key = info["private_key"]
+    if "\n" not in key.strip() or "-----BEGIN" not in key:
+        logger.error(
+            "FCM_SERVICE_ACCOUNT_JSON private_key is not a line-broken PEM — "
+            "the env var likely lost its newlines; push is off"
+        )
+
+
 def _access_token(settings: "Settings") -> str | None:
     """A bearer token for the FCM API, minted from the service account and
     reused until it expires. None on any failure — the caller fails open."""
@@ -113,7 +160,7 @@ def _access_token(settings: "Settings") -> str | None:
 
         with _creds_lock:
             if _creds is None:
-                info = json.loads(settings.FCM_SERVICE_ACCOUNT_JSON or "{}")
+                info = _service_account_info(settings)
                 _creds = service_account.Credentials.from_service_account_info(
                     info, scopes=[_SCOPE]
                 )
