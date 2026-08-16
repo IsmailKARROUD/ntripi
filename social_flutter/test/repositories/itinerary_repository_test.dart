@@ -78,6 +78,101 @@ void main() {
   // updateStop — Phase 1 (existing-track move) + Phase 2c (new-track move)
   // -------------------------------------------------------------------------
 
+  group('ItineraryRepository.getSharedWithMe', () {
+    /// A shared-with-me row IS a feed row: the summary fields at the top level
+    /// plus a nested `owner`. That is why FeedItem parses both.
+    Map<String, dynamic> _sharedRowJson({
+      String id = 'shared-1',
+      String? displayName = 'Amina K.',
+    }) =>
+        {
+          'id': id,
+          'user_id': 'owner-9',
+          'title': 'Tokyo run',
+          'cover_image_url': null,
+          'total_duration_min': 120,
+          'total_cost': 0.0,
+          'currency': 'JPY',
+          'visibility': 'restricted',
+          'created_at': '2026-08-12T10:22:56.909029Z',
+          'updated_at': '2026-08-12T10:22:56.909029Z',
+          'rating_avg': null,
+          'rating_count': 0,
+          'stops_count': 5,
+          'owner': {
+            'user_id': 'owner-9',
+            'username': 'amina',
+            'display_name': displayName,
+            'avatar_url': null,
+          },
+        };
+
+    test('Given granted trips, When called, Then parses trip and owner',
+        () async {
+      final (dio, adapter) = _makeDio();
+      adapter.onGet(
+        kSharedWithMeEndpoint,
+        (server) => server.reply(200, [_sharedRowJson()]),
+      );
+
+      final repo = ItineraryRepository(dio);
+      final items = await repo.getSharedWithMe();
+
+      expect(items, hasLength(1));
+      expect(items.first.itinerary.id, 'shared-1');
+      expect(items.first.itinerary.stopsCount, 5);
+      // The owner is the whole point — a restricted trip is in no feed and no
+      // search, so the card has to say whose it is.
+      expect(items.first.owner.username, 'amina');
+      expect(items.first.owner.label, 'Amina K.');
+    });
+
+    test(
+        'Given an owner with no display name, When called, '
+        'Then the label falls back to the @handle', () async {
+      final (dio, adapter) = _makeDio();
+      adapter.onGet(
+        kSharedWithMeEndpoint,
+        (server) => server.reply(200, [_sharedRowJson(displayName: null)]),
+      );
+
+      final repo = ItineraryRepository(dio);
+      final items = await repo.getSharedWithMe();
+
+      expect(items.first.owner.label, '@amina');
+    });
+
+    test('Given no granted trips, When called, Then returns empty', () async {
+      final (dio, adapter) = _makeDio();
+      adapter.onGet(
+        kSharedWithMeEndpoint,
+        (server) => server.reply(200, <Map<String, dynamic>>[]),
+      );
+
+      final repo = ItineraryRepository(dio);
+
+      expect(await repo.getSharedWithMe(), isEmpty);
+    });
+
+    test('Given the server fails, When called, Then the DioException surfaces',
+        () async {
+      final (dio, adapter) = _makeDio();
+      adapter.onGet(
+        kSharedWithMeEndpoint,
+        (server) => server.reply(500, {'detail': 'boom'}),
+      );
+
+      final repo = ItineraryRepository(dio);
+
+      // No swallow-to-empty here: the screen needs to tell "nothing shared
+      // with you" apart from "we could not ask".
+      await expectLater(
+        repo.getSharedWithMe(),
+        throwsA(isA<DioException>()),
+      );
+    });
+  });
+
   group('ItineraryRepository.updateStop', () {
     test('move-to-existing-track sends track_id and returns parsed Stop',
         () async {

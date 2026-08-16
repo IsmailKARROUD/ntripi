@@ -14,6 +14,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:social_flutter/features/feed/domain/feed_item.dart';
 import 'package:social_flutter/features/follows/data/follow_repository.dart';
 import 'package:social_flutter/features/follows/providers/follow_provider.dart';
 import 'package:social_flutter/features/itineraries/data/itinerary_repository.dart';
@@ -31,6 +32,7 @@ class _FakeItineraryRepo extends ItineraryRepository {
   _FakeItineraryRepo() : super(Dio());
 
   final List<bool> getMyItinerariesCalls = [];
+  final List<bool> getSharedWithMeCalls = [];
   final List<bool> getItineraryCalls = [];
   final List<bool> getUserItinerariesCalls = [];
   final List<bool> getRatingsPageCalls = [];
@@ -38,6 +40,12 @@ class _FakeItineraryRepo extends ItineraryRepository {
   @override
   Future<List<Itinerary>> getMyItineraries({bool forceRefresh = false}) async {
     getMyItinerariesCalls.add(forceRefresh);
+    return const [];
+  }
+
+  @override
+  Future<List<FeedItem>> getSharedWithMe({bool forceRefresh = false}) async {
+    getSharedWithMeCalls.add(forceRefresh);
     return const [];
   }
 
@@ -169,6 +177,16 @@ void main() {
       await container.read(myItinerariesProvider.notifier).refresh();
 
       expect(fakeRepo.getMyItinerariesCalls, [false, true]);
+    });
+
+    test(
+        'Given SharedWithMeNotifier, '
+        'When build() runs then refresh() is called, '
+        'Then build uses forceRefresh:false and refresh uses true', () async {
+      await container.read(sharedWithMeProvider.future);
+      await container.read(sharedWithMeProvider.notifier).refresh();
+
+      expect(fakeRepo.getSharedWithMeCalls, [false, true]);
     });
 
     test(

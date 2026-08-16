@@ -268,8 +268,12 @@ class _ItineraryListScreenState extends ConsumerState<ItineraryListScreen> {
                       ),
 
                     // Card list — an editor never gets the owner's delete
-                    // gesture, so the long-press is owned-rows only.
-                    for (final row in rows)
+                    // gesture, so the long-press is owned-rows only. Suppressed
+                    // while loading: on All one list can resolve first, and
+                    // drawing half the trips under a spinner claims the list is
+                    // complete when it is not.
+                    if (!loading && failure == null)
+                      for (final row in rows)
                       row.isOwned
                           ? ItinerarySummaryCard(
                               key: ValueKey(row.itinerary.id),

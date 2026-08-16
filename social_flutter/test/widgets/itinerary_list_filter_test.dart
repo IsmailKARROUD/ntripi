@@ -7,6 +7,8 @@
 // merge shows up here rather than as a 403 after the user typed a trip title
 // into a confirm dialog. And the Mine segment must survive a dead
 // shared-with-me call, because the two lists fail independently.
+import 'dart:async';
+
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -20,7 +22,9 @@ import 'package:social_flutter/features/itineraries/domain/itinerary.dart';
 import 'package:social_flutter/features/itineraries/presentation/itinerary_list_screen.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/itinerary_summary_card.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/shared_itinerary_card.dart';
+import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
 import 'package:social_flutter/l10n/app_localizations.dart';
+import 'package:social_flutter/shared/widgets/loaders.dart';
 
 Itinerary _itinerary({
   required String id,
@@ -104,7 +108,23 @@ class _EmptySharedRepo extends _FakeRepo {
       const [];
 }
 
-Future<void> _pump(WidgetTester tester, {ItineraryRepository? repo}) async {
+/// Holds the shared list open until the test completes [gate], so the loading
+/// branch can be asserted without a real delay.
+class _PendingSharedRepo extends _FakeRepo {
+  _PendingSharedRepo(this.gate);
+
+  final Completer<List<FeedItem>> gate;
+
+  @override
+  Future<List<FeedItem>> getSharedWithMe({bool forceRefresh = false}) =>
+      gate.future;
+}
+
+Future<void> _pump(
+  WidgetTester tester, {
+  ItineraryRepository? repo,
+  bool settle = true,
+}) async {
   // Tall enough that every card lays out at once — a ListView never builds its
   // off-screen children, so a findsNothing could otherwise pass for the wrong
   // reason.
@@ -138,7 +158,8 @@ Future<void> _pump(WidgetTester tester, {ItineraryRepository? repo}) async {
       routerConfig: router,
     ),
   ));
-  await tester.pumpAndSettle();
+  // pumpAndSettle would hang on a Completer that has not been completed yet.
+  if (settle) await tester.pumpAndSettle();
 }
 
 Future<void> _selectScope(WidgetTester tester, String label) async {
@@ -253,6 +274,57 @@ void main() {
 
       expect(find.text('My Lisbon trip'), findsOneWidget);
       expect(find.byType(ItinerarySummaryCard), findsOneWidget);
+    });
+
+    testWidgets(
+        'Given shared-with-me failed, When the error shows on All, '
+        'Then the scope selector is still on screen', (tester) async {
+      await _pump(tester, repo: _FakeRepo(sharedThrows: true));
+
+      // The escape hatch has to survive the failure. Replacing the whole screen
+      // with the error would take the control with it and strand the user on a
+      // scope they cannot leave.
+      expect(find.byType(SegmentedButton<ItineraryScope>), findsOneWidget);
+      expect(find.text('Retry'), findsOneWidget);
+    });
+  });
+
+  group('loading', () {
+    testWidgets(
+        'Given both lists are still in flight, When the screen builds, '
+        'Then the loader shows and the scope selector is already usable',
+        (tester) async {
+      final gate = Completer<List<FeedItem>>();
+      await _pump(tester, repo: _PendingSharedRepo(gate), settle: false);
+      await tester.pump(); // one frame: enough to build, not to resolve
+
+      expect(find.byType(NTripiItineraryLoader), findsOneWidget);
+      expect(find.byType(SegmentedButton<ItineraryScope>), findsOneWidget);
+      // Mine has resolved, but All is gated on the slower list, so no cards yet.
+      expect(find.byType(ItinerarySummaryCard), findsNothing);
+
+      gate.complete(_shared);
+      await tester.pumpAndSettle();
+
+      expect(find.byType(NTripiItineraryLoader), findsNothing);
+      expect(find.byType(ItinerarySummaryCard), findsNWidgets(3));
+    });
+
+    testWidgets(
+        'Given only the shared list is in flight, When Mine is selected, '
+        'Then Mine renders without waiting for it', (tester) async {
+      final gate = Completer<List<FeedItem>>();
+      await _pump(tester, repo: _PendingSharedRepo(gate), settle: false);
+      await tester.pump();
+
+      await _selectScope(tester, 'Mine');
+
+      // Mine must not be held hostage by the other endpoint.
+      expect(find.byType(NTripiItineraryLoader), findsNothing);
+      expect(find.text('My Lisbon trip'), findsOneWidget);
+
+      gate.complete(_shared);
+      await tester.pumpAndSettle();
     });
   });
 }

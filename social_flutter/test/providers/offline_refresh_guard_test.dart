@@ -11,6 +11,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:social_flutter/core/connectivity/connectivity_service.dart';
+import 'package:social_flutter/features/feed/domain/feed_item.dart';
 import 'package:social_flutter/features/itineraries/data/itinerary_repository.dart';
 import 'package:social_flutter/features/itineraries/domain/itinerary.dart';
 import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
@@ -23,11 +24,18 @@ class _FakeItineraryRepo extends ItineraryRepository {
   _FakeItineraryRepo() : super(Dio());
 
   final List<bool> getMyItinerariesCalls = [];
+  final List<bool> getSharedWithMeCalls = [];
   final List<bool> getItineraryCalls = [];
 
   @override
   Future<List<Itinerary>> getMyItineraries({bool forceRefresh = false}) async {
     getMyItinerariesCalls.add(forceRefresh);
+    return const [];
+  }
+
+  @override
+  Future<List<FeedItem>> getSharedWithMe({bool forceRefresh = false}) async {
+    getSharedWithMeCalls.add(forceRefresh);
     return const [];
   }
 
@@ -100,6 +108,27 @@ void main() {
 
       expect(repo.getMyItinerariesCalls, [false]); // build only, no refresh
       final state = container.read(myItinerariesProvider);
+      expect(state.hasValue, isTrue);
+      expect(state.isLoading, isFalse);
+      expect(state.hasError, isFalse);
+    });
+
+    test(
+        'Given the device is offline, '
+        'When SharedWithMeNotifier.refresh() is called, '
+        'Then no repository call fires and cached AsyncData is preserved',
+        () async {
+      final repo = _FakeItineraryRepo();
+      final container = _makeContainer(repo, online: false);
+      addTearDown(container.dispose);
+
+      await container.read(sharedWithMeProvider.future);
+      await _settleConnectivity(container);
+
+      await container.read(sharedWithMeProvider.notifier).refresh();
+
+      expect(repo.getSharedWithMeCalls, [false]); // build only, no refresh
+      final state = container.read(sharedWithMeProvider);
       expect(state.hasValue, isTrue);
       expect(state.isLoading, isFalse);
       expect(state.hasError, isFalse);
