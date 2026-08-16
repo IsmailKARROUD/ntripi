@@ -31,6 +31,9 @@ import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:social_flutter/core/api/api_client.dart';
 import 'package:social_flutter/core/api/api_endpoints.dart';
+// shared-with-me returns the same rows as the discovery feed (summary +
+// owner), so it reuses FeedItem instead of duplicating the owner model.
+import 'package:social_flutter/features/feed/domain/feed_item.dart';
 import 'package:social_flutter/features/itineraries/domain/allowed_user.dart';
 import 'package:social_flutter/features/itineraries/domain/annotation.dart';
 import 'package:social_flutter/features/itineraries/domain/edit_lock.dart';
@@ -136,6 +139,20 @@ class ItineraryRepository {
     return (response.data ?? [])
         .cast<Map<String, dynamic>>()
         .map(Itinerary.fromJson)
+        .toList();
+  }
+
+  /// Itineraries the caller was granted edit rights on (never their own).
+  /// The payload is the feed row shape — summary fields plus owner attribution
+  /// — so FeedItem parses it rather than a second owner model.
+  Future<List<FeedItem>> getSharedWithMe({bool forceRefresh = false}) async {
+    final response = await _dio.get<List<dynamic>>(
+      kSharedWithMeEndpoint,
+      options: forceRefresh ? forceRefreshOptions() : null,
+    );
+    return (response.data ?? [])
+        .cast<Map<String, dynamic>>()
+        .map(FeedItem.fromJson)
         .toList();
   }
 

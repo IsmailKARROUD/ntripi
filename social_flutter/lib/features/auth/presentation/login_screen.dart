@@ -93,6 +93,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       ref.read(authNotifierProvider.notifier).setAuthenticated(result.userId);
       ref.invalidate(myProfileProvider);
       ref.invalidate(myItinerariesProvider);
+      ref.invalidate(sharedWithMeProvider);
       ref.invalidate(savedItinerariesProvider);
       if (mounted) context.go('/profile/me');
     } on DioException catch (e) {
@@ -196,6 +197,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     ref.read(authNotifierProvider.notifier).setAuthenticated(result.userId);
     ref.invalidate(myProfileProvider);
     ref.invalidate(myItinerariesProvider);
+    ref.invalidate(sharedWithMeProvider);
     ref.invalidate(savedItinerariesProvider);
     if (mounted) context.go('/profile/me');
   }

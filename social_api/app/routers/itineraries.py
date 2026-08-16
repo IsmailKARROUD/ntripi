@@ -769,6 +769,46 @@ def list_saved_itineraries(
 
 
 # ---------------------------------------------------------------------------
+# GET /itineraries/shared-with-me — Itineraries the caller was granted edit
+# rights on. Declared before /{itinerary_id} so FastAPI matches the literal
+# path instead of treating it as a {itinerary_id} UUID.
+# ---------------------------------------------------------------------------
+
+@router.get("/shared-with-me", response_model=list[ItineraryFeedItem],
+            summary="List itineraries the current user can edit but does not own")
+def list_shared_with_me(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> list[ItineraryFeedItem]:
+    rows = db.execute(
+        select(Itinerary, User)
+        # The only query that reads itinerary_editors by its trailing column —
+        # what ix_itinerary_editors_user was created for.
+        .join(ItineraryEditor, ItineraryEditor.itinerary_id == Itinerary.id)
+        .join(User, Itinerary.user_id == User.id)
+        # Eager-load tracks→stops so the stops_count property is cheap (no N+1);
+        # same selectinload pattern as the feed.
+        .options(selectinload(Itinerary.tracks).selectinload(Track.stops))
+        .where(ItineraryEditor.user_id == current_user.id)
+        # Cheap SQL half of the access check (deleted / hidden / banned owner /
+        # blocked); needs the User join above.
+        .where(*public_listing_criteria(db, current_user.id))
+        # created_at can collide (server now()), so id is the stable tie-breaker.
+        .order_by(Itinerary.created_at.desc(), Itinerary.id.desc())
+    ).all()
+
+    # public_listing_criteria does not cover the visibility ladder, and a granted
+    # editor's access is usually restricted/followers — so the single source of
+    # truth still has to run per row. Its re-lookup of the editor row the join
+    # already proved is deliberate: one access ladder beats saving a query.
+    return [
+        _to_feed_item(itinerary, owner, current_user.id)
+        for itinerary, owner in rows
+        if can_edit_itinerary(itinerary, current_user.id, db)
+    ]
+
+
+# ---------------------------------------------------------------------------
 # GET /itineraries/{itinerary_id} — Get itinerary detail
 # ---------------------------------------------------------------------------
 

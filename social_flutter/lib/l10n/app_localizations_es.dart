@@ -733,6 +733,25 @@ class AppLocalizationsEs extends AppLocalizations {
   String get tapToCreateFirst => 'Toca + para crear tu primer viaje.';
 
   @override
+  String get itinerariesScopeAll => 'Todos';
+
+  @override
+  String get itinerariesScopeMine => 'Míos';
+
+  @override
+  String get itinerariesScopeShared => 'Compartidos';
+
+  @override
+  String get sharedItinerariesEmpty => 'No hay viajes compartidos contigo.';
+
+  @override
+  String get sharedItinerariesEmptyHint =>
+      'Cuando alguien te añade como editor, su viaje aparece aquí.';
+
+  @override
+  String get editorBadgeLabel => 'Editor';
+
+  @override
   String get deleteItineraryTitle => '¿Eliminar este itinerario?';
 
   @override

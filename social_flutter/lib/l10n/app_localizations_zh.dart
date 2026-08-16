@@ -694,6 +694,24 @@ class AppLocalizationsZh extends AppLocalizations {
   String get tapToCreateFirst => '点按 + 创建你的第一次旅行。';
 
   @override
+  String get itinerariesScopeAll => '全部';
+
+  @override
+  String get itinerariesScopeMine => '我的';
+
+  @override
+  String get itinerariesScopeShared => '共享';
+
+  @override
+  String get sharedItinerariesEmpty => '没有与你共享的行程。';
+
+  @override
+  String get sharedItinerariesEmptyHint => '当有人把你添加为编辑者时，他们的行程会出现在这里。';
+
+  @override
+  String get editorBadgeLabel => '编辑者';
+
+  @override
   String get deleteItineraryTitle => '删除此行程？';
 
   @override

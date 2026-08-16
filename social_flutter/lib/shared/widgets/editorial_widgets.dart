@@ -60,6 +60,76 @@ class AvatarInitials extends StatelessWidget {
   }
 }
 
+// ── OwnerAttributionRow ───────────────────────────────────────────────────────
+// "Whose trip is this?" — avatar + display name over @handle, with an optional
+// trailing action. Sits above an ItinerarySummaryCard on both the discovery
+// feed and the Shared segment of the Itineraries tab.
+//
+// Takes plain strings rather than a model so shared/ never has to import a
+// feature's domain layer.
+
+class OwnerAttributionRow extends StatelessWidget {
+  final String? displayName;
+  final String? username;
+  final String? avatarUrl;
+  final Widget? trailing;
+
+  const OwnerAttributionRow({
+    super.key,
+    this.displayName,
+    this.username,
+    this.avatarUrl,
+    this.trailing,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final nt = context.nt;
+    final hasDisplay = displayName != null && displayName!.isNotEmpty;
+    final title =
+        hasDisplay ? displayName! : (username != null ? '@$username' : '?');
+    // Only show the @handle as a subtitle when we already used the display name
+    // on the title line — otherwise it would duplicate.
+    final subtitle = (hasDisplay && username != null) ? '@$username' : null;
+
+    return Padding(
+      padding: const EdgeInsetsDirectional.only(start: 2, top: 4, bottom: 8),
+      child: Row(
+        children: [
+          AvatarInitials(name: title, avatarUrl: avatarUrl),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: nt.bark,
+                  ),
+                ),
+                if (subtitle != null)
+                  Text(
+                    subtitle,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(fontSize: 12, color: nt.text2),
+                  ),
+              ],
+            ),
+          ),
+          if (trailing != null) trailing!,
+        ],
+      ),
+    );
+  }
+}
+
 // ── EditorialTopBar ───────────────────────────────────────────────────────────
 // Standard top bar for secondary screens: back arrow + title + optional actions.
 // Replaces the Material AppBar throughout the app.

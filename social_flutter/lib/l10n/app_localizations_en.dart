@@ -726,6 +726,25 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tapToCreateFirst => 'Tap + to create your first trip.';
 
   @override
+  String get itinerariesScopeAll => 'All';
+
+  @override
+  String get itinerariesScopeMine => 'Mine';
+
+  @override
+  String get itinerariesScopeShared => 'Shared';
+
+  @override
+  String get sharedItinerariesEmpty => 'No trips shared with you.';
+
+  @override
+  String get sharedItinerariesEmptyHint =>
+      'When someone adds you as an editor, their trip appears here.';
+
+  @override
+  String get editorBadgeLabel => 'Editor';
+
+  @override
   String get deleteItineraryTitle => 'Delete this itinerary?';
 
   @override

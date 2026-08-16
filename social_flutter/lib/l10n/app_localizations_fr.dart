@@ -739,6 +739,25 @@ class AppLocalizationsFr extends AppLocalizations {
       'Appuyez sur + pour créer votre premier voyage.';
 
   @override
+  String get itinerariesScopeAll => 'Tous';
+
+  @override
+  String get itinerariesScopeMine => 'Les miens';
+
+  @override
+  String get itinerariesScopeShared => 'Partagés';
+
+  @override
+  String get sharedItinerariesEmpty => 'Aucun voyage partagé avec vous.';
+
+  @override
+  String get sharedItinerariesEmptyHint =>
+      'Quand quelqu\'un vous ajoute comme éditeur, son voyage apparaît ici.';
+
+  @override
+  String get editorBadgeLabel => 'Éditeur';
+
+  @override
   String get deleteItineraryTitle => 'Supprimer cet itinéraire ?';
 
   @override

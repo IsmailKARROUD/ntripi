@@ -736,6 +736,25 @@ class AppLocalizationsDe extends AppLocalizations {
       'Tippe auf +, um deine erste Reise zu erstellen.';
 
   @override
+  String get itinerariesScopeAll => 'Alle';
+
+  @override
+  String get itinerariesScopeMine => 'Meine';
+
+  @override
+  String get itinerariesScopeShared => 'Geteilt';
+
+  @override
+  String get sharedItinerariesEmpty => 'Keine mit dir geteilten Reisen.';
+
+  @override
+  String get sharedItinerariesEmptyHint =>
+      'Wenn dich jemand als Bearbeiter hinzufügt, erscheint die Reise hier.';
+
+  @override
+  String get editorBadgeLabel => 'Bearbeiter';
+
+  @override
   String get deleteItineraryTitle => 'Diese Reiseroute löschen?';
 
   @override

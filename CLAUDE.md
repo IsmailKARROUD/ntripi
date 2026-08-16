@@ -437,6 +437,44 @@ server-side; the client renders state and may be stale or hostile.
   `MUTABLE_TYPES`, so no new boolean column on `users`) — edit rights nobody
   knows they hold are edit rights nobody uses.
 
+### Finding a shared trip again — `GET /itineraries/shared-with-me`
+
+- The grant notification cannot be the only way back to a shared trip: a
+  `restricted` itinerary is in no feed and no search, and notifications are
+  purged (90 days read / 365 hard cap). This is the durable surface, and it is
+  the only query that reads `itinerary_editors` by its trailing column — what
+  `ix_itinerary_editors_user` was created for.
+- **Reuses `ItineraryFeedItem` and `_to_feed_item`**, not a new schema: summary
+  + `owner: RaterInfo` is exactly this payload, and `_to_feed_item` already
+  routes the display name through `public_profile_text`. `ItinerarySummary`
+  gains **no** `can_edit` — that would churn the key order of `/me`, `/saved`
+  and `/feed` for a flag only this list needs.
+- Two filters, like `/saved`: `public_listing_criteria` in SQL (deleted /
+  hidden / banned owner / blocked, and it needs the `join(User)` the attribution
+  wants anyway), then **`can_edit_itinerary` per row** — the SQL half does not
+  cover the visibility ladder and a granted editor's access is usually
+  `restricted` or `followers`. Its re-lookup of the editor row the join already
+  proved is deliberate: one access ladder beats saving a query.
+- Mine and Shared are **disjoint by construction** (`add_editor` 400s on the
+  owner), so the merged view needs no de-duplication.
+- A read, so `test_edit_guard_coverage.py` neither covers nor wants it —
+  adding it to any of those four sets fails the suite on `classified - live`.
+- Frontend: `sharedWithMeProvider` stays a **separate provider** from
+  `myItinerariesProvider` — two endpoints that fail independently, and the
+  active segment decides which must be settled, so a dead `shared-with-me` can
+  never blank the Mine segment. The scope selector, the loader and the error
+  therefore all live **inside** the list: replacing the screen wholesale would
+  take the control away with it and strand the user on a scope they cannot
+  leave. Client-side filter only — flipping segments must not refetch.
+- **A row's provenance, not an id comparison, gates the owner-only chrome.**
+  `/itineraries/me` is owner-only by construction, so a null `owner` is a
+  stronger signal than `currentUser?.id == itinerary.userId` and needs no
+  profile load. Shared rows get `SharedItineraryCard` (attribution + an Editor
+  badge, no share action) and never the long-press delete.
+- `OwnerAttributionRow` (`shared/widgets/editorial_widgets.dart`) is the row
+  `FeedCard` and `SharedItineraryCard` share. It takes plain nullable strings
+  rather than a `FeedOwner` so `shared/` never imports a feature's domain layer.
+
 ### Edit lock
 
 - **`itinerary_edit_locks` has `itinerary_id` as its PRIMARY KEY**, so "at most
@@ -681,6 +719,13 @@ because those write sibling tables, never itinerary content.
 - Do NOT push an itinerary editing route without claiming the edit lock first — no form claims one for itself, and the owner needs it as much as an editor does, so the screen looks editable and 428s on Save
 - Do NOT leave a revoked editor's claim standing — it blocks everyone until the TTL for someone who can no longer use it
 - Do NOT add a mutating itinerary endpoint without classifying it in `test_edit_guard_coverage.py` — the test fails until you do, deliberately
+- Do NOT add a READ route to any `test_edit_guard_coverage.py` set — `classified - live` is asserted empty, so a GET listed there fails the suite
+- Do NOT add `can_edit` to `ItinerarySummary` — it would reorder the JSON keys of `/me`, `/saved` and `/feed` for a flag only the shared list needs; reuse `ItineraryFeedItem`
+- Do NOT filter `shared-with-me` with `public_listing_criteria` alone — it does not cover the visibility ladder, and a granted editor's access is usually `restricted` or `followers`
+- Do NOT merge `sharedWithMeProvider` into `myItinerariesProvider` — two endpoints that fail independently, and one combined AsyncValue lets a dead shared call blank the Mine segment
+- Do NOT put the scope selector, the loader, or the error outside the list — replacing the screen wholesale removes the control and strands the user on a scope they cannot leave
+- Do NOT decide a list row's owner-only chrome by comparing ids — provenance is the stronger signal, since `/itineraries/me` is owner-only by construction and needs no profile load
+- Do NOT offer the long-press delete on a shared row — an editor cannot delete, so the confirm dialog could only earn a 403 after they typed the trip's title into it
 - Do NOT make `DELETE /lock` 404 — it is called from teardown, same rule as the notification DELETE
 - Do NOT pop a route or clear a field when a save returns `edit_lock_lost` — the user's unsaved text is the only copy of it at that moment
 - Do NOT attach `X-Edit-Lock` from a Dio interceptor — a blanket one would send a dead token onto requests that must not carry one

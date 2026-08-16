@@ -65,6 +65,7 @@ class AuthNotifier extends Notifier<String?> {
     // point, so a refetch would immediately 401.
     ref.invalidate(myProfileProvider);
     ref.invalidate(myItinerariesProvider);
+    ref.invalidate(sharedWithMeProvider);
     ref.invalidate(savedItinerariesProvider);
     ref.invalidate(searchQueryProvider);
     ref.invalidate(notificationsProvider);

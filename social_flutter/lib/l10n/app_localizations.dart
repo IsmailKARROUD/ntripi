@@ -1366,6 +1366,42 @@ abstract class AppLocalizations {
   /// **'Tap + to create your first trip.'**
   String get tapToCreateFirst;
 
+  /// No description provided for @itinerariesScopeAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get itinerariesScopeAll;
+
+  /// No description provided for @itinerariesScopeMine.
+  ///
+  /// In en, this message translates to:
+  /// **'Mine'**
+  String get itinerariesScopeMine;
+
+  /// No description provided for @itinerariesScopeShared.
+  ///
+  /// In en, this message translates to:
+  /// **'Shared'**
+  String get itinerariesScopeShared;
+
+  /// No description provided for @sharedItinerariesEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No trips shared with you.'**
+  String get sharedItinerariesEmpty;
+
+  /// No description provided for @sharedItinerariesEmptyHint.
+  ///
+  /// In en, this message translates to:
+  /// **'When someone adds you as an editor, their trip appears here.'**
+  String get sharedItinerariesEmptyHint;
+
+  /// No description provided for @editorBadgeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Editor'**
+  String get editorBadgeLabel;
+
   /// No description provided for @deleteItineraryTitle.
   ///
   /// In en, this message translates to:

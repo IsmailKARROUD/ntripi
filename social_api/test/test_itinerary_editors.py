@@ -504,3 +504,144 @@ class TestCanEditFlag:
         body = client.get(f"/itineraries/{itin_id}", headers=owner_hdrs).json()
 
         assert list(body)[-1] == "can_edit"
+
+
+# ---------------------------------------------------------------------------
+# GET /itineraries/shared-with-me
+# ---------------------------------------------------------------------------
+
+def _shared_ids(client: TestClient, hdrs: dict) -> list[str]:
+    response = client.get("/itineraries/shared-with-me", headers=hdrs)
+    assert response.status_code == 200, response.text
+    return [row["id"] for row in response.json()]
+
+
+def _set_visibility(client: TestClient, itin_id: str, owner_hdrs: dict, value: str):
+    """Owner changes visibility — needs its own claim, hence the takeover."""
+    token = acquire_edit_lock(client, itin_id, owner_hdrs, takeover=True)
+    return client.patch(
+        f"/itineraries/{itin_id}", json={"visibility": value},
+        headers=edit_headers(owner_hdrs, _etag(client, itin_id, owner_hdrs), token),
+    )
+
+
+class TestSharedWithMe:
+    """The list an editor reaches their granted trips through. Without it a
+    restricted itinerary is in no feed and no search, so the grant notification
+    is the only way back — and that gets purged."""
+
+    def test_editor_sees_the_trip_with_owner_attribution(self, client: TestClient):
+        owner_hdrs, alice_id, bob_hdrs, bob_id = _cast(client)
+        itin_id = _itinerary(client, owner_hdrs)
+        _grant(client, itin_id, owner_hdrs, bob_id)
+
+        body = client.get("/itineraries/shared-with-me", headers=bob_hdrs).json()
+
+        assert [row["id"] for row in body] == [itin_id]
+        # Attribution is the point: a shared card has to say whose trip it is.
+        assert body[0]["owner"]["user_id"] == alice_id
+        assert body[0]["owner"]["username"] == "alice"
+
+    def test_owners_own_trips_never_appear(self, client: TestClient):
+        """Mine and Shared are disjoint by construction — add_editor 400s on the
+        owner — so the merged 'All' view needs no de-duplication."""
+        owner_hdrs, _, _, bob_id = _cast(client)
+        itin_id = _itinerary(client, owner_hdrs)
+        _grant(client, itin_id, owner_hdrs, bob_id)
+
+        assert _shared_ids(client, owner_hdrs) == []
+
+    def test_a_stranger_sees_nothing(self, client: TestClient):
+        owner_hdrs, _, _, bob_id = _cast(client)
+        carol = register_user(client, "carol", "carol@example.com")
+        itin_id = _itinerary(client, owner_hdrs, visibility="public")
+        _grant(client, itin_id, owner_hdrs, bob_id, grant_view=False)
+
+        assert _shared_ids(client, auth_headers(carol["access_token"])) == []
+
+    def test_a_revoked_editor_no_longer_sees_it(self, client: TestClient):
+        owner_hdrs, _, bob_hdrs, bob_id = _cast(client)
+        itin_id = _itinerary(client, owner_hdrs)
+        _grant(client, itin_id, owner_hdrs, bob_id)
+        assert _shared_ids(client, bob_hdrs) == [itin_id]
+
+        assert client.delete(f"/itineraries/{itin_id}/editors/{bob_id}",
+                             headers=owner_hdrs).status_code == 204
+
+        assert _shared_ids(client, bob_hdrs) == []
+
+    def test_self_removal_takes_it_off_the_list(self, client: TestClient):
+        owner_hdrs, _, bob_hdrs, bob_id = _cast(client)
+        itin_id = _itinerary(client, owner_hdrs)
+        _grant(client, itin_id, owner_hdrs, bob_id)
+
+        assert client.delete(f"/itineraries/{itin_id}/editors/{bob_id}",
+                             headers=bob_hdrs).status_code == 204
+
+        assert _shared_ids(client, bob_hdrs) == []
+
+    def test_visibility_drop_to_only_me_removes_it(self, client: TestClient):
+        """The grant row survives; can_edit_itinerary is what drops the entry.
+        This is the whole 'one ladder, re-derived per request' property."""
+        owner_hdrs, _, bob_hdrs, bob_id = _cast(client)
+        itin_id = _itinerary(client, owner_hdrs)
+        _grant(client, itin_id, owner_hdrs, bob_id)
+        assert _shared_ids(client, bob_hdrs) == [itin_id]
+
+        assert _set_visibility(client, itin_id, owner_hdrs, "only_me").status_code == 200
+
+        assert _shared_ids(client, bob_hdrs) == []
+
+    def test_a_block_removes_it(self, client: TestClient):
+        owner_hdrs, _, bob_hdrs, bob_id = _cast(client)
+        itin_id = _itinerary(client, owner_hdrs)
+        _grant(client, itin_id, owner_hdrs, bob_id)
+
+        assert client.post(f"/users/{bob_id}/block",
+                           headers=owner_hdrs).status_code in (201, 204)
+
+        assert _shared_ids(client, bob_hdrs) == []
+
+    def test_a_moderator_hide_removes_it(self, client: TestClient):
+        owner_hdrs, _, bob_hdrs, bob_id = _cast(client)
+        itin_id = _itinerary(client, owner_hdrs)
+        _grant(client, itin_id, owner_hdrs, bob_id)
+
+        _stamp(itin_id, "hidden_at")
+
+        assert _shared_ids(client, bob_hdrs) == []
+
+    def test_a_soft_delete_removes_it(self, client: TestClient):
+        owner_hdrs, _, bob_hdrs, bob_id = _cast(client)
+        itin_id = _itinerary(client, owner_hdrs)
+        _grant(client, itin_id, owner_hdrs, bob_id)
+
+        _stamp(itin_id, "deleted_at")
+
+        assert _shared_ids(client, bob_hdrs) == []
+
+    def test_rows_carry_the_summary_fields_a_card_needs(self, client: TestClient):
+        owner_hdrs, _, bob_hdrs, bob_id = _cast(client)
+        itin_id = _itinerary(client, owner_hdrs)
+        _grant(client, itin_id, owner_hdrs, bob_id)
+
+        row = client.get("/itineraries/shared-with-me", headers=bob_hdrs).json()[0]
+
+        # Same shape as a feed row — the client parses both with FeedItem.
+        for key in ("title", "visibility", "stops_count", "created_at", "owner"):
+            assert key in row, key
+
+
+def _stamp(itin_id: str, column: str) -> None:
+    """Set a moderation timestamp directly — no endpoint exposes these."""
+    from datetime import datetime, timezone
+    import uuid as _uuid
+    from app.models.itinerary import Itinerary
+
+    db = TestingSessionLocal()
+    try:
+        setattr(db.get(Itinerary, _uuid.UUID(itin_id)), column,
+                datetime.now(timezone.utc))
+        db.commit()
+    finally:
+        db.close()

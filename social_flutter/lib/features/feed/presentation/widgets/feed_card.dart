@@ -19,60 +19,22 @@ class FeedCard extends ConsumerWidget {
     final nt = context.nt;
     final l10n = AppLocalizations.of(context)!;
     final owner = item.owner;
-    final hasDisplay =
-        owner.displayName != null && owner.displayName!.isNotEmpty;
-    final title = hasDisplay
-        ? owner.displayName!
-        : (owner.username != null ? '@${owner.username}' : '?');
-    // Only show the @handle as a subtitle when we already used the display name
-    // on the title line — otherwise it would duplicate.
-    final subtitle =
-        (hasDisplay && owner.username != null) ? '@${owner.username}' : null;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Padding(
-          padding: const EdgeInsetsDirectional.only(start: 2, top: 4, bottom: 8),
-          child: Row(
-            children: [
-              AvatarInitials(name: title, avatarUrl: owner.avatarUrl),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      title,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700,
-                        color: nt.bark,
-                      ),
-                    ),
-                    if (subtitle != null)
-                      Text(
-                        subtitle,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(fontSize: 12, color: nt.text2),
-                      ),
-                  ],
-                ),
-              ),
-              // Share the itinerary via the OS share sheet (reuses ShareService).
-              IconButton(
-                icon: Icon(Icons.share_rounded, size: 20, color: nt.text2),
-                visualDensity: VisualDensity.compact,
-                tooltip: l10n.shareTooltip,
-                onPressed: () => ref
-                    .read(shareServiceProvider)
-                    .shareItinerary(item.itinerary, l10n),
-              ),
-            ],
+        OwnerAttributionRow(
+          displayName: owner.displayName,
+          username: owner.username,
+          avatarUrl: owner.avatarUrl,
+          // Share the itinerary via the OS share sheet (reuses ShareService).
+          trailing: IconButton(
+            icon: Icon(Icons.share_rounded, size: 20, color: nt.text2),
+            visualDensity: VisualDensity.compact,
+            tooltip: l10n.shareTooltip,
+            onPressed: () => ref
+                .read(shareServiceProvider)
+                .shareItinerary(item.itinerary, l10n),
           ),
         ),
         // Reuse the shared card unchanged; feed cards don't offer delete.

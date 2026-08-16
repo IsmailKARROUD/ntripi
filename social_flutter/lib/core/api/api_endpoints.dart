@@ -97,6 +97,10 @@ String feedEndpoint({required String sort, int limit = 20, int offset = 0}) =>
 /// List the authenticated user's saved (bookmarked) itineraries, newest first.
 const kSavedItinerariesEndpoint = '/itineraries/saved';
 
+/// List itineraries the authenticated user may edit but does not own. Returns
+/// feed-shaped rows (summary + owner attribution), newest first.
+const kSharedWithMeEndpoint = '/itineraries/shared-with-me';
+
 /// Save (POST) or unsave (DELETE) an itinerary for the current user.
 String itinerarySaveEndpoint(String id) => '/itineraries/$id/save';
 

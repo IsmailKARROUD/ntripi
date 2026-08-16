@@ -747,6 +747,25 @@ class AppLocalizationsAr extends AppLocalizations {
   String get tapToCreateFirst => 'اضغط + لإنشاء رحلتك الأولى.';
 
   @override
+  String get itinerariesScopeAll => 'الكل';
+
+  @override
+  String get itinerariesScopeMine => 'مساراتي';
+
+  @override
+  String get itinerariesScopeShared => 'مشتركة معي';
+
+  @override
+  String get sharedItinerariesEmpty => 'لا توجد رحلات مشتركة معك.';
+
+  @override
+  String get sharedItinerariesEmptyHint =>
+      'عندما يضيفك أحدهم محرّرًا، تظهر رحلته هنا.';
+
+  @override
+  String get editorBadgeLabel => 'محرّر';
+
+  @override
   String get deleteItineraryTitle => 'حذف المسار هذا؟';
 
   @override

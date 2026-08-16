@@ -12,6 +12,7 @@ import 'package:latlong2/latlong.dart';
 import 'package:social_flutter/core/connectivity/connectivity_service.dart';
 import 'package:social_flutter/core/providers/locale_provider.dart';
 import 'package:social_flutter/core/services/geocoding_service.dart';
+import 'package:social_flutter/features/feed/domain/feed_item.dart';
 import 'package:social_flutter/features/itineraries/data/itinerary_repository.dart';
 import 'package:social_flutter/features/itineraries/data/maps_launcher_service.dart';
 import 'package:social_flutter/features/itineraries/data/share_service.dart';
@@ -67,6 +68,56 @@ class MyItinerariesNotifier extends AsyncNotifier<List<Itinerary>> {
 final myItinerariesProvider =
     AsyncNotifierProvider<MyItinerariesNotifier, List<Itinerary>>(
       () => MyItinerariesNotifier(),
+    );
+
+// ---------------------------------------------------------------------------
+// SharedWithMeNotifier — itineraries someone else owns and granted me edit
+// rights on. No add/remove: an editor may neither create nor delete here.
+// ---------------------------------------------------------------------------
+
+class SharedWithMeNotifier extends AsyncNotifier<List<FeedItem>> {
+  @override
+  Future<List<FeedItem>> build() async {
+    return ref.read(itineraryRepositoryProvider).getSharedWithMe();
+  }
+
+  Future<void> refresh() async {
+    // Offline: keep cached AsyncData — a forced refresh could only degrade it.
+    if (!isOnlineNowRef(ref)) return;
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(
+      () => ref
+          .read(itineraryRepositoryProvider)
+          .getSharedWithMe(forceRefresh: true),
+    );
+  }
+}
+
+final sharedWithMeProvider =
+    AsyncNotifierProvider<SharedWithMeNotifier, List<FeedItem>>(
+      () => SharedWithMeNotifier(),
+    );
+
+// ---------------------------------------------------------------------------
+// ItineraryScope — which slice of the Itineraries tab is on screen.
+// ---------------------------------------------------------------------------
+
+enum ItineraryScope { all, mine, shared }
+
+class ItineraryScopeNotifier extends Notifier<ItineraryScope> {
+  // Default to `all` so a user who never touches the control is never shown a
+  // partial list.
+  @override
+  ItineraryScope build() => ItineraryScope.all;
+
+  void set(ItineraryScope scope) => state = scope;
+}
+
+// Purely presentational: both lists are already loaded, so unlike feedSortProvider
+// nothing watches this inside a build() and flipping it never refetches.
+final itineraryScopeProvider =
+    NotifierProvider<ItineraryScopeNotifier, ItineraryScope>(
+      ItineraryScopeNotifier.new,
     );
 
 // ---------------------------------------------------------------------------
@@ -423,6 +474,10 @@ class EditorsNotifier extends AsyncNotifier<List<ItineraryEditor>> {
       state = AsyncData(list.where((e) => e.userId != userId).toList());
     });
     ref.invalidate(itineraryDetailProvider(arg));
+    // The single choke point for both revoke paths — when the removed editor is
+    // the caller, the trip has to leave their Shared list too. Invalidating
+    // unconditionally costs one refetch when an owner revokes someone else.
+    ref.invalidate(sharedWithMeProvider);
   }
 }
 
