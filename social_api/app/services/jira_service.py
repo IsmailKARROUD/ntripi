@@ -11,15 +11,17 @@ standing in front of the dashboard waiting to see an issue key, so a silently
 dropped failure would be worse than useless. Every failure raises JiraError and
 the router renders it as a red flash carrying Jira's own message.
 
-PRIVACY: the payload carries the reporter's @username but never their email.
+PRIVACY: the payload carries the BUG REPORTER's @username but never their email.
 The operator notification email does include it (bug_report_service), but that
-is one inbox — a Jira project is usually visible to a whole team.
+is one inbox — a Jira project is usually visible to a whole team. That rule is
+about the end user who filed the bug; the acting ADMIN's email is a different
+matter — see find_account_id.
 """
 
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, NamedTuple
 
 from app.services.share_service import absolute_storage_url
 
@@ -31,6 +33,9 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 _ISSUE_PATH = "/rest/api/3/issue"
+# Project-scoped on purpose: it answers "is this person on THIS project", which
+# is the question being asked. The site-wide /user/search does not.
+_USER_SEARCH_PATH = "/rest/api/3/user/assignable/search"
 
 # Jira rejects a longer summary outright rather than truncating it.
 _SUMMARY_MAX = 255
@@ -39,6 +44,18 @@ _SUMMARY_MAX = 255
 class JiraError(Exception):
     """Anything that stopped us creating the issue. The message is shown to the
     operator, so it must stay human-readable and free of credentials."""
+
+
+class JiraResult(NamedTuple):
+    """The issue key, plus why attribution was lost when it was.
+
+    A warning is not an error: the ticket exists either way, and `warning` only
+    ever explains that its Reporter is the service account rather than the admin
+    who clicked.
+    """
+
+    key: str
+    warning: str | None = None
 
 
 def is_enabled(settings: "Settings") -> bool:
@@ -66,10 +83,66 @@ def browse_base(settings: "Settings") -> str:
     return (settings.JIRA_BASE_URL or "").rstrip("/")
 
 
+def find_account_id(email: str, settings: "Settings") -> str | None:
+    """Jira accountId for an email address, or None if it cannot be resolved.
+
+    Jira Cloud dropped username/email as user identifiers in the 2019 GDPR
+    change — accountId is the only one left — so an email has to be looked up
+    before it can be used for anything.
+
+    NEVER RAISES, which is the opposite of create_issue's deliberate fail-closed
+    stance and is the point: the operator is waiting on a ticket, not on
+    attribution. Every failure here degrades to an unattributed issue plus a
+    warning, and none of them may block the filing.
+
+    PRIVACY: this sends the acting ADMIN's email to Jira as a search term. That
+    is not the invariant the module docstring protects — that one is about the
+    end user who filed the bug, whose address must never reach a whole Jira
+    team. An operator's Jira identity is already visible to that team, and the
+    address goes into a query string, never into the ticket.
+    """
+    try:
+        import requests  # local import: only this path needs it
+
+        resp = requests.get(
+            f"{browse_base(settings)}{_USER_SEARCH_PATH}",
+            params={"project": settings.JIRA_PROJECT_KEY, "query": email},
+            auth=(settings.JIRA_EMAIL, settings.JIRA_API_TOKEN),
+            headers={"Accept": "application/json"},
+            timeout=settings.JIRA_TIMEOUT_SECONDS,
+        )
+        if resp.status_code != 200:
+            # Most likely the service account lacks "Browse users and groups".
+            logger.warning(
+                "Jira user lookup returned HTTP %s: %s",
+                resp.status_code, resp.text[:200],
+            )
+            return None
+        for candidate in resp.json():
+            # Exact match only. `query` also matches displayName, so taking the
+            # first hit could file the ticket under a colleague's name. A user
+            # whose privacy settings hide their email simply will not match,
+            # which lands in the warning path rather than mis-attributing.
+            if (candidate.get("emailAddress") or "").lower() == email.lower():
+                return candidate.get("accountId")
+    except Exception:
+        logger.exception("Jira user lookup failed for %s", email)
+    return None
+
+
 def create_issue(
-    report: "BugReport", reporter: "User | None", settings: "Settings"
-) -> str:
-    """Create the Jira issue and return its key (e.g. "NTRIPI-6")."""
+    report: "BugReport",
+    reporter: "User | None",
+    settings: "Settings",
+    admin: "User | None" = None,
+) -> JiraResult:
+    """Create the Jira issue and return its key (e.g. "NTRIPI-6").
+
+    `admin` is the operator who clicked the button; the issue's Reporter is set
+    to them when their email resolves to a Jira account on the project. When it
+    does not, the issue is filed anyway under the service account and the
+    returned warning says why — attribution must never cost us the ticket.
+    """
     if not is_enabled(settings):
         raise JiraError("Jira is not configured.")
 
@@ -84,19 +157,49 @@ def create_issue(
         }
     }
 
-    try:
-        import requests  # local import: only this path needs it
-
-        resp = requests.post(
-            url,
-            json=payload,
-            auth=(settings.JIRA_EMAIL, settings.JIRA_API_TOKEN),
-            headers={"Accept": "application/json"},
-            timeout=settings.JIRA_TIMEOUT_SECONDS,
+    warning: str | None = None
+    account_id = find_account_id(admin.email, settings) if admin else None
+    if account_id:
+        payload["fields"]["reporter"] = {"id": account_id}
+    elif admin is not None:
+        # "Could not match", not "is not a user": a 403 on the search endpoint
+        # (service account missing "Browse users and groups") lands here too,
+        # and sending the operator off to add an account would not fix that.
+        warning = (
+            f"Filed under the service account — could not match {admin.email} to a "
+            f"Jira user on {settings.JIRA_PROJECT_KEY}. Check they have access to "
+            f'the project, and that the service account has "Browse users and groups".'
         )
-    except Exception as exc:
-        logger.exception("Jira request failed for bug report %s", report.id)
-        raise JiraError(f"Could not reach Jira: {exc!r}") from exc
+
+    def _post() -> Any:
+        try:
+            import requests  # local import: only this path needs it
+
+            return requests.post(
+                url,
+                json=payload,
+                auth=(settings.JIRA_EMAIL, settings.JIRA_API_TOKEN),
+                headers={"Accept": "application/json"},
+                timeout=settings.JIRA_TIMEOUT_SECONDS,
+            )
+        except Exception as exc:
+            logger.exception("Jira request failed for bug report %s", report.id)
+            raise JiraError(f"Could not reach Jira: {exc!r}") from exc
+
+    resp = _post()
+
+    if resp.status_code == 400 and account_id and "reporter" in resp.text.lower():
+        # Reporter is missing from the project's create screen, or the service
+        # account lacks "Modify Reporter". Same remedy as an unknown user: drop
+        # the attribution, keep the ticket, and say what happened.
+        logger.warning("Jira rejected the reporter field: %s", resp.text[:200])
+        payload["fields"].pop("reporter")
+        warning = (
+            "Filed under the service account — Jira rejected the Reporter field "
+            "(check that Reporter is on the create screen and that the service "
+            "account has Modify Reporter)."
+        )
+        resp = _post()
 
     if resp.status_code not in (200, 201):
         # Jira's error body names the offending field — a wrong JIRA_ISSUE_TYPE
@@ -112,7 +215,7 @@ def create_issue(
         raise JiraError(f"Jira response unparseable: {exc!r}") from exc
 
     logger.info("Filed bug report %s as Jira issue %s", report.id, key)
-    return key
+    return JiraResult(key, warning)
 
 
 def _summary(report: "BugReport") -> str:

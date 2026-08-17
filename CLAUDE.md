@@ -224,6 +224,8 @@ Optional (push notifications): `FCM_PROJECT_ID` · `FCM_SERVICE_ACCOUNT_JSON` (t
 
 Optional (Jira hand-off): `JIRA_BASE_URL` · `JIRA_EMAIL` · `JIRA_API_TOKEN` · `JIRA_PROJECT_KEY` · `JIRA_ISSUE_TYPE=Bug` · `JIRA_TIMEOUT_SECONDS=10`. Any of the first four unset ⇒ the "Create Jira issue" button is not rendered (a partially-set config logs which vars are missing). Free — the Jira Cloud REST API carries no per-call charge; the token comes from id.atlassian.com. `JIRA_PROJECT_KEY` is the board key (`NTRIPI`), not a numeric id, and `JIRA_ISSUE_TYPE` must name a type that exists in that project.
 
+The issue's **Reporter is the admin who clicked**, not the service account. Jira Cloud dropped username/email as user identifiers in the 2019 GDPR change, so `jira_service.find_account_id` resolves `admin.email` to an `accountId` first via `GET /rest/api/3/user/assignable/search?project=…` — project-scoped, because "is this person on *this* board" is the actual question. It matches on **exact `emailAddress` only**: `query` also matches displayName, and a loose hit would file the ticket under a colleague's name. Attribution is strictly best-effort — a failed lookup, an unknown admin, or a Jira 400 naming `reporter` all drop the field, file the ticket anyway, and return a `JiraResult.warning` the dashboard shows as a yellow flash beside the green one. Three Jira-side prerequisites, each of which merely degrades to that warning: the service account needs **Browse users and groups** (global) and **Modify Reporter** (project), and **Reporter must be on the create screen** for the issue type.
+
 ---
 
 ## Text Moderation
@@ -638,7 +640,9 @@ because those write sibling tables, never itinerary content.
 - Do NOT call Jira before checking `bug_reports.jira_issue_key` — its presence IS the duplicate guard; two operators working the queue would otherwise file the same bug twice
 - Do NOT convert `jira_service.create_issue` or its route to `async def` — same threadpool reasoning as the text-moderation providers; the blocking `requests.post` is correct in a sync endpoint
 - Do NOT make the Jira hand-off fail open like email or image moderation — the operator is waiting on the key, so a swallowed error is worse than a red flash
-- Do NOT put the reporter's email in the Jira payload, or log `JIRA_API_TOKEN` — the operator inbox is one person, a Jira project is a whole team
+- Do NOT put the **bug reporter's** email in the Jira payload, or log `JIRA_API_TOKEN` — the operator inbox is one person, a Jira project is a whole team. The acting **admin's** email is a different matter and does go to Jira, as a `user/assignable/search` query term only — an operator's Jira identity is already visible to that team, and it never reaches the ticket body
+- Do NOT let `find_account_id` raise, or let a missing Reporter block the filing — the operator is waiting on a ticket, not on attribution; every lookup failure degrades to a warning. This is the one deliberate exception to the fail-closed rule above, which still governs `create_issue` itself
+- Do NOT take the first `user/assignable/search` hit — `query` matches displayName too, so only an exact `emailAddress` match may set the Reporter; anything looser files the bug under the wrong person
 - Do NOT send a plain string as a Jira `description` — REST v3 requires ADF (`{"type":"doc","version":1,…}`) and rejects anything else
 - Do NOT put raw content text, emails, or display names in an automated `moderation_log` row
 - Do NOT store rendered notification text — it is wrong in five of six locales and freezes a display name moderation may later hide

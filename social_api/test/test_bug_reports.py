@@ -12,6 +12,7 @@ bug_report_service (mirrors test_reports._capture_emails).
 
 from __future__ import annotations
 
+import copy
 import io
 from datetime import datetime, timedelta, timezone
 
@@ -332,18 +333,56 @@ def _configure_jira(monkeypatch, **overrides) -> None:
         monkeypatch.setattr(settings, name, value)
 
 
-def _stub_jira(monkeypatch, response: _FakeResponse | Exception) -> list[dict]:
+# The admin _sign_in_admin creates, and the Jira account it resolves to.
+ADMIN_EMAIL = "ops@test.com"
+ADMIN_ACCOUNT_ID = "5b10a2844c20165700ede21g"
+
+
+def _stub_jira(
+    monkeypatch,
+    response: _FakeResponse | Exception | list,
+    *,
+    lookup: _FakeResponse | Exception | None = None,
+    lookup_calls: list | None = None,
+) -> list[dict]:
     """Intercept the transport. jira_service does a local `import requests`,
-    which resolves the same module object, so patching requests.post works."""
+    which resolves the same module object, so patching requests.post works.
+
+    `requests.get` is stubbed too and MUST be: create_issue looks the acting
+    admin's accountId up first, so leaving it live would put every test in this
+    file on a real network call. It defaults to finding the admin.
+
+    `response` may be a list, consumed in order — the reporter-rejected path
+    posts twice. Only POSTs land in the returned list, so index-based
+    assertions keep meaning what they did before the lookup existed.
+    """
     calls: list[dict] = []
+    posts = list(response) if isinstance(response, list) else [response]
 
     def _fake_post(url, **kwargs):
-        calls.append({"url": url, **kwargs})
-        if isinstance(response, Exception):
-            raise response
-        return response
+        # Snapshot: the retry mutates the same payload dict it posted first,
+        # so recording the reference would show both calls post-mutation.
+        calls.append({"url": url, **copy.deepcopy(kwargs)})
+        # Hold the last one once exhausted: most tests post exactly once.
+        nxt = posts.pop(0) if len(posts) > 1 else posts[0]
+        if isinstance(nxt, Exception):
+            raise nxt
+        return nxt
+
+    found = _FakeResponse(200, [
+        {"accountId": ADMIN_ACCOUNT_ID, "emailAddress": ADMIN_EMAIL},
+    ])
+    lookup_response = found if lookup is None else lookup
+
+    def _fake_get(url, **kwargs):
+        if lookup_calls is not None:
+            lookup_calls.append({"url": url, **kwargs})
+        if isinstance(lookup_response, Exception):
+            raise lookup_response
+        return lookup_response
 
     monkeypatch.setattr("requests.post", _fake_post)
+    monkeypatch.setattr("requests.get", _fake_get)
     return calls
 
 
@@ -529,3 +568,125 @@ def test_jira_base_url_trailing_slash(client: TestClient, admin_enabled, monkeyp
         auth=ADMIN_BASIC, follow_redirects=False,
     )
     assert calls[0]["url"] == "https://ntripi.atlassian.net/rest/api/3/issue"
+
+
+# ---------------------------------------------------------------------------
+# Jira reporter attribution — the acting admin, when Jira knows them
+# ---------------------------------------------------------------------------
+
+def _file_and_click(client, monkeypatch, response, **stub_kwargs):
+    """File a report, sign in as the admin, click Create Jira issue."""
+    _set_operator_email(monkeypatch, None)
+    _capture_emails(monkeypatch)
+    _file_report(client)
+    _sign_in_admin(client)
+    _configure_jira(monkeypatch)
+    calls = _stub_jira(monkeypatch, response, **stub_kwargs)
+    resp = client.post(
+        f"/admin/bugs/{_only_report().id}/jira",
+        auth=ADMIN_BASIC, follow_redirects=False,
+    )
+    return calls, resp
+
+
+def test_jira_reporter_is_the_acting_admin(
+    client: TestClient, admin_enabled, monkeypatch
+):
+    lookups: list[dict] = []
+    calls, resp = _file_and_click(
+        client, monkeypatch, _FakeResponse(201, {"key": "NTRIPI-9"}),
+        lookup_calls=lookups,
+    )
+
+    # Looked up project-scoped, by the admin's own email.
+    assert lookups[0]["url"].endswith("/rest/api/3/user/assignable/search")
+    assert lookups[0]["params"] == {"project": "NTRIPI", "query": ADMIN_EMAIL}
+    # ...and the resolved accountId became the Reporter.
+    assert calls[0]["json"]["fields"]["reporter"] == {"id": ADMIN_ACCOUNT_ID}
+    assert resp.status_code == 303
+    assert "warning=" not in resp.headers["location"]
+    assert _only_report().jira_issue_key == "NTRIPI-9"
+
+
+def test_jira_warns_but_still_files_when_admin_is_not_a_jira_user(
+    client: TestClient, admin_enabled, monkeypatch
+):
+    calls, resp = _file_and_click(
+        client, monkeypatch, _FakeResponse(201, {"key": "NTRIPI-10"}),
+        lookup=_FakeResponse(200, []),
+    )
+
+    # Attribution is lost, the ticket is not: that is the whole design.
+    assert "reporter" not in calls[0]["json"]["fields"]
+    assert _only_report().jira_issue_key == "NTRIPI-10"
+    location = resp.headers["location"]
+    assert "notice=" in location and "warning=" in location
+
+    page = client.get(location, auth=ADMIN_BASIC)
+    assert "flash warn" in page.text
+    # The message has to name both halves to be actionable.
+    assert ADMIN_EMAIL in page.text and "NTRIPI" in page.text
+
+
+def test_jira_does_not_attribute_on_a_display_name_only_match(
+    client: TestClient, admin_enabled, monkeypatch
+):
+    # `query` matches displayName as well as email, so a hit whose address does
+    # not match exactly must NOT be attributed — that would file the ticket
+    # under a colleague's name.
+    calls, resp = _file_and_click(
+        client, monkeypatch, _FakeResponse(201, {"key": "NTRIPI-11"}),
+        lookup=_FakeResponse(200, [
+            {"accountId": "someone-else", "emailAddress": "other@test.com"},
+            {"accountId": "hidden-email"},  # privacy settings hide the address
+        ]),
+    )
+
+    assert "reporter" not in calls[0]["json"]["fields"]
+    assert "warning=" in resp.headers["location"]
+    assert _only_report().jira_issue_key == "NTRIPI-11"
+
+
+def test_jira_retries_without_reporter_when_the_field_is_rejected(
+    client: TestClient, admin_enabled, monkeypatch
+):
+    # Reporter missing from the create screen, or no Modify Reporter permission.
+    calls, resp = _file_and_click(client, monkeypatch, [
+        _FakeResponse(400, {"errors": {"reporter": "Field 'reporter' cannot be set."}}),
+        _FakeResponse(201, {"key": "NTRIPI-12"}),
+    ])
+
+    assert len(calls) == 2
+    assert calls[0]["json"]["fields"]["reporter"] == {"id": ADMIN_ACCOUNT_ID}
+    assert "reporter" not in calls[1]["json"]["fields"]
+    assert _only_report().jira_issue_key == "NTRIPI-12"
+    assert "warning=" in resp.headers["location"]
+
+
+def test_jira_lookup_failure_still_files_the_ticket(
+    client: TestClient, admin_enabled, monkeypatch
+):
+    # A dead lookup must never cost us the ticket — find_account_id swallows.
+    calls, resp = _file_and_click(
+        client, monkeypatch, _FakeResponse(201, {"key": "NTRIPI-13"}),
+        lookup=RuntimeError("network down"),
+    )
+
+    assert "reporter" not in calls[0]["json"]["fields"]
+    assert _only_report().jira_issue_key == "NTRIPI-13"
+    assert "warning=" in resp.headers["location"]
+
+
+def test_jira_400_unrelated_to_reporter_still_fails_closed(
+    client: TestClient, admin_enabled, monkeypatch
+):
+    # Only a reporter-specific 400 is retried; a bad issue type must still
+    # fail closed with nothing written, exactly as before.
+    calls, resp = _file_and_click(
+        client, monkeypatch,
+        _FakeResponse(400, {"errors": {"issuetype": "valid issue type is required"}}),
+    )
+
+    assert len(calls) == 1
+    assert _only_report().jira_issue_key is None
+    assert "error=" in resp.headers["location"]

@@ -84,6 +84,7 @@
     .flash { padding: 10px 14px; border-radius: var(--radius); margin-bottom: 16px; font-size: 14px; }
     .flash.error  { background: var(--late-bg); color: var(--late-fg); }
     .flash.notice { background: var(--ok-bg);   color: var(--ok-fg); }
+    .flash.warn   { background: var(--warn-bg); color: var(--warn-fg); }
 
     /* Wide tables scroll inside their own container — the page never scrolls
        horizontally on a laptop screen. */
@@ -164,6 +165,8 @@
   <main>
     {% if error_message %}<div class="flash error">{{ error_message }}</div>{% endif %}
     {% if notice_message %}<div class="flash notice">{{ notice_message }}</div>{% endif %}
+    {# Rides alongside a notice: the Jira hand-off succeeds and warns at once. #}
+    {% if warning_message %}<div class="flash warn">{{ warning_message }}</div>{% endif %}
     {% block content %}{% endblock %}
   </main>
 </body>

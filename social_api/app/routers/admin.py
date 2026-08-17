@@ -24,6 +24,7 @@ from __future__ import annotations
 import secrets
 import uuid
 from datetime import datetime, timedelta, timezone
+from urllib.parse import urlencode
 
 from fastapi import APIRouter, Depends, Form, HTTPException, Request, status
 from fastapi.responses import HTMLResponse, RedirectResponse
@@ -184,15 +185,25 @@ def _page(request: Request, name: str, context: dict, status_code: int = 200) ->
     )
 
 
-def _redirect(path: str, error: str | None = None, notice: str | None = None):
+def _redirect(
+    path: str,
+    error: str | None = None,
+    notice: str | None = None,
+    warning: str | None = None,
+):
     # Split any #fragment off first: the query has to sit before it, or the whole
     # "?notice=..." would be parsed as part of the fragment and never rendered.
     path, _, fragment = path.partition("#")
-    query = ""
-    if error:
-        query = f"?error={error}"
-    elif notice:
-        query = f"?notice={notice}"
+    # urlencode, not interpolation: some messages carry a third party's text
+    # (Jira's own error body), where a bare & or # would truncate the rest.
+    # A notice and a warning can also travel together — the Jira hand-off files
+    # the ticket and explains lost attribution in the same redirect.
+    params = [
+        (name, value)
+        for name, value in (("error", error), ("notice", notice), ("warning", warning))
+        if value
+    ]
+    query = f"?{urlencode(params)}" if params else ""
     suffix = f"#{fragment}" if fragment else ""
     return RedirectResponse(
         f"{path}{query}{suffix}", status_code=status.HTTP_303_SEE_OTHER,
@@ -681,6 +692,7 @@ def admin_bugs(
     request: Request,
     error: str | None = None,
     notice: str | None = None,
+    warning: str | None = None,
     db: Session = Depends(get_db),
     admin: User = Depends(_require_admin_page),
     settings: Settings = Depends(get_settings),
@@ -710,6 +722,7 @@ def admin_bugs(
         "jira_browse_base": jira_service.browse_base(settings),
         "error_message": error,
         "notice_message": notice,
+        "warning_message": warning,
     })
 
 
@@ -761,17 +774,25 @@ def admin_bug_create_jira(
         )
 
     try:
-        key = jira_service.create_issue(report, db.get(User, report.user_id)
-                                        if report.user_id else None, settings)
+        # `admin` becomes the issue's Reporter when their email resolves to a
+        # Jira account on the project; otherwise the warning explains why not.
+        result = jira_service.create_issue(
+            report,
+            db.get(User, report.user_id) if report.user_id else None,
+            settings,
+            admin,
+        )
     except jira_service.JiraError as exc:
         # Fails closed: nothing is written and the operator sees why.
         return _redirect("/admin/bugs", error=str(exc))
 
-    report.jira_issue_key = key
+    report.jira_issue_key = result.key
     db.commit()
     # No moderation_log row, same reasoning as closing: filing a bug ticket is
     # not an action against a user or their content.
-    return _redirect("/admin/bugs", notice=f"Created {key}.")
+    return _redirect(
+        "/admin/bugs", notice=f"Created {result.key}.", warning=result.warning
+    )
 
 
 # ---------------------------------------------------------------------------
