@@ -316,10 +316,17 @@ JIRA_CONF = {
 
 
 class _FakeResponse:
-    def __init__(self, status_code: int, payload: dict | None = None, text: str = ""):
+    def __init__(
+        self,
+        status_code: int,
+        payload: dict | None = None,
+        text: str = "",
+        headers: dict | None = None,
+    ):
         self.status_code = status_code
         self._payload = payload
         self.text = text or (str(payload) if payload else "")
+        self.headers = headers or {}
 
     def json(self):
         if self._payload is None:
@@ -570,6 +577,75 @@ def test_jira_base_url_trailing_slash(client: TestClient, admin_enabled, monkeyp
     assert calls[0]["url"] == "https://ntripi.atlassian.net/rest/api/3/issue"
 
 
+def test_jira_base_url_keeps_only_the_site_root(
+    client: TestClient, admin_enabled, monkeypatch
+):
+    # What an operator has to hand is the URL of the board they are looking at.
+    # Cloud serves REST from the site root, so the path has to come off — left
+    # on, every call lands on the web app, which answers 200 with HTML.
+    _set_operator_email(monkeypatch, None)
+    _capture_emails(monkeypatch)
+    _file_report(client)
+    _sign_in_admin(client)
+    _configure_jira(
+        monkeypatch,
+        JIRA_BASE_URL="https://ntripi.atlassian.net/jira/software/projects/NTRIPI/boards/1",
+    )
+    lookups: list[dict] = []
+    calls = _stub_jira(
+        monkeypatch, _FakeResponse(201, {"key": "NTRIPI-14"}), lookup_calls=lookups,
+    )
+
+    client.post(
+        f"/admin/bugs/{_only_report().id}/jira",
+        auth=ADMIN_BASIC, follow_redirects=False,
+    )
+    assert calls[0]["url"] == "https://ntripi.atlassian.net/rest/api/3/issue"
+    assert lookups[0]["url"] == (
+        "https://ntripi.atlassian.net/rest/api/3/user/assignable/search"
+    )
+
+
+# A wrong base URL is not a 404: Jira Cloud's front end answers any path it does
+# not recognise with the web app's HTML at HTTP 200.
+def _jira_html() -> _FakeResponse:
+    return _FakeResponse(
+        200,
+        text='\n <!DOCTYPE html>\n<html lang="en"><head><title>Jira</title></head>',
+        headers={"Content-Type": "text/html;charset=UTF-8"},
+    )
+
+
+def test_create_jira_explains_a_non_json_response(
+    client: TestClient, admin_enabled, monkeypatch
+):
+    _set_operator_email(monkeypatch, None)
+    _capture_emails(monkeypatch)
+    _file_report(client)
+    _sign_in_admin(client)
+    _configure_jira(monkeypatch)
+    _stub_jira(monkeypatch, _jira_html())
+
+    report_id = _only_report().id
+    resp = client.post(
+        f"/admin/bugs/{report_id}/jira", auth=ADMIN_BASIC, follow_redirects=False,
+    )
+    assert resp.status_code == 303
+    assert "error=" in resp.headers["location"]
+
+    db = TestingSessionLocal()
+    try:
+        assert db.get(BugReport, report_id).jira_issue_key is None   # fails closed
+    finally:
+        db.close()
+
+    # The whole point: the operator is told which env var to look at, not that
+    # some JSON did not parse.
+    page = client.get(resp.headers["location"], auth=ADMIN_BASIC)
+    assert "JIRA_BASE_URL" in page.text
+    assert "text/html" in page.text
+
+
 # ---------------------------------------------------------------------------
 # Jira reporter attribution — the acting admin, when Jira knows them
 # ---------------------------------------------------------------------------
@@ -674,6 +750,21 @@ def test_jira_lookup_failure_still_files_the_ticket(
 
     assert "reporter" not in calls[0]["json"]["fields"]
     assert _only_report().jira_issue_key == "NTRIPI-13"
+    assert "warning=" in resp.headers["location"]
+
+
+def test_jira_html_lookup_still_files_the_ticket(
+    client: TestClient, admin_enabled, monkeypatch
+):
+    # Same rule for a lookup that answers 200 with the web app's HTML: the
+    # parse failure is logged and swallowed, never raised out of find_account_id.
+    calls, resp = _file_and_click(
+        client, monkeypatch, _FakeResponse(201, {"key": "NTRIPI-15"}),
+        lookup=_jira_html(),
+    )
+
+    assert "reporter" not in calls[0]["json"]["fields"]
+    assert _only_report().jira_issue_key == "NTRIPI-15"
     assert "warning=" in resp.headers["location"]
 
 
