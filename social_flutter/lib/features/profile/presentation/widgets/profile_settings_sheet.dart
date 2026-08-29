@@ -8,6 +8,7 @@ import 'package:social_flutter/core/providers/haptics_enabled_provider.dart';
 import 'package:social_flutter/core/providers/locale_provider.dart';
 import 'package:social_flutter/core/providers/sound_effects_enabled_provider.dart';
 import 'package:social_flutter/core/providers/theme_mode_provider.dart';
+import 'package:social_flutter/core/services/haptics_service.dart';
 import 'package:social_flutter/core/ui/app_theme.dart';
 import 'package:social_flutter/features/follows/providers/follow_provider.dart';
 import 'package:social_flutter/features/profile/providers/profile_provider.dart';
@@ -32,6 +33,18 @@ void showProfileSettingsSheet(
           },
         ),
   );
+}
+
+/// Flips the haptics preference, and previews it with the smallest tap there is.
+///
+/// fire() must come *after* setEnabled: it reads the very preference being
+/// written, so firing first would see the old `false` and suppress itself. This
+/// works only because setEnabled assigns `state` synchronously ahead of its
+/// first await. And only on the way ON — a buzz confirming you just turned
+/// buzzing off contradicts itself.
+void _setHaptics(WidgetRef ref, bool enabled) {
+  ref.read(hapticsEnabledProvider.notifier).setEnabled(enabled);
+  if (enabled) ref.read(hapticsServiceProvider).fire(Haptic.selection);
 }
 
 class _SettingsSheet extends ConsumerWidget {
@@ -424,15 +437,10 @@ class _SettingsSheet extends ConsumerWidget {
                         subtitle: l10n.settingsHapticsDetail,
                         trailing: Switch(
                           value: ref.watch(hapticsEnabledProvider),
-                          onChanged: (value) => ref
-                              .read(hapticsEnabledProvider.notifier)
-                              .setEnabled(value),
+                          onChanged: (value) => _setHaptics(ref, value),
                         ),
-                        onTap: () => ref
-                            .read(hapticsEnabledProvider.notifier)
-                            .setEnabled(
-                              !ref.read(hapticsEnabledProvider),
-                            ),
+                        onTap: () =>
+                            _setHaptics(ref, !ref.read(hapticsEnabledProvider)),
                       ),
                       EditorialRow(
                         icon: Icons.shield_outlined,

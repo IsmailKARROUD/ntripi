@@ -32,33 +32,84 @@ class HapticStep {
 
 /// The haptic cues the app can fire.
 ///
-/// The delays are tuned against the accents of the sound each cue is paired
-/// with in [Sfx], so a two-step cue reads as one gesture rather than two
-/// events. They are the only place those numbers live — retune here.
+/// Every pattern below is derived from the waveform of the sound it is paired
+/// with in Sfx, by `scripts/analyze_sfx.py` — re-run it to retune, and after
+/// swapping any asset in assets/SFX/. How many taps and how hard each lands
+/// come from the analysis; *when* they land does not. The taps fire as a short
+/// burst at the head of the cue rather than at the accents' real times, because
+/// those times are useless: Open_itinerary.wav opens with 450 ms of silence and
+/// Delete_itinerary.wav saves its loudest moment for 2913 ms, long after the
+/// trip is gone.
+///
+/// The 60 ms spacing is the perceptual floor — closer together and two taps
+/// smear into one buzz.
 enum Haptic {
-  /// A bare acknowledgement with no sound: the long-press affordance.
+  /// A bare acknowledgement with no sound: the long-press affordance. The only
+  /// member the analysis does not derive, because nothing is playing.
   selection([HapticStep(HapticWeight.selection, 0)]),
 
-  /// A trip opening — light, then a softer second as the map settles.
+  /// A trip opening — loud and low, so it lands as weight rather than detail.
+  /// The first to revisit if it feels heavy: that sound is both loud and dull,
+  /// and the dull-brightness rule pushes every tier up a step.
   open([
+    // PHASE 1: Initial Tug & First Flap (0ms - 450ms)
+    // Breaking the primary fold open.
+    HapticStep(HapticWeight.medium, 50),
+    HapticStep(HapticWeight.light, 100),
+    HapticStep(HapticWeight.light, 300), // Pause: map swings open in hands
+
+    // PHASE 2: Main Unfold & Center Creases (450ms - 1400ms)
+    // Rapid burst of panel flips and paper friction.
+    HapticStep(HapticWeight.light, 40),
+    HapticStep(HapticWeight.light, 30),
+    HapticStep(HapticWeight.medium, 120), // Heavy center crease popping
+    HapticStep(HapticWeight.light, 60),
+    HapticStep(HapticWeight.light, 200), // Pause: hand repositions on edges
+    HapticStep(HapticWeight.medium, 80),
+    HapticStep(HapticWeight.light, 40),
+    HapticStep(HapticWeight.light, 50),
+    HapticStep(HapticWeight.medium, 330), // Lull: pulling the last corner open
+
+    // PHASE 3: Flattening & Snap Taut (1400ms - 2000ms)
+    // Smoothing out the paper and locking it flat.
+    HapticStep(HapticWeight.light, 40),
+    HapticStep(HapticWeight.light, 60),
+    HapticStep(HapticWeight.light, 150),
+    HapticStep(HapticWeight.medium, 350), // Tension building as it reaches full extension
+    HapticStep(HapticWeight.heavy, 0),    // Final taut snap (2000ms mark)
+  ]),
+
+  /// Folding closed — the thump, then the two bright crinkles after it.
+  fold([
+  // PHASE 1: Initial Swing & Collapse (0.0s – 0.25s)
+  // Gathering the open panels inward. Light sliding surface friction.
+  HapticStep(HapticWeight.light, 100),
+  HapticStep(HapticWeight.medium, 150),  // First wide crease swinging shut
+
+  // PHASE 2: Multi-Layer Stack Compression (0.25s – 0.70s)
+  // Rapid micro-bursts as multiple accordion folds trap air and slap together
+  HapticStep(HapticWeight.light, 50),
+  HapticStep(HapticWeight.light, 60),
+  HapticStep(HapticWeight.medium, 100),  // Center stack catching
+  HapticStep(HapticWeight.light, 40),
+  HapticStep(HapticWeight.medium, 200),  // Pause as hands press the stack flat
+
+  // PHASE 3: The Final Fold & Slap Shut (0.70s – 1.04s)
+  // The final half-fold that locks the map into its compact rectangle
+  HapticStep(HapticWeight.medium, 140),  // Edges aligning
+  HapticStep(HapticWeight.heavy, 200),   // Final firm press locking the stack shut
+]),
+
+  /// Two light crinkles and the dull thud that ends the sound (brightness 0.05,
+  /// the deepest onset in any of the four assets).
+  delete([
     HapticStep(HapticWeight.light, 0),
     HapticStep(HapticWeight.light, 120),
+    HapticStep(HapticWeight.heavy, 120),
   ]),
 
-  /// Folding it closed — the heavier beat first, trailing off.
-  fold([
-    HapticStep(HapticWeight.medium, 0),
-    HapticStep(HapticWeight.light, 90),
-  ]),
-
-  /// Destructive, so a single unambiguous thud rather than a flourish.
-  delete([HapticStep(HapticWeight.heavy, 0)]),
-
-  /// An arrival — a quick tick that rises, the shape of a notification.
-  arrival([
-    HapticStep(HapticWeight.light, 0),
-    HapticStep(HapticWeight.medium, 70),
-  ]);
+  /// One bright tick — the sound has exactly one onset, so the cue has one tap.
+  arrival([HapticStep(HapticWeight.medium, 0)]);
 
   const Haptic(this.steps);
   final List<HapticStep> steps;
