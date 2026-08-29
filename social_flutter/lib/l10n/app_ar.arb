@@ -203,6 +203,8 @@
   "settingsTheme": "المظهر",
   "settingsSoundEffects": "المؤثرات الصوتية",
   "settingsSoundEffectsDetail": "تشغيل أصوات قصيرة عند تنفيذ الإجراءات في التطبيق",
+  "settingsHaptics": "الاهتزاز",
+  "settingsHapticsDetail": "الاهتزاز مع الأصوات والإجراءات الرئيسية",
   "settingsSupport": "الدعم",
   "settingsHelpCenter": "مركز المساعدة",
   "settingsAbout": "حول Ntripi",

@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:social_flutter/core/providers/haptics_enabled_provider.dart';
 import 'package:social_flutter/core/providers/locale_provider.dart';
 import 'package:social_flutter/core/providers/sound_effects_enabled_provider.dart';
 import 'package:social_flutter/core/providers/theme_mode_provider.dart';
@@ -410,6 +411,27 @@ class _SettingsSheet extends ConsumerWidget {
                             .read(soundEffectsEnabledProvider.notifier)
                             .setEnabled(
                               !ref.read(soundEffectsEnabledProvider),
+                            ),
+                      ),
+                      // Its own switch, not folded into the sound one: muting
+                      // the app is exactly when the tap is the only feedback
+                      // left. Not web-guarded either — a harmless no-op there.
+                      EditorialRow(
+                        icon: Icons.touch_app_outlined,
+                        iconBg: nt.mist,
+                        iconColor: nt.forest,
+                        label: l10n.settingsHaptics,
+                        subtitle: l10n.settingsHapticsDetail,
+                        trailing: Switch(
+                          value: ref.watch(hapticsEnabledProvider),
+                          onChanged: (value) => ref
+                              .read(hapticsEnabledProvider.notifier)
+                              .setEnabled(value),
+                        ),
+                        onTap: () => ref
+                            .read(hapticsEnabledProvider.notifier)
+                            .setEnabled(
+                              !ref.read(hapticsEnabledProvider),
                             ),
                       ),
                       EditorialRow(

@@ -1,8 +1,11 @@
-// core/services/sfx_service.dart — one-shot UI sound cues.
+// core/services/sfx_service.dart — one-shot UI cues.
 //
-// One long-lived AudioPlayer behind a root provider. Every cue goes through
-// play(), which is also where the user's on/off preference is read, so a new
-// call site cannot forget to check it.
+// A cue is two channels, sound and haptic, and play() is the single door to
+// both. Each channel reads its own preference behind that door (the sound gate
+// is here, the haptic gate is inside HapticsService.fire), so a call site can
+// neither forget a check nor let the two drift apart.
+//
+// One long-lived AudioPlayer behind a root provider carries the audio half.
 //
 // Two things here are load-bearing and easy to get wrong:
 //
@@ -18,16 +21,19 @@
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:social_flutter/core/providers/sound_effects_enabled_provider.dart';
+import 'package:social_flutter/core/services/haptics_service.dart';
 
 /// The cues the app can play. `path` is relative to `assets/` — see the header.
+/// `haptic` is the tap pattern timed to that sound; both fire from [play].
 enum Sfx {
-  openItinerary('SFX/Open_itinerary.wav'),
-  closeItinerary('SFX/fold-a-map.wav'),
-  deleteItinerary('SFX/Delete_itinerary.wav'),
-  newNotification('SFX/New_notification.wav');
+  openItinerary('SFX/Open_itinerary.wav', Haptic.open),
+  closeItinerary('SFX/fold-a-map.wav', Haptic.fold),
+  deleteItinerary('SFX/Delete_itinerary.wav', Haptic.delete),
+  newNotification('SFX/New_notification.wav', Haptic.arrival);
 
-  const Sfx(this.path);
+  const Sfx(this.path, this.haptic);
   final String path;
+  final Haptic haptic;
 }
 
 // Full scale. The asset is mastered well below 0 dBFS, so anything less than
@@ -66,6 +72,12 @@ class SfxService {
   bool _contextSet = false;
 
   Future<void> play(Sfx sfx) async {
+    // First, and synchronously: the audio path below awaits a stop() and a
+    // decode, so firing the tap after them would land it late enough to read as
+    // a second, separate event. Above the sound gate too, because a muted app
+    // is exactly when the tap is the only feedback left — fire() reads its own
+    // preference, so the two channels stay independently switchable.
+    _ref.read(hapticsServiceProvider).fire(sfx.haptic);
     if (!_ref.read(soundEffectsEnabledProvider)) return;
     try {
       if (!_contextSet) {

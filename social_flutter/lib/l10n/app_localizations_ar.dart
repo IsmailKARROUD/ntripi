@@ -578,6 +578,12 @@ class AppLocalizationsAr extends AppLocalizations {
       'تشغيل أصوات قصيرة عند تنفيذ الإجراءات في التطبيق';
 
   @override
+  String get settingsHaptics => 'الاهتزاز';
+
+  @override
+  String get settingsHapticsDetail => 'الاهتزاز مع الأصوات والإجراءات الرئيسية';
+
+  @override
   String get settingsSupport => 'الدعم';
 
   @override

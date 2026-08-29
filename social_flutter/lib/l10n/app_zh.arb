@@ -175,6 +175,8 @@
   "settingsTheme": "主题",
   "settingsSoundEffects": "音效",
   "settingsSoundEffectsDetail": "在应用内执行操作时播放短提示音",
+  "settingsHaptics": "触感反馈",
+  "settingsHapticsDetail": "在播放提示音和执行关键操作时震动",
   "settingsSupport": "支持",
   "settingsHelpCenter": "帮助中心",
   "settingsAbout": "关于 Ntripi",

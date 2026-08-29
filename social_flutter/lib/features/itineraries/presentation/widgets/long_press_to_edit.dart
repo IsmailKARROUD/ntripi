@@ -9,9 +9,9 @@
 // viewer-report are disjoint by role and never contend for the same press.
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:social_flutter/core/connectivity/connectivity_service.dart';
+import 'package:social_flutter/core/services/haptics_service.dart';
 import 'package:social_flutter/shared/widgets/offline_gate.dart';
 
 class LongPressToEdit extends ConsumerWidget {
@@ -46,7 +46,7 @@ class LongPressToEdit extends ConsumerWidget {
         }
         // Long-press has no visible affordance — the haptic is the only
         // confirmation the gesture registered before the editor opens.
-        HapticFeedback.selectionClick();
+        ref.read(hapticsServiceProvider).fire(Haptic.selection);
         onEdit!();
       },
       child: child,

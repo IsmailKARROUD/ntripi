@@ -119,8 +119,9 @@ class _NotificationPollerState extends ConsumerState<NotificationPoller>
     final arrived =
         await ref.read(notificationBadgeProvider.notifier).poll();
     if (!mounted || !arrived) return;
-    // Gated on the user's sound toggle inside SfxService, and swallowed there
-    // if the platform refuses — a cue has no failure worth surfacing.
+    // Sound and haptic both, each gated on its own toggle inside SfxService,
+    // and swallowed there if the platform refuses — a cue has no failure
+    // worth surfacing.
     unawaited(ref.read(sfxServiceProvider).play(Sfx.newNotification));
   }
 

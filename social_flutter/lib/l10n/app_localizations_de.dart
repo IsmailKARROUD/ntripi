@@ -578,6 +578,13 @@ class AppLocalizationsDe extends AppLocalizations {
       'Kurze Töne bei Aktionen in der App abspielen';
 
   @override
+  String get settingsHaptics => 'Haptisches Feedback';
+
+  @override
+  String get settingsHapticsDetail =>
+      'Bei Tönen und wichtigen Aktionen vibrieren';
+
+  @override
   String get settingsSupport => 'Support';
 
   @override

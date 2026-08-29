@@ -182,6 +182,8 @@
   "settingsTheme": "Thème",
   "settingsSoundEffects": "Effets sonores",
   "settingsSoundEffectsDetail": "Jouer de courts sons lors des actions dans l'application",
+  "settingsHaptics": "Retour haptique",
+  "settingsHapticsDetail": "Vibrer en même temps que les sons et les actions clés",
   "settingsSupport": "Assistance",
   "settingsHelpCenter": "Centre d'aide",
   "settingsAbout": "À propos de Ntripi",

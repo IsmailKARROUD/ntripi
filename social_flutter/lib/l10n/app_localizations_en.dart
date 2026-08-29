@@ -569,6 +569,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'Play short sounds for actions in the app';
 
   @override
+  String get settingsHaptics => 'Haptics';
+
+  @override
+  String get settingsHapticsDetail =>
+      'Vibrate along with sounds and key actions';
+
+  @override
   String get settingsSupport => 'Support';
 
   @override

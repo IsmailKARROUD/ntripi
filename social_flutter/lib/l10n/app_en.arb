@@ -218,6 +218,8 @@
   "settingsTheme": "Theme",
   "settingsSoundEffects": "Sound effects",
   "settingsSoundEffectsDetail": "Play short sounds for actions in the app",
+  "settingsHaptics": "Haptics",
+  "settingsHapticsDetail": "Vibrate along with sounds and key actions",
   "settingsSupport": "Support",
   "settingsHelpCenter": "Help center",
   "settingsAbout": "About Ntripi",

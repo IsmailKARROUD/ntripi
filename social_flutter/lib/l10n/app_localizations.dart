@@ -1114,6 +1114,18 @@ abstract class AppLocalizations {
   /// **'Play short sounds for actions in the app'**
   String get settingsSoundEffectsDetail;
 
+  /// No description provided for @settingsHaptics.
+  ///
+  /// In en, this message translates to:
+  /// **'Haptics'**
+  String get settingsHaptics;
+
+  /// No description provided for @settingsHapticsDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Vibrate along with sounds and key actions'**
+  String get settingsHapticsDetail;
+
   /// No description provided for @settingsSupport.
   ///
   /// In en, this message translates to:

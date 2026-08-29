@@ -175,6 +175,8 @@
   "settingsTheme": "Design",
   "settingsSoundEffects": "Soundeffekte",
   "settingsSoundEffectsDetail": "Kurze Töne bei Aktionen in der App abspielen",
+  "settingsHaptics": "Haptisches Feedback",
+  "settingsHapticsDetail": "Bei Tönen und wichtigen Aktionen vibrieren",
   "settingsSupport": "Support",
   "settingsHelpCenter": "Hilfecenter",
   "settingsAbout": "Über Ntripi",

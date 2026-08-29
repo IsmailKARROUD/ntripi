@@ -580,6 +580,13 @@ class AppLocalizationsFr extends AppLocalizations {
       'Jouer de courts sons lors des actions dans l\'application';
 
   @override
+  String get settingsHaptics => 'Retour haptique';
+
+  @override
+  String get settingsHapticsDetail =>
+      'Vibrer en même temps que les sons et les actions clés';
+
+  @override
   String get settingsSupport => 'Assistance';
 
   @override

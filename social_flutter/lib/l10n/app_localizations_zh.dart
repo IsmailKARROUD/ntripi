@@ -539,6 +539,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get settingsSoundEffectsDetail => '在应用内执行操作时播放短提示音';
 
   @override
+  String get settingsHaptics => '触感反馈';
+
+  @override
+  String get settingsHapticsDetail => '在播放提示音和执行关键操作时震动';
+
+  @override
   String get settingsSupport => '支持';
 
   @override
