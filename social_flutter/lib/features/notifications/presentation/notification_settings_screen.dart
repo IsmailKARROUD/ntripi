@@ -10,7 +10,9 @@
 //
 // Preferences are enforced server-side at write time — a muted type never
 // creates a row — so this screen writes through PATCH /users/me rather than
-// keeping local state.
+// keeping the value locally. The only local state is which row is mid-save:
+// the switch cannot move until the server answers, so without it a tap has
+// nothing to show for itself for the length of a round trip.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -73,30 +75,47 @@ class NotificationSettingsScreen extends ConsumerWidget {
   }
 }
 
-class _Switches extends ConsumerWidget {
+/// Which row is mid-save. The switches render from the server's answer, so a
+/// flip has nothing to show for itself until the round trip lands.
+enum _NotifPref { ratings, saves, followAccepted }
+
+class _Switches extends ConsumerStatefulWidget {
   final User user;
 
   const _Switches({required this.user});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_Switches> createState() => _SwitchesState();
+}
+
+class _SwitchesState extends ConsumerState<_Switches> {
+  final _pending = <_NotifPref>{};
+
+  /// Marks the row busy, saves, and acknowledges only once the new value is on
+  /// screen — so the cue, the tap and the thumb sliding are one event rather
+  /// than a sound now and an animation a second later.
+  Future<void> _update(_NotifPref pref, bool value) async {
+    setState(() => _pending.add(pref));
+    await ref.read(myProfileProvider.notifier).updateProfile(
+          notifyRatings: pref == _NotifPref.ratings ? value : null,
+          notifySaves: pref == _NotifPref.saves ? value : null,
+          notifyFollowAccepted:
+              pref == _NotifPref.followAccepted ? value : null,
+        );
+    // updateProfile is AsyncValue.guard'd and never throws — it writes the
+    // failure into myProfileProvider, which swaps this whole list for an error
+    // message. So still being mounted IS the success test, and a failed save
+    // gets no acknowledgement.
+    if (!mounted) return;
+    setState(() => _pending.remove(pref));
+    toggleFeedback(ref);
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final nt = context.nt;
     final l10n = AppLocalizations.of(context)!;
-
-    Future<void> update({
-      bool? ratings,
-      bool? saves,
-      bool? followAccepted,
-    }) async {
-      // Ahead of the await, not after it: the acknowledgement belongs to the tap,
-      // and this one is a round trip to the server.
-      toggleFeedback(ref);
-      await ref.read(myProfileProvider.notifier).updateProfile(
-            notifyRatings: ratings,
-            notifySaves: saves,
-            notifyFollowAccepted: followAccepted,
-          );
-    }
+    final user = widget.user;
 
     return ListView(
       padding: const EdgeInsets.only(top: 8, bottom: 40),
@@ -115,15 +134,19 @@ class _Switches extends ConsumerWidget {
                 label: l10n.notificationSettingsRatings,
                 detail: l10n.notificationSettingsRatingsDetail,
                 value: user.notifyRatings,
-                onChanged:
-                    online ? (v) => update(ratings: v) : null,
+                pending: _pending.contains(_NotifPref.ratings),
+                onChanged: online
+                    ? (v) => _update(_NotifPref.ratings, v)
+                    : null,
               ),
               _SwitchRow(
                 icon: Icons.bookmark_rounded,
                 label: l10n.notificationSettingsSaves,
                 detail: l10n.notificationSettingsSavesDetail,
                 value: user.notifySaves,
-                onChanged: online ? (v) => update(saves: v) : null,
+                pending: _pending.contains(_NotifPref.saves),
+                onChanged:
+                    online ? (v) => _update(_NotifPref.saves, v) : null,
               ),
               _SwitchRow(
                 icon: Icons.how_to_reg_rounded,
@@ -131,8 +154,10 @@ class _Switches extends ConsumerWidget {
                 detail: l10n.notificationSettingsFollowAcceptedDetail,
                 value: user.notifyFollowAccepted,
                 isLast: true,
-                onChanged:
-                    online ? (v) => update(followAccepted: v) : null,
+                pending: _pending.contains(_NotifPref.followAccepted),
+                onChanged: online
+                    ? (v) => _update(_NotifPref.followAccepted, v)
+                    : null,
               ),
             ],
           ),
@@ -155,6 +180,7 @@ class _SwitchRow extends StatelessWidget {
   final String detail;
   final bool value;
   final bool isLast;
+  final bool pending;
   final ValueChanged<bool>? onChanged;
 
   const _SwitchRow({
@@ -163,6 +189,7 @@ class _SwitchRow extends StatelessWidget {
     required this.detail,
     required this.value,
     required this.onChanged,
+    this.pending = false,
     this.isLast = false,
   });
 
@@ -175,14 +202,20 @@ class _SwitchRow extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
           child: Row(
             children: [
+              // The spinner takes the icon's place rather than the switch's:
+              // a switch that unmounts and comes back at its new value cannot
+              // animate, and that slide is the acknowledgement.
               Container(
                 width: 30,
                 height: 30,
+                alignment: Alignment.center,
                 decoration: BoxDecoration(
                   color: nt.mist,
                   borderRadius: BorderRadius.circular(9),
                 ),
-                child: Icon(icon, size: 16, color: nt.forest),
+                child: pending
+                    ? const NTripiRingLoader(size: 20)
+                    : Icon(icon, size: 16, color: nt.forest),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -208,7 +241,9 @@ class _SwitchRow extends StatelessWidget {
               const SizedBox(width: 8),
               Switch.adaptive(
                 value: value,
-                onChanged: onChanged,
+                // Disabled mid-save: a second tap would race the first, and
+                // both would land on whatever the server answered last.
+                onChanged: pending ? null : onChanged,
                 activeTrackColor: nt.forest,
               ),
             ],

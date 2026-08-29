@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:social_flutter/core/auth/token_manager.dart';
+import 'package:social_flutter/core/services/sfx_service.dart';
 import 'package:social_flutter/core/storage/secure_storage.dart';
 import 'package:social_flutter/core/ui/app_theme.dart';
 import 'package:social_flutter/l10n/app_localizations.dart';
@@ -18,6 +21,12 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
   @override
   void initState() {
     super.initState();
+    // The same brand-flash budget _navigate() spends warming the access token,
+    // spent again on the audio engine: the plugin's global init, the asset
+    // extraction and each short cue's SoundPool sample, none of which the first
+    // cue should be paying for at the moment it is meant to be heard. Never
+    // awaited, never throws — navigation must not wait on a decorative sound.
+    unawaited(ref.read(sfxServiceProvider).warmUp());
     _navigate();
   }
 
