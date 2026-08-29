@@ -27,8 +27,11 @@ import wave
 
 SFX_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'assets', 'SFX')
 
-# Which enum member each asset feeds. Sfx.selection has no paired sound (it is
-# the long-press acknowledgement) so nothing here derives it.
+# Which enum member each asset feeds. Haptic.selection is derived from nothing:
+# the long press it acknowledges has no sound at all, and Turn_on_SFX.wav — the
+# switch-flip cue, which does — deliberately reuses that same smallest tap rather
+# than the heavy thud its full-scale onset derives, because a settings row can be
+# flipped ten times in a row. So Turn_on_SFX.wav is absent here on purpose.
 CUES = [
     ('Open_itinerary.wav', 'open'),
     ('fold-a-map.wav', 'fold'),

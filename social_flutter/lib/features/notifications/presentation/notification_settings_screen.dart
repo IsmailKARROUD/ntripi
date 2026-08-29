@@ -16,6 +16,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:social_flutter/core/api/api_client.dart';
 import 'package:social_flutter/core/ui/app_theme.dart';
+import 'package:social_flutter/core/ui/toggle_feedback.dart';
 import 'package:social_flutter/core/utils/platform_utils.dart';
 import 'package:social_flutter/features/profile/providers/profile_provider.dart';
 import 'package:social_flutter/l10n/app_localizations.dart';
@@ -87,6 +88,9 @@ class _Switches extends ConsumerWidget {
       bool? saves,
       bool? followAccepted,
     }) async {
+      // Ahead of the await, not after it: the acknowledgement belongs to the tap,
+      // and this one is a round trip to the server.
+      toggleFeedback(ref);
       await ref.read(myProfileProvider.notifier).updateProfile(
             notifyRatings: ratings,
             notifySaves: saves,

@@ -32,8 +32,9 @@ class HapticStep {
 
 /// The haptic cues the app can fire.
 ///
-/// Every pattern below is derived from the waveform of the sound it is paired
-/// with in Sfx, by `scripts/analyze_sfx.py` — re-run it to retune, and after
+/// Every pattern below except `selection` is derived from the waveform of the
+/// sound it is paired with in Sfx, by `scripts/analyze_sfx.py` — re-run it to
+/// retune, and after
 /// swapping any asset in assets/SFX/. How many taps and how hard each lands
 /// come from the analysis; *when* they land does not. The taps fire as a short
 /// burst at the head of the cue rather than at the accents' real times, because
@@ -44,8 +45,10 @@ class HapticStep {
 /// The 60 ms spacing is the perceptual floor — closer together and two taps
 /// smear into one buzz.
 enum Haptic {
-  /// A bare acknowledgement with no sound: the long-press affordance. The only
-  /// member the analysis does not derive, because nothing is playing.
+  /// A bare acknowledgement: the long-press affordance, and every switch flip.
+  /// The only member the analysis does not derive — the long press has no sound
+  /// at all, and a toggle wants the smallest tap there is however loud its own
+  /// 136 ms blip happens to be.
   selection([HapticStep(HapticWeight.selection, 0)]),
 
   /// A trip opening — loud and low, so it lands as weight rather than detail.

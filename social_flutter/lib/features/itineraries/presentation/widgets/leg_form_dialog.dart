@@ -16,8 +16,10 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:social_flutter/core/ui/app_theme.dart';
 import 'package:social_flutter/core/ui/destructive_actions.dart';
+import 'package:social_flutter/core/ui/toggle_feedback.dart';
 import 'package:social_flutter/features/itineraries/domain/transport_leg.dart';
 import 'package:social_flutter/l10n/app_localizations.dart';
 
@@ -47,7 +49,7 @@ class RegexInputFormatter extends TextInputFormatter {
   }
 }
 
-class LegFormDialog extends StatefulWidget {
+class LegFormDialog extends ConsumerStatefulWidget {
   final TransportLeg? existing;
 
   const LegFormDialog({super.key, this.existing});
@@ -67,10 +69,10 @@ class LegFormDialog extends StatefulWidget {
   }
 
   @override
-  State<LegFormDialog> createState() => _LegFormDialogState();
+  ConsumerState<LegFormDialog> createState() => _LegFormDialogState();
 }
 
-class _LegFormDialogState extends State<LegFormDialog> {
+class _LegFormDialogState extends ConsumerState<LegFormDialog> {
   late TransportMode _mode;
   late TextEditingController _lineCtrl;
   late TextEditingController _directionCtrl;
@@ -519,10 +521,13 @@ class _LegFormDialogState extends State<LegFormDialog> {
                       ),
                       Switch(
                         value: _isFree,
-                        onChanged: (v) => setState(() {
-                          _isFree = v;
-                          if (v) _costCtrl.clear();
-                        }),
+                        onChanged: (v) {
+                          setState(() {
+                            _isFree = v;
+                            if (v) _costCtrl.clear();
+                          });
+                          toggleFeedback(ref);
+                        },
                         activeThumbColor: nt.forest,
                         activeTrackColor: nt.mist,
                       ),

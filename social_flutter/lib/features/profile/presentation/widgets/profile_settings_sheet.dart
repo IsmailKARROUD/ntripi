@@ -8,8 +8,8 @@ import 'package:social_flutter/core/providers/haptics_enabled_provider.dart';
 import 'package:social_flutter/core/providers/locale_provider.dart';
 import 'package:social_flutter/core/providers/sound_effects_enabled_provider.dart';
 import 'package:social_flutter/core/providers/theme_mode_provider.dart';
-import 'package:social_flutter/core/services/haptics_service.dart';
 import 'package:social_flutter/core/ui/app_theme.dart';
+import 'package:social_flutter/core/ui/toggle_feedback.dart';
 import 'package:social_flutter/features/follows/providers/follow_provider.dart';
 import 'package:social_flutter/features/profile/providers/profile_provider.dart';
 import 'package:social_flutter/features/bug_report/providers/shake_report_enabled_provider.dart';
@@ -35,16 +35,23 @@ void showProfileSettingsSheet(
   );
 }
 
-/// Flips the haptics preference, and previews it with the smallest tap there is.
-///
-/// fire() must come *after* setEnabled: it reads the very preference being
-/// written, so firing first would see the old `false` and suppress itself. This
-/// works only because setEnabled assigns `state` synchronously ahead of its
-/// first await. And only on the way ON — a buzz confirming you just turned
-/// buzzing off contradicts itself.
+// One handler per switch, shared by the row's own onTap so the two can never
+// drift. Each writes its preference *before* toggleFeedback — see its doc: these
+// three rows are the only ones whose flip changes what the acknowledgement is
+// allowed to do.
+void _setSoundEffects(WidgetRef ref, bool enabled) {
+  ref.read(soundEffectsEnabledProvider.notifier).setEnabled(enabled);
+  toggleFeedback(ref);
+}
+
 void _setHaptics(WidgetRef ref, bool enabled) {
   ref.read(hapticsEnabledProvider.notifier).setEnabled(enabled);
-  if (enabled) ref.read(hapticsServiceProvider).fire(Haptic.selection);
+  toggleFeedback(ref);
+}
+
+void _setShakeReport(WidgetRef ref, bool enabled) {
+  ref.read(shakeReportEnabledProvider.notifier).setEnabled(enabled);
+  toggleFeedback(ref);
 }
 
 class _SettingsSheet extends ConsumerWidget {
@@ -416,15 +423,12 @@ class _SettingsSheet extends ConsumerWidget {
                         subtitle: l10n.settingsSoundEffectsDetail,
                         trailing: Switch(
                           value: ref.watch(soundEffectsEnabledProvider),
-                          onChanged: (value) => ref
-                              .read(soundEffectsEnabledProvider.notifier)
-                              .setEnabled(value),
+                          onChanged: (value) => _setSoundEffects(ref, value),
                         ),
-                        onTap: () => ref
-                            .read(soundEffectsEnabledProvider.notifier)
-                            .setEnabled(
-                              !ref.read(soundEffectsEnabledProvider),
-                            ),
+                        onTap: () => _setSoundEffects(
+                          ref,
+                          !ref.read(soundEffectsEnabledProvider),
+                        ),
                       ),
                       // Its own switch, not folded into the sound one: muting
                       // the app is exactly when the tap is the only feedback
@@ -522,15 +526,12 @@ class _SettingsSheet extends ConsumerWidget {
                           isLast: true,
                           trailing: Switch(
                             value: ref.watch(shakeReportEnabledProvider),
-                            onChanged: (value) => ref
-                                .read(shakeReportEnabledProvider.notifier)
-                                .setEnabled(value),
+                            onChanged: (value) => _setShakeReport(ref, value),
                           ),
-                          onTap: () => ref
-                              .read(shakeReportEnabledProvider.notifier)
-                              .setEnabled(
-                                !ref.read(shakeReportEnabledProvider),
-                              ),
+                          onTap: () => _setShakeReport(
+                            ref,
+                            !ref.read(shakeReportEnabledProvider),
+                          ),
                         ),
                     ],
                   ),

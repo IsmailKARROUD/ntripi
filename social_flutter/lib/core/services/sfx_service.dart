@@ -29,7 +29,14 @@ enum Sfx {
   openItinerary('SFX/Open_itinerary.wav', Haptic.open),
   closeItinerary('SFX/fold-a-map.wav', Haptic.fold),
   deleteItinerary('SFX/Delete_itinerary.wav', Haptic.delete),
-  newNotification('SFX/New_notification.wav', Haptic.arrival);
+  newNotification('SFX/New_notification.wav', Haptic.arrival),
+  // Every switch in the app, either direction — fired through toggleFeedback in
+  // core/ui/toggle_feedback.dart, which is also where the one rule a call site
+  // can get wrong (write the preference first) is written down. Paired with the
+  // acknowledgement tap rather than a pattern derived from this waveform: a
+  // settings row can be flipped ten times in a row, and its own full-scale onset
+  // would derive a heavy thud each time.
+  toggle('SFX/Turn_on_SFX.wav', Haptic.selection);
 
   const Sfx(this.path, this.haptic);
   final String path;

@@ -36,6 +36,7 @@ import 'package:social_flutter/features/itineraries/providers/edit_lock_provider
 import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
 import 'package:social_flutter/features/profile/providers/profile_provider.dart';
 import 'package:social_flutter/core/ui/app_theme.dart';
+import 'package:social_flutter/core/ui/toggle_feedback.dart';
 import 'package:social_flutter/core/utils/platform_utils.dart';
 import 'package:social_flutter/l10n/app_localizations.dart';
 import 'package:social_flutter/shared/widgets/device_location_dot.dart';
@@ -1930,11 +1931,14 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                                   ),
                                   Switch(
                                     value: _isFree,
-                                    onChanged:
-                                        readOnly
-                                            ? null
-                                            : (v) =>
-                                                setState(() => _isFree = v),
+                                    // null while readOnly, so a disabled switch
+                                    // stays silent without asking.
+                                    onChanged: readOnly
+                                        ? null
+                                        : (v) {
+                                            setState(() => _isFree = v);
+                                            toggleFeedback(ref);
+                                          },
                                     thumbColor: WidgetStateProperty.resolveWith((
                                       states,
                                     ) {

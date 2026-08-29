@@ -9,6 +9,7 @@ import 'package:social_flutter/core/api/api_client.dart';
 import 'package:social_flutter/core/moderation/nsfw_precheck.dart';
 import 'package:social_flutter/core/ui/app_theme.dart';
 import 'package:social_flutter/core/ui/destructive_actions.dart';
+import 'package:social_flutter/core/ui/toggle_feedback.dart';
 import 'package:social_flutter/features/follows/providers/follow_provider.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/cover_image_field.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/markdown_notes_editor.dart';
@@ -609,7 +610,10 @@ class _ProfileEditFormState extends ConsumerState<ProfileEditForm> {
                     label: l10n.privateAccountLabel,
                     subtitle: l10n.privateAccountSubtitle,
                     value: _editIsPrivate ?? user.isPrivate,
-                    onChanged: (v) => setState(() => _editIsPrivate = v),
+                    onChanged: (v) {
+                      setState(() => _editIsPrivate = v);
+                      toggleFeedback(ref);
+                    },
                   ),
                 ]),
                 // Only password accounts can change a password — Google-only
