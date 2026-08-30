@@ -41,6 +41,9 @@ class ItineraryAllowedUser(Base):
         ForeignKey("users.id", ondelete="CASCADE"),
         primary_key=True,
         nullable=False,
+        # Trailing column of the PK, so the PK index cannot serve it — and the
+        # CASCADE means deleting a user scans this table without one.
+        index=True,
     )
 
     created_at: Mapped[datetime] = mapped_column(

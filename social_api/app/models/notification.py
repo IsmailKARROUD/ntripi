@@ -89,11 +89,12 @@ class Notification(Base):
 
     # The recipient. CASCADE: a notification is not evidence, and a deleted
     # account's feed has no reader.
+    # Deliberately NOT index=True: ix_notifications_user_created below leads
+    # with user_id, so a standalone index on it would be a redundant prefix.
     user_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("users.id", ondelete="CASCADE"),
         nullable=False,
-        index=True,
     )
 
     type: Mapped[str] = mapped_column(String(32), nullable=False)

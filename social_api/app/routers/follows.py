@@ -140,7 +140,7 @@ def follow_user(
 
     # Only update counters if the follow is immediately accepted.
     if initial_status == FollowStatus.accepted:
-        bump_follow_counters(current_user, target_user, 1)
+        bump_follow_counters(db, current_user, target_user, 1)
 
     # Same transaction as the Follow row: a request the recipient is never told
     # about is a request they can never answer.
@@ -196,7 +196,7 @@ def unfollow_user(
     db.delete(follow)
 
     if was_accepted:
-        bump_follow_counters(current_user, db.get(User, user_id), -1)
+        bump_follow_counters(db, current_user, db.get(User, user_id), -1)
 
     db.commit()
 
@@ -289,7 +289,7 @@ def accept_follow_request(
     # Accept the request and update counters.
     follow.status = FollowStatus.accepted
 
-    bump_follow_counters(db.get(User, follow.follower_id), current_user, 1)
+    bump_follow_counters(db, db.get(User, follow.follower_id), current_user, 1)
 
     notification_service.notify(
         db,

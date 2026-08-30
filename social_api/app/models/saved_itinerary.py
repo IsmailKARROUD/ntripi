@@ -41,6 +41,10 @@ class SavedItinerary(Base):
         ForeignKey("users.id", ondelete="CASCADE"),
         primary_key=True,
         nullable=False,
+        # Indexed despite being in the PK: the PK is (itinerary_id, user_id), so
+        # its index cannot serve the Saved tab's "WHERE user_id = me". Same
+        # reasoning as ix_itinerary_editors_user.
+        index=True,
     )
 
     saved_at: Mapped[datetime] = mapped_column(

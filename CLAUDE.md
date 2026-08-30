@@ -51,7 +51,7 @@ Extracted in the 2026-07 dedup refactor. Before writing a query/response block i
 - **`app/services/user_service.py`** — cross-router user/follow helpers:
   - `get_active_user_or_404(db, user_id)` / `get_active_user_by_username_or_404(db, username)` — the only way to fetch-or-404 a user (enforces `is_active` + `username_lower`).
   - `get_follow(db, follower_id, following_id)` · `is_accepted_follower(...)` — never write inline Follow queries.
-  - `bump_follow_counters(follower, followed, delta)` — the only way to touch `followers_count`/`following_count` (None-skip, `max(0, …)`). Exception: `delete_my_account`'s bulk UPDATEs.
+  - `bump_follow_counters(db, follower, followed, delta)` — the only way to touch `followers_count`/`following_count` (None-skip, clamped at 0). Exception: `delete_my_account`'s bulk UPDATEs. **The arithmetic is an atomic SQL `UPDATE`, never Python**: `count = count + delta` read into an int and written back is a lost update under READ COMMITTED, so two people following one account in the same moment both read N and both write N+1 and the count drifts low forever. The clamp is a `case()` expression, not `GREATEST()` — the suite runs on SQLite, which has no `GREATEST`. It sets `synchronize_session=False` — the default `'auto'` would reconcile the identity map only by re-SELECTing the row it just wrote — and then `db.expire()`s the attribute itself, which is why the loaded object still reads correctly afterwards.
 - **`app/services/token_util.py`** — `hash_token` / `as_aware_utc` / `new_raw_token` for every opaque-token service (refresh, email). New token types must use these.
 - **`app/services/image_service.py`** — `process_and_store(raw, key, processor, *, cache_bust)` for all image uploads. `cache_bust=True` for user avatar/cover (stable keys need `?v=`), `False` for itinerary covers (never carried `?v=`).
 - **`app/services/share_service.py`** — `build_share_url(itinerary, settings)` for the public share URL; never rebuild the f-string. Also `absolute_storage_url(key, settings)` — the only way to turn a storage key into a URL fit to leave the site (emails, Jira tickets, OG crawlers). Filesystem storage returns a relative `/uploads/…`; R2 is already absolute and passes through.
@@ -95,6 +95,7 @@ Key rules:
 ### Database Invariants
 - Pool: `pool_size=10`, `max_overflow=20`, `pool_pre_ping=True`.
 - Statement timeout: 30 s via `connect_args={"options": "-c statement_timeout=30000"}`. Alembic uses its own `NullPool` engine and is not affected by this timeout.
+- **Every FK column needs an explicit index** (`index=True`, or an entry in `__table_args__`). PostgreSQL creates one for the *referenced* key, never for the referencing column: without it the join seq-scans, and a DELETE on the parent locks the child table and scans it whole — which is what a CASCADE to `users.id` does on every account deletion. A column that is the **trailing** half of a composite PK is not covered either: `saved_itineraries` and `itinerary_allowed_users` are keyed `(itinerary_id, user_id)`, so `WHERE user_id = ?` cannot use the PK index. `ix_itinerary_editors_user` is the precedent. The eight remaining unindexed FKs are all `SET NULL` admin/audit columns with no hot read and no cascade scan — deliberately left alone.
 
 ### Stop / Track Ordering (fractional indexing)
 - **Tracks** are a first-class table (`tracks`). A track is a vertical column of parallel stop alternatives.
@@ -608,6 +609,7 @@ because those write sibling tables, never itinerary content.
 - **Always verify a single head before committing** — run `venv/bin/alembic heads` from `social_api/`. If it lists more than one `(head)`, stop and fix the branch (create a merge migration or remove a duplicate stub) before adding a new migration.
 - **Never keep two files with the same revision ID** — if a stub (`*_stub_*.py`) and the original file both exist for the same revision, delete the stub; the original is authoritative.
 - **`down_revision` must point to the current single head** — read `venv/bin/alembic heads` to get the exact revision string; do not guess from file names or dates.
+- **Adding an index to a populated table needs `CREATE INDEX CONCURRENTLY`** — a plain `CREATE INDEX` holds a write lock for the length of the build, and migrations run at deploy on Railway. It cannot execute inside a transaction, so it is not a flag flip: wrap it in `with op.get_context().autocommit_block():` and pass `postgresql_concurrently=True`. Guard the block on `op.get_context().dialect.name == "postgresql"` and keep a plain branch for anything else. The trade-off is that autocommit forfeits the migration's atomicity — a failed concurrent build leaves an `INVALID` index to drop by hand (`SELECT * FROM pg_index WHERE NOT indisvalid`). `a681984a1a04` is the reference implementation.
 
 ---
 
@@ -624,6 +626,7 @@ because those write sibling tables, never itinerary content.
 - Do NOT create new access control logic — reuse `can_view_itinerary()`
 - Do NOT call `moderate_or_422` as a `Depends` — endpoint body only, or a 412 spends a paid moderation call
 - Do NOT convert text write endpoints to `async def` — sync SQLAlchemy on the event loop is the real hazard; the threadpool already keeps blocking provider calls off it
+- Do NOT "fix" the ten `async def` endpoints by making them sync — the four upload paths, both admin form posts and the bug-report intake are `async` because they need `await file.read()` / `await request.form()`, and a sync `def` cannot read a multipart body. They are the known exception to the rule above: they do run sync SQLAlchemy on the loop, for a local round trip. What must stay off the loop there is the **CPU** work — `process_and_store` hands Pillow to `asyncio.to_thread`, exactly as `r2_storage` and the Rekognition call already do; never call a `process_*_image` function directly from an `async def`
 - Do NOT send anything but the text to a moderation provider — no user id, email, or content id
 - Do NOT write an itinerary's moderation state from outside the owner's request without `set_preserving_etag` — it 412s their open editor
 - Do NOT change a threshold in `moderation_policy.py` without bumping `POLICY_VERSION` — stale verdicts would survive in the cache
@@ -741,6 +744,7 @@ because those write sibling tables, never itinerary content.
 - Do NOT use `allow_methods=["*"]` or `allow_headers=["*"]` in CORS — explicit lists only
 - Do NOT query `User.username == something` — always `username_lower`
 - Do NOT write inline fetch-user-or-404, Follow queries, or follower-counter math — use `app/services/user_service.py` helpers
+- Do NOT compute a denormalized counter in Python — read-then-write loses concurrent updates under READ COMMITTED; the increment belongs in the `UPDATE` statement, where Postgres re-evaluates it against the latest committed row
 - Do NOT duplicate a helper that already exists in the Shared Helpers section — extract on second occurrence instead of copying
 - Do NOT merge Pydantic Response classes into a shared base if it reorders JSON keys — field-definition order is part of the API contract
 - Do NOT use `--web-renderer` flag in Flutter (removed in 3.29)
