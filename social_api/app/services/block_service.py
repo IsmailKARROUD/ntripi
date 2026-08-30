@@ -143,5 +143,5 @@ def _sever_follows(db: Session, blocker: User, blocked: User) -> None:
         if follow.status == FollowStatus.accepted:
             follower = blocker if follow.follower_id == blocker.id else blocked
             followed = blocked if follow.following_id == blocked.id else blocker
-            bump_follow_counters(follower, followed, -1)
+            bump_follow_counters(db, follower, followed, -1)
         db.delete(follow)

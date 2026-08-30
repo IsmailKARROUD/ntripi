@@ -11,7 +11,7 @@ from __future__ import annotations
 import uuid
 
 from starlette import status
-from sqlalchemy import select
+from sqlalchemy import case, select, update
 from sqlalchemy.orm import Session
 
 from app.errors import ApiError
@@ -77,12 +77,32 @@ def is_accepted_follower(db: Session, follower_id: uuid.UUID,
     return follow is not None
 
 
-def bump_follow_counters(follower: User | None, followed: User | None,
-                         delta: int) -> None:
+def bump_follow_counters(db: Session, follower: User | None,
+                         followed: User | None, delta: int) -> None:
     # follower gains/loses one `following`; followed gains/loses one `follower`.
     # None args are skipped so callers can pass a possibly-deleted counterpart.
-    # Counters never go negative (invariant documented in routers/follows.py).
-    if follower is not None:
-        follower.following_count = max(0, follower.following_count + delta)
-    if followed is not None:
-        followed.followers_count = max(0, followed.followers_count + delta)
+    #
+    # The arithmetic runs in SQL, never in Python: reading the count into an int
+    # and writing it back is a lost update under READ COMMITTED — two people
+    # following one account concurrently both read N and both write N+1, and the
+    # count drifts low permanently. An UPDATE re-evaluates the column against the
+    # latest committed row, so it cannot.
+    for user, column in ((follower, User.following_count),
+                         (followed, User.followers_count)):
+        if user is None:
+            continue
+        bumped = column + delta
+        db.execute(
+            update(User)
+            .where(User.id == user.id)
+            # case(), not GREATEST() — the suite runs on SQLite, which has no
+            # GREATEST. Counters never go negative (see routers/follows.py).
+            .values({column: case((bumped < 0, 0), else_=bumped)})
+            # synchronize_session='auto' would reconcile the identity map for us,
+            # but only by re-SELECTing the row it just wrote. The expire() below
+            # does the same job for free — the next read reloads either way.
+            .execution_options(synchronize_session=False)
+        )
+        # Nothing has reconciled the loaded object, so its counter is now stale;
+        # drop it rather than let a later read in this request serve the old value.
+        db.expire(user, [column.key])

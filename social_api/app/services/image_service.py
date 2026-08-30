@@ -1,3 +1,4 @@
+import asyncio
 import time
 from io import BytesIO
 from typing import TYPE_CHECKING, Callable
@@ -138,7 +139,11 @@ async def process_and_store(raw_bytes: bytes, key: str,
     rejected image is never written. Omitting it (or moderation being disabled)
     stores the image exactly as before.
     """
-    processed = processor(raw_bytes)
+    # to_thread, not a direct call: Pillow decode+resize+encode is pure CPU and
+    # this runs inside an async endpoint, so a large phone photo would block the
+    # event loop for every other in-flight request. The two awaits below already
+    # offload their boto3 work the same way.
+    processed = await asyncio.to_thread(processor, raw_bytes)
     if moderation is not None:
         # Scan sits after Pillow processing, before storage — rejected bytes
         # are never persisted.

@@ -175,7 +175,7 @@ def update_my_profile(
 
         for follow in pending_follows:
             follow.status = FollowStatus.accepted
-            bump_follow_counters(db.get(User, follow.follower_id), current_user, 1)
+            bump_follow_counters(db, db.get(User, follow.follower_id), current_user, 1)
             # One per requester — going public accepts them all at once, and
             # each of them is owed the same notice as an individual accept.
             notification_service.notify(

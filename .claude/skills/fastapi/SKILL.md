@@ -7,6 +7,38 @@ description: FastAPI best practices and conventions. Use when working with FastA
 
 Official FastAPI skill to write code with best practices, keeping up to date with new versions and features.
 
+## Project overrides (Ntripi) — read first
+
+This is the upstream FastAPI skill, written without knowledge of this codebase. Four
+of its recommendations do not apply here. Everything else in this file stands.
+
+* **SQLAlchemy 2, not SQLModel.** Ignore `references/other-tools.md` "SQLModel for SQL
+  databases". 31 ORM models and 52 Alembic migrations; the swap buys nothing.
+* **Blocking `requests` is correct here, not HTTPX.** Ignore `references/other-tools.md`
+  "HTTPX". Seven services (`push_service`, `jira_service`, `text_moderation_providers`,
+  `email_service`, `pwned_service`, `google_people`, `auth`) call `requests` from sync
+  `def` endpoints, which FastAPI runs in a threadpool — CLAUDE.md documents this as the
+  correct shape. `httpx` is not even a dependency.
+* **Never `app.frontend()`.** The Flutter web build is served by `_SPAStaticFiles`
+  (`app/main.py:62`), a `StaticFiles` subclass that injects `GOOGLE_WEB_CLIENT_ID` into
+  `index.html` at serve time. Replacing it with `app.frontend()` silently breaks Google
+  sign-in on web.
+* **Run with `uvicorn app.main:app`**, or the Dockerfile at the repo root — not
+  `fastapi dev` / `fastapi run`, and do not add a `[tool.fastapi]` entrypoint. Railway
+  builds from the root Dockerfile.
+
+Where the skill and CLAUDE.md **agree**, and the agreement is load-bearing:
+
+* **Default to sync `def`** (the "Async vs Sync" section below). CLAUDE.md states the
+  same rule more sharply: sync SQLAlchemy on the event loop is the real hazard, so text
+  write endpoints must never become `async def`. The four multipart upload endpoints are
+  the known exception — they are `async` for `await file.read()`.
+* **Return a Pydantic schema, never a raw ORM object** (the "Return Type or Response
+  Model" section). CLAUDE.md requires this of every endpoint.
+* One caveat the skill does not know: **JSON key order is part of this API's contract.**
+  Pydantic serializes in field-definition order, so do not merge Response classes into a
+  shared base to deduplicate them — see CLAUDE.md on `app/schemas/itinerary.py`.
+
 ## Quick Reference
 
 * Serve frontend apps: use `app.frontend()` or `router.frontend()` for built frontend assets; see [Serve Frontend Apps](#serve-frontend-apps).

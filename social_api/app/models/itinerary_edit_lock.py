@@ -51,6 +51,8 @@ class ItineraryEditLock(Base):
         UUID(as_uuid=True),
         ForeignKey("users.id", ondelete="CASCADE"),
         nullable=False,
+        # CASCADE with no index means deleting a user seq-scans every lock row.
+        index=True,
     )
 
     # SHA-256 hex digest — 64 chars. Never the raw token.

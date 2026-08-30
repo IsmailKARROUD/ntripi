@@ -60,6 +60,9 @@ class TransitSegment(Base):
         UUID(as_uuid=True),
         ForeignKey("stops.id", ondelete="CASCADE"),
         nullable=False,
+        # from_stop_id leads uq_segment_stops; to_stop_id is covered by nothing,
+        # so a stop deletion scans this table.
+        index=True,
     )
 
     total_duration_min: Mapped[int] = mapped_column(
