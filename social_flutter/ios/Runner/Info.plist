@@ -22,12 +22,23 @@
 	<string>$(FLUTTER_BUILD_NAME)</string>
 	<key>CFBundleSignature</key>
 	<string>????</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.googleusercontent.apps.29126714665-8n68nlct0m8edp04b6obslteslqtitdq</string>
+			</array>
+		</dict>
+	</array>
 	<key>CFBundleVersion</key>
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
-	<key>LSRequiresIPhoneOS</key>
-	<true/>
-	<!-- Schemes probed by canLaunchUrl to detect installed map apps;
-	     launches themselves use https universal links. -->
+	<key>GIDClientID</key>
+	<string>29126714665-8n68nlct0m8edp04b6obslteslqtitdq.apps.googleusercontent.com</string>
+	<key>GIDServerClientID</key>
+	<string>29126714665-9pgodn1nt1ikf6goo71a6b7634sknna4.apps.googleusercontent.com</string>
 	<key>LSApplicationQueriesSchemes</key>
 	<array>
 		<string>comgooglemaps</string>
@@ -37,6 +48,8 @@
 		<string>citymapper</string>
 		<string>osmandmaps</string>
 	</array>
+	<key>LSRequiresIPhoneOS</key>
+	<true/>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>Ntripi uses your location to center the map when you add a stop.</string>
 	<key>UIApplicationSceneManifest</key>
@@ -62,6 +75,11 @@
 	</dict>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>remote-notification</string>
+		<string>fetch</string>
+	</array>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
 	<key>UIMainStoryboardFile</key>
@@ -78,38 +96,6 @@
 		<string>UIInterfaceOrientationPortraitUpsideDown</string>
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
-	</array>
-
-	<!-- Google Sign-In. These are read by the native GIDSignIn SDK, not by Dart:
-	     google_sign_in_ios only builds a GIDConfiguration when it is given a
-	     clientId (from initialize() or GoogleService-Info.plist), and we pass
-	     neither — so the plugin keeps GIDSignIn's default, which comes from here.
-	     That also means the --dart-define GOOGLE_SERVER_CLIENT_ID is ignored on
-	     iOS; GIDServerClientID below is what forces the ID token aud to the web
-	     client id, so the backend verifies Android and iOS tokens uniformly. -->
-	<key>GIDClientID</key>
-	<string>29126714665-8n68nlct0m8edp04b6obslteslqtitdq.apps.googleusercontent.com</string>
-	<key>GIDServerClientID</key>
-	<string>29126714665-9pgodn1nt1ikf6goo71a6b7634sknna4.apps.googleusercontent.com</string>
-	<key>CFBundleURLTypes</key>
-	<array>
-		<dict>
-			<key>CFBundleTypeRole</key>
-			<string>Editor</string>
-			<key>CFBundleURLSchemes</key>
-			<array>
-				<!-- REVERSED GIDClientID — Google redirects the finished sign-in to
-				     this scheme, and iOS only routes it back to us if it is declared here. -->
-				<string>com.googleusercontent.apps.29126714665-8n68nlct0m8edp04b6obslteslqtitdq</string>
-			</array>
-		</dict>
-	</array>
-	<!-- Lets iOS hand a push to the app while it is backgrounded, which is what
-	     makes firebase_messaging's background handler run. Without it the tray
-	     entry still appears, but the app learns nothing until the user taps. -->
-	<key>UIBackgroundModes</key>
-	<array>
-		<string>remote-notification</string>
 	</array>
 </dict>
 </plist>
