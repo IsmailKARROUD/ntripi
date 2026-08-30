@@ -3075,6 +3075,13 @@ class AppLocalizationsDe extends AppLocalizations {
   String get helpCenterContactSupportSubtitle => 'Schreib uns zu allem anderen';
 
   @override
+  String get helpCenterGeneralEnquiries => 'Allgemeine Anfragen';
+
+  @override
+  String get helpCenterGeneralEnquiriesSubtitle =>
+      'Presse, Partnerschaften und Geschäftliches';
+
+  @override
   String get helpCenterAccountStatusSubtitle =>
       'Moderationsentscheidungen ansehen und Einspruch einlegen';
 

@@ -61,6 +61,7 @@ void main() {
       expect(find.text(_en.settingsReportBug), findsOneWidget);
       expect(find.text(_en.helpCenterContactSupport), findsOneWidget);
       expect(find.text(_en.abuseContact), findsOneWidget);
+      expect(find.text(_en.helpCenterGeneralEnquiries), findsOneWidget);
       expect(find.text(_en.accountStatusTitle), findsOneWidget);
       // Terms and Privacy are separate rows now — the sheet takes one document.
       expect(find.text(_en.registerTosTitle), findsOneWidget);

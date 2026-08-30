@@ -102,6 +102,18 @@ class HelpCenterScreen extends ConsumerWidget {
                             Uri(scheme: 'mailto', path: kAbuseContactEmail),
                           ),
                         ),
+                        // Sits below support so the two rows a user in trouble
+                        // needs stay adjacent at the top.
+                        EditorialRow(
+                          icon: Icons.business_center_outlined,
+                          iconBg: nt.mist,
+                          iconColor: nt.forest,
+                          label: l10n.helpCenterGeneralEnquiries,
+                          subtitle: l10n.helpCenterGeneralEnquiriesSubtitle,
+                          onTap: () => launchUrl(
+                            Uri(scheme: 'mailto', path: kGeneralContactEmail),
+                          ),
+                        ),
                         EditorialRow(
                           icon: Icons.shield_outlined,
                           iconBg: nt.mist,

@@ -3023,6 +3023,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get helpCenterContactSupportSubtitle => 'Email us about anything else';
 
   @override
+  String get helpCenterGeneralEnquiries => 'General enquiries';
+
+  @override
+  String get helpCenterGeneralEnquiriesSubtitle =>
+      'Press, partnerships and business';
+
+  @override
   String get helpCenterAccountStatusSubtitle =>
       'See moderation decisions and appeal';
 

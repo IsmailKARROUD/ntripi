@@ -3082,6 +3082,13 @@ class AppLocalizationsFr extends AppLocalizations {
       'Écrivez-nous pour tout le reste';
 
   @override
+  String get helpCenterGeneralEnquiries => 'Demandes générales';
+
+  @override
+  String get helpCenterGeneralEnquiriesSubtitle =>
+      'Presse, partenariats et questions professionnelles';
+
+  @override
   String get helpCenterAccountStatusSubtitle =>
       'Consulter les décisions de modération et faire appel';
 

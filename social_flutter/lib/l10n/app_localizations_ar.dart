@@ -3069,6 +3069,13 @@ class AppLocalizationsAr extends AppLocalizations {
   String get helpCenterContactSupportSubtitle => 'راسلنا بشأن أي أمر آخر';
 
   @override
+  String get helpCenterGeneralEnquiries => 'الاستفسارات العامة';
+
+  @override
+  String get helpCenterGeneralEnquiriesSubtitle =>
+      'الصحافة والشراكات والأمور التجارية';
+
+  @override
   String get helpCenterAccountStatusSubtitle =>
       'اطّلع على قرارات الإشراف وقدّم تظلّمًا';
 

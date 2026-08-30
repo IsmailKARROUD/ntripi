@@ -2866,6 +2866,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get helpCenterContactSupportSubtitle => '其他问题请发邮件给我们';
 
   @override
+  String get helpCenterGeneralEnquiries => '一般咨询';
+
+  @override
+  String get helpCenterGeneralEnquiriesSubtitle => '媒体、合作与商务事宜';
+
+  @override
   String get helpCenterAccountStatusSubtitle => '查看审核决定并提出申诉';
 
   @override

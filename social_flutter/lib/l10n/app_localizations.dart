@@ -5338,6 +5338,18 @@ abstract class AppLocalizations {
   /// **'Email us about anything else'**
   String get helpCenterContactSupportSubtitle;
 
+  /// No description provided for @helpCenterGeneralEnquiries.
+  ///
+  /// In en, this message translates to:
+  /// **'General enquiries'**
+  String get helpCenterGeneralEnquiries;
+
+  /// No description provided for @helpCenterGeneralEnquiriesSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Press, partnerships and business'**
+  String get helpCenterGeneralEnquiriesSubtitle;
+
   /// No description provided for @helpCenterAccountStatusSubtitle.
   ///
   /// In en, this message translates to:

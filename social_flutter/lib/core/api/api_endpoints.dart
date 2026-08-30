@@ -326,7 +326,12 @@ const kGuidelinesUrl = '$kShareBaseUrl/guidelines';
 const kAbuseContactEmail = 'abuse@ntripi.app';
 
 /// Ordinary support mail. Kept separate from the abuse address so a "how do I
-/// reorder stops" question never lands in the safety queue, but defaults to it
-/// so nothing is published until a real support inbox exists.
+/// reorder stops" question never lands in the safety queue.
 const kSupportContactEmail =
-    String.fromEnvironment('SUPPORT_EMAIL', defaultValue: kAbuseContactEmail);
+    String.fromEnvironment('SUPPORT_EMAIL', defaultValue: 'support@ntripi.app');
+
+/// General and business enquiries — press, partnerships. Distinct from
+/// kSupportContactEmail so a user's help request never lands in a business
+/// inbox, or the reverse.
+const kGeneralContactEmail =
+    String.fromEnvironment('CONTACT_EMAIL', defaultValue: 'contact@ntripi.app');

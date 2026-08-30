@@ -125,7 +125,7 @@ The entire application-side response to a Cloudflare notice is one operator acti
 | `R2_ENDPOINT` | `https://<account-id>.r2.cloudflarestorage.com` | S3 API |
 | `R2_BUCKET` / `R2_ACCESS_KEY_ID` / `R2_SECRET_ACCESS_KEY` | — | token needs Object Read & Write |
 | `STORAGE_PUBLIC_URL_PREFIX` | `/uploads` | keep set — legacy relative URLs still validate against it |
-| `OPERATOR_EMAIL` | your address | also use it as Cloudflare's notification address |
+| `OPERATOR_EMAIL` | `ops@ntripi.app` | also use it as Cloudflare's notification address |
 
 No application config exists for CSAM scanning; it is entirely a dashboard toggle.
 

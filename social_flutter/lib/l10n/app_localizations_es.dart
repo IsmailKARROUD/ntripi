@@ -3050,6 +3050,13 @@ class AppLocalizationsEs extends AppLocalizations {
       'Escríbenos sobre cualquier otra cosa';
 
   @override
+  String get helpCenterGeneralEnquiries => 'Consultas generales';
+
+  @override
+  String get helpCenterGeneralEnquiriesSubtitle =>
+      'Prensa, colaboraciones y temas comerciales';
+
+  @override
   String get helpCenterAccountStatusSubtitle =>
       'Ver decisiones de moderación y apelar';
 
