@@ -21,6 +21,7 @@ import 'package:social_flutter/features/itineraries/domain/itinerary.dart';
 import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
 import 'package:social_flutter/l10n/app_localizations.dart';
 import 'package:social_flutter/shared/models/user.dart';
+import 'package:social_flutter/shared/widgets/editorial_widgets.dart';
 import 'package:social_flutter/shared/widgets/loaders.dart';
 import 'package:social_flutter/shared/widgets/offline_gate.dart';
 import 'package:social_flutter/shared/widgets/saving_overlay.dart';
@@ -97,25 +98,29 @@ class _VisibilityScreenState extends ConsumerState<VisibilityScreen> {
     return SavingOverlay(
       saving: _submitting,
       child: Scaffold(
-      backgroundColor: nt.sand,
-      appBar: AppBar(
-        backgroundColor: nt.sand,
-        title: Text(AppLocalizations.of(context)!.visibilityScreenTitle),
-        actions: [
-          TextButton(
-            onPressed: _done,
-            child: Text(
-              AppLocalizations.of(context)!.doneTooltip,
-              style: TextStyle(
-                color: nt.forest,
-                fontWeight: FontWeight.w700,
-                fontSize: 15,
+      backgroundColor: nt.surface,
+      body: Column(children: [
+        SafeArea(
+          bottom: false,
+          child: EditorialTopBar(
+            title: AppLocalizations.of(context)!.visibilityScreenTitle,
+            actions: [
+              TextButton(
+                onPressed: _done,
+                child: Text(
+                  AppLocalizations.of(context)!.doneTooltip,
+                  style: TextStyle(
+                    color: nt.forest,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 15,
+                  ),
+                ),
               ),
-            ),
+            ],
           ),
-        ],
-      ),
-      body: ListView(
+        ),
+        const EditorialDivider(),
+        Expanded(child: ListView(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 40),
         children: [
           // ── Visibility option cards ──────────────────────────────────────
@@ -166,7 +171,8 @@ class _VisibilityScreenState extends ConsumerState<VisibilityScreen> {
               ),
             ),
         ],
-      ),
+      )),
+      ]),
       ),
     );
   }

@@ -137,11 +137,18 @@ class OwnerAttributionRow extends StatelessWidget {
 class EditorialTopBar extends StatelessWidget {
   final String title;
   final List<Widget> actions;
+  // Replaces the back arrow — a modal edit form cancels rather than navigates.
+  final Widget? leading;
+  // Only for a leading/trailing pair (Cancel … Save), where a left-aligned
+  // title would sit off-centre between two controls of unequal width.
+  final bool centerTitle;
 
   const EditorialTopBar({
     super.key,
     required this.title,
     this.actions = const [],
+    this.leading,
+    this.centerTitle = false,
   });
 
   @override
@@ -151,14 +158,20 @@ class EditorialTopBar extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
       child: Row(
         children: [
-          IconButton(
-            icon: const Icon(Icons.arrow_back),
-            color: nt.bark,
-            onPressed: () => Navigator.of(context).maybePop(),
-          ),
+          leading ??
+              IconButton(
+                icon: const Icon(Icons.arrow_back),
+                color: nt.bark,
+                // Material's own AppBar back button carries this; an icon with
+                // no label is unreadable to a screen reader without it.
+                tooltip: MaterialLocalizations.of(context).backButtonTooltip,
+                onPressed: () => Navigator.of(context).maybePop(),
+              ),
           Expanded(
             child: Text(
               title,
+              textAlign: centerTitle ? TextAlign.center : TextAlign.start,
+              overflow: TextOverflow.ellipsis,
               style: TextStyle(
                 fontSize: 17,
                 fontWeight: FontWeight.w700,
@@ -211,18 +224,20 @@ class EditorialDivider extends StatelessWidget {
 }
 
 // ── SectionLabel ──────────────────────────────────────────────────────────────
-// Uppercase label row with a small leading icon.  Used as a section header
-// above a SectionCard.
+// Uppercase label row with an optional small leading icon.  Used as a section
+// header above a SectionCard.
 
 class SectionLabel extends StatelessWidget {
-  final IconData icon;
+  // Nullable: the form screens' headers carry no icon, and inventing one to
+  // satisfy this widget would be a redesign rather than an alignment.
+  final IconData? icon;
   final String label;
   // Nullable: theme lookups aren't const, so the default resolves in build.
   final Color? color;
 
   const SectionLabel({
     super.key,
-    required this.icon,
+    this.icon,
     required this.label,
     this.color,
   });
@@ -234,8 +249,10 @@ class SectionLabel extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(22, 16, 22, 6),
       child: Row(
         children: [
-          Icon(icon, size: 13, color: color),
-          const SizedBox(width: 6),
+          if (icon != null) ...[
+            Icon(icon, size: 13, color: color),
+            const SizedBox(width: 6),
+          ],
           Text(
             label.toUpperCase(),
             style: TextStyle(
@@ -256,7 +273,21 @@ class SectionLabel extends StatelessWidget {
 
 class SectionCard extends StatelessWidget {
   final List<Widget> children;
-  const SectionCard({super.key, required this.children});
+  // Both default to the behaviour every existing caller already gets, so the
+  // form screens can adopt this widget without moving anyone else's pixels.
+  //
+  // Clipping is opt-in on purpose: the whole app draws with this card, and
+  // notifications_screen deliberately clips its own swipe pane instead of
+  // paying for a layer on every card in every list.
+  final Clip clipBehavior;
+  final CrossAxisAlignment crossAxisAlignment;
+
+  const SectionCard({
+    super.key,
+    required this.children,
+    this.clipBehavior = Clip.none,
+    this.crossAxisAlignment = CrossAxisAlignment.center,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -268,7 +299,29 @@ class SectionCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(18),
         border: Border.all(color: nt.border),
       ),
-      child: Column(mainAxisSize: MainAxisSize.min, children: children),
+      clipBehavior: clipBehavior,
+      child: Column(
+        crossAxisAlignment: crossAxisAlignment,
+        mainAxisSize: MainAxisSize.min,
+        children: children,
+      ),
+    );
+  }
+}
+
+// ── FieldDivider ──────────────────────────────────────────────────────────────
+// Hairline between two rows of a SectionCard, inset past the card's padding so
+// it reads as a separator rather than a full-width rule.
+
+class FieldDivider extends StatelessWidget {
+  const FieldDivider({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 1,
+      color: context.nt.border,
+      margin: const EdgeInsetsDirectional.only(start: 16),
     );
   }
 }

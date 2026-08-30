@@ -15,6 +15,7 @@ import 'package:social_flutter/features/itineraries/domain/annotation.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/annotation_form_dialog.dart'
     show AnnotationFormResult;
 import 'package:social_flutter/l10n/app_localizations.dart';
+import 'package:social_flutter/shared/widgets/editorial_widgets.dart';
 import 'package:social_flutter/shared/widgets/loaders.dart';
 import 'package:social_flutter/shared/widgets/moderation_hint.dart';
 import 'package:social_flutter/shared/widgets/offline_gate.dart';
@@ -145,11 +146,13 @@ class _AnnotationScreenState extends State<AnnotationScreen> {
         saving: _saving,
         child: Scaffold(
       resizeToAvoidBottomInset: false,
-      backgroundColor: nt.sand,
-      appBar: AppBar(
-        backgroundColor: nt.sand,
-        title: Text(title),
-        actions: [
+      backgroundColor: nt.surface,
+      body: Column(children: [
+        SafeArea(
+          bottom: false,
+          child: EditorialTopBar(
+            title: title,
+            actions: [
           if (_saving)
             const Padding(
               padding: EdgeInsets.all(16),
@@ -170,8 +173,10 @@ class _AnnotationScreenState extends State<AnnotationScreen> {
               ),
             ),
         ],
-      ),
-      body: ListView(
+          ),
+        ),
+        const EditorialDivider(),
+        Expanded(child: ListView(
         padding: const EdgeInsets.only(bottom: 40),
         keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag, // allow dismissing the keyboard by dragging the list down
         children: [
@@ -363,7 +368,8 @@ class _AnnotationScreenState extends State<AnnotationScreen> {
             ),
           ),
         ],
-      ),
+      )),
+      ]),
         ),
       ),
     );

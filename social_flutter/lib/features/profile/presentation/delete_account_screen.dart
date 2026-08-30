@@ -350,7 +350,6 @@ class _DeleteAccountScreenState extends ConsumerState<DeleteAccountScreen> {
             helpTitle: l10n.deleteAccountPasswordHelpTitle,
             helpMessage: l10n.deleteAccountPasswordHelpMessage,
           ),
-          border: const OutlineInputBorder(),
           prefixIcon: const Icon(Icons.lock_outlined),
           suffixIcon: IconButton(
             icon: Icon(

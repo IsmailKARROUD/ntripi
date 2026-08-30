@@ -286,7 +286,6 @@ class _PasswordField extends StatelessWidget {
       onFieldSubmitted: onSubmitted,
       decoration: InputDecoration(
         labelText: label,
-        border: const OutlineInputBorder(),
         prefixIcon: const Icon(Icons.lock_outlined),
         suffixIcon: IconButton(
           icon: Icon(

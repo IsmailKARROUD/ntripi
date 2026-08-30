@@ -589,7 +589,7 @@ ThemeData _buildTheme(NtripiColors nt, ColorScheme scheme) {
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
       fillColor: nt.surface,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 2, vertical: 15),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 15),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14),
         borderSide: BorderSide(color: nt.border),

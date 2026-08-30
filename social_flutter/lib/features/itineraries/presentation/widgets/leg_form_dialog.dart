@@ -21,6 +21,7 @@ import 'package:social_flutter/core/ui/app_theme.dart';
 import 'package:social_flutter/core/ui/destructive_actions.dart';
 import 'package:social_flutter/core/ui/toggle_feedback.dart';
 import 'package:social_flutter/features/itineraries/domain/transport_leg.dart';
+import 'package:social_flutter/shared/widgets/editorial_widgets.dart';
 import 'package:social_flutter/l10n/app_localizations.dart';
 
 // Modes that use numbered/named transit lines and directions.
@@ -306,10 +307,8 @@ class _LegFormDialogState extends ConsumerState<LegFormDialog> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              _LFSectionLabel(
-                  text: AppLocalizations.of(ctx)!
-                      .transportModeSection
-                      .toUpperCase()),
+              SectionLabel(
+                  label: AppLocalizations.of(ctx)!.transportModeSection),
               // Flexible lets the card fill remaining sheet space and scroll.
               Flexible(
                 child: Container(
@@ -408,8 +407,10 @@ class _LegFormDialogState extends ConsumerState<LegFormDialog> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             // ── TRANSPORT MODE ─────────────────────────────────────────────
-            _LFSectionLabel(text: l10n.transportModeSection.toUpperCase()),
-            _LFSectionCard(
+            SectionLabel(label: l10n.transportModeSection),
+            SectionCard(
+              clipBehavior: Clip.antiAlias,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _LFPickerRow(
                   icon: _mode.icon,
@@ -422,8 +423,10 @@ class _LegFormDialogState extends ConsumerState<LegFormDialog> {
 
             // ── LINE & DIRECTION (transit modes only) ──────────────────────
             if (_showTransitLine) ...[
-              _LFSectionLabel(text: l10n.lineDirectionSection.toUpperCase()),
-              _LFSectionCard(
+              SectionLabel(label: l10n.lineDirectionSection),
+              SectionCard(
+              clipBehavior: Clip.antiAlias,
+              crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _LFBorderlessField(
                     label: l10n.transitLineLabel.toUpperCase(),
@@ -443,7 +446,7 @@ class _LegFormDialogState extends ConsumerState<LegFormDialog> {
                           color: nt.bark),
                     ),
                   ),
-                  const _LFDivider(),
+                  const FieldDivider(),
                   _LFBorderlessField(
                     label: l10n.transitDirectionLabel.toUpperCase(),
                     child: TextField(
@@ -467,8 +470,10 @@ class _LegFormDialogState extends ConsumerState<LegFormDialog> {
             ],
 
             // ── DURATION & COST ────────────────────────────────────────────
-            _LFSectionLabel(text: l10n.durationCostSection.toUpperCase()),
-            _LFSectionCard(
+            SectionLabel(label: l10n.durationCostSection),
+            SectionCard(
+              clipBehavior: Clip.antiAlias,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _LFPickerRow(
                   icon: Icons.schedule_rounded,
@@ -476,7 +481,7 @@ class _LegFormDialogState extends ConsumerState<LegFormDialog> {
                   value: _durationLabel,
                   onTap: _showDurationPicker,
                 ),
-                const _LFDivider(),
+                const FieldDivider(),
 
                 // Free toggle row
                 Padding(
@@ -537,7 +542,7 @@ class _LegFormDialogState extends ConsumerState<LegFormDialog> {
 
                 // Cost amount field — hidden when free
                 if (!_isFree) ...[
-                  const _LFDivider(),
+                  const FieldDivider(),
                   _LFBorderlessField(
                     label: l10n.costLabel.toUpperCase(),
                     child: TextField(
@@ -567,8 +572,10 @@ class _LegFormDialogState extends ConsumerState<LegFormDialog> {
             ),
 
             // ── THOUGHTS ──────────────────────────────────────────────────
-            _LFSectionLabel(text: l10n.thoughtsLabel.toUpperCase()),
-            _LFSectionCard(
+            SectionLabel(label: l10n.thoughtsLabel),
+            SectionCard(
+              clipBehavior: Clip.antiAlias,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 13, 16, 12),
@@ -643,60 +650,8 @@ class _LegFormDialogState extends ConsumerState<LegFormDialog> {
 
 // ── Local editorial helpers ───────────────────────────────────────────────────
 
-class _LFSectionLabel extends StatelessWidget {
-  final String text;
-  const _LFSectionLabel({required this.text});
 
-  @override
-  Widget build(BuildContext context) {
-    final nt = context.nt;
-    return Padding(
-        padding: const EdgeInsets.fromLTRB(22, 14, 22, 6),
-        child: Text(
-          text,
-          style: TextStyle(
-            fontSize: 11,
-            fontWeight: FontWeight.w700,
-            color: nt.text2,
-            letterSpacing: 0.6,
-          ),
-        ),
-      );
-  }
-}
 
-class _LFSectionCard extends StatelessWidget {
-  final List<Widget> children;
-  const _LFSectionCard({required this.children});
-
-  @override
-  Widget build(BuildContext context) {
-    final nt = context.nt;
-    return Container(
-        margin: const EdgeInsets.fromLTRB(16, 0, 16, 0),
-        decoration: BoxDecoration(
-          color: nt.surface,
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: nt.border),
-        ),
-        clipBehavior: Clip.antiAlias,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: children,
-        ),
-      );
-  }
-}
-
-class _LFDivider extends StatelessWidget {
-  const _LFDivider();
-
-  @override
-  Widget build(BuildContext context) {
-    final nt = context.nt;
-    return Container(height: 1, color: nt.border, margin: const EdgeInsetsDirectional.only(start: 16));
-  }
-}
 
 class _LFBorderlessField extends StatelessWidget {
   final String label;

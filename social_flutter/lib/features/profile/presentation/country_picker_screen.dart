@@ -63,9 +63,9 @@ class _CountryPickerScreenState extends State<CountryPickerScreen> {
     final filtered = _filtered(langCode);
     return Scaffold(
       resizeToAvoidBottomInset: false,
-      backgroundColor: nt.sand,
+      backgroundColor: nt.surface,
       appBar: AppBar(
-        backgroundColor: nt.sand,
+        backgroundColor: nt.surface,
         elevation: 0,
         leading: IconButton(
           icon: Icon(Icons.arrow_back_rounded, color: nt.bark),

@@ -18,6 +18,7 @@ import 'package:social_flutter/core/ui/app_theme.dart';
 import 'package:social_flutter/core/ui/destructive_actions.dart';
 import 'package:social_flutter/features/itineraries/domain/recommended_period.dart';
 import 'package:social_flutter/l10n/app_localizations.dart';
+import 'package:social_flutter/shared/widgets/editorial_widgets.dart';
 import 'package:social_flutter/shared/widgets/moderation_hint.dart';
 
 /// Any year works — none is stored. 2024 is a leap year so 29 Feb formats, and
@@ -212,30 +213,34 @@ class _RecommendedPeriodScreenState extends State<RecommendedPeriodScreen> {
         }
       },
       child: Scaffold(
-      backgroundColor: nt.sand,
-      appBar: AppBar(
-        backgroundColor: nt.sand,
-        title: Text(l10n.bestTimeToVisit),
-        actions: [
-          TextButton(
-            onPressed: _done,
-            child: Text(
-              l10n.done,
-              style: TextStyle(
-                color: nt.forest,
-                fontWeight: FontWeight.w700,
-                fontSize: 15,
+      backgroundColor: nt.surface,
+      body: Column(children: [
+        SafeArea(
+          bottom: false,
+          child: EditorialTopBar(
+            title: l10n.bestTimeToVisit,
+            actions: [
+              TextButton(
+                onPressed: _done,
+                child: Text(
+                  l10n.done,
+                  style: TextStyle(
+                    color: nt.forest,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 15,
+                  ),
+                ),
               ),
-            ),
+            ],
           ),
-        ],
-      ),
-      body: ListView(
+        ),
+        const EditorialDivider(),
+        Expanded(child: ListView(
         keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
         padding: const EdgeInsets.only(bottom: 40),
         children: [
           // ── Months grid ───────────────────────────────────────────────────
-          _SectionLabel(text: l10n.periodSectionMonths),
+          SectionLabel(label: l10n.periodSectionMonths),
           _SectionCard(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -267,7 +272,7 @@ class _RecommendedPeriodScreenState extends State<RecommendedPeriodScreen> {
           ),
 
           // ── Derived windows ───────────────────────────────────────────────
-          _SectionLabel(text: l10n.periodSectionWindows),
+          SectionLabel(label: l10n.periodSectionWindows),
           _SectionCard(
             child: windows.isEmpty
                 ? Text(
@@ -287,7 +292,7 @@ class _RecommendedPeriodScreenState extends State<RecommendedPeriodScreen> {
           ),
 
           // ── Weekdays ──────────────────────────────────────────────────────
-          _SectionLabel(text: l10n.periodSectionWeekdays),
+          SectionLabel(label: l10n.periodSectionWeekdays),
           _SectionCard(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -326,7 +331,7 @@ class _RecommendedPeriodScreenState extends State<RecommendedPeriodScreen> {
           ),
 
           // ── Why ───────────────────────────────────────────────────────────
-          _SectionLabel(text: l10n.periodSectionWhy),
+          SectionLabel(label: l10n.periodSectionWhy),
           _SectionCard(
             // Free prose, which is exactly the client filter's scope. It warns
             // and nothing more: Done above stays enabled either way, and the
@@ -371,7 +376,8 @@ class _RecommendedPeriodScreenState extends State<RecommendedPeriodScreen> {
             ),
           ),
           ],
-        ),
+        )),
+      ]),
       ),
     );
   }
@@ -572,47 +578,20 @@ class _DayPickerRow extends StatelessWidget {
 
 // ─── Screen-private widgets ───────────────────────────────────────────────────
 
-class _SectionLabel extends StatelessWidget {
-  final String text;
 
-  const _SectionLabel({required this.text});
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(22, 18, 22, 6),
-      child: Text(
-        text,
-        style: TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.w700,
-          color: context.nt.text2,
-          letterSpacing: 0.6,
-        ),
-      ),
-    );
-  }
-}
-
+// Padded single-child variant of the shared SectionCard — this screen's
+// sections are prose and grids, not rows, so they need the inner padding that
+// row widgets supply themselves. Delegates so card styling has one home.
 class _SectionCard extends StatelessWidget {
   final Widget child;
 
   const _SectionCard({required this.child});
 
   @override
-  Widget build(BuildContext context) {
-    final nt = context.nt;
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: nt.surface,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: nt.border),
-      ),
-      child: child,
-    );
-  }
+  Widget build(BuildContext context) => SectionCard(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [Padding(padding: const EdgeInsets.all(14), child: child)],
+      );
 }
 
 class _ToggleCell extends StatelessWidget {

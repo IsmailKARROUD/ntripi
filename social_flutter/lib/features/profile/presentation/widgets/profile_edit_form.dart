@@ -19,6 +19,7 @@ import 'package:social_flutter/features/profile/providers/profile_provider.dart'
 import 'package:social_flutter/l10n/app_localizations.dart';
 import 'package:social_flutter/shared/data/countries.dart';
 import 'package:social_flutter/shared/models/user.dart';
+import 'package:social_flutter/shared/widgets/editorial_widgets.dart';
 import 'package:social_flutter/shared/widgets/markdown_edit_screen.dart';
 import 'package:social_flutter/shared/widgets/moderation_hint.dart';
 import 'package:social_flutter/shared/widgets/offline_gate.dart';
@@ -246,52 +247,41 @@ class _ProfileEditFormState extends ConsumerState<ProfileEditForm> {
       children: [
         SafeArea(
           bottom: false,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            child: Row(
-              children: [
-                TextButton(
-                  onPressed: _saving ? null : widget.onCancel,
-                  style: TextButton.styleFrom(foregroundColor: nt.text2),
-                  child: Text(
-                    l10n.cancel,
-                    style: const TextStyle(
-                        fontWeight: FontWeight.w500, fontSize: 15),
-                  ),
-                ),
-                Expanded(
-                  child: Text(
-                    l10n.editProfileTitle,
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                      color: nt.bark,
-                      letterSpacing: -0.2,
-                    ),
-                  ),
-                ),
-                OfflineGate(
-                  builder: (online) => TextButton(
-                    onPressed: (_saving || !online) ? null : _saveEdits,
-                    child: _saving
-                        ? SizedBox(
-                            width: 18,
-                            height: 18,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation(nt.forest),
-                            ),
-                          )
-                        : Text(
-                            l10n.save,
-                            style: const TextStyle(
-                                fontWeight: FontWeight.w700, fontSize: 15),
-                          ),
-                  ),
-                ),
-              ],
+          // Cancel replaces the back arrow: this form is a modal edit, not a
+          // pushed route, so there is nothing to pop.
+          child: EditorialTopBar(
+            title: l10n.editProfileTitle,
+            centerTitle: true,
+            leading: TextButton(
+              onPressed: _saving ? null : widget.onCancel,
+              style: TextButton.styleFrom(foregroundColor: nt.text2),
+              child: Text(
+                l10n.cancel,
+                style: const TextStyle(
+                    fontWeight: FontWeight.w500, fontSize: 15),
+              ),
             ),
+            actions: [
+              OfflineGate(
+                builder: (online) => TextButton(
+                  onPressed: (_saving || !online) ? null : _saveEdits,
+                  child: _saving
+                      ? SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation(nt.forest),
+                          ),
+                        )
+                      : Text(
+                          l10n.save,
+                          style: const TextStyle(
+                              fontWeight: FontWeight.w700, fontSize: 15),
+                        ),
+                ),
+              ),
+            ],
           ),
         ),
         Expanded(
@@ -415,11 +405,11 @@ class _ProfileEditFormState extends ConsumerState<ProfileEditForm> {
 
                 // Cover image section — picker only. Images are scanned on
                 // upload (NSFWJS + AWS); no raw-URL entry so nothing bypasses it.
-                _SectionLabel(
+                SectionLabel(
                   icon: Icons.image_outlined,
                   label: l10n.coverImageSection,
                 ),
-                _SectionCard(children: [
+                SectionCard(children: [
                   Padding(
                     padding: const EdgeInsets.symmetric(
                         horizontal: 12, vertical: 8),
@@ -438,11 +428,11 @@ class _ProfileEditFormState extends ConsumerState<ProfileEditForm> {
                     ),
                   ),
                 ]),
-                _SectionLabel(
+                SectionLabel(
                   icon: Icons.person_outline_rounded,
                   label: l10n.identitySection,
                 ),
-                _SectionCard(children: [
+                SectionCard(children: [
                   _EditFieldRow(
                     icon: Icons.badge_outlined,
                     label: l10n.displayNameLabel,
@@ -456,14 +446,14 @@ class _ProfileEditFormState extends ConsumerState<ProfileEditForm> {
                             fontWeight: FontWeight.w500),
                         decoration: const InputDecoration(
                           border: InputBorder.none,
-                          contentPadding: EdgeInsetsDirectional.only(
-                              start: 8, top: 8, bottom: 8),
+                          contentPadding:
+                              EdgeInsets.symmetric(vertical: 8),
                           isDense: true,
                         ),
                       ),
                     ),
                   ),
-                  const _FieldDivider(),
+                  const FieldDivider(),
                   _EditFieldRow(
                     icon: Icons.alternate_email_rounded,
                     label: l10n.usernameLabel,
@@ -475,7 +465,7 @@ class _ProfileEditFormState extends ConsumerState<ProfileEditForm> {
                           fontWeight: FontWeight.w500),
                     ),
                   ),
-                  const _FieldDivider(),
+                  const FieldDivider(),
                   _EditFieldRow(
                     icon: Icons.notes_rounded,
                     label: l10n.bioLabel,
@@ -512,11 +502,11 @@ class _ProfileEditFormState extends ConsumerState<ProfileEditForm> {
                     ),
                   ),
                 ]),
-                _SectionLabel(
+                SectionLabel(
                   icon: Icons.public_rounded,
                   label: l10n.travelIdentitySection,
                 ),
-                _SectionCard(children: [
+                SectionCard(children: [
                   _CodeChipsRow(
                     icon: Icons.badge_outlined,
                     label: l10n.passportLabel,
@@ -549,7 +539,7 @@ class _ProfileEditFormState extends ConsumerState<ProfileEditForm> {
                       _passportCountriesChanged = true;
                     }),
                   ),
-                  const _FieldDivider(),
+                  const FieldDivider(),
                   _PickerRow(
                     icon: Icons.location_on_outlined,
                     label: l10n.livesInLabel,
@@ -570,7 +560,7 @@ class _ProfileEditFormState extends ConsumerState<ProfileEditForm> {
                       }
                     },
                   ),
-                  const _FieldDivider(),
+                  const FieldDivider(),
                   _CodeChipsRow(
                     icon: Icons.translate_outlined,
                     label: l10n.languagesLabel,
@@ -600,11 +590,11 @@ class _ProfileEditFormState extends ConsumerState<ProfileEditForm> {
                     }),
                   ),
                 ]),
-                _SectionLabel(
+                SectionLabel(
                   icon: Icons.lock_outline_rounded,
                   label: l10n.privacySection,
                 ),
-                _SectionCard(children: [
+                SectionCard(children: [
                   _ToggleRow(
                     icon: Icons.lock_rounded,
                     label: l10n.privateAccountLabel,
@@ -619,11 +609,11 @@ class _ProfileEditFormState extends ConsumerState<ProfileEditForm> {
                 // Only password accounts can change a password — Google-only
                 // accounts (has_password == false) have nothing to change.
                 if (user.hasPassword) ...[
-                  _SectionLabel(
+                  SectionLabel(
                     icon: Icons.lock_outline_rounded,
                     label: l10n.securitySection,
                   ),
-                  _SectionCard(children: [
+                  SectionCard(children: [
                     InkWell(
                       onTap: _saving
                           ? null
@@ -664,12 +654,12 @@ class _ProfileEditFormState extends ConsumerState<ProfileEditForm> {
                   ]),
                 ],
                 const SizedBox(height: 20),
-                _SectionLabel(
+                SectionLabel(
                   icon: Icons.warning_amber_rounded,
                   label: l10n.dangerZoneSection,
                   color: nt.danger,
                 ),
-                _SectionCard(children: [
+                SectionCard(children: [
                   InkWell(
                     onTap: _saving ? null : widget.onDeleteAccount,
                     borderRadius: BorderRadius.circular(18),
@@ -716,69 +706,8 @@ class _ProfileEditFormState extends ConsumerState<ProfileEditForm> {
   }
 }
 
-class _SectionLabel extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  // Nullable: theme lookups aren't const, so the default resolves in build.
-  final Color? color;
-  const _SectionLabel({required this.icon, required this.label, this.color});
 
-  @override
-  Widget build(BuildContext context) {
-    final color = this.color ?? context.nt.text2;
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(22, 14, 22, 8),
-      child: Row(
-        children: [
-          Icon(icon, size: 14, color: color),
-          const SizedBox(width: 6),
-          Text(
-            label.toUpperCase(),
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w700,
-              color: color,
-              letterSpacing: 0.6,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
 
-class _SectionCard extends StatelessWidget {
-  final List<Widget> children;
-  const _SectionCard({required this.children});
-
-  @override
-  Widget build(BuildContext context) {
-    final nt = context.nt;
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      decoration: BoxDecoration(
-        color: nt.surface,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: nt.border),
-      ),
-      child: Column(children: children),
-    );
-  }
-}
-
-class _FieldDivider extends StatelessWidget {
-  const _FieldDivider();
-
-  @override
-  Widget build(BuildContext context) {
-    final nt = context.nt;
-    return Container(
-      height: 1,
-      margin: const EdgeInsetsDirectional.only(start: 16),
-      color: nt.border,
-    );
-  }
-}
 
 class _EditFieldRow extends StatelessWidget {
   final IconData icon;

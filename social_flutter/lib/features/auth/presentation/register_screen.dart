@@ -172,7 +172,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     return null;
                   },
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 14),
 
                 // Date of birth
                 _FieldLabel(
@@ -185,7 +185,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   value: _dateOfBirth,
                   onChanged: (v) => setState(() => _dateOfBirth = v),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 14),
 
                 // Username
                 _FieldLabel(
@@ -222,7 +222,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     return null;
                   },
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 14),
 
                 // Email
                 _FieldLabel(
@@ -251,7 +251,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     return null;
                   },
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 14),
 
                 // Password
                 _FieldLabel(
@@ -296,7 +296,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     return null;
                   },
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 14),
 
                 // Confirm password
                 _FieldLabel(

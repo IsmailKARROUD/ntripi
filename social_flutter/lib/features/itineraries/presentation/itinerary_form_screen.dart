@@ -51,6 +51,7 @@ import 'package:social_flutter/features/itineraries/providers/itinerary_provider
 import 'package:social_flutter/features/profile/providers/profile_provider.dart';
 import 'package:social_flutter/core/utils/platform_utils.dart';
 import 'package:social_flutter/l10n/app_localizations.dart';
+import 'package:social_flutter/shared/widgets/editorial_widgets.dart';
 import 'package:social_flutter/shared/widgets/loaders.dart';
 import 'package:social_flutter/shared/widgets/offline_gate.dart';
 import 'package:social_flutter/shared/widgets/saving_overlay.dart';
@@ -567,37 +568,43 @@ class _ItineraryFormScreenState extends ConsumerState<ItineraryFormScreen> {
         saving: _saving,
         child: Scaffold(
       resizeToAvoidBottomInset: false,
-      backgroundColor: nt.sand,
-      appBar: AppBar(
-        backgroundColor: nt.sand,
-        title: Text(widget.mode == ItineraryFormMode.create
-            ? l10n.newItinerary
-            : l10n.editItinerary),
-        actions: [
-          if (_saving)
-            const Padding(
-              padding: EdgeInsets.all(16),
-              child: NTripiRingLoader(size: 20),
-            )
-          else
-            OfflineGate(
-              builder: (online) => TextButton(
-                onPressed: online ? _save : null,
-                child: Text(
-                  l10n.save,
-                  style: TextStyle(
-                    color: online ? nt.forest : nt.text3,
-                    fontWeight: FontWeight.w700,
-                    fontSize: 15,
-                  ),
-                ),
-              ),
-            ),
-        ],
-      ),
-      body: ConstrainedBox(
+      backgroundColor: nt.surface,
+      body: Center(
+        child: ConstrainedBox(
         constraints: BoxConstraints(
             maxWidth: isDesktopWeb() ? kDesktopMaxWidth : double.infinity),
+        child: Column(children: [
+        SafeArea(
+          bottom: false,
+          child: EditorialTopBar(
+            title: widget.mode == ItineraryFormMode.create
+                ? l10n.newItinerary
+                : l10n.editItinerary,
+            actions: [
+              if (_saving)
+                const Padding(
+                  padding: EdgeInsets.all(16),
+                  child: NTripiRingLoader(size: 20),
+                )
+              else
+                OfflineGate(
+                  builder: (online) => TextButton(
+                    onPressed: online ? _save : null,
+                    child: Text(
+                      l10n.save,
+                      style: TextStyle(
+                        color: online ? nt.forest : nt.text3,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 15,
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+        const EditorialDivider(),
+        Expanded(
         child: Form(
           key: _formKey,
           child: ListView(
@@ -606,7 +613,7 @@ class _ItineraryFormScreenState extends ConsumerState<ItineraryFormScreen> {
             children: [
               // ── Title  ───────────────────────────────────────────
               const SizedBox(height: 12),
-              _SectionCard(
+              SectionCard(
                 children: [
                   // Title field — opaque GestureDetector so taps on the label
                   // and empty space in the padded column also focus the input.
@@ -734,8 +741,8 @@ class _ItineraryFormScreenState extends ConsumerState<ItineraryFormScreen> {
                   ),
 
                 // ── Basics ──────────────────────────────────────────────────
-                _SectionLabel(text: l10n.formSectionBasics),
-                _SectionCard(
+                SectionLabel(label: l10n.formSectionBasics),
+                SectionCard(
                   children: [
                     _PickerRow(
                       icon: Icons.payments_rounded,
@@ -746,7 +753,7 @@ class _ItineraryFormScreenState extends ConsumerState<ItineraryFormScreen> {
                           : (_currency ?? 'EUR'),
                       onTap: _showCurrencyPicker,
                     ),
-                    const _FieldDivider(),
+                    const FieldDivider(),
                     _PickerRow(
                       icon: Icons.event_available_rounded,
                       label: l10n.formLabelBestTime,
@@ -761,7 +768,7 @@ class _ItineraryFormScreenState extends ConsumerState<ItineraryFormScreen> {
                     // is not part of editing its content (the PATCH 403s on the
                     // key alone); granting edit rights is not delegable.
                     if (isOwner) ...[
-                      const _FieldDivider(),
+                      const FieldDivider(),
                       _PickerRow(
                         icon: visIcon,
                         label: l10n.formLabelWhoCanSee,
@@ -773,7 +780,7 @@ class _ItineraryFormScreenState extends ConsumerState<ItineraryFormScreen> {
                       // that exists, and the server rejects an editor who cannot
                       // yet see it — both unanswerable during create.
                       if (widget.mode == ItineraryFormMode.edit) ...[
-                        const _FieldDivider(),
+                        const FieldDivider(),
                         _PickerRow(
                           icon: Icons.edit_note_rounded,
                           label: l10n.editorsTitle,
@@ -793,9 +800,9 @@ class _ItineraryFormScreenState extends ConsumerState<ItineraryFormScreen> {
               // out is giving up the pen. Last on the page on purpose: it should
               // cost a deliberate scroll, never a mis-tap near Save.
               if (widget.mode == ItineraryFormMode.edit) ...[
-                _SectionLabel(
-                    text: l10n.formSectionDangerZone, tone: nt.ratingRed),
-                _SectionCard(
+                SectionLabel(
+                    label: l10n.formSectionDangerZone, color: nt.ratingRed),
+                SectionCard(
                   children: [
                     OfflineGate(
                       builder: (online) => isOwner
@@ -825,6 +832,9 @@ class _ItineraryFormScreenState extends ConsumerState<ItineraryFormScreen> {
             ],
           ),
         ),
+        ),
+        ]),
+        ),
       ),
         ),
       ),
@@ -846,9 +856,9 @@ class _CannotEditNotice extends StatelessWidget {
     final nt = context.nt;
     final l10n = AppLocalizations.of(context)!;
     return Scaffold(
-      backgroundColor: nt.sand,
+      backgroundColor: nt.surface,
       appBar: AppBar(
-        backgroundColor: nt.sand,
+        backgroundColor: nt.surface,
         title: Text(l10n.editItinerary),
       ),
       body: Center(
@@ -874,63 +884,8 @@ class _CannotEditNotice extends StatelessWidget {
   }
 }
 
-class _SectionLabel extends StatelessWidget {
-  final String text;
-  // Nullable: theme lookups aren't const, so the default resolves in build.
-  final Color? tone;
 
-  const _SectionLabel({required this.text, this.tone});
 
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(22, 14, 22, 6),
-      child: Text(
-        text,
-        style: TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.w700,
-          color: tone,
-          letterSpacing: 0.6,
-        ),
-      ),
-    );
-  }
-}
-
-class _SectionCard extends StatelessWidget {
-  final List<Widget> children;
-  const _SectionCard({required this.children});
-
-  @override
-  Widget build(BuildContext context) {
-    final nt = context.nt;
-    return Container(
-      margin: const EdgeInsets.fromLTRB(16, 0, 16, 0),
-      decoration: BoxDecoration(
-        color: nt.surface,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: nt.border),
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: children,
-      ),
-    );
-  }
-}
-
-class _FieldDivider extends StatelessWidget {
-  const _FieldDivider();
-
-  @override
-  Widget build(BuildContext context) {
-    final nt = context.nt;
-    return Container(
-        height: 1, color: nt.border, margin: const EdgeInsetsDirectional.only(start: 16));
-  }
-}
 
 class _PickerRow extends StatelessWidget {
   final IconData icon;

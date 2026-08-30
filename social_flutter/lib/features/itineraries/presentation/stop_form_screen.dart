@@ -39,6 +39,7 @@ import 'package:social_flutter/core/ui/app_theme.dart';
 import 'package:social_flutter/core/ui/toggle_feedback.dart';
 import 'package:social_flutter/core/utils/platform_utils.dart';
 import 'package:social_flutter/l10n/app_localizations.dart';
+import 'package:social_flutter/shared/widgets/editorial_widgets.dart';
 import 'package:social_flutter/shared/widgets/device_location_dot.dart';
 import 'package:social_flutter/shared/widgets/field_help.dart';
 import 'package:social_flutter/shared/widgets/loaders.dart';
@@ -1190,11 +1191,19 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
       child: SavingOverlay(
         saving: _saving,
         child: Scaffold(
-          backgroundColor: nt.sand,
+          backgroundColor: nt.surface,
           resizeToAvoidBottomInset: false,
-          appBar: AppBar(
-            backgroundColor: nt.sand,
-            title: Text(appBarTitle),
+          body: Align(
+            alignment: Alignment.topCenter,
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                maxWidth: isDesktopWeb() ? kDesktopMaxWidth : double.infinity,
+              ),
+              child: Column(children: [
+          SafeArea(
+            bottom: false,
+            child: EditorialTopBar(
+            title: appBarTitle,
             actions: [
               if (readOnly && isOwner)
                 Padding(
@@ -1235,12 +1244,9 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                     ),
             ],
           ),
-          body: Align(
-            alignment: Alignment.topCenter,
-            child: ConstrainedBox(
-              constraints: BoxConstraints(
-                maxWidth: isDesktopWeb() ? kDesktopMaxWidth : double.infinity,
-              ),
+          ),
+          const EditorialDivider(),
+          Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.only(top: 8, bottom: 40),
                 child: Form(
@@ -1418,7 +1424,9 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                       ],
 
                       // ── Place name + address ───────────────────────────────
-                      _SFSectionCard(
+                      SectionCard(
+                          clipBehavior: Clip.antiAlias,
+                          crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           _SFBorderlessField(
                             label: l10n.placeNameLabel.toUpperCase(),
@@ -1451,7 +1459,7 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                           ),
                           // Address is a coordinate-stop field; hidden in link mode.
                           if (_locationMode == _LocationMode.coordinates) ...[
-                            const _SFDivider(),
+                            const FieldDivider(),
                             _SFBorderlessField(
                               label: l10n.addressLabel.toUpperCase(),
                               childBuilder:
@@ -1482,7 +1490,9 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
 
                       // ── Location: coordinates + map picker + preview ───────
                       const SizedBox(height: 8),
-                      _SFSectionCard(
+                      SectionCard(
+                          clipBehavior: Clip.antiAlias,
+                          crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           if (_locationMode == _LocationMode.coordinates)
                             IntrinsicHeight(
@@ -1599,7 +1609,7 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                             ),
                           if (!readOnly &&
                               _locationMode == _LocationMode.coordinates) ...[
-                            const _SFDivider(),
+                            const FieldDivider(),
                             _SFPickerRow(
                               icon: Icons.map_rounded,
                               label: l10n.locationLabel.toUpperCase(),
@@ -1857,10 +1867,10 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
 
                       if (!collapseOptional) ...[
                         // ── DETAILS ────────────────────────────────────────────
-                        _SFSectionLabel(
-                          text: l10n.detailsSection.toUpperCase(),
-                        ),
-                        _SFSectionCard(
+                        SectionLabel(label: l10n.detailsSection),
+                        SectionCard(
+                          clipBehavior: Clip.antiAlias,
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             // Place type
                             _SFPickerRow(
@@ -1870,7 +1880,7 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                               value: _placeType?.label(l10n) ?? '—',
                               onTap: readOnly ? null : _showPlaceTypePicker,
                             ),
-                            const _SFDivider(),
+                            const FieldDivider(),
                             // Duration
                             _SFPickerRow(
                               icon: Icons.schedule_rounded,
@@ -1878,7 +1888,7 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                               value: _durationLabel,
                               onTap: readOnly ? null : _showDurationPicker,
                             ),
-                            const _SFDivider(),
+                            const FieldDivider(),
                             // Free toggle
                             Padding(
                               padding: const EdgeInsets.fromLTRB(
@@ -1981,7 +1991,7 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                               ),
                             ),
                             if (!_isFree) ...[
-                              const _SFDivider(),
+                              const FieldDivider(),
                               _SFBorderlessField(
                                 label: l10n.costLabel.toUpperCase(),
                                 childBuilder:
@@ -2025,8 +2035,10 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                         ),
 
                         // ── NOTES ─────────────────────────────────────────────
-                        _SFSectionLabel(text: l10n.notesLabel.toUpperCase()),
-                        _SFSectionCard(
+                        SectionLabel(label: l10n.notesLabel),
+                        SectionCard(
+                          clipBehavior: Clip.antiAlias,
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Padding(
                               padding: const EdgeInsets.fromLTRB(
@@ -2148,6 +2160,8 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                   ),
                 ),
               ),
+              ),
+              ]),
             ),
           ),
         ),
@@ -2345,55 +2359,8 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
 
 // ─── Stop-form editorial helpers ─────────────────────────────────────────────
 
-class _SFSectionLabel extends StatelessWidget {
-  final String text;
-  const _SFSectionLabel({required this.text});
 
-  @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.fromLTRB(22, 14, 22, 6),
-    child: Text(
-      text,
-      style: TextStyle(
-        fontSize: 11,
-        fontWeight: FontWeight.w700,
-        color: context.nt.text2,
-        letterSpacing: 0.6,
-      ),
-    ),
-  );
-}
 
-class _SFSectionCard extends StatelessWidget {
-  final List<Widget> children;
-  const _SFSectionCard({required this.children});
-
-  @override
-  Widget build(BuildContext context) => Container(
-    margin: const EdgeInsets.fromLTRB(16, 0, 16, 0),
-    decoration: BoxDecoration(
-      color: context.nt.surface,
-      borderRadius: BorderRadius.circular(18),
-      border: Border.all(color: context.nt.border),
-    ),
-    clipBehavior: Clip.antiAlias,
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: children,
-    ),
-  );
-}
-
-class _SFDivider extends StatelessWidget {
-  const _SFDivider();
-
-  @override
-  Widget build(BuildContext context) => Container(
-    height: 1,
-    color: context.nt.border,
-    margin: const EdgeInsetsDirectional.only(start: 16),
-  );
-}
 
 class _SFBorderlessField extends StatefulWidget {
   final String label;

@@ -45,9 +45,9 @@ class RatingsHubScreen extends ConsumerWidget {
     final page = ratingsAsync.value;
 
     return Scaffold(
-      backgroundColor: nt.sand,
+      backgroundColor: nt.surface,
       resizeToAvoidBottomInset: false,
-      appBar: AppBar(backgroundColor: nt.sand, title: Text(AppLocalizations.of(context)!.ratingsTitle)),
+      appBar: AppBar(backgroundColor: nt.surface, title: Text(AppLocalizations.of(context)!.ratingsTitle)),
       body: Center(
         child: ConstrainedBox(
           constraints: BoxConstraints(

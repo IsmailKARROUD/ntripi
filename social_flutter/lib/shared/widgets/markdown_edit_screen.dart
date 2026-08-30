@@ -150,9 +150,9 @@ class _MarkdownEditScreenState extends State<MarkdownEditScreen> {
         saving: _saving,
         child: Scaffold(
         resizeToAvoidBottomInset: false,
-        backgroundColor: nt.sand,
+        backgroundColor: nt.surface,
         appBar: AppBar(
-          backgroundColor: nt.sand,
+          backgroundColor: nt.surface,
           // Hide the back arrow mid-save so the only way out is a finished save.
           automaticallyImplyLeading: !_saving,
           title: Text(widget.title),

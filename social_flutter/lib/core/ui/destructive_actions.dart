@@ -125,7 +125,6 @@ class _TypedConfirmDialogState extends State<_TypedConfirmDialog> {
             controller: _controller,
             autofocus: true,
             decoration: InputDecoration(
-              border: const OutlineInputBorder(),
               hintText: widget.hintText,
             ),
           ),

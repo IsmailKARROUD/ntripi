@@ -144,7 +144,6 @@ class _AppealSheetState extends ConsumerState<AppealSheet> {
           enabled: !_busy,
           decoration: InputDecoration(
             labelText: l10n.appealReasonLabel,
-            border: const OutlineInputBorder(),
             errorText: _error,
           ),
         ),
