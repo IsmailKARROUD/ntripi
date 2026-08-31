@@ -124,6 +124,7 @@ Key rules:
 - Manual `fromJson`/`toJson` — no build_runner/json_serializable
 - Three async states always: loading, error, data (and empty)
 - Never `ListView` inside `Column` — use `CustomScrollView` + Slivers
+- Grounds, chrome widgets and color tokens: **UX Conventions → Surfaces and Chrome**
 - Owner UI elements via explicit `currentUser?.id == itinerary.ownerId`
 - `ItineraryStaleException` thrown by repository on 412 — presentation catches and shows reload dialog
 - **Never touch `ref` in `State.dispose()`** — `ref` resolves through `BuildContext`, which is already deactivated by then, so `ref.read(...)` throws `StateError: Using "ref" when a widget is about to or has been unmounted is unsafe`. To call a notifier on the way out, hold it in a field: `NotifierType? _notifier;` assigned in `build` via `ref.watch(someProvider.notifier)` (watched, not read once in `initState` — an invalidation swaps the instance and `dispose` must reach the live one), then call `_notifier?.method()` in `dispose`. Safe only because the provider is not `autoDispose`, so the notifier's own `ref` outlives the screen; an `autoDispose` provider needs `ref.keepAlive()` or the work moved into the notifier's `ref.onDispose`. Live example: `notifications_screen.dart` flushing the deferred-delete queue.
@@ -177,6 +178,18 @@ Both require `If-Match` on mutations.
 ---
 
 ## UX Conventions
+
+### Surfaces and Chrome
+
+One ground, one card, one set of chrome widgets. `0d3b3d0` aligned the form screens; the sheet pass that followed collapsed the last split.
+
+- **Everything paints `nt.surface`** — full-screen routes, modal sheets, dialogs. `bottomSheetTheme.modalBackgroundColor` and `dialogTheme.backgroundColor` both say so, so a `showModalBottomSheet` / `AlertDialog` that passes no `backgroundColor` is already correct; passing one is what breaks the rule. There is no second ground: a sheet is meant to read like the route behind it, white card off a `nt.border` hairline, and in dark mode `nt.surface` is pure black so the hairline is the *only* edge a card gets.
+- **`nt.sand` is a warm accent fill, never a background** — `ConfirmDialog`'s cancel pill, avatar and cover placeholders, the `track_reorder_view` drag proxy, the bug-report backdrop. Its job is to make one element stand out *against* the surface; using it as a ground is what made sheets read as a different app.
+- **Chrome comes from `shared/widgets/editorial_widgets.dart`, never re-inlined**: `EditorialTopBar` (replaces `AppBar` — 17/w700/`-0.2`) · `EditorialDivider` · `SectionLabel` (uppercased internally; do not call `.toUpperCase()` at the call site) · `SectionCard` (`nt.surface`, radius 18, `nt.border`, margin h16) · `FieldDivider` (leading inset only, full-bleed trailing) · `EditorialRow` · `RefreshableCenter` · `AvatarInitials` · `OwnerAttributionRow`. Six private clones of the middle three had already drifted apart before they were extracted.
+- **A sheet leads with a title and uses the native handle** — `showDragHandle: true` (48 px tap target and a `Semantics` label a hand-rolled 36×4 box does not have), then a title at 18/w800/`nt.bark`/`-0.3` in `fromLTRB(22, 6, 22, 14)`. Section headers sit at inset 22, cards at 16 — two insets, not three.
+- **Geometry scale**: card radius 18 · card margin 16 · label inset 22 · input radius 14 · icon-pill radius 9. Sheet top radii are still inconsistent (20 / 24 / 28 / Material default) — normalising them belongs in `bottomSheetTheme.shape`, not per call.
+- **Colors come from `context.nt` only.** `app_theme.dart` is the single source of truth and there is not one `Color` literal outside it (`Colors.transparent` excepted) — keep it that way. `nt.danger` is the destructive color, not `nt.ratingRed` and not `colorScheme.error`; reach for `colorScheme` only for on-colors (`onPrimary`, `onError`) that have no `nt` token. Note `Theme.of(context).dividerColor` is **not** `nt.border` — the theme sets `dividerTheme.color` but never `dividerColor`, so that getter falls through to M3's `outlineVariant` grey.
+- **A sheet that fails must say so inline.** `ScaffoldMessenger` snackbars render behind the modal barrier and are never seen, so a sheet that stays open on failure carries its own `String? _error` row (`Icon(Icons.error_outline, 18, nt.danger)` + 13/`nt.danger`) above its actions.
 
 ### Destructive Actions
 - **Tier 1** — undo snackbar: `showUndoableActionSnackbar()`
@@ -754,6 +767,14 @@ because those write sibling tables, never itinerary content.
 - Do NOT bypass the storage abstraction
 - Do NOT skip EXIF stripping on uploaded images
 - Do NOT write inline `showDialog` for destructive actions
+- Do NOT pass a `backgroundColor` to a sheet or dialog — `bottomSheetTheme` and `dialogTheme` already say `nt.surface`, so the only thing an explicit one can do is break the rule
+- Do NOT use `nt.sand` as a ground — it is an accent fill that exists to stand out *against* the surface; a sand sheet is what made sheets read as a different app
+- Do NOT re-inline `SectionCard`, `SectionLabel`, `FieldDivider` or `EditorialTopBar` — six private clones had already drifted apart from each other before they were extracted
+- Do NOT call `.toUpperCase()` on a `SectionLabel` — it uppercases internally, and the call site's own padding will miss the 22 inset every other header uses
+- Do NOT hand-roll a sheet's drag handle — `showDragHandle: true` carries a 48 px tap target and a `Semantics` label that a 36×4 `Container` does not
+- Do NOT use `Theme.of(context).dividerColor` for a hairline — the theme sets `dividerTheme.color` but never `dividerColor`, so it falls through to M3's `outlineVariant` grey; use `nt.border`
+- Do NOT use `nt.ratingRed` or `colorScheme.error` for a destructive affordance — `nt.danger` is the token; `colorScheme` is only for on-colors that have none
+- Do NOT report a sheet's failure with a `ScaffoldMessenger` snackbar — it draws behind the modal barrier and is never seen; use an inline error row
 - Do NOT omit `ProxyHeadersMiddleware` when deploying behind Railway/Cloudflare — rate limiting will throttle all users from the same proxy IP without it
 - Do NOT remove `ALLOWED_HOSTS` or set it to `*` in production — always whitelist `ntripi.app,*.ntripi.app`
 - Do NOT set `SECRET_KEY` shorter than 32 characters — startup will refuse to start
