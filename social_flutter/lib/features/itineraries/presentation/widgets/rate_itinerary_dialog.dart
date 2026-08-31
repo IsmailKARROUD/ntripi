@@ -10,6 +10,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:social_flutter/core/api/api_client.dart';
+import 'package:social_flutter/core/services/haptics_service.dart';
 import 'package:social_flutter/core/ui/app_theme.dart';
 import 'package:social_flutter/core/ui/destructive_actions.dart';
 import 'package:social_flutter/features/itineraries/domain/my_rating.dart';
@@ -368,7 +369,7 @@ class _RateItinerarySheetState extends State<_RateItinerarySheet> {
 // Dimension row — icon + label on top, large stars + score below
 // ---------------------------------------------------------------------------
 
-class _RatingSliderRow extends StatelessWidget {
+class _RatingSliderRow extends ConsumerWidget {
   final IconData icon;
   final String label;
   final bool isRequired;
@@ -395,7 +396,7 @@ class _RatingSliderRow extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final nt = context.nt;
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
@@ -436,7 +437,22 @@ class _RatingSliderRow extends StatelessWidget {
                       : nt.border;
                 }
                 return GestureDetector(
-                  onTap: () => onChanged(value == star ? null : star),
+                  // Fired here, at the one tap site every row funnels through,
+                  // rather than from the six onChanged closures — a seventh
+                  // dimension row then inherits the cue instead of forgetting
+                  // it.
+                  //
+                  // Scaled by the glyph under the finger, not by the score that
+                  // results: re-tapping the current score clears it, and that
+                  // would otherwise be the one tap in the sheet answered by
+                  // nothing at all.
+                  onTap: () {
+                    ref.read(hapticsServiceProvider).fire(
+                          Haptic.rating,
+                          scale: star,
+                        );
+                    onChanged(value == star ? null : star);
+                  },
                   child: Padding(
                     padding: const EdgeInsetsDirectional.only(end: 4),
                     child: Icon(

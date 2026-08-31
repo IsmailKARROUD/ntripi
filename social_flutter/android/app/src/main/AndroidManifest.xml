@@ -2,6 +2,8 @@
     <!-- Device location: centers the stop-form preview map and the map picker. -->
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
+    <!-- Rating-glyph cue: a duration-controlled buzz, which HapticFeedback cannot express. -->
+    <uses-permission android:name="android.permission.VIBRATE"/>
     <application
         android:label="NTripi"
         android:name="${applicationName}"
