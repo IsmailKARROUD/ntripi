@@ -1134,8 +1134,8 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                                     ? () =>
                                         _editDescription(itinerary.description)
                                     : null,
-                                child: InertMarkdownBody(
-                                    data: itinerary.description!),
+                                child: _DescriptionRow(
+                                    description: itinerary.description!),
                               ),
                             ),
                           ),
@@ -1471,6 +1471,57 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+// ─── Description (read-only) ─────────────────────────────────────────────────
+// Card styled to match _RecommendedPeriodRow so the two blocks read as one
+// system; the owner sees _DescriptionEditRow instead.
+class _DescriptionRow extends StatelessWidget {
+  final String description;
+
+  const _DescriptionRow({required this.description});
+
+  @override
+  Widget build(BuildContext context) {
+    final nt = context.nt;
+    final l10n = AppLocalizations.of(context)!;
+
+    return Container(
+      padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+      decoration: BoxDecoration(
+        // bark (ink), not shadow — same reason as _RecommendedPeriodRow: a
+        // translucent fill must flip per theme or it vanishes on dark.
+        color: nt.bark.withValues(alpha: 0.03),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: nt.border),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.notes_rounded, size: 16, color: nt.forest),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  l10n.descriptionLabel,
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: nt.text2,
+                    letterSpacing: 0.4,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                InertMarkdownBody(data: description),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
