@@ -13,7 +13,6 @@
 //
 // isScrollControlled: true keeps the cost/notes fields above the keyboard.
 
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -21,6 +20,7 @@ import 'package:social_flutter/core/ui/app_theme.dart';
 import 'package:social_flutter/core/ui/destructive_actions.dart';
 import 'package:social_flutter/core/ui/toggle_feedback.dart';
 import 'package:social_flutter/features/itineraries/domain/transport_leg.dart';
+import 'package:social_flutter/shared/widgets/duration_picker_sheet.dart';
 import 'package:social_flutter/shared/widgets/editorial_widgets.dart';
 import 'package:social_flutter/l10n/app_localizations.dart';
 
@@ -161,112 +161,30 @@ class _LegFormDialogState extends ConsumerState<LegFormDialog> {
   }
 
   String get _durationLabel {
+    final l10n = AppLocalizations.of(context)!;
     final parts = <String>[
-      if (_durationDays > 0) '${_durationDays}d',
-      if (_durationHours > 0) '${_durationHours}h',
+      if (_durationDays > 0) '$_durationDays${l10n.daysLabel}',
+      if (_durationHours > 0) '$_durationHours${l10n.hoursLabel}',
       if (_durationMinutes > 0)
-        '${_durationMinutes.toString().padLeft(2, '0')}min',
+        '${_durationMinutes.toString().padLeft(2, '0')}${l10n.minutesLabel}',
     ];
-    return parts.isEmpty ? AppLocalizations.of(context)!.notSet : parts.join(' ');
+    return parts.isEmpty ? l10n.notSet : parts.join(' ');
   }
 
   Future<void> _showDurationPicker() async {
-    if (!mounted) return;
-    int tempDays = _durationDays;
-    int tempHours = _durationHours;
-    int tempMinutes = _durationMinutes;
-
-    final daysCtrl = FixedExtentScrollController(initialItem: tempDays);
-    final hoursCtrl = FixedExtentScrollController(initialItem: tempHours);
-    final minsCtrl = FixedExtentScrollController(initialItem: tempMinutes);
-
-    final l10n = AppLocalizations.of(context)!;
-
-    await showModalBottomSheet<void>(
+    final picked = await showDurationPickerSheet(
       context: context,
-      builder: (ctx) => SafeArea(
-        child: SizedBox(
-          height: 300,
-          child: Column(
-            children: [
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    TextButton(
-                      onPressed: () => Navigator.of(ctx).pop(),
-                      child: Text(l10n.cancel),
-                    ),
-                    Text(
-                      l10n.durationLabel,
-                      style: Theme.of(ctx).textTheme.titleSmall,
-                    ),
-                    TextButton(
-                      onPressed: () {
-                        setState(() {
-                          _durationDays = tempDays;
-                          _durationHours = tempHours;
-                          _durationMinutes = tempMinutes;
-                        });
-                        Navigator.of(ctx).pop();
-                      },
-                      child: Text(l10n.doneTooltip),
-                    ),
-                  ],
-                ),
-              ),
-              Expanded(
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: CupertinoPicker(
-                        scrollController: daysCtrl,
-                        itemExtent: 44,
-                        onSelectedItemChanged: (i) => tempDays = i,
-                        children: List.generate(
-                          366,
-                          (i) => Center(child: Text('$i ${AppLocalizations.of(context)!.daysLabel}')),
-                        ),
-                      ),
-                    ),
-                    Expanded(
-                      child: CupertinoPicker(
-                        scrollController: hoursCtrl,
-                        itemExtent: 44,
-                        onSelectedItemChanged: (i) => tempHours = i,
-                        children: List.generate(
-                          24,
-                          (i) => Center(child: Text('$i ${AppLocalizations.of(context)!.hoursLabel}')),
-                        ),
-                      ),
-                    ),
-                    Expanded(
-                      child: CupertinoPicker(
-                        scrollController: minsCtrl,
-                        itemExtent: 44,
-                        onSelectedItemChanged: (i) => tempMinutes = i,
-                        children: List.generate(
-                          60,
-                          (i) => Center(
-                            child: Text(
-                                '${i.toString().padLeft(2, '0')} min'),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
+      title: AppLocalizations.of(context)!.durationLabel,
+      days: _durationDays,
+      hours: _durationHours,
+      minutes: _durationMinutes,
     );
-
-    daysCtrl.dispose();
-    hoursCtrl.dispose();
-    minsCtrl.dispose();
+    if (picked == null || !mounted) return;
+    setState(() {
+      _durationDays = picked.days;
+      _durationHours = picked.hours;
+      _durationMinutes = picked.minutes;
+    });
   }
 
   void _submit() {
