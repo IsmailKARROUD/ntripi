@@ -23,13 +23,11 @@ Future<bool> showAppealSheet(
   required String targetId,
 }) async {
   final l10n = AppLocalizations.of(context)!;
-  final nt = context.nt;
 
   final submitted = await showModalBottomSheet<bool>(
     context: context,
     isScrollControlled: true,
     showDragHandle: true,
-    backgroundColor: nt.sand,
     builder: (sheetContext) => Padding(
       padding: EdgeInsets.only(
         left: 20,

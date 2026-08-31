@@ -9,6 +9,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 import 'package:markdown/markdown.dart' as md;
+import 'package:social_flutter/core/ui/app_theme.dart';
 import 'package:social_flutter/l10n/app_localizations.dart';
 import 'package:social_flutter/shared/widgets/field_help.dart';
 
@@ -41,7 +42,10 @@ class _MarkdownNotesEditorState extends State<MarkdownNotesEditor> {
       return _ReadOnlyNotes(text: widget.controller.text, label: widget.label);
     }
 
-    final borderColor = Theme.of(context).dividerColor;
+    // nt.border, not dividerColor: the theme never sets dividerColor, so that
+    // falls through to M3's outlineVariant — a grey against the green hairline
+    // every card and field around this one is drawn with.
+    final borderColor = context.nt.border;
     final labelStyle = Theme.of(context).textTheme.bodySmall?.copyWith(
           color: Theme.of(context).colorScheme.primary,
           fontWeight: FontWeight.w500,
@@ -52,7 +56,8 @@ class _MarkdownNotesEditorState extends State<MarkdownNotesEditor> {
     return Container(
       decoration: BoxDecoration(
         border: Border.all(color: borderColor),
-        borderRadius: BorderRadius.circular(4),
+        // 14 — the radius inputDecorationTheme gives every other field.
+        borderRadius: BorderRadius.circular(14),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,

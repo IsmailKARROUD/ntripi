@@ -68,7 +68,6 @@ class _SettingsSheet extends ConsumerWidget {
     showModalBottomSheet<void>(
       context: context,
       showDragHandle: true,
-      backgroundColor: nt.sand,
       builder:
           (ctx) => SafeArea(
             child: Padding(
@@ -198,7 +197,6 @@ class _SettingsSheet extends ConsumerWidget {
     showModalBottomSheet<void>(
       context: context,
       showDragHandle: true,
-      backgroundColor: nt.sand,
       builder:
           (ctx) => SafeArea(
             child: Padding(

@@ -59,12 +59,10 @@ class LegFormDialog extends ConsumerStatefulWidget {
     BuildContext context, {
     TransportLeg? existing,
   }) {
-    final nt = context.nt;
     return showModalBottomSheet<Map<String, dynamic>>(
       context: context,
       isScrollControlled: true,
       showDragHandle: true,
-      backgroundColor: nt.sand,
       builder: (_) => LegFormDialog(existing: existing),
     );
   }
@@ -218,7 +216,6 @@ class _LegFormDialogState extends ConsumerState<LegFormDialog> {
     final picked = await showModalBottomSheet<TransportMode>(
       context: context,
       showDragHandle: true,
-      backgroundColor: nt.sand,
       builder: (ctx) => SafeArea(
         child: Padding(
           padding: const EdgeInsets.only(bottom: 16),

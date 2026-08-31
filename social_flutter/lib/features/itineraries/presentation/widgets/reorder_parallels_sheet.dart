@@ -164,7 +164,7 @@ class _ReorderParallelsSheetState
         saving: _busy,
         loaderSize: 40,
         child: Container(
-        color: nt.sand,
+        color: nt.surface,
         child: SafeArea(
           child: Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),

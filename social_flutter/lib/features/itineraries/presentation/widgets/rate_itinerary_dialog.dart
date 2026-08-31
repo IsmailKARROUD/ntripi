@@ -10,12 +10,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:social_flutter/core/api/api_client.dart';
+import 'package:social_flutter/core/services/haptics_service.dart';
 import 'package:social_flutter/core/ui/app_theme.dart';
 import 'package:social_flutter/core/ui/destructive_actions.dart';
 import 'package:social_flutter/features/itineraries/domain/my_rating.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/markdown_notes_editor.dart';
 import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
 import 'package:social_flutter/l10n/app_localizations.dart';
+import 'package:social_flutter/shared/widgets/editorial_widgets.dart';
 import 'package:social_flutter/shared/widgets/moderation_hint.dart';
 import 'package:social_flutter/shared/widgets/loaders.dart';
 import 'package:social_flutter/shared/widgets/offline_gate.dart';
@@ -32,6 +34,7 @@ Future<void> showRateItineraryDialog(
     context: context,
     isScrollControlled: true,
     useSafeArea: true,
+    showDragHandle: true,
     // Cap at 70 % of screen height so it never takes over the screen.
     constraints: BoxConstraints(
       maxHeight: MediaQuery.of(context).size.height * 0.7,
@@ -74,6 +77,9 @@ class _RateItinerarySheetState extends State<_RateItinerarySheet> {
   final _noteController = TextEditingController();
 
   bool _saving = false;
+  // Shown inline rather than via a snackbar: the sheet stays open on failure, so
+  // a root-messenger snackbar renders behind the modal barrier and is never seen.
+  String? _error;
 
   @override
   void initState() {
@@ -102,7 +108,10 @@ class _RateItinerarySheetState extends State<_RateItinerarySheet> {
       confirmLabel: l10n.removeButton,
     );
     if (!confirmed || !mounted) return;
-    setState(() => _saving = true);
+    setState(() {
+      _saving = true;
+      _error = null;
+    });
     try {
       await widget.parentRef
           .read(myRatingProvider(widget.itineraryId).notifier)
@@ -110,16 +119,20 @@ class _RateItinerarySheetState extends State<_RateItinerarySheet> {
       if (mounted) Navigator.of(context).pop();
     } on Exception catch (e) {
       if (!mounted) return;
-      setState(() => _saving = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(extractErrorMessage(e, AppLocalizations.of(context)!))),
-      );
+      // Keep the sheet open with every score intact so the action retries.
+      setState(() {
+        _saving = false;
+        _error = extractErrorMessage(e, AppLocalizations.of(context)!);
+      });
     }
   }
 
   Future<void> _save() async {
     if (_overall == null) return;
-    setState(() => _saving = true);
+    setState(() {
+      _saving = true;
+      _error = null;
+    });
     try {
       final trimmedNote = _noteController.text.trim();
       await widget.parentRef
@@ -136,10 +149,11 @@ class _RateItinerarySheetState extends State<_RateItinerarySheet> {
       if (mounted) Navigator.of(context).pop();
     } on Exception catch (e) {
       if (!mounted) return;
-      setState(() => _saving = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(extractErrorMessage(e, AppLocalizations.of(context)!))),
-      );
+      // Keep the sheet open with every score intact so Save retries.
+      setState(() {
+        _saving = false;
+        _error = extractErrorMessage(e, AppLocalizations.of(context)!);
+      });
     }
   }
 
@@ -155,10 +169,7 @@ class _RateItinerarySheetState extends State<_RateItinerarySheet> {
       canPop: !_saving,
       child: SavingOverlay(
         saving: _saving,
-        tint: nt.surface,
         loaderSize: 40,
-        // Match the sheet shape — content starts at the very top of the sheet.
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
         child: SingleChildScrollView(
       padding: EdgeInsets.only(
         bottom: MediaQuery.of(context).viewInsets.bottom + 16,
@@ -167,22 +178,20 @@ class _RateItinerarySheetState extends State<_RateItinerarySheet> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Sheet drag handle
-          Center(
-            child: Container(
-              margin: const EdgeInsets.only(top: 10, bottom: 8),
-              width: 36,
-              height: 4,
-              decoration: BoxDecoration(
-                color: nt.text3.withValues(alpha: 0.5),
-                borderRadius: BorderRadius.circular(2),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(22, 6, 22, 4),
+            child: Text(
+              l10n.rateItineraryTitle,
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
+                color: nt.bark,
+                letterSpacing: -0.3,
               ),
             ),
           ),
-
-          // Hint text
           Padding(
-            padding: const EdgeInsets.fromLTRB(22, 4, 22, 12),
+            padding: const EdgeInsets.fromLTRB(22, 0, 22, 12),
             child: Text(
               l10n.rateOverallFirstHint,
               style: TextStyle(fontSize: 12, color: nt.text2),
@@ -190,58 +199,41 @@ class _RateItinerarySheetState extends State<_RateItinerarySheet> {
           ),
 
           // ── Overall rating (required) ────────────────────────────────────
-          Container(
-            margin: const EdgeInsets.fromLTRB(16, 0, 16, 0),
-            decoration: BoxDecoration(
-              color: nt.surface,
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: nt.border),
-            ),
+          SectionCard(
             clipBehavior: Clip.antiAlias,
-            child: _RatingSliderRow(
-              icon: Icons.star_rounded,
-              label: l10n.overallRatingLabel,
-              isRequired: true,
-              value: _overall,
-              onChanged: (v) => setState(() => _overall = v),
-            ),
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _RatingSliderRow(
+                icon: Icons.star_rounded,
+                label: l10n.overallRatingLabel,
+                isRequired: true,
+                value: _overall,
+                onChanged: (v) => setState(() => _overall = v),
+              ),
+            ],
           ),
 
           // ── Your review (optional) ────────────────────────────────────────
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 14, 16, 6),
-            child: Text(
-              l10n.yourImpressionLabel.toUpperCase(),
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w700,
-                color: nt.text2,
-                letterSpacing: 0.6,
-              ),
-            ),
-          ),
-          Container(
-            margin: const EdgeInsets.fromLTRB(16, 0, 16, 0),
-            decoration: BoxDecoration(
-              color: nt.surface,
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: nt.border),
-            ),
+          SectionLabel(label: l10n.yourImpressionLabel),
+          SectionCard(
             clipBehavior: Clip.antiAlias,
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
-              // Advisory only — the hint can never disable Submit.
-              child: ModerationHint(
-                controller: _noteController,
-                child: MarkdownNotesEditor(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
+                // Advisory only — the hint can never disable Submit.
+                child: ModerationHint(
                   controller: _noteController,
-                  readOnly: false,
-                  label: l10n.yourImpressionLabel,
-                  helpTitle: l10n.yourImpressionLabel,
-                  helpMessage: l10n.yourImpressionHelp,
+                  child: MarkdownNotesEditor(
+                    controller: _noteController,
+                    readOnly: false,
+                    label: l10n.yourImpressionLabel,
+                    helpTitle: l10n.yourImpressionLabel,
+                    helpMessage: l10n.yourImpressionHelp,
+                  ),
                 ),
               ),
-            ),
+            ],
           ),
 
           // ── Extra dimensions — revealed only after Overall is rated ──────
@@ -254,76 +246,77 @@ class _RateItinerarySheetState extends State<_RateItinerarySheet> {
                 : Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 14, 16, 6),
-                        child: Text(
-                          l10n.wantToShareMore.toUpperCase(),
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w700,
-                            color: nt.text2,
-                            letterSpacing: 0.6,
-                          ),
-                        ),
-                      ),
-                      Container(
-                        margin: const EdgeInsets.fromLTRB(16, 0, 16, 0),
-                        decoration: BoxDecoration(
-                          color: nt.surface,
-                          borderRadius: BorderRadius.circular(18),
-                          border: Border.all(color: nt.border),
-                        ),
+                      SectionLabel(label: l10n.wantToShareMore),
+                      SectionCard(
                         clipBehavior: Clip.antiAlias,
-                        child: Column(
-                          children: [
-                            _RatingSliderRow(
-                              icon: Icons.shield_outlined,
-                              label: l10n.safetyLabel,
-                              value: _safety,
-                              onChanged: (v) => setState(() => _safety = v),
-                            ),
-                            const Divider(height: 1, indent: 16, endIndent: 16),
-                            _RatingSliderRow(
-                              icon: Icons.emoji_emotions_outlined,
-                              label: l10n.experienceLabel,
-                              value: _experience,
-                              onChanged: (v) => setState(() => _experience = v),
-                            ),
-                            const Divider(height: 1, indent: 16, endIndent: 16),
-                            _RatingSliderRow(
-                              icon: Icons.accessible_outlined,
-                              label: l10n.accessibilityLabel,
-                              value: _accessibility,
-                              onChanged: (v) =>
-                                  setState(() => _accessibility = v),
-                            ),
-                            const Divider(height: 1, indent: 16, endIndent: 16),
-                            _RatingSliderRow(
-                              icon: Icons.family_restroom_outlined,
-                              label: l10n.familyFriendlyLabel,
-                              value: _familyFriendly,
-                              onChanged: (v) =>
-                                  setState(() => _familyFriendly = v),
-                            ),
-                            const Divider(height: 1, indent: 16, endIndent: 16),
-                            _RatingSliderRow(
-                              icon: Icons.groups_outlined,
-                              label: l10n.crowdednessLabel,
-                              // People glyphs (not stars); inverted so filled =
-                              // crowd present (red), empty = uncrowded (green).
-                              filledIcon: Icons.person,
-                              emptyIcon: Icons.person_outline,
-                              inverted: true,
-                              value: _crowdedness,
-                              onChanged: (v) =>
-                                  setState(() => _crowdedness = v),
-                            ),
-                          ],
-                        ),
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _RatingSliderRow(
+                            icon: Icons.shield_outlined,
+                            label: l10n.safetyLabel,
+                            value: _safety,
+                            onChanged: (v) => setState(() => _safety = v),
+                          ),
+                          const FieldDivider(),
+                          _RatingSliderRow(
+                            icon: Icons.emoji_emotions_outlined,
+                            label: l10n.experienceLabel,
+                            value: _experience,
+                            onChanged: (v) => setState(() => _experience = v),
+                          ),
+                          const FieldDivider(),
+                          _RatingSliderRow(
+                            icon: Icons.accessible_outlined,
+                            label: l10n.accessibilityLabel,
+                            value: _accessibility,
+                            onChanged: (v) =>
+                                setState(() => _accessibility = v),
+                          ),
+                          const FieldDivider(),
+                          _RatingSliderRow(
+                            icon: Icons.family_restroom_outlined,
+                            label: l10n.familyFriendlyLabel,
+                            value: _familyFriendly,
+                            onChanged: (v) =>
+                                setState(() => _familyFriendly = v),
+                          ),
+                          const FieldDivider(),
+                          _RatingSliderRow(
+                            icon: Icons.groups_outlined,
+                            label: l10n.crowdednessLabel,
+                            // People glyphs (not stars); inverted so filled =
+                            // crowd present (red), empty = uncrowded (green).
+                            filledIcon: Icons.person,
+                            emptyIcon: Icons.person_outline,
+                            inverted: true,
+                            value: _crowdedness,
+                            onChanged: (v) =>
+                                setState(() => _crowdedness = v),
+                          ),
+                        ],
                       ),
                     ],
                   ),
           ),
+
+          // ── Failure message ───────────────────────────────────────────────
+          if (_error != null)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(Icons.error_outline, size: 18, color: nt.danger),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      _error!,
+                      style: TextStyle(fontSize: 13, color: nt.danger),
+                    ),
+                  ),
+                ],
+              ),
+            ),
 
           const SizedBox(height: 20),
 
@@ -335,8 +328,7 @@ class _RateItinerarySheetState extends State<_RateItinerarySheet> {
                 if (widget.current != null) ...[
                   OfflineGate(
                     builder: (online) => IconButton(
-                      icon: Icon(Icons.delete_outline,
-                          color: Theme.of(context).colorScheme.error),
+                      icon: Icon(Icons.delete_outline, color: nt.danger),
                       tooltip: l10n.removeMyRatingTooltip,
                       onPressed: (_saving || !online) ? null : _deleteRating,
                     ),
@@ -377,7 +369,7 @@ class _RateItinerarySheetState extends State<_RateItinerarySheet> {
 // Dimension row — icon + label on top, large stars + score below
 // ---------------------------------------------------------------------------
 
-class _RatingSliderRow extends StatelessWidget {
+class _RatingSliderRow extends ConsumerWidget {
   final IconData icon;
   final String label;
   final bool isRequired;
@@ -404,7 +396,7 @@ class _RatingSliderRow extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final nt = context.nt;
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
@@ -445,7 +437,22 @@ class _RatingSliderRow extends StatelessWidget {
                       : nt.border;
                 }
                 return GestureDetector(
-                  onTap: () => onChanged(value == star ? null : star),
+                  // Fired here, at the one tap site every row funnels through,
+                  // rather than from the six onChanged closures — a seventh
+                  // dimension row then inherits the cue instead of forgetting
+                  // it.
+                  //
+                  // Scaled by the glyph under the finger, not by the score that
+                  // results: re-tapping the current score clears it, and that
+                  // would otherwise be the one tap in the sheet answered by
+                  // nothing at all.
+                  onTap: () {
+                    ref.read(hapticsServiceProvider).fire(
+                          Haptic.rating,
+                          scale: star,
+                        );
+                    onChanged(value == star ? null : star);
+                  },
                   child: Padding(
                     padding: const EdgeInsetsDirectional.only(end: 4),
                     child: Icon(

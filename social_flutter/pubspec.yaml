@@ -126,6 +126,14 @@ dependencies:
   firebase_core: ^4.13.0
   firebase_messaging: ^16.5.0
 
+  # The one cue in lib/core/services/haptics_service.dart that is specified as a
+  # duration (the 100 ms rating-glyph buzz). Flutter's own HapticFeedback still
+  # drives every other cue — it has no duration control at all, and stacking its
+  # fixed-length constants only approximates a buzz. Mobile only: the plugin
+  # declares no web implementation, so the service probes for the capability
+  # once and degrades to a HapticFeedback tap wherever the answer is no.
+  vibration: ^3.2.0
+
 
 dev_dependencies:
   flutter_test:
@@ -136,6 +144,11 @@ dev_dependencies:
   build_runner: ^2.4.9
   # Intercepts Dio HTTP calls in unit tests — no real network needed.
   http_mock_adapter: ^0.6.1
+  # Lets haptics_service_test swap VibrationPlatform.instance for a fake. The
+  # test host is neither Android nor iOS, so the real implementation answers
+  # hasVibrator() false without ever reaching a channel — mocking the channel
+  # could therefore only ever exercise the fallback tap, never the buzz.
+  vibration_platform_interface: ^0.1.2
 
 flutter:
   generate: true

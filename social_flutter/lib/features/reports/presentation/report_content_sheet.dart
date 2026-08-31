@@ -15,6 +15,7 @@ import 'package:social_flutter/core/ui/app_theme.dart';
 import 'package:social_flutter/features/reports/data/report_repository.dart';
 import 'package:social_flutter/features/reports/domain/report_target.dart';
 import 'package:social_flutter/l10n/app_localizations.dart';
+import 'package:social_flutter/shared/widgets/editorial_widgets.dart';
 import 'package:social_flutter/shared/widgets/loaders.dart';
 import 'package:social_flutter/shared/widgets/offline_gate.dart';
 import 'package:social_flutter/shared/widgets/saving_overlay.dart';
@@ -54,6 +55,7 @@ Future<void> showReportContentSheet(
     context: context,
     isScrollControlled: true,
     useSafeArea: true,
+    showDragHandle: true,
     constraints: BoxConstraints(
       maxHeight: MediaQuery.of(context).size.height * 0.7,
     ),
@@ -128,9 +130,7 @@ class _ReportContentSheetState extends State<_ReportContentSheet> {
       canPop: !_saving,
       child: SavingOverlay(
         saving: _saving,
-        tint: nt.surface,
         loaderSize: 40,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
         child: SingleChildScrollView(
           padding: EdgeInsets.only(
             bottom: MediaQuery.of(context).viewInsets.bottom + 16,
@@ -139,19 +139,6 @@ class _ReportContentSheetState extends State<_ReportContentSheet> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Sheet drag handle
-              Center(
-                child: Container(
-                  margin: const EdgeInsets.only(top: 10, bottom: 8),
-                  width: 36,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: nt.text3.withValues(alpha: 0.5),
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-              ),
-
               Padding(
                 padding: const EdgeInsets.fromLTRB(22, 6, 22, 14),
                 child: Text(
@@ -166,29 +153,21 @@ class _ReportContentSheetState extends State<_ReportContentSheet> {
               ),
 
               // ── Reason list (single choice) ──────────────────────────────
-              Container(
-                margin: const EdgeInsets.fromLTRB(16, 0, 16, 0),
-                decoration: BoxDecoration(
-                  color: nt.surface,
-                  borderRadius: BorderRadius.circular(18),
-                  border: Border.all(color: nt.border),
-                ),
+              SectionCard(
                 clipBehavior: Clip.antiAlias,
-                child: Column(
-                  children: [
-                    for (var i = 0; i < kReportReasons.length; i++) ...[
-                      if (i > 0)
-                        Divider(height: 1, indent: 16, endIndent: 16, color: nt.border),
-                      _ReasonRow(
-                        label: _reasonLabel(kReportReasons[i], l10n),
-                        selected: _reason == kReportReasons[i],
-                        onTap: _saving
-                            ? null
-                            : () => setState(() => _reason = kReportReasons[i]),
-                      ),
-                    ],
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  for (var i = 0; i < kReportReasons.length; i++) ...[
+                    if (i > 0) const FieldDivider(),
+                    _ReasonRow(
+                      label: _reasonLabel(kReportReasons[i], l10n),
+                      selected: _reason == kReportReasons[i],
+                      onTap: _saving
+                          ? null
+                          : () => setState(() => _reason = kReportReasons[i]),
+                    ),
                   ],
-                ),
+                ],
               ),
 
               // ── Notes (optional) ─────────────────────────────────────────

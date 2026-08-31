@@ -20,8 +20,9 @@ class SavingOverlay extends StatelessWidget {
   final bool saving;
   final Widget child;
 
-  /// Scrim color over the blur — pass `nt.surface` on plain-background
-  /// screens. Defaults to `nt.sand` (theme lookups aren't const).
+  /// Scrim color over the blur. Defaults to `nt.surface`, the ground every
+  /// route and sheet paints (theme lookups aren't const, so it resolves in
+  /// `build`); pass one only where the covered surface is something else.
   final Color? tint;
 
   /// 56 for full screens, 40 for bottom sheets.
@@ -48,7 +49,7 @@ class SavingOverlay extends StatelessWidget {
                 child: BackdropFilter(
                   filter: ImageFilter.blur(sigmaX: 6, sigmaY: 6),
                   child: Container(
-                    color: (tint ?? nt.sand).withValues(alpha: 0.35),
+                    color: (tint ?? nt.surface).withValues(alpha: 0.35),
                     alignment: Alignment.center,
                     child: NTripiRingLoader(size: loaderSize),
                   ),

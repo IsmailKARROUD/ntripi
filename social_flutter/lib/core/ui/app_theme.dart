@@ -88,9 +88,11 @@ class NtripiColors extends ThemeExtension<NtripiColors> {
   final Color canopy;  // mid green
   final Color mist;    // soft green tint (chips, icon pills)
   final Color amber;   // accent gold
-  final Color sand;    // warm elevated bg (sheets, section cards)
+  // Warm accent fill — cancel pills, avatar/cover placeholders, drag proxies.
+  // NOT a background: routes, sheets and dialogs all paint [surface].
+  final Color sand;
   final Color bark;    // primary text
-  final Color surface; // page/card background
+  final Color surface; // page/sheet/dialog/card background
   final Color border;
   final Color text2;   // secondary text
   final Color text3;   // tertiary text / hints
@@ -679,7 +681,9 @@ ThemeData _buildTheme(NtripiColors nt, ColorScheme scheme) {
 
     bottomSheetTheme: BottomSheetThemeData(
       backgroundColor: nt.surface,
-      modalBackgroundColor: nt.sand,
+      // Same ground as a route: a sheet's SectionCards read as cards off the
+      // nt.border hairline, exactly as they do on the form screens.
+      modalBackgroundColor: nt.surface,
       surfaceTintColor: Colors.transparent,
     ),
 
