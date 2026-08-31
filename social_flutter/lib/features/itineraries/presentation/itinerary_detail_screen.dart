@@ -106,6 +106,10 @@ class ItineraryDetailScreen extends ConsumerStatefulWidget {
 
 class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
   bool _editMode = false;
+  // The best-time PATCH is the one inline save on this screen with no editor of
+  // its own to spin in: the picker pops on Done and the write happens here, so
+  // without this the row just sits on the old value until the response lands.
+  bool _savingPeriod = false;
   // Active parallel-stop index per track (trackId → page index).
   final Map<String, int> _activeParallelByTrack = {};
   // GlobalKey per track widget so we can call Scrollable.ensureVisible after a
@@ -220,7 +224,13 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
     );
   }
 
+  // The PATCH below needs X-Edit-Lock and the picker never claims one itself,
+  // so the round trip has to happen before it opens — same rule as
+  // _openStopForm. Reached from the read-mode long-press without this, the save
+  // 428s after the user has already done the work.
   Future<void> _editRecommendedPeriod(RecommendedPeriod? current) async {
+    if (!_editMode) await _enterEditMode();
+    if (!mounted || !_editMode) return;
     final picked = await Navigator.push<RecommendedPeriod>(
       context,
       MaterialPageRoute(
@@ -228,9 +238,24 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
       ),
     );
     if (picked == null || !mounted) return;
-    await ref
-        .read(itineraryDetailProvider(widget.itineraryId).notifier)
-        .updateHeader(picked.toPayload());
+    setState(() => _savingPeriod = true);
+    try {
+      await ref
+          .read(itineraryDetailProvider(widget.itineraryId).notifier)
+          .updateHeader(picked.toPayload());
+    } on Exception catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+            content: Text(extractErrorMessage(
+                e as dynamic, AppLocalizations.of(context)!))),
+      );
+    } finally {
+      // finally, not the success path: every exit has to clear the spinner, and
+      // `on Exception` does not catch an Error — one of those would otherwise
+      // leave the row spinning at a value it is no longer saving.
+      if (mounted) setState(() => _savingPeriod = false);
+    }
   }
 
   // Opens the add-stop form — but claims the edit lock first, because the form
@@ -1064,6 +1089,7 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                               padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
                               child: _RecommendedPeriodEditRow(
                                 period: itinerary.recommendedPeriod,
+                                saving: _savingPeriod,
                                 onTap: () => _editRecommendedPeriod(
                                     itinerary.recommendedPeriod),
                               ),
@@ -2050,7 +2076,16 @@ class _RecommendedPeriodEditRow extends StatelessWidget {
   final RecommendedPeriod? period;
   final VoidCallback onTap;
 
-  const _RecommendedPeriodEditRow({required this.period, required this.onTap});
+  /// The PATCH behind [onTap] is still in flight. The row goes on showing the
+  /// value the server holds — the edit is not saved yet, and swapping early
+  /// would claim otherwise and then quietly swap back if the save failed.
+  final bool saving;
+
+  const _RecommendedPeriodEditRow({
+    required this.period,
+    required this.onTap,
+    this.saving = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -2069,7 +2104,9 @@ class _RecommendedPeriodEditRow extends StatelessWidget {
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: onTap,
+        // Refused mid-save: a second picker would open on the value being
+        // replaced, and its Done would race the PATCH already in flight.
+        onTap: saving ? null : onTap,
         borderRadius: BorderRadius.circular(4),
         child: Container(
           decoration: BoxDecoration(
@@ -2084,30 +2121,48 @@ class _RecommendedPeriodEditRow extends StatelessWidget {
                 children: [
                   Text(l10n.bestTimeToVisit, style: labelStyle),
                   const Spacer(),
-                  Icon(Icons.edit_outlined, size: 18, color: nt.forest),
+                  // Same 18px box as the pencil it stands in for, so the header
+                  // does not reflow for the length of the save.
+                  if (saving)
+                    const NTripiRingLoader(size: 18)
+                  else
+                    Icon(Icons.edit_outlined, size: 18, color: nt.forest),
                 ],
               ),
               const SizedBox(height: 6),
-              if (!hasAny)
-                Text(
-                  l10n.addBestTimeToVisit,
-                  style: TextStyle(color: Theme.of(context).hintColor),
-                )
-              else ...[
-                if (dates != null)
-                  Text(
-                    dates,
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: nt.bark,
-                    ),
-                  ),
-                if (weekdays != null)
-                  Text(weekdays, style: TextStyle(fontSize: 12.5, color: nt.text2)),
-                if (note != null && note.isNotEmpty)
-                  Text(note, style: TextStyle(fontSize: 12.5, color: nt.text2)),
-              ],
+              // Dimmed rather than blanked: the old value is still the true one
+              // until the PATCH answers, and an empty row would read as cleared.
+              AnimatedOpacity(
+                duration: const Duration(milliseconds: 150),
+                opacity: saving ? 0.4 : 1,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (!hasAny)
+                      Text(
+                        l10n.addBestTimeToVisit,
+                        style: TextStyle(color: Theme.of(context).hintColor),
+                      )
+                    else ...[
+                      if (dates != null)
+                        Text(
+                          dates,
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: nt.bark,
+                          ),
+                        ),
+                      if (weekdays != null)
+                        Text(weekdays,
+                            style: TextStyle(fontSize: 12.5, color: nt.text2)),
+                      if (note != null && note.isNotEmpty)
+                        Text(note,
+                            style: TextStyle(fontSize: 12.5, color: nt.text2)),
+                    ],
+                  ],
+                ),
+              ),
             ],
           ),
         ),

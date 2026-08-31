@@ -546,6 +546,15 @@ class _ItineraryFormScreenState extends ConsumerState<ItineraryFormScreen> {
       });
     }
     if (_blockedNonEditor) return const _CannotEditNotice();
+    // Until the detail arrives the form holds nothing but its defaults, so the
+    // best-time row would read "Not set" about a trip that has one. An
+    // AsyncError is not loading, so it still falls through to the old text
+    // rather than spinning forever; a background refresh keeps hasValue, so a
+    // populated row never flickers back.
+    final detail = widget.mode == ItineraryFormMode.edit
+        ? ref.watch(itineraryDetailProvider(widget.itineraryId!))
+        : null;
+    final periodLoading = detail != null && detail.isLoading && !detail.hasValue;
     final isOwner = _ownsItinerary(watch: true);
     final visLabel = _visibility.label(l10n);
     final visIcon = _visibilityIcon(_visibility);
@@ -760,6 +769,7 @@ class _ItineraryFormScreenState extends ConsumerState<ItineraryFormScreen> {
                       value: _recommendedPeriod
                               ?.shortLabel(l10n, l10n.localeName) ??
                           l10n.periodNotSet,
+                      loading: periodLoading,
                       onTap: _showRecommendedPeriodPicker,
                     ),
                     // Both owner-only, and the last two rows, so an editor's
@@ -894,12 +904,19 @@ class _PickerRow extends StatelessWidget {
   final Color? iconColor;
   final VoidCallback? onTap;
 
+  /// Shows a loader in the value slot and refuses the tap. The value slot is a
+  /// statement about what the server holds, so before that arrives a
+  /// placeholder is the only honest thing to put there — and a picker opened on
+  /// a null initial lets the user clear a value they were never shown.
+  final bool loading;
+
   const _PickerRow({
     required this.icon,
     required this.label,
     required this.value,
     this.iconColor,
     this.onTap,
+    this.loading = false,
   });
 
   @override
@@ -907,7 +924,7 @@ class _PickerRow extends StatelessWidget {
     final nt = context.nt;
     final tint = iconColor ?? nt.forest;
     return InkWell(
-      onTap: onTap,
+      onTap: loading ? null : onTap,
       child: Padding(
         padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
         child: Row(
@@ -937,18 +954,28 @@ class _PickerRow extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 2),
-                  Text(
-                    value,
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                      color: nt.bark,
+                  // 18px matches the ~19px line box of the value text it
+                  // stands in for, so the row does not jump on the swap.
+                  if (loading)
+                    const NTripiRingLoader(size: 18)
+                  else
+                    Text(
+                      value,
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        color: nt.bark,
+                      ),
                     ),
-                  ),
                 ],
               ),
             ),
-            Icon(Icons.chevron_right_rounded, size: 20, color: nt.text3),
+            Icon(
+              Icons.chevron_right_rounded,
+              size: 20,
+              // The row is not tappable while loading — the affordance says so.
+              color: loading ? nt.text3.withValues(alpha: 0.4) : nt.text3,
+            ),
           ],
         ),
       ),
