@@ -113,7 +113,7 @@ class _LanguagePickerSheetState extends State<_LanguagePickerSheet> {
       // paint their background and ink splash on the nearest Material ancestor
       // — a coloured box in between hides both (Flutter asserts on it).
       child: Material(
-        color: nt.sand,
+        color: nt.surface,
         clipBehavior: Clip.antiAlias,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
         // A fixed height, not a maximum: the sheet is bottom-anchored, so any

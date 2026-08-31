@@ -573,7 +573,6 @@ class _AddPersonDialogState extends ConsumerState<_AddPersonDialog> {
     // watch (not read) so open dialogs react to connectivity changes live
     final online = ref.watch(isOnlineProvider).value ?? true;
     return AlertDialog(
-      backgroundColor: nt.sand,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       title: Text(AppLocalizations.of(context)!.visibilityAddPerson,
           style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700)),

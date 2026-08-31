@@ -140,7 +140,7 @@ class _OpenInMapsSheetState extends ConsumerState<_OpenInMapsSheet> {
     final nt = context.nt;
     final l10n = AppLocalizations.of(context)!;
     return Container(
-      color: nt.sand,
+      color: nt.surface,
       child: SafeArea(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),

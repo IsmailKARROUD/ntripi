@@ -52,7 +52,6 @@ class _AnnotationFormDialogState extends State<AnnotationFormDialog> {
     final nt = context.nt;
     final l10n = AppLocalizations.of(context)!;
     return AlertDialog(
-      backgroundColor: nt.sand,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       title: Text(widget.title,
           style: TextStyle(
