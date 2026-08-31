@@ -2338,6 +2338,9 @@ class AppLocalizationsFr extends AppLocalizations {
       'Pincez pour zoomer · Faites glisser pour repositionner';
 
   @override
+  String get rotateImageTooltip => 'Pivoter de 90°';
+
+  @override
   String get addCoverImage => 'Ajouter une image de couverture';
 
   @override

@@ -811,6 +811,7 @@
   "imageTooLarge": "L'image est trop volumineuse (max 10 Mo).",
   "couldNotLoadImage": "Impossible de charger l'image. Veuillez en essayer une autre.",
   "pinchToZoomHint": "Pincez pour zoomer · Faites glisser pour repositionner",
+  "rotateImageTooltip": "Pivoter de 90°",
   "addCoverImage": "Ajouter une image de couverture",
   "coverOptionalMapFallback": "Optionnel — la carte sera utilisée sinon.",
   "noCoverImage": "Aucune image de couverture",

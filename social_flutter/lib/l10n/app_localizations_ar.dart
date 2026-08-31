@@ -2350,6 +2350,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get pinchToZoomHint => 'اقرص للتكبير · اسحب لتغيير الموضع';
 
   @override
+  String get rotateImageTooltip => 'تدوير 90°';
+
+  @override
   String get addCoverImage => 'أضف صورة غلاف';
 
   @override

@@ -2318,6 +2318,9 @@ class AppLocalizationsEs extends AppLocalizations {
       'Pellizca para ampliar · Arrastra para reposicionar';
 
   @override
+  String get rotateImageTooltip => 'Girar 90°';
+
+  @override
   String get addCoverImage => 'Añade una imagen de portada';
 
   @override

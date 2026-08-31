@@ -668,6 +668,7 @@
   "imageTooLarge": "La imagen es demasiado grande (máx. 10 MB).",
   "couldNotLoadImage": "No se pudo cargar la imagen. Prueba con otra.",
   "pinchToZoomHint": "Pellizca para ampliar · Arrastra para reposicionar",
+  "rotateImageTooltip": "Girar 90°",
   "addCoverImage": "Añade una imagen de portada",
   "coverOptionalMapFallback": "Opcional: de lo contrario, se usará el mapa.",
   "noCoverImage": "Sin imagen de portada",

@@ -668,6 +668,7 @@
   "imageTooLarge": "Das Bild ist zu groß (max. 10 MB).",
   "couldNotLoadImage": "Bild konnte nicht geladen werden. Bitte versuche ein anderes.",
   "pinchToZoomHint": "Zum Zoomen zusammenziehen · Zum Verschieben ziehen",
+  "rotateImageTooltip": "Um 90° drehen",
   "addCoverImage": "Füge ein Titelbild hinzu",
   "coverOptionalMapFallback": "Optional – andernfalls wird die Karte verwendet.",
   "noCoverImage": "Kein Titelbild",

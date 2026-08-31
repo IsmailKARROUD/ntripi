@@ -2296,6 +2296,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get pinchToZoomHint => 'Pinch to zoom · Drag to reposition';
 
   @override
+  String get rotateImageTooltip => 'Rotate 90°';
+
+  @override
   String get addCoverImage => 'Add a cover image';
 
   @override

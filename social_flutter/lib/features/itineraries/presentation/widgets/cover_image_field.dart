@@ -13,10 +13,15 @@
 // — see openImageCropOverlay.
 //
 // Crop math (_CropScreen._done):
-//   Transform: viewport_point = image_point * scale + offset
-//   Inverting:  image_point  = (viewport_point - offset) / scale
-//   We map viewport corners (0,0)→(vpW,vpH) to image space, clamp to image
+//   Transform: viewport_point = display_point * scale + offset
+//   Inverting:  display_point = (viewport_point - offset) / scale
+//   We map viewport corners (0,0)→(vpW,vpH) to display space, clamp to display
 //   bounds, then draw that rect onto a 1200×630 dart:ui canvas.
+//
+// "Display space" is the source image as the user currently sees it, after
+// _quarterTurns clockwise — odd turns swap its width and height. unrotateCrop
+// maps the resulting rect back to real source pixels, and _done rotates the
+// canvas by the same turns so the output matches the preview.
 
 import 'dart:async';
 import 'dart:math' as math;
@@ -24,7 +29,7 @@ import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show kIsWeb, visibleForTesting;
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:social_flutter/core/api/api_endpoints.dart';
@@ -300,8 +305,30 @@ class _CoverImageFieldState extends State<CoverImageField> {
 }
 
 // ---------------------------------------------------------------------------
-// _CropScreen — full-screen pan/zoom crop editor
+// _CropScreen — full-screen pan/zoom/rotate crop editor
 // ---------------------------------------------------------------------------
+
+/// Maps a crop rect expressed in rotated display space back into the source
+/// image's own pixel space. [quarterTurns] is clockwise.
+///
+/// The editor does its pan/zoom math on the image as the user sees it, but
+/// `drawImageRect` samples real source pixels — this is the bridge.
+@visibleForTesting
+Rect unrotateCrop(Rect crop, Size imageSize, int quarterTurns) {
+  final w = imageSize.width;
+  final h = imageSize.height;
+  switch (quarterTurns % 4) {
+    case 1:
+      return Rect.fromLTRB(crop.top, h - crop.right, crop.bottom, h - crop.left);
+    case 2:
+      return Rect.fromLTRB(
+          w - crop.right, h - crop.bottom, w - crop.left, h - crop.top);
+    case 3:
+      return Rect.fromLTRB(w - crop.bottom, crop.left, w - crop.top, crop.right);
+    default:
+      return crop;
+  }
+}
 
 class _CropScreen extends StatefulWidget {
   final Uint8List imageBytes;
@@ -332,6 +359,15 @@ class _CropScreenState extends State<_CropScreen> {
   bool _initialized = false;
   Size? _viewportSize;
 
+  // Quarter-turns clockwise the user has applied. The pan/zoom math below runs
+  // in this rotated "display space"; the source bytes are untouched until _done.
+  int _quarterTurns = 0;
+
+  // What the user sees: odd turns swap the source's width and height.
+  Size get _displaySize => _quarterTurns.isOdd
+      ? Size(_imageSize!.height, _imageSize!.width)
+      : _imageSize!;
+
   // Snapshot taken at the start of each gesture.
   double _gestureBaseScale = 1.0;
   Offset _gestureBaseOffset = Offset.zero;
@@ -357,13 +393,13 @@ class _CropScreenState extends State<_CropScreen> {
 
   // Minimum scale at which the image exactly cover-fills the viewport.
   double _minScale(Size vp) =>
-      math.max(vp.width / _imageSize!.width, vp.height / _imageSize!.height);
+      math.max(vp.width / _displaySize.width, vp.height / _displaySize.height);
 
   // Hard-clamp so the viewport is always fully covered:
   //   offset.dx ∈ [vpW − iW*s, 0],  offset.dy ∈ [vpH − iH*s, 0]
   Offset _clampOffset(Offset o, double s, Size vp) => Offset(
-        o.dx.clamp(vp.width - _imageSize!.width * s, 0.0),
-        o.dy.clamp(vp.height - _imageSize!.height * s, 0.0),
+        o.dx.clamp(vp.width - _displaySize.width * s, 0.0),
+        o.dy.clamp(vp.height - _displaySize.height * s, 0.0),
       );
 
   // Called synchronously from LayoutBuilder — no setState, just field writes.
@@ -375,8 +411,8 @@ class _CropScreenState extends State<_CropScreen> {
       final ms = _minScale(vp);
       _scale = ms;
       _offset = Offset(
-        (vp.width - _imageSize!.width * ms) / 2,
-        (vp.height - _imageSize!.height * ms) / 2,
+        (vp.width - _displaySize.width * ms) / 2,
+        (vp.height - _displaySize.height * ms) / 2,
       );
     } else if (_viewportSize != vp) {
       _viewportSize = vp;
@@ -409,6 +445,16 @@ class _CropScreenState extends State<_CropScreen> {
     });
   }
 
+  void _rotate() {
+    if (_imageSize == null) return;
+    setState(() {
+      _quarterTurns = (_quarterTurns + 1) % 4;
+      // The viewport's aspect is fixed while the source's just flipped, so the
+      // old scale/offset frame nothing meaningful — re-centre on next layout.
+      _initialized = false;
+    });
+  }
+
   Future<void> _done() async {
     if (_imageSize == null || _viewportSize == null) return;
     setState(() => _processing = true);
@@ -416,13 +462,21 @@ class _CropScreenState extends State<_CropScreen> {
       final vpW = _viewportSize!.width;
       final vpH = _viewportSize!.height;
 
-      // Invert: image_point = (viewport_point − offset) / scale
-      final srcLeft = (-_offset.dx / _scale).clamp(0.0, _imageSize!.width);
-      final srcTop = (-_offset.dy / _scale).clamp(0.0, _imageSize!.height);
+      // Invert: display_point = (viewport_point − offset) / scale
+      final srcLeft = (-_offset.dx / _scale).clamp(0.0, _displaySize.width);
+      final srcTop = (-_offset.dy / _scale).clamp(0.0, _displaySize.height);
       final srcRight =
-          ((vpW - _offset.dx) / _scale).clamp(0.0, _imageSize!.width);
+          ((vpW - _offset.dx) / _scale).clamp(0.0, _displaySize.width);
       final srcBottom =
-          ((vpH - _offset.dy) / _scale).clamp(0.0, _imageSize!.height);
+          ((vpH - _offset.dy) / _scale).clamp(0.0, _displaySize.height);
+
+      // drawImageRect samples real source pixels, so undo the rotation the
+      // viewport math was done in.
+      final srcRect = unrotateCrop(
+        Rect.fromLTRB(srcLeft, srcTop, srcRight, srcBottom),
+        _imageSize!,
+        _quarterTurns,
+      );
 
       final codec = await ui.instantiateImageCodec(widget.imageBytes);
       final frame = await codec.getNextFrame();
@@ -431,10 +485,19 @@ class _CropScreenState extends State<_CropScreen> {
       final tw = widget.targetWidth;
       final th = widget.targetHeight;
       final recorder = ui.PictureRecorder();
-      Canvas(recorder).drawImageRect(
+      final canvas = Canvas(recorder);
+      // Rotate about the destination centre so the turned result lands exactly
+      // on 0,0..tw,th; odd turns swap the destination's sides before the turn.
+      canvas.translate(tw / 2, th / 2);
+      canvas.rotate(_quarterTurns * math.pi / 2);
+      canvas.drawImageRect(
         srcImage,
-        Rect.fromLTRB(srcLeft, srcTop, srcRight, srcBottom),
-        Rect.fromLTWH(0, 0, tw.toDouble(), th.toDouble()),
+        srcRect,
+        Rect.fromCenter(
+          center: Offset.zero,
+          width: (_quarterTurns.isOdd ? th : tw).toDouble(),
+          height: (_quarterTurns.isOdd ? tw : th).toDouble(),
+        ),
         Paint()..filterQuality = FilterQuality.high,
       );
       final picture = recorder.endRecording();
@@ -496,58 +559,81 @@ class _CropScreenState extends State<_CropScreen> {
       body: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Container(
-            foregroundDecoration: BoxDecoration(
-              border: Border.all(
-                color: nt.sand,
-                width: 2,
+          // Flexible so a square target on a wide, short window (the 1:1 avatar
+          // crop on desktop web) shrinks the viewport instead of overflowing —
+          // AspectRatio honours a finite maxHeight once it is given one.
+          Flexible(
+            child: Container(
+              foregroundDecoration: BoxDecoration(
+                border: Border.all(
+                  color: nt.sand,
+                  width: 2,
+                ),
+                borderRadius: BorderRadius.circular(12),
               ),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: AspectRatio(
-              aspectRatio: widget.targetWidth / widget.targetHeight,
-              child: _imageSize == null
-                  ? const Center(child: NTripiRingLoader())
-                  : LayoutBuilder(
-                      builder: (context, constraints) {
-                        final vp = Size(
-                          constraints.maxWidth,
-                          constraints.maxHeight,
-                        );
-                        _maybeInit(vp);
+              child: AspectRatio(
+                aspectRatio: widget.targetWidth / widget.targetHeight,
+                child: _imageSize == null
+                    ? const Center(child: NTripiRingLoader())
+                    : LayoutBuilder(
+                        builder: (context, constraints) {
+                          final vp = Size(
+                            constraints.maxWidth,
+                            constraints.maxHeight,
+                          );
+                          _maybeInit(vp);
 
-                        return GestureDetector(
-                          onScaleStart: _onScaleStart,
-                          onScaleUpdate: _onScaleUpdate,
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(12),
-                            child: SizedBox.expand(
-                              child: _initialized
-                                  ? Stack(
-                                      clipBehavior: Clip.none,
-                                      children: [
-                                        Positioned(
-                                          left: _offset.dx,
-                                          top: _offset.dy,
-                                          width: _imageSize!.width * _scale,
-                                          height: _imageSize!.height * _scale,
-                                          child: Image.memory(
-                                            widget.imageBytes,
-                                            fit: BoxFit.fill,
-                                            gaplessPlayback: true,
+                          return GestureDetector(
+                            onScaleStart: _onScaleStart,
+                            onScaleUpdate: _onScaleUpdate,
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(12),
+                              child: SizedBox.expand(
+                                child: _initialized
+                                    ? Stack(
+                                        clipBehavior: Clip.none,
+                                        children: [
+                                          Positioned(
+                                            left: _offset.dx,
+                                            top: _offset.dy,
+                                            width: _displaySize.width * _scale,
+                                            height: _displaySize.height * _scale,
+                                            // RotatedBox, not Transform:
+                                            // it swaps the child's
+                                            // constraints at layout time, so
+                                            // the image still fills the
+                                            // already-swapped box.
+                                            child: RotatedBox(
+                                              quarterTurns: _quarterTurns,
+                                              child: Image.memory(
+                                                widget.imageBytes,
+                                                fit: BoxFit.fill,
+                                                gaplessPlayback: true,
+                                              ),
+                                            ),
                                           ),
-                                        ),
-                                      ],
-                                    )
-                                  : const SizedBox(),
+                                        ],
+                                      )
+                                    : const SizedBox(),
+                              ),
                             ),
-                          ),
-                        );
-                      },
-                    ),
+                          );
+                        },
+                      ),
+              ),
             ),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 16),
+          IconButton(
+            onPressed: (_imageSize == null || _processing) ? null : _rotate,
+            icon: const Icon(Icons.rotate_90_degrees_cw_outlined),
+            tooltip: AppLocalizations.of(context)!.rotateImageTooltip,
+            style: IconButton.styleFrom(
+              backgroundColor: nt.sand,
+              foregroundColor: nt.bark,
+            ),
+          ),
+          const SizedBox(height: 12),
           Text(
             AppLocalizations.of(context)!.pinchToZoomHint,
             style: TextStyle(color: nt.sand, fontSize: 13),

@@ -2332,6 +2332,9 @@ class AppLocalizationsDe extends AppLocalizations {
       'Zum Zoomen zusammenziehen · Zum Verschieben ziehen';
 
   @override
+  String get rotateImageTooltip => 'Um 90° drehen';
+
+  @override
   String get addCoverImage => 'Füge ein Titelbild hinzu';
 
   @override

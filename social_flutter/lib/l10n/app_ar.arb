@@ -1009,6 +1009,7 @@
   "imageTooLarge": "الصورة كبيرة جدًا (الحد الأقصى 10 ميغابايت).",
   "couldNotLoadImage": "تعذّر تحميل الصورة. يرجى تجربة أخرى.",
   "pinchToZoomHint": "اقرص للتكبير · اسحب لتغيير الموضع",
+  "rotateImageTooltip": "تدوير 90°",
   "addCoverImage": "أضف صورة غلاف",
   "coverOptionalMapFallback": "اختياري — ستُستخدم الخريطة بدلاً منها.",
   "noCoverImage": "لا توجد صورة غلاف",

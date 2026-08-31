@@ -1031,6 +1031,7 @@
   "imageTooLarge": "Image is too large (max 10 MB).",
   "couldNotLoadImage": "Could not load image. Please try another.",
   "pinchToZoomHint": "Pinch to zoom · Drag to reposition",
+  "rotateImageTooltip": "Rotate 90°",
   "addCoverImage": "Add a cover image",
   "coverOptionalMapFallback": "Optional — the map will be used otherwise.",
   "noCoverImage": "No cover image",

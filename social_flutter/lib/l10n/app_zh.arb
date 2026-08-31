@@ -668,6 +668,7 @@
   "imageTooLarge": "图片过大（最大 10 MB）。",
   "couldNotLoadImage": "无法加载图片。请尝试另一张。",
   "pinchToZoomHint": "双指缩放 · 拖动以重新定位",
+  "rotateImageTooltip": "旋转 90°",
   "addCoverImage": "添加封面图片",
   "coverOptionalMapFallback": "可选——否则将使用地图。",
   "noCoverImage": "无封面图片",

@@ -4072,6 +4072,12 @@ abstract class AppLocalizations {
   /// **'Pinch to zoom · Drag to reposition'**
   String get pinchToZoomHint;
 
+  /// No description provided for @rotateImageTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Rotate 90°'**
+  String get rotateImageTooltip;
+
   /// No description provided for @addCoverImage.
   ///
   /// In en, this message translates to:

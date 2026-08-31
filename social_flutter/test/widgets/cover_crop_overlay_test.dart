@@ -6,6 +6,9 @@
 // app) has maintainState:false, so an opaque entry above it unmounted the
 // entire app; "Done" then threw on a disposed route before it could remove the
 // overlay, leaving the crop screen stuck on screen.
+//
+// The second test guards the rotate control: the crop math runs in a rotated
+// "display space", so a bug there ships a cover framed on the wrong region.
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 
@@ -26,6 +29,50 @@ Future<Uint8List> _pngBytes(WidgetTester tester) async {
     bytes = data!.buffer.asUint8List();
   });
   return bytes;
+}
+
+/// 40x40, blue except a red top-left quadrant — an asymmetric marker so a
+/// rotation is visible in the output pixels.
+Future<Uint8List> _quadrantPngBytes(WidgetTester tester) async {
+  late Uint8List bytes;
+  await tester.runAsync(() async {
+    final recorder = ui.PictureRecorder();
+    final canvas = Canvas(recorder);
+    canvas.drawRect(
+        const Rect.fromLTWH(0, 0, 40, 40), Paint()..color = Colors.blue);
+    canvas.drawRect(
+        const Rect.fromLTWH(0, 0, 20, 20), Paint()..color = Colors.red);
+    final image = await recorder.endRecording().toImage(40, 40);
+    final data = await image.toByteData(format: ui.ImageByteFormat.png);
+    bytes = data!.buffer.asUint8List();
+  });
+  return bytes;
+}
+
+/// Decodes [png] and returns the RGBA pixel at (x, y).
+Future<Color> _pixelAt(WidgetTester tester, Uint8List png, int x, int y) async {
+  late Color color;
+  await tester.runAsync(() async {
+    final codec = await ui.instantiateImageCodec(png);
+    final image = (await codec.getNextFrame()).image;
+    final data = await image.toByteData(format: ui.ImageByteFormat.rawRgba);
+    final i = (y * image.width + x) * 4;
+    final b = data!.buffer.asUint8List();
+    color = Color.fromARGB(b[i + 3], b[i], b[i + 1], b[i + 2]);
+    image.dispose();
+  });
+  return color;
+}
+
+/// _done() awaits real async work (decode -> rasterise -> toByteData): each step
+/// only advances when the real event loop runs, and its continuation only lands
+/// when the fake-async zone is pumped. Alternate the two.
+Future<void> _settle(WidgetTester tester, bool Function() done) async {
+  for (var i = 0; i < 20 && !done(); i++) {
+    await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 20)));
+    await tester.pump();
+  }
 }
 
 void main() {
@@ -73,19 +120,68 @@ void main() {
     await tester.pump();
 
     await tester.tap(find.text('Done'));
-    // _done() awaits real async work (decode → rasterise → toByteData): each
-    // step only advances when the real event loop runs, and its continuation
-    // only lands when the fake-async zone is pumped. Alternate the two.
-    for (var i = 0; i < 20 && !settled; i++) {
-      await tester.runAsync(
-          () => Future<void>.delayed(const Duration(milliseconds: 20)));
-      await tester.pump();
-    }
+    await _settle(tester, () => settled);
 
     expect(tester.takeException(), isNull);
     expect(find.text('Adjust cover photo'), findsNothing,
         reason: 'Done must close the crop screen');
     expect(result, isNotNull, reason: 'Done must return the cropped bytes');
     expect(find.text('form'), findsOneWidget);
+  });
+
+  testWidgets('rotate turns the output pixels a quarter turn clockwise',
+      (tester) async {
+    final bytes = await _quadrantPngBytes(tester);
+
+    late BuildContext ctx;
+    await tester.pumpWidget(
+      BetterFeedback(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: Builder(builder: (c) {
+              ctx = c;
+              return const Text('form');
+            }),
+          ),
+        ),
+      ),
+    );
+
+    Uint8List? result;
+    var settled = false;
+    // A square target so the whole source stays framed: cover-fill of a square
+    // image in a square viewport is an exact fit, before and after the turn.
+    openImageCropOverlay(ctx,
+            sourceBytes: bytes, targetWidth: 40, targetHeight: 40)
+        .then((value) {
+      result = value;
+      settled = true;
+    });
+    await tester.pump();
+
+    // Let the source image decode so the controls enable.
+    await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 200)));
+    await tester.pump();
+
+    await tester.tap(find.byIcon(Icons.rotate_90_degrees_cw_outlined));
+    await tester.pump();
+
+    await tester.tap(find.text('Done'));
+    await _settle(tester, () => settled);
+
+    expect(tester.takeException(), isNull);
+    expect(result, isNotNull);
+
+    // Red started top-left; one turn clockwise puts it top-right.
+    expect(await _pixelAt(tester, result!, 30, 10), isSameColorAs(Colors.red),
+        reason: 'the marked quadrant must land top-right after one turn');
+    expect(await _pixelAt(tester, result!, 10, 10), isSameColorAs(Colors.blue),
+        reason: 'top-left must no longer hold the marker');
+    expect(await _pixelAt(tester, result!, 10, 30), isSameColorAs(Colors.blue));
+    expect(await _pixelAt(tester, result!, 30, 30), isSameColorAs(Colors.blue));
   });
 }

@@ -2183,6 +2183,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get pinchToZoomHint => '双指缩放 · 拖动以重新定位';
 
   @override
+  String get rotateImageTooltip => '旋转 90°';
+
+  @override
   String get addCoverImage => '添加封面图片';
 
   @override
