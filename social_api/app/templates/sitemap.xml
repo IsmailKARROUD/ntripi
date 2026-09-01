@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+{#- Every <url> carries the full alternate set, including a self-reference:
+    Google requires each language variant to list all of them, itself included,
+    or it treats the cluster as inconsistent and ignores the annotations. -#}
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:xhtml="http://www.w3.org/1999/xhtml">
+{%- for loc, changefreq, priority, alternates in pages %}
+  <url>
+    <loc>{{ loc }}</loc>
+    <changefreq>{{ changefreq }}</changefreq>
+    <priority>{{ priority }}</priority>
+{%- for code, href in alternates %}
+    <xhtml:link rel="alternate" hreflang="{{ code }}" href="{{ href }}"/>
+{%- endfor %}
+  </url>
+{%- endfor %}
+</urlset>

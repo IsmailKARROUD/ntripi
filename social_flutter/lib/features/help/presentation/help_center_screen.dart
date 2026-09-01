@@ -11,6 +11,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:social_flutter/core/api/api_endpoints.dart';
+import 'package:social_flutter/core/providers/locale_provider.dart';
 import 'package:social_flutter/core/ui/app_theme.dart';
 import 'package:social_flutter/core/utils/platform_utils.dart';
 import 'package:social_flutter/features/auth/presentation/widgets/legal_doc_sheet.dart';
@@ -62,8 +63,26 @@ class HelpCenterScreen extends ConsumerWidget {
                           FaqRow(
                             question: faqs[i].question,
                             answer: faqs[i].answer,
-                            isLast: i == faqs.length - 1,
                           ),
+                        // The eight questions above ship with the binary so they
+                        // can never describe a version the reader is not holding.
+                        // This row is the way out to the fuller, deploy-updated
+                        // set — same `?lang=` convention as legalDocUrl.
+                        EditorialRow(
+                          icon: Icons.open_in_new_rounded,
+                          iconBg: nt.mist,
+                          iconColor: nt.forest,
+                          label: l10n.helpCenterFullSite,
+                          subtitle: l10n.helpCenterFullSiteSubtitle,
+                          isLast: true,
+                          onTap: () => launchUrl(
+                            Uri.parse(
+                              '$kHelpCenterUrl?lang='
+                              '${ref.read(localeProvider).languageCode}',
+                            ),
+                            mode: LaunchMode.externalApplication,
+                          ),
+                        ),
                       ],
                     ),
                     SectionLabel(

@@ -2875,6 +2875,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get helpCenterGeneralEnquiriesSubtitle => '媒体、合作与商务事宜';
 
   @override
+  String get helpCenterFullSite => '完整帮助中心';
+
+  @override
+  String get helpCenterFullSiteSubtitle => '在 ntripi.app 上查看更多指南与解答';
+
+  @override
   String get helpCenterAccountStatusSubtitle => '查看审核决定并提出申诉';
 
   @override

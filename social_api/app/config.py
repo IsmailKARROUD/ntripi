@@ -189,6 +189,14 @@ class Settings(BaseSettings):
     # address, never a personal one.
     ABUSE_CONTACT_EMAIL: str = "abuse@ntripi.app"
 
+    # The other three published mailboxes, cited by the help centre and its
+    # ContactPage structured data. Defaults match the Flutter constants in
+    # lib/core/api/api_endpoints.dart — change both together or the app and the
+    # website publish different addresses.
+    SUPPORT_CONTACT_EMAIL: str = "support@ntripi.app"
+    PRIVACY_CONTACT_EMAIL: str = "privacy@ntripi.app"
+    GENERAL_CONTACT_EMAIL: str = "contact@ntripi.app"
+
     # ── In-app bug reports (shake to report) ────────────────────────────────
     # slowapi limit string for POST /bug-reports. Lower than the report limit:
     # each one carries a screenshot upload.

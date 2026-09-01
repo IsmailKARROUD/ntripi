@@ -1071,6 +1071,201 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "es": "Estas Normas de la comunidad se han traducido para tu comodidad. En caso de conflicto o discrepancia entre la versión traducida y la versión en inglés, prevalecerá la versión en inglés.",
         "zh": "本社区准则的翻译仅为方便阅读。若翻译版本与英文版本存在任何冲突或不一致，以英文版本为准。",
     },
+    # ── Help centre ───────────────────────────────────────────────────────
+    # Chrome only — nav labels, headings, the search box. Article bodies live in
+    # app/constants/help/<lang>.py. These carry all six languages even while the
+    # articles are English-only, so the hub, breadcrumbs and search box read
+    # natively from day one and only the prose falls back.
+    "nav_help": {
+        "en": "Help", "fr": "Aide", "ar": "مساعدة",
+        "de": "Hilfe", "es": "Ayuda", "zh": "帮助",
+    },
+    "footer_help": {
+        "en": "Help", "fr": "Aide", "ar": "مساعدة",
+        "de": "Hilfe", "es": "Ayuda", "zh": "帮助",
+    },
+    "help_title": {
+        "en": "Help Centre", "fr": "Centre d'aide", "ar": "مركز المساعدة",
+        "de": "Hilfebereich", "es": "Centro de ayuda", "zh": "帮助中心",
+    },
+    "help_description": {
+        "en": "How to use Ntripi: plan a trip itinerary, add stops and transport, share it with the people you choose, and fix common problems.",
+        "fr": "Comment utiliser Ntripi : planifier un itinéraire, ajouter des étapes et des trajets, le partager avec qui vous voulez et résoudre les problèmes courants.",
+        "ar": "كيفية استخدام Ntripi: تخطيط مسار رحلة، وإضافة المحطات ووسائل التنقّل، ومشاركته مع من تختار، وحلّ المشكلات الشائعة.",
+        "de": "So nutzen Sie Ntripi: eine Reiseroute planen, Stopps und Verbindungen hinzufügen, sie gezielt teilen und häufige Probleme lösen.",
+        "es": "Cómo usar Ntripi: planificar un itinerario, añadir paradas y transporte, compartirlo con quien quieras y resolver problemas frecuentes.",
+        "zh": "如何使用 Ntripi：规划行程、添加站点与交通、按你的选择分享，以及解决常见问题。",
+    },
+    "help_tagline": {
+        "en": "How to plan, share and troubleshoot a trip in Ntripi.",
+        "fr": "Planifier, partager et dépanner un voyage dans Ntripi.",
+        "ar": "كيف تخطّط لرحلة وتشاركها وتحلّ مشكلاتها في Ntripi.",
+        "de": "Eine Reise in Ntripi planen, teilen und Probleme beheben.",
+        "es": "Cómo planificar, compartir y solucionar problemas de un viaje en Ntripi.",
+        "zh": "在 Ntripi 中规划、分享和排查行程问题。",
+    },
+    "help_search_placeholder": {
+        "en": "Search help — try “share privately”",
+        "fr": "Rechercher — essayez « partager en privé »",
+        "ar": "ابحث في المساعدة — جرّب «مشاركة خاصة»",
+        "de": "Hilfe durchsuchen — z. B. „privat teilen“",
+        "es": "Buscar ayuda — prueba «compartir en privado»",
+        "zh": "搜索帮助 — 试试“私密分享”",
+    },
+    "help_search_label": {
+        "en": "Search the help centre", "fr": "Rechercher dans le centre d'aide",
+        "ar": "ابحث في مركز المساعدة", "de": "Hilfebereich durchsuchen",
+        "es": "Buscar en el centro de ayuda", "zh": "搜索帮助中心",
+    },
+    "help_search_button": {
+        "en": "Search", "fr": "Rechercher", "ar": "بحث",
+        "de": "Suchen", "es": "Buscar", "zh": "搜索",
+    },
+    "help_search_results": {
+        "en": "Results for “{q}”", "fr": "Résultats pour « {q} »",
+        "ar": "نتائج البحث عن «{q}»", "de": "Ergebnisse für „{q}“",
+        "es": "Resultados de «{q}»", "zh": "“{q}”的搜索结果",
+    },
+    "help_search_none": {
+        "en": "Nothing matched “{q}”.", "fr": "Aucun résultat pour « {q} ».",
+        "ar": "لا توجد نتائج مطابقة لـ «{q}».", "de": "Keine Treffer für „{q}“.",
+        "es": "No hay resultados para «{q}».", "zh": "没有匹配“{q}”的结果。",
+    },
+    "help_search_none_hint": {
+        "en": "Try fewer words, or browse the topics below.",
+        "fr": "Essayez moins de mots, ou parcourez les sujets ci-dessous.",
+        "ar": "جرّب كلمات أقل، أو تصفّح المواضيع أدناه.",
+        "de": "Versuchen Sie es mit weniger Wörtern oder stöbern Sie unten.",
+        "es": "Prueba con menos palabras o explora los temas de abajo.",
+        "zh": "试试更少的关键词，或浏览下面的主题。",
+    },
+    "help_search_empty": {
+        "en": "Type a few words to search the help centre.",
+        "fr": "Saisissez quelques mots pour rechercher dans le centre d'aide.",
+        "ar": "اكتب بضع كلمات للبحث في مركز المساعدة.",
+        "de": "Geben Sie ein paar Wörter ein, um den Hilfebereich zu durchsuchen.",
+        "es": "Escribe unas palabras para buscar en el centro de ayuda.",
+        "zh": "输入几个关键词来搜索帮助中心。",
+    },
+    "help_on_this_page": {
+        "en": "On this page", "fr": "Sur cette page", "ar": "في هذه الصفحة",
+        "de": "Auf dieser Seite", "es": "En esta página", "zh": "本页内容",
+    },
+    "help_related": {
+        "en": "Related", "fr": "À lire aussi", "ar": "ذات صلة",
+        "de": "Auch interessant", "es": "Relacionado", "zh": "相关内容",
+    },
+    "help_updated": {
+        "en": "Updated", "fr": "Mis à jour le", "ar": "آخر تحديث",
+        "de": "Aktualisiert am", "es": "Actualizado el", "zh": "更新于",
+    },
+    "help_read_markdown": {
+        "en": "Read this page as Markdown", "fr": "Lire cette page en Markdown",
+        "ar": "اقرأ هذه الصفحة بصيغة Markdown", "de": "Diese Seite als Markdown lesen",
+        "es": "Leer esta página en Markdown", "zh": "以 Markdown 格式阅读本页",
+    },
+    "help_all_topics": {
+        "en": "All topics", "fr": "Tous les sujets", "ar": "كل المواضيع",
+        "de": "Alle Themen", "es": "Todos los temas", "zh": "全部主题",
+    },
+    "help_popular": {
+        "en": "Popular questions", "fr": "Questions fréquentes",
+        "ar": "الأسئلة الشائعة", "de": "Häufige Fragen",
+        "es": "Preguntas frecuentes", "zh": "常见问题",
+    },
+    "help_not_found_title": {
+        "en": "We couldn’t find that page",
+        "fr": "Page introuvable",
+        "ar": "تعذّر العثور على هذه الصفحة",
+        "de": "Diese Seite wurde nicht gefunden",
+        "es": "No hemos encontrado esa página",
+        "zh": "找不到该页面",
+    },
+    "help_not_found_body": {
+        "en": "The address may be out of date. Search for what you need, or start from the topics below.",
+        "fr": "L’adresse est peut-être obsolète. Recherchez ce dont vous avez besoin, ou partez des sujets ci-dessous.",
+        "ar": "قد يكون العنوان قديمًا. ابحث عمّا تحتاجه، أو ابدأ من المواضيع أدناه.",
+        "de": "Die Adresse ist womöglich veraltet. Suchen Sie nach dem, was Sie brauchen, oder beginnen Sie unten.",
+        "es": "Puede que la dirección esté desactualizada. Busca lo que necesitas o empieza por los temas de abajo.",
+        "zh": "该地址可能已失效。搜索你需要的内容，或从下面的主题开始。",
+    },
+    "help_contact_title": {
+        "en": "Still stuck?", "fr": "Toujours bloqué ?", "ar": "ما زالت المشكلة قائمة؟",
+        "de": "Kommen Sie nicht weiter?", "es": "¿Sigues atascado?", "zh": "仍未解决？",
+    },
+    "help_contact_body": {
+        "en": "Write to us and we will take a look.",
+        "fr": "Écrivez-nous et nous regarderons cela.",
+        "ar": "راسِلنا وسننظر في الأمر.",
+        "de": "Schreiben Sie uns, wir sehen uns das an.",
+        "es": "Escríbenos y lo revisamos.",
+        "zh": "给我们写信，我们会来看看。",
+    },
+    "help_contact_support": {
+        "en": "Something is broken", "fr": "Quelque chose ne marche pas",
+        "ar": "هناك خلل ما", "de": "Etwas funktioniert nicht",
+        "es": "Algo no funciona", "zh": "有功能出错",
+    },
+    "help_contact_abuse": {
+        "en": "Report abuse or a safety concern",
+        "fr": "Signaler un abus ou un problème de sécurité",
+        "ar": "الإبلاغ عن إساءة أو مخاوف تتعلّق بالسلامة",
+        "de": "Missbrauch oder ein Sicherheitsproblem melden",
+        "es": "Denunciar abuso o un problema de seguridad",
+        "zh": "举报滥用或安全问题",
+    },
+    "help_contact_privacy": {
+        "en": "Data protection request", "fr": "Demande relative aux données",
+        "ar": "طلب متعلّق بحماية البيانات", "de": "Datenschutzanfrage",
+        "es": "Solicitud de protección de datos", "zh": "数据保护请求",
+    },
+    "help_contact_general": {
+        "en": "Anything else", "fr": "Autre demande", "ar": "أي شيء آخر",
+        "de": "Alles Weitere", "es": "Cualquier otra cosa", "zh": "其他事项",
+    },
+    "help_cta_default": {
+        "en": "Plan your next trip with Ntripi.",
+        "fr": "Planifiez votre prochain voyage avec Ntripi.",
+        "ar": "خطّط لرحلتك القادمة مع Ntripi.",
+        "de": "Planen Sie Ihre nächste Reise mit Ntripi.",
+        "es": "Planifica tu próximo viaje con Ntripi.",
+        "zh": "用 Ntripi 规划你的下一次旅行。",
+    },
+    "help_cta_button": {
+        "en": "Open Ntripi", "fr": "Ouvrir Ntripi", "ar": "افتح Ntripi",
+        "de": "Ntripi öffnen", "es": "Abrir Ntripi", "zh": "打开 Ntripi",
+    },
+    "help_quickstart_title": {
+        "en": "New here?", "fr": "Vous débutez ?", "ar": "جديد هنا؟",
+        "de": "Neu hier?", "es": "¿Es tu primera vez?", "zh": "第一次使用？",
+    },
+    # Meta descriptions. One key per document rather than one with a {document}
+    # placeholder, for the same reason legal_notice_* is split: Arabic and
+    # Chinese put the noun where an interpolation cannot reach it.
+    "legal_desc_terms": {
+        "en": "The agreement between you and Ntripi: what the service does, what you may publish, and the rules that apply to your account.",
+        "fr": "L’accord entre vous et Ntripi : ce que fait le service, ce que vous pouvez publier et les règles qui s’appliquent à votre compte.",
+        "ar": "الاتفاقية بينك وبين Ntripi: ما الذي تقدّمه الخدمة، وما الذي يمكنك نشره، والقواعد التي تسري على حسابك.",
+        "de": "Die Vereinbarung zwischen Ihnen und Ntripi: was der Dienst leistet, was Sie veröffentlichen dürfen und welche Regeln für Ihr Konto gelten.",
+        "es": "El acuerdo entre tú y Ntripi: qué hace el servicio, qué puedes publicar y las normas que se aplican a tu cuenta.",
+        "zh": "你与 Ntripi 之间的协议：本服务提供什么、你可以发布什么，以及适用于你账户的规则。",
+    },
+    "legal_desc_privacy": {
+        "en": "What data Ntripi collects, why it is stored, who it is shared with, how long it is kept, and how to have it deleted.",
+        "fr": "Quelles données Ntripi collecte, pourquoi elles sont conservées, avec qui elles sont partagées, combien de temps et comment les faire supprimer.",
+        "ar": "ما البيانات التي يجمعها Ntripi، ولماذا تُخزَّن، ومع من تُشارَك، وكم تُحفَظ، وكيف يمكنك طلب حذفها.",
+        "de": "Welche Daten Ntripi erhebt, warum sie gespeichert werden, mit wem sie geteilt werden, wie lange sie bleiben und wie Sie sie löschen lassen.",
+        "es": "Qué datos recopila Ntripi, por qué se almacenan, con quién se comparten, cuánto tiempo se conservan y cómo eliminarlos.",
+        "zh": "Ntripi 收集哪些数据、为何存储、与谁共享、保留多久，以及如何要求删除。",
+    },
+    "legal_desc_guidelines": {
+        "en": "What may and may not be published on Ntripi, how content is moderated, and how to appeal a decision.",
+        "fr": "Ce qui peut ou non être publié sur Ntripi, comment les contenus sont modérés et comment contester une décision.",
+        "ar": "ما الذي يجوز نشره على Ntripi وما لا يجوز، وكيف يُراجَع المحتوى، وكيف تعترض على قرار.",
+        "de": "Was auf Ntripi veröffentlicht werden darf und was nicht, wie Inhalte moderiert werden und wie Sie Einspruch erheben.",
+        "es": "Qué se puede y qué no se puede publicar en Ntripi, cómo se modera el contenido y cómo recurrir una decisión.",
+        "zh": "在 Ntripi 上可以和不可以发布什么、内容如何审核，以及如何申诉。",
+    },
 }
 
 

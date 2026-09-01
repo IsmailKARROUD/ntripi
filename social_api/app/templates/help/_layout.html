@@ -1,0 +1,183 @@
+{# The shared shell for every help page.
+
+   Extends the public _base.html rather than standing alone: the site already
+   carries four divergent copies of the design tokens (home.html, legal's base,
+   share_public.html, admin) and a fifth would be one more place for the green
+   to drift. Everything here is layout on top of those tokens. #}
+{% extends "_base.html" %}
+
+{% block head %}
+{% include "help/_seo.html" %}
+<style>
+  /* A documentation column, not a login form. */
+  main { --main-max: 860px; }
+
+  .hc-crumbs {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 6px;
+    font-size: 13px; color: var(--text2); margin-bottom: 18px;
+  }
+  .hc-crumbs a { color: var(--text2); }
+  .hc-crumbs a:hover { color: var(--forest); text-decoration: none; }
+  .hc-crumbs .sep { opacity: .45; }
+  .hc-crumbs .here { color: var(--text); font-weight: 600; }
+
+  .hc-hero { margin-bottom: 28px; }
+  .hc-hero h1 {
+    font-size: clamp(28px, 5vw, 40px); font-weight: 800;
+    letter-spacing: -1px; line-height: 1.15; margin-bottom: 10px;
+  }
+  .hc-hero .lede { font-size: 17px; color: var(--text2); max-width: 62ch; }
+
+  /* ── Search ── */
+  .hc-search { position: relative; margin: 22px 0 8px; }
+  .hc-search form { display: flex; gap: 8px; }
+  .hc-search .field { position: relative; flex: 1; }
+  .hc-search .field .ic {
+    position: absolute; inset-inline-start: 14px; top: 50%;
+    transform: translateY(-50%); color: var(--text2); pointer-events: none;
+  }
+  .hc-search input {
+    width: 100%; padding: 14px 16px; padding-inline-start: 42px;
+    border-radius: var(--radius); border: 1.5px solid var(--border);
+    background: var(--surface); color: var(--text);
+    font-size: 15px; font-family: inherit; outline: none;
+    transition: border-color .15s;
+  }
+  .hc-search input:focus { border-color: var(--forest); }
+
+  /* The instant dropdown. Hidden until the script has something to show, so it
+     never appears for a visitor with JavaScript off — they get the server page. */
+  .hc-suggest {
+    position: absolute; inset-inline: 0; top: calc(100% + 6px); z-index: 20;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); overflow: hidden;
+    box-shadow: 0 4px 20px rgba(0,40,20,.10);
+  }
+  .hc-suggest a {
+    display: block; padding: 11px 16px; border-bottom: 1px solid var(--border);
+    color: var(--text); font-size: 14px;
+  }
+  .hc-suggest a:last-child { border-bottom: 0; }
+  .hc-suggest a:hover, .hc-suggest a.on { background: var(--mist); text-decoration: none; }
+  .hc-suggest .s-sub { display: block; font-size: 12px; color: var(--text2); margin-top: 2px; }
+
+  /* ── Cards ── */
+  .hc-grid {
+    display: grid; gap: 14px; margin: 28px 0;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  }
+  .hc-card {
+    display: block; background: var(--surface); border: 1px solid var(--border);
+    border-radius: 18px; padding: 20px; color: var(--text);
+    transition: border-color .15s, transform .1s;
+  }
+  .hc-card:hover { border-color: var(--canopy); text-decoration: none; transform: translateY(-1px); }
+  .hc-card .hd { display: flex; align-items: center; gap: 9px; margin-bottom: 6px; }
+  .hc-card .hd .ic { color: var(--forest); flex: none; }
+  .hc-card h2, .hc-card h3 { font-size: 16px; font-weight: 700; letter-spacing: -.2px; }
+  .hc-card p { font-size: 14px; color: var(--text2); }
+  .hc-card ul { list-style: none; margin-top: 12px; }
+  .hc-card ul li { margin-top: 6px; }
+  .hc-card ul a { font-size: 14px; }
+
+  .hc-section-title {
+    font-size: 12px; font-weight: 700; letter-spacing: .08em;
+    text-transform: uppercase; color: var(--text2); margin: 34px 0 12px;
+  }
+
+  /* ── Article prose ── */
+  .hc-meta { font-size: 13px; color: var(--text2); margin-bottom: 22px; }
+  .hc-lede {
+    font-size: 18px; line-height: 1.65; color: var(--text);
+    border-inline-start: 3px solid var(--mist);
+    padding-inline-start: 16px; margin-bottom: 30px;
+  }
+  .hc-toc {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 14px; padding: 16px 20px; margin-bottom: 32px;
+  }
+  .hc-toc p {
+    font-size: 11px; font-weight: 700; letter-spacing: .08em;
+    text-transform: uppercase; color: var(--text2); margin-bottom: 8px;
+  }
+  .hc-toc ol { list-style: none; counter-reset: toc; }
+  .hc-toc li { counter-increment: toc; margin: 5px 0; font-size: 14px; }
+  .hc-toc li::before {
+    content: counter(toc) "."; color: var(--text2);
+    margin-inline-end: 8px; font-variant-numeric: tabular-nums;
+  }
+
+  .hc-block { margin-bottom: 34px; scroll-margin-top: 76px; }
+  .hc-block > h2 {
+    font-size: 21px; font-weight: 700; letter-spacing: -.3px; margin-bottom: 10px;
+  }
+  /* The anchor link is invisible until the heading is hovered or it takes
+     keyboard focus — discoverable without decorating every heading. */
+  .hc-anchor { color: var(--border); margin-inline-start: 8px; font-weight: 400; }
+  .hc-block > h2:hover .hc-anchor, .hc-anchor:focus { color: var(--canopy); text-decoration: none; }
+
+  .hc-figure {
+    background: var(--sand); border: 1px solid var(--border);
+    border-radius: 14px; padding: 18px; margin-bottom: 16px; overflow-x: auto;
+  }
+  .hc-figure svg { display: block; margin: 0 auto; }
+
+  .hc-prose { font-size: 15.5px; line-height: 1.75; color: var(--text); }
+  .hc-prose p { margin-bottom: 14px; }
+  .hc-prose ul, .hc-prose ol { margin: 0 0 14px 0; padding-inline-start: 22px; }
+  .hc-prose li { margin-bottom: 7px; }
+  .hc-prose strong { font-weight: 700; }
+  .hc-prose a { color: var(--forest); text-decoration: underline; text-underline-offset: 2px; }
+  .hc-prose code {
+    background: var(--mist); border-radius: 5px; padding: 1px 5px;
+    font-size: .9em; font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  .hc-prose table { width: 100%; border-collapse: collapse; margin-bottom: 14px; font-size: 14px; }
+  .hc-prose th, .hc-prose td {
+    text-align: start; padding: 8px 10px; border-bottom: 1px solid var(--border);
+  }
+
+  /* ── Footers ── */
+  .hc-cta {
+    background: var(--bark); color: #fff; border-radius: 18px;
+    padding: 26px 24px; margin: 40px 0 28px;
+    display: flex; flex-wrap: wrap; gap: 16px;
+    align-items: center; justify-content: space-between;
+  }
+  .hc-cta p { font-size: 17px; font-weight: 600; max-width: 46ch; }
+
+  .hc-contact {
+    border-top: 1px solid var(--border); padding-top: 22px; margin-top: 34px;
+  }
+  .hc-contact h2 { font-size: 17px; font-weight: 700; margin-bottom: 4px; }
+  .hc-contact > p { font-size: 14px; color: var(--text2); margin-bottom: 14px; }
+  .hc-contact ul { list-style: none; display: grid; gap: 8px;
+                   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+  .hc-contact li a { display: flex; align-items: center; gap: 8px; font-size: 14px; }
+  .hc-contact li a .ic { color: var(--text2); flex: none; }
+
+  .hc-source {
+    margin-top: 26px; font-size: 13px; color: var(--text2);
+    display: flex; align-items: center; gap: 7px;
+  }
+  .hc-source a { color: var(--text2); }
+
+  .hc-results { list-style: none; }
+  .hc-results li { padding: 16px 0; border-bottom: 1px solid var(--border); }
+  .hc-results h2 { font-size: 17px; font-weight: 700; margin-bottom: 3px; }
+  .hc-results p { font-size: 14px; color: var(--text2); }
+  .hc-empty { font-size: 15px; color: var(--text2); margin: 8px 0 26px; }
+</style>
+{% endblock %}
+
+{% block content %}
+{% if crumbs %}
+<nav class="hc-crumbs" aria-label="Breadcrumb">
+  {% for label, href in crumbs %}
+    {% if href %}<a href="{{ href }}">{{ label }}</a><span class="sep" aria-hidden="true">›</span>
+    {% else %}<span class="here" aria-current="page">{{ label }}</span>{% endif %}
+  {% endfor %}
+</nav>
+{% endif %}
+{% block help_content %}{% endblock %}
+{% endblock %}

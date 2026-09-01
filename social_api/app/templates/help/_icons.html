@@ -1,0 +1,25 @@
+{# One inline-SVG sprite for the whole help section.
+
+   Inline rather than files under /static: an <img src="…svg"> is opaque to a
+   screen reader and to the AI crawlers this section exists to serve, and it
+   cannot inherit currentColor. These are 24x24 stroke paths so a single `size`
+   argument scales them cleanly. #}
+{% macro icon(name, size=20) %}
+{%- set paths = {
+  'rocket':  'M12 2 19 21 12 17 5 21Z',
+  'article': 'M6 2h9l5 5v15H6zM15 2v5h5M9 12h6M9 16h4',
+  'lock':    'M5 10h14v11H5zM9 10V7a3 3 0 0 1 6 0v3',
+  'group':   'M9 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM3 20a6 6 0 0 1 12 0M16.5 5.3a3 3 0 0 1 0 5.4M16.5 14.2A6 6 0 0 1 21 20',
+  'person':  'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21a8 8 0 0 1 16 0',
+  'flag':    'M5 21V4h12l-2 4 2 4H5',
+  'warning': 'M12 3 21 19H3zM12 9v4M12 16.2v.3',
+  'info':    'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM12 11v5M12 7.8v.3',
+  'search':  'M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14zM20 20l-4.2-4.2',
+  'chevron': 'M9 6l6 6-6 6',
+  'code':    'M9 7l-5 5 5 5M15 7l5 5-5 5',
+  'mail':    'M3 6h18v12H3zM3 6l9 7 9-7',
+} -%}
+<svg class="ic" width="{{ size }}" height="{{ size }}" viewBox="0 0 24 24" fill="none"
+     stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"
+     aria-hidden="true" focusable="false"><path d="{{ paths.get(name, paths['info']) }}"/></svg>
+{%- endmacro %}

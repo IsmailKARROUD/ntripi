@@ -1,0 +1,66 @@
+{# Annotated screen diagrams for /help/app-map.
+
+   Inline SVG rather than files under /static: every label below is a real text
+   node, so it translates through _() like any other string, lands in the
+   accessibility tree, and is extractable by the AI crawlers this whole section
+   exists to serve. An <img src="…svg"> gives all three of them nothing.
+
+   Colours are the exact Flutter light-theme values, the same technique
+   home.html already uses for its phone mockup. #}
+
+{% macro diagram(name) %}
+{%- if name == "bottom-nav" %}
+<figure class="hc-figure">
+  <svg viewBox="0 0 520 110" role="img" width="100%" style="max-width:520px"
+       aria-label="The five tabs of Ntripi's bottom bar, numbered left to right">
+    <rect x="1" y="26" width="518" height="62" rx="14" fill="#FFFFFF" stroke="#E4EDE6"/>
+    {%- for i, label in [(1,'Search'),(2,'Profile'),(3,'Itineraries'),(4,'Saved'),(5,'Feed')] %}
+    {%- set cx = 52 + (i - 1) * 104 %}
+    <circle cx="{{ cx }}" cy="16" r="11" fill="#1F6E3A"/>
+    <text x="{{ cx }}" y="20" text-anchor="middle" font-size="12" font-weight="700" fill="#fff">{{ i }}</text>
+    <circle cx="{{ cx }}" cy="52" r="13" fill="{{ '#D0EBDA' if i == 3 else '#F5F2EC' }}"/>
+    <text x="{{ cx }}" y="78" text-anchor="middle" font-size="11" fill="#1A2A1E">{{ label }}</text>
+    {%- endfor %}
+  </svg>
+</figure>
+{%- elif name == "itinerary-screen" %}
+<figure class="hc-figure">
+  <svg viewBox="0 0 340 250" role="img" width="100%" style="max-width:340px"
+       aria-label="An itinerary screen: two tracks side by side with a transport row between them">
+    <rect x="1" y="1" width="338" height="248" rx="16" fill="#FFFFFF" stroke="#E4EDE6"/>
+    <text x="16" y="26" font-size="13" font-weight="800" fill="#1A2A1E">Four days in Marrakech</text>
+    <rect x="16" y="34" width="52" height="16" rx="8" fill="#D0EBDA"/>
+    <text x="42" y="46" text-anchor="middle" font-size="9" fill="#1F6E3A">Public</text>
+
+    <circle cx="26" cy="72" r="9" fill="#1F6E3A"/>
+    <text x="26" y="76" text-anchor="middle" font-size="10" font-weight="700" fill="#fff">1</text>
+    <rect x="44" y="60" width="128" height="42" rx="10" fill="#F5F2EC" stroke="#E4EDE6"/>
+    <text x="56" y="78" font-size="10" fill="#1A2A1E">Jardin Majorelle</text>
+    <text x="56" y="92" font-size="9" fill="#5A6B5E">2 h · 70 MAD</text>
+
+    <rect x="184" y="60" width="128" height="42" rx="10" fill="#F5F2EC" stroke="#E4EDE6"/>
+    <text x="196" y="78" font-size="10" fill="#1A2A1E">Bahia Palace</text>
+    <text x="196" y="92" font-size="9" fill="#5A6B5E">1 h 30 · 70 MAD</text>
+    <circle cx="302" cy="52" r="9" fill="#C89030"/>
+    <text x="302" y="56" text-anchor="middle" font-size="10" font-weight="700" fill="#fff">2</text>
+
+    <circle cx="26" cy="130" r="9" fill="#1F6E3A"/>
+    <text x="26" y="134" text-anchor="middle" font-size="10" font-weight="700" fill="#fff">3</text>
+    <rect x="44" y="120" width="90" height="20" rx="10" fill="#D0EBDA"/>
+    <text x="56" y="134" font-size="9" fill="#1F6E3A">Taxi · 15 min</text>
+
+    <circle cx="26" cy="176" r="9" fill="#1F6E3A"/>
+    <text x="26" y="180" text-anchor="middle" font-size="10" font-weight="700" fill="#fff">4</text>
+    <rect x="44" y="158" width="268" height="38" rx="10" fill="#F5F2EC" stroke="#E4EDE6"/>
+    <text x="56" y="174" font-size="10" fill="#1A2A1E">Jemaa el-Fnaa</text>
+    <rect x="56" y="180" width="86" height="13" rx="6" fill="#FDF0D5"/>
+    <text x="62" y="190" font-size="8" fill="#8A6A20">Caution · pickpockets</text>
+
+    <circle cx="26" cy="222" r="9" fill="#1F6E3A"/>
+    <text x="26" y="226" text-anchor="middle" font-size="10" font-weight="700" fill="#fff">5</text>
+    <rect x="44" y="210" width="268" height="26" rx="10" fill="#FFFFFF" stroke="#E4EDE6"/>
+    <text x="56" y="227" font-size="10" fill="#5A6B5E">★ 4.8 · 26 ratings</text>
+  </svg>
+</figure>
+{%- endif %}
+{% endmacro %}

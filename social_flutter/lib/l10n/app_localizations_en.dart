@@ -3033,6 +3033,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'Press, partnerships and business';
 
   @override
+  String get helpCenterFullSite => 'Full help centre';
+
+  @override
+  String get helpCenterFullSiteSubtitle =>
+      'More guides and answers on ntripi.app';
+
+  @override
   String get helpCenterAccountStatusSubtitle =>
       'See moderation decisions and appeal';
 

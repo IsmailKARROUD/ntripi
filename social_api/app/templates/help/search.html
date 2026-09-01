@@ -1,0 +1,35 @@
+{% extends "help/_layout.html" %}
+
+{# A results page is not a document worth indexing, and it would burn crawl
+   budget one query at a time. `follow` still lets the crawler walk into the
+   articles it lists. #}
+{% block head %}{{ super() }}<meta name="robots" content="noindex,follow">{% endblock %}
+
+{% block help_content %}
+<div class="hc-hero">
+  <h1>{% if q %}{{ _('help_search_results', q=q) }}{% else %}{{ _('help_search_button') }}{% endif %}</h1>
+</div>
+
+{% include "help/_search_form.html" %}
+
+{% if not q %}
+  <p class="hc-empty">{{ _('help_search_empty') }}</p>
+{% elif results %}
+  <ul class="hc-results">
+    {% for a in results %}
+    <li><h2><a href="/help/{{ a.slug }}">{{ a.title }}</a></h2><p>{{ a.summary }}</p></li>
+    {% endfor %}
+  </ul>
+{% else %}
+  <p class="hc-empty">{{ _('help_search_none', q=q) }} {{ _('help_search_none_hint') }}</p>
+  <div class="hc-grid">
+    {% for category, members in grouped %}
+    <section class="hc-card"><h2>{{ category.title }}</h2><ul>
+      {% for a in members %}<li><a href="/help/{{ a.slug }}">{{ a.title }}</a></li>{% endfor %}
+    </ul></section>
+    {% endfor %}
+  </div>
+{% endif %}
+{% endblock %}
+
+{% block body_end %}{% include "help/_search_js.html" %}{% endblock %}

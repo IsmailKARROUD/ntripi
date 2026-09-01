@@ -74,8 +74,22 @@ class TestWebI18n:
 
     def test_switcher_lists_other_languages(self, client: TestClient):
         # Current language absent from the switcher, every other one linked.
+        #
+        # Scoped to <nav> rather than the whole document: the page now also
+        # carries a canonical link and an hreflang set, and both legitimately
+        # name the language currently being served.
         resp = client.get("/reset-password?lang=ar")
-        assert '?lang=ar' not in resp.text
+        nav = resp.text.split("<nav>")[1].split("</nav>")[0]
+        assert "?lang=ar" not in nav
         for code in ("en", "fr", "de", "es", "zh"):
-            assert f'?lang={code}' in resp.text
-        assert '?lang=ar' not in resp.text.replace("/reset-password?lang=ar", "")
+            assert f"?lang={code}" in nav
+
+    def test_switcher_links_are_relative_and_keep_the_query(self, client: TestClient):
+        # A bare "?lang=xx" replaces the whole query string, so the switcher has
+        # to merge into it — otherwise /help/search?q=… loses the search on
+        # every language switch.
+        resp = client.get("/help/search?q=track&lang=fr")
+        nav = resp.text.split("<nav>")[1].split("</nav>")[0]
+        assert "q=track" in nav
+        # Relative, so the request's host is never baked into the markup.
+        assert "http://testserver" not in nav

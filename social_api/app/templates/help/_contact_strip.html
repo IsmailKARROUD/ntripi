@@ -1,0 +1,11 @@
+{% from "help/_icons.html" import icon %}
+<section class="hc-contact">
+  <h2>{{ _('help_contact_title') }}</h2>
+  <p>{{ _('help_contact_body') }}</p>
+  <ul>
+    <li><a href="mailto:{{ emails['customer support'] }}">{{ icon('mail', 16) }}{{ _('help_contact_support') }}</a></li>
+    <li><a href="mailto:{{ emails['abuse'] }}">{{ icon('flag', 16) }}{{ _('help_contact_abuse') }}</a></li>
+    <li><a href="mailto:{{ emails['privacy'] }}">{{ icon('lock', 16) }}{{ _('help_contact_privacy') }}</a></li>
+    <li><a href="mailto:{{ emails['general'] }}">{{ icon('info', 16) }}{{ _('help_contact_general') }}</a></li>
+  </ul>
+</section>

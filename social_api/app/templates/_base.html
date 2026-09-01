@@ -6,10 +6,18 @@
   <title>{{ page_title or "NTripi" }}</title>
   <meta name="description" content="{{ page_description or _('meta_default_desc') }}">
 
+  {# Canonical and alternates come from the context processor, so a new page
+     cannot ship without them. The processor also decides the alternate set per
+     path — a route cannot override it, because Starlette applies context
+     processors after the caller's context. See seo.alternates_for(). #}
+  <link rel="canonical" href="{{ canonical_url }}">
+  {% for code, href in alternates %}<link rel="alternate" hreflang="{{ code }}" href="{{ href }}">
+  {% endfor %}
+
   <meta property="og:type" content="website">
   <meta property="og:title" content="{{ page_title or 'NTripi' }}">
   <meta property="og:description" content="{{ page_description or _('meta_default_desc') }}">
-  <meta property="og:url" content="https://ntripi.app{{ request.url.path }}">
+  <meta property="og:url" content="{{ canonical_url }}">
   <meta property="og:image" content="https://ntripi.app/static/ntripi-og-default.png">
 
   <meta name="twitter:card" content="summary_large_image">
@@ -98,6 +106,7 @@
       color: var(--text2);
     }
     nav a:hover { color: var(--text); text-decoration: none; }
+    .nav-sep { color: var(--border); font-size: 13px; }
 
     /* ── Buttons ── */
     .btn-primary {
@@ -136,7 +145,10 @@
     /* ── Main content area ── */
     main {
       flex: 1;
-      max-width: 480px;
+      /* Overridable from a child template's head block. The form pages want 480
+         and a documentation column wants ~820; duplicating the whole token block
+         to get that is what let home.html and share_public.html drift apart. */
+      max-width: var(--main-max, 480px);
       width: 100%;
       margin: 0 auto;
       padding: 40px 16px 64px;
@@ -206,6 +218,7 @@
       main { padding: 56px 24px 80px; }
     }
   </style>
+  {% block head %}{% endblock %}
 </head>
 <body>
 
@@ -220,7 +233,11 @@
     <span class="logo-text">NTripi</span>
   </a>
   <nav>
-    {% for code in supported if code != lang %}<a href="?lang={{ code }}">{{ lang_names[code] }}</a>{% endfor %}
+    <a href="/help">{{ _('nav_help') }}</a>
+    <span class="nav-sep" aria-hidden="true">·</span>
+    {# switch_lang, not a bare ?lang= — the bare form replaces the whole query
+       string, which drops `q` when you switch language on /help/search. #}
+    {% for code in supported if code != lang %}<a href="{{ switch_lang(code) }}">{{ lang_names[code] }}</a>{% endfor %}
   </nav>
 </header>
 
@@ -229,11 +246,14 @@
 </main>
 
 <footer>
+  <a href="/help">{{ _('footer_help') }}</a>
   <a href="/privacy">{{ _('footer_privacy') }}</a>
   <a href="/terms">{{ _('footer_terms') }}</a>
   <a href="/guidelines">{{ _('footer_guidelines') }}</a>
   <span>© NTripi {{ current_year }}</span>
 </footer>
+
+{% block body_end %}{% endblock %}
 
 </body>
 </html>

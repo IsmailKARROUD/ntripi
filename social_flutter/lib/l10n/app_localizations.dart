@@ -5356,6 +5356,18 @@ abstract class AppLocalizations {
   /// **'Press, partnerships and business'**
   String get helpCenterGeneralEnquiriesSubtitle;
 
+  /// No description provided for @helpCenterFullSite.
+  ///
+  /// In en, this message translates to:
+  /// **'Full help centre'**
+  String get helpCenterFullSite;
+
+  /// No description provided for @helpCenterFullSiteSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'More guides and answers on ntripi.app'**
+  String get helpCenterFullSiteSubtitle;
+
   /// No description provided for @helpCenterAccountStatusSubtitle.
   ///
   /// In en, this message translates to:

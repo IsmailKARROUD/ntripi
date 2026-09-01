@@ -1,0 +1,7 @@
+{# Tied to what the reader just read — `article.cta` is a field on the article so
+   it translates with the article and needs no separate i18n key. Empty falls
+   back to the generic line. #}
+<aside class="hc-cta">
+  <p>{{ cta_line or _('help_cta_default') }}</p>
+  <a class="btn-primary" href="/app/">{{ _('help_cta_button') }}</a>
+</aside>

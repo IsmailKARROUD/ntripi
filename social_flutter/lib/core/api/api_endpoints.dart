@@ -321,6 +321,12 @@ String deviceEndpoint(String token) =>
 /// rather than an app-store submission.
 const kGuidelinesUrl = '$kShareBaseUrl/guidelines';
 
+/// The web help centre. Longer-form than the in-app FAQ and updated on a
+/// deploy rather than a store release, so it can cover the current server
+/// behaviour; the in-app FAQ deliberately stays shipped with the binary.
+/// Append `?lang=` like legalDocUrl does — the server honours it.
+const kHelpCenterUrl = '$kShareBaseUrl/help';
+
 /// Published abuse contact. Must match the backend's ABUSE_CONTACT_EMAIL and
 /// the store listing — reviewers compare them.
 const kAbuseContactEmail = 'abuse@ntripi.app';

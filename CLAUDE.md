@@ -618,6 +618,84 @@ because those write sibling tables, never itinerary content.
 
 ---
 
+## Help Centre (`/help`) and sitewide SEO
+
+Public documentation at `/help`, written once and rendered five ways: HTML for
+people, Markdown for AI assistants, JSON-LD for search engines, a search index,
+and the sitemap. Nothing is authored twice.
+
+- **`app/constants/help/en.py` is the route table.** The router, `sitemap.xml`,
+  `llms.txt` and the search index all read the same tuple, so they cannot
+  disagree about which pages exist. A slug that is not there does not exist.
+- **Content is Python string constants, never `.md` files on disk.**
+  `.dockerignore` strips `**/*.md`, so on-disk Markdown would build an image with
+  an empty help centre and nothing would fail until production served a blank
+  page. Same one-module-per-language shape as `constants/legal/`.
+- **The dataclasses live in `constants/help/models.py`, not `__init__.py`** — the
+  language modules import them and `__init__.py` imports the language modules.
+  `constants/legal/` dodges this only because its modules export bare strings.
+- **Structure in dataclasses, prose in Markdown.** A `Block` carries its
+  `anchor`, `heading` and `kind` as fields, and its `body` **must contain no
+  headings**. `FAQPage.mainEntity` and `HowTo.step` are built from `kind`, so
+  deriving them by scanning rendered HTML for `<h2>` would let a translator
+  writing `###` silently empty the structured data while the page still looked
+  perfect. Pinned by `test_help_content.py`.
+- **`articles(lang)` falls back per *slug*, not per module** — a half-finished
+  translation ships what it has beside English for the rest, the same way
+  `translator()` falls back per key. This is also what makes hreflang and the
+  sitemap honest: every alternate they advertise resolves. `en.ARTICLES` stays
+  the spine, so a slug present only in a translated module is dropped.
+- **`MarkdownIt` stays `html=False`.** The content is ours, so this is not
+  defence against a hostile author — it is defence against the flag being
+  flipped for a one-off embed, which would turn every article into an injection
+  point. The site's CSP is `frame-ancestors` only and would not catch it.
+- **Titles are problem-shaped, not feature-shaped.** Someone who has never heard
+  of Ntripi searches for "plan two options for the same day", not for our word
+  for it. The feature name lives in a block heading and in `keywords`. `intro`
+  is the direct answer in 40–60 words — what a search engine lifts into a
+  featured snippet and what an assistant quotes, so it must stand alone.
+- **Declaration order in `routers/help.py` is load-bearing.** `/help/{slug}`
+  matches any single segment, so every literal path must be declared above it and
+  `{slug}.md` above `{slug}`. The failure is silent: `/help/search` simply starts
+  rendering "page not found".
+- **Cloudflare honours `Vary` only on `Accept-Encoding`.** So help HTML — whose
+  language can come from a cookie or `Accept-Language` — must never carry
+  `Cache-Control: public`, or one visitor's language is served to everyone. The
+  machine surfaces (`.md`, `search-index.json`, `llms-full.txt`) read `?lang=`
+  **only**, ignoring the cookie, which is what makes the URL the whole cache key
+  and public caching safe there. `ETagMiddleware` now preserves an
+  endpoint-set `Cache-Control`, the same way it already preserved a set `ETag`.
+- **`.md` is served as `text/plain`, not `text/markdown`** — browsers download
+  the latter, and a link an assistant is meant to follow should render.
+- **No named crawler groups in `robots.txt`.** A named user-agent group
+  *replaces* the `*` group rather than adding to it, so an `Allow: /` block
+  written to welcome an AI crawler would also hand it `/admin`.
+- **Diagrams are inline SVG in the template, never `/static/*.svg`.** An
+  `<img src="…svg">` is opaque to a screen reader and to the crawlers this
+  section exists to serve, and cannot inherit `currentColor`. Every diagram is
+  followed by a text legend — the diagram is decoration, the legend is content.
+- **Deep links into the app use the hash form** (`/app/#/settings/help`). Flutter
+  web has no `usePathUrlStrategy()` call, so the path form lands on the app's
+  home screen instead.
+- **`services/seo.py` owns canonical, hreflang and the sitemap sitewide** — the
+  homepage and legal pages need them too. `templating.py`'s context processor
+  injects `canonical_url`, `alternates` and `switch_lang` into every render,
+  because Starlette applies context processors *after* the caller's context, so
+  a route cannot override what the processor sets. `alternates_for()` therefore
+  makes the per-path decision: help articles advertise only the languages whose
+  prose is translated; everything else advertises all six.
+- **The language switcher uses `switch_lang(code)`, not a bare `?lang=`** — the
+  bare form replaces the whole query string, which drops `q` on `/help/search`.
+- The in-app FAQ in `social_flutter/lib/features/help/` stays as it is and is
+  *not* replaced by this. Its eight answers ship with the binary so they cannot
+  describe a version the reader is not holding; the web centre is the fuller,
+  deploy-updated resource, reached from one row in `HelpCenterScreen`.
+- The "Do NOT ship a legal document in HTML" rule below is specific to *legal*
+  documents, whose strings must also render in a bare Flutter `Text` widget.
+  Help articles have no such consumer, which is why Markdown is free here.
+
+---
+
 ## Alembic Migration Rules (CRITICAL)
 
 - **Never hand-write a revision ID** — always generate one with `venv/bin/alembic revision -m "description"` (or `--autogenerate` if a DB is reachable). Hand-written placeholder IDs (e.g. `a1b2c3d4e5f6`) silently collide with existing migrations, fork the chain, and crash Railway on `alembic upgrade head`.
@@ -724,6 +802,25 @@ because those write sibling tables, never itinerary content.
 - Do NOT ship a legal document in HTML — plain text is what lets one string serve the web page and the in-app sheet without a renderer package
 - Do NOT add a language to the app's locales without adding it to `i18n.py` `SUPPORTED` — the app's `?lang=` would silently fall back to English
 - Do NOT pin a legal page's body to `dir="ltr"` — the bodies are translated now, and Arabic needs RTL
+- Do NOT move help content into `.md` files on disk — `.dockerignore` strips `**/*.md`, so the image would ship an empty help centre and nothing would fail until production served a blank page
+- Do NOT declare the help dataclasses in `constants/help/__init__.py` — the language modules import them and `__init__.py` imports the language modules; that is an import cycle at boot
+- Do NOT put a heading inside a `Block.body` — the anchor, the table of contents and the JSON-LD all key off `Block.heading`, so a stray `##` is invisible to every one of them while the page still looks right
+- Do NOT derive `FAQPage` questions or `HowTo` steps by scanning rendered HTML — a translator writing `###` would empty the structured data silently; `Block.kind` is the contract
+- Do NOT set `MarkdownIt(html=True)` for a one-off embed — it turns every article into an injection point, and `frame-ancestors`-only CSP would not catch it
+- Do NOT declare a literal `/help/*` route below `/help/{slug}`, or `{slug}` above `{slug}.md` — the catch-all swallows them and the page still renders, just the wrong one
+- Do NOT put `Cache-Control: public` on help HTML — its language can come from a cookie, and Cloudflare honours `Vary` only on `Accept-Encoding`, so one visitor's language would be served to everyone
+- Do NOT read the language cookie on `.md`, `search-index.json` or `llms-full.txt` — `?lang=` alone is what makes the URL the whole cache key and public caching safe
+- Do NOT serve `/help/{slug}.md` as `text/markdown` — browsers download it instead of rendering it
+- Do NOT add a named `GPTBot` / `ClaudeBot` group to `robots.txt` — a named group replaces the `*` group wholesale, so an `Allow: /` written to welcome a crawler also hands it `/admin`
+- Do NOT put a help diagram in `/static` as an `<img>` — inline SVG text nodes translate, reach the accessibility tree, and are extractable by the crawlers this section exists for; always pair a diagram with a text legend
+- Do NOT link into the app with a path deep link — Flutter web is on the hash strategy, so `/app/#/…` is the only form that arrives
+- Do NOT advertise an hreflang alternate for a language whose *content* is not translated — six alternates all serving English is a duplicate-content signal, not a localisation one
+- Do NOT pass `alternates` or `canonical_url` from a route — Starlette applies context processors after the caller's context, so the processor always wins; make the decision in `seo.alternates_for()`
+- Do NOT use a bare `?lang=` for the language switcher — it replaces the whole query string and drops `q` on `/help/search`
+- Do NOT add a "was this helpful" form — free text from the public site drags in `moderate_or_422`, rate limits, a retention policy and a new table, for a signal nothing consumes; a `mailto:` with the slug in the subject costs nothing
+- Do NOT rate-limit `/help/search` — the limiter is in-memory and single-instance, the endpoint touches no DB, and a 429 on a crawler-facing page is a self-inflicted SEO wound
+- Do NOT replace the in-app FAQ with the web one — its answers ship with the binary so they cannot describe a version the reader is not holding
+- Do NOT name internal state (`edit_lock_lost`, a status code) in a troubleshooting article — describe the message the user saw and what to do; the internal name goes stale on the next refactor
 - Do NOT apply the client text filter to titles or place names — European place names false-positive
 - Do NOT let a client-side filter block submission, mutate text, or clear a compose field
 - Do NOT create a second access ladder for editing — `can_edit_itinerary` must keep delegating to `can_view_itinerary`, or edit rights outlive view rights

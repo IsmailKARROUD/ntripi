@@ -3079,6 +3079,13 @@ class AppLocalizationsAr extends AppLocalizations {
       'الصحافة والشراكات والأمور التجارية';
 
   @override
+  String get helpCenterFullSite => 'مركز المساعدة الكامل';
+
+  @override
+  String get helpCenterFullSiteSubtitle =>
+      'مزيد من الأدلّة والإجابات على ntripi.app';
+
+  @override
   String get helpCenterAccountStatusSubtitle =>
       'اطّلع على قرارات الإشراف وقدّم تظلّمًا';
 

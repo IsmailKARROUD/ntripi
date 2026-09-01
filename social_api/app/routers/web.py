@@ -29,7 +29,7 @@ from __future__ import annotations
 import uuid
 
 from fastapi import APIRouter, Depends, Form, Request
-from fastapi.responses import HTMLResponse, PlainTextResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, PlainTextResponse, RedirectResponse, Response
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -46,7 +46,9 @@ from app.i18n import resolve_lang
 from app.limiter import limiter
 from app.models.moderation_log import ModerationLog
 from app.models.user import User
-from app.services import appeal_service, appeal_token, auth_service, email_service
+from app.services import (
+    appeal_service, appeal_token, auth_service, email_service, help_service, seo,
+)
 from app.templating import templates
 
 router = APIRouter(tags=["web"])
@@ -55,6 +57,13 @@ router = APIRouter(tags=["web"])
 # ---------------------------------------------------------------------------
 # Internal helpers
 # ---------------------------------------------------------------------------
+
+def _alt_langs(path: str) -> tuple[str, ...]:
+    """The hreflang set for one sitemap entry — the same rule the pages use."""
+    from app.i18n import SUPPORTED
+
+    return seo.HELP_CONTENT_LANGS if path.startswith(seo.HELP_PREFIX) else SUPPORTED
+
 
 def _t(request: Request):
     """Translator bound to the request's resolved language (for page titles)."""
@@ -96,6 +105,7 @@ def _legal_page(
     request: Request,
     *,
     heading_key: str,
+    desc_key: str,
     notice_key: str,
     body: str,
     date: str,
@@ -110,6 +120,7 @@ def _legal_page(
     heading = t(heading_key)
     return templates.TemplateResponse(request, "legal.html", {
         "page_title": f"{heading} — Ntripi",
+        "page_description": t(desc_key),
         "heading": heading,
         "content": body,
         "last_updated": date,
@@ -123,6 +134,7 @@ def privacy_page(request: Request) -> HTMLResponse:
     return _legal_page(
         request,
         heading_key="legal_privacy_heading",
+        desc_key="legal_desc_privacy",
         notice_key="legal_notice_privacy",
         body=get_privacy(resolve_lang(request)),
         date=PRIVACY_DATE,
@@ -135,6 +147,7 @@ def terms_page(request: Request) -> HTMLResponse:
     return _legal_page(
         request,
         heading_key="legal_terms_heading",
+        desc_key="legal_desc_terms",
         notice_key="legal_notice_terms",
         body=get_tos(resolve_lang(request)),
         date=TOS_DATE,
@@ -147,6 +160,7 @@ def guidelines_page(request: Request) -> HTMLResponse:
     return _legal_page(
         request,
         heading_key="legal_guidelines_heading",
+        desc_key="legal_desc_guidelines",
         notice_key="legal_notice_guidelines",
         body=get_guidelines(resolve_lang(request)),
         date=GUIDELINES_DATE,
@@ -225,10 +239,60 @@ def verify_email_page(
 # ---------------------------------------------------------------------------
 
 @router.get("/robots.txt", response_class=PlainTextResponse)
-def robots_txt() -> PlainTextResponse:
+def robots_txt(settings: Settings = Depends(get_settings)) -> PlainTextResponse:
     # Only /admin is disallowed — /app deep links are user-shareable and fine to
     # index. The admin pages additionally carry X-Robots-Tag: noindex.
-    return PlainTextResponse("User-agent: *\nDisallow: /admin/\n")
+    #
+    # No named GPTBot / ClaudeBot / CCBot groups, deliberately: a named
+    # user-agent group *replaces* the `*` group for that crawler rather than
+    # adding to it, so an "Allow: /" block written to welcome an AI crawler
+    # would also hand it /admin. The `*` group already allows everything else.
+    return PlainTextResponse(
+        "User-agent: *\n"
+        "Disallow: /admin/\n"
+        "\n"
+        f"Sitemap: {seo.absolute('/sitemap.xml', settings)}\n"
+    )
+
+
+# ---------------------------------------------------------------------------
+# Machine-readable surfaces
+#
+# Siblings of robots.txt rather than /help routes: they describe the whole site.
+# All three read constants/help/en.py, the same tuple the router walks, so the
+# sitemap cannot list a page that does not exist or miss one that does.
+# ---------------------------------------------------------------------------
+
+@router.get("/sitemap.xml")
+def sitemap_xml(request: Request, settings: Settings = Depends(get_settings)) -> Response:
+    # media_type is explicit: TemplateResponse defaults to text/html, and a
+    # sitemap served as HTML is silently ignored by every crawler.
+    return templates.TemplateResponse(
+        request, "sitemap.xml",
+        {"pages": [
+            (seo.absolute(path, settings), changefreq, priority,
+             seo.hreflang_alternates(path, settings, langs=_alt_langs(path)))
+            for path, changefreq, priority in seo.sitemap_paths()
+        ]},
+        media_type="application/xml",
+    )
+
+
+@router.get("/llms.txt", response_class=PlainTextResponse)
+def llms_txt(settings: Settings = Depends(get_settings)) -> PlainTextResponse:
+    return PlainTextResponse(help_service.llms_txt(settings))
+
+
+@router.get("/llms-full.txt", response_class=PlainTextResponse)
+def llms_full_txt(
+    lang: str = "en",
+    settings: Settings = Depends(get_settings),
+) -> PlainTextResponse:
+    # `lang` from the query string only, like the other machine surfaces: the
+    # URL is the whole cache key, so a CDN cannot serve one reader's language
+    # to another.
+    resolved = lang if lang in seo.HELP_CONTENT_LANGS else "en"
+    return PlainTextResponse(help_service.llms_full_txt(resolved, settings))
 
 
 # ---------------------------------------------------------------------------

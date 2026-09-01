@@ -3085,6 +3085,13 @@ class AppLocalizationsDe extends AppLocalizations {
       'Presse, Partnerschaften und Geschäftliches';
 
   @override
+  String get helpCenterFullSite => 'Vollständiger Hilfebereich';
+
+  @override
+  String get helpCenterFullSiteSubtitle =>
+      'Mehr Anleitungen und Antworten auf ntripi.app';
+
+  @override
   String get helpCenterAccountStatusSubtitle =>
       'Moderationsentscheidungen ansehen und Einspruch einlegen';
 

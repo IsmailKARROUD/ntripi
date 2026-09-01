@@ -1,0 +1,55 @@
+{% extends "help/_layout.html" %}
+{% from "help/_icons.html" import icon %}
+{% from "help/_diagrams.html" import diagram %}
+
+{% block help_content %}
+<article>
+  <div class="hc-hero">
+    <h1>{{ article.title }}</h1>
+  </div>
+
+  {% if article.updated %}
+  <p class="hc-meta">{{ _('help_updated') }} {{ article.updated }}</p>
+  {% endif %}
+
+  {% if intro_html %}<div class="hc-lede hc-prose">{{ intro_html }}</div>{% endif %}
+
+  {% if toc | length > 1 %}
+  <nav class="hc-toc" aria-label="{{ _('help_on_this_page') }}">
+    <p>{{ _('help_on_this_page') }}</p>
+    <ol>{% for anchor, heading in toc %}<li><a href="#{{ anchor }}">{{ heading }}</a></li>{% endfor %}</ol>
+  </nav>
+  {% endif %}
+
+  {% for block in blocks %}
+  <section class="hc-block" id="{{ block.anchor }}">
+    <h2>{{ block.heading }}<a class="hc-anchor" href="#{{ block.anchor }}"
+        aria-label="{{ block.heading }}">#</a></h2>
+    {# The picture is decoration; the legend in block.html beneath it is the
+       content, and the only half that survives into /help/{slug}.md. #}
+    {% if block.kind == 'diagram' %}{{ diagram(block.anchor) }}{% endif %}
+    <div class="hc-prose">{{ block.html }}</div>
+  </section>
+  {% endfor %}
+
+  {% if article.releases %}{% include "help/whats_new.html" %}{% endif %}
+</article>
+
+{% if related %}
+<p class="hc-section-title">{{ _('help_related') }}</p>
+<div class="hc-grid">
+  {% for a in related %}
+  <a class="hc-card" href="/help/{{ a.slug }}"><h3>{{ a.title }}</h3><p>{{ a.summary }}</p></a>
+  {% endfor %}
+</div>
+{% endif %}
+
+{% include "help/_cta.html" %}
+{% include "help/_contact_strip.html" %}
+
+{# The .md twin is linked, not hidden: an assistant following the page finds the
+   source it should have been given, and a reader who wants plain text gets it. #}
+<p class="hc-source">{{ icon('code', 15) }}<a href="/help/{{ article.slug }}.md">{{ _('help_read_markdown') }}</a></p>
+{% endblock %}
+
+{% block body_end %}{% include "help/_search_js.html" %}{% endblock %}

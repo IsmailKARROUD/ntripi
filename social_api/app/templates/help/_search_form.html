@@ -1,0 +1,16 @@
+{% from "help/_icons.html" import icon %}
+{# GET, and a real action: with JavaScript off this submits to the server-rendered
+   results page, which is also what a crawler follows. The dropdown below is an
+   enhancement layered on top, never the only way to search. #}
+<div class="hc-search">
+  <form action="/help/search" method="get" role="search" autocomplete="off">
+    <div class="field">
+      {{ icon('search', 18) }}
+      <input type="search" name="q" id="hc-q" value="{{ q or '' }}"
+             placeholder="{{ _('help_search_placeholder') }}"
+             aria-label="{{ _('help_search_label') }}">
+    </div>
+    <button type="submit" class="btn-primary">{{ _('help_search_button') }}</button>
+  </form>
+  <div id="hc-suggest" hidden></div>
+</div>

@@ -1,0 +1,13 @@
+{# Included by article.html when the article carries releases, rather than being
+   its own route: whats-new is a normal Article, so it lands in the sitemap, the
+   search index, llms.txt and the .md surface with no special-casing anywhere. #}
+{% for release in article.releases %}
+<section class="hc-block" id="{{ release.anchor }}">
+  <h2>{{ release.version }} — {{ release.headline }}<a class="hc-anchor"
+      href="#{{ release.anchor }}" aria-label="{{ release.version }}">#</a></h2>
+  <p class="hc-meta">{{ _('help_updated') }} {{ release.date }}</p>
+  <div class="hc-prose"><ul>
+    {% for entry in release.entries %}<li>{{ render(entry) }}</li>{% endfor %}
+  </ul></div>
+</section>
+{% endfor %}

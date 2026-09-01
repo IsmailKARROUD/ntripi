@@ -16,7 +16,8 @@ Why a body hash instead of `updated_at`?
 Endpoints that need ETag for *concurrency* (If-Match) still set their own
 ETag explicitly (see `_etag_value` in `app/dependencies.py`). This middleware
 detects that and leaves their header alone, so the existing flow keeps
-working unchanged.
+working unchanged. The same holds for `Cache-Control`: an endpoint that sets
+one keeps it, so a public document is not forced down to `private, no-cache`.
 """
 
 import hashlib
@@ -71,7 +72,12 @@ class ETagMiddleware(BaseHTTPMiddleware):
         # for offline fallback and emit If-None-Match on every fresh request.
         headers = dict(response.headers)
         headers["etag"] = etag
-        headers["cache-control"] = "private, no-cache"
+        # Same principle as the manually-set ETag above: an endpoint that has
+        # declared its own caching wins. `private, no-cache` is the right
+        # default for user-scoped JSON, but it is wrong for a public, immutable,
+        # language-in-the-URL document like /help/search-index.json, which a CDN
+        # should be free to hold.
+        headers.setdefault("cache-control", "private, no-cache")
 
         # Weak-compare per RFC 7232 §2.3.2: intermediaries (Cloudflare,
         # nginx) downgrade strong ETags to `W/"…"` when they recompress.

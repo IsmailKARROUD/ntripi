@@ -11,6 +11,12 @@
   <meta property="og:title"       content="{{ display_name }}">
   <meta property="og:description" content="{{ bio or '@' ~ user.username ~ ' on Ntripi.' }}">
   <meta property="og:url"         content="{{ share_url }}">
+
+  {# Standalone template — nothing to inherit this from. Stops the ?lang=
+     variants of one itinerary competing with each other in search. The page's
+     *content* is the user's itinerary, which exists in one language however the
+     chrome is translated, so there is no hreflang set to declare. #}
+  <link rel="canonical" href="{{ canonical_url }}">
   <meta property="og:image"       content="{{ preview_image_url }}">
 
   <meta name="twitter:card"        content="summary">
@@ -266,7 +272,7 @@
 </main>
 
 <footer>
-  <p>{{ _('share_shared_via') }} · <a href="/">ntripi.app</a></p>
+  <p>{{ _('share_shared_via') }} · <a href="/">ntripi.app</a> · <a href="/help">{{ _('footer_help') }}</a></p>
 </footer>
 
 </body>

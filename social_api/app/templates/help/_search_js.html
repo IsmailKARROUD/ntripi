@@ -1,0 +1,67 @@
+<script>
+// Instant narrowing for the search box. Deliberately NOT a second ranking
+// implementation: help_service.search() in Python is authoritative and is what
+// the Enter key reaches. This only substring-narrows an already-folded index so
+// the dropdown can answer between keystrokes without a request per character.
+(function () {
+  var input = document.getElementById('hc-q');
+  var box = document.getElementById('hc-suggest');
+  if (!input || !box) return;
+
+  var docs = null, loading = false;
+
+  // Same three steps as help_service.fold(): lowercase, drop combining marks,
+  // punctuation to spaces. Kept in step so both sides agree what a word is.
+  function fold(s) {
+    return s.toLowerCase().normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')  // combining marks
+            .replace(/[^\w\s]/g, ' ')
+            .replace(/\s+/g, ' ').trim();
+  }
+
+  // Fetched on first interaction rather than on page load: most visitors read
+  // an article and never search, and the index is dead weight for them.
+  function load() {
+    if (docs || loading) return;
+    loading = true;
+    fetch('/help/search-index.json?lang=' + encodeURIComponent(document.documentElement.lang || 'en'))
+      .then(function (r) { return r.json(); })
+      .then(function (d) { docs = d.docs || []; render(); })
+      .catch(function () { loading = false; });  // Enter still reaches the server
+  }
+
+  function render() {
+    var tokens = fold(input.value).split(' ').filter(function (t) { return t.length >= 2; }).slice(0, 6);
+    if (!docs || !tokens.length) { box.hidden = true; box.textContent = ''; return; }
+
+    var hits = docs.filter(function (d) {
+      var hay = d.t + ' ' + d.k + ' ' + d.d + ' ' + d.c + ' ' + d.b;
+      return tokens.every(function (t) { return hay.indexOf(t) !== -1; });
+    }).slice(0, 6);
+
+    box.textContent = '';
+    if (!hits.length) { box.hidden = true; return; }
+    box.className = 'hc-suggest';
+    hits.forEach(function (d) {
+      // createElement + textContent, never innerHTML: the index is ours, but a
+      // dropdown that renders markup is a sink waiting for content that is not.
+      var a = document.createElement('a');
+      a.href = '/help/' + d.s;
+      a.appendChild(document.createTextNode(d.n));
+      var sub = document.createElement('span');
+      sub.className = 's-sub';
+      sub.textContent = d.x;
+      a.appendChild(sub);
+      box.appendChild(a);
+    });
+    box.hidden = false;
+  }
+
+  input.addEventListener('focus', load);
+  input.addEventListener('input', function () { load(); render(); });
+  document.addEventListener('click', function (e) {
+    if (!box.contains(e.target) && e.target !== input) box.hidden = true;
+  });
+  input.addEventListener('keydown', function (e) { if (e.key === 'Escape') box.hidden = true; });
+})();
+</script>

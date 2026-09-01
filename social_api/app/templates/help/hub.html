@@ -1,0 +1,44 @@
+{% extends "help/_layout.html" %}
+{% from "help/_icons.html" import icon %}
+
+{% block help_content %}
+<div class="hc-hero">
+  <h1>{{ _('help_title') }}</h1>
+  <p class="lede">{{ _('help_tagline') }}</p>
+</div>
+
+{% include "help/_search_form.html" %}
+
+{% if quickstart %}
+<a class="hc-card" href="/help/{{ quickstart.slug }}" style="margin-top:26px">
+  <div class="hd">{{ icon('rocket') }}<h2>{{ _('help_quickstart_title') }}</h2></div>
+  <p>{{ quickstart.title }} — {{ quickstart.summary }}</p>
+</a>
+{% endif %}
+
+<p class="hc-section-title">{{ _('help_all_topics') }}</p>
+<div class="hc-grid">
+  {% for category, members in grouped %}
+  <section class="hc-card" id="{{ category.id }}">
+    <div class="hd">{{ icon(category.icon) }}<h2>{{ category.title }}</h2></div>
+    <p>{{ category.blurb }}</p>
+    <ul>
+      {% for a in members %}<li><a href="/help/{{ a.slug }}">{{ a.title }}</a></li>{% endfor %}
+    </ul>
+  </section>
+  {% endfor %}
+</div>
+
+{% if popular %}
+<p class="hc-section-title">{{ _('help_popular') }}</p>
+<ul class="hc-results">
+  {% for a in popular %}
+  <li><h2><a href="/help/{{ a.slug }}">{{ a.title }}</a></h2><p>{{ a.summary }}</p></li>
+  {% endfor %}
+</ul>
+{% endif %}
+
+{% include "help/_contact_strip.html" %}
+{% endblock %}
+
+{% block body_end %}{% include "help/_search_js.html" %}{% endblock %}

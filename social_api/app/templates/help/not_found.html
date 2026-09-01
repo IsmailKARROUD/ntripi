@@ -1,0 +1,24 @@
+{% extends "help/_layout.html" %}
+{% block head %}{{ super() }}<meta name="robots" content="noindex,follow">{% endblock %}
+
+{% block help_content %}
+<div class="hc-hero">
+  <h1>{{ _('help_not_found_title') }}</h1>
+  <p class="lede">{{ _('help_not_found_body') }}</p>
+</div>
+
+{% include "help/_search_form.html" %}
+
+<p class="hc-section-title">{{ _('help_all_topics') }}</p>
+<div class="hc-grid">
+  {% for category, members in grouped %}
+  <section class="hc-card"><h2>{{ category.title }}</h2><ul>
+    {% for a in members %}<li><a href="/help/{{ a.slug }}">{{ a.title }}</a></li>{% endfor %}
+  </ul></section>
+  {% endfor %}
+</div>
+
+{% include "help/_contact_strip.html" %}
+{% endblock %}
+
+{% block body_end %}{% include "help/_search_js.html" %}{% endblock %}

@@ -1,0 +1,7 @@
+{# Structured data. Canonical and hreflang are emitted by _base.html from the
+   context processor, so they are not repeated here.
+
+   jsonld_script escapes "<" as <: a "</script>" inside a translated FAQ
+   answer would otherwise close this element and inject the rest of the JSON
+   into the document as markup. #}
+{% if jsonld %}<script type="application/ld+json">{{ jsonld }}</script>{% endif %}
