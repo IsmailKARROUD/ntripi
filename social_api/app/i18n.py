@@ -1231,6 +1231,16 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "es": "Planifica tu próximo viaje con Ntripi.",
         "zh": "用 Ntripi 规划你的下一次旅行。",
     },
+    # The contact strip prints each address as text beside its mailto, because a
+    # mailto with no registered handler does nothing at all on desktop.
+    "help_contact_copy": {
+        "en": "Copy", "fr": "Copier", "ar": "نسخ",
+        "de": "Kopieren", "es": "Copiar", "zh": "复制",
+    },
+    "help_contact_copied": {
+        "en": "Copied", "fr": "Copié", "ar": "تم النسخ",
+        "de": "Kopiert", "es": "Copiado", "zh": "已复制",
+    },
     "help_cta_button": {
         "en": "Open Ntripi", "fr": "Ouvrir Ntripi", "ar": "افتح Ntripi",
         "de": "Ntripi öffnen", "es": "Abrir Ntripi", "zh": "打开 Ntripi",

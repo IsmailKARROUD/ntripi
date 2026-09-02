@@ -1,11 +1,55 @@
 {% from "help/_icons.html" import icon %}
+{# Each row shows the address as text as well as linking it. A mailto: with no
+   registered handler does nothing at all — the common case on desktop — which
+   silently turned all four of these into dead ends. Visible text can be
+   selected; the button copies it. #}
 <section class="hc-contact">
   <h2>{{ _('help_contact_title') }}</h2>
   <p>{{ _('help_contact_body') }}</p>
   <ul>
-    <li><a href="mailto:{{ emails['customer support'] }}">{{ icon('mail', 16) }}{{ _('help_contact_support') }}</a></li>
-    <li><a href="mailto:{{ emails['abuse'] }}">{{ icon('flag', 16) }}{{ _('help_contact_abuse') }}</a></li>
-    <li><a href="mailto:{{ emails['privacy'] }}">{{ icon('lock', 16) }}{{ _('help_contact_privacy') }}</a></li>
-    <li><a href="mailto:{{ emails['general'] }}">{{ icon('info', 16) }}{{ _('help_contact_general') }}</a></li>
+    {% for key, label, glyph in [
+        ('customer support', 'help_contact_support', 'mail'),
+        ('abuse',            'help_contact_abuse',   'flag'),
+        ('privacy',          'help_contact_privacy', 'lock'),
+        ('general',          'help_contact_general', 'info'),
+    ] %}
+    <li>
+      <a href="mailto:{{ emails[key] }}">{{ icon(glyph, 16) }}{{ _(label) }}</a>
+      <span class="hc-mail">
+        <code>{{ emails[key] }}</code>
+        <button type="button" class="hc-copy" data-copy="{{ emails[key] }}"
+                aria-label="{{ _('help_contact_copy') }} {{ emails[key] }}">{{ _('help_contact_copy') }}</button>
+      </span>
+    </li>
+    {% endfor %}
   </ul>
 </section>
+<script>
+// No build step on this site, so this rides with the partial it belongs to.
+(function () {
+  var done = {{ _('help_contact_copied') | tojson }};
+  document.querySelectorAll('.hc-copy').forEach(function (b) {
+    var label = b.textContent;
+    b.addEventListener('click', function () {
+      var text = b.dataset.copy;
+      var restore = function () {
+        b.textContent = done; b.dataset.done = '1';
+        setTimeout(function () { b.textContent = label; delete b.dataset.done; }, 1600);
+      };
+      // navigator.clipboard is undefined on plain http and in older browsers,
+      // so the textarea fallback is the path that actually runs for some readers.
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(restore, fallback);
+      } else { fallback(); }
+      function fallback() {
+        var ta = document.createElement('textarea');
+        ta.value = text; ta.setAttribute('readonly', '');
+        ta.style.position = 'fixed'; ta.style.opacity = '0';
+        document.body.appendChild(ta); ta.select();
+        try { document.execCommand('copy'); restore(); } catch (e) { /* leave the text on screen to select */ }
+        document.body.removeChild(ta);
+      }
+    });
+  });
+})();
+</script>

@@ -687,6 +687,25 @@ and the sitemap. Nothing is authored twice.
   both rules, and its punctuation class must be `\p{L}\p{N}` with the `u` flag
   — JavaScript's `\w` is ASCII-only and would erase every Arabic and Chinese
   character.
+- **The CTA and the contact strip are included by `_layout.html`, not by each
+  page**, so they reach the hub, every article, the search page and the 404 —
+  the last two being exactly where a reader is most likely to leave. A page that
+  also includes one renders it twice; `test_furniture_is_not_duplicated` pins it.
+- **The CTA's download button points at `/#get-the-app`, never a store URL.**
+  The app is pre-launch, so the homepage's own download buttons open the
+  waitlist; `home.html` has a `location.hash` handler so a cross-page link can
+  do the same. A hardcoded store link would ship dead.
+- **The contact strip prints each address as text beside its `mailto:`.** A
+  `mailto:` with no registered handler does nothing at all — the common case on
+  desktop — which silently turned all four support routes into dead ends. The
+  copy button falls back to a `<textarea>` + `execCommand`, because
+  `navigator.clipboard` is undefined on plain http.
+- **Only `a.hc-card` gets the hover lift.** A category card is a `<section>`
+  with nowhere to go; the unscoped `.hc-card:hover` rule lifted it anyway, which
+  made the blurb read as the card's first link and earned a click that could
+  never do anything. The article links inside a card carry a standing underline
+  for the same reason: blurb and links sit at the same size in two shades of the
+  same green, and an underline is direction-neutral where a chevron is not.
 - **`llms.txt` is per-language and its links carry `?lang=`.** The index is the
   first thing an assistant reads; English titles under `?lang=de` would advertise
   a corpus that does not match the pages behind it, and a bare link would index
@@ -866,6 +885,10 @@ and the sitemap. Nothing is authored twice.
 - Do NOT add a "was this helpful" form — free text from the public site drags in `moderate_or_422`, rate limits, a retention policy and a new table, for a signal nothing consumes; a `mailto:` with the slug in the subject costs nothing
 - Do NOT rate-limit `/help/search` — the limiter is in-memory and single-instance, the endpoint touches no DB, and a 429 on a crawler-facing page is a self-inflicted SEO wound
 - Do NOT replace the in-app FAQ with the web one — its answers ship with the binary so they cannot describe a version the reader is not holding
+- Do NOT include `_cta.html` or `_contact_strip.html` from a help page — `_layout.html` includes both, so a page that adds one renders it twice
+- Do NOT put a store URL in the help CTA — the app is pre-launch, so `/#get-the-app` (the homepage waitlist) is what a "download" button can honestly do
+- Do NOT offer a support address as a bare `mailto:` — with no registered mail handler it does nothing at all, so the address must also be on screen as selectable text
+- Do NOT give a hover lift to a `.hc-card` that is not a link — a category card has no destination, and the affordance makes its blurb read as a link that cannot be clicked
 - Do NOT register a `constants/help/<lang>.py` in `_MODULES` until every slug in it is translated — registration is what advertises the language in hreflang, the sitemap and `llms.txt`, so a partial module claims a localisation that is mostly English
 - Do NOT change a `Block.anchor`, a `kind`, a `slug`, a `category`, a `schema`, a `related` list or an `updated` date when translating — the anchor is the in-page fragment *and* the `HowToStep.url`, and `kind` is what the structured data is built from; the page still renders perfectly, which is why only a test catches it
 - Do NOT translate `keywords` word for word — they are search synonyms and have to be what someone types in that language; in Chinese they are what makes the keyword tier fire at all

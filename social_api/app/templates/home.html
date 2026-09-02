@@ -663,6 +663,13 @@
     setTimeout(function() { document.getElementById('wl-email').focus(); }, 50);
   }
 
+  // The help centre's CTA links here with #get-the-app. Before launch the
+  // waitlist IS the download, so that link has to be able to open it — there is
+  // no store URL to point at, and a dead link is worse than a form.
+  if (location.hash === '#get-the-app') {
+    openWaitlist({ dataset: { platform: 'both' } });
+  }
+
   function closeWaitlist() {
     document.getElementById('waitlist-overlay').style.display = 'none';
     document.body.style.overflow = '';

@@ -71,14 +71,25 @@
     border-radius: 18px; padding: 20px; color: var(--text);
     transition: border-color .15s, transform .1s;
   }
-  .hc-card:hover { border-color: var(--canopy); text-decoration: none; transform: translateY(-1px); }
+  /* Only a card that IS a link gets the interactive affordance. A category card
+     is a <section>, so lifting it on hover promised a click that never existed
+     and made the blurb read as the card's first link. */
+  a.hc-card:hover { border-color: var(--canopy); text-decoration: none; transform: translateY(-1px); }
   .hc-card .hd { display: flex; align-items: center; gap: 9px; margin-bottom: 6px; }
   .hc-card .hd .ic { color: var(--forest); flex: none; }
   .hc-card h2, .hc-card h3 { font-size: 16px; font-weight: 700; letter-spacing: -.2px; }
+  /* The blurb is prose, the list is navigation, and both sit at 14px in shades
+     of the same green — so the links carry a standing underline rather than one
+     that only appears on hover. Underline is direction-neutral, unlike a chevron. */
   .hc-card p { font-size: 14px; color: var(--text2); }
-  .hc-card ul { list-style: none; margin-top: 12px; }
-  .hc-card ul li { margin-top: 6px; }
-  .hc-card ul a { font-size: 14px; }
+  .hc-card ul { list-style: none; margin-top: 14px; border-top: 1px solid var(--border); padding-top: 12px; }
+  .hc-card ul li { margin-top: 7px; }
+  .hc-card ul a {
+    font-size: 14px; font-weight: 500;
+    text-decoration: underline; text-decoration-thickness: 1px;
+    text-underline-offset: 3px; text-decoration-color: var(--mist);
+  }
+  .hc-card ul a:hover { text-decoration-color: currentColor; }
 
   .hc-section-title {
     font-size: 12px; font-weight: 700; letter-spacing: .08em;
@@ -145,6 +156,18 @@
     align-items: center; justify-content: space-between;
   }
   .hc-cta p { font-size: 17px; font-weight: 600; max-width: 46ch; }
+  .hc-cta-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+  .hc-cta .btn-app, .hc-cta .btn-web {
+    font-weight: 700; font-size: 14px; padding: 10px 20px; border-radius: 50px;
+    text-decoration: none; display: inline-block; white-space: nowrap;
+    transition: background .15s, transform .1s;
+  }
+  .hc-cta .btn-app { background: #fff; color: var(--bark); }
+  .hc-cta .btn-web { border: 1px solid rgba(255,255,255,.35); color: #fff; }
+  .hc-cta .btn-app:hover, .hc-cta .btn-web:hover {
+    transform: translateY(-1px); text-decoration: none;
+  }
+  .hc-cta .btn-web:hover { background: rgba(255,255,255,.1); }
 
   .hc-contact {
     border-top: 1px solid var(--border); padding-top: 22px; margin-top: 34px;
@@ -153,8 +176,25 @@
   .hc-contact > p { font-size: 14px; color: var(--text2); margin-bottom: 14px; }
   .hc-contact ul { list-style: none; display: grid; gap: 8px;
                    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+  .hc-contact li { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
   .hc-contact li a { display: flex; align-items: center; gap: 8px; font-size: 14px; }
   .hc-contact li a .ic { color: var(--text2); flex: none; }
+  /* The address is shown, not just linked: a mailto with no registered handler
+     does nothing at all on desktop, which turns every one of these into a dead
+     end. Visible text can always be selected, and the button copies it. */
+  .hc-mail { display: inline-flex; align-items: center; gap: 6px; margin-inline-start: auto; }
+  .hc-mail code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 12.5px; color: var(--text2); user-select: all;
+  }
+  .hc-copy {
+    font: inherit; font-size: 12px; font-weight: 600; line-height: 1;
+    color: var(--text2); background: var(--surface);
+    border: 1px solid var(--border); border-radius: 7px;
+    padding: 4px 8px; cursor: pointer;
+  }
+  .hc-copy:hover { color: var(--forest); border-color: var(--canopy); }
+  .hc-copy[data-done="1"] { color: var(--forest); border-color: var(--canopy); }
 
   .hc-source {
     margin-top: 26px; font-size: 13px; color: var(--text2);
@@ -180,4 +220,10 @@
 </nav>
 {% endif %}
 {% block help_content %}{% endblock %}
+{# Both live here rather than in each page: they belong on every help surface,
+   and a search that found nothing or a stale link is exactly when a reader
+   needs the way out. `emails` comes from _base_context, which every help route
+   builds on. #}
+{% include "help/_cta.html" %}
+{% include "help/_contact_strip.html" %}
 {% endblock %}

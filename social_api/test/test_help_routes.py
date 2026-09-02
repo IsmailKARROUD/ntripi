@@ -7,6 +7,7 @@ behind the CDN.
 """
 
 import json
+import re
 
 import pytest
 from fastapi.testclient import TestClient
@@ -185,6 +186,82 @@ class TestSearch:
         resp = client.get(f"/help/search?q={q}&lang=zh")
         assert resp.status_code == 200
         assert "没有匹配" in resp.text
+
+
+class TestPageFurniture:
+    """The CTA and the contact strip belong on every help surface, and the
+    contact rows have to work for a reader whose browser has no mail client."""
+
+    PAGES = ["/help", "/help/getting-started", "/help/search?q=track", "/help/no-such-page"]
+
+    @pytest.mark.parametrize("path", PAGES)
+    def test_every_page_carries_the_cta(self, client: TestClient, path):
+        # Including the 404 and an empty search — the two moments a reader is
+        # most likely to leave.
+        assert 'class="hc-cta"' in client.get(path).text, path
+
+    @pytest.mark.parametrize("path", PAGES)
+    def test_every_page_carries_the_contact_strip(self, client: TestClient, path):
+        assert 'class="hc-contact"' in client.get(path).text, path
+
+    @pytest.mark.parametrize("path", PAGES)
+    def test_furniture_is_not_duplicated(self, client: TestClient, path):
+        """Both used to be included per page; they now live in the layout, so a
+        page that also includes one would render it twice."""
+        text = client.get(path).text
+        assert text.count('class="hc-cta"') == 1, path
+        assert text.count('class="hc-contact"') == 1, path
+
+    def test_contact_rows_show_the_address_as_text(self, client: TestClient):
+        """A mailto: with no registered handler does nothing at all, which is the
+        common case on desktop and made all four rows dead ends. The address has
+        to be readable and selectable without the link ever firing."""
+        strip = client.get("/help").text.split('class="hc-contact"')[1].split("</section>")[0]
+        for address in ("support@ntripi.app", "abuse@ntripi.app",
+                        "privacy@ntripi.app", "contact@ntripi.app"):
+            assert f"<code>{address}</code>" in strip
+            assert f'href="mailto:{address}"' in strip  # still linked for those who can use it
+
+    def test_contact_rows_offer_a_copy_button(self, client: TestClient):
+        strip = client.get("/help").text.split('class="hc-contact"')[1].split("</section>")[0]
+        assert strip.count('class="hc-copy"') == 4
+
+    def test_cta_offers_the_app_as_well_as_the_web(self, client: TestClient):
+        text = client.get("/help").text
+        # The waitlist, not a store URL: the app is pre-launch, so a hardcoded
+        # store link would ship dead. Same destination the homepage uses.
+        assert 'href="/#get-the-app"' in text
+        assert 'href="/app/"' in text
+
+    def test_an_article_keeps_its_own_cta_line(self, client: TestClient):
+        art = next(a for a in ALL_ARTICLES if a.cta)
+        assert art.cta in client.get(f"/help/{art.slug}").text
+
+    def test_a_page_without_an_article_falls_back_to_the_generic_line(self, client: TestClient):
+        from app.i18n import TRANSLATIONS
+        assert TRANSLATIONS["help_cta_default"]["en"] in client.get("/help").text
+
+
+class TestCategoryCards:
+    def test_only_a_link_card_claims_to_be_clickable(self, client: TestClient):
+        """A category card is a <section> with no destination. The bare
+        `.hc-card:hover` rule lifted it anyway, which made the blurb read as the
+        card's first link and earned a click that could never do anything."""
+        css = client.get("/help").text
+        assert "a.hc-card:hover" in css
+        # Any `.hc-card:hover` NOT preceded by `a` is the rule coming back.
+        assert not re.search(r"(?<!a)\.hc-card:hover", css)
+
+    def test_category_cards_are_not_links(self, client: TestClient):
+        text = client.get("/help").text
+        grid = text.split('class="hc-grid"')[1].split("</div>")[0]
+        assert '<section class="hc-card"' in grid
+        assert '<a class="hc-card"' not in grid
+
+    def test_article_links_inside_a_card_are_underlined(self, client: TestClient):
+        # The blurb and the links sit at the same size in two shades of the same
+        # green, so the underline is what separates prose from navigation.
+        assert "text-decoration: underline" in client.get("/help").text
 
 
 class TestSearchIndex:
