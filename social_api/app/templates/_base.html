@@ -46,6 +46,7 @@
       --border:       oklch(90% 0.02 150);
       --surface:      #ffffff;
       --radius:       14px;
+      --shadow-md:    0 4px 16px rgba(0,40,20,.10), 0 12px 40px rgba(0,40,20,.08);
       --error-bg:     #FFEDAD;
       --error-border: #FFB4AB;
       --error-text:   #410002;
@@ -106,7 +107,25 @@
       color: var(--text2);
     }
     nav a:hover { color: var(--text); text-decoration: none; }
-    .nav-sep { color: var(--border); font-size: 13px; }
+
+    /* ── Language menu ── geometry and behaviour mirror home.html's switcher;
+       keep the two in step rather than letting a second style grow here. */
+    .lang-menu { position: relative; }
+    .lang-menu summary { list-style: none; }
+    .lang-menu summary::-webkit-details-marker { display: none; }
+    .lang-btn { display: inline-flex; align-items: center; gap: 7px; padding: 7px 13px; border-radius: 50px; border: 1px solid var(--border); background: var(--surface); color: var(--text2); font-weight: 600; font-size: 14px; cursor: pointer; font-family: inherit; user-select: none; transition: color .15s, border-color .15s; }
+    .lang-btn:hover, .lang-menu[open] .lang-btn { color: var(--forest); border-color: var(--forest); }
+    .lang-btn .lang-chev { transition: transform .15s; }
+    .lang-menu[open] .lang-chev { transform: rotate(180deg); }
+    .lang-list { position: absolute; top: calc(100% + 8px); inset-inline-end: 0; min-width: 170px; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; box-shadow: var(--shadow-md); padding: 6px; z-index: 300; }
+    .lang-item { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 9px 12px; border-radius: 9px; text-decoration: none; font-size: 14px; font-weight: 500; color: var(--bark); transition: background .1s; }
+    .lang-item:hover { background: var(--mist); text-decoration: none; color: var(--bark); }
+    .lang-item.is-active { color: var(--forest); font-weight: 700; }
+
+    @media (max-width: 480px) {
+      .lang-btn-name { display: none; }
+      .lang-btn { padding: 7px 9px; }
+    }
 
     /* ── Buttons ── */
     .btn-primary {
@@ -234,10 +253,23 @@
   </a>
   <nav>
     <a href="/help">{{ _('nav_help') }}</a>
-    <span class="nav-sep" aria-hidden="true">·</span>
     {# switch_lang, not a bare ?lang= — the bare form replaces the whole query
        string, which drops `q` when you switch language on /help/search. #}
-    {% for code in supported if code != lang %}<a href="{{ switch_lang(code) }}">{{ lang_names[code] }}</a>{% endfor %}
+    <details class="lang-menu">
+      <summary class="lang-btn">
+        <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="8" cy="8" r="6.5"/><path d="M8 1.5c2 2.5 2 8.5 0 11M1.5 8h13M2 5h12M2 11h12" stroke-width="1.1"/></svg>
+        <span class="lang-btn-name">{{ lang_names[lang] }}</span>
+        <svg class="lang-chev" width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 3.5l3 3 3-3"/></svg>
+      </summary>
+      <div class="lang-list">
+        {% for code in supported %}
+        <a class="lang-item{% if code == lang %} is-active{% endif %}" href="{{ switch_lang(code) }}"{% if code == lang %} aria-current="true"{% endif %}>
+          {{ lang_names[code] }}
+          {% if code == lang %}<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>{% endif %}
+        </a>
+        {% endfor %}
+      </div>
+    </details>
   </nav>
 </header>
 
@@ -252,6 +284,21 @@
   <a href="/guidelines">{{ _('footer_guidelines') }}</a>
   <span>© NTripi {{ current_year }}</span>
 </footer>
+
+<script>
+  // <details> has no light-dismiss — close the language menu on outside click
+  function closeLangMenu() {
+    document.querySelectorAll('details.lang-menu[open]').forEach(function (menu) {
+      menu.removeAttribute('open');
+    });
+  }
+  document.addEventListener('click', function (e) {
+    if (!e.target.closest('details.lang-menu')) closeLangMenu();
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') closeLangMenu();
+  });
+</script>
 
 {% block body_end %}{% endblock %}
 

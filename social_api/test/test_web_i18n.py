@@ -75,17 +75,22 @@ class TestWebI18n:
         # on 2026-07-26 and i18n.py moved with it.
         assert "المسار غير موجود" in resp.text
 
-    def test_switcher_lists_other_languages(self, client: TestClient):
-        # Current language absent from the switcher, every other one linked.
+    def test_switcher_lists_every_language_and_marks_the_current_one(
+        self, client: TestClient
+    ):
+        # The switcher is a dropdown (same shape as home.html's), so unlike the
+        # flat row it replaced it lists ALL six and marks the current one —
+        # a menu that hides the language you are on cannot show you where you are.
         #
-        # Scoped to <nav> rather than the whole document: the page now also
-        # carries a canonical link and an hreflang set, and both legitimately
-        # name the language currently being served.
+        # Scoped to <nav> rather than the whole document: the page also carries
+        # a canonical link and an hreflang set, and both legitimately name the
+        # language currently being served.
         resp = client.get("/reset-password?lang=ar")
         nav = resp.text.split("<nav>")[1].split("</nav>")[0]
-        assert "?lang=ar" not in nav
-        for code in ("en", "fr", "de", "es", "zh"):
-            assert f"?lang={code}" in nav
+        for code in ("en", "fr", "de", "es", "zh", "ar"):
+            assert f"lang={code}" in nav
+        assert 'class="lang-item is-active" href="/reset-password?lang=ar"' in nav
+        assert 'aria-current="true"' in nav
 
     def test_switcher_links_are_relative_and_keep_the_query(self, client: TestClient):
         # A bare "?lang=xx" replaces the whole query string, so the switcher has
