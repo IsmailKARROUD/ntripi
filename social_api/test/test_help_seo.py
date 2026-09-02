@@ -16,6 +16,7 @@ from fastapi.testclient import TestClient
 
 from app.constants.help import en
 from app.i18n import SUPPORTED
+from app.services.seo import HELP_CONTENT_LANGS
 
 ALL_ARTICLES = en.ARTICLES
 SLUGS = [a.slug for a in ALL_ARTICLES]
@@ -102,11 +103,12 @@ class TestCanonicalAndHreflang:
         assert href.endswith("/help/getting-started?lang=fr")
 
     def test_help_advertises_only_translated_languages(self, client: TestClient):
-        """Articles are English-only today, so claiming six alternates that all
-        serve the same English prose would be a duplicate-content signal. The
-        set grows on its own as constants/help/<lang>.py modules land."""
+        """An hreflang alternate is a claim that the content is in that language.
+        Compared against HELP_CONTENT_LANGS rather than a literal set, so this
+        stays true at every point of the rollout: with one module registered and
+        with all six."""
         codes = [c for c, _ in ALTERNATE_RE.findall(client.get("/help/contact").text)]
-        assert set(codes) == {"en", "x-default"}
+        assert set(codes) == set(HELP_CONTENT_LANGS) | {"x-default"}
 
     def test_legal_pages_advertise_all_six(self, client: TestClient):
         # The legal bodies *are* translated into all six, so these genuinely differ.
@@ -207,6 +209,27 @@ class TestLlmsSurfaces:
 
     def test_llms_full_language_comes_from_the_query(self, client: TestClient):
         assert client.get("/llms-full.txt?lang=xx").status_code == 200
+
+    def test_llms_txt_is_localized(self, client: TestClient):
+        """The index is the first thing an assistant reads, so serving English
+        titles under `?lang=de` would advertise a corpus that does not match the
+        pages behind it."""
+        de = client.get("/llms.txt?lang=de").text
+        assert "So planen Sie Ihre erste Reise in Ntripi" in de
+        assert "How to start planning a trip in Ntripi" not in de
+
+    def test_llms_txt_links_carry_the_language(self, client: TestClient):
+        # Without ?lang= on each link, the assistant indexes German and then
+        # fetches English when it follows one.
+        de = client.get("/llms.txt?lang=de").text
+        assert "/help/getting-started.md?lang=de" in de
+        # English is the bare path, matching the canonical rule.
+        assert "?lang=" not in client.get("/llms.txt").text
+
+    def test_llms_txt_unknown_language_falls_back(self, client: TestClient):
+        resp = client.get("/llms.txt?lang=xx")
+        assert resp.status_code == 200
+        assert "How to start planning a trip in Ntripi" in resp.text
 
 
 class TestStandaloneTemplates:

@@ -41,21 +41,45 @@ def toc(article: Article) -> list[tuple[str, str]]:
 # not "itinerarystep".
 _PUNCT = re.compile(r"[^\w\s]", re.UNICODE)
 
+# Arabic orthographic variants that a searcher does not distinguish and a
+# keyboard does not make easy: the four alef forms, taa marbuta, and alef
+# maksura. NFD does not merge these — they are separate code points, not a base
+# plus a combining mark — so without this table "مساره" never matches "مسارة".
+_AR_VARIANTS = str.maketrans({
+    "\u0623": "\u0627", "\u0625": "\u0627", "\u0622": "\u0627", "\u0671": "\u0627",
+    "\u0629": "\u0647",
+    "\u0649": "\u064a",
+    "\u0640": "",  # tatweel: decorative elongation, never meaningful
+})
+
+# The Arabic definite article, written joined to its noun. Stripped only from
+# tokens long enough to leave a real word behind, so ordinary words that happen
+# to start with these two letters (ألم, الف) survive.
+_AR_ARTICLE = re.compile(r"^\u0627\u0644(?=[\u0621-\u064a]{3,})")
+
 
 def fold(text: str) -> str:
-    """Lowercase, strip diacritics, and split punctuation off words.
+    """Lowercase, strip diacritics, split punctuation off words, and normalise
+    Arabic orthography.
 
-    Three steps, and the third is not cosmetic: without it the trailing comma in
+    The punctuation step is not cosmetic: without it the trailing comma in
     "a trip itinerary, step by step" makes the title word "itinerary," which no
     query for "itinerary" can ever match as a whole word, quietly demoting the
     most relevant article to a prefix hit.
 
-    The client-side dropdown performs the same three steps, so the two agree
-    about what a word is.
+    The Arabic step is the difference between Arabic search working and not.
+    _score_token asks whether the token is *in* the title, so a search for
+    "المسار" scores zero against a title carrying "مسار" — the token is the
+    longer string, and containment runs the wrong way. Stripping the article on
+    both sides of the comparison is what makes the two meet.
+
+    The client-side dropdown performs the same steps, so the two agree about
+    what a word is.
     """
     decomposed = unicodedata.normalize("NFD", text.lower())
     stripped = "".join(c for c in decomposed if not unicodedata.combining(c))
-    return " ".join(_PUNCT.sub(" ", stripped).split())
+    normalized = _PUNCT.sub(" ", stripped).translate(_AR_VARIANTS)
+    return " ".join(_AR_ARTICLE.sub("", w) for w in normalized.split())
 
 
 def tokenize(query: str) -> list[str]:
@@ -95,7 +119,13 @@ def _documents(lang: str) -> tuple[dict, ...]:
     return tuple(docs)
 
 
-def _score_token(doc: dict, token: str) -> int:
+# CJK scripts write without spaces, so fold() cannot split a Chinese phrase into
+# words: "如何分享行程" arrives as one six-character token that no document
+# contains verbatim, and every tier below scores it 0.
+_CJK = re.compile(r"[\u3400-\u9fff\uf900-\ufaff\u3040-\u30ff\uac00-\ud7af]")
+
+
+def _field_score(doc: dict, token: str) -> int:
     """Highest-scoring field hit for one token. 0 means the token is absent."""
     title_words = doc["t"].split()
     if token in title_words:
@@ -113,6 +143,31 @@ def _score_token(doc: dict, token: str) -> int:
     if token in doc["b"]:
         return 1
     return 0
+
+
+def _score_token(doc: dict, token: str) -> int:
+    """`_field_score`, plus a character-bigram fallback for CJK.
+
+    A Chinese query is one long token, so without this the natural way to ask a
+    question ("如何分享行程") matches nothing at all while the two-character
+    keywords do — which would make search work only for people who already know
+    our vocabulary. Bigrams are the standard cheap CJK index: the phrase scores
+    only if a *majority* of its overlapping pairs are present, so a token still
+    has to be substantially there rather than sharing one character.
+    """
+    direct = _field_score(doc, token)
+    if direct or len(token) < 3 or not _CJK.search(token):
+        return direct
+    grams = [token[i:i + 2] for i in range(len(token) - 1)]
+    hits = [s for s in (_field_score(doc, g) for g in grams) if s]
+    if len(hits) * 2 < len(grams):
+        return 0
+    # The strongest field any part of the phrase reached, scaled by how much of
+    # the phrase is actually there. Coverage is the only ranking signal a CJK
+    # query has — it arrives as a single token, so the `3 * matched` coverage
+    # bonus in search() cannot separate two documents the way it does for a
+    # space-delimited query.
+    return max(1, round(max(hits) * len(hits) / len(grams)))
 
 
 def required_matches(token_count: int) -> int:
@@ -171,11 +226,12 @@ def search_index_json(lang: str) -> str:
 # Machine-readable surfaces
 # ---------------------------------------------------------------------------
 
-def llms_txt(settings: Settings) -> str:
+def llms_txt(lang: str, settings: Settings) -> str:
     """The llmstxt.org index: what this site is, and where the source lives.
 
     Article links point at the `.md` variants — handing an assistant the source
-    rather than the rendered page is the entire reason those exist.
+    rather than the rendered page is the entire reason those exist, and each one
+    carries `?lang=` so the assistant lands on the language it just indexed.
     """
     lines = [
         "# Ntripi",
@@ -186,10 +242,11 @@ def llms_txt(settings: Settings) -> str:
         "> so one plan can carry a wet-weather option and a dry one side by side.",
         "",
     ]
-    for category, members in by_category("en"):
+    suffix = "" if lang == "en" else f"?lang={lang}"
+    for category, members in by_category(lang):
         lines += [f"## {category.title}", ""]
         for a in members:
-            url = absolute(f"{article_path(a.slug)}.md", settings)
+            url = absolute(f"{article_path(a.slug)}.md", settings) + suffix
             lines.append(f"- [{a.title}]({url}): {a.summary}")
         lines.append("")
 
@@ -202,7 +259,7 @@ def llms_txt(settings: Settings) -> str:
         "",
         "## Optional",
         "",
-        f"- [Every help article in one file]({absolute('/llms-full.txt', settings)})",
+        f"- [Every help article in one file]({absolute('/llms-full.txt', settings)}{suffix})",
         "",
     ]
     return "\n".join(lines)

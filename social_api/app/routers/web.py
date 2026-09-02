@@ -279,8 +279,14 @@ def sitemap_xml(request: Request, settings: Settings = Depends(get_settings)) ->
 
 
 @router.get("/llms.txt", response_class=PlainTextResponse)
-def llms_txt(settings: Settings = Depends(get_settings)) -> PlainTextResponse:
-    return PlainTextResponse(help_service.llms_txt(settings))
+def llms_txt(
+    lang: str = "en",
+    settings: Settings = Depends(get_settings),
+) -> PlainTextResponse:
+    # `?lang=` only, never the cookie — same rule as llms-full.txt and the search
+    # index, so the URL is the whole cache key and public caching stays safe.
+    resolved = lang if lang in seo.HELP_CONTENT_LANGS else "en"
+    return PlainTextResponse(help_service.llms_txt(resolved, settings))
 
 
 @router.get("/llms-full.txt", response_class=PlainTextResponse)

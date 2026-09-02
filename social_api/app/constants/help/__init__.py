@@ -17,11 +17,18 @@ from __future__ import annotations
 
 from functools import lru_cache
 
-from app.constants.help import en
+from app.constants.help import ar, de, en, es, fr, zh
 from app.constants.help.models import Article, Category, Release
 
 # Translated modules land here as they are written; the accessors need no change.
-_MODULES: dict[str, object] = {"en": en}
+#
+# A module belongs here only when EVERY slug in it is translated. Registration is
+# what puts the language into seo.HELP_CONTENT_LANGS, and therefore into hreflang
+# and the sitemap — advertising a language whose articles are still English is a
+# duplicate-content signal, not a localisation one. test_help_content pins it.
+_MODULES: dict[str, object] = {
+    "en": en, "fr": fr, "ar": ar, "de": de, "es": es, "zh": zh,
+}
 
 
 @lru_cache(maxsize=None)

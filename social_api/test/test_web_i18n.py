@@ -7,7 +7,10 @@ Uses /reset-password as the rendered-page vehicle — the login/register pages
 were removed (auth lives in the Flutter app; /login now 302s to /app/).
 """
 
+import pytest
 from fastapi.testclient import TestClient
+
+from app.i18n import SUPPORTED, TRANSLATIONS
 
 
 class TestWebI18n:
@@ -93,3 +96,37 @@ class TestWebI18n:
         assert "q=track" in nav
         # Relative, so the request's host is never baked into the markup.
         assert "http://testserver" not in nav
+
+
+class TestHelpChromeCoverage:
+    """The help centre's chrome is translated for all six languages even where
+    the article prose is not, so the hub, breadcrumbs and search box read
+    natively from day one. An English fallback here would be invisible: the page
+    still renders, just half in the wrong language."""
+
+    @pytest.mark.parametrize("lang", SUPPORTED)
+    def test_every_help_key_has_every_language(self, lang):
+        missing = [
+            key for key, entry in TRANSLATIONS.items()
+            if key.startswith(("help_", "nav_help", "footer_help"))
+            and not entry.get(lang)
+        ]
+        assert not missing, f"{lang} missing: {missing}"
+
+    @pytest.mark.parametrize("lang", SUPPORTED)
+    def test_diagram_labels_are_translated(self, lang):
+        """/help/app-map's two SVGs are inline precisely so their labels are real
+        translatable text. They were hardcoded English string literals until the
+        articles were translated, which would have left the diagrams as the one
+        English island on an otherwise translated page."""
+        keys = [k for k in TRANSLATIONS if k.startswith("help_diag_")]
+        assert len(keys) >= 15, "the diagram labels are no longer being covered"
+        for key in keys:
+            assert TRANSLATIONS[key].get(lang), f"{key} has no {lang}"
+
+    def test_diagram_labels_reach_the_page(self, client: TestClient):
+        # The macro is imported `with context`; without that `_` is undefined
+        # inside it, because it comes from a context processor and not env.globals.
+        text = client.get("/help/app-map?lang=de").text
+        assert "Vier Tage in Marrakesch" in text
+        assert "Four days in Marrakech" not in text

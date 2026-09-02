@@ -1239,6 +1239,111 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "en": "New here?", "fr": "Vous débutez ?", "ar": "جديد هنا؟",
         "de": "Neu hier?", "es": "¿Es tu primera vez?", "zh": "第一次使用？",
     },
+    # Diagram labels for /help/app-map. Inline SVG text nodes, so they are real
+    # translatable text — the whole reason the diagrams are not <img src="…svg">.
+    # Tab names, "Public" and "Caution" are the app's own strings from
+    # lib/l10n/app_<lang>.arb, not re-invented here: a diagram that names a
+    # button differently from the button is worse than no diagram.
+    #
+    # The geometry stays left-to-right in every language, Arabic included. The
+    # diagram is decoration and the legend beneath it is the content; mirroring
+    # a phone mockup would cost a counter-flip on every text node for no gain.
+    "help_diag_nav_alt": {
+        "en": "The five tabs of Ntripi’s bottom bar, numbered left to right",
+        "fr": "Les cinq onglets de la barre inférieure de Ntripi, numérotés de gauche à droite",
+        "ar": "علامات التبويب الخمس في الشريط السفلي لـ Ntripi، مرقّمة من اليسار إلى اليمين",
+        "de": "Die fünf Tabs der unteren Leiste von Ntripi, von links nach rechts nummeriert",
+        "es": "Las cinco pestañas de la barra inferior de Ntripi, numeradas de izquierda a derecha",
+        "zh": "Ntripi 底部导航栏的五个标签，自左至右编号",
+    },
+    "help_diag_screen_alt": {
+        "en": "An itinerary screen: two tracks side by side with a transport row between them",
+        "fr": "Un écran d’itinéraire : deux pistes côte à côte, avec un transit entre elles",
+        "ar": "شاشة مسار: ممرّان جنبًا إلى جنب وبينهما صف تنقّل",
+        "de": "Ein Reiserouten-Bildschirm: zwei Spalten nebeneinander, dazwischen eine Transportzeile",
+        "es": "Una pantalla de itinerario: dos columnas en paralelo con una fila de transporte entre ellas",
+        "zh": "行程页面：并排的两列，中间是一行交通",
+    },
+    "help_diag_tab_search": {
+        "en": "Search", "fr": "Recherche", "ar": "بحث",
+        "de": "Suche", "es": "Buscar", "zh": "搜索",
+    },
+    "help_diag_tab_profile": {
+        "en": "Profile", "fr": "Profil", "ar": "الملف الشخصي",
+        "de": "Profil", "es": "Perfil", "zh": "个人资料",
+    },
+    "help_diag_tab_itineraries": {
+        "en": "Itineraries", "fr": "Itinéraires", "ar": "المسارات",
+        "de": "Reiserouten", "es": "Itinerarios", "zh": "行程",
+    },
+    "help_diag_tab_saved": {
+        "en": "Saved", "fr": "Enregistrés", "ar": "المحفوظات",
+        "de": "Gespeichert", "es": "Guardados", "zh": "已保存",
+    },
+    "help_diag_tab_feed": {
+        "en": "Feed", "fr": "Fil", "ar": "اكتشف",
+        "de": "Feed", "es": "Feed", "zh": "动态",
+    },
+    "help_diag_trip_title": {
+        "en": "Four days in Marrakech",
+        "fr": "Quatre jours à Marrakech",
+        "ar": "أربعة أيام في مراكش",
+        "de": "Vier Tage in Marrakesch",
+        "es": "Cuatro días en Marrakech",
+        "zh": "马拉喀什四日游",
+    },
+    "help_diag_public": {
+        "en": "Public", "fr": "Public", "ar": "عام",
+        "de": "Öffentlich", "es": "Público", "zh": "公开",
+    },
+    "help_diag_place_garden": {
+        "en": "Jardin Majorelle", "fr": "Jardin Majorelle",
+        "ar": "حديقة ماجوريل",
+        "de": "Jardin Majorelle", "es": "Jardin Majorelle", "zh": "马孟花园",
+    },
+    "help_diag_place_palace": {
+        "en": "Bahia Palace", "fr": "Palais de la Bahia",
+        "ar": "قصر الباهية",
+        "de": "Bahia-Palast", "es": "Palacio de la Bahia", "zh": "巴伊亚宫",
+    },
+    "help_diag_place_square": {
+        "en": "Jemaa el-Fnaa", "fr": "Jemaa el-Fna",
+        "ar": "جامع الفناء",
+        "de": "Djemaa el-Fna", "es": "Yamaa el-Fna", "zh": "德吉马广场",
+    },
+    # "h" for hours and "min" are units, not prose — every locale keeps the
+    # numbers and only the unit and separator move.
+    "help_diag_dur_garden": {
+        "en": "2 h · 70 MAD", "fr": "2 h · 70 MAD",
+        "ar": "ساعتان · 70 درهم",
+        "de": "2 Std. · 70 MAD", "es": "2 h · 70 MAD", "zh": "2 小时 · 70 迪拉姆",
+    },
+    "help_diag_dur_palace": {
+        "en": "1 h 30 · 70 MAD", "fr": "1 h 30 · 70 MAD",
+        "ar": "ساعة و30 دقيقة · 70 درهم",
+        "de": "1 Std. 30 · 70 MAD", "es": "1 h 30 · 70 MAD", "zh": "1.5 小时 · 70 迪拉姆",
+    },
+    "help_diag_transit": {
+        "en": "Taxi · 15 min", "fr": "Taxi · 15 min",
+        "ar": "سيارة أجرة · 15 دقيقة",
+        "de": "Taxi · 15 Min.", "es": "Taxi · 15 min", "zh": "出租车 · 15 分钟",
+    },
+    "help_diag_caution": {
+        "en": "Caution · pickpockets",
+        "fr": "Prudence · pickpockets",
+        "ar": "احترس · نشّالون",
+        "de": "Vorsicht · Taschendiebe",
+        "es": "Precaución · carteristas",
+        "zh": "注意 · 小心扒手",
+    },
+    "help_diag_rating": {
+        "en": "★ 4.8 · 26 ratings",
+        "fr": "★ 4,8 · 26 évaluations",
+        "ar": "★ 4.8 · 26 تقييمًا",
+        "de": "★ 4,8 · 26 Bewertungen",
+        "es": "★ 4,8 · 26 valoraciones",
+        "zh": "★ 4.8 · 26 条评分",
+    },
     # Meta descriptions. One key per document rather than one with a {document}
     # placeholder, for the same reason legal_notice_* is split: Arabic and
     # Chinese put the noun where an interpolation cannot reach it.

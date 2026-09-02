@@ -10,13 +10,50 @@
 
   var docs = null, loading = false;
 
-  // Same three steps as help_service.fold(): lowercase, drop combining marks,
-  // punctuation to spaces. Kept in step so both sides agree what a word is.
+  // The same steps as help_service.fold(), in the same order, so both sides
+  // agree what a word is: lowercase, drop combining marks, punctuation to
+  // spaces, then normalise Arabic orthography and strip its definite article.
+  // The Arabic half is not optional — without it a query for "المسار" cannot
+  // match a title carrying "مسار", because containment runs the wrong way.
+  // JavaScript's \w is ASCII-only — unlike Python's, which is Unicode-aware for
+  // str patterns. So the obvious /[^\w\s]/ erases every Arabic letter and every
+  // Chinese character rather than just the punctuation, and the two folders stop
+  // agreeing the moment the index is not English. \p{L}\p{N} with the u flag is
+  // the equivalent; the fallback keeps an ancient browser searching in English
+  // instead of throwing at parse time.
+  var PUNCT;
+  try { PUNCT = new RegExp('[^\\p{L}\\p{N}\\s_]', 'gu'); }
+  catch (e) { PUNCT = /[^\w\s]/g; }
+
   function fold(s) {
-    return s.toLowerCase().normalize('NFD')
-            .replace(/[\u0300-\u036f]/g, '')  // combining marks
-            .replace(/[^\w\s]/g, ' ')
-            .replace(/\s+/g, ' ').trim();
+    var t = s.toLowerCase().normalize('NFD')
+             .replace(/[\u0300-\u036f]/g, '')   // combining marks
+             .replace(PUNCT, ' ')
+             .replace(/[\u0623\u0625\u0622\u0671]/g, '\u0627')  // alef variants
+             .replace(/\u0629/g, '\u0647')       // taa marbuta
+             .replace(/\u0649/g, '\u064a')       // alef maksura
+             .replace(/\u0640/g, '')             // tatweel
+             .replace(/\s+/g, ' ').trim();
+    if (!t) return t;
+    return t.split(' ').map(function (w) {
+      return w.replace(/^\u0627\u0644(?=[\u0621-\u064a]{3,})/, '');
+    }).join(' ');
+  }
+
+  // CJK writes without spaces, so a Chinese question folds to one long token
+  // that appears verbatim nowhere and the dropdown would stay empty for every
+  // natural phrasing. Same majority-of-bigrams rule as help_service._score_token,
+  // so the dropdown and the Enter key agree about what counts as a match.
+  var CJK = /[\u3400-\u9fff\uf900-\ufaff\u3040-\u30ff\uac00-\ud7af]/;
+
+  function present(hay, token) {
+    if (hay.indexOf(token) !== -1) return true;
+    if (token.length < 3 || !CJK.test(token)) return false;
+    var grams = token.length - 1, hit = 0;
+    for (var i = 0; i < grams; i++) {
+      if (hay.indexOf(token.substr(i, 2)) !== -1) hit++;
+    }
+    return hit * 2 >= grams;
   }
 
   // Fetched on first interaction rather than on page load: most visitors read
@@ -36,7 +73,7 @@
 
     var hits = docs.filter(function (d) {
       var hay = d.t + ' ' + d.k + ' ' + d.d + ' ' + d.c + ' ' + d.b;
-      return tokens.every(function (t) { return hay.indexOf(t) !== -1; });
+      return tokens.every(function (t) { return present(hay, t); });
     }).slice(0, 6);
 
     box.textContent = '';

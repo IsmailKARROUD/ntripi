@@ -15,7 +15,13 @@ from fastapi.testclient import TestClient
 
 from app.constants.help import article, articles, by_category, categories, en
 from app.constants.help.models import KIND_FAQ, KIND_STEP
+from app.constants.help import _MODULES
 from app.i18n import SUPPORTED
+
+# Languages with a registered module. Empty of everything but English until
+# the first translation lands, which is why these parametrizations are safe
+# to add before there is anything to run them against.
+TRANSLATED = [c for c in SUPPORTED if c != "en" and c in _MODULES]
 from app.services import help_render
 
 ALL_ARTICLES = en.ARTICLES
@@ -53,11 +59,14 @@ class TestSlugsAndShape:
     def test_slug_is_url_safe(self, art):
         assert SLUG_RE.match(art.slug), art.slug
 
-    @pytest.mark.parametrize("art", ALL_ARTICLES, ids=lambda a: a.slug)
-    def test_summary_fits_a_meta_description(self, art):
+    @pytest.mark.parametrize("lang", SUPPORTED)
+    def test_summary_fits_a_meta_description(self, lang):
         # Google truncates around 160 characters; a summary is also the hub card
-        # and the llms.txt line, so it has to work standing alone.
-        assert 0 < len(art.summary) <= 160, len(art.summary)
+        # and the llms.txt line, so it has to work standing alone. Checked per
+        # language because German runs ~20% longer than English, so a faithful
+        # translation of a summary already near the cap goes over it.
+        for art in articles(lang):
+            assert 0 < len(art.summary) <= 160, f"{lang}:{art.slug} {len(art.summary)}"
 
     @pytest.mark.parametrize("art", ALL_ARTICLES, ids=lambda a: a.slug)
     def test_category_exists(self, art):
@@ -78,14 +87,18 @@ class TestBlockContract:
     """The machine contract: headings are a field, so JSON-LD cannot be emptied
     by editing prose."""
 
-    @pytest.mark.parametrize("art", ALL_ARTICLES, ids=lambda a: a.slug)
-    def test_no_headings_inside_a_block_body(self, art):
+    @pytest.mark.parametrize("lang", SUPPORTED)
+    def test_no_headings_inside_a_block_body(self, lang):
         # A `##` in a body is invisible to the anchor, the table of contents and
         # the structured data, all of which key off Block.heading. The page would
-        # still look right, which is exactly why this needs a test.
-        for block in art.blocks:
-            for line in block.body.splitlines():
-                assert not line.lstrip().startswith("#"), f"{art.slug}/{block.anchor}: {line!r}"
+        # still look right, which is exactly why this needs a test — and why it
+        # runs against every language, since reaching for `###` is a translator's
+        # mistake as much as an author's.
+        for art in articles(lang):
+            for block in art.blocks:
+                for line in block.body.splitlines():
+                    assert not line.lstrip().startswith("#"), \
+                        f"{lang}:{art.slug}/{block.anchor}: {line!r}"
 
     @pytest.mark.parametrize("art", ALL_ARTICLES, ids=lambda a: a.slug)
     def test_block_anchors_are_unique_and_url_safe(self, art):
@@ -120,6 +133,56 @@ class TestTranslationFallback:
         assert articles("xx") == articles("en")
         assert categories("xx") == categories("en")
 
+    @pytest.mark.parametrize("lang", TRANSLATED)
+    def test_a_registered_module_translates_every_article(self, lang):
+        """Registration in _MODULES is what puts a language into hreflang and the
+        sitemap, so a module may only be registered once every slug is really
+        translated. Identity with the English object is the test: articles() has
+        substituted English wherever the module was silent."""
+        english = {a.slug: a for a in articles("en")}
+        untranslated = [a.slug for a in articles(lang) if a is english[a.slug]]
+        assert not untranslated, f"{lang} falls back to English for: {untranslated}"
+
+    @pytest.mark.parametrize("lang", TRANSLATED)
+    def test_structure_is_identical_across_languages(self, lang):
+        """Everything a derived surface keys off must match en.py exactly.
+
+        The anchor is both the in-page fragment and the HowToStep url, and `kind`
+        is what FAQPage.mainEntity and HowTo.step are built from — a translator
+        who renumbers one empties the structured data and breaks the table of
+        contents while the page still renders perfectly.
+        """
+        english = {a.slug: a for a in articles("en")}
+        for art in articles(lang):
+            src = english[art.slug]
+            assert art.category == src.category, art.slug
+            assert art.schema == src.schema, art.slug
+            assert art.related == src.related, art.slug
+            assert art.updated == src.updated, art.slug
+            assert [(b.anchor, b.kind) for b in art.blocks] == [
+                (b.anchor, b.kind) for b in src.blocks
+            ], art.slug
+
+    @pytest.mark.parametrize("lang", TRANSLATED)
+    def test_categories_keep_their_id_and_icon(self, lang):
+        english = {c.id: c for c in categories("en")}
+        for cat in categories(lang):
+            # icon keys into templates/help/_icons.html — translating it draws
+            # nothing at all, silently.
+            assert cat.icon == english[cat.id].icon, cat.id
+
+    @pytest.mark.parametrize("lang", TRANSLATED)
+    def test_keywords_are_not_copied_from_english(self, lang):
+        """Keywords are search synonyms, not prose: they have to be the words
+        someone types in *this* language. An identical tuple is the signature of
+        a translation pass that skipped them."""
+        english = {a.slug: a for a in articles("en")}
+        copied = [
+            a.slug for a in articles(lang)
+            if a.keywords and a.keywords == english[a.slug].keywords
+        ]
+        assert not copied, f"{lang} reuses the English keywords for: {copied}"
+
 
 class TestLinks:
     def test_internal_links_resolve(self, client: TestClient):
@@ -142,17 +205,19 @@ class TestLinks:
         assert not broken, broken
 
     def test_mailto_links_are_real_mailboxes(self):
-        for art in ALL_ARTICLES:
-            for text in _all_markdown(art):
-                for address in MAILTO_RE.findall(text):
-                    assert address in REAL_MAILBOXES, f"{art.slug}: {address}"
+        for lang in SUPPORTED:
+            for art in articles(lang):
+                for text in _all_markdown(art):
+                    for address in MAILTO_RE.findall(text):
+                        assert address in REAL_MAILBOXES, f"{lang}:{art.slug}: {address}"
 
     def test_external_links_are_allowlisted(self):
-        for art in ALL_ARTICLES:
-            for text in _all_markdown(art):
-                for url in EXTERNAL_LINK_RE.findall(text):
-                    host = url.split("/")[2]
-                    assert host in ALLOWED_HOSTS, f"{art.slug}: {host}"
+        for lang in SUPPORTED:
+            for art in articles(lang):
+                for text in _all_markdown(art):
+                    for url in EXTERNAL_LINK_RE.findall(text):
+                        host = url.split("/")[2]
+                        assert host in ALLOWED_HOSTS, f"{lang}:{art.slug}: {host}"
 
 
 class TestRendererSafety:

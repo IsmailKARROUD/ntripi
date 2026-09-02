@@ -645,6 +645,52 @@ and the sitemap. Nothing is authored twice.
   `translator()` falls back per key. This is also what makes hreflang and the
   sitemap honest: every alternate they advertise resolves. `en.ARTICLES` stays
   the spine, so a slug present only in a translated module is dropped.
+- **All six languages are translated** (`en` `fr` `es` `de` `ar` `zh`), and a
+  module is registered in `_MODULES` only once **every** slug in it is
+  translated. Registration is what puts a language into
+  `seo.HELP_CONTENT_LANGS`, and therefore into hreflang, the sitemap and
+  `llms.txt` — advertising a language whose articles are still English is a
+  duplicate-content signal, not a localisation one.
+  `test_help_content.py::test_a_registered_module_translates_every_article`
+  makes a half-finished registration fail the suite.
+- **Structure is identical across languages, by construction.** `slug`,
+  `category`, `schema`, `related`, `updated`, `Category.id`/`icon`,
+  `Release.version`/`date` and every `Block.anchor`/`kind` are copied from
+  `en.py`; only the prose fields are translated. The anchor is both the in-page
+  fragment and the `HowToStep.url`, and `kind` is what `FAQPage.mainEntity` and
+  `HowTo.step` are built from, so a translator who renumbers one empties the
+  structured data and breaks the table of contents while the page still renders
+  perfectly. Pinned by `test_structure_is_identical_across_languages`.
+- **`keywords` are the one field that is NOT translated — they are re-chosen.**
+  They are search synonyms, so they have to be the words someone types in *that*
+  language. This matters most for Chinese, where the substring tier is what
+  carries a query: short 2-character terms in `keywords` are what make the
+  keyword tier fire at all.
+- **Every prose invariant runs per language**: `summary` ≤ 160 characters (German
+  needs real rewrites here, not translations), no `#` heading inside a
+  `Block.body`, `mailto:` limited to the four real mailboxes, external links
+  host-allowlisted.
+- **`/help/app-map`'s diagram labels are `help_diag_*` i18n keys**, and
+  `article.html` imports the macro `{% from "help/_diagrams.html" import diagram
+  with context %}`. `_` is a context-processor value (`templating.py`), not
+  `env.globals`, so a plain `import` leaves it undefined and every `_()` in the
+  macro raises. The SVG geometry stays left-to-right in every language including
+  Arabic — the diagram is decoration, the legend beneath it is the content.
+- **`fold()` normalises Arabic and falls back to bigrams for CJK.** Both are
+  recall fixes, not polish. `_score_token` asks whether the token is *in* the
+  field, so a search for `المسار` scores zero against a title carrying `مسار`
+  — containment runs the wrong way — hence the alef/taa-marbuta/alef-maksura
+  table and the stripped `ال`. And CJK has no spaces, so a Chinese question
+  folds to one long token that appears verbatim nowhere: `_score_token` scores
+  it by its character bigrams, but only when a **majority** of them are present,
+  so sharing one character is not a match. The `_search_js.html` mirror carries
+  both rules, and its punctuation class must be `\p{L}\p{N}` with the `u` flag
+  — JavaScript's `\w` is ASCII-only and would erase every Arabic and Chinese
+  character.
+- **`llms.txt` is per-language and its links carry `?lang=`.** The index is the
+  first thing an assistant reads; English titles under `?lang=de` would advertise
+  a corpus that does not match the pages behind it, and a bare link would index
+  German then fetch English.
 - **`MarkdownIt` stays `html=False`.** The content is ours, so this is not
   defence against a hostile author — it is defence against the flag being
   flipped for a one-off embed, which would turn every article into an injection
@@ -820,6 +866,16 @@ and the sitemap. Nothing is authored twice.
 - Do NOT add a "was this helpful" form — free text from the public site drags in `moderate_or_422`, rate limits, a retention policy and a new table, for a signal nothing consumes; a `mailto:` with the slug in the subject costs nothing
 - Do NOT rate-limit `/help/search` — the limiter is in-memory and single-instance, the endpoint touches no DB, and a 429 on a crawler-facing page is a self-inflicted SEO wound
 - Do NOT replace the in-app FAQ with the web one — its answers ship with the binary so they cannot describe a version the reader is not holding
+- Do NOT register a `constants/help/<lang>.py` in `_MODULES` until every slug in it is translated — registration is what advertises the language in hreflang, the sitemap and `llms.txt`, so a partial module claims a localisation that is mostly English
+- Do NOT change a `Block.anchor`, a `kind`, a `slug`, a `category`, a `schema`, a `related` list or an `updated` date when translating — the anchor is the in-page fragment *and* the `HowToStep.url`, and `kind` is what the structured data is built from; the page still renders perfectly, which is why only a test catches it
+- Do NOT translate `keywords` word for word — they are search synonyms and have to be what someone types in that language; in Chinese they are what makes the keyword tier fire at all
+- Do NOT let a translated `summary` exceed 160 characters — German runs ~20% longer, so several of them are rewrites rather than translations
+- Do NOT import the diagram macro without `with context` — `_` comes from a context processor, not `env.globals`, so every label inside it would raise
+- Do NOT hardcode a label inside `_diagrams.html` — inline SVG text is translatable text, which is the entire reason the diagrams are not `<img>`
+- Do NOT use `\w` in the search JS — JavaScript's is ASCII-only, so `[^\w\s]` erases every Arabic and Chinese character rather than the punctuation; use `\p{L}\p{N}` with the `u` flag
+- Do NOT drop the Arabic normalisation from `fold()` — `_score_token` tests containment in one direction only, so a query carrying `ال` can never match a title without it
+- Do NOT relax the CJK bigram rule to "any gram hits" — one shared character would match a large share of the corpus, which is worse than the empty result the fallback exists to fix
+- Do NOT serve `llms.txt` in English under another `?lang=` — the index is what an assistant reads first, and its links must carry the language they name
 - Do NOT name internal state (`edit_lock_lost`, a status code) in a troubleshooting article — describe the message the user saw and what to do; the internal name goes stale on the next refactor
 - Do NOT apply the client text filter to titles or place names — European place names false-positive
 - Do NOT let a client-side filter block submission, mutate text, or clear a compose field

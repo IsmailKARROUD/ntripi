@@ -138,6 +138,54 @@ class TestSearch:
     def test_search_page_is_noindex(self, client: TestClient):
         assert "noindex" in client.get("/help/search?q=track").text
 
+    def test_arabic_definite_article_still_finds_the_bare_noun(self, client: TestClient):
+        """المسار is how the word is actually typed; مسار is how the titles carry it.
+
+        _score_token asks whether the token is *in* the field, so without the
+        article being stripped on both sides the containment runs the wrong way
+        and every Arabic query beginning with ال scores zero.
+        """
+        resp = client.get("/help/search?q=%D8%A7%D9%84%D8%A3%D8%B0%D9%88%D9%86%D8%A7%D8%AA&lang=ar")
+        assert resp.status_code == 200
+        assert "/help/permissions" in resp.text
+
+    def test_arabic_orthographic_variants_are_folded(self, client: TestClient):
+        # Written with a bare alef rather than the hamza the article uses.
+        resp = client.get("/help/search?q=%D8%A7%D8%B0%D9%88%D9%86%D8%A7%D8%AA&lang=ar")
+        assert "/help/permissions" in resp.text
+
+    def test_chinese_keyword_finds_its_article(self, client: TestClient):
+        # 权限 = permissions. Short terms are what the zh keyword lists carry.
+        resp = client.get("/help/search?q=%E6%9D%83%E9%99%90&lang=zh")
+        assert resp.status_code == 200
+        assert "/help/permissions" in resp.text
+
+    def test_chinese_sentence_is_not_one_unmatchable_token(self, client: TestClient):
+        """怎么和朋友一起规划行程 — "how do I plan a trip with friends".
+
+        CJK has no spaces, so this folds to a single token that appears verbatim
+        in no document. Without the bigram fallback the most natural way to ask a
+        question in Chinese returns nothing at all, and search would only work
+        for people who already knew our vocabulary.
+        """
+        q = "%E6%80%8E%E4%B9%88%E5%92%8C%E6%9C%8B%E5%8F%8B%E4%B8%80%E8%B5%B7%E8%A7%84%E5%88%92%E8%A1%8C%E7%A8%8B"
+        resp = client.get(f"/help/search?q={q}&lang=zh")
+        assert resp.status_code == 200
+        assert "/help/plan-a-trip-with-friends" in resp.text
+
+    def test_a_partial_bigram_overlap_is_not_a_match(self, client: TestClient):
+        """行星探测器 ("planetary probe") shares the character 行 with 行程 but no
+        whole bigram with anything we publish.
+
+        The fallback must stay a majority-of-bigrams rule: relaxed to "any gram
+        hits" it would match a large share of the corpus on one shared character,
+        which is worse than the empty result it was added to fix.
+        """
+        q = "%E8%A1%8C%E6%98%9F%E6%8E%A2%E6%B5%8B%E5%99%A8"
+        resp = client.get(f"/help/search?q={q}&lang=zh")
+        assert resp.status_code == 200
+        assert "没有匹配" in resp.text
+
 
 class TestSearchIndex:
     def test_one_entry_per_article_with_every_field(self, client: TestClient):
