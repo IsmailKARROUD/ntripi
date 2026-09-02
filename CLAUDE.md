@@ -759,6 +759,51 @@ and the sitemap. Nothing is authored twice.
   documents, whose strings must also render in a bare Flutter `Text` widget.
   Help articles have no such consumer, which is why Markdown is free here.
 
+### Every user-facing change updates the help centre (CRITICAL)
+
+The help centre is the record of how the app works **today**, so keeping it true
+is part of the change, not follow-up work. **A commit that alters what a user
+sees or does — a new feature, a moved control, reworded copy, a changed limit, a
+removed screen — is not finished until `app/constants/help/` says so.** An
+article describing last month's UI is worse than no article: the reader follows
+it, the step is not where it says, and they conclude the app is broken. A
+refactor, an index or a migration with no visible surface needs none of this —
+the test is whether a reader could notice.
+
+For each article the change touches:
+
+- **Edit the prose in all six languages, not just `en.py`.** `articles()` falls
+  back per *slug*, not per field, so a translated module goes on serving its own
+  stale text forever — the page still renders perfectly and nothing fails. Only
+  a wholly missing slug is caught
+  (`test_a_registered_module_translates_every_article`).
+- **Bump `updated`, in all six.** `test_structure_is_identical_across_languages`
+  asserts it matches `en.py` exactly, so the date bump is what makes the suite
+  refuse a change that touched one language and forgot the other five. It is
+  also `dateModified` in the JSON-LD.
+- **Re-check `summary` (≤160 chars), `keywords` and `related`.** If the change
+  renamed something, the old word is what people still type — keywords are
+  re-chosen per language, never translated. A new article also needs `related`
+  links *from* its neighbours; a page nothing points at is reachable only by
+  search.
+- **A new capability needs a new `Article` in `en.py` and in every registered
+  language, in the same commit.** `en.ARTICLES` is the route table, and a
+  module in `_MODULES` is expected to translate every slug — landing
+  English-only either fails the suite or advertises a language whose new page
+  is not in it.
+- **Add a `Release` to `RELEASES` for `/help/whats-new` — in all six modules.**
+  `releases()` falls back *whole*, not per entry, and each translated module
+  carries its own list, so an entry added only to `en.py` silently leaves the
+  other five showing an outdated What's New with no test to catch it.
+- **Fix the in-app FAQ when the change contradicts one of its eight answers.**
+  It is built from `AppLocalizations` (`faq*Q` / `faq*A` in the `.arb` files),
+  ships with the binary and cannot be corrected by a deploy — which is exactly
+  why a wrong answer there outlives the release that broke it.
+- **Renamed routes and screens count too.** `/help/app-map`'s labels are
+  `help_diag_*` i18n keys, and every deep link is `/app/#/…`; a route renamed
+  without them lands the reader on the app's home screen with nothing to explain
+  it.
+
 ---
 
 ## Alembic Migration Rules (CRITICAL)
@@ -900,6 +945,11 @@ and the sitemap. Nothing is authored twice.
 - Do NOT relax the CJK bigram rule to "any gram hits" — one shared character would match a large share of the corpus, which is worse than the empty result the fallback exists to fix
 - Do NOT serve `llms.txt` in English under another `?lang=` — the index is what an assistant reads first, and its links must carry the language they name
 - Do NOT name internal state (`edit_lock_lost`, a status code) in a troubleshooting article — describe the message the user saw and what to do; the internal name goes stale on the next refactor
+- Do NOT ship a user-facing change without updating `app/constants/help/` in the same commit — an article describing last month's UI is worse than none, because the reader follows it, finds the step missing, and concludes the app is broken
+- Do NOT edit help prose in `en.py` alone — `articles()` falls back per slug, so each translated module keeps serving its own stale text and only a *missing* slug fails the suite
+- Do NOT leave `updated` untouched after editing an article — bumping it in all six is what makes the structure test catch a one-language edit, and it is `dateModified` in the JSON-LD
+- Do NOT add a `Release` entry to `en.py` only — `releases()` falls back whole rather than per entry, so the other five languages go on showing an outdated What's New and nothing fails
+- Do NOT leave a contradicted in-app FAQ answer to the next release — it ships with the binary, so unlike the web centre a deploy cannot correct it
 - Do NOT apply the client text filter to titles or place names — European place names false-positive
 - Do NOT let a client-side filter block submission, mutate text, or clear a compose field
 - Do NOT create a second access ladder for editing — `can_edit_itinerary` must keep delegating to `can_view_itinerary`, or edit rights outlive view rights
