@@ -15,6 +15,44 @@ Monorepo at `/Users/ismac/project/Ntripi/`:
 
 ---
 
+## Documentation (`docs/`) — READ FIRST
+
+`docs/` is the single source of truth for **what this project does**. This file is
+the rules; `docs/` is the reference. Read it before writing code, update it after.
+
+**Before any feature work:**
+1. Read `docs/README.md` — the index, and how the folder is meant to be used.
+2. Read `docs/constraints.md` — the project-wide rules a new feature must not
+   violate. They are cross-cutting, so a feature that breaks one is wrong before
+   it is written.
+3. Read the relevant `docs/features/<feature>.md` **and the "Related" links at its
+   foot** — that is where you find what your change would conflict with.
+4. Read `docs/decisions.md` before reversing anything: the reasoning is usually
+   recorded, including the alternatives already rejected.
+
+**Finishing a change is not just the code.** A change is done when:
+- The relevant `docs/features/<feature>.md` reflects the new behaviour — Rules,
+  Data model, API surface, Flutter surface, Known gaps.
+- A new capability has its own `docs/features/<name>.md`, linked from
+  `docs/README.md` and from the "Related" section of every doc it touches.
+- Any architectural decision is appended to `docs/decisions.md` as a new dated
+  entry (Context / Decision / Consequences / Alternatives rejected). **Append
+  only.**
+- Anything deferred is in `docs/backlog.md`, marked idea / planned / in-progress.
+- A new table or column is in `docs/reference/data-model.md`; a new error code is
+  in `docs/reference/error-codes.md`.
+- A cross-cutting rule is in `docs/constraints.md`.
+
+Only what the code actually does gets documented. Anything ambiguous goes under an
+**OPEN QUESTIONS** heading at the foot of the file it belongs to, never guessed at.
+
+A refactor, an index or a migration with no user-visible surface needs none of
+this — the test is whether a reader could notice. This is the same standard the
+help centre is held to below: **docs describing last month's behaviour are worse
+than no docs, because the reader follows them.**
+
+---
+
 ## Tech Stack
 
 **Backend:** FastAPI · PostgreSQL via SQLAlchemy 2 · Alembic · JWT HS256 (python-jose + bcrypt direct) · Pydantic v2 + pydantic-settings · Jinja2 · Pillow · Uvicorn · pytest + SQLite in-memory
@@ -818,6 +856,15 @@ For each article the change touches:
 
 ## What NOT To Do
 
+- Do NOT start feature work without reading `docs/README.md` and
+  `docs/constraints.md` — the constraints are cross-cutting, and a feature that
+  violates one is wrong before it is written
+- Do NOT ship a change without updating the matching `docs/features/<feature>.md`
+  and appending to `docs/decisions.md` — a doc describing last month's behaviour
+  is worse than none, because the reader follows it
+- Do NOT edit or delete an existing `docs/decisions.md` entry — the log is
+  append-only; a reversed decision gets a NEW entry that supersedes the old one
+  and links to it
 - Do NOT add `type`, `position`, or `parallel_position` columns to `stops`
 - Do NOT send or return `position` / `parallel_position` in any API payload
 - Do NOT skip `If-Match` on any mutation endpoint

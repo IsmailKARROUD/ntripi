@@ -1,0 +1,681 @@
+# Decision log
+
+Append-only. Oldest first, newest last. **Never edit or delete an entry** — a
+reversed decision gets a new entry at the bottom that supersedes the old one and
+links to it.
+
+Dates come from git history (438 commits, 2026-03-12 → 2026-09-02) and from the
+date each Alembic revision was **first added**, which dates the schema decision
+behind it. Where no commit anchors a decision it is marked **undated** rather
+than guessed at. Two gaps in the history — 2026-05-26 → 2026-06-11 and
+2026-08-18 → 2026-08-29 — are why interpolation is refused.
+
+---
+
+### 2026-03-12 — Monorepo with a strictly separated backend and frontend
+
+**Context.** One person building a FastAPI backend and a Flutter app for three
+platforms.
+**Decision.** One repository, `social_api/` and `social_flutter/`, sharing **no
+code** — HTTP/JSON only. UUID primary keys everywhere, carried as `String` in
+Dart.
+**Consequences.** The two halves version and deploy independently; every contract
+change has to travel over the wire, which is what makes the API shape matter so
+much later. UUIDs cost index size but remove any need for id-guessing defences.
+**Alternatives rejected.** Two repositories (coordination overhead for one
+person); a shared codegen layer (would reintroduce coupling and require
+build_runner, rejected separately).
+
+---
+
+### 2026-03-13 — Accounts are private by default
+
+**Context.** A social app whose content is people's travel plans.
+**Decision.** `users.is_private` defaults `True`. New itineraries default
+`only_me`.
+**Consequences.** Every new account starts invisible, so growth depends on
+deliberate sharing. The private→public flip needs a bulk auto-accept path, which
+now lives in `update_me`.
+**Alternatives rejected.** Public by default with an opt-out (the usual choice,
+and the wrong one when the content is somebody's itinerary and home city).
+
+---
+
+### 2026-03-15 — Four-level visibility replaces the `is_public` boolean
+
+**Context.** `is_public` could not express "my followers" or "these five people".
+**Decision.** `visibility` ∈ `public | followers | restricted | only_me`, with
+`itinerary_allowed_users` backing `restricted`. One function,
+`can_view_itinerary()`, owns the ladder.
+**Consequences.** Every read path in the project calls that one function, and the
+edit ladder later delegates to it rather than duplicating it — the single most
+load-bearing structural decision in the codebase. The column shipped without a DB
+CHECK, which is still true.
+**Alternatives rejected.** A boolean plus a separate share table (cannot express
+`followers`); per-stop visibility (no read path would have been cheap enough).
+Migration `c3d2e1f0a9b8`.
+
+---
+
+### 2026-04-19 — GDPR deletion keeps ratings by anonymising them
+
+**Context.** A hard account delete would erase ratings other people rely on to
+judge a trip.
+**Decision.** `itinerary_ratings.user_id` is `ON DELETE SET NULL`. The account and
+its own content are hard-deleted; a documented set of evidence columns keep their
+rows with a NULL user.
+**Consequences.** A trip keeps its score after a reviewer leaves. `rating_count`
+stays honest. The deletion path has to decrement other users' counters *before*
+the cascade, and nulls `user_id` explicitly as belt-and-braces.
+**Alternatives rejected.** Cascading ratings away (would silently re-score every
+trip a departing user had rated); soft-deleting accounts (a GDPR erasure request
+is not satisfied by a flag).
+
+---
+
+### 2026-04-22 — Community ratings replace the owner-declared `safety_rating`
+
+**Context.** `itineraries.safety_rating` was set by the trip's author.
+**Decision.** Drop the column. Introduce `itinerary_ratings` with a required
+overall score and five optional dimensions (safety, experience, accessibility,
+family-friendly, and later crowdedness), one row per user per trip.
+**Consequences.** The number means something. Averages must be computed in SQL,
+the aggregate has to exclude moderated reviews, and each rating needs its own
+`moderation_status` so an abusive review cannot take down the trip.
+**Alternatives rejected.** Keeping both (two numbers called "safety" on one
+screen); a single overall score only (loses the dimension that travellers
+actually ask about). Migrations `07035928fd6c`, `a1b2c3d4e5f6`, `b7c8d9e0f1a2`.
+
+---
+
+### 2026-04-23 — `CLAUDE.md` as the conventions file, and a portability rule set
+
+**Context.** Most of the code is written with an AI assistant, and conventions
+were being re-derived every session.
+**Decision.** One root `CLAUDE.md` holding architectural rules and a "What NOT To
+Do" list, plus five portability rules: env-var config, a single root Dockerfile,
+no platform-specific features, storage behind an abstraction, and no shared
+backend/frontend code.
+**Consequences.** The rules held — there is not one `Color` literal outside
+`app_theme.dart`, and the storage abstraction made the R2 migration a config
+change. The file also grew to 1,011 lines with no navigation, which is why
+`docs/` now exists beside it.
+**Alternatives rejected.** Per-directory convention files (an agent reads the root
+first); documenting nothing and relying on code review (there is one reviewer).
+
+---
+
+### 2026-04-27 — Conservative username policy with `username_lower` as the key
+
+**Context.** Case-insensitive uniqueness, and handles that appear in share URLs.
+**Decision.** `username_lower` is UNIQUE and **the only lookup key**; `username`
+keeps display casing. Pattern `^[a-zA-Z][a-zA-Z0-9_.]{2,28}[a-zA-Z0-9]$`, no
+consecutive `.`/`_`, a 68-entry reserved list. A separate free-Unicode
+`display_name`.
+**Consequences.** `User.username == …` is a bug anywhere it appears. Usernames
+became immutable, because `build_profile_share_url` depends on it.
+**Alternatives rejected.** `LOWER(username)` functional index (easy to forget at
+a call site); allowing Unicode usernames (homoglyph impersonation in a share URL).
+Migration `d4e5f6a7b8c9`.
+
+---
+
+### 2026-05-02 — Filesystem storage → Cloudflare R2
+
+**Context.** Railway's filesystem is ephemeral; images vanished on redeploy
+without a mounted volume.
+**Decision.** Add an R2 backend behind the existing `Storage` ABC. Keep filesystem
+as the local-dev and rollback path.
+**Consequences.** Because the abstraction already existed, this was a config
+change plus one class. R2 later became a **compliance dependency**: Cloudflare's
+CSAM scanning only sees images served through the zone, so `STORAGE_BACKEND=r2`
+with any `R2_*` var missing now raises at startup, and an `r2.dev`
+`R2_PUBLIC_URL` logs a warning. Filesystem `public_url` returns a relative path,
+which is why `absolute_storage_url` exists.
+**Alternatives rejected.** A Railway persistent volume (works, but keeps images
+off the CDN and out of the CSAM scan); presigned direct-to-R2 uploads — rejected
+in writing at `media_pipeline_spec.md:70`, because the server would never see the
+bytes it is supposed to scan and strip EXIF from.
+
+---
+
+### 2026-05-04 — Place types become 11 purpose-based categories; `destination` → `arrival`
+
+**Context.** The original place taxonomy described venue kinds rather than what a
+traveller goes there to do.
+**Decision.** 11 camelCase values in `stops.place_type`: `eatDrink, sleep, pray,
+learnSee, buy, playWatch, nature, travel, healBathe, entertainment, sight`. The
+final stop role is renamed `arrival`.
+**Consequences.** `PlaceType.fromString()` must handle legacy values and return
+null for unknowns — it is the only permitted way to read the field. `travel` was
+later renamed `transport` (2026-07-04, `c78a28a2e02f`). The column still has no DB
+CHECK; the Pydantic regex is the only gate.
+**Alternatives rejected.** A venue-type taxonomy (users do not think in venue
+types); a free-text tag (unfilterable).
+
+---
+
+### 2026-05-05 — Stop role is derived from position, not stored
+
+**Context.** Users were being asked to label a stop as origin / waypoint /
+arrival, which is information the list order already carries.
+**Decision.** Drop `stops.type`. Derive the role client-side in
+`Itinerary._parseTracks()`: one track → all `origin`; two or more → first
+`origin`, last `arrival`, rest `waypoint`.
+**Consequences.** Reordering can never produce an inconsistent labelling, because
+there is nothing to keep in sync. `Stop.fromJson` sets a placeholder and the real
+role is assigned after deserialisation. The model file says "Never add it back".
+It also broke the share page — `794725c` (2026-05-20) fixed a 500 from a leftover
+`stop.type` access, which a live `test_share.py` would have caught.
+**Alternatives rejected.** Keeping the column and recomputing on write (two
+sources of truth); a DB trigger (same problem, further from the reader).
+Migration `f1e2d3c4b5a6`.
+
+---
+
+### 2026-05-07 — Fractional indexing with first-class tracks
+
+**Context.** Integer stop positions meant a mid-list insert rewrote every row
+above it — 25 UPDATEs in a 50-stop trip — and those writes raced with concurrent
+edits. Parallel alternatives ("Hotel A or Hotel B") had no representation at all.
+**Decision.** `tracks` becomes a real table. `tracks.rank` and `stops.rank` are
+lexicographic base-62 strings, `TEXT COLLATE "C"`. `services/ordering.py` owns
+`key_between` / `n_keys_between`. A track exists only while it holds ≥1 stop,
+enforced in application code.
+**Consequences.** An insert or a move writes **one** row. `COLLATE "C"` is
+required so SQL order matches Python order. `_two_phase_renumber` with `!`-prefixed
+temporary ranks exists to dodge the UNIQUE constraints during a full rewrite, and
+`add_stop` needs a 3-attempt retry on rank collision. Out-of-order anchors answer
+**412**, not 422 — they mean the client's list is stale. The clean-slate migration
+wiped stops, segments and annotations. **The same commit skipped six test files
+with `"rewriting after fractional-indexing refactor"`, and they are still
+skipped** — see [backlog.md](backlog.md).
+**Alternatives rejected.** Integer positions with gaps (still rewrites on
+exhaustion, and the gap size is a guess); a linked list (no `ORDER BY`); a
+`parallel_position` column, which had shipped the day before (2026-05-06,
+`c5d6e7f8a9b0`) and was replaced by tracks a day later. Migration
+`d5e6f7a8b9c0`.
+
+---
+
+### 2026-05-12 — The cache ETag is split from the concurrency ETag
+
+**Context.** `If-Match` on itinerary mutations already used `updated_at` as an
+ETag. Bandwidth on repeated GETs was the separate problem.
+**Decision.** Add `ETagMiddleware`, which hashes any JSON GET body to a 16-char
+opaque token and answers 304 on `If-None-Match`. **It leaves an endpoint-set
+`ETag` alone**, so `GET /itineraries/{id}` keeps emitting the ISO concurrency
+token and the 304 round-trip still works against it.
+**Consequences.** Two mechanisms share a header name and a normalisation function
+but not a value format. `_normalize_etag` has to absorb Cloudflare's `W/` weak
+prefix and Dart's `Z` vs Python's `+00:00`. Later designs are shaped by it: the
+edit-lock GET carries absolute timestamps and **no** remaining-seconds field
+specifically so its body is byte-stable and the 304 fires on every poll.
+**Alternatives rejected.** Reusing `updated_at` for caching too (wrong for every
+endpoint that is not one itinerary); `Last-Modified` (second resolution is too
+coarse). Commits `71078a2`, `3968f71`, `eea9554`.
+
+---
+
+### 2026-05-14 — Alembic migration rules, after five revision-ID collisions
+
+**Context.** The placeholder revision id `a1b2c3d4e5f6` had been hand-written for
+**three different migrations** and `42f3ed3997b2` for two. Each collision forked
+the chain and crashed the deploy, producing eight separate head-fixing commits
+between 2026-04-27 and 2026-05-14.
+**Decision.** Never hand-write a revision id — generate it. Always verify a single
+head with `alembic heads` before committing. Never keep two files with the same
+id. `down_revision` must be read from `alembic heads`, not guessed from filenames.
+Written into `CLAUDE.md`.
+**Consequences.** No collision since. Later additions: adding an index to a
+populated table needs `CREATE INDEX CONCURRENTLY` inside an
+`autocommit_block()`, guarded on the dialect — which forfeits the migration's
+atomicity in exchange for not holding a write lock through a deploy.
+**Alternatives rejected.** A CI check on head count (would have worked; nobody had
+CI); sequential integer revisions (Alembic's own docs advise against it for
+branching). Commit `e360f99`.
+
+---
+
+### 2026-05-19 — `StatefulShellRoute` replaces the hand-rolled `_AppShell`
+
+**Context.** Switching tabs rebuilt each tab's widget tree, losing scroll position
+and refetching.
+**Decision.** `StatefulShellRoute.indexedStack` with five branches — `/search`,
+`/profile/me`, `/itineraries`, `/saved`, `/feed`.
+**Consequences.** Each branch's tree stays alive, so keep-alive providers render
+their previous data on a second visit — which is why several screens now refetch
+explicitly on open. `/profile/:userId` must be declared *after* the shell so
+`/profile/me` wins.
+**Alternatives rejected.** An `IndexedStack` inside one route (loses per-branch
+navigation); `AutomaticKeepAliveClientMixin` per screen (per-widget, not
+per-branch). Commit `4d869bd`.
+
+---
+
+### 2026-06-12 — Short access tokens plus rotating refresh tokens
+
+**Context.** A 24-hour JWT was the whole session. A leak meant a day of access,
+and there was no revocation.
+**Decision.** `ACCESS_TOKEN_EXPIRE_MINUTES=15`; a rotating refresh token with a
+`family_id`, 30-day inactivity expiry, stored only as a SHA-256 hash. **Replaying
+a revoked token revokes the whole family.** `revoke()` no-ops on an unknown token
+so it cannot become a validity oracle. The client refreshes transparently.
+**Consequences.** Every write path can now be invalidated — password change and
+reset both call `revoke_all_for_user`. The access token deliberately carries no
+`scope` claim, and that *absence* is what the admin session and the appeal token
+check against. `rotated_to` and `user_agent` are captured and still unread.
+**Alternatives rejected.** Long-lived JWTs with a denylist (needs the same table
+plus a check on every request); server-side sessions (gives up statelessness for
+a mobile client). Migration `340e256514b7`.
+
+---
+
+### 2026-06-20 — Google Sign-In, and email verification effectively via Google
+
+**Context.** Verifying email addresses needed an email provider and a flow;
+high-value actions needed *some* verification signal.
+**Decision.** `POST /auth/google` with manual `aud` and `iss` checks after
+`verify_oauth2_token`. Three branches: sign in, link to an existing email account
+(**only if Google reports the address verified**), create new.
+`require_verified_email` gates nine write endpoints.
+**Consequences.** Dual-method accounts exist and can delete themselves with
+either credential. All three client ids empty means Google sign-in is silently
+off. The server later became the only place that knows whether a token means
+signup or sign-in, which forced consent-on-demand. `/auth/register` does email a
+verification link, so `require_verified_email`'s "only via Google" message is now
+stale.
+**Alternatives rejected.** Email-only verification (a provider dependency on the
+critical signup path); trusting the Google token's `aud` without checking it
+(accepts tokens minted for any app). Migration `0a2c5b2f918e`.
+
+---
+
+### 2026-07-27 — Image moderation as a two-tier, fail-open pipeline
+
+**Context.** User-uploaded cover images and avatars are served publicly.
+**Decision.** AWS Rekognition `DetectModerationLabels` inside
+`process_and_store`, **after** Pillow processing and **before** storage. Hard
+reject (≥80) → 422 and nothing stored; soft flag (≥50) → stored, logged,
+operator emailed; **AWS error → stored as `pending` (fail-open)**. A client-side
+pre-check is a UX/cost optimisation only.
+**Consequences.** An AWS outage cannot block every upload; the `pending` status is
+what the sweep's post-outage re-check looks for — though the re-check only
+re-scans *text*, so a fail-open image is never looked at again. Off by default, so
+a missing credential degrades to "stored unscanned". The client pre-check is still
+inert on both platforms because neither model file is vendored.
+**Alternatives rejected.** Fail-closed (an AWS outage becomes an app outage);
+scanning before Pillow (EXIF and resizing would change the bytes that were
+scanned); client-side only (trivially bypassed). Migration `b858424a1092`.
+
+---
+
+### 2026-07-28 — Moderation is soft state, and moderator writes preserve the ETag
+
+**Context.** Hiding or removing content had to be reversible and appealable, and
+`updated_at` was already the concurrency ETag.
+**Decision.** `hidden_at` (owner-only) and `deleted_at` (invisible to everyone,
+owner included) as soft state on `itineraries`. **`admin_service.set_preserving_etag`
+is the only way to write an itinerary's moderation state from outside the owner's
+request.**
+**Consequences.** 13 call sites go through it. Without it a moderator action would
+412 the author's open editor over a change they cannot see. An admin "delete" is a
+soft delete while the *owner's* `DELETE /itineraries/{id}` is a hard delete — two
+operations behind one word. Ratings and profiles have no `hidden_at`, so
+`moderation_log` is the only record of *when*, which is why `_last_takedown_at` is
+a correlated subquery.
+**Alternatives rejected.** Hard deletion (destroys evidence and makes appeals
+impossible); a separate moderation table (the visibility check would need a join
+on every read). Migration `e190f1dcbf2c`.
+
+---
+
+### 2026-07-30 — Text moderation with our own policy, not the provider's verdict
+
+**Context.** Provider APIs return a boolean `flagged` plus per-category scores.
+The boolean encodes someone else's thresholds.
+**Decision.** `moderation_policy.py` holds 13 categories with Ntripi's own
+`(review, reject)` thresholds; **the provider's `flagged` is ignored**.
+`POLICY_VERSION` is part of the cache key. Provider chain `openai → local →
+pending`, selected by config. `moderate_or_422` is called from the endpoint
+**body**, never as a `Depends`. `text_moderation_cache` stores no raw text and no
+user reference; `text_moderation_decisions` is both the audit trail and the
+moderator queue.
+**Consequences.** Swapping providers is a config change. Bumping a threshold
+requires bumping `POLICY_VERSION` or stale verdicts survive. Four text fields are
+**deliberately not** moderated — report notes, appeal reasons, bug-report
+messages, admin action reasons — because a 422 there would block someone reporting
+hate speech who quotes it. Stop, annotation and leg text rolls up to the parent
+itinerary, because hiding is itinerary-level.
+**Alternatives rejected.** Using the provider's boolean (a threshold change on
+their side silently changes our policy); a `Depends` (spends a paid call before
+the 412); per-fragment moderation status (no read path). Migration
+`4bdacee286ac`, one commit with six migrations (`8365e10`).
+
+---
+
+### 2026-07-30 — Blocking cuts visibility in both directions
+
+**Context.** A one-sided block would let the blocked user keep reading someone who
+asked to be left alone.
+**Decision.** `is_blocked_either_way` is the predicate, consulted inside
+`can_view_itinerary` and as a SQL `NOT IN` in `public_listing_criteria`. **A
+blocked profile 404s identically to a deleted one.** Blocking severs follows both
+ways; unblocking does not restore them. Both FKs CASCADE, because a block is a
+preference, not evidence.
+**Consequences.** Twelve surfaces consult it. Search and the follow lists filter
+**in the query**, not after, or `limit`/`offset` would silently shrink pages. You
+can block someone who has already blocked you, which needs a bare `db.get` rather
+than the blocked-aware helper.
+**Alternatives rejected.** One-directional blocking (the failure above); a
+distinct 403 for blocked (tells the blocked user the account exists). Migration
+`9dcbd2b7d34c`.
+
+---
+
+### 2026-07-30 — The client text filter is a hand-written list; `safe_text` is removed
+
+**Context.** Lifted from the commit body of `e56c9be`, which is the fullest
+written rationale in the repository:
+
+> `ModerationHint` built `safe_text`'s ~21,700-entry trie synchronously on the UI
+> isolate the first time any compose screen opened. Its Aho-Corasick preprocessing
+> dequeues with `List.removeAt(0)` — O(n) per node, so **O(n²)** over the
+> ~150k-node trie: **2,889 ms on a desktop JIT, tens of seconds on a phone**. That
+> is the "Ntripi isn't responding" dialog users hit while editing an annotation…
+> Search was never implicated (0.05 ms/call), so the per-keystroke debounce was not
+> the problem.
+>
+> Precision was the second reason to drop it, not just cost. Those lists are
+> scraped, not curated: *beach, queue, fish, after, el, ce, eg* and the bare pronoun
+> *i* are all in them, so **roughly a third of ordinary travel prose flagged**. No
+> minimum-length cutoff fixes that — *beach* is five letters — and a hint that fires
+> on "Beautiful beach" teaches people to ignore every hint.
+
+**Decision.** A short hand-written list we own: pure Dart, no assets, no plugin,
+no isolate, hash-set lookups over leet-normalised tokens. **Whole-token matching**,
+so Scunthorpe and Cockermouth are structurally safe. Stretched spellings (`fuuck`)
+collapse onto the list, **but only for tokens that actually stutter, or squeezing
+would put *Niger* onto a slur**. Slurs with common innocent readings in the app's
+own six languages are **omitted on purpose** (`spic, chink, pedo, negro, con,
+cono`) — the backend classifier reads context and catches those.
+**Consequences.** `looksOffensive` keeps its signature, so the six call sites are
+untouched; `warmUpTextPrecheck` is gone. **The never-block contract is
+unchanged**: any failure still reads as clean, the submit control stays enabled,
+and text is never mutated. 42 new tests, 26 of them benign prose across all six
+languages plus the documented place-name traps — **they exercise the real list for
+the first time**, because the old implementation always degraded to "clean" under
+`flutter test` when its assets could not load. The filter is never applied to
+titles or place names.
+**Alternatives rejected.** Keeping `safe_text` with a background isolate (does not
+fix the ~⅓ false-positive rate); a minimum token length (*beach* is five letters);
+blocking submission on a client verdict (the backend is the authority).
+
+---
+
+### 2026-08-03 — CSAM detection at the Cloudflare edge, serve-time, with a stated accepted risk
+
+**Context.** Known-CSAM hash matching needs a corpus no application can hold.
+**Decision.** Cloudflare's CSAM Scanning Tool, enabled by a dashboard toggle with
+**no app config**, scanning at **serve time** on R2 behind a proxied custom
+domain. The app's whole job is the response: `admin_service.csam_takedown`, driven
+from `/admin/legal`.
+**Consequences.** The order inside the takedown is the evidence — **hash the
+object before deleting it**, then clear the URL, deactivate the account, write one
+operator `ban` row, escalate against the *user*, commit, and only then delete the
+object. `rejected_csam` rows are exempt from the 90-day purge and must never be
+touched. `parse_storage_key` refuses anything it does not recognise, because
+guessing could suspend an unrelated account. The uploader is never emailed. A
+`pub-*.r2.dev` `R2_PUBLIC_URL` silently disables the entire layer.
+**Accepted risk, stated in writing** (`media_pipeline_spec.md:23`): *"because
+detection is serve-time and the digest is daily, a matched image will have been
+stored and possibly served before you learn of it. Upload-time hash matching
+(PhotoDNA) is the only thing that prevents that, and it was consciously traded
+away for operational simplicity."*
+**Alternatives rejected.** PhotoDNA at upload time — *"needs a Microsoft
+application and NCMEC ESP paperwork that a solo operator cannot sustain"*;
+detection of *new, unknown* CSAM — out of scope, *"services that attempt it exist
+and need their own legal review"*; automated reporting to authorities, rejected in
+the model file itself: *"the requirement is that this category cannot be silently
+closed, not that the app files reports on its own."* Migration `7f6e757d452c`.
+
+#### The six stances awaiting counsel sign-off
+
+Reproduced from `csam_response_runbook.md` §6 **with the sign-off column intact**
+— all six are still unticked.
+
+| Decision | Stance | Rationale | Signed off |
+|---|---|---|---|
+| Detection timing | **Serve-time only** (Cloudflare); no upload-time hash matching | PhotoDNA needs a Microsoft application and NCMEC ESP paperwork a solo operator cannot sustain. **Accepted risk: matched content is stored and may be served before detection.** | ☐ |
+| Notification latency | **Daily digest accepted** | Cloudflare's cadence; not configurable. The filing clock starts at the notice, not the upload. | ☐ |
+| Uploader notification | **None** — no email, no distinct error | A notice confirms what was detected to the person who uploaded it | ☐ |
+| Reporting to authorities | **Manual only** | Neither Ntripi nor Cloudflare files automatically; the requirement is that these cannot be silently closed | ☐ |
+| Account suspension | **Immediate, on the operator's takedown** | A hash match does not guess; reversible via the standard unban if ever disputed | ☐ |
+| Evidence retention | **Indefinite** for `rejected_csam` rows | Preservation duties; the object is deleted, so nothing else survives | ☐ |
+
+---
+
+### 2026-08-06 — Notifications are structured references, never rendered text
+
+**Context.** Six locales, and display names that moderation may later hide.
+**Decision.** A row is `(type, subtype, actor_id, entity_type, entity_id)`; the
+sentence is built client-side from `AppLocalizations`. **`notification_service.notify`
+is the only writer**, and it does `db.add()` and nothing else — no commit, no
+flush — so a notification lands in the same transaction as the event that caused
+it.
+**Consequences.** Its three suppression rules (self, muted, blocked) hold only
+because there is one door. Preferences are three booleans on `users` checked at
+**write** time, so a muted type writes no row at all. Adding a type alters the
+`type` CHECK regardless, which is why a separate preferences table would buy
+nothing. `moderation_action` carries the action in `subtype` and **no actor** —
+naming the reporter would out them.
+**Alternatives rejected.** Storing the rendered sentence (wrong in five of six
+locales, freezes a name moderation may hide, needs a backfill to reword); a
+preferences table; committing inside `notify()` (would take the caller's write
+with it). Migration `8cd9a4fe3396`.
+
+---
+
+### 2026-08-08 — A 16+ age gate, with the arithmetic in one place
+
+**Context.** The ToS had asserted a minimum age for a release before anything
+asked for one.
+**Decision.** `users.date_of_birth` + `dob_source`, enforced on all three write
+paths. `age_service.py` is the single source of truth — `MINIMUM_AGE = 16`,
+`MAX_PLAUSIBLE_AGE = 120`. **Shape errors are 422; policy refusals are 400
+`underage`.** The check runs **before** `moderate_or_422`.
+**Consequences.** 16 clears GDPR Art. 8 in every member state, so no
+parental-consent path is ever needed — but it does not imply contract capacity,
+which is why the ToS keeps a separate age-of-majority clause. The comparison is a
+tuple compare, which is what makes a 29 February birth turn 16 on 1 March, and
+`DateOfBirthField.isOldEnough` mirrors it. `date_of_birth` is nullable and **never
+backfilled**; existing accounts declare at the re-acceptance gate, and an existing
+date is never overwritten.
+**Alternatives rejected.** A checkbox ("I am over 16") — not evidence; storing a
+derived age (goes stale daily); backfilling a plausible date (fakes the evidence
+the gate exists to produce); 13+ (would need a parental-consent path in most of
+the EU). Migration `2ddec1197cc9`.
+
+---
+
+### 2026-08-08 — Google supplies the birthday when it can; the consent sheet is the fallback
+
+**Context.** Google ID tokens carry **no birthdate claim**.
+**Decision.** Read it from the People API with the `user.birthday.read` sensitive
+scope and an access token, **requested only after the server answers
+`tos_required`** — that 400 is the only signal the token means signup rather than
+sign-in. `dob_source` records which source stood behind the account. The consent
+sheet is the guaranteed fallback.
+**Consequences.** `fetch_birthdate` must verify `resourceName == "people/{sub}"`,
+because the access token is a separate credential and without the check a caller
+could pair their own ID token with an access token minted for a different Google
+account. A birthday with no `year` is unusable. The lookup never raises. **This
+half is blocked on OAuth verification** — a 100-test-user cap until it clears — and
+the sheet fallback is what lets everything else ship.
+**Alternatives rejected.** Prompting before the Google picker (re-prompts every
+returning user at every sign-in); trusting the client's People API read (it is a
+prefill hint; the server re-reads).
+
+---
+
+### 2026-08-13 — Editors, and an edit lock identified by a rotating token
+
+**Context.** An itinerary needed more than one author, and two people writing at
+once had nothing stopping them.
+**Decision.** `itinerary_editors` mirrors the allowlist. **`can_edit_itinerary()`
+delegates to `can_view_itinerary()` first**, so edit rights are re-derived, not
+stored. `itinerary_edit_locks.itinerary_id` is the **PRIMARY KEY**, so "at most
+one holder" is a database invariant. **The claim is identified by a rotating
+opaque token, never by `user_id`** — every takeover mints a fresh one, and that
+rotation is the entire mechanism behind "the displaced device cannot save". One
+guard, `require_edit_access`, re-checks permission + lock + `If-Match` on all 17
+mutating endpoints, and `test_edit_guard_coverage.py` proves the coverage
+structurally.
+**Consequences.** A block, a visibility change, a moderator hide, a banned owner
+or a soft delete revokes editing the moment it revokes viewing — no rows to clean
+up, no sweep. **The lock check sits above the `If-Match` check**, because after a
+takeover the ETag has usually moved too and 412 would send the user to reload into
+a screen they still cannot save from. 409 and 423 must never be collapsed. There
+is no `expires_at` column, so raising the TTL affects existing claims. A heartbeat
+must never touch `updated_at`. A new mutating endpoint fails the suite until
+somebody classifies it.
+**Alternatives rejected.** Identifying the claim by `user_id` (cannot tell a
+displaced device from the same person on a new one); checking only at acquire time
+(the whole point is the re-check); a second access ladder for editing (edit rights
+would outlive view rights); letting editors grant edit rights (the grant is the
+owner's trust decision and does not carry the power to delegate it). Migrations
+`192d73531acf`, `393a6b3179ce`.
+
+---
+
+### 2026-08-13 — FCM push as a latency improvement, dispatched after commit
+
+**Context.** A 60-second poll was the only delivery channel; a hot restart was the
+only way to see a new row.
+**Decision.** FCM HTTP v1 with **zero new backend dependencies** — `google-auth`
+(already installed for Sign-In) mints the bearer, so `push_service.py` is a
+`requests.post`. **Dispatched from an `after_commit` listener, never from inside
+`notify()`**: `notify()` appends a frozen `PendingPush` snapshot to
+`Session.info`, and an `after_soft_rollback` listener clears the queue. The
+dispatcher uses its **own** session. It **fails open**.
+**Consequences.** **Push is never load-bearing** — `NotificationPoller` stays,
+and stays unconditional, because gating it on push would inherit push's failure
+modes. Suppression is inherited from `notify()`, so there is no fourth preference
+column: the OS permission is the master switch. `device_tokens.token` is UNIQUE
+**globally, not per user**, because FCM reassigns a token across accounts — so
+registering moves the row. Sign-out must delete the token before discarding the
+access token. Dead tokens are pruned only on `UNREGISTERED` / `INVALID_ARGUMENT`.
+Locale lives on the device, not the user. Web push is deliberately excluded.
+**Alternatives rejected.** Sending inside `notify()` (would push for transactions
+that roll back — and a push cannot be un-sent); the Firebase Admin SDK (a new
+dependency for one HTTP call); committing on the request session inside
+`after_commit` (re-enters the listener that called it); holding an ORM row in the
+snapshot (expired attributes lazy-load on a session between transactions).
+Migration `dfb62a1759d8`.
+
+---
+
+### 2026-08-15 — The Edit Itinerary screen reopens to editors, minus the owner-only controls
+
+**Context.** Two days after editors shipped, `1d3cf4a` had restricted the whole
+"Edit Itinerary" screen to the owner. That also refused the title, currency and
+recommended period, which an editor may already change.
+**Decision.** Reverses `1d3cf4a` the same day. **The screen opens on `mayEdit`;
+each owner-only control inside gates on `isOwner`** and is hidden rather than
+offered and left to 403. An editor's branch of the danger zone is
+`EditorAccessRow` — removing themselves, the way out that *is* theirs.
+**Consequences.** `visibility` must be **absent** from the PATCH body for a
+non-owner, because the server refuses the key's presence, so an explicit null 403s
+exactly as a real value does. `_CannotEditNotice` fires **only on evidence** — a
+still-loading profile falls through to the form, or a cold deep link would lock the
+owner out of their own trip. Regression test:
+`test/widgets/itinerary_edit_form_access_test.dart`.
+**Alternatives rejected.** Keeping the screen owner-only (refuses three fields an
+editor may change); showing owner-only controls and letting them 403 (teaches the
+user the app is broken). Commits `1d3cf4a` then `4ccbf4d`, `0db613a`.
+
+---
+
+### 2026-08-16 — `shared-with-me` as a durable surface, reusing the feed schema
+
+**Context.** The grant notification could not be the only way back to a shared
+trip: a `restricted` itinerary is in no feed and no search, and notifications are
+purged at 90 days read / 365 hard.
+**Decision.** `GET /itineraries/shared-with-me`, reusing `ItineraryFeedItem` and
+`_to_feed_item`. **`ItinerarySummary` gains no `can_edit`** — that would churn the
+JSON key order of `/me`, `/saved` and `/feed` for a flag only this list needs.
+**Consequences.** It is the only query that reads `itinerary_editors` by its
+trailing column, which is what `ix_itinerary_editors_user` was created for. Two
+filters: `public_listing_criteria` in SQL, then `can_edit_itinerary` **per row**,
+because the SQL half does not cover the visibility ladder. Mine and Shared are
+disjoint by construction. On the client `sharedWithMeProvider` stays a **separate**
+provider, so a dead `shared-with-me` cannot blank the Mine segment, and the scope
+selector lives **inside** the list so a failure cannot strand the user on a scope
+they cannot leave. A row's **provenance**, not an id comparison, gates the
+owner-only chrome.
+**Alternatives rejected.** Adding `can_edit` to `ItinerarySummary` (reorders three
+existing payloads); a new schema (summary + owner is exactly
+`ItineraryFeedItem`); one merged provider (one dead endpoint blanks both
+segments). Commit `62608f2`.
+
+---
+
+### 2026-08-30 — Follow counters become atomic SQL; hot-path FKs get indexes
+
+**Context.** `bump_follow_counters` read the count into a Python int and wrote it
+back. Under READ COMMITTED two people following one account in the same moment
+both read N and both write N+1, and **the count drifts low forever**. Separately,
+several FK columns had no index — including the trailing halves of two composite
+primary keys.
+**Decision.** The arithmetic moves **into the `UPDATE` statement**, clamped with a
+`case()` expression, `synchronize_session=False`, then `db.expire()` on the
+attribute. `bump_follow_counters` becomes **the only** way to touch either
+counter. Index the hot-path FKs with `CREATE INDEX CONCURRENTLY` in an
+`autocommit_block()`, and drop the redundant `ix_notifications_user_id` (a prefix
+of `ix_notifications_user_created`).
+**Consequences.** `GREATEST` cannot be used — the suite runs on SQLite. The one
+permitted exception is `delete_my_account`'s bulk UPDATEs.
+`ix_saved_itineraries_user_id` and `ix_itinerary_allowed_users_user_id` exist
+because a trailing composite-PK column cannot serve `WHERE user_id = ?`. The eight
+remaining unindexed FKs are all `SET NULL` audit columns with no hot read and are
+deliberately left alone. `a681984a1a04` is now the reference implementation for
+concurrent index creation, at the cost of the migration's atomicity.
+**Alternatives rejected.** `SELECT … FOR UPDATE` then write (serialises every
+follow); a periodic recount job (the count is wrong in the meantime, and this is a
+profile's headline number); a plain `CREATE INDEX` (holds a write lock through the
+deploy). Commit `2e8e5c6`, migration `a681984a1a04`.
+
+---
+
+### undated — Single-operator admin model
+
+**Context.** One person operates the service.
+**Decision.** `users.is_admin` is set **manually via SQL**. There is no API or UI
+to promote a user. `/admin` sits behind HTTP Basic *and* a per-admin session whose
+cookie carries `scope="admin"`, and **404s entirely when the Basic credentials are
+unset**.
+**Consequences.** No privilege-escalation surface exists, because there is no
+grant path. Adding a second operator means a SQL statement and, at that point,
+probably a provisioning UI. The 404-when-unconfigured pattern was reused for the
+sweep endpoint, the Jira button and push.
+**Alternatives rejected.** A role table (nothing to model yet); 403 instead of 404
+when unconfigured (advertises that a dashboard exists). Undated because the
+`is_admin` column and the dashboard arrived in different commits and the
+single-operator reasoning appears only as a code comment.
+
+---
+
+### undated — No automated reporting to authorities
+
+**Context.** CSAM and other legal escalations.
+**Decision.** Stated in `models/legal_escalation.py:13`: *"Deliberately NOT
+implemented here: automated reporting to authorities. The requirement is that this
+category cannot be silently closed, not that the app files reports on its own."*
+**Consequences.** `legal_escalations` gets its own `/admin/legal` lane, the routine
+dismiss action refuses escalated reports, and closing one demands a written note.
+The CyberTipline filing (24h from a Cloudflare notice), removal and preservation
+are all manual and documented in
+`../social_api/docs/csam_response_runbook.md`.
+**Alternatives rejected.** Automated filing (a false positive filed with law
+enforcement is not reversible, and an ESP registration carries duties a solo
+operator cannot sustain). Undated — the stance predates the file that records it.
