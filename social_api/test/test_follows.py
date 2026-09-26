@@ -482,3 +482,66 @@ class TestPrivacyWall:
             headers=auth_headers(bob["access_token"]),
         )
         assert response.status_code == 200
+
+
+# ---------------------------------------------------------------------------
+# Stale Decline + follow-list paging
+# ---------------------------------------------------------------------------
+
+class TestStaleDecline:
+
+    def test_declining_an_already_accepted_request_leaves_the_follow(
+        self, client: TestClient
+    ):
+        """Accepted on another device (or by going public), then Declined from a
+        stale row: deleting the live follow would skip the counter decrement."""
+        alice = register_user(client, "alice1", "alice@test.com")
+        bob = register_user(client, "bob1", "bob@test.com")
+        make_private(client, bob["access_token"])
+        follow(client, alice["access_token"], bob["user_id"])
+        follow_id = client.get(
+            "/users/me/follow-requests", headers=auth_headers(bob["access_token"]),
+        ).json()[0]["follow_id"]
+        accepted = client.post(f"/users/me/follow-requests/{follow_id}/accept",
+                               headers=auth_headers(bob["access_token"]))
+        assert accepted.status_code == 200
+
+        stale = client.delete(f"/users/me/follow-requests/{follow_id}",
+                              headers=auth_headers(bob["access_token"]))
+
+        assert stale.status_code == 404
+        assert stale.json()["code"] == "follow_request_not_found"
+        followers = client.get(f"/users/{bob['user_id']}/followers",
+                               headers=auth_headers(bob["access_token"])).json()
+        assert [f["username"] for f in followers] == ["alice1"]
+        assert get_profile(client, bob["access_token"])["followers_count"] == 1
+
+
+class TestFollowListPaging:
+
+    @pytest.fixture(autouse=True)
+    def _no_register_limit(self):
+        # 25 signups in one test would trip the 5/hour register limit.
+        from app.limiter import limiter
+        limiter.enabled = False
+        yield
+        limiter.enabled = True
+
+    def test_pages_are_disjoint_and_cover_everyone(self, client: TestClient):
+        star = register_user(client, "star1", "star@test.com")
+        client.patch("/users/me", headers=auth_headers(star["access_token"]),
+                     json={"is_private": False})  # accounts start private
+        for i in range(25):
+            fan = register_user(client, f"fan{i:02d}", f"fan{i}@test.com")
+            assert follow(client, fan["access_token"], star["user_id"]).status_code == 201
+
+        url = f"/users/{star['user_id']}/followers"
+        hdrs = auth_headers(star["access_token"])
+        first = client.get(url, params={"limit": 10, "offset": 0}, headers=hdrs).json()
+        second = client.get(url, params={"limit": 10, "offset": 10}, headers=hdrs).json()
+        third = client.get(url, params={"limit": 10, "offset": 20}, headers=hdrs).json()
+
+        names = [u["username"] for u in first + second + third]
+        assert len(names) == 25
+        assert len(set(names)) == 25
+        assert names[0] == "fan24"  # newest first

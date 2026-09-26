@@ -78,8 +78,18 @@ hiding is itinerary-level, so a per-fragment status would have no read path.
 **Automated writes only ever RAISE severity** (`apply_moderation_status`), in the
 order `approved < pending < flagged < hidden < rejected`: a clean caption edit
 must not clear an unresolved image flag. **Moderator and appeal paths assign
-directly** to lower it. `PATCH /users/me` also assigns rather than escalates,
-because that *is* the author's own request.
+directly** to lower it.
+
+**An author's rewrite of a profile or a review goes through
+`apply_author_edit_status`** (`text_moderation_service.py`). A rewrite that was
+rescanned whole *replaces* an automated flag — the text that earned it is gone.
+It only escalates in two cases: the record is under a **takedown** (`hidden` /
+`rejected` — only a moderator or an appeal lifts one; with the provider disabled
+nothing was scanned at all), or the rewrite was **partial** (a profile edit that
+left a stored `display_name` or `bio` unsent, so that text was never re-judged).
+A review's note is rescanned whole on every upsert, so only the takedown case
+applies there. Before 2026-09-26 both paths assigned the verdict outright, which
+let any author edit un-hide their own taken-down profile or review.
 
 **Any moderation write to an itinerary from outside the owner's own request MUST
 go through `admin_service.set_preserving_etag` / `moderation_actions.set_status`**

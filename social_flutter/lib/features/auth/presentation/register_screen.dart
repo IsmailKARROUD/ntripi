@@ -75,6 +75,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
         tosAccepted: _tosAccepted,
         dateOfBirth: _dateOfBirth!,
       );
+      // Popped mid-request: the widget ref is dead; the saved tokens restore
+      // the session on next launch.
+      if (!mounted) return;
       ref.read(authNotifierProvider.notifier).setAuthenticated(result.userId);
       ref.invalidate(myProfileProvider);
       ref.invalidate(myItinerariesProvider);
@@ -82,6 +85,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       ref.invalidate(savedItinerariesProvider);
       if (mounted) context.go('/profile/me');
     } on DioException catch (e) {
+      if (!mounted) return;
       setState(() => _errorMessage = extractErrorMessage(e, AppLocalizations.of(context)!));
     } finally {
       if (mounted) setState(() => _isLoading = false);

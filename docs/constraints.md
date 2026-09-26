@@ -414,12 +414,10 @@ excused.
 |---|---|
 | **A Google Maps Embed API key is hardcoded** | `Dockerfile:15` — `--dart-define=GOOGLE_MAPS_EMBED_API_KEY=AIzaSy…`, against "never hardcode secrets or environment values". An Embed key necessarily ships to the client and this one is referrer-restricted, so exposure is not the issue; it is a committed, un-rotatable build constant. `API_BASE_URL` and `SHARE_BASE_URL` are hardcoded there too |
 | **`_VISIBILITY` is a `Literal`, not a `pattern=`** | `schemas/itinerary.py:31`, against the constrained-string rule. It is also the reason `itineraries.visibility` has no DB CHECK |
-| **The web password-reset path validates inline** | `web.py:198` instead of calling `validate_password_strength`, so the 72-byte NFKC bcrypt cap is not enforced there |
-| **The allowlist endpoints read `display_name` raw** | `itineraries.py:945,975`, bypassing `public_profile_text`. The editors endpoint's own comment names this |
 | **Eleven `AuthError` sites share `code="auth_error"`** | including four that surface on one screen needing different UI |
 | **`CLAUDE.md`'s middleware table omits `LanguageCookieMiddleware`** | the real runtime stack has seven layers, not six |
 | **`.env.example` is 14 settings behind**, three of them validator-backed | see above |
-| **Two model docstrings assert invariants nothing enforces** | segment stop-adjacency and "deleting the last leg deletes the segment" — see [transit-segments.md](features/transit-segments.md) |
+| **A model docstring asserts an invariant nothing enforces** | segment stop-adjacency — see [transit-segments.md](features/transit-segments.md). ("Deleting the last leg deletes the segment" is enforced since 2026-09-26) |
 
 ---
 

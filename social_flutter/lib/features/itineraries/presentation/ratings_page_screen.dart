@@ -147,7 +147,7 @@ class RatingsHubScreen extends ConsumerWidget {
                     SliverList(
                       delegate: SliverChildBuilderDelegate(
                         (context, i) =>
-                            _RatingListTile(
+                            RatingListTile(
                               rating: page.ratings[i],
                               viewerId: viewerId,
                             ),
@@ -667,14 +667,18 @@ class RatingDistributionBars extends StatelessWidget {
 }
 
 /// One rater tile.
-class _RatingListTile extends ConsumerWidget {
+/// Public because DimensionRatingsScreen shares it — a private class behind a
+/// typedef hid that caller from the analyzer, which then flagged `dimension`
+/// as never passed.
+class RatingListTile extends ConsumerWidget {
   final RatingWithUser rating;
   final DimensionKey dimension;
 
   /// Null when the viewer wrote this review — you don't report yourself.
   final String? viewerId;
 
-  const _RatingListTile({
+  const RatingListTile({
+    super.key,
     required this.rating,
     this.dimension = DimensionKey.overall,
     this.viewerId,
@@ -847,7 +851,3 @@ class _ReviewNoteState extends State<_ReviewNote> {
     );
   }
 }
-
-// Export _RatingListTile for DimensionRatingsScreen via the public alias.
-// ignore: library_private_types_in_public_api
-typedef RatingListTile = _RatingListTile;

@@ -146,6 +146,7 @@ Key rules:
 - Scope: whole-itinerary. Any mutation bumps `itinerary.updated_at`.
 - ETag value = quoted ISO datetime of `updated_at`: `"2026-05-11T14:18:05.079393+00:00"`. The Flutter client emits the same field as `…Z` (Dart's `toIso8601String()`); the server's `_normalize_etag()` collapses both forms before byte-compare.
 - Every GET returns `ETag` header. Every mutation requires `If-Match` header.
+- Only the owner's editing session may move `updated_at`: moderation writes, lock heartbeats and the rating aggregate (`recalculate_rating`) all go through `set_preserving_etag` or leave it alone, or a stranger's action 412s the owner's open editor.
 - Missing `If-Match` → 428. Mismatch → 412 `{"detail":"itinerary modified, please reload"}`.
 - `_normalize_etag()` handles three intermediary mutations: whitespace, `W/` weak prefix (added by Cloudflare when it recompresses), and `Z` ↔ `+00:00` timezone serialization.
 - Dependency: `require_etag` in `app/dependencies.py` (SELECT FOR UPDATE + ownership + ETag compare).
@@ -242,7 +243,7 @@ When inserting a new track between two adjacent tracks that have a segment conne
 
 ## Testing
 
-**Backend:** `client` fixture in `test/conftest.py` (fresh SQLite per test). Itinerary/stop tests marked `pytest.mark.skip("rewriting after fractional-indexing refactor")`. New tests go in `test/test_fractional_indexing_smoke.py`.
+**Backend:** `client` fixture in `test/conftest.py` (fresh SQLite per test). Every itinerary write needs `If-Match` + `X-Edit-Lock` — use conftest's `edit_now` / `locked_headers`, never bare `auth_headers`. The six files once parked under `pytest.mark.skip("rewriting after fractional-indexing refactor")` run again (2026-09-26); new itinerary/ordering tests go in `test/test_fractional_indexing_smoke.py`.
 
 **Flutter:** `http_mock_adapter` for Dio mocking. `FlutterSecureStorage.setMockInitialValues({})` for auth state.
 
@@ -293,6 +294,7 @@ Provider-agnostic by construction — swapping providers is a config change, nev
 - **`text_moderation_cache`** holds no raw text and no user reference; `text_moderation_decisions` is the audit trail *and* the moderator queue (`reviewed_at IS NULL` = queued). Retention purges reviewed rows only.
 - **Content state** lives on `itineraries.moderation_status` (shared by the image and text tiers), `itinerary_ratings.moderation_status`, and `users.moderation_status`. Stop / annotation / transport-leg text **rolls up to its parent itinerary** — hiding is itinerary-level, so a per-fragment status would have no read path.
 - **Automated writes only ever RAISE severity** (`apply_moderation_status`, order `approved < pending < flagged < hidden < rejected`): a clean caption edit must not clear an unresolved image flag. Moderator and appeal paths assign directly to lower it.
+- **An author's rewrite of a profile or review goes through `apply_author_edit_status`**: a whole-text rescan replaces an automated flag, but a takedown (`hidden`/`rejected`) is lifted only by a moderator or an appeal, and a partial profile edit only escalates. The cover endpoints never lower the status either.
 - **Any moderation write to an itinerary from outside the owner's own request MUST go through `admin_service.set_preserving_etag` / `moderation_actions.set_status`.** `updated_at` IS the concurrency ETag; moving it 412s the author's open editor over a change they cannot see.
 - **Coverage is every stored user string except the moderator-facing ones.** Itinerary title/description, stop name/address/notes, both annotation tables, transport-leg line/direction/notes, rating notes, profile display_name/bio, and the `username` + `display_name` chosen at registration. Deliberately NOT moderated: `content_reports.notes`, `appeals.user_reason`, `bug_reports.message`, and admin action reasons — a 422 there would block someone reporting hate speech who quotes it, which is a safety regression, not an improvement.
 - **Account creation scans before it writes.** `create_user` commits, so a rejection found afterwards could not undo the account — `moderate_or_422` runs first, with `author=None`. `POST /auth/google` scans the Google profile name but **never rejects it**: the name is Google's, not something the user typed, so a 422 would lock a real person out with no recourse. A reject there drops the name (as `validate_display_name` already does) and stores `approved` — nothing offensive was persisted.
@@ -879,6 +881,9 @@ For each article the change touches:
 - Do NOT "fix" the ten `async def` endpoints by making them sync — the four upload paths, both admin form posts and the bug-report intake are `async` because they need `await file.read()` / `await request.form()`, and a sync `def` cannot read a multipart body. They are the known exception to the rule above: they do run sync SQLAlchemy on the loop, for a local round trip. What must stay off the loop there is the **CPU** work — `process_and_store` hands Pillow to `asyncio.to_thread`, exactly as `r2_storage` and the Rekognition call already do; never call a `process_*_image` function directly from an `async def`
 - Do NOT send anything but the text to a moderation provider — no user id, email, or content id
 - Do NOT write an itinerary's moderation state from outside the owner's request without `set_preserving_etag` — it 412s their open editor
+- Do NOT assign a text verdict on an author's edit — `apply_author_edit_status`; assigning let any edit un-hide a taken-down profile or review
+- Do NOT write `rating_count` / `rating_avg` directly — `recalculate_rating` preserves the ETag; a raw write 412s the owner every time someone rates
+- Do NOT page a list with `limit`/`offset` without a total `ORDER BY` — Postgres may repeat or skip rows between pages; and a client list that sends no `limit` silently stops at the server default
 - Do NOT change a threshold in `moderation_policy.py` without bumping `POLICY_VERSION` — stale verdicts would survive in the cache
 - Do NOT scan account text *after* `create_user` — it commits, so the 422 could not undo the account
 - Do NOT let a moderation verdict reject a Google-supplied profile name — drop the name instead; the user cannot edit what Google sent

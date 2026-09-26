@@ -24,6 +24,7 @@ class SoundEffectsEnabledNotifier extends Notifier<bool> {
 
   Future<void> _load() async {
     final saved = await _storage.read(key: _kSoundEffectsKey);
+    if (!ref.mounted) return; // disposed while storage answered
     // null (first launch) or an unknown value means "not turned off yet".
     state = saved != 'false';
   }

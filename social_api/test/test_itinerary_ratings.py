@@ -1,6 +1,3 @@
-import pytest
-pytestmark = pytest.mark.skip("rewriting after fractional-indexing refactor")
-
 """
 test_itinerary_ratings.py — Tests for the itinerary rating endpoints.
 

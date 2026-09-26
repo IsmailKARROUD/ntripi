@@ -673,6 +673,24 @@ def test_hidden_display_name_does_not_leak_through_search(
     assert all(row["display_name"] is None for row in results)
 
 
+def test_hidden_display_name_does_not_leak_through_the_allowlist(
+    client, owner, stranger, provider
+):
+    client.patch("/users/me", json={"display_name": "Stranger Name"},
+                 headers=auth_headers(stranger["access_token"]))
+    _hide_user("stranger@example.com")
+    itinerary = _create_itinerary(client, owner["access_token"], visibility="restricted")
+    url = f"/itineraries/{itinerary['id']}/allowed-users"
+
+    added = client.post(url, json={"user_id": stranger["user_id"]},
+                        headers=auth_headers(owner["access_token"]))
+    listed = client.get(url, headers=auth_headers(owner["access_token"]))
+
+    assert added.status_code == 201, added.text
+    assert added.json()["display_name"] is None
+    assert [row["display_name"] for row in listed.json()] == [None]
+
+
 def test_a_rewritten_bio_clears_the_previous_flag(client, owner, provider):
     """Unlike itineraries, profile text is replaced wholesale, so a cleaned-up
     bio is genuinely new content."""
@@ -695,6 +713,65 @@ def test_a_rewritten_bio_clears_the_previous_flag(client, owner, provider):
     try:
         assert db.query(User).filter(User.email == "owner@example.com").one(
         ).moderation_status == "approved"
+    finally:
+        db.close()
+
+
+def _user_status(email: str) -> str:
+    db = TestingSessionLocal()
+    try:
+        return db.query(User).filter(User.email == email).one().moderation_status
+    finally:
+        db.close()
+
+
+def test_an_author_edit_never_lifts_a_profile_takedown(client, owner, stranger):
+    """With the provider disabled (the default) nothing is scanned, so an
+    assignment here would hand every hidden profile back to its author."""
+    client.patch("/users/me", json={"display_name": "Nasty Name"},
+                 headers=auth_headers(owner["access_token"]))
+    _hide_user("owner@example.com")
+
+    response = client.patch("/users/me", json={"display_name": "Nasty Name"},
+                            headers=auth_headers(owner["access_token"]))
+
+    assert response.status_code == 200
+    assert _user_status("owner@example.com") == "hidden"
+    seen = client.get(f"/users/{owner['user_id']}",
+                      headers=auth_headers(stranger["access_token"])).json()
+    assert seen["display_name"] is None
+
+
+def test_a_partial_profile_edit_does_not_clear_a_flag_on_the_other_field(
+    client, owner, provider
+):
+    provider.scores = REVIEW
+    client.patch("/users/me", json={"display_name": "Owner", "bio": "borderline"},
+                 headers=auth_headers(owner["access_token"]))
+    assert _user_status("owner@example.com") == "flagged"
+
+    provider.scores = CLEAN
+    client.patch("/users/me", json={"display_name": "Owner Renamed"},
+                 headers=auth_headers(owner["access_token"]))
+
+    assert _user_status("owner@example.com") == "flagged"  # the bio was never rescanned
+
+
+def test_editing_a_hidden_review_keeps_it_hidden(client, owner, stranger):
+    itinerary = _create_itinerary(client, owner["access_token"], visibility="public")
+    rate = lambda stars: client.post(  # noqa: E731
+        f"/itineraries/{itinerary['id']}/ratings",
+        json={"stars": stars, "note": "abusive note"},
+        headers=auth_headers(stranger["access_token"]),
+    )
+    assert rate(1).status_code == 201
+    _hide_rating(itinerary["id"])
+
+    assert rate(2).status_code == 201
+
+    db = TestingSessionLocal()
+    try:
+        assert db.query(ItineraryRating).one().moderation_status == "hidden"
     finally:
         db.close()
 

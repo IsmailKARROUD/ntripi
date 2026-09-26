@@ -21,6 +21,8 @@ import 'package:social_flutter/features/search/presentation/search_screen.dart';
 import 'package:social_flutter/features/search/providers/search_provider.dart';
 import 'package:social_flutter/l10n/app_localizations.dart';
 import 'package:social_flutter/shared/models/user.dart';
+import 'package:social_flutter/shared/widgets/field_help.dart';
+import 'package:social_flutter/shared/widgets/loaders.dart';
 
 // ── Fixtures ──────────────────────────────────────────────────────────────
 
@@ -124,7 +126,8 @@ void main() {
         await tester.pumpWidget(_buildScreen());
         await tester.pump();
 
-        expect(find.byTooltip('Search users'), findsOneWidget);
+        // The help affordance is the shared FieldHelpIcon, not a Tooltip.
+        expect(find.byType(FieldHelpIcon), findsOneWidget);
       });
     });
 
@@ -166,7 +169,7 @@ void main() {
     group('loading and error states', () {
       testWidgets(
           'Given search is loading, When screen builds, '
-          'Then shows CircularProgressIndicator', (tester) async {
+          'Then shows the itinerary loader', (tester) async {
         tester.view.physicalSize = const Size(1080, 1920);
         tester.view.devicePixelRatio = 1.0;
         addTearDown(tester.view.resetPhysicalSize);
@@ -176,7 +179,7 @@ void main() {
             _buildScreen(notifier: _FakeSearchResultsLoading.new));
         await tester.pump();
 
-        expect(find.byType(CircularProgressIndicator), findsOneWidget);
+        expect(find.byType(NTripiItineraryLoader), findsOneWidget);
       });
 
       testWidgets(

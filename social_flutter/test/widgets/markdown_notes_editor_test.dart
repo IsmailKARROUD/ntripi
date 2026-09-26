@@ -14,7 +14,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:social_flutter/core/ui/app_theme.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/markdown_notes_editor.dart';
+import 'package:social_flutter/l10n/app_localizations.dart';
 
 void main() {
   late TextEditingController controller;
@@ -30,6 +32,11 @@ void main() {
   Future<void> pumpEditor(WidgetTester tester) async {
     await tester.pumpWidget(
       MaterialApp(
+        // The toolbar's tooltips read AppLocalizations and its colors
+        // context.nt — without both the first build throws.
+        theme: buildNtripiTheme(),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(
           resizeToAvoidBottomInset: false,
           body: SingleChildScrollView(

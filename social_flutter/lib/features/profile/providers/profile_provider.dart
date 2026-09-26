@@ -68,9 +68,11 @@ class MyProfileNotifier extends AsyncNotifier<User> {
     // Offline: keep cached AsyncData — a forced refresh could only degrade it.
     if (!isOnlineNowRef(ref)) return;
     state = const AsyncLoading();
-    state = await AsyncValue.guard(
+    final next = await AsyncValue.guard(
       () => ref.read(profileRepositoryProvider).getMyProfile(),
     );
+    if (!ref.mounted) return; // disposed mid-request (logout)
+    state = next;
   }
 
   /// Optimistic update after editing the profile.
@@ -88,7 +90,7 @@ class MyProfileNotifier extends AsyncNotifier<User> {
     bool? notifySaves,
     bool? notifyFollowAccepted,
   }) async {
-    state = await AsyncValue.guard(
+    final next = await AsyncValue.guard(
       () => ref.read(profileRepositoryProvider).updateMyProfile(
             displayName: displayName,
             bio: bio,
@@ -104,6 +106,8 @@ class MyProfileNotifier extends AsyncNotifier<User> {
             notifyFollowAccepted: notifyFollowAccepted,
           ),
     );
+    if (!ref.mounted) return; // disposed mid-request (logout)
+    state = next;
   }
 
   /// Upload a new avatar image. State is updated with the returned URL
@@ -116,6 +120,7 @@ class MyProfileNotifier extends AsyncNotifier<User> {
     // render is instant (and not a roundtrip back to R2). Cross-device
     // freshness is handled by the ?v=<ts> the server appends to the URL.
     await _refreshImageCache(url, bytes);
+    if (!ref.mounted) return; // disposed mid-request (logout)
     state.whenData((user) {
       state = AsyncData(user.copyWith(avatarUrl: url));
     });
@@ -129,7 +134,9 @@ class MyProfileNotifier extends AsyncNotifier<User> {
   /// that closes the form never fires.
   Future<void> deleteAvatar() async {
     await _evictImageCache(state.value?.avatarUrl);
+    if (!ref.mounted) return; // disposed mid-request (logout)
     await ref.read(profileRepositoryProvider).deleteAvatarImage();
+    if (!ref.mounted) return; // disposed mid-request (logout)
     state.whenData((user) {
       state = AsyncData(user.copyWith(clearAvatarUrl: true));
     });
@@ -141,6 +148,7 @@ class MyProfileNotifier extends AsyncNotifier<User> {
         .read(profileRepositoryProvider)
         .uploadCoverImage(bytes: bytes, filename: filename);
     await _refreshImageCache(url, bytes);
+    if (!ref.mounted) return; // disposed mid-request (logout)
     state.whenData((user) {
       state = AsyncData(user.copyWith(coverImageUrl: url));
     });
@@ -150,7 +158,9 @@ class MyProfileNotifier extends AsyncNotifier<User> {
   /// the reason refresh() must NOT be used here.
   Future<void> deleteCoverImage() async {
     await _evictImageCache(state.value?.coverImageUrl);
+    if (!ref.mounted) return; // disposed mid-request (logout)
     await ref.read(profileRepositoryProvider).deleteCoverImage();
+    if (!ref.mounted) return; // disposed mid-request (logout)
     state.whenData((user) {
       state = AsyncData(user.copyWith(clearCoverImageUrl: true));
     });
@@ -182,9 +192,11 @@ class UserProfileNotifier extends AsyncNotifier<User> {
     if (!isOnlineNowRef(ref)) return;
     final userId = arg;
     state = const AsyncLoading();
-    state = await AsyncValue.guard(
+    final next = await AsyncValue.guard(
       () => ref.read(profileRepositoryProvider).getUserProfile(userId),
     );
+    if (!ref.mounted) return; // disposed mid-request (logout)
+    state = next;
   }
 
   /// Update follow state locally without a full reload (optimistic update).

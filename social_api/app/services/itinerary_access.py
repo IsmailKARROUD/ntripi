@@ -188,5 +188,13 @@ def recalculate_rating(itinerary: Itinerary, db: Session) -> None:
         )
     ).one()
 
-    itinerary.rating_count = row.cnt or 0
-    itinerary.rating_avg = float(row.avg) if row.avg is not None else None
+    # A rater or a moderator is never the owner's editing session, so the
+    # aggregate must not move updated_at (the If-Match ETag) and 412 it.
+    # Imported lazily: admin_service imports this module.
+    from app.services.admin_service import set_preserving_etag
+
+    set_preserving_etag(
+        itinerary,
+        rating_count=row.cnt or 0,
+        rating_avg=float(row.avg) if row.avg is not None else None,
+    )

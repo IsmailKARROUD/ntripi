@@ -60,11 +60,13 @@ mapping would bypass the guard.
 
 ### Text moderation
 
-`PATCH /users/me` scans `display_name` + `bio` in one call, and the resulting
-status is **assigned, not escalate-only** (`users.py:146`) — so cleaning up a
-flagged bio clears the flag. That is the deliberate exception to the
-automated-writes-only-raise-severity rule, because this *is* the author's own
-request.
+`PATCH /users/me` scans the submitted `display_name` + `bio` in one call and
+sets the status through `apply_author_edit_status` (`users.py:157`). Cleaning up
+a flagged profile still clears the flag — provided every stored text field was
+in the rewrite. A partial edit (only `display_name` sent while a `bio` is
+stored) can only raise the status, and **no edit lowers a takedown**: a `hidden`
+or `rejected` profile stays hidden until a moderator restores it or an appeal
+succeeds. See [text-moderation.md](text-moderation.md#escalate-only).
 
 ### Account deletion (GDPR)
 

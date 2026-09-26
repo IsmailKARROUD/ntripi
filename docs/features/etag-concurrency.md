@@ -48,6 +48,10 @@ because one endpoint emits both.
   change they cannot see.
 - **A heartbeat or a takeover must never touch `updated_at`** either, or every
   open client would 412 once a minute.
+- **Nor may a rating.** `rating_count` / `rating_avg` live on the itinerary row,
+  so `recalculate_rating` writes them through `set_preserving_etag` — otherwise
+  the column's `onupdate=now()` fires and every stranger's rating 412s the
+  owner's open editor ([ratings.md](ratings.md)).
 - `_etag_json_response` (`itineraries.py:137`) is the only way to build a
   response carrying the concurrency ETag. In `reorder_itinerary` it must be
   passed the **freshly reloaded** detail, not the stale itinerary.
@@ -121,6 +125,12 @@ No endpoints of its own. It applies to:
   `test_edit_guard_coverage.py`.
 - `SELECT … FOR UPDATE` — the actual race protection — **cannot be tested**,
   because the suite runs on SQLite where it is a no-op.
+- **The detail GET's cache validator is the concurrency token.** Every write
+  that deliberately preserves `updated_at` — moderation, and since 2026-09-26
+  the rating aggregate — therefore leaves a *cached* detail able to 304 with a
+  stale `rating_avg` / moderation field until the next content edit or a forced
+  refresh. Separating the two would change the header an existing client echoes
+  as `If-Match`, so it was not done here.
 
 ## Related
 
@@ -128,6 +138,7 @@ No endpoints of its own. It applies to:
 - [itineraries.md](itineraries.md) — owns `updated_at`
 - [admin-and-appeals.md](admin-and-appeals.md) — `set_preserving_etag`
 - [text-moderation.md](text-moderation.md) — why moderation writes must preserve it
+- [ratings.md](ratings.md) — the aggregate write that also preserves it
 - [help-centre.md](help-centre.md) — the `Cache-Control` preservation rule
 - [web-and-platform.md](web-and-platform.md) — middleware ordering
 - [reference/error-codes.md](../reference/error-codes.md#concurrency-etag--if-match)

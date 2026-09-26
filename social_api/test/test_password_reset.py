@@ -105,3 +105,35 @@ def test_google_only_account_gets_no_reset_email(client, monkeypatch):
     r = client.post("/auth/forgot-password", json={"email": "gonly@gmail.com"})
     assert r.status_code == 200
     assert sent == []
+
+
+def _reset_token(client, monkeypatch, email: str) -> str:
+    sent = _capture_emails(monkeypatch)
+    client.post("/auth/forgot-password", json={"email": email})
+    return _token_from(sent[0]["html"])
+
+
+def test_reset_with_an_over_long_password_is_a_form_error_not_a_500(client, monkeypatch):
+    """bcrypt 5 raises past 72 bytes; the form must say so, not crash."""
+    register_user(client, "longpass", "long@example.com")
+    token = _reset_token(client, monkeypatch, "long@example.com")
+    long_pw = "correct horse battery staple 1 " * 3  # 93 bytes
+
+    r = client.post("/web/reset-password", data={
+        "token": token, "password": long_pw, "password_confirm": long_pw})
+
+    assert r.status_code == 200
+    assert "too long" in r.text
+
+
+def test_reset_rejects_non_ascii_digits_like_every_other_path(client, monkeypatch):
+    register_user(client, "digits", "digits@example.com")
+    token = _reset_token(client, monkeypatch, "digits@example.com")
+    arabic_indic = "password١٢٣"  # digits the API and the app refuse
+
+    r = client.post("/web/reset-password", data={
+        "token": token, "password": arabic_indic, "password_confirm": arabic_indic})
+
+    assert r.status_code == 200
+    assert "at least one digit" in r.text
+    assert "Password updated" not in r.text

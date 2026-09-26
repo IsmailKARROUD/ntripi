@@ -89,9 +89,6 @@ normally reads them.
 
 ## Known gaps / TODOs
 
-- **`test_annotations.py` is skipped** with `"rewriting after
-  fractional-indexing refactor"` since 2026-05-07. Both systems have had no
-  direct test coverage for four months.
 - Neither table carries a `moderation_status`. Annotation text **rolls up to the
   parent itinerary** — hiding is itinerary-level, so a per-fragment status would
   have no read path. See [text-moderation.md](text-moderation.md).

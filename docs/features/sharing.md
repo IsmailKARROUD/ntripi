@@ -84,10 +84,6 @@ Both are HTML, so `ETagMiddleware` (JSON only) does not touch them.
 
 ## Known gaps / TODOs
 
-- **`test_share.py` is skipped** with `"rewriting after fractional-indexing
-  refactor"` since 2026-05-07. Commit `794725c` (2026-05-20) then fixed a **500 on
-  share links** caused by a removed `stop.type` access — exactly the regression a
-  live `test_share.py` would have caught. `test_share_profile.py` also exists.
 - **Auto-generated per-itinerary OG preview images are unbuilt.**
   `app/static/README.md:15` carries the repo's one real code-adjacent TODO:
   *"TODO (Jira Ticket 3): Replace with dynamic per-itinerary preview images

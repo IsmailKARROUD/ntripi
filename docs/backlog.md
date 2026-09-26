@@ -17,41 +17,6 @@ assets and unticked operator checklists.
 
 ## Test coverage
 
-### planned — six backend test files have been skipped for four months
-
-Six files carry an identical module-level marker at line 2:
-
-```python
-pytestmark = pytest.mark.skip("rewriting after fractional-indexing refactor")
-```
-
-| File | Covers |
-|---|---|
-| `test_share.py` | the public share landing page |
-| `test_transit_segments.py` | segments and transport legs |
-| `test_itinerary_ratings.py` | rating submit / aggregate / page |
-| `test_itinerary_visibility.py` | the four-level visibility ladder |
-| `test_annotations.py` | both annotation systems |
-| `test_itinerary_image.py` | cover upload, processing, OG tags |
-
-All six were added by the **same** commit — `473c2b1`, 2026-05-07, the first
-fractional-indexing implementation. **Still skipped as of the last commit
-(2026-09-02): 118 days.**
-
-Four of them cover load-bearing surfaces, and each has been modified *since* the
-skip landed: moderation added `moderation_status` to ratings on 2026-07-30, and
-`794725c` (2026-05-20) fixed a **500 on share links** caused by a leftover
-`stop.type` access — exactly the regression a live `test_share.py` would have
-caught.
-
-Partial mitigation, so the gap is not overstated:
-`test_fractional_indexing_smoke.py`, `test_feed_smoke.py`,
-`test_hidden_deleted_visibility.py`, `test_report_thresholds.py` and
-`test_edit_guard_coverage.py` cover adjacent ground.
-
-**This is the largest single gap in the project.** → [features/visibility-and-access.md](features/visibility-and-access.md),
-[features/ratings.md](features/ratings.md), [features/sharing.md](features/sharing.md)
-
 ### idea — migration-only schema objects cannot be tested
 
 The suite builds its schema from ORM metadata on SQLite, so `COLLATE "C"` on both
@@ -230,31 +195,15 @@ uniformity or a copy-paste; nothing records which.
 
 ## Unenforced invariants
 
-### planned — two model docstrings assert rules nothing checks
+### planned — a model docstring asserts a rule nothing checks
 
-- `models/transit_segment.py:5` — *"A TransitSegment lives strictly between two
-  adjacent stops (`from_stop.position + 1 == to_stop.position`)"*. The `position`
-  column was removed by `d5e6f7a8b9c0`, and `_require_stops_in_itinerary` checks
-  only itinerary membership. **Adjacency is enforced nowhere.**
-- `models/transport_leg.py:20` — *"Orphan legs (segment with zero legs) are
-  forbidden. The router enforces this: deleting the last leg deletes the segment
-  too."* `delete_leg` (`itineraries.py:2216`) does not.
-
-Either the comments are stale or checks are missing. → [features/transit-segments.md](features/transit-segments.md)
-
-### planned — an owner can clear a moderator's `rejected` status
-
-`delete_itinerary_image` (`itineraries.py:2294`) sets
-`moderation_status = "approved"` unconditionally. It reaches an itinerary whose
-cover `admin_service.remove_flagged_image` just removed while setting `rejected`,
-so `DELETE /itineraries/{id}/image` on an already-null cover clears it.
-`hidden_at` is untouched so the content stays hidden, but the status and
-`hidden_at` diverge and the escalate-only guarantee is broken.
-
-The sibling case: `upload_itinerary_image` (`itineraries.py:2270`) assigns the
-status directly, so with `MODERATION_ENABLED=False` **uploading a cover lowers an
-existing text-moderation flag to `approved`**. →
-[features/image-moderation.md](features/image-moderation.md)
+`models/transit_segment.py:5` — *"A TransitSegment lives strictly between two
+adjacent stops (`from_stop.position + 1 == to_stop.position`)"*. The `position`
+column was removed by `d5e6f7a8b9c0`, and `_require_stops_in_itinerary` checks
+only itinerary membership. **Adjacency is enforced nowhere.** Either the comment
+is stale or a check is missing. (Its sibling — `models/transport_leg.py:20`,
+"deleting the last leg deletes the segment" — is enforced by `delete_leg` since
+2026-09-26.) → [features/transit-segments.md](features/transit-segments.md)
 
 ### idea — `moderate_or_422`'s documented precondition is not held
 

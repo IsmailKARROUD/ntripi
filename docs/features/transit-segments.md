@@ -101,18 +101,15 @@ endpoints are defined in the backend for future API consumers."*
 
 ## Known gaps / TODOs
 
-- **Two documented invariants are not actually enforced:**
-  - `models/transit_segment.py:5` asserts a segment "lives strictly between two
-    adjacent stops (`from_stop.position + 1 == to_stop.position`)". The
-    `position` column was removed by `d5e6f7a8b9c0`, and
-    `_require_stops_in_itinerary` checks only itinerary membership. **Adjacency
-    is enforced nowhere.**
-  - `models/transport_leg.py:20` asserts "deleting the last leg deletes the
-    segment too. The router enforces this". `delete_leg`
-    (`itineraries.py:2216`) does not. Since `legs` has `min_length=1` on create,
-    a zero-leg segment is only reachable through `DELETE …/legs/{id}`.
-- **`test_transit_segments.py` is skipped** with `"rewriting after
-  fractional-indexing refactor"` since 2026-05-07.
+- **A documented invariant is not actually enforced:**
+  `models/transit_segment.py:5` asserts a segment "lives strictly between two
+  adjacent stops (`from_stop.position + 1 == to_stop.position`)". The `position`
+  column was removed by `d5e6f7a8b9c0`, and `_require_stops_in_itinerary` checks
+  only itinerary membership. **Adjacency is enforced nowhere.**
+- **Deleting a segment's last leg deletes the segment** (`delete_leg`, since
+  2026-09-26), which is what `models/transport_leg.py:20` always claimed. With
+  `legs` at `min_length=1` on create and update, a zero-leg segment is no longer
+  reachable at all.
 - **`social_flutter/README.md` still presents transit segments as a current
   feature** after `7025987` bypassed the concept in the UI.
 - The 409 on a duplicate leg position is a bare `HTTPException`

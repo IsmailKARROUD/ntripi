@@ -34,7 +34,7 @@ from typing import Literal
 from fastapi import APIRouter, Depends, File, HTTPException, Query, Request, UploadFile, status
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse, Response
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, selectinload
 
@@ -104,7 +104,8 @@ from app.services.itinerary_access import (
 )
 from app.services.ordering import MAX_RANK_LENGTH, key_between, n_keys_between
 from app.services.text_moderation_service import (
-    apply_moderation_status, attach_target, moderate_or_422,
+    apply_author_edit_status, apply_moderation_status, attach_target,
+    moderate_or_422,
 )
 from app.services.user_service import get_active_user_or_404, public_profile_text
 from app.storage.factory import storage
@@ -568,6 +569,13 @@ def _resolve_track_rank(
             code="itinerary_stale", detail="itinerary modified, please reload",
         )
 
+    if after_track_id is None and before_track_id is None:
+        # No anchor means "append". key_between(None, None) is a fixed midpoint,
+        # so on a non-empty itinerary it would collide with the first track.
+        after_rank = db.execute(
+            select(func.max(Track.rank)).where(Track.itinerary_id == itinerary_id)
+        ).scalar_one_or_none()
+
     return key_between(after_rank, before_rank)
 
 
@@ -949,7 +957,8 @@ def add_allowed_user(
     return AllowedUserResponse(
         user_id=entry.user_id,
         username=target_user.username,
-        display_name=target_user.display_name,
+        # Moderated names are blanked for everyone but their author.
+        display_name=public_profile_text(target_user, current_user.id)[0],
         created_at=entry.created_at,
     )
 
@@ -975,7 +984,7 @@ def get_allowed_users(
         AllowedUserResponse(
             user_id=allowed.user_id,
             username=user.username,
-            display_name=user.display_name,
+            display_name=public_profile_text(user, current_user.id)[0],
             created_at=allowed.created_at,
         )
         for allowed, user in results
@@ -1775,9 +1784,9 @@ def upsert_rating(
         existing.family_friendly_stars = body.family_friendly_stars
         existing.crowdedness_stars = body.crowdedness_stars
         existing.note = note
-        # Assigned, not escalated: an edited note is new content, so a rewritten
-        # note that now passes clears the previous flag.
-        existing.moderation_status = ctx.status
+        # The note is rescanned whole on every upsert, so a rewrite that now
+        # passes clears an automated flag — but never a takedown.
+        apply_author_edit_status(existing, ctx.status, rescanned_all=True)
         rating = existing
     else:
         rating = ItineraryRating(
@@ -2225,7 +2234,16 @@ def delete_leg(
 
     db.delete(leg)
     db.flush()
-    _recalculate_segment_totals(segment, db)
+    remaining = db.execute(
+        select(func.count(TransportLeg.id)).where(TransportLeg.segment_id == segment_id)
+    ).scalar_one()
+    if remaining == 0:
+        # A segment with no legs is forbidden (models/transport_leg.py), and
+        # create/update already refuse one — the last leg takes its segment.
+        db.delete(segment)
+        db.flush()
+    else:
+        _recalculate_segment_totals(segment, db)
     _recalculate_totals(itinerary, db)
     db.commit()
 
@@ -2268,9 +2286,11 @@ async def upload_itinerary_image(
         )
 
     itinerary.cover_image_url = public_url
-    # 'error_allowed' (AWS was down) → needs later review; else mirror the scan.
-    itinerary.moderation_status = (
-        "pending" if moderation.action == "error_allowed" else moderation.action
+    # 'error_allowed' (AWS was down) → needs later review. Escalate-only: a clean
+    # cover must not clear a text flag, nor a moderator's earlier verdict.
+    apply_moderation_status(
+        itinerary,
+        "pending" if moderation.action == "error_allowed" else moderation.action,
     )
     db.commit()
 
@@ -2290,8 +2310,9 @@ async def delete_itinerary_image(
     key = f"itineraries/{itinerary_id}.jpg"
     await storage().delete(key)
 
+    # moderation_status is left alone: it also carries text flags and a
+    # moderator's 'rejected', which removing the cover must not clear.
     itinerary.cover_image_url = None
-    itinerary.moderation_status = "approved"  # no cover → nothing to moderate
     db.commit()
 
 

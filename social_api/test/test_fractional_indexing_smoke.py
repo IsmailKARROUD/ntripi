@@ -1105,3 +1105,140 @@ class TestRatingModerationStatusExposure:
         keys = list(page.json()["ratings"][0].keys())
         assert keys[-1] == "moderation_status"
         assert keys[-2] == "id"
+
+
+# ---------------------------------------------------------------------------
+# A rating is not an edit: it must not move the owner's If-Match ETag
+# ---------------------------------------------------------------------------
+
+class TestRatingDoesNotStaleTheEditor:
+    """rating_count / rating_avg live on the itinerary row, whose updated_at IS
+    the concurrency ETag. A stranger's rating landing while the owner has the
+    editor open must not 412 the owner's next save."""
+
+    @staticmethod
+    def _backdate(itinerary_id: str) -> None:
+        # SQLite's now() has one-second resolution, so without this a rating
+        # in the same second as the create could not move updated_at at all.
+        import uuid
+        from datetime import datetime, timedelta, timezone
+        from app.models.itinerary import Itinerary
+        from conftest import TestingSessionLocal
+
+        db = TestingSessionLocal()
+        try:
+            row = db.get(Itinerary, uuid.UUID(itinerary_id))
+            row.updated_at = datetime.now(timezone.utc) - timedelta(minutes=5)
+            db.commit()
+        finally:
+            db.close()
+
+    def _setup(self, client: TestClient):
+        owner = register_user(client, "owner", "owner@example.com")
+        rater = register_user(client, "rater", "rater@example.com")
+        created = client.post(
+            "/itineraries/", json={"title": "Trip", "visibility": "public"},
+            headers=auth_headers(owner["access_token"]),
+        )
+        assert created.status_code == 201, created.text
+        itinerary_id = created.json()["id"]
+        self._backdate(itinerary_id)
+        etag = client.get(f"/itineraries/{itinerary_id}",
+                          headers=auth_headers(owner["access_token"])).headers["etag"]
+        return owner, rater, itinerary_id, etag
+
+    def test_owner_can_still_save_after_a_stranger_rates(self, client: TestClient):
+        owner, rater, itinerary_id, etag = self._setup(client)
+        hdrs = locked_headers(client, itinerary_id,
+                              auth_headers(owner["access_token"]), etag)
+
+        rated = client.post(f"/itineraries/{itinerary_id}/ratings", json={"stars": 5},
+                            headers=auth_headers(rater["access_token"]))
+        assert rated.status_code == 201, rated.text
+
+        saved = client.patch(f"/itineraries/{itinerary_id}", json={"title": "Renamed"},
+                             headers=hdrs)
+        assert saved.status_code == 200, saved.text
+
+    def test_the_aggregate_still_updates(self, client: TestClient):
+        owner, rater, itinerary_id, _ = self._setup(client)
+        client.post(f"/itineraries/{itinerary_id}/ratings", json={"stars": 4},
+                    headers=auth_headers(rater["access_token"]))
+
+        detail = client.get(f"/itineraries/{itinerary_id}",
+                            headers=auth_headers(owner["access_token"])).json()
+        assert detail["rating_count"] == 1
+        assert detail["rating_avg"] == 4.0
+
+    def test_deleting_a_rating_does_not_stale_the_editor_either(self, client: TestClient):
+        owner, rater, itinerary_id, _ = self._setup(client)
+        client.post(f"/itineraries/{itinerary_id}/ratings", json={"stars": 4},
+                    headers=auth_headers(rater["access_token"]))
+        self._backdate(itinerary_id)
+        etag = client.get(f"/itineraries/{itinerary_id}",
+                          headers=auth_headers(owner["access_token"])).headers["etag"]
+        hdrs = locked_headers(client, itinerary_id,
+                              auth_headers(owner["access_token"]), etag)
+
+        assert client.delete(f"/itineraries/{itinerary_id}/ratings/me",
+                             headers=auth_headers(rater["access_token"])).status_code == 204
+
+        saved = client.patch(f"/itineraries/{itinerary_id}", json={"title": "Renamed"},
+                             headers=hdrs)
+        assert saved.status_code == 200, saved.text
+
+
+# ---------------------------------------------------------------------------
+# API-only edges: an unanchored new track, and the last leg of a segment
+# ---------------------------------------------------------------------------
+
+class TestUnanchoredTrackAndLastLeg:
+
+    def _itinerary(self, client: TestClient):
+        user = register_user(client, "owner", "owner@example.com")
+        hdrs = auth_headers(user["access_token"])
+        r = client.post("/itineraries/", json={"title": "Trip"}, headers=hdrs)
+        assert r.status_code == 201, r.text
+        return hdrs, r.json()["id"]
+
+    def _add_stop(self, client: TestClient, hdrs: dict, itinerary_id: str, name: str):
+        from conftest import edit_now
+        r = client.post(f"/itineraries/{itinerary_id}/stops",
+                        json={"place_name": name},
+                        headers=edit_now(client, itinerary_id, hdrs))
+        assert r.status_code == 201, r.text
+        return r.json()
+
+    def test_a_new_track_without_anchors_is_appended(self, client: TestClient):
+        """key_between(None, None) is a fixed midpoint — without the append
+        fallback every second unanchored track answered 409 rank_collision."""
+        hdrs, itinerary_id = self._itinerary(client)
+        for name in ("A", "B", "C"):
+            self._add_stop(client, hdrs, itinerary_id, name)
+
+        detail = client.get(f"/itineraries/{itinerary_id}", headers=hdrs).json()
+        names = [t["stops"][0]["place_name"] for t in detail["tracks"]]
+        assert names == ["A", "B", "C"]
+
+    def test_deleting_the_last_leg_deletes_its_segment(self, client: TestClient):
+        from conftest import edit_now
+        hdrs, itinerary_id = self._itinerary(client)
+        a = self._add_stop(client, hdrs, itinerary_id, "A")
+        b = self._add_stop(client, hdrs, itinerary_id, "B")
+        seg = client.post(
+            f"/itineraries/{itinerary_id}/segments",
+            json={"from_stop_id": a["id"], "to_stop_id": b["id"],
+                  "legs": [{"position": 1, "mode": "metro"}]},
+            headers=edit_now(client, itinerary_id, hdrs),
+        )
+        assert seg.status_code == 201, seg.text
+        segment = seg.json()
+
+        r = client.delete(
+            f"/itineraries/{itinerary_id}/segments/{segment['id']}/legs/{segment['legs'][0]['id']}",
+            headers=edit_now(client, itinerary_id, hdrs),
+        )
+        assert r.status_code == 204, r.text
+
+        listed = client.get(f"/itineraries/{itinerary_id}/segments", headers=hdrs)
+        assert listed.json() == []

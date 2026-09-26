@@ -101,6 +101,8 @@ class _FakeFollowRepo implements FollowRepository {
   @override
   Future<List<FollowerListItem>> getFollowers(
     String userId, {
+    int limit = kFollowListPageSize,
+    int offset = 0,
     bool forceRefresh = false,
   }) async {
     getFollowersCalls.add(forceRefresh);
@@ -110,6 +112,8 @@ class _FakeFollowRepo implements FollowRepository {
   @override
   Future<List<FollowerListItem>> getFollowing(
     String userId, {
+    int limit = kFollowListPageSize,
+    int offset = 0,
     bool forceRefresh = false,
   }) async {
     getFollowingCalls.add(forceRefresh);

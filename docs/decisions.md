@@ -679,3 +679,57 @@ are all manual and documented in
 **Alternatives rejected.** Automated filing (a false positive filed with law
 enforcement is not reversible, and an ESP registration carries duties a solo
 operator cannot sustain). Undated — the stance predates the file that records it.
+
+---
+
+### 2026-09-26 — An author's edit can no longer lift a takedown
+
+**Context.** `PATCH /users/me` and the rating upsert *assigned* the text-moderation
+verdict to `moderation_status` rather than escalating it, on the reasoning that
+rewritten profile or review text is new content (recorded in
+[text-moderation.md](features/text-moderation.md) and
+[accounts-and-profiles.md](features/accounts-and-profiles.md) as the deliberate
+exception to escalate-only). Two holes followed. With the default
+`TEXT_MODERATION_PROVIDER=disabled` the verdict is always `approved` and nothing
+is scanned, so any edit un-hid a profile or review a moderator or a report
+threshold had taken down. And the profile scan covers only the submitted fields,
+so renaming alone brought back a still-offensive bio.
+**Decision.** Both paths now call `apply_author_edit_status`
+(`text_moderation_service.py`). A rewrite that was rescanned whole still
+*replaces* an automated flag. It only escalates when the record is under a
+takedown (`hidden` / `rejected`) or when the rewrite was partial (a stored
+`display_name` or `bio` left out of the request).
+**Consequences.** A takedown is lifted only by a moderator or an appeal — the path
+the help centre already describes. An author who cleans up a *flagged* (not
+hidden) review or full profile still clears the flag. A partial profile edit on a
+flagged profile leaves it flagged until a moderator reviews it.
+**Alternatives rejected.** Escalate-only for every author edit (a cleaned-up
+flagged bio would stay flagged forever); rescanning the stored-but-unsent field on
+every profile edit (spends a paid provider call on text nobody changed, and could
+422 a rename over an old bio judged under an older policy).
+
+---
+
+### 2026-09-26 — The rating aggregate does not move the itinerary's ETag
+
+**Context.** `rating_count` / `rating_avg` live on the `itineraries` row, and
+`updated_at` has `onupdate=now()` and *is* the `If-Match` concurrency token.
+`recalculate_rating` assigned the two columns directly, so every stranger's
+rating — and every moderator hide or restore of a review — bumped `updated_at`
+and 412'd the owner's open editor with "itinerary modified, please reload" over a
+change they could not see.
+**Decision.** `recalculate_rating` writes through
+`admin_service.set_preserving_etag`, the same helper moderation writes use.
+Imported lazily, because `admin_service` imports `itinerary_access`.
+**Consequences.** The detail GET's cache validator is that same `updated_at`, so
+a viewer holding a *cached* detail can see a stale average until the next content
+edit or a pull-to-refresh (which uses `CachePolicy.refresh` and skips the
+conditional GET). The rater's own post-submit refresh is forced, so they always
+see their rating counted, and the ratings page carries a body-hash ETag and is
+always fresh. Moderation writes have accepted the identical trade-off since they
+started preserving the ETag.
+**Alternatives rejected.** Keeping the bump (the owner's editor keeps 412ing on
+every rating); a separate cache validator on the detail GET (changes the header
+the Flutter client and the test helpers echo back as `If-Match`); moving the
+aggregates to their own table (a migration and a join on every feed read, for a
+number that tolerates being a minute stale).

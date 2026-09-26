@@ -62,6 +62,7 @@ class FeedNotifier extends AsyncNotifier<List<FeedItem>> {
       final next = await ref
           .read(feedRepositoryProvider)
           .getFeed(sort: sort.value, offset: _offset);
+      if (!ref.mounted) return; // disposed mid-request (logout)
       _offset += next.length;
       _hasMore = next.length == kFeedPageSize;
       state = AsyncData([...current, ...next]);
@@ -75,7 +76,7 @@ class FeedNotifier extends AsyncNotifier<List<FeedItem>> {
     // Offline: keep cached AsyncData — a forced refresh could only degrade it.
     if (!isOnlineNowRef(ref)) return;
     state = const AsyncLoading();
-    state = await AsyncValue.guard(() async {
+    final next = await AsyncValue.guard(() async {
       final sort = ref.read(feedSortProvider);
       final first = await ref.read(feedRepositoryProvider).getFeed(
             sort: sort.value,
@@ -86,6 +87,8 @@ class FeedNotifier extends AsyncNotifier<List<FeedItem>> {
       _hasMore = first.length == kFeedPageSize;
       return first;
     });
+    if (!ref.mounted) return; // disposed mid-request (logout)
+    state = next;
   }
 }
 

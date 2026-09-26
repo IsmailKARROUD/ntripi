@@ -52,6 +52,9 @@ nothing in the project answers "can this person see this" for itself.
   so even the author's own hidden rating cannot move the average others see.
 - **The allowlist only applies to `restricted`.** `POST /allowed-users` answers
   400 `allowlist_restricted_only` otherwise (`itineraries.py:920`).
+- **Allowlist names go through `public_profile_text`**, like the editor list: a
+  display name that moderation hid comes back `null` (the client shows
+  `@username`). Both allowlist endpoints read it raw until 2026-09-26.
 - **Allowlist mutations are owner-only** (`_require_owner`) and are the one
   itinerary sub-resource that does **not** bump `updated_at`: the allowlist
   changes nothing in `ItineraryDetail`, and bumping it would 412 the owner's open
@@ -100,19 +103,6 @@ cannot use the PK index. Full columns in
 
 ## Known gaps / TODOs
 
-- **The allowlist endpoints read `user.display_name` raw**
-  (`itineraries.py:945,975`) while the editor endpoints route it through
-  `public_profile_text`. The comment at `itineraries.py:1035` names this
-  explicitly: *"not `user.display_name` — a moderated name must not leak through a
-  list the allowlist endpoints happen to read raw."* So a display name that
-  moderation has hidden still appears in the allowlist response. Owner-only
-  surface, which bounds the exposure, but the asymmetry is acknowledged and
-  unfixed.
-- **`test_itinerary_visibility.py` is skipped** with
-  `pytest.mark.skip("rewriting after fractional-indexing refactor")` since
-  2026-05-07 — the four-level ladder has had no direct test coverage for four
-  months. `test_hidden_deleted_visibility.py` covers the moderation half only.
-  See [backlog.md](../backlog.md).
 - `_VISIBILITY` is a Pydantic `Literal` (`schemas/itinerary.py:31`) while
   `_NOTE_TYPE_PATTERN` and `_PLACE_TYPE_PATTERN` are `pattern=` regexes, against
   the rule in [constraints.md](../constraints.md#api-contract-stability) that

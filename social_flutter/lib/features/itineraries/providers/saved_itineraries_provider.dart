@@ -26,11 +26,13 @@ class SavedItinerariesNotifier extends AsyncNotifier<List<Itinerary>> {
     // Offline: keep cached AsyncData — a forced refresh could only degrade it.
     if (!isOnlineNowRef(ref)) return;
     state = const AsyncLoading();
-    state = await AsyncValue.guard(
+    final next = await AsyncValue.guard(
       () => ref
           .read(itineraryRepositoryProvider)
           .getSavedItineraries(forceRefresh: true),
     );
+    if (!ref.mounted) return; // disposed mid-request (logout)
+    state = next;
   }
 
   /// Save an itinerary. Optimistically prepends it so the bookmark fills
@@ -44,9 +46,11 @@ class SavedItinerariesNotifier extends AsyncNotifier<List<Itinerary>> {
     try {
       await ref.read(itineraryRepositoryProvider).saveItinerary(itinerary.id);
     } catch (_) {
-      if (previous != null) state = AsyncData(previous); // revert optimistic insert
+      // revert optimistic insert — unless logout disposed us mid-request
+      if (previous != null && ref.mounted) state = AsyncData(previous);
       rethrow;
     }
+    if (!ref.mounted) return; // disposed mid-request (logout)
     _warmOfflineCache(itinerary.id);
   }
 
@@ -59,7 +63,8 @@ class SavedItinerariesNotifier extends AsyncNotifier<List<Itinerary>> {
     try {
       await ref.read(itineraryRepositoryProvider).unsaveItinerary(id);
     } catch (_) {
-      if (previous != null) state = AsyncData(previous); // revert optimistic removal
+      // revert optimistic removal — unless logout disposed us mid-request
+      if (previous != null && ref.mounted) state = AsyncData(previous);
       rethrow;
     }
   }
@@ -84,6 +89,7 @@ class SavedItinerariesNotifier extends AsyncNotifier<List<Itinerary>> {
       final list = await ref
           .read(itineraryRepositoryProvider)
           .getSavedItineraries(forceRefresh: true);
+      if (!ref.mounted) return; // disposed mid-request (logout)
       state = AsyncData(list);
     } catch (_) {/* keep optimistic state on failure */}
   }

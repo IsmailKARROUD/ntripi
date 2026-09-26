@@ -53,7 +53,7 @@ void main() {
 
       expect(find.text('Need inspiration?'), findsOneWidget);
       expect(
-        find.textContaining('Browse your itineraries'),
+        find.textContaining('Explore the community feed'),
         findsOneWidget,
       );
     });

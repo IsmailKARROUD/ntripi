@@ -20,7 +20,7 @@ Rect _sheetRect(WidgetTester tester) => tester.getRect(
     );
 
 void main() {
-  testWidgets('sheet keeps a fixed 70% frame across keyboard and filtering',
+  testWidgets('sheet keeps a fixed 50% frame across keyboard and filtering',
       (tester) async {
     tester.view.physicalSize = const Size(400, 800);
     tester.view.devicePixelRatio = 1.0;
@@ -44,7 +44,7 @@ void main() {
     showLanguagePickerSheet(ctx);
     await tester.pumpAndSettle();
 
-    const expected = Rect.fromLTRB(0, 240, 400, 800); // 70% of an 800pt screen
+    const expected = Rect.fromLTRB(0, 400, 400, 800); // 50% of an 800pt screen
     expect(_sheetRect(tester), expected);
 
     tester.view.viewInsets = const FakeViewPadding(bottom: 336);

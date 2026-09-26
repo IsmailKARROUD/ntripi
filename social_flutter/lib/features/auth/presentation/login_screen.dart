@@ -63,6 +63,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   /// Records the message *and* the backend code — the banner needs the code to
   /// decide whether to offer the appeal link.
   void _showDioError(DioException e) {
+    if (!mounted) return; // reached from a catch after an await
     setState(() {
       _errorMessage = extractErrorMessage(e, AppLocalizations.of(context)!);
       _errorCode = apiErrorCode(e);
@@ -90,6 +91,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         identifier: _identifierController.text.trim(),
         password: _passwordController.text,
       );
+      // Popped mid-request: the widget ref is dead; the saved tokens restore
+      // the session on next launch.
+      if (!mounted) return;
       ref.read(authNotifierProvider.notifier).setAuthenticated(result.userId);
       ref.invalidate(myProfileProvider);
       ref.invalidate(myItinerariesProvider);
@@ -194,6 +198,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         googleAccessToken: accessToken,
       );
     }
+    if (!mounted) return; // see _login
     ref.read(authNotifierProvider.notifier).setAuthenticated(result.userId);
     ref.invalidate(myProfileProvider);
     ref.invalidate(myItinerariesProvider);

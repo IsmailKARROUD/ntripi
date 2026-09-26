@@ -341,6 +341,14 @@ def reject_follow_request(
             code="cannot_reject_request", detail="You cannot reject this follow request.",
         )
 
+    # A stale Decline (accepted meanwhile, on another device or by going public)
+    # must not delete a live follow: it would skip the counter decrement.
+    if follow.status != FollowStatus.pending:
+        raise ApiError(
+            status_code=status.HTTP_404_NOT_FOUND,
+            code="follow_request_not_found", detail="Follow request not found.",
+        )
+
     db.delete(follow)
     db.commit()
 
@@ -387,6 +395,9 @@ def list_followers(
             Follow.status == FollowStatus.accepted,
             *([Follow.follower_id.notin_(hidden)] if hidden else []),
         )
+        # Pages are limit/offset, so without a total order Postgres may repeat
+        # or skip rows between pages. Newest first; id breaks created_at ties.
+        .order_by(Follow.created_at.desc(), Follow.id.desc())
         .limit(limit)
         .offset(offset)
     ).scalars().all()
@@ -428,6 +439,7 @@ def list_following(
             Follow.status == FollowStatus.accepted,
             *([Follow.following_id.notin_(hidden)] if hidden else []),
         )
+        .order_by(Follow.created_at.desc(), Follow.id.desc())  # see list_followers
         .limit(limit)
         .offset(offset)
     ).scalars().all()

@@ -188,8 +188,10 @@ void main() {
         ));
         await tester.pump();
 
-        expect(find.text('Followers'), findsOneWidget);
-        expect(find.text('Following'), findsOneWidget);
+        // Labels carry the profile's totals (fixture: 2 / 1), not the length
+        // of the loaded page — a page undercounts anyone past the first one.
+        expect(find.text('2 Followers'), findsOneWidget);
+        expect(find.text('1 Following'), findsOneWidget);
       });
 
       testWidgets(
@@ -206,8 +208,10 @@ void main() {
         ));
         await tester.pump();
 
-        expect(find.text('Followers'), findsOneWidget);
-        expect(find.text('Following'), findsOneWidget);
+        // Labels carry the profile's totals (fixture: 2 / 1), not the length
+        // of the loaded page — a page undercounts anyone past the first one.
+        expect(find.text('2 Followers'), findsOneWidget);
+        expect(find.text('1 Following'), findsOneWidget);
       });
 
       testWidgets(
@@ -492,8 +496,8 @@ void main() {
         ));
         await tester.pump();
 
-        // Navigate to the following tab
-        await tester.tap(find.text('Following'));
+        // Navigate to the following tab (label carries the fixture's total)
+        await tester.tap(find.text('1 Following'));
         await tester.pumpAndSettle();
 
         expect(

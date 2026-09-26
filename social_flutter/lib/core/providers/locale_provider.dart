@@ -21,6 +21,7 @@ class LocaleNotifier extends Notifier<Locale> {
 
   Future<void> _load() async {
     final saved = await _storage.read(key: _kLocaleKey);
+    if (!ref.mounted) return; // disposed while storage answered
     if (saved != null) {
       // User has previously chosen a language — always honour it.
       state = Locale(saved);

@@ -1,6 +1,3 @@
-import pytest
-pytestmark = pytest.mark.skip("rewriting after fractional-indexing refactor")
-
 """
 test_transit_segments.py — Tests for transit segment and transport leg endpoints.
 
@@ -33,11 +30,27 @@ def create_itinerary(client, token, *, title="Trip", visibility="only_me"):
     return r.json()
 
 
+def write_headers(client, token, itinerary_id):
+    """Auth + If-Match, plus an edit claim when this caller may hold one.
+
+    A non-editor cannot claim, and the guard answers their 403 before it ever
+    looks at the claim — so the 403 tests still exercise the real check."""
+    hdrs = auth_headers(token)
+    etag = client.get(f"/itineraries/{itinerary_id}", headers=hdrs).headers.get("etag", '"none"')
+    claim = client.post(f"/itineraries/{itinerary_id}/lock",
+                        json={"takeover": True}, headers=hdrs)
+    if claim.status_code != 200:
+        return {**hdrs, "If-Match": etag}
+    return {**hdrs, "If-Match": etag, "X-Edit-Lock": claim.json()["token"]}
+
+
 def add_stop(client, token, itinerary_id, position, stop_type="waypoint"):
     r = client.post(
         f"/itineraries/{itinerary_id}/stops",
-        json={"position": position, "type": stop_type, "place_name": f"Stop {position}"},
-        headers=auth_headers(token),
+        # `position` is only a label now: stops are ranked, and role is derived
+        # client-side — neither is ever sent.
+        json={"place_name": f"Stop {position}"},
+        headers=write_headers(client, token, itinerary_id),
     )
     assert r.status_code == 201, r.json()
     return r.json()
@@ -49,7 +62,7 @@ def create_segment(client, token, itinerary_id, from_stop_id, to_stop_id, legs=N
     return client.post(
         f"/itineraries/{itinerary_id}/segments",
         json={"from_stop_id": from_stop_id, "to_stop_id": to_stop_id, "legs": legs},
-        headers=auth_headers(token),
+        headers=write_headers(client, token, itinerary_id),
     )
 
 
@@ -207,7 +220,7 @@ class TestUpdateSegment:
                 "to_stop_id": stop_c["id"],
                 "legs": [{"position": 1, "mode": "tram"}],
             },
-            headers=auth_headers(user["access_token"]),
+            headers=write_headers(client, user["access_token"], itin_id),
         )
         assert r.status_code == 200
         assert r.json()["to_stop_id"] == stop_c["id"]
@@ -228,7 +241,7 @@ class TestUpdateSegment:
                 "to_stop_id": stop_b["id"],
                 "legs": [{"position": 1, "mode": "taxi"}],
             },
-            headers=auth_headers(user["access_token"]),
+            headers=write_headers(client, user["access_token"], itin_id),
         )
         assert r.status_code == 200
         assert len(r.json()["legs"]) == 1
@@ -248,7 +261,7 @@ class TestUpdateSegment:
                 "to_stop_id": stop_b["id"],
                 "legs": [{"position": 1, "mode": "walk"}],
             },
-            headers=auth_headers(other["access_token"]),
+            headers=write_headers(client, other["access_token"], itin_id),
         )
         assert r.status_code == 403
 
@@ -263,7 +276,7 @@ class TestUpdateSegment:
                 "to_stop_id": stop_b["id"],
                 "legs": [{"position": 1, "mode": "walk"}],
             },
-            headers=auth_headers(user["access_token"]),
+            headers=write_headers(client, user["access_token"], itin_id),
         )
         assert r.status_code == 404
 
@@ -282,7 +295,7 @@ class TestDeleteSegment:
 
         r = client.delete(
             f"/itineraries/{itin_id}/segments/{seg['id']}",
-            headers=auth_headers(user["access_token"]),
+            headers=write_headers(client, user["access_token"], itin_id),
         )
         assert r.status_code == 204
 
@@ -302,7 +315,7 @@ class TestDeleteSegment:
 
         client.delete(
             f"/itineraries/{itin_id}/segments/{seg['id']}",
-            headers=auth_headers(user["access_token"]),
+            headers=write_headers(client, user["access_token"], itin_id),
         )
 
         # Detail should have no segments.
@@ -316,7 +329,7 @@ class TestDeleteSegment:
 
         r = client.delete(
             f"/itineraries/{itin_id}/segments/00000000-0000-0000-0000-000000000000",
-            headers=auth_headers(user["access_token"]),
+            headers=write_headers(client, user["access_token"], itin_id),
         )
         assert r.status_code == 404
 
@@ -329,7 +342,7 @@ class TestDeleteSegment:
 
         r = client.delete(
             f"/itineraries/{itin_id}/segments/{seg['id']}",
-            headers=auth_headers(other["access_token"]),
+            headers=write_headers(client, other["access_token"], itin_id),
         )
         assert r.status_code == 403
 
@@ -355,7 +368,7 @@ class TestLegCRUD:
         r = client.post(
             f"/itineraries/{itin_id}/segments/{seg['id']}/legs",
             json={"position": 2, "mode": "bus", "duration_min": 10},
-            headers=auth_headers(user["access_token"]),
+            headers=write_headers(client, user["access_token"], itin_id),
         )
         assert r.status_code == 201
         assert r.json()["mode"] == "bus"
@@ -369,7 +382,7 @@ class TestLegCRUD:
         r = client.post(
             f"/itineraries/{itin_id}/segments/{seg['id']}/legs",
             json={"position": 1, "mode": "bus"},
-            headers=auth_headers(user["access_token"]),
+            headers=write_headers(client, user["access_token"], itin_id),
         )
         assert r.status_code == 409
 
@@ -383,7 +396,7 @@ class TestLegCRUD:
         r = client.patch(
             f"/itineraries/{itin_id}/segments/{seg['id']}/legs/{leg_id}",
             json={"mode": "tram", "duration_min": 20},
-            headers=auth_headers(user["access_token"]),
+            headers=write_headers(client, user["access_token"], itin_id),
         )
         assert r.status_code == 200
         assert r.json()["mode"] == "tram"
@@ -402,7 +415,7 @@ class TestLegCRUD:
 
         r = client.delete(
             f"/itineraries/{itin_id}/segments/{seg['id']}/legs/{leg_id}",
-            headers=auth_headers(user["access_token"]),
+            headers=write_headers(client, user["access_token"], itin_id),
         )
         assert r.status_code == 204
 
@@ -414,7 +427,7 @@ class TestLegCRUD:
 
         r = client.delete(
             f"/itineraries/{itin_id}/segments/{seg['id']}/legs/00000000-0000-0000-0000-000000000000",
-            headers=auth_headers(user["access_token"]),
+            headers=write_headers(client, user["access_token"], itin_id),
         )
         assert r.status_code == 404
 
@@ -427,7 +440,7 @@ class TestLegCRUD:
         r = client.post(
             f"/itineraries/{itin_id}/segments/{seg['id']}/legs",
             json={"position": 2, "mode": "helicopter"},
-            headers=auth_headers(user["access_token"]),
+            headers=write_headers(client, user["access_token"], itin_id),
         )
         assert r.status_code == 422
 
@@ -457,7 +470,7 @@ class TestTotalRecalculation:
         # Give the stops some duration too.
         client.patch(f"/itineraries/{itin_id}/stops/{stop_a['id']}",
                      json={"duration_min": 30},
-                     headers=auth_headers(user["access_token"]))
+                     headers=write_headers(client, user["access_token"], itin_id))
 
         legs = [{"position": 1, "mode": "metro", "duration_min": 20}]
         create_segment(client, user["access_token"], itin_id,
@@ -488,7 +501,7 @@ class TestTotalRecalculation:
                              stop_a["id"], stop_b["id"], legs=legs).json()
 
         client.delete(f"/itineraries/{itin_id}/segments/{seg['id']}",
-                      headers=auth_headers(user["access_token"]))
+                      headers=write_headers(client, user["access_token"], itin_id))
 
         itin = client.get(f"/itineraries/{itin_id}",
                           headers=auth_headers(user["access_token"])).json()
@@ -507,7 +520,7 @@ class TestTotalRecalculation:
         client.patch(
             f"/itineraries/{itin_id}/segments/{seg['id']}/legs/{leg_id}",
             json={"cost": "5.00", "duration_min": 30},
-            headers=auth_headers(user["access_token"]),
+            headers=write_headers(client, user["access_token"], itin_id),
         )
 
         itin = client.get(f"/itineraries/{itin_id}",

@@ -54,7 +54,9 @@ from app.services.image_service import (
 from app.services.moderation_service import ModerationContext, ModerationRejectedError
 from app.services import block_service, notification_service
 from app.services.itinerary_access import can_view_itinerary
-from app.services.text_moderation_service import moderate_or_422
+from app.services.text_moderation_service import (
+    apply_author_edit_status, moderate_or_422,
+)
 from app.services.moderation_actions import escalate_if_flagged
 from app.storage.factory import storage
 from app.errors import ApiError
@@ -152,9 +154,17 @@ def update_my_profile(
         target_id=current_user.id,
     )
     if "display_name" in update_data or "bio" in update_data:
-        # Assigned, not escalated: rewritten profile text is new content, so a
-        # cleaned-up bio clears the previous flag.
-        current_user.moderation_status = ctx.status
+        # Rewritten profile text is new content, so a full rewrite clears an
+        # automated flag — but a partial one leaves unscanned text in place, and
+        # no author edit may lift a takedown.
+        apply_author_edit_status(
+            current_user, ctx.status,
+            # An omitted field only matters if it holds text the scan skipped.
+            rescanned_all=all(
+                key in update_data or not getattr(current_user, key)
+                for key in ("display_name", "bio")
+            ),
+        )
         escalate_if_flagged(
             db, "user", current_user,
             escalate_flag=ctx.escalate, decision_id=ctx.decision_id,

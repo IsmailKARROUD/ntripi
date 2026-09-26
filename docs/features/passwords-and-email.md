@@ -117,11 +117,12 @@ Change-password errors all arrive as 403/400 with the generic
 
 ## Known gaps / TODOs
 
-- **`POST /web/reset-password` validates the password with its own inline rules**
-  (`web.py:198`: mismatch / under 8 chars / must contain a digit) instead of
-  calling `validate_password_strength`. **The 72-byte NFKC bcrypt cap is
-  therefore not enforced on the web reset path**, while it is on every other
-  password path. A longer password would be silently truncated by bcrypt.
+- **The web reset path skips the breached-password (HIBP) and reuse checks**
+  that `change_password` runs (`auth_service.py:533`). It does enforce the shared
+  `validate_password_strength` policy since 2026-09-26 — before that it
+  validated inline, so a password over bcrypt's 72-byte cap reached `hashpw`,
+  which bcrypt 5 answers with a `ValueError` (a 500 page), and Arabic-Indic
+  digits satisfied the digit rule.
 - **`ResetPasswordRequest` (`schemas/auth.py:141`) is defined and never
   referenced** by any router or test.
 - **Eight distinct change-password failures share one error code.** "No password

@@ -94,7 +94,7 @@ for the gap here.
 |---|---|---|---|
 | `cannot_follow_self` | 400 | `follows.py:103` | localized |
 | `not_following` | 404 | `follows.py:192` | localized |
-| `follow_request_not_found` | 404 | `follows.py:272` (×3) | localized |
+| `follow_request_not_found` | 404 | `follows.py:272` (×4 — accept ×2, reject ×2: missing, or no longer pending) | localized |
 | `follow_request_already_accepted` | 400 | `follows.py:286` | localized |
 | `cannot_reject_request` | 403 | `follows.py:341` | localized |
 | `account_private` | 403 | `follows.py:55` | localized |

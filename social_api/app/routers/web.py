@@ -50,6 +50,7 @@ from app.services import (
     appeal_service, appeal_token, auth_service, email_service, help_service, seo,
 )
 from app.templating import templates
+from app.validators.password import validate_password_strength
 
 router = APIRouter(tags=["web"])
 
@@ -199,8 +200,12 @@ def web_reset_password(
         return _form_error("Passwords do not match.")
     if len(password) < 8:
         return _form_error("Password must be at least 8 characters.")
-    if not any(c.isdigit() for c in password):
-        return _form_error("Password must contain at least one digit.")
+    # The shared policy, not an inline copy: it enforces bcrypt's 72-byte cap
+    # (bcrypt 5 raises past it, a 500 here) and ASCII-only digits.
+    try:
+        validate_password_strength(password)
+    except ValueError as exc:
+        return _form_error(str(exc))
 
     try:
         auth_service.reset_password(db, token, password)

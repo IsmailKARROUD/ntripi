@@ -87,11 +87,15 @@ class _FollowListScreenState extends ConsumerState<FollowListScreen>
         ? ref.watch(followRequestsProvider).value ?? []
         : <FollowRequestItem>[];
 
-    // Counts for tab labels — use loaded-list length as best proxy.
+    // Tab labels show the profile's totals: the loaded list is only the pages
+    // fetched so far, so its length undercounts anyone past the first page.
+    final profile = isOwnProfile
+        ? myProfile
+        : ref.watch(userProfileProvider(widget.userId)).value;
     final followerCount =
-        followersAsync.value?.length ?? 0;
+        profile?.followersCount ?? followersAsync.value?.length ?? 0;
     final followingCount =
-        followingAsync.value?.length ?? 0;
+        profile?.followingCount ?? followingAsync.value?.length ?? 0;
 
     // Handle for the top-bar title.
     final handle = isOwnProfile
@@ -158,12 +162,20 @@ class _FollowListScreenState extends ConsumerState<FollowListScreen>
                               .refresh();
                         }
                       },
-                      child: _FollowersTab(
-                        followersAsync: followersAsync,
-                        pendingRequests: pendingRequests,
-                        isOwnProfile: isOwnProfile,
-                        onUserTap: (id) =>
-                            context.push('${widget.profileBaseRoute}/$id'),
+                      child: _LoadMoreOnScroll(
+                        onNearEnd: () => ref
+                            .read(followersProvider(widget.userId).notifier)
+                            .loadMore(),
+                        child: _FollowersTab(
+                          followersAsync: followersAsync,
+                          hasMore: ref
+                              .read(followersProvider(widget.userId).notifier)
+                              .hasMore,
+                          pendingRequests: pendingRequests,
+                          isOwnProfile: isOwnProfile,
+                          onUserTap: (id) =>
+                              context.push('${widget.profileBaseRoute}/$id'),
+                        ),
                       ),
                     ),
                     // Following
@@ -172,10 +184,18 @@ class _FollowListScreenState extends ConsumerState<FollowListScreen>
                           .read(followingProvider(widget.userId)
                               .notifier)
                           .refresh(),
-                      child: _FollowingTab(
-                        followingAsync: followingAsync,
-                        onUserTap: (id) =>
-                            context.push('${widget.profileBaseRoute}/$id'),
+                      child: _LoadMoreOnScroll(
+                        onNearEnd: () => ref
+                            .read(followingProvider(widget.userId).notifier)
+                            .loadMore(),
+                        child: _FollowingTab(
+                          followingAsync: followingAsync,
+                          hasMore: ref
+                              .read(followingProvider(widget.userId).notifier)
+                              .hasMore,
+                          onUserTap: (id) =>
+                              context.push('${widget.profileBaseRoute}/$id'),
+                        ),
                       ),
                     ),
                   ],
@@ -237,12 +257,14 @@ class _TopBar extends StatelessWidget {
 
 class _FollowersTab extends ConsumerWidget {
   final AsyncValue<List<FollowerListItem>> followersAsync;
+  final bool hasMore;
   final List<FollowRequestItem> pendingRequests;
   final bool isOwnProfile;
   final ValueChanged<String> onUserTap;
 
   const _FollowersTab({
     required this.followersAsync,
+    this.hasMore = false,
     required this.pendingRequests,
     required this.isOwnProfile,
     required this.onUserTap,
@@ -294,6 +316,7 @@ class _FollowersTab extends ConsumerWidget {
                   ),
               ],
             ),
+            if (hasMore) const _NextPageLoader(),
           ] else if (pendingRequests.isEmpty)
             _EmptyListPlaceholder(
               message: AppLocalizations.of(context)!.noFollowersYet,
@@ -311,10 +334,12 @@ class _FollowersTab extends ConsumerWidget {
 
 class _FollowingTab extends StatelessWidget {
   final AsyncValue<List<FollowerListItem>> followingAsync;
+  final bool hasMore;
   final ValueChanged<String> onUserTap;
 
   const _FollowingTab({
     required this.followingAsync,
+    this.hasMore = false,
     required this.onUserTap,
   });
 
@@ -349,9 +374,51 @@ class _FollowingTab extends StatelessWidget {
                   ),
               ],
             ),
+            if (hasMore) const _NextPageLoader(),
           ],
         );
       },
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Paging
+// ═══════════════════════════════════════════════════════════════════════════
+
+/// Asks for the next page as a tab's list nears its end. A listener rather than
+/// a ScrollController: each TabBarView page owns its own scrollable.
+class _LoadMoreOnScroll extends StatelessWidget {
+  final VoidCallback onNearEnd;
+  final Widget child;
+
+  const _LoadMoreOnScroll({required this.onNearEnd, required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return NotificationListener<ScrollNotification>(
+      onNotification: (notification) {
+        // depth 0 only: the TabBarView's own horizontal scroll must not page.
+        if (notification.depth == 0 &&
+            notification.metrics.axis == Axis.vertical &&
+            notification.metrics.extentAfter < 400) {
+          onNearEnd();
+        }
+        return false;
+      },
+      child: child,
+    );
+  }
+}
+
+class _NextPageLoader extends StatelessWidget {
+  const _NextPageLoader();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Padding(
+      padding: EdgeInsets.symmetric(vertical: 20),
+      child: Center(child: NTripiRingLoader(size: 36)),
     );
   }
 }

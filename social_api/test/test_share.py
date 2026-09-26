@@ -1,6 +1,3 @@
-import pytest
-pytestmark = pytest.mark.skip("rewriting after fractional-indexing refactor")
-
 """
 test_share.py — Tests for the public share landing page endpoint.
 
@@ -28,7 +25,7 @@ import uuid
 import pytest
 from fastapi.testclient import TestClient
 
-from conftest import auth_headers, register_user
+from conftest import auth_headers, edit_now, register_user
 
 
 # ---------------------------------------------------------------------------
@@ -45,15 +42,13 @@ def create_itinerary(client, token, *, visibility="public", title="Test Trip"):
     return r.json()
 
 
-def add_stop(client, token, itinerary_id, *, place_name, position=1, stop_type="origin"):
+def add_stop(client, token, itinerary_id, *, place_name):
+    # No anchor: the server appends a new track. Stop role (origin/arrival) is
+    # derived client-side, never sent.
     r = client.post(
         f"/itineraries/{itinerary_id}/stops",
-        json={
-            "position": position,
-            "type": stop_type,
-            "place_name": place_name,
-        },
-        headers=auth_headers(token),
+        json={"place_name": place_name},
+        headers=edit_now(client, itinerary_id, auth_headers(token)),
     )
     assert r.status_code == 201, r.json()
     return r.json()
@@ -104,12 +99,9 @@ class TestSharePublicItinerary:
         itinerary = create_itinerary(
             client, token, visibility="public", title="3-Stop Adventure"
         )
-        add_stop(client, token, itinerary["id"], place_name="Eiffel Tower",
-                 position=1, stop_type="origin")
-        add_stop(client, token, itinerary["id"], place_name="Louvre Museum",
-                 position=2, stop_type="waypoint")
-        add_stop(client, token, itinerary["id"], place_name="Arc de Triomphe",
-                 position=3, stop_type="arrival")
+        add_stop(client, token, itinerary["id"], place_name="Eiffel Tower")
+        add_stop(client, token, itinerary["id"], place_name="Louvre Museum")
+        add_stop(client, token, itinerary["id"], place_name="Arc de Triomphe")
 
         r = client.get(share_url(itinerary["id"]))
 
@@ -141,8 +133,7 @@ class TestSharePrivateItinerary:
         itinerary = create_itinerary(
             client, token, visibility="followers", title="Private Followers Trip"
         )
-        add_stop(client, token, itinerary["id"], place_name="Secret Spot",
-                 position=1, stop_type="origin")
+        add_stop(client, token, itinerary["id"], place_name="Secret Spot")
 
         r = client.get(share_url(itinerary["id"]))
 
@@ -161,8 +152,7 @@ class TestSharePrivateItinerary:
         itinerary = create_itinerary(
             client, token, visibility="restricted", title="Restricted Trip"
         )
-        add_stop(client, token, itinerary["id"], place_name="Hidden Gem",
-                 position=1, stop_type="origin")
+        add_stop(client, token, itinerary["id"], place_name="Hidden Gem")
 
         r = client.get(share_url(itinerary["id"]))
 

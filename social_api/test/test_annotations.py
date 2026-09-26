@@ -1,6 +1,3 @@
-import pytest
-pytestmark = pytest.mark.skip("rewriting after fractional-indexing refactor")
-
 """
 test_annotations.py — Tests for annotation create, delete, and edit endpoints.
 
@@ -32,11 +29,25 @@ def create_itinerary(client, token, visibility="public"):
     return r.json()
 
 
-def add_stop(client, token, itinerary_id):
+def write_headers(client, token, itinerary_id):
+    """Auth + If-Match, plus an edit claim when this caller may hold one.
+
+    A non-editor cannot claim, and the guard answers their 403 before it ever
+    looks at the claim — so the 403 tests still exercise the real check."""
+    hdrs = auth_headers(token)
+    etag = client.get(f"/itineraries/{itinerary_id}", headers=hdrs).headers.get("etag", '"none"')
+    claim = client.post(f"/itineraries/{itinerary_id}/lock",
+                        json={"takeover": True}, headers=hdrs)
+    if claim.status_code != 200:
+        return {**hdrs, "If-Match": etag}
+    return {**hdrs, "If-Match": etag, "X-Edit-Lock": claim.json()["token"]}
+
+
+def add_stop(client, token, itinerary_id, place_name="Stop"):
     r = client.post(
         f"/itineraries/{itinerary_id}/stops",
-        json={"position": 1, "type": "waypoint"},
-        headers=auth_headers(token),
+        json={"place_name": place_name},
+        headers=write_headers(client, token, itinerary_id),
     )
     assert r.status_code == 201, r.json()
     return r.json()
@@ -47,7 +58,7 @@ def add_annotation(client, token, itinerary_id, stop_id, *,
     r = client.post(
         f"/itineraries/{itinerary_id}/stops/{stop_id}/annotations",
         json={"type": type_, "content": content},
-        headers=auth_headers(token),
+        headers=write_headers(client, token, itinerary_id),
     )
     assert r.status_code == 201, r.json()
     return r.json()
@@ -57,7 +68,7 @@ def patch_annotation(client, token, itinerary_id, stop_id, annotation_id, body):
     return client.patch(
         f"/itineraries/{itinerary_id}/stops/{stop_id}/annotations/{annotation_id}",
         json=body,
-        headers=auth_headers(token),
+        headers=write_headers(client, token, itinerary_id),
     )
 
 
@@ -75,7 +86,7 @@ class TestAnnotationCreate:
         r = client.post(
             f"/itineraries/{it['id']}/stops/{stop['id']}/annotations",
             json={"type": "advice", "content": "Buy tickets in advance."},
-            headers=auth_headers(alice["access_token"]),
+            headers=write_headers(client, alice["access_token"], it["id"]),
         )
         assert r.status_code == 201
         data = r.json()
@@ -93,7 +104,7 @@ class TestAnnotationCreate:
         r = client.post(
             f"/itineraries/{it['id']}/stops/{stop['id']}/annotations",
             json={"type": "info", "content": "Nice place."},
-            headers=auth_headers(bob1["access_token"]),
+            headers=write_headers(client, bob1["access_token"], it["id"]),
         )
         assert r.status_code == 403
 
@@ -112,7 +123,7 @@ class TestAnnotationDelete:
 
         r = client.delete(
             f"/itineraries/{it['id']}/stops/{stop['id']}/annotations/{ann['id']}",
-            headers=auth_headers(alice["access_token"]),
+            headers=write_headers(client, alice["access_token"], it["id"]),
         )
         assert r.status_code == 204
 
@@ -125,7 +136,7 @@ class TestAnnotationDelete:
 
         r = client.delete(
             f"/itineraries/{it['id']}/stops/{stop['id']}/annotations/{ann['id']}",
-            headers=auth_headers(bob1["access_token"]),
+            headers=write_headers(client, bob1["access_token"], it["id"]),
         )
         assert r.status_code == 403
 
@@ -235,11 +246,7 @@ class TestAnnotationUpdate:
         alice = register_user(client, "alice1", "alice@test.com")
         it = create_itinerary(client, alice["access_token"])
         stop_a = add_stop(client, alice["access_token"], it["id"])
-        stop_b = client.post(
-            f"/itineraries/{it['id']}/stops",
-            json={"position": 2, "type": "arrival"},
-            headers=auth_headers(alice["access_token"]),
-        ).json()
+        stop_b = add_stop(client, alice["access_token"], it["id"], place_name="B")
         ann = add_annotation(client, alice["access_token"], it["id"], stop_a["id"])
 
         # Annotation belongs to stop_a but we address it via stop_b

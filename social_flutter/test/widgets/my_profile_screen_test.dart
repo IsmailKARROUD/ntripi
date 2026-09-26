@@ -18,6 +18,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:social_flutter/core/ui/confirm_dialog.dart';
 import 'package:social_flutter/features/follows/providers/follow_provider.dart';
 import 'package:social_flutter/features/itineraries/domain/itinerary.dart';
 import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
@@ -369,7 +370,7 @@ void main() {
 
         expect(find.text('Settings'), findsOneWidget);
         expect(find.text('Log out'), findsOneWidget);
-        expect(find.text('Delete account'), findsOneWidget);
+        // Delete account lives in the profile edit form, not this sheet.
       });
 
       testWidgets(
@@ -390,7 +391,8 @@ void main() {
         await tester.tap(find.text('Log out'));
         await tester.pumpAndSettle();
 
-        expect(find.byType(AlertDialog), findsOneWidget);
+        // Logout confirms through confirmDestructiveAction → ConfirmDialog.
+        expect(find.byType(ConfirmDialog), findsOneWidget);
         expect(find.text('Are you sure you want to log out?'),
             findsOneWidget);
       });
@@ -412,11 +414,10 @@ void main() {
         await tester.tap(find.text('Log out'));
         await tester.pumpAndSettle();
 
-        await tester
-            .tap(find.widgetWithText(TextButton, 'Cancel').last);
+        await tester.tap(find.text('Cancel').last);
         await tester.pumpAndSettle();
 
-        expect(find.byType(AlertDialog), findsNothing);
+        expect(find.byType(ConfirmDialog), findsNothing);
       });
     });
 

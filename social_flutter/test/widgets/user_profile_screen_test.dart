@@ -16,6 +16,7 @@ import 'package:social_flutter/features/itineraries/domain/itinerary.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/itinerary_summary_card.dart';
 import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
 import 'package:social_flutter/features/profile/presentation/profile_screen.dart';
+import 'package:social_flutter/features/profile/presentation/widgets/follow_action_row.dart';
 import 'package:social_flutter/features/profile/presentation/widgets/profile_unavailable_view.dart';
 import 'package:social_flutter/features/profile/providers/profile_provider.dart';
 import 'package:social_flutter/features/reports/presentation/ugc_actions.dart';
@@ -573,7 +574,7 @@ void main() {
 
       testWidgets(
           'Given private account viewer does not follow, '
-          'When screen builds, Then follow action row is hidden',
+          'When screen builds, Then follow action row is shown',
           (tester) async {
         tester.view.physicalSize = const Size(1080, 1920);
         tester.view.devicePixelRatio = 1.0;
@@ -584,7 +585,9 @@ void main() {
             _buildScreen(user: _makeUser(isPrivate: true)));
         await tester.pump();
 
-        expect(find.byIcon(Icons.mail_outline_rounded), findsNothing);
+        // A locked profile still offers Follow — it is the only place a
+        // follow request can be sent from (profile_screen.dart).
+        expect(find.byType(FollowActionRow), findsOneWidget);
       });
 
       testWidgets(

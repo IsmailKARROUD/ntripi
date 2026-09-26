@@ -26,6 +26,14 @@ not information anyone could use.
   `rating_avg` / `rating_count` back onto the itinerary. Call it after every
   insert, update, delete **and after any change to a rating's
   `moderation_status`**.
+- **The aggregate write never moves `updated_at`.** `recalculate_rating` writes
+  through `admin_service.set_preserving_etag`, because `updated_at` is the
+  itinerary's `If-Match` ETag and a rater or a moderator is never the owner's
+  editing session — before 2026-09-26 every rating 412'd the owner's open editor.
+  Trade-off: the detail GET's validator is that same ETag, so a viewer holding a
+  cached detail can see a stale average until a content edit or a pull-to-refresh
+  (which skips the conditional GET). The rater's own post-submit refresh is
+  always fresh. See [decisions.md](../decisions.md).
 - **Hidden ratings are excluded from the public aggregate, including the
   author's own.** `recalculate_rating` passes `visible_rating_criteria(None)` —
   no viewer — because an aggregate is public and even its author's hidden rating
@@ -33,6 +41,10 @@ not information anyone could use.
 - **A rating carries its own `moderation_status`** (`itineraries.py:1756`). A
   stranger's abusive review must never take down the owner's trip, so the status
   lives on the rating, not the itinerary.
+- **Editing a review cannot un-hide it.** The upsert sets the status through
+  `apply_author_edit_status`: a rewritten note that passes still clears an
+  automated flag, but a `hidden` / `rejected` review stays down until a moderator
+  or an appeal lifts it ([text-moderation.md](text-moderation.md#escalate-only)).
 - **Only the first rating notifies the owner.** `is_first_rating`
   (`itineraries.py:1768`) is set on the insert branch; editing an existing rating
   is silent.
@@ -117,9 +129,6 @@ ratings: [RatingWithUser]}`.
 
 ## Known gaps / TODOs
 
-- **`test_itinerary_ratings.py` is skipped** with `"rewriting after
-  fractional-indexing refactor"` since 2026-05-07 — and the moderation tier added
-  `moderation_status` to this table on 2026-07-30, well after the skip.
 - `social_api/README.md` still documents the dropped `itineraries.safety_rating`
   column.
 - The dimension-average "≥ 3 ratings" threshold is a client-side rendering rule,

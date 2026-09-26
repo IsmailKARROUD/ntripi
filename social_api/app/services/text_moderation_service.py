@@ -148,6 +148,27 @@ def apply_moderation_status(record, status: str) -> None:
         record.moderation_status = status
 
 
+# Takedowns: a moderator's or a report threshold's call, lifted only by a
+# moderator or an appeal. Mirrors itinerary_access.HIDDEN_STATUSES.
+_TAKEDOWN_STATUSES = ("hidden", "rejected")
+
+
+def apply_author_edit_status(record, status: str, *, rescanned_all: bool) -> None:
+    """Set the status of a profile or review after its author rewrote it.
+
+    A full rewrite replaces an automated flag — the text that earned it is gone
+    and `status` judged its replacement. Two cases may only escalate instead:
+    a takedown, because the author editing is not a review (and with the
+    provider disabled nothing was scanned at all); and a partial rewrite,
+    because the fields it left alone were never re-judged.
+    """
+    current = getattr(record, "moderation_status", None) or "approved"
+    if rescanned_all and current not in _TAKEDOWN_STATUSES:
+        record.moderation_status = status
+    else:
+        apply_moderation_status(record, status)
+
+
 def moderate_fields_or_raise(
     fields: dict[str, str | None], ctx: TextModerationContext
 ) -> None:

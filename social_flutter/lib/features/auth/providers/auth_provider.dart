@@ -59,6 +59,7 @@ class AuthNotifier extends Notifier<String?> {
     // signs in next on the same phone. Never throws.
     await unregisterForPush();
     await ref.read(authRepositoryProvider).logout();
+    if (!ref.mounted) return;
     // Clear cached user data so a subsequent login as a different account
     // doesn't briefly show the previous user's content.
     // Use invalidate() not refresh() — the user is unauthenticated at this

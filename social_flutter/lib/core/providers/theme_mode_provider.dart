@@ -18,6 +18,7 @@ class ThemeModeNotifier extends Notifier<ThemeMode> {
 
   Future<void> _load() async {
     final saved = await _storage.read(key: _kThemeModeKey);
+    if (!ref.mounted) return; // disposed while storage answered
     state = switch (saved) {
       'light' => ThemeMode.light,
       'dark' => ThemeMode.dark,

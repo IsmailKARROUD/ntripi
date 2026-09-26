@@ -130,23 +130,6 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
   }
 }
 
-class _Dot extends StatelessWidget {
-  final double opacity;
-  const _Dot({required this.opacity});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 8,
-      height: 8,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: NtripiBrand.chrome.withValues(alpha: opacity),
-      ),
-    );
-  }
-}
-
 class _RouteTexture extends StatelessWidget {
   const _RouteTexture();
 

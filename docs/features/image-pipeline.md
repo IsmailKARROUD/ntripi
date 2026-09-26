@@ -152,8 +152,6 @@ face, and every upload spends a paid Rekognition scan.
 - `scripts/migrate_to_r2.py` is the one-time backfill (`--dry-run`,
   `--old-base`); it rewrites `itineraries.cover_image_url`, `users.avatar_url`
   and `users.cover_image_url`.
-- `test_itinerary_image.py` is **skipped** with `"rewriting after
-  fractional-indexing refactor"` since 2026-05-07.
 
 ## Related
 

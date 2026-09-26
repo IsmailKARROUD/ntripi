@@ -46,10 +46,13 @@ class _AcceptTermsScreenState extends ConsumerState<AcceptTermsScreen> {
       await ref.read(authRepositoryProvider).acceptTos(
             dateOfBirth: _dateOfBirth,
           );
+      // Signed out from the gate mid-request: the widget ref is dead.
+      if (!mounted) return;
       // Refreshing the profile is what lowers the gate: TosGate watches
       // myProfileProvider, so the new tos_current releases the whole app.
       ref.invalidate(myProfileProvider);
     } on DioException catch (e) {
+      if (!mounted) return;
       setState(() => _errorMessage = extractErrorMessage(e, l10n));
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -64,7 +67,7 @@ class _AcceptTermsScreenState extends ConsumerState<AcceptTermsScreen> {
     // loading and error both fall through to "don't ask" — the server still
     // refuses the acceptance, which is the authoritative check.
     final needsDob = ref.watch(myProfileProvider).maybeWhen(
-          data: (user) => user?.dateOfBirth == null,
+          data: (user) => user.dateOfBirth == null,
           orElse: () => false,
         );
 

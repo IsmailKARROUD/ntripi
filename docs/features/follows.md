@@ -36,6 +36,11 @@ B.followers_count +1         │
 - **There is no `rejected` status.** Rejecting **deletes** the row
   (`models/follow.py:6`), so the requester can try again without obstruction and
   no "bad" relationship data accumulates.
+- **Reject acts on a *pending* row only.** A stale Decline — the request was
+  accepted meanwhile, on another device or by the account going public — answers
+  404 `follow_request_not_found` and leaves the follow alone. Deleting it would
+  have removed a live follower without the counter decrement, so
+  `followers_count` drifted high for good (fixed 2026-09-26).
 - **`status` is a native PostgreSQL ENUM `followstatus`** — the only native enum
   in the schema.
 - **Counters move only on accepted transitions** (`follows.py:141,195`,
@@ -98,14 +103,16 @@ Full columns: [reference/data-model.md](../reference/data-model.md#follows).
 | DELETE | `/users/{user_id}/follow` | Bearer | 204 | 404 `not_following` |
 | GET | `/users/me/follow-requests` | Bearer | `list[FollowRequestItem]` | — |
 | POST | `/users/me/follow-requests/{follow_id}/accept` | Bearer | `FollowResponse` | 404 `follow_request_not_found`, 400 `follow_request_already_accepted` |
-| DELETE | `/users/me/follow-requests/{follow_id}` | Bearer | 204 | 404 `follow_request_not_found`, **403 `cannot_reject_request`** |
+| DELETE | `/users/me/follow-requests/{follow_id}` | Bearer | 204 | 404 `follow_request_not_found` (missing, **or no longer pending**), **403 `cannot_reject_request`** |
 | GET | `/users/{user_id}/followers` | Bearer | `list[FollowerListItem]` | 404 `user_not_found`, 403 `account_private` |
 | GET | `/users/{user_id}/following` | Bearer | `list[FollowerListItem]` | same |
 
 `FollowResponse` = `{id, follower_id, following_id, status, created_at}`.
 `FollowRequestItem` = `{follow_id, follower_id, username, display_name,
 avatar_url, requested_at}`.
-Both list endpoints take `limit` / `offset`.
+Both list endpoints take `limit` (default 20, max 100) / `offset` and return
+**newest follow first**, with `Follow.id` breaking `created_at` ties — without a
+total order Postgres may repeat or skip rows between offset pages.
 
 Note the follows router has **no prefix** — its paths are literal `/users/…`
 (`main.py:279`).
@@ -120,8 +127,17 @@ Note the follows router has **no prefix** — its paths are literal `/users/…`
   |---|---|---|
   | `followRepositoryProvider` | `Provider` | `FollowRepository` |
   | `followRequestsProvider` | `AsyncNotifierProvider` | incoming requests (**keep-alive**) |
-  | `followersProvider` | `AsyncNotifierProvider.family` | a user's followers |
-  | `followingProvider` | `AsyncNotifierProvider.family` | who a user follows |
+  | `followersProvider` | `AsyncNotifierProvider.family` | a user's followers, paged |
+  | `followingProvider` | `AsyncNotifierProvider.family` | who a user follows, paged |
+- **The two lists page like the feed.** Both notifiers extend
+  `FollowListNotifier`: `kFollowListPageSize` (50) rows per request, `loadMore()`
+  appends at the current offset and `hasMore` drives a trailing loader.
+  `FollowListScreen` asks for the next page as a tab nears its end. Before
+  2026-09-26 the app sent no `limit`, so every list silently stopped at the
+  server's default 20.
+- **Tab labels show the profile's totals** (`followers_count` /
+  `following_count`), not the loaded list's length, which counts only the pages
+  fetched so far.
 - **`FollowButton`** (`shared/widgets/follow_button.dart`) — three states:
   Follow / Following / Requested.
 - **`followRequestsProvider` is keep-alive, so the screen refetches on open** —

@@ -112,6 +112,16 @@ def _get_log() -> ImageModerationLog:
         db.close()
 
 
+def _set_itinerary_status(it_id: str, status: str) -> None:
+    import uuid
+    db = TestingSessionLocal()
+    try:
+        db.get(Itinerary, uuid.UUID(it_id)).moderation_status = status
+        db.commit()
+    finally:
+        db.close()
+
+
 def _itinerary_status(it_id: str) -> str:
     import uuid
     db = TestingSessionLocal()
@@ -363,7 +373,9 @@ class TestModerationRetentionAndDelete:
         assert log.action == "approved"
         assert log.target_kind == "avatar"
 
-    def test_cover_delete_resets_moderation_status(self, client, monkeypatch, _temp_storage):
+    def test_cover_delete_leaves_moderation_status_alone(self, client, monkeypatch, _temp_storage):
+        """The column also carries text flags, so the owner removing a cover
+        cannot tell which tier raised it — only a moderator lowers it."""
         _enable_moderation(monkeypatch)
         _stub_rekognition(monkeypatch, labels=[
             {"Name": "Suggestive", "ParentName": "", "Confidence": 60.0},
@@ -376,4 +388,24 @@ class TestModerationRetentionAndDelete:
 
         r = client.delete(f"/itineraries/{it_id}/image", headers=hdrs)
         assert r.status_code == 204
-        assert _itinerary_status(it_id) == "approved"
+        assert _itinerary_status(it_id) == "flagged"
+
+    def test_cover_delete_cannot_clear_a_moderator_reject(self, client, _temp_storage):
+        alice = register_user(client, "mod_rej", "modrej@test.com")
+        hdrs = auth_headers(alice["access_token"])
+        it_id = _create_itinerary(client, alice["access_token"])
+        _set_itinerary_status(it_id, "rejected")  # remove_flagged_image's outcome
+
+        r = client.delete(f"/itineraries/{it_id}/image", headers=hdrs)
+        assert r.status_code == 204
+        assert _itinerary_status(it_id) == "rejected"
+
+    def test_clean_cover_upload_does_not_clear_a_text_flag(self, client, _temp_storage):
+        alice = register_user(client, "mod_txt", "modtxt@test.com")
+        hdrs = auth_headers(alice["access_token"])
+        it_id = _create_itinerary(client, alice["access_token"])
+        _set_itinerary_status(it_id, "flagged")  # raised by the text tier
+
+        r = _upload(client, hdrs, f"/itineraries/{it_id}/image")  # moderation off
+        assert r.status_code == 200
+        assert _itinerary_status(it_id) == "flagged"

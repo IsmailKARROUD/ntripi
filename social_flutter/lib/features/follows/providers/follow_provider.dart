@@ -25,11 +25,13 @@ class FollowRequestsNotifier extends AsyncNotifier<List<FollowRequestItem>> {
     // draws its own spinner over a list the user is still holding, and blanking
     // it mid-gesture reads as the requests being wiped.
     if (!state.hasValue) state = const AsyncLoading();
-    state = await AsyncValue.guard(
+    final next = await AsyncValue.guard(
       () => ref
           .read(followRepositoryProvider)
           .getFollowRequests(forceRefresh: true),
     );
+    if (!ref.mounted) return; // disposed mid-request (logout)
+    state = next;
   }
 
   /// Reload in the background, leaving the current list on screen throughout.
@@ -109,31 +111,80 @@ final followRequestsProvider =
 //   accessible as `arg` anywhere in the notifier class. We use it in refresh()
 //   because the build() parameter is only available during the initial build.
 
-/// Loads and caches the accepted followers list for a given user ID.
-/// Returns a 403 error for private accounts the current user doesn't follow.
-class FollowersNotifier extends AsyncNotifier<List<FollowerListItem>> {
-  FollowersNotifier(this.arg); // family argument: user id
+/// One user's followers or following, a page at a time — the same offset
+/// paging as FeedNotifier. The server caps a page, so without [loadMore] a
+/// list silently stopped at its first page.
+abstract class FollowListNotifier extends AsyncNotifier<List<FollowerListItem>> {
+  FollowListNotifier(this.arg); // family argument: user id
   final String arg;
 
-  @override
-  Future<List<FollowerListItem>> build() {
-    return ref.read(followRepositoryProvider).getFollowers(arg);
+  int _offset = 0;
+  // False until a full first page proves there may be more — so a subclass
+  // that overrides build() never shows a loader for pages it cannot fetch.
+  bool _hasMore = false;
+  bool _loadingMore = false;
+
+  /// Whether another page may exist — drives the trailing load-more indicator.
+  bool get hasMore => _hasMore;
+
+  Future<List<FollowerListItem>> fetchPage(int offset, {bool forceRefresh = false});
+
+  List<FollowerListItem> _startFrom(List<FollowerListItem> firstPage) {
+    _offset = firstPage.length;
+    _hasMore = firstPage.length == kFollowListPageSize;
+    return firstPage;
   }
 
-  /// Re-fetches from the server and replaces the current state.
-  /// Called by the RefreshIndicator (pull-to-refresh). Forces a fresh server
-  /// fetch so a 304 with the cached body can't silently no-op the refresh.
+  @override
+  Future<List<FollowerListItem>> build() async => _startFrom(await fetchPage(0));
+
+  /// Append the next page. No-op while a load is in flight or the end is reached.
+  Future<void> loadMore() async {
+    if (_loadingMore || !_hasMore) return;
+    final current = state.value;
+    if (current == null) return;
+    _loadingMore = true;
+    try {
+      final next = await fetchPage(_offset);
+      if (!ref.mounted) return;
+      _offset += next.length;
+      _hasMore = next.length == kFollowListPageSize;
+      state = AsyncData([...current, ...next]);
+    } catch (_) {
+      // Called unawaited from a scroll listener: keep the rows already shown,
+      // and the next scroll to the bottom retries.
+    } finally {
+      _loadingMore = false;
+    }
+  }
+
+  /// Re-fetches page 0 and replaces the current state. Called by the
+  /// RefreshIndicator (pull-to-refresh). Forces a fresh server fetch so a 304
+  /// with the cached body can't silently no-op the refresh.
   Future<void> refresh() async {
     // Offline: keep cached AsyncData — a forced refresh could only degrade it.
     if (!isOnlineNowRef(ref)) return;
     state = const AsyncLoading();
-    state = await AsyncValue.guard(
-      () => ref.read(followRepositoryProvider).getFollowers(
-            arg,
-            forceRefresh: true,
-          ),
+    final next = await AsyncValue.guard(
+      () async => _startFrom(await fetchPage(0, forceRefresh: true)),
     );
+    if (!ref.mounted) return;
+    state = next;
   }
+}
+
+/// Loads and caches the accepted followers list for a given user ID.
+/// Returns a 403 error for private accounts the current user doesn't follow.
+class FollowersNotifier extends FollowListNotifier {
+  FollowersNotifier(super.arg);
+
+  @override
+  Future<List<FollowerListItem>> fetchPage(int offset, {bool forceRefresh = false}) =>
+      ref.read(followRepositoryProvider).getFollowers(
+            arg,
+            offset: offset,
+            forceRefresh: forceRefresh,
+          );
 }
 
 final followersProvider =
@@ -143,27 +194,16 @@ final followersProvider =
 
 /// Loads and caches the list of users that a given user follows.
 /// Returns a 403 error for private accounts the current user doesn't follow.
-class FollowingNotifier extends AsyncNotifier<List<FollowerListItem>> {
-  FollowingNotifier(this.arg); // family argument: user id
-  final String arg;
+class FollowingNotifier extends FollowListNotifier {
+  FollowingNotifier(super.arg);
 
   @override
-  Future<List<FollowerListItem>> build() {
-    return ref.read(followRepositoryProvider).getFollowing(arg);
-  }
-
-  /// Re-fetches from the server and replaces the current state.
-  Future<void> refresh() async {
-    // Offline: keep cached AsyncData — a forced refresh could only degrade it.
-    if (!isOnlineNowRef(ref)) return;
-    state = const AsyncLoading();
-    state = await AsyncValue.guard(
-      () => ref.read(followRepositoryProvider).getFollowing(
+  Future<List<FollowerListItem>> fetchPage(int offset, {bool forceRefresh = false}) =>
+      ref.read(followRepositoryProvider).getFollowing(
             arg,
-            forceRefresh: true,
-          ),
-    );
-  }
+            offset: offset,
+            forceRefresh: forceRefresh,
+          );
 }
 
 final followingProvider =

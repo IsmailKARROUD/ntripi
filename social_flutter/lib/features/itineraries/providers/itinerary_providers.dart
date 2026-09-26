@@ -40,17 +40,20 @@ class MyItinerariesNotifier extends AsyncNotifier<List<Itinerary>> {
     // Offline: keep cached AsyncData — a forced refresh could only degrade it.
     if (!isOnlineNowRef(ref)) return;
     state = const AsyncLoading();
-    state = await AsyncValue.guard(
+    final next = await AsyncValue.guard(
       () => ref
           .read(itineraryRepositoryProvider)
           .getMyItineraries(forceRefresh: true),
     );
+    if (!ref.mounted) return; // disposed mid-request (logout)
+    state = next;
   }
 
   Future<Itinerary> addItinerary(Map<String, dynamic> data) async {
     final itinerary = await ref
         .read(itineraryRepositoryProvider)
         .createItinerary(data);
+    if (!ref.mounted) return itinerary; // disposed mid-request (logout)
     state.whenData((list) {
       state = AsyncData([itinerary, ...list]);
     });
@@ -59,6 +62,7 @@ class MyItinerariesNotifier extends AsyncNotifier<List<Itinerary>> {
 
   Future<void> removeItinerary(String id) async {
     await ref.read(itineraryRepositoryProvider).deleteItinerary(id);
+    if (!ref.mounted) return; // disposed mid-request (logout)
     state.whenData((list) {
       state = AsyncData(list.where((i) => i.id != id).toList());
     });
@@ -85,11 +89,13 @@ class SharedWithMeNotifier extends AsyncNotifier<List<FeedItem>> {
     // Offline: keep cached AsyncData — a forced refresh could only degrade it.
     if (!isOnlineNowRef(ref)) return;
     state = const AsyncLoading();
-    state = await AsyncValue.guard(
+    final next = await AsyncValue.guard(
       () => ref
           .read(itineraryRepositoryProvider)
           .getSharedWithMe(forceRefresh: true),
     );
+    if (!ref.mounted) return; // disposed mid-request (logout)
+    state = next;
   }
 }
 
@@ -164,11 +170,13 @@ class ItineraryDetailNotifier extends AsyncNotifier<Itinerary> {
     // Offline: keep cached AsyncData — a forced refresh could only degrade it.
     if (!isOnlineNowRef(ref)) return;
     state = const AsyncLoading();
-    state = await AsyncValue.guard(
+    final next = await AsyncValue.guard(
       () => ref
           .read(itineraryRepositoryProvider)
           .getItinerary(arg, forceRefresh: true),
     );
+    if (!ref.mounted) return; // disposed mid-request (logout)
+    state = next;
   }
 
   /// Add a stop, then refresh so totals and track structure are accurate.
@@ -262,6 +270,7 @@ class ItineraryDetailNotifier extends AsyncNotifier<Itinerary> {
     final updated = await ref
         .read(itineraryRepositoryProvider)
         .updateItinerary(arg, data, etag: _etag, lockToken: _lockToken);
+    if (!ref.mounted) return updated; // disposed mid-request (logout)
     state.whenData((current) {
       // The PATCH response is an ItinerarySummary, which omits `description` and
       // the recommended-period fields alike, so `updated` is always null for
@@ -419,6 +428,7 @@ class AllowedUsersNotifier extends AsyncNotifier<List<AllowedUser>> {
     final added = await ref
         .read(itineraryRepositoryProvider)
         .addAllowedUser(arg, userId);
+    if (!ref.mounted) return; // disposed mid-request (logout)
     state.whenData((list) {
       state = AsyncData([...list, added]);
     });
@@ -426,6 +436,7 @@ class AllowedUsersNotifier extends AsyncNotifier<List<AllowedUser>> {
 
   Future<void> removeUser(String userId) async {
     await ref.read(itineraryRepositoryProvider).removeAllowedUser(arg, userId);
+    if (!ref.mounted) return; // disposed mid-request (logout)
     state.whenData((list) {
       state = AsyncData(list.where((u) => u.userId != userId).toList());
     });
@@ -459,6 +470,7 @@ class EditorsNotifier extends AsyncNotifier<List<ItineraryEditor>> {
     final added = await ref
         .read(itineraryRepositoryProvider)
         .addEditor(arg, userId, grantView: grantView);
+    if (!ref.mounted) return; // disposed mid-request (logout)
     state.whenData((list) {
       state = AsyncData([...list, added]);
     });
@@ -470,6 +482,7 @@ class EditorsNotifier extends AsyncNotifier<List<ItineraryEditor>> {
 
   Future<void> removeEditor(String userId) async {
     await ref.read(itineraryRepositoryProvider).removeEditor(arg, userId);
+    if (!ref.mounted) return; // disposed mid-request (logout)
     state.whenData((list) {
       state = AsyncData(list.where((e) => e.userId != userId).toList());
     });
@@ -504,11 +517,13 @@ class UserItinerariesNotifier extends AsyncNotifier<List<Itinerary>> {
     // Offline: keep cached AsyncData — a forced refresh could only degrade it.
     if (!isOnlineNowRef(ref)) return;
     state = const AsyncLoading();
-    state = await AsyncValue.guard(
+    final next = await AsyncValue.guard(
       () => ref
           .read(itineraryRepositoryProvider)
           .getUserItineraries(arg, forceRefresh: true),
     );
+    if (!ref.mounted) return; // disposed mid-request (logout)
+    state = next;
   }
 }
 
@@ -535,12 +550,14 @@ class MyRatingNotifier extends AsyncNotifier<MyRating?> {
     final saved = await ref
         .read(itineraryRepositoryProvider)
         .submitRating(arg, rating);
+    if (!ref.mounted) return; // disposed mid-request (logout)
     state = AsyncData(saved);
     await ref.read(itineraryDetailProvider(arg).notifier).refresh();
   }
 
   Future<void> deleteRating() async {
     await ref.read(itineraryRepositoryProvider).deleteMyRating(arg);
+    if (!ref.mounted) return; // disposed mid-request (logout)
     state = const AsyncData(null);
     await ref.read(itineraryDetailProvider(arg).notifier).refresh();
   }
@@ -568,11 +585,13 @@ class RatingsPageNotifier extends AsyncNotifier<RatingsPage> {
     // Offline: keep cached AsyncData — a forced refresh could only degrade it.
     if (!isOnlineNowRef(ref)) return;
     state = const AsyncLoading();
-    state = await AsyncValue.guard(
+    final next = await AsyncValue.guard(
       () => ref
           .read(itineraryRepositoryProvider)
           .getRatingsPage(arg, forceRefresh: true),
     );
+    if (!ref.mounted) return; // disposed mid-request (logout)
+    state = next;
   }
 }
 
@@ -602,7 +621,7 @@ class PlaceSearchNotifier extends AsyncNotifier<List<PlaceSuggestion>> {
       return;
     }
     state = const AsyncLoading();
-    state = await AsyncValue.guard(
+    final next = await AsyncValue.guard(
       () => ref
           .read(geocodingServiceProvider)
           .search(
@@ -611,6 +630,8 @@ class PlaceSearchNotifier extends AsyncNotifier<List<PlaceSuggestion>> {
             near: near,
           ),
     );
+    if (!ref.mounted) return; // disposed mid-request (logout)
+    state = next;
   }
 
   /// Searches inside the box [sw]–[ne] (the map's visible bounds). If the box
@@ -675,9 +696,10 @@ class PlaceSearchNotifier extends AsyncNotifier<List<PlaceSuggestion>> {
         if (epoch != _epoch) return;
       }
 
+      if (!ref.mounted) return; // disposed mid-request (logout)
       state = AsyncData(results);
     } catch (error, stackTrace) {
-      if (epoch != _epoch) return;
+      if (epoch != _epoch || !ref.mounted) return;
       state = AsyncError(error, stackTrace);
     }
   }

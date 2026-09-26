@@ -33,6 +33,15 @@ happens at the Cloudflare edge and has **no app config** — see
   not silently stop rejecting.
 - **Fail-open is deliberate**: an AWS outage must not block every upload. The
   `pending` status is what the sweep's post-outage re-check looks for.
+- **The cover endpoints never lower `itineraries.moderation_status`.** The column
+  also carries text-tier flags and a moderator's `rejected`, and the owner's
+  request cannot tell which tier raised it. So `upload_itinerary_image` writes the
+  scan result through `apply_moderation_status` (escalate-only), and
+  `delete_itinerary_image` leaves the status alone — removing a flagged cover
+  keeps the itinerary in the moderator queue until someone reviews it. Before
+  2026-09-26 an upload assigned the verdict and a delete reset it to `approved`,
+  which cleared text flags and let an owner undo `remove_flagged_image`'s
+  `rejected`.
 - The Rekognition call is offloaded with `asyncio.to_thread`, like the Pillow
   work and the boto3 I/O.
 - **IAM needs only `rekognition:DetectModerationLabels`.** Set an AWS Budgets
@@ -122,19 +131,3 @@ Thresholds are tunable without a redeploy.
 - [moderation-sweep is documented in admin-and-appeals.md](admin-and-appeals.md#the-sweep)
 - `../../social_api/docs/media_pipeline_spec.md` — the four-layer strategy
 - `../../social_api/docs/csam_response_runbook.md` — the operator procedure
-
-## OPEN QUESTIONS
-
-- **`upload_itinerary_image` assigns `itinerary.moderation_status` directly**
-  (`itineraries.py:2270`) — not via `apply_moderation_status` (escalate-only) and
-  not via `set_preserving_etag`. With `MODERATION_ENABLED=False` the scan result
-  stays `"approved"`, so **uploading a cover image lowers an existing
-  text-moderation `flagged` or `hidden` status to `approved`.** Whether that is
-  intended or an unnoticed bypass of the escalate-only rule is not recorded.
-- **`delete_itinerary_image` sets `moderation_status = "approved"`
-  unconditionally** (`itineraries.py:2294`), commented "no cover → nothing to
-  moderate". It reaches an itinerary that is currently `hidden`, and one whose
-  cover `admin_service.remove_flagged_image` just removed while setting
-  `rejected`. So an owner can clear a moderator's `rejected` status by calling
-  `DELETE /itineraries/{id}/image` on an already-null cover. `hidden_at` is
-  untouched so the content stays hidden, but the status and `hidden_at` diverge.

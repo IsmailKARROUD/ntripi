@@ -22,6 +22,7 @@ class LongPressHintNotifier extends Notifier<bool> {
 
   Future<void> _load() async {
     final saved = await _storage.read(key: _kLongPressHintKey);
+    if (!ref.mounted) return; // disposed while storage answered
     state = saved == 'true';
   }
 

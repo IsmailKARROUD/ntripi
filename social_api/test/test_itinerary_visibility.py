@@ -1,6 +1,3 @@
-import pytest
-pytestmark = pytest.mark.skip("rewriting after fractional-indexing refactor")
-
 """
 tests/test_itinerary_visibility.py — Tests for the four-level visibility system.
 
@@ -19,7 +16,7 @@ The helpers at the top of this file mirror the pattern in test_follows.py.
 import pytest
 from fastapi.testclient import TestClient
 
-from conftest import auth_headers, register_user
+from conftest import auth_headers, edit_now, register_user
 
 
 # ---------------------------------------------------------------------------
@@ -130,9 +127,9 @@ def update_visibility(
     resp = client.patch(
         f"/itineraries/{itinerary_id}",
         json={"visibility": visibility},
-        headers=auth_headers(token),
+        headers=edit_now(client, itinerary_id, auth_headers(token)),
     )
-    assert resp.status_code == 200
+    assert resp.status_code == 200, resp.text
 
 
 # ---------------------------------------------------------------------------

@@ -58,6 +58,11 @@ or moving one item writes exactly one row.
 - `add_stop` retries up to **3 times** on `IntegrityError` from the rank UNIQUE,
   then answers 409 `rank_collision` (`itineraries.py:1324`). Text moderation runs
   **before** the retry loop so a collision never re-bills a provider call.
+- **A new track with no anchor is appended after the last one**
+  (`_resolve_track_rank`). `key_between(None, None)` is a fixed midpoint, so
+  before 2026-09-26 an unanchored `track_id=null` create collided with the first
+  track on any non-empty itinerary and every retry hit the same key. The app
+  always sends `after_track_id` there, so only direct API callers saw it.
 - `StopUpdate._validate_move_target` (`schemas/itinerary.py:203`) rejects
   `after_track_id`/`before_track_id` unless `track_id` is null — otherwise the
   intent ("move to that track" vs "make a new track there") is ambiguous.
@@ -154,9 +159,8 @@ passed that, not the stale itinerary.
   regression in the collation would not fail any test; it would silently reorder
   every itinerary in production.
 - `test_fractional_indexing_smoke.py` is the designated home for new ordering
-  tests. Six sibling test files were skipped by the same commit that introduced
-  fractional indexing (2026-05-07) and are still skipped — see
-  [backlog.md](../backlog.md).
+  tests. The six sibling files skipped by the commit that introduced fractional
+  indexing (2026-05-07) run again since 2026-09-26.
 - **"Phase 2b — whole-track reorder" is referenced but not built**
   (`move_stop_to_track_sheet.dart:20`). The sheet clears segments now
   specifically so a Phase 2b that restores track adjacency cannot resurrect a

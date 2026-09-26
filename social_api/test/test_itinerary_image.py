@@ -1,6 +1,3 @@
-import pytest
-pytestmark = pytest.mark.skip("rewriting after fractional-indexing refactor")
-
 """
 test_itinerary_image.py — Cover image upload, processing, and OG tag tests.
 
@@ -86,7 +83,7 @@ def _temp_storage(tmp_path):
 class TestImageUpload:
 
     def test_owner_uploads_jpeg_succeeds(self, client: TestClient):
-        alice = register_user(client, "alice_img", "alice@img.test")
+        alice = register_user(client, "alice_img", "alice@img.example.com")
         hdrs = auth_headers(alice["access_token"])
         itin_id = _create_itinerary(client, hdrs)
 
@@ -102,7 +99,7 @@ class TestImageUpload:
         assert detail.json()["cover_image_url"] == data["cover_image_url"]
 
     def test_owner_uploads_png_succeeds(self, client: TestClient):
-        alice = register_user(client, "alice_png", "alice@png.test")
+        alice = register_user(client, "alice_png", "alice@png.example.com")
         hdrs = auth_headers(alice["access_token"])
         itin_id = _create_itinerary(client, hdrs)
 
@@ -117,7 +114,7 @@ class TestImageUpload:
         assert resp.json()["cover_image_url"].endswith(".jpg")
 
     def test_owner_uploads_webp_succeeds(self, client: TestClient):
-        alice = register_user(client, "alice_webp", "alice@webp.test")
+        alice = register_user(client, "alice_webp", "alice@webp.example.com")
         hdrs = auth_headers(alice["access_token"])
         itin_id = _create_itinerary(client, hdrs)
 
@@ -130,8 +127,8 @@ class TestImageUpload:
         assert resp.status_code == 200
 
     def test_non_owner_rejected(self, client: TestClient):
-        alice = register_user(client, "alice_own", "alice@own.test")
-        bob = register_user(client, "bob_intruder", "bob@own.test")
+        alice = register_user(client, "alice_own", "alice@own.example.com")
+        bob = register_user(client, "bob_intruder", "bob@own.example.com")
         itin_id = _create_itinerary(client, auth_headers(alice["access_token"]))
 
         resp = _upload_image(
@@ -141,7 +138,7 @@ class TestImageUpload:
         assert resp.status_code == 403
 
     def test_unauthenticated_rejected(self, client: TestClient):
-        alice = register_user(client, "alice_unauth", "alice@unauth.test")
+        alice = register_user(client, "alice_unauth", "alice@unauth.example.com")
         itin_id = _create_itinerary(client, auth_headers(alice["access_token"]))
 
         resp = client.post(
@@ -149,10 +146,10 @@ class TestImageUpload:
             files={"file": ("cover.jpg", _make_jpeg(), "image/jpeg")},
         )
 
-        assert resp.status_code == 401
+        assert resp.status_code == 403  # no header → 403 not_authenticated, by design
 
     def test_too_small_rejected(self, client: TestClient):
-        alice = register_user(client, "alice_small", "alice@small.test")
+        alice = register_user(client, "alice_small", "alice@small.example.com")
         hdrs = auth_headers(alice["access_token"])
         itin_id = _create_itinerary(client, hdrs)
 
@@ -162,7 +159,7 @@ class TestImageUpload:
         assert "small" in resp.json()["detail"].lower()
 
     def test_too_large_rejected(self, client: TestClient):
-        alice = register_user(client, "alice_large", "alice@large.test")
+        alice = register_user(client, "alice_large", "alice@large.example.com")
         hdrs = auth_headers(alice["access_token"])
         itin_id = _create_itinerary(client, hdrs)
 
@@ -170,11 +167,11 @@ class TestImageUpload:
 
         resp = _upload_image(client, hdrs, itin_id, big_bytes)
 
-        assert resp.status_code == 400
-        assert "10 MB" in resp.json()["detail"] or "10mb" in resp.json()["detail"].lower()
+        # ContentSizeLimitMiddleware answers before the endpoint's own 10 MB guard.
+        assert resp.status_code == 413
 
     def test_invalid_format_rejected(self, client: TestClient):
-        alice = register_user(client, "alice_fmt", "alice@fmt.test")
+        alice = register_user(client, "alice_fmt", "alice@fmt.example.com")
         hdrs = auth_headers(alice["access_token"])
         itin_id = _create_itinerary(client, hdrs)
 
@@ -192,7 +189,7 @@ class TestImageUpload:
         assert resp.status_code == 400
 
     def test_corrupt_file_rejected(self, client: TestClient):
-        alice = register_user(client, "alice_corrupt", "alice@corrupt.test")
+        alice = register_user(client, "alice_corrupt", "alice@corrupt.example.com")
         hdrs = auth_headers(alice["access_token"])
         itin_id = _create_itinerary(client, hdrs)
 
@@ -201,7 +198,7 @@ class TestImageUpload:
         assert resp.status_code == 400
 
     def test_replacing_image_overwrites_previous(self, client: TestClient, _temp_storage):
-        alice = register_user(client, "alice_replace", "alice@replace.test")
+        alice = register_user(client, "alice_replace", "alice@replace.example.com")
         hdrs = auth_headers(alice["access_token"])
         itin_id = _create_itinerary(client, hdrs)
 
@@ -213,7 +210,7 @@ class TestImageUpload:
         assert client.get(f"/itineraries/{itin_id}", headers=hdrs).json()["cover_image_url"] == url_b
 
     def test_delete_image_clears_url(self, client: TestClient):
-        alice = register_user(client, "alice_del", "alice@del.test")
+        alice = register_user(client, "alice_del", "alice@del.example.com")
         hdrs = auth_headers(alice["access_token"])
         itin_id = _create_itinerary(client, hdrs)
 
@@ -226,7 +223,7 @@ class TestImageUpload:
         assert detail["cover_image_url"] is None
 
     def test_delete_no_image_succeeds(self, client: TestClient):
-        alice = register_user(client, "alice_nodel", "alice@nodel.test")
+        alice = register_user(client, "alice_nodel", "alice@nodel.example.com")
         hdrs = auth_headers(alice["access_token"])
         itin_id = _create_itinerary(client, hdrs)
 
@@ -234,7 +231,7 @@ class TestImageUpload:
         assert resp.status_code == 204
 
     def test_image_url_in_itinerary_response(self, client: TestClient):
-        alice = register_user(client, "alice_resp", "alice@resp.test")
+        alice = register_user(client, "alice_resp", "alice@resp.example.com")
         hdrs = auth_headers(alice["access_token"])
         itin_id = _create_itinerary(client, hdrs)
 
@@ -244,7 +241,7 @@ class TestImageUpload:
         assert detail["cover_image_url"] == upload_url
 
     def test_image_url_in_share_landing_page_og_tag(self, client: TestClient):
-        alice = register_user(client, "alice_og", "alice@og.test")
+        alice = register_user(client, "alice_og", "alice@og.example.com")
         hdrs = auth_headers(alice["access_token"])
         itin_id = _create_itinerary(client, hdrs)
 
@@ -257,7 +254,7 @@ class TestImageUpload:
         assert upload_url.lstrip("/") in html
 
     def test_no_image_uses_default_og_image(self, client: TestClient):
-        alice = register_user(client, "alice_defog", "alice@defog.test")
+        alice = register_user(client, "alice_defog", "alice@defog.example.com")
         hdrs = auth_headers(alice["access_token"])
         itin_id = _create_itinerary(client, hdrs)
 
@@ -278,8 +275,11 @@ class TestImageProcessing:
         # Build a JPEG with EXIF data attached
         img = Image.new("RGB", (800, 800), color=(0, 128, 255))
         exif_bytes = img.getexif()
-        # Write a dummy GPS tag (tag 34853)
-        exif_bytes[34853] = b"\x00"
+        # A real GPS sub-IFD (tag 34853) plus a camera make — Pillow 12 can no
+        # longer serialise a bare bytes value under an IFD pointer tag.
+        from PIL import ExifTags
+        exif_bytes[0x010F] = "SpyCam"
+        exif_bytes.get_ifd(ExifTags.IFD.GPSInfo)[2] = (48.0, 51.0, 29.0)
         buf = io.BytesIO()
         img.save(buf, format="JPEG", exif=exif_bytes.tobytes())
         raw = buf.getvalue()
@@ -290,6 +290,7 @@ class TestImageProcessing:
         result = Image.open(io.BytesIO(processed))
         exif_out = result.getexif()
         assert 34853 not in exif_out  # GPS IFD tag is gone
+        assert 0x010F not in exif_out  # camera make is gone
 
     def test_resizes_large_image_to_1200x630(self):
         from app.services.image_service import process_cover_image

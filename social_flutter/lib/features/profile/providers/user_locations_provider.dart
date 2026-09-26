@@ -24,9 +24,11 @@ class UserLocationsNotifier extends AsyncNotifier<List<VisitedLocation>> {
     if (!isOnlineNowRef(ref)) return;
     final userId = arg;
     state = const AsyncLoading();
-    state = await AsyncValue.guard(
+    final next = await AsyncValue.guard(
       () => ref.read(profileRepositoryProvider).getUserLocations(userId),
     );
+    if (!ref.mounted) return; // disposed mid-request (logout)
+    state = next;
   }
 }
 
