@@ -531,9 +531,31 @@ class TestFollowListPaging:
         star = register_user(client, "star1", "star@test.com")
         client.patch("/users/me", headers=auth_headers(star["access_token"]),
                      json={"is_private": False})  # accounts start private
+        fan_ids = []
         for i in range(25):
             fan = register_user(client, f"fan{i:02d}", f"fan{i}@test.com")
             assert follow(client, fan["access_token"], star["user_id"]).status_code == 201
+            fan_ids.append(fan["user_id"])
+
+        # SQLite's now() has 1-second resolution, so consecutive follows can tie
+        # on created_at and fall to the random-UUID tiebreaker. Spread them out,
+        # or "newest first" below is a coin toss.
+        import uuid
+        from datetime import datetime, timedelta, timezone
+
+        from app.models.follow import Follow
+        from conftest import TestingSessionLocal
+
+        base = datetime(2026, 1, 1, tzinfo=timezone.utc)
+        db = TestingSessionLocal()
+        try:
+            for i, fan_id in enumerate(fan_ids):
+                db.query(Follow).filter(
+                    Follow.follower_id == uuid.UUID(fan_id)
+                ).one().created_at = base + timedelta(seconds=i)
+            db.commit()
+        finally:
+            db.close()
 
         url = f"/users/{star['user_id']}/followers"
         hdrs = auth_headers(star["access_token"])

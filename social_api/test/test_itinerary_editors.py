@@ -208,6 +208,46 @@ class TestViewIsAPrerequisite:
         detail = client.get(f"/itineraries/{itin_id}", headers=owner_hdrs).json()
         assert detail["visibility"] == "followers"
 
+    def test_an_allowlisted_target_of_a_hidden_trip_is_refused_not_a_500(
+            self, client: TestClient):
+        """Already on the allowlist but still blind (a moderator hide): a second
+        allowlist row would trip the composite PK, and the allowlist is not what
+        stands in the way, so the client must not be told it can fix it."""
+        owner_hdrs, _, _, bob_id = _cast(client)
+        itin_id = _itinerary(client, owner_hdrs)
+        assert client.post(f"/itineraries/{itin_id}/allowed-users",
+                           json={"user_id": bob_id},
+                           headers=owner_hdrs).status_code == 201
+        _stamp(itin_id, "hidden_at")
+
+        first = _grant(client, itin_id, owner_hdrs, bob_id, grant_view=False)
+        assert first.status_code == 409
+        assert first.json()["can_fix_with_allowlist"] is False
+
+        second = _grant(client, itin_id, owner_hdrs, bob_id, grant_view=True)
+        assert second.status_code == 409, second.text
+        assert second.json()["code"] == "editor_cannot_view"
+        assert second.json()["can_fix_with_allowlist"] is False
+
+    def test_grant_view_to_a_blocked_user_leaves_nothing_behind(self, client: TestClient):
+        """The allowlist row is not the only gate. Granting through it anyway
+        would hand edit rights, and a notice, to someone the trip 403s."""
+        owner_hdrs, _, bob_hdrs, bob_id = _cast(client)
+        itin_id = _itinerary(client, owner_hdrs)
+        assert client.post(f"/users/{bob_id}/block",
+                           headers=owner_hdrs).status_code in (201, 204)
+
+        response = _grant(client, itin_id, owner_hdrs, bob_id, grant_view=True)
+
+        assert response.status_code == 409, response.text
+        assert response.json()["can_fix_with_allowlist"] is False
+        assert client.get(f"/itineraries/{itin_id}/allowed-users",
+                          headers=owner_hdrs).json() == []
+        assert client.get(f"/itineraries/{itin_id}/editors",
+                          headers=owner_hdrs).json() == []
+        assert client.get("/notifications",
+                          headers=bob_hdrs).json()["notifications"] == []
+
     def test_losing_the_allowlist_row_revokes_editing(self, client: TestClient):
         """The grant row survives; the ability does not. Nothing revoked it —
         can_edit_itinerary simply re-asked can_view_itinerary."""

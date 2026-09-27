@@ -34,6 +34,7 @@ import 'package:social_flutter/features/itineraries/domain/track.dart';
 import 'package:social_flutter/features/itineraries/domain/transit_segment.dart';
 import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
 import 'package:social_flutter/l10n/app_localizations.dart';
+import 'package:social_flutter/shared/widgets/editorial_widgets.dart';
 import 'package:social_flutter/shared/widgets/offline_gate.dart';
 import 'package:social_flutter/shared/widgets/saving_overlay.dart';
 
@@ -89,6 +90,8 @@ class _MoveStopToTrackSheet extends ConsumerStatefulWidget {
 class _MoveStopToTrackSheetState extends ConsumerState<_MoveStopToTrackSheet> {
   // true while a move API call is in flight — disables all row taps and shows the progress bar
   bool _busy = false;
+  // Shown inline: a snackbar would draw behind this sheet's modal barrier.
+  String? _error;
 
   Track get _sourceTrack => widget.tracks.firstWhere(
         (t) => t.id == widget.stop.trackId,
@@ -140,7 +143,10 @@ class _MoveStopToTrackSheetState extends ConsumerState<_MoveStopToTrackSheet> {
     final messenger = ScaffoldMessenger.of(context);
     final navigator = Navigator.of(context);
 
-    setState(() => _busy = true);
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
     final notifier =
         ref.read(itineraryDetailProvider(widget.itineraryId).notifier);
 
@@ -167,15 +173,17 @@ class _MoveStopToTrackSheetState extends ConsumerState<_MoveStopToTrackSheet> {
       };
     } on ItineraryStaleException {
       if (!mounted) return;
-      setState(() => _busy = false);
-      messenger.showSnackBar(SnackBar(content: Text(changedElsewhereMsg)));
+      setState(() {
+        _busy = false;
+        _error = changedElsewhereMsg;
+      });
       return;
     } on Exception catch (e) {
       if (!mounted) return;
-      setState(() => _busy = false);
-      messenger.showSnackBar(
-        SnackBar(content: Text(extractErrorMessage(e as dynamic, AppLocalizations.of(context)!))),
-      );
+      setState(() {
+        _busy = false;
+        _error = extractErrorMessage(e as dynamic, AppLocalizations.of(context)!);
+      });
       return;
     }
 
@@ -446,6 +454,11 @@ class _MoveStopToTrackSheetState extends ConsumerState<_MoveStopToTrackSheet> {
                   ),
                 ),
               ),
+              if (_error != null)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(6, 0, 6, 10),
+                  child: SheetErrorRow(_error!),
+                ),
               // Rows in a white card — capped at 65 % screen height so the
               // sheet never overflows when the itinerary has many tracks.
               // Every row fires a move mutation, so the whole card is gated:

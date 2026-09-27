@@ -199,19 +199,7 @@ class _ReportContentSheetState extends State<_ReportContentSheet> {
               if (_error != null)
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Icon(Icons.error_outline, size: 18, color: nt.danger),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          _error!,
-                          style: TextStyle(fontSize: 13, color: nt.danger),
-                        ),
-                      ),
-                    ],
-                  ),
+                  child: SheetErrorRow(_error!),
                 ),
 
               const SizedBox(height: 8),

@@ -9,6 +9,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:social_flutter/core/ui/app_theme.dart';
 import 'package:social_flutter/features/profile/presentation/language_picker_sheet.dart';
 import 'package:social_flutter/l10n/app_localizations.dart';
+import 'package:social_flutter/shared/data/languages.dart';
+import 'package:social_flutter/shared/widgets/editorial_widgets.dart';
 
 Rect _sheetRect(WidgetTester tester) => tester.getRect(
       find
@@ -55,5 +57,40 @@ void main() {
     await tester.enterText(find.byType(TextField), 'zulu');
     await tester.pumpAndSettle();
     expect(_sheetRect(tester), expected, reason: 'filtering must not move it');
+  });
+
+  testWidgets('the language cap is announced inside the sheet', (tester) async {
+    // It used to be a snackbar, which draws behind the modal barrier: a tap past
+    // the cap simply did nothing, with no visible reason why.
+    late BuildContext ctx;
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: buildNtripiTheme(),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Builder(
+          builder: (c) {
+            ctx = c;
+            return const Scaffold(body: SizedBox());
+          },
+        ),
+      ),
+    );
+
+    final atCap = kLanguages.take(60).map((l) => l.code).toList();
+    final extra = kLanguages[60];
+    showLanguagePickerSheet(ctx, selected: atCap);
+    await tester.pumpAndSettle();
+    expect(find.byType(SheetErrorRow), findsNothing);
+
+    await tester.enterText(find.byType(TextField), extra.name);
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(ListTile, extra.name).first);
+    await tester.pumpAndSettle();
+
+    final l10n = AppLocalizations.of(ctx)!;
+    expect(find.byType(SheetErrorRow), findsOneWidget);
+    expect(find.text(l10n.maxLanguagesReached(60)), findsOneWidget);
+    expect(find.byType(SnackBar), findsNothing);
   });
 }

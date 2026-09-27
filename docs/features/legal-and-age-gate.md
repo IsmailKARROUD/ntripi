@@ -171,17 +171,12 @@ New error codes: `tos_required`, `underage`, `dob_required`.
 - l10n keys: `registerDob`, `registerDobHelp`, `registerDobHint`,
   `registerDobRequired`, `registerDobTooYoung`, `dobPickerHelp`, `dobFromGoogle`,
   `acceptTermsDobPrompt`, `googleConsentDobLabel`, plus `errorUnderage` /
-  `errorDobRequired`.
+  `errorDobRequired`, which `localizedApiError` maps from `underage` /
+  `dob_required` so the signup and re-acceptance screens show them in the
+  reader's language.
 
 ## Known gaps / TODOs
 
-- **`errorUnderage` and `errorDobRequired` are translated in all six `.arb` files
-  and never consumed.** A grep for either identifier outside `lib/l10n/` returns
-  nothing, and neither `underage` nor `dob_required` has a case in
-  `localizedApiError`. So the two errors on the **signup path** show the server's
-  **English `detail`** to a French, Arabic, German, Spanish or Chinese user. See
-  [reference/error-codes.md](../reference/error-codes.md#unmapped-codes) and
-  [backlog.md](../backlog.md).
 - **The Google-sourced half is blocked on OAuth verification** for
   `user.birthday.read` — a 100-test-user cap and an "unverified app" warning until
   it clears. The sheet fallback means everything else ships without waiting.

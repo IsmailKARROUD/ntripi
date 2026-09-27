@@ -99,8 +99,10 @@ which builds from ORM metadata on SQLite, never exercises them. See
 
 `place_type` has **no DB CHECK** — only the Pydantic `_PLACE_TYPE_PATTERN`
 regex. The 11 values are:
-`eatDrink · sleep · pray · learnSee · buy · playWatch · nature · travel ·
-healBathe · entertainment · sight`
+`eatDrink · sleep · pray · learnSee · buy · playWatch · nature · transport ·
+healBathe · entertainment · sight`. `travel` is the pre-rename spelling of
+`transport` (`c78a28a2e02f`): the backend now rejects it, and only the client's
+`PlaceType.fromString()` still maps it, for rows stored before the rename.
 
 Migration `d5e6f7a8b9c0` is a **clean-slate** migration: it wipes `annotations`,
 `transit_segments` and `stops` on upgrade.

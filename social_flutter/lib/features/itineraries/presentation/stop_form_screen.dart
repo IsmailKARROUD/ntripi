@@ -2048,14 +2048,14 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
                                           : _confirmDelete,
                                   icon: Icon(
                                     Icons.delete_outline,
-                                    color: nt.ratingRed,
+                                    color: nt.danger,
                                   ),
                                   label: Text(
                                     l10n.deleteStopButton,
-                                    style: TextStyle(color: nt.ratingRed),
+                                    style: TextStyle(color: nt.danger),
                                   ),
                                   style: OutlinedButton.styleFrom(
-                                    side: BorderSide(color: nt.ratingRed),
+                                    side: BorderSide(color: nt.danger),
                                   ),
                                 ),
                           ),

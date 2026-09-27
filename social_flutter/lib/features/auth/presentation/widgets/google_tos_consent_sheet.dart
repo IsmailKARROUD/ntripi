@@ -30,14 +30,12 @@ Future<GoogleConsentResult?> showGoogleTosConsentSheet(
   BuildContext context, {
   DateTime? prefill,
 }) async {
-  final nt = context.nt;
   return showModalBottomSheet<GoogleConsentResult>(
     context: context,
     isScrollControlled: true,
     // Not dismissible by tapping away: closing it is a decision, and the only
     // ways out are the explicit Cancel button and the system back gesture.
     isDismissible: false,
-    backgroundColor: nt.surface,
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
     ),

@@ -94,6 +94,12 @@ Both are HTML, so `ETagMiddleware` (JSON only) does not touch them.
 - `app/static/README.md` says the default OG PNG is "not committed to version
   control", but `ntripi-og-default.png` is on disk and tracked — the README is
   stale on that point.
+- **A branching route shows one arbitrary transit segment per stop.** The page
+  reads `Stop.outgoing_segment`, declared one-to-one (`uselist=False`), but a stop
+  before a track of parallel alternatives has a segment into each of them. The
+  page also flattens every track into one numbered list, so the fix needs a
+  decision on how a branch should read, not just a relationship change. See
+  [backlog.md](../backlog.md).
 
 ## Related
 

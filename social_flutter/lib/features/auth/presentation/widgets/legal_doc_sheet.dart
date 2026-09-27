@@ -40,11 +40,9 @@ String legalDocTitle(LegalDoc doc, AppLocalizations l10n) => switch (doc) {
     };
 
 void showLegalDocSheet(BuildContext context, LegalDoc doc) {
-  final nt = context.nt;
   showModalBottomSheet(
     context: context,
     isScrollControlled: true,
-    backgroundColor: nt.surface,
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
     ),

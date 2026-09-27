@@ -4390,6 +4390,12 @@ abstract class AppLocalizations {
   /// **'Invalid Google token.'**
   String get apiErrorGoogleTokenInvalid;
 
+  /// No description provided for @apiErrorGoogleAccountMismatch.
+  ///
+  /// In en, this message translates to:
+  /// **'That Google account doesn\'t match this one. Choose the account you signed up with.'**
+  String get apiErrorGoogleAccountMismatch;
+
   /// No description provided for @apiErrorInvalidGrant.
   ///
   /// In en, this message translates to:

@@ -1092,6 +1092,7 @@
   "apiErrorItineraryStale": "تم تعديل المسار — يرجى إعادة التحميل.",
   "apiErrorWaitlistContactRequired": "أدخل بريدًا إلكترونيًا أو رقم واتساب على الأقل.",
   "apiErrorGoogleTokenInvalid": "رمز Google غير صالح.",
+  "apiErrorGoogleAccountMismatch": "حساب Google هذا لا يطابق هذا الحساب. اختر الحساب الذي سجّلت به.",
   "apiErrorInvalidGrant": "انتهت جلستك. يرجى تسجيل الدخول مجددًا.",
   "apiErrorStopNotFound": "المحطة غير موجودة.",
   "apiErrorTrackNotFound": "الممر غير موجود، أو لا ينتمي إلى المسار هذا.",

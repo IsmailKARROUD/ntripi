@@ -2477,6 +2477,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get apiErrorGoogleTokenInvalid => 'Invalid Google token.';
 
   @override
+  String get apiErrorGoogleAccountMismatch =>
+      'That Google account doesn\'t match this one. Choose the account you signed up with.';
+
+  @override
   String get apiErrorInvalidGrant =>
       'Your session expired. Please sign in again.';
 

@@ -28,6 +28,17 @@ server-side; the client renders state and may be stale or hostile.
 - **Granting to someone who cannot view answers 409 `editor_cannot_view`** with
   `extra = {visibility, can_fix_with_allowlist}`. That is a question, not an
   error: the client asks the owner and re-posts with `grant_view: true`.
+- **`can_fix_with_allowlist` is true only when an allowlist row would actually
+  help** — the itinerary is `restricted` **and** the target is not already on the
+  allowlist. An allowlisted target who still cannot view is blocked by something
+  else (a moderator hide, a block in either direction), so the answer is false.
+- **After `grant_view` inserts its row, `add_editor` re-runs
+  `can_view_itinerary`** and refuses with the same 409 if the target is still
+  blind. The raise rolls the allowlist row back, so a refused grant leaves no
+  allowlist row, no editor row and no notification behind. Before 2026-09-27 a
+  re-post for an already-allowlisted target inserted a duplicate row and 500'd
+  on the composite PK, and a blocked target was granted edit rights — and
+  notified — for a trip that 403'd them.
 - **`grant_view` may only insert an allowlist row, and only for `restricted`.**
   It must never change `visibility` — `followers → restricted` would silently cut
   off every follower, and `only_me → anything` is a privacy decision the owner
@@ -260,10 +271,6 @@ showed as editing.
 
 ## Known gaps / TODOs
 
-- **`de`, `es` and `zh` are each missing all 36 edit-lock / editor l10n keys** —
-  `apiErrorEditLockLost`, `apiErrorEditorCannotView`, `editLockAvailableIn` and
-  33 more. `fr` and `ar` are complete. Measured by diffing the `.arb` files. See
-  [backlog.md](../backlog.md).
 - `moderate_or_422`'s docstring says the caller "must not have added rows to the
   session", but this guard's step 6 writes the heartbeat before the endpoint body
   runs — see OPEN QUESTIONS in [text-moderation.md](text-moderation.md).

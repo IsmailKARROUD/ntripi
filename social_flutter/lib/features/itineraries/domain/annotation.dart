@@ -20,6 +20,12 @@ enum AnnotationType {
         info => l10n.annotationInfo,
       };
 
+  /// Server strings go through this, never `values.byName`: an unknown type from
+  /// a newer backend degrades to the neutral one instead of failing the whole
+  /// itinerary parse.
+  static AnnotationType fromString(String? value) =>
+      AnnotationType.values.asNameMap()[value] ?? AnnotationType.info;
+
   String description(AppLocalizations l10n) => switch (this) {
         advice => l10n.annotationAdviceDesc,
         caution => l10n.annotationCautionDesc,
@@ -73,7 +79,7 @@ class Annotation {
     return Annotation(
       id: json['id'] as String,
       stopId: json['stop_id'] as String,
-      type: AnnotationType.values.byName(json['type'] as String),
+      type: AnnotationType.fromString(json['type'] as String?),
       content: json['content'] as String,
       createdAt: DateTime.parse(json['created_at'] as String),
       updatedAt: DateTime.parse(json['updated_at'] as String),

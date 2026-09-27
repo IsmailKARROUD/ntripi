@@ -170,10 +170,13 @@ itinerary_id, stop_id}]}` — derived from the user's stops, filtered by
 - **`GET /users/by-username/{username}` has no client and is a functional
   duplicate** — `GET /users/{identifier}` already accepts a username.
 - `security_audit_log` is written by the password paths and read by nothing.
-- Four error codes on the deletion path (`reauth_required`,
-  `google_reauth_required`, `google_account_mismatch`, `incorrect_password` in
-  its uncoded twin) have no client localization, and three are not referenced
-  anywhere in `lib/`.
+- Two error codes on the deletion path stay unmapped on purpose, because the
+  app cannot reach them: `google_reauth_required` (the Google path always sends
+  a fresh token) and `reauth_required` (fail-closed, for an account with neither
+  a password nor a provider). `google_account_mismatch` — the user picked a
+  different Google account in the re-auth picker — is localized, and it is the
+  one failure `_deleteWithGoogleToken` names instead of the generic message,
+  since it is the only one the user can fix.
 
 ## Related
 

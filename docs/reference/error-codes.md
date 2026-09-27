@@ -67,7 +67,7 @@ refreshes or logs out on *codeless* 401s.
 | Code | Status | Raised at | Client |
 |---|---|---|---|
 | `google_token_invalid` | 401 | `auth.py:201` (×2) | localized |
-| `google_account_mismatch` | 401 | `users.py:259` | — |
+| `google_account_mismatch` | 401 | `users.py:259` | localized |
 | `google_reauth_required` | 401 | `users.py:274` | — |
 
 ### Registration, ToS and age gate
@@ -79,14 +79,14 @@ refreshes or logs out on *codeless* 401s.
 | `username_invalid` | 422 | `auth_service.py:133` | — |
 | `display_name_invalid` | 422 | `auth_service.py:141` | — |
 | `tos_required` | 400 | `auth.py:90`, `auth_service.py:116,262` | localized |
-| `underage` | 400 | `auth.py:435`, `auth_service.py:126,286` | — |
-| `dob_required` | 400 | `auth.py:426`, `auth_service.py:280` | — |
+| `underage` | 400 | `auth.py:435`, `auth_service.py:126,286` | localized |
+| `dob_required` | 400 | `auth.py:426`, `auth_service.py:280` | localized |
 
 **Shape errors are 422; policy refusals are 400.** A future or >120-year date
 fails the Pydantic validator (422); a real date under 16 answers 400 `underage`
-from the router. The client is meant to render a field error for one and a
-message for the other — see [legal-and-age-gate.md](../features/legal-and-age-gate.md)
-for the gap here.
+from the router. `DateOfBirthField` refuses both before anything is sent, and a
+400 that still arrives is shown in the reader's language via `errorUnderage` /
+`errorDobRequired` — see [legal-and-age-gate.md](../features/legal-and-age-gate.md).
 
 ### Follows
 
@@ -214,23 +214,25 @@ All raised via `AppealError` in `services/appeal_service.py`.
 
 ## Unmapped codes
 
-These **14** have no `localizedApiError` case, so the server's English `detail`
-is shown to every user in every language:
+These **11** have no `localizedApiError` case. None of them can reach an app
+user, which is why they stay unmapped — a string in six languages for a message
+nobody can see is dead weight:
 
-`appeal_already_decided` · `appeal_reason_required` · `appeal_reason_too_long` ·
-`bug_report_empty` · `cannot_save_own_itinerary` · `display_name_invalid` ·
-`dob_required` · `google_account_mismatch` · `google_reauth_required` ·
-`not_found` · `reauth_required` · `unauthorized` · `underage` ·
-`username_invalid`
+| Code | Why the app never sees it |
+|---|---|
+| `username_invalid`, `display_name_invalid` | `create_user` re-runs the validators as defence in depth, but its only caller is `/auth/register`, whose `RegisterRequest` runs the same validators first and answers a Pydantic 422 |
+| `appeal_reason_required`, `appeal_reason_too_long` | `AppealSheet` trims and refuses an empty reason, and caps the field at the same 2000 the server enforces |
+| `appeal_already_decided` | raised only by `decide_appeal`, the operator's `/admin` path |
+| `bug_report_empty` | the bug-report sheet's Send stays disabled until the message has non-whitespace text |
+| `cannot_save_own_itinerary` | the bookmark is not rendered for the owner |
+| `google_reauth_required` | the Google delete path always sends a fresh token |
+| `reauth_required` | fail-closed branch for an account with neither a password nor a provider |
+| `unauthorized`, `not_found` | raised only by `/internal/moderation-sweep`, which has no app client |
 
-Two of them are worse than the rest: **`underage` and `dob_required` sit on the
-signup path**, and the l10n keys `errorUnderage` / `errorDobRequired` are already
-written and translated in all six `.arb` files — they are simply never read. A
-grep for either identifier outside `lib/l10n/` returns nothing. Logged in
-[backlog.md](../backlog.md).
-
-`unauthorized` and `not_found` are raised only by `/internal/moderation-sweep`,
-which has no app client, so they need no mapping.
+If a client change makes one of these reachable, it moves out of this table in
+the same commit. `underage`, `dob_required` and `google_account_mismatch` were
+here until 2026-09-27; the first two had translated strings in all six `.arb`
+files that nothing read.
 
 ---
 
@@ -243,8 +245,7 @@ which has no app client, so they need no mapping.
 - Keep `detail` stable — web templates and tests read it.
 - Add the case to `lib/core/api/api_error_codes.dart` **and** an `apiError*` key
   to all six `.arb` files in the same change, or the code lands in the unmapped
-  list above. Note `de`, `es` and `zh` are already missing 36 keys — see
-  [backlog.md](../backlog.md).
+  list above.
 - Put machine-readable context in `extra`, never in `detail`.
 - Add the row to this file.
 

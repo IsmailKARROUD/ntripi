@@ -24,7 +24,7 @@ class ItineraryAnnotation {
     return ItineraryAnnotation(
       id: json['id'] as String,
       itineraryId: json['itinerary_id'] as String,
-      type: AnnotationType.values.byName(json['type'] as String),
+      type: AnnotationType.fromString(json['type'] as String?),
       content: json['content'] as String,
       createdAt: DateTime.parse(json['created_at'] as String),
       updatedAt: DateTime.parse(json['updated_at'] as String),

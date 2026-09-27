@@ -863,34 +863,17 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                                       .toList();
 
                                   if (orphaned.isNotEmpty) {
-    final nt = context.nt;
                                     final n = orphaned.length;
-                                    final confirmed = await showDialog<bool>(
+                                    final confirmed =
+                                        await confirmDestructiveAction(
                                       context: context,
-                                      builder: (ctx) => AlertDialog(
-                                        title: Text(
-                                            l10n.deleteOrphanSegmentsTitle(n)),
-                                        content: Text(l10n
-                                            .deleteOrphanSegmentsMessage(n)),
-                                        actions: [
-                                          TextButton(
-                                            onPressed: () =>
-                                                Navigator.of(ctx).pop(false),
-                                            child: Text(l10n.cancel),
-                                          ),
-                                          FilledButton(
-                                            onPressed: () =>
-                                                Navigator.of(ctx).pop(true),
-                                            style: FilledButton.styleFrom(
-                                              backgroundColor: nt.ratingRed,
-                                            ),
-                                            child: Text(l10n.deleteAndContinue),
-                                          ),
-                                        ],
-                                      ),
+                                      title: l10n.deleteOrphanSegmentsTitle(n),
+                                      message:
+                                          l10n.deleteOrphanSegmentsMessage(n),
+                                      confirmLabel: l10n.deleteAndContinue,
                                     );
 
-                                    if (confirmed != true || !mounted) return;
+                                    if (!confirmed || !mounted) return;
 
                                     final notifier = ref.read(
                                       itineraryDetailProvider(
@@ -1553,7 +1536,7 @@ class _DescriptionEditRow extends StatelessWidget {
         borderRadius: BorderRadius.circular(4),
         child: Container(
           decoration: BoxDecoration(
-            border: Border.all(color: Theme.of(context).dividerColor),
+            border: Border.all(color: context.nt.border),
             borderRadius: BorderRadius.circular(4),
           ),
           padding: const EdgeInsets.fromLTRB(12, 8, 8, 12),
@@ -2161,7 +2144,7 @@ class _RecommendedPeriodEditRow extends StatelessWidget {
         borderRadius: BorderRadius.circular(4),
         child: Container(
           decoration: BoxDecoration(
-            border: Border.all(color: Theme.of(context).dividerColor),
+            border: Border.all(color: context.nt.border),
             borderRadius: BorderRadius.circular(4),
           ),
           padding: const EdgeInsets.fromLTRB(12, 8, 8, 12),

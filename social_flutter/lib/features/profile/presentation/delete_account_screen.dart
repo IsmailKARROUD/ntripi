@@ -12,6 +12,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:social_flutter/core/api/api_client.dart';
 import 'package:social_flutter/core/auth/google_signin_service.dart';
 import 'package:social_flutter/core/auth/google_web_button.dart';
 import 'package:social_flutter/core/ui/app_theme.dart';
@@ -141,10 +142,14 @@ class _DeleteAccountScreenState extends ConsumerState<DeleteAccountScreen> {
       final repo = ref.read(profileRepositoryProvider);
       await repo.deleteAccount(googleIdToken: idToken);
       await _finishLoggedOut();
-    } catch (_) {
+    } catch (e) {
       if (mounted) {
-        setState(() =>
-            _errorMessage = AppLocalizations.of(context)!.deleteAccountGenericError);
+        final l10n = AppLocalizations.of(context)!;
+        // The one failure the user can fix: they picked a different Google
+        // account in the picker than the one this Ntripi account belongs to.
+        setState(() => _errorMessage = apiErrorCode(e) == 'google_account_mismatch'
+            ? l10n.apiErrorGoogleAccountMismatch
+            : l10n.deleteAccountGenericError);
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);

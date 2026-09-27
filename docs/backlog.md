@@ -107,55 +107,6 @@ stale one. Sibling phases are labelled in `reorder_parallels_sheet.dart:11`
 
 ---
 
-## Localization
-
-### planned — `de`, `es` and `zh` are each missing the same 36 keys
-
-All 36 are collaborative-editing / edit-lock strings. **`fr` and `ar` are
-complete.** Measured by diffing the `.arb` files (955 keys in `en`, `fr`, `ar`;
-919 in `de`, `es`, `zh`):
-
-```
-apiErrorEditLockLost, apiErrorEditLockRequired, apiErrorEditorCannotView,
-apiErrorEditorExists, apiErrorEditorIsOwner, apiErrorEditorNotFound,
-apiErrorItineraryLocked, editLockAvailableIn, editLockAvailableNow,
-editLockCopied, editLockCopyText, editLockLostMessage,
-editLockLostMessageUnknown, editLockLostTitle, editLockMoveHere,
-editLockMoveHereMessage, editLockOwnerCanReclaim, editLockReclaim,
-editLockReclaimed, editLockSomeoneEditing, editLockSomeoneEditingIdle,
-editLockTakeOver, editLockYouElsewhere, editorsAdd,
-editorsChangeVisibilityMessage, editorsEmpty, editorsGrantViewConfirm,
-editorsGrantViewMessage, editorsGrantViewTitle, editorsOpenVisibility,
-editorsRemoveMessage, editorsRemoveTitle, editorsRemoved, editorsSearchHint,
-editorsSubtitle, editorsTitle
-```
-
-A German, Spanish or Chinese user sharing a trip sees the English string for every
-editor and lock message. → [features/collaborative-editing.md](features/collaborative-editing.md)
-
-### planned — `errorUnderage` and `errorDobRequired` are translated and never used
-
-Both keys exist in all six `.arb` files. A grep for either identifier outside
-`lib/l10n/` returns **nothing**, and neither `underage` nor `dob_required` has a
-case in `localizedApiError`. So the two failures on the **signup path** fall
-through to the server's English `detail` in every locale.
-
-This is the cheapest fix in the backlog: two switch cases. →
-[reference/error-codes.md](reference/error-codes.md#unmapped-codes)
-
-### idea — 12 more error codes have no client localization
-
-`appeal_already_decided`, `appeal_reason_required`, `appeal_reason_too_long`,
-`bug_report_empty`, `cannot_save_own_itinerary`, `display_name_invalid`,
-`google_account_mismatch`, `google_reauth_required`, `not_found`,
-`reauth_required`, `unauthorized`, `username_invalid`.
-
-`unauthorized` and `not_found` are raised only by `/internal/moderation-sweep`,
-which has no app client, so they need no mapping. →
-[reference/error-codes.md](reference/error-codes.md)
-
----
-
 ## Error-contract cleanup
 
 ### idea — 11 `AuthError` sites share one error code
@@ -205,6 +156,20 @@ is stale or a check is missing. (Its sibling — `models/transport_leg.py:20`,
 "deleting the last leg deletes the segment" — is enforced by `delete_leg` since
 2026-09-26.) → [features/transit-segments.md](features/transit-segments.md)
 
+### idea — `Stop.outgoing_segment` is one-to-one in the ORM, one-to-many in the data
+
+`models/stop.py` declares `outgoing_segment` / `incoming_segment` with
+`uselist=False` and the comment "at most one per stop", but the only constraint is
+`UNIQUE(from_stop_id, to_stop_id)`. A stop before a track of parallel
+alternatives legitimately has one segment into **each** of them, and the client
+already treats it that way (`stop_detail_screen.dart` filters a list). The one
+reader is the public share page (`share.py:124`), which therefore renders one
+arbitrary segment per stop, and SQLAlchemy warns about the extra rows. Deletion is
+unaffected — the DB `ON DELETE CASCADE` removes the rest. The share page flattens
+tracks into a single numbered list anyway, so the fix needs a decision on how it
+should show a branch, not just `uselist=True`. →
+[features/sharing.md](features/sharing.md)
+
 ### idea — `moderate_or_422`'s documented precondition is not held
 
 Its docstring says the caller "must not have added rows to the session", but
@@ -252,13 +217,6 @@ as "for future API consumers" in `api_endpoints.dart:199` and
 | `Storage.exists()` | on the ABC, implemented by both backends, **no caller anywhere** |
 | `ResetPasswordRequest` (`schemas/auth.py:141`) | defined, referenced by no router or test |
 | `MODERATION_LOG_SYSTEM_ACTIONS`'s `"recheck"` | permitted by the CHECK; nothing writes it |
-
-### planned — the web password-reset path skips the shared validator
-
-`web.py:198` validates inline (mismatch / under 8 chars / needs a digit) instead
-of calling `validate_password_strength`, so **the 72-byte NFKC bcrypt cap is not
-enforced there** while it is on every other password path. →
-[features/passwords-and-email.md](features/passwords-and-email.md)
 
 ---
 

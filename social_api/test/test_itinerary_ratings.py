@@ -331,6 +331,42 @@ class TestRatingsPage:
         assert dist["two"] == 0
         assert dist["one"] == 0
 
+    def test_distribution_skips_the_viewers_own_hidden_rating(self, client):
+        """The author still sees their hidden review (so they can appeal it), but
+        the aggregate excludes it — the bars must sum to rating_count for them
+        exactly as they do for everyone else."""
+        import uuid
+
+        from conftest import TestingSessionLocal
+        from app.models.itinerary import Itinerary
+        from app.models.itinerary_rating import ItineraryRating
+        from app.services.itinerary_access import recalculate_rating
+
+        alice = register_user(client, "alice", "alice@x.com")
+        bob = register_user(client, "bob1", "bob@x.com")
+        charlie = register_user(client, "charlie", "charlie@x.com")
+
+        it = create_itinerary(client, alice["access_token"], visibility="public")
+        rate(client, bob["access_token"], it["id"], 5)
+        rate(client, charlie["access_token"], it["id"], 2)
+
+        db = TestingSessionLocal()
+        try:
+            db.query(ItineraryRating).filter(
+                ItineraryRating.user_id == uuid.UUID(bob["user_id"])
+            ).one().moderation_status = "hidden"
+            db.flush()  # autoflush is off; the aggregate query must see the hide
+            recalculate_rating(db.get(Itinerary, uuid.UUID(it["id"])), db)
+            db.commit()
+        finally:
+            db.close()
+
+        body = get_ratings_page(client, bob["access_token"], it["id"]).json()
+        assert len(body["ratings"]) == 2  # bob's own hidden row is still listed
+        assert body["rating_count"] == 1
+        assert sum(body["distribution"].values()) == 1
+        assert body["distribution"]["five"] == 0
+
     def test_deleted_user_rating_survives_with_null_user(self, client):
         """
         When a rater deletes their account, their score is anonymized

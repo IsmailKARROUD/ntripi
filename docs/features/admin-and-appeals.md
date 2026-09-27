@@ -56,6 +56,11 @@ through during an outage.
 - **System** (`admin_user_id IS NULL`) — `auto_reject, auto_hide_reports,
   auto_hide_sla, recheck, appeal_filed, legal_escalate`
 
+`/admin/log` pages by `offset` over `created_at DESC, id DESC`. The `id`
+tiebreaker is load-bearing: rows written in one transaction (a takedown and its
+ban) share `now()`, so `created_at` alone let a page boundary split or repeat
+them.
+
 `HIDE_FAMILY = (hide, auto_hide_reports, auto_hide_sla, auto_reject)` is shared
 by the log template (which actions it offers to reverse), `_last_takedown_at`,
 and the appeal logic — so the UI and the appeal rules cannot disagree about what

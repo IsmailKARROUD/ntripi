@@ -47,7 +47,11 @@ our database.
   leaving it in the results tells the blocked user the account still exists — and
   filtering after the fact would silently shrink pages under `limit`/`offset`.
 - Excludes self and any `is_active == False` account.
-- **Ordered exact match → prefix match → `followers_count DESC`.**
+- **Ordered exact match → prefix match → `followers_count DESC` →
+  `username_lower`.** The last key is unique, so the order is total and
+  `offset` pages cannot repeat or skip anyone. Most accounts tie on
+  `followers_count = 0`, so without it Postgres was free to shuffle them between
+  requests.
 - **Results are built by hand, not via `from_attributes`** (`users.py:401`), so a
   moderated `display_name` cannot leak through.
 - Rate-limited **30/minute**. `limit` 1–100, `offset` ≥ 0.

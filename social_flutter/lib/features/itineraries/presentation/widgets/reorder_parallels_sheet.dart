@@ -28,6 +28,7 @@ import 'package:social_flutter/features/itineraries/data/itinerary_repository.da
 import 'package:social_flutter/features/itineraries/domain/stop.dart';
 import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
 import 'package:social_flutter/l10n/app_localizations.dart';
+import 'package:social_flutter/shared/widgets/editorial_widgets.dart';
 import 'package:social_flutter/shared/widgets/offline_gate.dart';
 import 'package:social_flutter/shared/widgets/saving_overlay.dart';
 
@@ -68,6 +69,8 @@ class _ReorderParallelsSheetState
   late List<Stop> _local;
   late List<String> _initialOrder;
   bool _busy = false;
+  // Shown inline: a snackbar would draw behind this sheet's modal barrier.
+  String? _error;
 
   @override
   void initState() {
@@ -119,7 +122,10 @@ class _ReorderParallelsSheetState
     if (_busy || !_dirty) return;
     final messenger = ScaffoldMessenger.of(context);
     final navigator = Navigator.of(context);
-    setState(() => _busy = true);
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
     try {
       await ref
           .read(itineraryDetailProvider(widget.itineraryId).notifier)
@@ -130,19 +136,17 @@ class _ReorderParallelsSheetState
           );
     } on ItineraryStaleException {
       if (!mounted) return;
-      setState(() => _busy = false);
-      messenger.showSnackBar(
-        SnackBar(
-          content: Text(AppLocalizations.of(context)!.itineraryChangedElsewhere),
-        ),
-      );
+      setState(() {
+        _busy = false;
+        _error = AppLocalizations.of(context)!.itineraryChangedElsewhere;
+      });
       return;
     } on Exception catch (e) {
       if (!mounted) return;
-      setState(() => _busy = false);
-      messenger.showSnackBar(
-        SnackBar(content: Text(extractErrorMessage(e as dynamic, AppLocalizations.of(context)!))),
-      );
+      setState(() {
+        _busy = false;
+        _error = extractErrorMessage(e as dynamic, AppLocalizations.of(context)!);
+      });
       return;
     }
     if (!mounted) return;
@@ -292,6 +296,12 @@ class _ReorderParallelsSheetState
                     ),
                   ),
                 ),
+
+                if (_error != null)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(6, 12, 6, 0),
+                    child: SheetErrorRow(_error!),
+                  ),
 
                 // ── Buttons ──────────────────────────────────────────────
                 const SizedBox(height: 12),

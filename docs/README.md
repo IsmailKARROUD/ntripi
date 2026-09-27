@@ -179,7 +179,7 @@ Measured from the code, not estimated.
 |---|---|
 | Backend | 251 Python files · **30 tables** · 16 routers · **147 routes** · **63 error codes** · 53 migrations |
 | Frontend | 217 Dart files · 10 feature directories · **58 providers** · **36 live screens** · 5 shell branches |
-| Localization | 6 languages · 955 keys (`en`, `fr`, `ar`); 919 (`de`, `es`, `zh`) |
+| Localization | 6 languages · 956 keys, complete in all six |
 | Help centre | 26 articles · 8 categories · 6 languages |
 | History | 438 commits, 2026-03-12 → 2026-09-02 |
 

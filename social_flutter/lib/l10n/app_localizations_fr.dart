@@ -2520,6 +2520,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get apiErrorGoogleTokenInvalid => 'Jeton Google invalide.';
 
   @override
+  String get apiErrorGoogleAccountMismatch =>
+      'Ce compte Google ne correspond pas à celui-ci. Choisissez le compte avec lequel vous vous êtes inscrit.';
+
+  @override
   String get apiErrorInvalidGrant =>
       'Votre session a expiré. Veuillez vous reconnecter.';
 

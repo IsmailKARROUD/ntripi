@@ -2352,6 +2352,10 @@ class AppLocalizationsZh extends AppLocalizations {
   String get apiErrorGoogleTokenInvalid => 'Google 令牌无效。';
 
   @override
+  String get apiErrorGoogleAccountMismatch =>
+      '该 Google 账号与此账号不匹配。请选择你注册时使用的 Google 账号。';
+
+  @override
   String get apiErrorInvalidGrant => '你的会话已过期。请重新登录。';
 
   @override
@@ -3002,78 +3006,72 @@ class AppLocalizationsZh extends AppLocalizations {
       '你的列表中的所有通知都将被移除。审核通知仍会保留在“账号状态”页面。';
 
   @override
-  String get apiErrorItineraryLocked =>
-      'Someone else is editing this itinerary right now.';
+  String get apiErrorItineraryLocked => '其他人正在编辑此行程。';
 
   @override
-  String get apiErrorEditLockRequired => 'Start editing before saving changes.';
+  String get apiErrorEditLockRequired => '请先开始编辑，再保存更改。';
 
   @override
-  String get apiErrorEditLockLost =>
-      'Your editing session was taken over. Your changes were not saved.';
+  String get apiErrorEditLockLost => '你的编辑会话已被接管，你的更改未保存。';
 
   @override
-  String get apiErrorEditorCannotView =>
-      'This person can\'t see this itinerary, so they can\'t edit it.';
+  String get apiErrorEditorCannotView => '此人无法查看此行程，因此无法编辑。';
 
   @override
-  String get apiErrorEditorExists =>
-      'This person can already edit this itinerary.';
+  String get apiErrorEditorExists => '此人已经可以编辑此行程。';
 
   @override
-  String get apiErrorEditorNotFound =>
-      'This person is not an editor of this itinerary.';
+  String get apiErrorEditorNotFound => '此人不是此行程的编辑者。';
 
   @override
-  String get apiErrorEditorIsOwner => 'You already have full edit rights.';
+  String get apiErrorEditorIsOwner => '你已拥有完整的编辑权限。';
 
   @override
-  String get editorsTitle => 'Who can edit';
+  String get editorsTitle => '谁可以编辑';
 
   @override
-  String get editorsSubtitle =>
-      'Editors can change the description, stops and notes. Only you can delete the trip, change who can see it, or manage this list.';
+  String get editorsSubtitle => '编辑者可以修改描述、停靠点和备注。只有你可以删除行程、更改谁能查看，或管理此列表。';
 
   @override
-  String get editorsEmpty => 'Nobody else can edit this trip yet.';
+  String get editorsEmpty => '目前还没有其他人可以编辑此行程。';
 
   @override
-  String get editorsAdd => 'Add an editor';
+  String get editorsAdd => '添加编辑者';
 
   @override
-  String get editorsSearchHint => 'Search by username';
+  String get editorsSearchHint => '按用户名搜索';
 
   @override
-  String get editorsRemoveTitle => 'Remove editor?';
+  String get editorsRemoveTitle => '移除编辑者？';
 
   @override
   String editorsRemoveMessage(Object name) {
-    return '$name will no longer be able to change this trip. Anything they already added stays.';
+    return '$name 将无法再修改此行程。其已添加的内容会保留。';
   }
 
   @override
   String editorsRemoved(Object name) {
-    return '$name can no longer edit';
+    return '$name 已无法编辑';
   }
 
   @override
-  String get editorsGrantViewTitle => 'Give them access too?';
+  String get editorsGrantViewTitle => '同时授予查看权限？';
 
   @override
   String editorsGrantViewMessage(Object name) {
-    return '$name can\'t see this trip yet. Add them to the people who can view it, so they can edit it.';
+    return '$name 目前还看不到此行程。将其加入可查看此行程的人员，这样才能编辑。';
   }
 
   @override
-  String get editorsGrantViewConfirm => 'Add and give access';
+  String get editorsGrantViewConfirm => '添加并授予权限';
 
   @override
   String editorsChangeVisibilityMessage(Object name) {
-    return '$name can\'t see this trip. Change who can see it first, then add them as an editor.';
+    return '$name 看不到此行程。请先更改谁可以查看，再将其添加为编辑者。';
   }
 
   @override
-  String get editorsOpenVisibility => 'Change visibility';
+  String get editorsOpenVisibility => '更改可见性';
 
   @override
   String get editorsLeaveRowTitle => '你是此行程的编辑者';
@@ -3096,60 +3094,58 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String editLockSomeoneEditing(Object name) {
-    return '$name is editing';
+    return '$name 正在编辑';
   }
 
   @override
   String editLockSomeoneEditingIdle(Object name) {
-    return '$name is editing · away';
+    return '$name 正在编辑 · 暂时离开';
   }
 
   @override
   String editLockAvailableIn(Object time) {
-    return 'You can take over in $time';
+    return '你可以在 $time 后接管';
   }
 
   @override
-  String get editLockAvailableNow => 'You can take over now';
+  String get editLockAvailableNow => '你现在可以接管';
 
   @override
-  String get editLockTakeOver => 'Take over';
+  String get editLockTakeOver => '接管';
 
   @override
-  String get editLockYouElsewhere => 'You\'re editing this on another device';
+  String get editLockYouElsewhere => '你正在另一台设备上编辑';
 
   @override
-  String get editLockMoveHere => 'Continue here';
+  String get editLockMoveHere => '在此继续';
 
   @override
-  String get editLockMoveHereMessage =>
-      'Your other device will not be able to save. Anything unsaved there stays on that device.';
+  String get editLockMoveHereMessage => '你的另一台设备将无法保存。那里未保存的内容会留在那台设备上。';
 
   @override
-  String get editLockLostTitle => 'Your editing session was taken over';
+  String get editLockLostTitle => '你的编辑会话已被接管';
 
   @override
   String editLockLostMessage(Object name) {
-    return '$name is editing now, so this change wasn\'t saved. Your text is still here — copy anything you need, or try to take the session back.';
+    return '$name 正在编辑，因此此更改未保存。你的文字仍在这里——复制你需要的内容，或尝试收回会话。';
   }
 
   @override
   String get editLockLostMessageUnknown =>
-      'Somebody else is editing now, so this change wasn\'t saved. Your text is still here — copy anything you need, or try to take the session back.';
+      '其他人正在编辑，因此此更改未保存。你的文字仍在这里——复制你需要的内容，或尝试收回会话。';
 
   @override
-  String get editLockReclaim => 'Try to take it back';
+  String get editLockReclaim => '尝试收回';
 
   @override
-  String get editLockReclaimed => 'You\'re editing again';
+  String get editLockReclaimed => '你又在编辑了';
 
   @override
-  String get editLockCopyText => 'Copy my text';
+  String get editLockCopyText => '复制我的文字';
 
   @override
-  String get editLockCopied => 'Copied';
+  String get editLockCopied => '已复制';
 
   @override
-  String get editLockOwnerCanReclaim =>
-      'You own this trip — you can take over at any time.';
+  String get editLockOwnerCanReclaim => '这是你的行程——你可以随时接管。';
 }

@@ -6,9 +6,9 @@
 //
 // Deliberately NOT a CupertinoPicker. That widget hard-codes
 // overAndUnderCenterOpacity = 0.447 (cupertino/picker.dart) and does not expose
-// it, so every row but the centred one lands near 2.9:1 against nt.sand — under
-// WCAG's 4.5:1, and unreachable by any colour choice, since black is already as
-// dark as ink gets. ListWheelScrollView exposes that opacity; that single
+// it, so every row but the centred one lands near 2.9:1 against the sheet's
+// ground — under WCAG's 4.5:1, and unreachable by any colour choice, since black
+// is already as dark as ink gets. ListWheelScrollView exposes that opacity; that single
 // parameter is the whole reason for the rewrite. Dropping Cupertino also drops
 // CupertinoColors, which resolve against the *OS* appearance whenever no
 // ancestor supplies a brightness — wrong in an app whose theme is chosen
@@ -34,7 +34,7 @@ const double _squeeze = 1.45;
 const double _itemExtent = 44;
 
 // The point of the exercise: legible off-centre rows. Cupertino's 0.447 is what
-// made the numbers look near-white on the sand sheet.
+// made the numbers look washed out against the sheet.
 const double _overAndUnderCenterOpacity = 0.9;
 
 // Tap-a-row-to-centre-it, the other behaviour CupertinoPicker gave us for free
@@ -55,9 +55,9 @@ Future<DurationParts?> showDurationPickerSheet({
   required int hours,
   required int minutes,
 }) {
+  // No backgroundColor: bottomSheetTheme already paints nt.surface, the one ground.
   return showModalBottomSheet<DurationParts>(
     context: context,
-    backgroundColor: context.nt.sand,
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
     ),

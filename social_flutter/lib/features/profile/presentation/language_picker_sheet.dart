@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:social_flutter/core/ui/app_theme.dart';
 import 'package:social_flutter/l10n/app_localizations.dart';
 import 'package:social_flutter/shared/data/languages.dart';
+import 'package:social_flutter/shared/widgets/editorial_widgets.dart';
 
 // Mirrors the backend cap in social_api/app/schemas/user.py (_check_languages).
 const int _kMaxLanguages = 60;
@@ -40,6 +41,8 @@ class _LanguagePickerSheetState extends State<_LanguagePickerSheet> {
   String _query = '';
   // Codes are stored upper-cased to match the backend + Language.code casing.
   late final Set<String> _selected;
+  // The cap message, shown inline — a snackbar draws behind the modal barrier.
+  String? _error;
 
   @override
   void initState() {
@@ -56,21 +59,23 @@ class _LanguagePickerSheetState extends State<_LanguagePickerSheet> {
   void _toggle(String code) {
     final upper = code.toUpperCase();
     if (_selected.contains(upper)) {
-      setState(() => _selected.remove(upper));
+      setState(() {
+        _selected.remove(upper);
+        _error = null;
+      });
       return;
     }
     // Enforce the cap client-side so the user gets a clear message instead of a
     // 422 at save time. Mirror of the backend limit in schemas/user.py.
     if (_selected.length >= _kMaxLanguages) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content:
-              Text(AppLocalizations.of(context)!.maxLanguagesReached(_kMaxLanguages)),
-        ),
-      );
+      setState(() => _error =
+          AppLocalizations.of(context)!.maxLanguagesReached(_kMaxLanguages));
       return;
     }
-    setState(() => _selected.add(upper));
+    setState(() {
+      _selected.add(upper);
+      _error = null;
+    });
   }
 
   List<Language> _filtered(String langCode) {
@@ -209,6 +214,11 @@ class _LanguagePickerSheetState extends State<_LanguagePickerSheet> {
                   ),
                 ),
               ),
+              if (_error != null)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                  child: SheetErrorRow(_error!),
+                ),
               Expanded(
                 child: ListView.builder(
                   // The keyboard overlays the sheet rather than resizing it, so

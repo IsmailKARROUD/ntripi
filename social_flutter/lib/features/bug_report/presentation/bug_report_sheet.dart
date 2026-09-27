@@ -17,6 +17,7 @@ import 'package:social_flutter/core/api/api_client.dart';
 import 'package:social_flutter/core/ui/app_theme.dart';
 import 'package:social_flutter/features/bug_report/domain/bug_report_diagnostics.dart';
 import 'package:social_flutter/l10n/app_localizations.dart';
+import 'package:social_flutter/shared/widgets/editorial_widgets.dart';
 import 'package:social_flutter/shared/widgets/loaders.dart';
 import 'package:social_flutter/shared/widgets/offline_gate.dart';
 
@@ -191,19 +192,7 @@ class _BugReportSheetState extends State<BugReportSheet> {
 
             if (_error != null) ...[
               const SizedBox(height: 10),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Icon(Icons.error_outline, size: 18, color: nt.danger),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      _error!,
-                      style: TextStyle(fontSize: 13, color: nt.danger),
-                    ),
-                  ),
-                ],
-              ),
+              SheetErrorRow(_error!),
             ],
 
             const SizedBox(height: 14),

@@ -1082,10 +1082,18 @@ def add_editor(
         # It must never change `visibility`: followers → restricted would cut off
         # every follower silently, and only_me → anything is a privacy decision
         # the owner has to make deliberately on the visibility screen.
-        if body.grant_view and itinerary.visibility == 'restricted':
+        already_allowed = db.get(
+            ItineraryAllowedUser, (itinerary_id, target.id)
+        ) is not None
+        # Already allowlisted and still blind means a hide or a block is in the
+        # way — a second row would only trip the composite PK.
+        fixable = itinerary.visibility == 'restricted' and not already_allowed
+        if body.grant_view and fixable:
             db.add(ItineraryAllowedUser(itinerary_id=itinerary_id, user_id=target.id))
             db.flush()
-        if not body.grant_view or itinerary.visibility != 'restricted':
+        # Re-asked, not assumed: the allowlist row is not the only gate, and an
+        # editor who still cannot view would be notified about a trip that 403s.
+        if not can_view_itinerary(itinerary, target.id, db):
             raise ApiError(
                 status_code=status.HTTP_409_CONFLICT,
                 code="editor_cannot_view",
@@ -1094,7 +1102,7 @@ def add_editor(
                     "visibility": itinerary.visibility,
                     # Whether the client can fix this itself, or has to send the
                     # owner to the visibility screen.
-                    "can_fix_with_allowlist": itinerary.visibility == 'restricted',
+                    "can_fix_with_allowlist": fixable and not body.grant_view,
                 },
             )
 
@@ -1968,12 +1976,15 @@ def get_ratings_page(
         .order_by(ItineraryRating.updated_at.desc())
     ).all()
 
-    # Distribution is computed over ALL rows, before the block filter below: the
-    # score is a fact about the itinerary, so hiding a blocked author's row must
-    # not make the histogram (or rating_avg/rating_count) disagree per viewer.
+    # Distribution is computed before the block filter below: the score is a fact
+    # about the itinerary, so hiding a blocked author's row must not make the
+    # histogram (or rating_avg/rating_count) disagree per viewer. It skips the
+    # viewer's own hidden rating, which rows keeps only so they can appeal it —
+    # recalculate_rating excludes it, and the bars must sum to rating_count.
     dist: dict[int, int] = {1: 0, 2: 0, 3: 0, 4: 0, 5: 0}
     for row in rows:
-        dist[row.stars] += 1
+        if row.rating_moderation_status not in HIDDEN_STATUSES:
+            dist[row.stars] += 1
 
     distribution = RatingDistribution(
         five=dist[5], four=dist[4], three=dist[3], two=dist[2], one=dist[1]

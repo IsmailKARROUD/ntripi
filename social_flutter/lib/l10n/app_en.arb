@@ -1131,6 +1131,7 @@
   "apiErrorItineraryStale": "The itinerary was modified — please reload.",
   "apiErrorWaitlistContactRequired": "Provide at least an email or a WhatsApp number.",
   "apiErrorGoogleTokenInvalid": "Invalid Google token.",
+  "apiErrorGoogleAccountMismatch": "That Google account doesn't match this one. Choose the account you signed up with.",
   "apiErrorInvalidGrant": "Your session expired. Please sign in again.",
   "apiErrorStopNotFound": "Stop not found.",
   "apiErrorTrackNotFound": "Track not found, or it doesn't belong to this itinerary.",

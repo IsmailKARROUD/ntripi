@@ -2515,6 +2515,10 @@ class AppLocalizationsDe extends AppLocalizations {
   String get apiErrorGoogleTokenInvalid => 'Ungültiges Google-Token.';
 
   @override
+  String get apiErrorGoogleAccountMismatch =>
+      'Dieses Google-Konto passt nicht zu diesem Konto. Wähle das Konto, mit dem du dich registriert hast.';
+
+  @override
   String get apiErrorInvalidGrant =>
       'Deine Sitzung ist abgelaufen. Bitte melde dich erneut an.';
 
@@ -3220,77 +3224,79 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get apiErrorItineraryLocked =>
-      'Someone else is editing this itinerary right now.';
+      'Jemand anderes bearbeitet diese Reiseroute gerade.';
 
   @override
-  String get apiErrorEditLockRequired => 'Start editing before saving changes.';
+  String get apiErrorEditLockRequired =>
+      'Beginne mit dem Bearbeiten, bevor du Änderungen speicherst.';
 
   @override
   String get apiErrorEditLockLost =>
-      'Your editing session was taken over. Your changes were not saved.';
+      'Deine Bearbeitungssitzung wurde übernommen. Deine Änderungen wurden nicht gespeichert.';
 
   @override
   String get apiErrorEditorCannotView =>
-      'This person can\'t see this itinerary, so they can\'t edit it.';
+      'Diese Person kann diese Reiseroute nicht sehen und sie daher auch nicht bearbeiten.';
 
   @override
   String get apiErrorEditorExists =>
-      'This person can already edit this itinerary.';
+      'Diese Person kann diese Reiseroute bereits bearbeiten.';
 
   @override
   String get apiErrorEditorNotFound =>
-      'This person is not an editor of this itinerary.';
+      'Diese Person ist kein Bearbeiter dieser Reiseroute.';
 
   @override
-  String get apiErrorEditorIsOwner => 'You already have full edit rights.';
+  String get apiErrorEditorIsOwner =>
+      'Du hast bereits volle Bearbeitungsrechte.';
 
   @override
-  String get editorsTitle => 'Who can edit';
+  String get editorsTitle => 'Wer bearbeiten kann';
 
   @override
   String get editorsSubtitle =>
-      'Editors can change the description, stops and notes. Only you can delete the trip, change who can see it, or manage this list.';
+      'Bearbeiter können Beschreibung, Stopps und Notizen ändern. Nur du kannst die Reise löschen, festlegen, wer sie sehen kann, oder diese Liste verwalten.';
 
   @override
-  String get editorsEmpty => 'Nobody else can edit this trip yet.';
+  String get editorsEmpty => 'Noch kann niemand sonst diese Reise bearbeiten.';
 
   @override
-  String get editorsAdd => 'Add an editor';
+  String get editorsAdd => 'Bearbeiter hinzufügen';
 
   @override
-  String get editorsSearchHint => 'Search by username';
+  String get editorsSearchHint => 'Nach Benutzername suchen';
 
   @override
-  String get editorsRemoveTitle => 'Remove editor?';
+  String get editorsRemoveTitle => 'Bearbeiter entfernen?';
 
   @override
   String editorsRemoveMessage(Object name) {
-    return '$name will no longer be able to change this trip. Anything they already added stays.';
+    return '$name kann diese Reise dann nicht mehr ändern. Was bereits hinzugefügt wurde, bleibt erhalten.';
   }
 
   @override
   String editorsRemoved(Object name) {
-    return '$name can no longer edit';
+    return '$name kann nicht mehr bearbeiten';
   }
 
   @override
-  String get editorsGrantViewTitle => 'Give them access too?';
+  String get editorsGrantViewTitle => 'Auch Zugriff gewähren?';
 
   @override
   String editorsGrantViewMessage(Object name) {
-    return '$name can\'t see this trip yet. Add them to the people who can view it, so they can edit it.';
+    return '$name kann diese Reise noch nicht sehen. Füge die Person zu denen hinzu, die sie sehen dürfen, damit sie sie bearbeiten kann.';
   }
 
   @override
-  String get editorsGrantViewConfirm => 'Add and give access';
+  String get editorsGrantViewConfirm => 'Hinzufügen und Zugriff gewähren';
 
   @override
   String editorsChangeVisibilityMessage(Object name) {
-    return '$name can\'t see this trip. Change who can see it first, then add them as an editor.';
+    return '$name kann diese Reise nicht sehen. Ändere zuerst, wer sie sehen kann, und füge die Person dann als Bearbeiter hinzu.';
   }
 
   @override
-  String get editorsOpenVisibility => 'Change visibility';
+  String get editorsOpenVisibility => 'Sichtbarkeit ändern';
 
   @override
   String get editorsLeaveRowTitle => 'Du bist Bearbeiter dieser Reiseroute';
@@ -3313,60 +3319,61 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String editLockSomeoneEditing(Object name) {
-    return '$name is editing';
+    return '$name bearbeitet gerade';
   }
 
   @override
   String editLockSomeoneEditingIdle(Object name) {
-    return '$name is editing · away';
+    return '$name bearbeitet gerade · abwesend';
   }
 
   @override
   String editLockAvailableIn(Object time) {
-    return 'You can take over in $time';
+    return 'Du kannst in $time übernehmen';
   }
 
   @override
-  String get editLockAvailableNow => 'You can take over now';
+  String get editLockAvailableNow => 'Du kannst jetzt übernehmen';
 
   @override
-  String get editLockTakeOver => 'Take over';
+  String get editLockTakeOver => 'Übernehmen';
 
   @override
-  String get editLockYouElsewhere => 'You\'re editing this on another device';
+  String get editLockYouElsewhere =>
+      'Du bearbeitest das gerade auf einem anderen Gerät';
 
   @override
-  String get editLockMoveHere => 'Continue here';
+  String get editLockMoveHere => 'Hier weitermachen';
 
   @override
   String get editLockMoveHereMessage =>
-      'Your other device will not be able to save. Anything unsaved there stays on that device.';
+      'Dein anderes Gerät kann dann nicht mehr speichern. Was dort nicht gespeichert ist, bleibt auf diesem Gerät.';
 
   @override
-  String get editLockLostTitle => 'Your editing session was taken over';
+  String get editLockLostTitle => 'Deine Bearbeitungssitzung wurde übernommen';
 
   @override
   String editLockLostMessage(Object name) {
-    return '$name is editing now, so this change wasn\'t saved. Your text is still here — copy anything you need, or try to take the session back.';
+    return '$name bearbeitet jetzt, daher wurde diese Änderung nicht gespeichert. Dein Text ist noch da – kopiere, was du brauchst, oder versuche, die Sitzung zurückzuholen.';
   }
 
   @override
   String get editLockLostMessageUnknown =>
-      'Somebody else is editing now, so this change wasn\'t saved. Your text is still here — copy anything you need, or try to take the session back.';
+      'Jemand anderes bearbeitet jetzt, daher wurde diese Änderung nicht gespeichert. Dein Text ist noch da – kopiere, was du brauchst, oder versuche, die Sitzung zurückzuholen.';
 
   @override
-  String get editLockReclaim => 'Try to take it back';
+  String get editLockReclaim => 'Zurückholen versuchen';
 
   @override
-  String get editLockReclaimed => 'You\'re editing again';
+  String get editLockReclaimed => 'Du bearbeitest wieder';
 
   @override
-  String get editLockCopyText => 'Copy my text';
+  String get editLockCopyText => 'Meinen Text kopieren';
 
   @override
-  String get editLockCopied => 'Copied';
+  String get editLockCopied => 'Kopiert';
 
   @override
   String get editLockOwnerCanReclaim =>
-      'You own this trip — you can take over at any time.';
+      'Diese Reise gehört dir – du kannst jederzeit übernehmen.';
 }

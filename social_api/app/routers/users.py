@@ -399,6 +399,7 @@ def search_users(
             (User.username_lower == q_lower).desc(),
             User.username_lower.ilike(prefix_term).desc(),
             User.followers_count.desc(),
+            User.username_lower,  # unique: a total order, so offset pages are stable
         )
         .limit(limit)
         .offset(offset)

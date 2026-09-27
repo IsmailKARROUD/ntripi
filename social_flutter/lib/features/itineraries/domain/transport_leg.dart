@@ -38,6 +38,13 @@ enum TransportMode {
         TransportMode.airplane => l10n.transportModeAirplane,
       };
 
+  /// Server strings go through this, never `values.byName`: an unknown mode from
+  /// a newer backend renders as the generic vehicle instead of failing the whole
+  /// itinerary parse. The segment PATCH replaces every leg, so saving such a
+  /// segment from this client writes `car` back — accepted over a crash.
+  static TransportMode fromString(String? value) =>
+      TransportMode.values.asNameMap()[value] ?? TransportMode.car;
+
   IconData get icon => const {
         TransportMode.walk: Icons.directions_walk,
         TransportMode.bus: Icons.directions_bus,
@@ -88,7 +95,7 @@ class TransportLeg {
       id: json['id'] as String,
       segmentId: json['segment_id'] as String,
       position: json['position'] as int,
-      mode: TransportMode.values.byName(json['mode'] as String),
+      mode: TransportMode.fromString(json['mode'] as String?),
       line: json['line'] as String?,
       direction: json['direction'] as String?,
       durationMin: json['duration_min'] as int?,
@@ -96,7 +103,7 @@ class TransportLeg {
       isFree: json['is_free'] as bool? ?? false,
       notes: json['notes'] as String?,
       noteType: rawNoteType != null
-          ? AnnotationType.values.byName(rawNoteType)
+          ? AnnotationType.fromString(rawNoteType)
           : null,
       createdAt: DateTime.parse(json['created_at'] as String),
     );

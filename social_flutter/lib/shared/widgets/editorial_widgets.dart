@@ -474,3 +474,32 @@ class RefreshableCenter extends StatelessWidget {
     );
   }
 }
+
+// ── SheetErrorRow ─────────────────────────────────────────────────────────────
+// A failure message for a modal sheet or dialog that stays open. A snackbar
+// draws behind the modal barrier and is never seen, so the sheet says it itself.
+// Callers own the padding — each sheet slots it above its actions.
+
+class SheetErrorRow extends StatelessWidget {
+  final String message;
+
+  const SheetErrorRow(this.message, {super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final nt = context.nt;
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(Icons.error_outline, size: 18, color: nt.danger),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            message,
+            style: TextStyle(fontSize: 13, color: nt.danger),
+          ),
+        ),
+      ],
+    );
+  }
+}

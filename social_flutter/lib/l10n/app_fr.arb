@@ -894,6 +894,7 @@
   "apiErrorItineraryStale": "L'itinéraire a été modifié — veuillez recharger.",
   "apiErrorWaitlistContactRequired": "Indiquez au moins un e-mail ou un numéro WhatsApp.",
   "apiErrorGoogleTokenInvalid": "Jeton Google invalide.",
+  "apiErrorGoogleAccountMismatch": "Ce compte Google ne correspond pas à celui-ci. Choisissez le compte avec lequel vous vous êtes inscrit.",
   "apiErrorInvalidGrant": "Votre session a expiré. Veuillez vous reconnecter.",
   "apiErrorStopNotFound": "Étape introuvable.",
   "apiErrorTrackNotFound": "Piste introuvable ou n'appartenant pas à cet itinéraire.",

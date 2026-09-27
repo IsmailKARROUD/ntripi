@@ -2526,6 +2526,10 @@ class AppLocalizationsAr extends AppLocalizations {
   String get apiErrorGoogleTokenInvalid => 'رمز Google غير صالح.';
 
   @override
+  String get apiErrorGoogleAccountMismatch =>
+      'حساب Google هذا لا يطابق هذا الحساب. اختر الحساب الذي سجّلت به.';
+
+  @override
   String get apiErrorInvalidGrant => 'انتهت جلستك. يرجى تسجيل الدخول مجددًا.';
 
   @override

@@ -126,8 +126,10 @@ sign-in: `DELETE /users/me` (account deletion) answers 401
   `user.birthday.read` sensitive scope: a 100-test-user cap and an "unverified
   app" warning until it clears. The consent-sheet fallback means everything else
   ships without waiting. See [backlog.md](../backlog.md).
-- `google_account_mismatch` and `google_reauth_required` have **no client-side
-  localization** and are not referenced anywhere in `lib/` — see
+- `google_reauth_required` has **no client-side localization**: the Google
+  delete path always sends a token, so the app cannot reach it.
+  `google_account_mismatch` is localized (`apiErrorGoogleAccountMismatch`) and
+  shown by name on the delete screen — see
   [reference/error-codes.md](../reference/error-codes.md#unmapped-codes).
 - Branch 2's "email already registered, use your password" answers 409 with the
   generic `code="auth_error"`.

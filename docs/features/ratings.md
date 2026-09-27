@@ -59,8 +59,11 @@ not information anyone could use.
 
 1. Applies `visible_rating_criteria(current_user.id)` — a moderated note is
    visible to its author and nobody else.
-2. Computes the **distribution over all returned rows *before* the block
-   filter**, so the histogram cannot disagree between two viewers.
+2. Computes the **distribution over the returned rows *before* the block
+   filter**, so the histogram cannot disagree between two viewers. It skips the
+   viewer's **own** hidden rating: step 1 keeps that row so its author can see
+   and appeal it, but `recalculate_rating` excludes it, and the bars must sum to
+   `rating_count` for the author too (before 2026-09-27 they came to one more).
 3. Filters out blocked authors' rows **after** that.
 4. Forces every other viewer's `moderation_status` to `"approved"` — `pending`
    and `flagged` are internal and never leak.

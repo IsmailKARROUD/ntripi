@@ -909,7 +909,8 @@ async def csam_takedown(db: Session, admin: User, path: str) -> dict:
 def recent_log(db: Session, limit: int = 50, offset: int = 0) -> list[ModerationLog]:
     return list(db.execute(
         select(ModerationLog)
-        .order_by(ModerationLog.created_at.desc())
+        # id breaks ties: rows written in one transaction share created_at (now()).
+        .order_by(ModerationLog.created_at.desc(), ModerationLog.id.desc())
         .limit(limit).offset(offset)
     ).scalars().all())
 
