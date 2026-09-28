@@ -179,6 +179,56 @@ written. → [features/text-moderation.md](features/text-moderation.md)
 
 ---
 
+## Policy calls left by the 2026-09-28 sweep
+
+Found while debugging and verified in the code, but each is a decision rather
+than a bug, so none was changed.
+
+### idea — an anonymous IP counts again once its hash is scrubbed
+
+`scrub_expired_ip_hashes` nulls hashes past the rate window, after which
+`has_pending_report_by_ip` no longer sees the earlier report, and
+`count_distinct_reporters` counts every hash-less row as one reporter "apiece" —
+deliberately, so an attacker cannot age out evidence. The side effect: one IP can
+reach a threshold by reporting once a day (`harassment:2` in two days). →
+[features/content-reports.md](features/content-reports.md)
+
+### idea — reviews by banned users stay visible and counted
+
+The ratings page joins `User` but never checks `is_active`, and
+`recalculate_rating` counts the stars. A banned owner's itineraries are hidden;
+a banned rater's review is not. Hiding it also means recounting every itinerary
+they rated at ban time. → [features/ratings.md](features/ratings.md)
+
+### idea — a replaced itinerary cover keeps its URL
+
+Itinerary covers use `cache_bust=False` by design (documented in CLAUDE.md), so
+a replacement reuses `itineraries/{id}.jpg` and URL-keyed image caches
+(CachedNetworkImage, the browser) keep the old picture until they expire. R2's
+`max-age=3600` bounds only the CDN. → [features/image-pipeline.md](features/image-pipeline.md)
+
+### idea — password reset skips the reuse and breach checks
+
+`change_password` refuses a recently used or breached password; the email reset
+path does not. And `forgot_password` does a write, a commit and a mail call only
+when the account exists, so its latency leaks existence despite the
+enumeration-safe body (`/web/appeal-request` has the same shape). →
+[features/passwords-and-email.md](features/passwords-and-email.md)
+
+### idea — smaller loose ends
+
+- `create_appeal` does not check that the action is still in force; the feed
+  hides lifted actions, but the endpoint accepts them.
+- `jira_service._summary` collapses the whole message, not the first line its
+  docstring promises.
+- Deleting a transport leg has no confirmation or undo (`leg_form_dialog.dart`).
+- A request that reaches Railway directly, bypassing Cloudflare, can forge
+  `CF-Connecting-IP` as easily as `X-Forwarded-For` — closing that is edge
+  configuration (restrict the origin to Cloudflare), not app code. →
+  [features/web-and-platform.md](features/web-and-platform.md)
+
+---
+
 ## Dead and unread code
 
 ### idea — delete `segment_form_screen.dart`
@@ -210,7 +260,7 @@ as "for future API consumers" in `api_endpoints.dart:199` and
 
 | Thing | Note |
 |---|---|
-| `security_audit_log` | holds exactly two `event_type` values; **no endpoint, admin lane or query in `app/` reads the table** |
+| `security_audit_log` | holds three `event_type` values; **no endpoint, admin lane or query in `app/` reads the table** |
 | `refresh_tokens.rotated_to` | written at rotation, documented "informational" |
 | `refresh_tokens.user_agent` | captured for a **"list active sessions" UI** its docstring anticipates, which does not exist |
 | `waitlist.platform` | written, read nowhere — no admin lane, no export |
@@ -344,7 +394,6 @@ Recorded because a reader who trusts these will be wrong. None is a code change.
 | `README.md` | 24-hour JWT (really 15 min + refresh); `ACCESS_TOKEN_EXPIRE_MINUTES=1440` (default 15); "auto-logout on **any** 401" (really codeless-401 only); ratings list omits crowdedness; `features/users/` (really `profile/`); a 4-row Flutter test table against 62 backend test files; `is_private` "default false" (the model default is `True`); `GET /` described as returning `{"status":"ok"}` (that is `/health`) |
 | `social_api/README.md` | documents **11 of 30** tables; the endpoint tables omit ~60 endpoints; still documents the dropped `itineraries.safety_rating`; `Storage backend (filesystem or s3-compatible)` predates the R2 decision |
 | `social_flutter/README.md` | still presents transit segments as a current feature after `7025987` bypassed the concept; names no unbuilt work at all |
-| `CLAUDE.md` | the middleware table omits `LanguageCookieMiddleware`, so it shows six runtime layers where there are seven |
 | `dependencies.py:110` | `require_verified_email`'s message says verification happens "only by signing in with Google", but `/auth/register` emails a link and `/verify-email` sets the flag |
 
 `docs/` supersedes the schema and endpoint sections of both backend READMEs. →

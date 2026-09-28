@@ -15,7 +15,9 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 
-from conftest import TestingSessionLocal, auth_headers, register_user
+from conftest import (
+    TestingSessionLocal, auth_headers, concurrency_part, register_user,
+)
 from app.config import get_settings
 from app.models.content_report import ContentReport
 from app.models.itinerary import Itinerary
@@ -235,7 +237,7 @@ def test_sla_hide_preserves_the_authors_etag(client, author, reporter):
     after = client.get(
         f"/itineraries/{itinerary}", headers=auth_headers(author["access_token"])
     ).headers["ETag"]
-    assert before == after
+    assert concurrency_part(before) == concurrency_part(after)
 
 
 def test_sla_closes_a_report_whose_target_vanished(client, author, reporter):
@@ -286,6 +288,99 @@ def test_pending_content_is_rechecked_and_approved(client, author, monkeypatch):
     assert _row(Itinerary, itinerary).moderation_status == "approved"
 
 
+def test_the_recheck_reads_every_rolled_up_field(client, author, monkeypatch):
+    """A stop note written during the outage made the itinerary pending too; the
+    recheck scanned only title/description and approved the note unread."""
+    from conftest import edit_now
+
+    itinerary = _make_pending(client, author, monkeypatch)
+    hdrs = auth_headers(author["access_token"])
+    stop = client.post(f"/itineraries/{itinerary}/stops",
+                       json={"place_name": "Somewhere", "notes": "NOTE-WRITTEN-OFFLINE"},
+                       headers=edit_now(client, itinerary, hdrs))
+    assert stop.status_code == 201, stop.text
+
+    provider = StubProvider({"hate": 0.9})
+    monkeypatch.setattr(tms, "get_provider_chain", lambda settings: [provider])
+    _run_sweep()
+
+    assert any("NOTE-WRITTEN-OFFLINE" in text for text in provider.calls)
+    assert _row(Itinerary, itinerary).moderation_status == "rejected"
+
+
+def test_the_recheck_reads_the_username(client, monkeypatch):
+    monkeypatch.setattr(get_settings(), "TEXT_MODERATION_PROVIDER", "openai")
+    monkeypatch.setattr(get_settings(), "OPENAI_API_KEY", "test-key")
+    monkeypatch.setattr(tms, "get_provider_chain", lambda settings: [])
+    user = register_user(client, "outagename", "outage@example.com")
+    assert _row(User, user["user_id"]).moderation_status == "pending"
+
+    provider = StubProvider({"hate": 0.01})
+    monkeypatch.setattr(tms, "get_provider_chain", lambda settings: [provider])
+    _run_sweep()
+    assert any("outagename" in text for text in provider.calls)
+
+
+def test_an_unscanned_cover_keeps_the_itinerary_pending(client, author, monkeypatch):
+    """Clean text is not a verdict on an image the provider never saw."""
+    from app.models.image_moderation_log import ImageModerationLog
+
+    itinerary = _make_pending(client, author, monkeypatch)
+    db = TestingSessionLocal()
+    try:
+        db.add(ImageModerationLog(
+            image_hash="d" * 64, target_kind="itinerary_cover",
+            target_itinerary_id=uuid.UUID(itinerary), action="error_allowed", labels=[],
+        ))
+        db.commit()
+    finally:
+        db.close()
+
+    monkeypatch.setattr(tms, "get_provider_chain", lambda settings: [StubProvider({"hate": 0.01})])
+    counters = _run_sweep()
+    assert counters["still_pending"] == 1
+    assert _row(Itinerary, itinerary).moderation_status == "pending"
+
+
+def test_the_sweep_lock_is_taken_and_released_on_one_connection():
+    """An advisory lock belongs to one connection; the session handed its
+    connection back at every commit, so the unlock ran elsewhere and the lock
+    leaked — later sweeps answered skipped/locked."""
+    calls = []
+
+    class FakeConn:
+        closed = False
+
+        def execute(self, stmt, params=None):
+            calls.append((self, str(stmt)))
+            return type("R", (), {"scalar": lambda self_: True})()
+
+        def commit(self):
+            pass
+
+        def invalidate(self):
+            pass
+
+        def close(self):
+            self.closed = True
+
+    class FakeEngine:
+        dialect = type("D", (), {"name": "postgresql"})()
+
+        def connect(self):
+            return FakeConn()
+
+    class FakeSession:
+        def get_bind(self):
+            return FakeEngine()
+
+    held, conn = sweep_service._acquire_lock(FakeSession())
+    sweep_service._release_lock(conn)
+    assert held and conn.closed
+    assert {id(c) for c, _ in calls} == {id(conn)}
+    assert "pg_advisory_unlock" in calls[-1][1]
+
+
 def test_pending_content_rechecked_into_a_flag(client, author, monkeypatch):
     itinerary = _make_pending(client, author, monkeypatch)
 
@@ -332,7 +427,7 @@ def test_recheck_takedown_preserves_the_authors_etag(client, author, monkeypatch
     after = client.get(
         f"/itineraries/{itinerary}", headers=auth_headers(author["access_token"])
     ).headers["ETag"]
-    assert before == after
+    assert concurrency_part(before) == concurrency_part(after)
 
 
 def test_still_pending_when_the_provider_is_still_down(client, author, monkeypatch):

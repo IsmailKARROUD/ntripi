@@ -706,7 +706,9 @@ Nur der **Eigentümer** kann Bearbeiter hinzufügen oder entfernen. Ein Bearbeit
                 kind=KIND_STEP,
                 body="""Bearbeiten setzt voraus, sie überhaupt sehen zu können. Laden Sie jemanden ein, der das nicht kann, fragt Ntripi, ob Sie ihm auch Zugriff geben wollen, statt einfach zu scheitern.
 
-Ein Ja fügt die Person der Zugriffsliste dieser Reise hinzu, mehr nicht. Es erweitert nie die Sichtbarkeit der Reise: „Follower“ in „bestimmte Personen“ zu verwandeln, würde alle anderen stillschweigend ausschließen — das bleibt eine Entscheidung, die Sie bewusst treffen.""",
+Ein Ja fügt die Person der Zugriffsliste dieser Reise hinzu, mehr nicht. Es erweitert nie die Sichtbarkeit der Reise: „Follower“ in „bestimmte Personen“ zu verwandeln, würde alle anderen stillschweigend ausschließen — das bleibt eine Entscheidung, die Sie bewusst treffen.
+
+Ist die Reise nur für Follower oder nur für Sie sichtbar, hilft eine Zugriffsliste nicht — Ntripi bietet dann **Sichtbarkeit ändern** an, das die Einstellung öffnet, wer die Reise sehen kann. Wählen Sie dort, speichern Sie und laden Sie die Person erneut ein.""",
             ),
             Block(
                 anchor="one-at-a-time",
@@ -751,7 +753,7 @@ Holen Sie die Reise zurück und speichern Sie, oder kopieren Sie Ihren Text hera
             "sperre",
         ),
         related=("share-an-itinerary-privately", "plan-alternative-options", "troubleshooting"),
-        updated="2026-09-01",
+        updated="2026-09-28",
         cta="Planen Sie Ihre nächste Reise mit denen, die mitfahren.",
     ),
     Article(
@@ -1333,7 +1335,9 @@ Automatische Prüfungen senden den Inhalt und sonst nichts — keine Nutzerkennu
                 kind=KIND_FAQ,
                 body="""Im Bearbeitungsbildschirm Ihres Profils unter Sicherheit ▸ **Konto löschen**. Sie bestätigen mit Ihrem Passwort oder mit Google, falls Sie sich so anmelden.
 
-Die Löschung ist endgültig und nimmt Ihre Reisen mit. Von anderen gespeicherte Reisen funktionieren dann nicht mehr, denn ein Lesezeichen ist ein Verweis und keine Kopie.""",
+Die Löschung ist endgültig und nimmt Ihre Reisen mit. Von anderen gespeicherte Reisen funktionieren dann nicht mehr, denn ein Lesezeichen ist ein Verweis und keine Kopie.
+
+Ihr Profilbild, Ihr Titelbild und die Titelbilder Ihrer Reisen werden dabei ebenfalls gelöscht.""",
             ),
             Block(
                 anchor="requests",
@@ -1374,7 +1378,9 @@ Dieselbe Adresse deckt Anträge auf Berichtigung, Einschränkung und Widerspruch
                 kind=KIND_FAQ,
                 body="""Nutzen Sie **Passwort vergessen** im Anmeldebildschirm. Ein Link zum Zurücksetzen kommt per E-Mail und gilt für kurze Zeit.
 
-Kommt nichts an, prüfen Sie den Spam-Ordner und ob Sie die Adresse verwenden, mit der Sie sich registriert haben. Haben Sie sich mit Google registriert, haben Sie womöglich gar kein Passwort — melden Sie sich dann mit Google an.""",
+Kommt nichts an, prüfen Sie den Spam-Ordner und ob Sie die Adresse verwenden, mit der Sie sich registriert haben. Haben Sie sich mit Google registriert, haben Sie womöglich gar kein Passwort — melden Sie sich dann mit Google an.
+
+Jede Anfrage schickt einen neuen Link. Sobald Sie ein neues Passwort gesetzt haben, funktionieren alle älteren Links nicht mehr.""",
             ),
             Block(
                 anchor="verify-email",
@@ -1382,7 +1388,9 @@ Kommt nichts an, prüfen Sie den Spam-Ordner und ob Sie die Adresse verwenden, m
                 kind=KIND_FAQ,
                 body="""Diese drei brauchen eine bestätigte E-Mail-Adresse. Suchen Sie den Bestätigungslink in Ihrem Posteingang, oder senden Sie über den Hinweis in Ihrem Profil einen neuen.
 
-Die Anmeldung mit Google unter derselben Adresse bestätigt sie ebenfalls. Diese Anforderung hält Wegwerfkonten aus den Bewertungen und aus den Followerlisten heraus.""",
+Die Anmeldung mit Google unter derselben Adresse bestätigt sie ebenfalls. Diese Anforderung hält Wegwerfkonten aus den Bewertungen und aus den Followerlisten heraus.
+
+Haben Sie auf einem nie bestätigten Konto ein Passwort gesetzt und melden sich dann mit Google an, wird dieses Passwort entfernt und alle anderen Sitzungen werden abgemeldet — das schützt Sie, falls jemand Ihre Adresse vor Ihnen registriert hat. Mit **Passwort vergessen** setzen Sie ein neues.""",
             ),
             Block(
                 anchor="changing-password",
@@ -1434,7 +1442,7 @@ Es ist endgültig und nimmt Ihre Reisen mit. Wollen Sie nur aus der Sichtbarkeit
             "16",
         ),
         related=("your-data-and-privacy", "troubleshooting"),
-        updated="2026-09-01",
+        updated="2026-09-28",
     ),
     Article(
         slug="report-and-block",

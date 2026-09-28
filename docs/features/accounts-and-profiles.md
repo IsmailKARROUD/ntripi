@@ -51,11 +51,14 @@ mapping would bypass the guard.
   **`cache_bust=True`**, which appends `?v=<ms>` so a replaced image is not
   served from cache. Itinerary covers use `cache_bust=False` — they never carried
   a `?v=`.
-- **`validators/image_url.py` is what forces uploads through the scan pipeline.**
-  `PATCH /users/me` accepts `avatar_url` / `cover_image_url` only as `null` or a
-  URL beginning with `STORAGE_PUBLIC_URL_PREFIX` or `R2_PUBLIC_URL`. Without it,
-  a user could point their avatar at an arbitrary external image and skip
-  moderation entirely — which is the bypass `d7f48e8` closed.
+- **`PATCH /users/me` can clear an image or resend the one stored, never repoint
+  it.** `validators/image_url.py` refuses anything outside our own storage (the
+  external-image bypass `d7f48e8` closed), and since 2026-09-28 `update_my_profile`
+  also refuses any value other than `null` or the current one with **422
+  `image_url_not_allowed`** — the prefix check alone let anyone wear another
+  user's avatar, or republish their own taken-down cover, which stays in storage
+  as evidence. New images go through the upload endpoints, which scan them. The
+  app never PATCHes an image URL.
 - Avatar is a square crop; the cover is a wide crop.
 
 ### Text moderation
@@ -67,6 +70,15 @@ in the rewrite. A partial edit (only `display_name` sent while a `bio` is
 stored) can only raise the status, and **no edit lowers a takedown**: a `hidden`
 or `rejected` profile stays hidden until a moderator restores it or an appeal
 succeeds. See [text-moderation.md](text-moderation.md#escalate-only).
+
+### One account's data never reaches the next (client)
+
+A shared phone is the case: the next person to sign in must see nothing the last
+one left behind. The HTTP cache keys on `<JWT sub>:<url>` and is cleaned on
+sign-out, and every keep-alive user-scoped provider is reset on sign-in and
+sign-out — see [authentication.md](authentication.md#flutter-surface). Before
+2026-09-28 the cache keyed on the URL alone: offline, user B was served user A's
+`/users/me` (email, date of birth), private trips and notifications.
 
 ### Account deletion (GDPR)
 
@@ -81,7 +93,8 @@ succeeds. See [text-moderation.md](text-moderation.md#escalate-only).
    | neither | account type decides | 401 `incorrect_password` / `google_reauth_required` / `reauth_required` |
    A dual-method account can therefore delete itself with **either** credential.
 2. **Decrement other users' counters before the cascade**, via bulk `UPDATE`
-   (`users.py:286`). This is the one documented exception to
+   (`users.py:286`), clamped at 0 with the same `case()` as
+   `bump_follow_counters`. This is the one documented exception to
    "`bump_follow_counters` is the only way to touch the counters".
 3. **Null `ItineraryRating.user_id` explicitly** (`users.py:318`) — belt and
    braces over the `ON DELETE SET NULL`.
@@ -89,6 +102,14 @@ succeeds. See [text-moderation.md](text-moderation.md#escalate-only).
    allowlist and editor rows, locks, follows, blocks, notifications, device
    tokens, saves, appeals, refresh and email tokens, password history, and the
    security audit log.
+5. **Erase the images, after the commit, best-effort.** The keys are collected
+   before the delete (`_erasable_image_keys`): the avatar, the profile cover, and
+   every owned itinerary's cover — **except** while the account is under an open
+   legal escalation (nothing is erased), and except the cover of any itinerary
+   that was taken down (`deleted_at` / `hidden_at`, `hidden` / `rejected`) or is
+   escalated in its own right. Until 2026-09-28 every image stayed publicly
+   reachable at its stable URL after a "permanent" deletion. A storage failure is
+   logged, never raised.
 
 **Rows that survive with a NULL user, because they are evidence:**
 `content_reports.reporter_user_id`, `moderation_log.admin_user_id`,

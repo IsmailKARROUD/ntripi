@@ -110,7 +110,7 @@ class ParallelStopGroup extends StatefulWidget {
 }
 
 class _ParallelStopGroupState extends State<ParallelStopGroup> {
-  late final PageController _pageController;
+  late PageController _pageController;
   int _currentPage = 0;
   bool _addStopBeforeLoading = false;
   bool _addStopLoading = false;
@@ -123,12 +123,34 @@ class _ParallelStopGroupState extends State<ParallelStopGroup> {
   }
 
   @override
+  void didUpdateWidget(covariant ParallelStopGroup oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // This State survives rebuilds (the detail screen keys each group with a
+    // per-track GlobalKey), so deleting or moving out the parallel on screen
+    // left _currentPage past the end of the new list — a RangeError in build.
+    final last = widget.stops.length - 1;
+    if (_currentPage <= last) return;
+    _currentPage = last < 0 ? 0 : last;
+    // A fresh controller already on the clamped page, for a page view rebuilt
+    // under a new key (see build): ExpandablePageView sizes an internal list by
+    // the old item count and wrote past its end after the list shrank.
+    final old = _pageController;
+    _pageController = PageController(initialPage: _currentPage);
+    WidgetsBinding.instance.addPostFrameCallback((_) => old.dispose());
+    final page = _currentPage;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) widget.onPageChanged?.call(page);
+    });
+  }
+
+  @override
   void dispose() {
     _pageController.dispose();
     super.dispose();
   }
 
-  Stop get _activeStop => widget.stops[_currentPage];
+  Stop get _activeStop =>
+      widget.stops[_currentPage.clamp(0, widget.stops.length - 1)];
 
   @override
   Widget build(BuildContext context) {
@@ -168,6 +190,9 @@ class _ParallelStopGroupState extends State<ParallelStopGroup> {
             Expanded(
               child: hasParallels
                   ? ExpandablePageView.builder(
+                    // New identity whenever the controller is replaced — see
+                    // didUpdateWidget.
+                    key: ObjectKey(_pageController),
                     controller: _pageController,
                     itemCount: widget.stops.length,
                     onPageChanged: (i) {

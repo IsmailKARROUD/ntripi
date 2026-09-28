@@ -61,6 +61,17 @@ itinerary title/description · stop name/address/notes · both annotation tables
 transport-leg line/direction/notes · rating notes · profile display_name/bio ·
 the `username` + `display_name` chosen at registration.
 
+**The post-outage re-check covers the same set.** Text published as `pending`
+during an outage is re-scanned by the sweep across everything that rolls up to
+its row — for an itinerary the header, the period note and every stop, annotation
+and leg field; for a user the username as well as display_name/bio. Until
+2026-09-28 the re-check read only the header fields and display_name/bio and then
+approved the row, so text written during an outage went live unscanned.
+
+**Concurrent identical scans no longer fail a write.** `_store_cache` inserts
+with `ON CONFLICT DO NOTHING`: two people posting the same short text at once
+both saw no cache row, and the second commit hit the primary key as a 500.
+
 **Deliberately NOT moderated:** `content_reports.notes`, `appeals.user_reason`,
 `bug_reports.message`, and admin action reasons. A 422 there would block someone
 reporting hate speech who quotes it — a safety regression, not an improvement.

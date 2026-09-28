@@ -11,10 +11,12 @@ Endpoints:
   GET  /users/{user_id}       → public profile of any user (with follow status)
 """
 
+import logging
 import uuid
 
+import anyio
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
-from sqlalchemy import select, or_, update
+from sqlalchemy import case, select, or_, update
 from sqlalchemy.orm import Session, selectinload
 from starlette.requests import Request
 
@@ -52,7 +54,7 @@ from app.services.image_service import (
     process_cover_image,
 )
 from app.services.moderation_service import ModerationContext, ModerationRejectedError
-from app.services import block_service, notification_service
+from app.services import admin_service, block_service, notification_service
 from app.services.itinerary_access import can_view_itinerary
 from app.services.text_moderation_service import (
     apply_author_edit_status, moderate_or_422,
@@ -62,6 +64,7 @@ from app.storage.factory import storage
 from app.errors import ApiError
 
 router = APIRouter(prefix="/users", tags=["Users"])
+logger = logging.getLogger(__name__)
 
 
 def _require_not_blocked(db: Session, viewer: User, target: User) -> None:
@@ -144,6 +147,18 @@ def update_my_profile(
 
     # Apply only the provided fields (partial update pattern).
     update_data = payload.model_dump(exclude_unset=True)
+
+    # PATCH may clear an image or leave it be, never repoint it: the schema's
+    # prefix check alone let anyone wear another user's avatar, or republish
+    # their own taken-down cover (kept in storage as evidence). New images go
+    # through the upload endpoints, which scan them.
+    for key in ("avatar_url", "cover_image_url"):
+        if key in update_data and update_data[key] not in (None, getattr(current_user, key)):
+            raise ApiError(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                code="image_url_not_allowed",
+                detail="Upload a new image instead of setting its URL.",
+            )
 
     ctx = moderate_or_422(
         db, get_settings(),
@@ -304,7 +319,11 @@ def delete_my_account(
         db.execute(
             update(User)
             .where(User.id.in_(following_ids))
-            .values(followers_count=User.followers_count - 1)
+            # Clamped like bump_follow_counters: a counter that had drifted must
+            # not go negative. case(), not GREATEST() — SQLite has none.
+            .values(followers_count=case(
+                (User.followers_count > 0, User.followers_count - 1), else_=0,
+            ))
         )
 
     # Users that follow current_user (accepted): they lose someone they follow.
@@ -319,7 +338,9 @@ def delete_my_account(
         db.execute(
             update(User)
             .where(User.id.in_(follower_ids))
-            .values(following_count=User.following_count - 1)
+            .values(following_count=case(
+                (User.following_count > 0, User.following_count - 1), else_=0,
+            ))
         )
 
     # Step 3 — anonymize ratings before deleting the user row.
@@ -331,9 +352,56 @@ def delete_my_account(
         .values(user_id=None)
     )
 
+    # Collected before the delete: the rows that name the keys go with it.
+    image_keys = _erasable_image_keys(db, current_user)
+
     # Step 4 — delete the user. Cascade handles all remaining owned data.
     db.delete(current_user)
     db.commit()
+
+    # Step 5 — the images. Their public URLs outlive the rows, so without this a
+    # "permanently deleted" account's photos stayed reachable. After the commit
+    # and best-effort: a storage outage must not resurrect the account.
+    for key in image_keys:
+        try:
+            # This endpoint is sync (FastAPI runs it in a worker thread) and the
+            # storage API is async; from_thread hands the coroutine to the loop.
+            anyio.from_thread.run(storage().delete, key)
+        except Exception:
+            logger.exception("account deletion: could not delete %s", key)
+
+
+def _erasable_image_keys(db: Session, user: User) -> list[str]:
+    """Storage keys to erase with the account — everything but possible evidence.
+
+    Kept: every image while the account itself is under an open legal
+    escalation, and the cover of any itinerary a moderator took down or that is
+    escalated in its own right. Those rows are gone after the cascade, but the
+    runbook's preservation duty attaches to the content, not to the row.
+    """
+    if admin_service.target_has_open_escalation(db, "user", user.id):
+        return []
+    keys = []
+    if user.avatar_url:
+        keys.append(f"avatars/{user.id}.jpg")
+    if user.cover_image_url:
+        keys.append(f"covers/{user.id}.jpg")
+    for itinerary in db.execute(
+        select(Itinerary).where(
+            Itinerary.user_id == user.id, Itinerary.cover_image_url.is_not(None),
+        )
+    ).scalars():
+        taken_down = (
+            itinerary.deleted_at is not None
+            or itinerary.hidden_at is not None
+            or itinerary.moderation_status in ("hidden", "rejected")
+        )
+        if taken_down or admin_service.target_has_open_escalation(
+            db, "itinerary", itinerary.id
+        ):
+            continue
+        keys.append(f"itineraries/{itinerary.id}.jpg")
+    return keys
 
 
 @router.get(
@@ -375,9 +443,12 @@ def search_users(
     ILIKE: PostgreSQL's case-insensitive LIKE. % wildcard matches any sequence.
     Using %query% means the query can appear anywhere in the field.
     """
-    search_term = f"%{q}%"
+    # Escaped so the user's text is matched literally: '_' and '%' are ILIKE
+    # wildcards, and q="_" matched every account (and "a_b" matched "axb").
+    literal = q.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+    search_term = f"%{literal}%"
     q_lower = q.lower()
-    prefix_term = f"{q_lower}%"
+    prefix_term = f"{literal.lower()}%"
 
     # A blocked account must be unfindable, not merely unopenable — leaving it
     # in the results tells the blocked user the account still exists. Filtered
@@ -391,13 +462,13 @@ def search_users(
             User.is_active == True,
             *([User.id.notin_(hidden)] if hidden else []),
             or_(
-                User.username_lower.ilike(search_term.lower()),
-                User.display_name.ilike(search_term),
+                User.username_lower.ilike(search_term.lower(), escape="\\"),
+                User.display_name.ilike(search_term, escape="\\"),
             ),
         )
         .order_by(
             (User.username_lower == q_lower).desc(),
-            User.username_lower.ilike(prefix_term).desc(),
+            User.username_lower.ilike(prefix_term, escape="\\").desc(),
             User.followers_count.desc(),
             User.username_lower,  # unique: a total order, so offset pages are stable
         )

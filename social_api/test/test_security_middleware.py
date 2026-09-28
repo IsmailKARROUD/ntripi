@@ -56,6 +56,14 @@ class TestSecurityHeaders:
         r = client.get("/nonexistent-route-xyz")
         assert r.headers.get("x-frame-options") == "DENY"
 
+    @pytest.mark.parametrize("path", ["/appeal/not-a-token", "/appeals/violations"])
+    def test_appeal_paths_are_not_mistaken_for_the_app_mount(self, client, path):
+        """"/app" is a static prefix; a bare startswith also matched /appeal and
+        /appeals, leaving the public appeal form frameable."""
+        r = client.get(path)
+        assert r.headers.get("x-frame-options") == "DENY"
+        assert r.headers.get("content-security-policy") == "frame-ancestors 'none'"
+
     def test_hsts_absent_on_http(self, client: TestClient):
         """HSTS must NOT be emitted over plain HTTP — only HTTPS connections get it.
         All TestClient requests are HTTP, so HSTS should never appear here."""
@@ -413,3 +421,42 @@ class TestExceptionHandler:
         Exception handler, so 404 responses still get 404 not 500."""
         r = client.get("/this-route-does-not-exist-xyz")
         assert r.status_code == 404
+
+
+# ---------------------------------------------------------------------------
+# ClientIPHeaderMiddleware
+# ---------------------------------------------------------------------------
+
+class TestClientIPHeader:
+    """X-Forwarded-For's leftmost entry is caller-chosen behind Cloudflare, so the
+    client IP every rate limit keys on comes from CF-Connecting-IP instead."""
+
+    @staticmethod
+    def _client_seen(headers: list[tuple[bytes, bytes]], header="cf-connecting-ip"):
+        from app.middleware.client_ip import ClientIPHeaderMiddleware
+
+        seen = {}
+
+        async def inner(scope, receive, send):
+            seen["client"] = scope["client"]
+
+        mw = ClientIPHeaderMiddleware(inner, header=header)
+        scope = {"type": "http", "headers": headers, "client": ("10.0.0.1", 5000)}
+        asyncio.run(mw(scope, None, None))
+        return seen["client"]
+
+    def test_header_wins_over_the_forwarded_client(self):
+        assert self._client_seen([(b"cf-connecting-ip", b"203.0.113.9")]) == ("203.0.113.9", 5000)
+
+    def test_absent_header_leaves_the_client_alone(self):
+        assert self._client_seen([(b"x-forwarded-for", b"1.2.3.4")]) == ("10.0.0.1", 5000)
+
+    def test_garbage_is_ignored(self):
+        assert self._client_seen([(b"cf-connecting-ip", b"not an ip")]) == ("10.0.0.1", 5000)
+
+    def test_ipv6(self):
+        assert self._client_seen([(b"cf-connecting-ip", b"2001:db8::1")])[0] == "2001:db8::1"
+
+    def test_disabled_by_empty_setting(self):
+        seen = self._client_seen([(b"cf-connecting-ip", b"203.0.113.9")], header="")
+        assert seen == ("10.0.0.1", 5000)

@@ -20,13 +20,16 @@ WHY ETAG / IF-MATCH?
          - Missing→ 428 Precondition Required.
 
   The concurrency ETag is the itinerary's `updated_at` as an ISO datetime
-  string, wrapped in quotes. _normalize_etag normalizes both sides so
-  `Z` ↔ `+00:00` and `W/`-prefix differences (added by intermediaries like
-  Cloudflare) are tolerated. The cache ETag emitted by `ETagMiddleware` is
-  a separate, body-hash-based opaque token — they don't share a format.
+  string, wrapped in quotes. _concurrency_token parses both sides to a
+  datetime, so `Z` ↔ `+00:00`, `W/`-prefix differences (added by intermediaries
+  like Cloudflare) and fractional-digit spellings are all tolerated. The GET's
+  cache validator is that token plus `;<body hash>` (see ETagMiddleware); only
+  the part before `;` is compared here.
 """
 
 import uuid
+from datetime import datetime, timezone
+
 from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy import select
@@ -151,6 +154,23 @@ def _normalize_etag(raw: str) -> str:
     return s
 
 
+def _concurrency_token(raw: str) -> datetime | str:
+    """The instant an If-Match (or the server's own ETag) names.
+
+    Compared as a datetime, not a string: Dart's toIso8601String() drops the
+    sub-millisecond digits when they are zero (".123Z") where Python writes
+    ".123000+00:00", so a byte compare 412'd roughly one save in a thousand —
+    permanently, since a reload returns the same updated_at. Anything after `;`
+    is the GET's body-hash suffix and is not part of the concurrency token.
+    """
+    s = _normalize_etag(raw).split(";", 1)[0]
+    try:
+        parsed = datetime.fromisoformat(s)
+    except ValueError:
+        return s
+    return parsed if parsed.tzinfo else parsed.replace(tzinfo=timezone.utc)
+
+
 def _load_itinerary_for_update(itinerary_id: uuid.UUID, db: Session):
     """The itinerary row, locked for the length of the transaction.
 
@@ -189,9 +209,8 @@ def _check_if_match(request: Request, itinerary) -> None:
             code="if_match_required", detail="If-Match header is required for mutations.",
         )
 
-    # Normalize both sides to the same timezone representation before comparing.
-    client_etag = _normalize_etag(if_match)
-    server_etag = _normalize_etag(_etag_value(itinerary))
+    client_etag = _concurrency_token(if_match)
+    server_etag = _concurrency_token(_etag_value(itinerary))
 
     if client_etag != server_etag:
         # The itinerary was modified between the client's last fetch and now.

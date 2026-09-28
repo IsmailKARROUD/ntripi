@@ -34,11 +34,9 @@ from app.database import Base
 REPORT_TARGET_TYPES = ("itinerary", "rating", "user")
 
 # Canonical reasons, ordered most → least severe. Each maps to a
-# distinct-reporter hide threshold in REPORT_HIDE_THRESHOLDS.
-REPORT_REASONS = (
-    "csam", "sexual_content", "violence_threat",
-    "hate_speech", "harassment", "other", "spam",
-)
+# distinct-reporter hide threshold in REPORT_HIDE_THRESHOLDS. Defined in
+# constants so Settings can validate the thresholds without importing a model.
+from app.constants.report_reasons import REPORT_REASONS  # noqa: E402
 
 # Wire values from clients that predate the canonical list. Accepted on input
 # and normalized before storage (report_service.normalize_reason) so a deployed

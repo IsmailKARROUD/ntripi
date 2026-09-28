@@ -21,6 +21,8 @@ from urllib.parse import urlparse
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
+from app.validators.not_null import reject_explicit_nulls
+
 
 # Shared field constraints. Kept as regex strings (not Literal types) so the
 # 422 validation-error shape stays byte-identical to the pre-refactor schemas.
@@ -213,6 +215,11 @@ class StopUpdate(BaseModel):
             )
         return self
 
+    @model_validator(mode='after')
+    def _no_null_columns(self) -> 'StopUpdate':
+        # track_id is not listed: null there means "move to a new track".
+        return reject_explicit_nulls(self, ("cost", "is_free"))
+
 
 class ReorderRequest(BaseModel):
     """
@@ -326,6 +333,10 @@ class TransportLegUpdate(BaseModel):
     is_free: Optional[bool] = None
     notes: Optional[str] = Field(None, max_length=_MAX_LEG_NOTES)
     note_type: Optional[_NOTE_TYPES] = None
+
+    @model_validator(mode='after')
+    def _no_null_columns(self) -> 'TransportLegUpdate':
+        return reject_explicit_nulls(self, ("mode", "cost", "is_free"))
 
 
 class TransportLegResponse(BaseModel):
@@ -497,6 +508,10 @@ class ItineraryUpdate(_RecommendedPeriodInput):
     description: Optional[str] = Field(None, max_length=_MAX_DESCRIPTION)
     currency: Optional[str] = Field(None, max_length=3, min_length=3)
     visibility: Optional[_VISIBILITY] = None
+
+    @model_validator(mode='after')
+    def _no_null_columns(self) -> 'ItineraryUpdate':
+        return reject_explicit_nulls(self, ("title", "currency", "visibility"))
 
 
 # ---------------------------------------------------------------------------

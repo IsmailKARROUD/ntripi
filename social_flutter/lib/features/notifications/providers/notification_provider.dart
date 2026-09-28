@@ -44,16 +44,85 @@ class _PendingDelete {
   const _PendingDelete(this.notification, this.timer);
 }
 
+/// Rows per GET /notifications page. The feed used to stop at the first one,
+/// with no way to reach older rows at all.
+const kNotificationPageSize = 30;
+
+/// Most ids one POST /notifications/read accepts (MarkReadRequest).
+const _kMarkReadBatch = 200;
+
 /// The notification feed, newest first.
 class NotificationsNotifier extends AsyncNotifier<List<AppNotification>> {
   /// Dismissed rows awaiting their DELETE, keyed by notification id.
   final Map<String, _PendingDelete> _pending = {};
 
+  /// Server rows loaded so far — the next page's offset.
+  int _offset = 0;
+  bool _hasMore = false;
+  bool _loadingMore = false;
+
+  /// Whether another page may exist — drives the trailing loader.
+  bool get hasMore => _hasMore;
+
   @override
   Future<List<AppNotification>> build() async {
     ref.onDispose(_cancelPending);
-    final page = await ref.read(notificationRepositoryProvider).getNotifications();
+    final page = await ref
+        .read(notificationRepositoryProvider)
+        .getNotifications(limit: kNotificationPageSize);
+    _resetPaging(page.notifications);
     return page.notifications;
+  }
+
+  void _resetPaging(List<AppNotification> firstPage) {
+    _offset = firstPage.length;
+    _hasMore = firstPage.length == kNotificationPageSize;
+  }
+
+  /// Append the next page, and count its unread rows as seen. No-op while a
+  /// load is in flight or the end is reached. Never throws — it runs from a
+  /// scroll listener, and a failed page just leaves the loaded ones in place.
+  Future<void> loadMore() async {
+    if (_loadingMore || !_hasMore) return;
+    final current = state.value;
+    if (current == null) return;
+    _loadingMore = true;
+    try {
+      final page = await ref
+          .read(notificationRepositoryProvider)
+          .getNotifications(limit: kNotificationPageSize, offset: _offset);
+      if (!ref.mounted) return;
+      _offset += page.notifications.length;
+      _hasMore = page.notifications.length == kNotificationPageSize;
+      // An arrival between pages shifts every row down one; skip what is here.
+      final seen = {for (final n in current) n.id};
+      final fresh = page.notifications.where((n) => !seen.contains(n.id)).toList();
+      state = AsyncData([...current, ...fresh]);
+      await _markShownRead(fresh);
+    } catch (_) {
+      // The next scroll asks again.
+    } finally {
+      _loadingMore = false;
+    }
+  }
+
+  /// A background reload reads the first page only. Replacing the list with it
+  /// would drop every older page the user had scrolled into, so rows older than
+  /// that page are kept (and the offset follows them).
+  List<AppNotification> _mergeFirstPage(List<AppNotification> first) {
+    final current = state.value ?? const <AppNotification>[];
+    if (first.length < kNotificationPageSize || current.length <= first.length) {
+      _resetPaging(first);
+      return first;
+    }
+    final seen = {for (final n in first) n.id};
+    final boundary = first.last.createdAt;
+    final merged = [
+      ...first,
+      ...current.where((n) => !seen.contains(n.id) && n.createdAt.isBefore(boundary)),
+    ];
+    _offset = merged.length;
+    return merged;
   }
 
   Future<void> refresh() async {
@@ -71,10 +140,11 @@ class NotificationsNotifier extends AsyncNotifier<List<AppNotification>> {
     final next = await AsyncValue.guard(() async {
       final page = await ref
           .read(notificationRepositoryProvider)
-          .getNotifications(forceRefresh: true);
+          .getNotifications(limit: kNotificationPageSize, forceRefresh: true);
       // The badge rides along with every page — spending a second request on
       // what is already in hand is why pulling here never fixed the bell.
       _pushBadge(page.badge);
+      _resetPaging(page.notifications);
       return page.notifications;
     });
     // Assigning state on a disposed notifier throws; a pull-to-refresh the user
@@ -110,11 +180,12 @@ class NotificationsNotifier extends AsyncNotifier<List<AppNotification>> {
 
     final List<AppNotification> rows;
     try {
-      final page =
-          await ref.read(notificationRepositoryProvider).getNotifications();
+      final page = await ref
+          .read(notificationRepositoryProvider)
+          .getNotifications(limit: kNotificationPageSize);
       if (!ref.mounted) return;
       _pushBadge(page.badge);
-      rows = page.notifications;
+      rows = _mergeFirstPage(page.notifications);
     } catch (_) {
       // Swallowed on purpose — see the doc comment. The next poll retries.
       return;
@@ -137,7 +208,7 @@ class NotificationsNotifier extends AsyncNotifier<List<AppNotification>> {
     ref.read(notificationBadgeProvider.notifier).setBadge(badge);
   }
 
-  /// Clear the badge on the server, leaving the rows on screen as they are.
+  /// Mark the loaded rows read on the server, leaving them on screen as they are.
   ///
   /// Deliberately NOT optimistic: flipping the local rows to read would erase
   /// the unread tint in the same frame the user arrived to look at it. The
@@ -149,12 +220,24 @@ class NotificationsNotifier extends AsyncNotifier<List<AppNotification>> {
   /// error — same reasoning as _commit, and the same swallow the background
   /// reads already make. The badge re-read below is the whole recovery: the
   /// server stays the authority on read state either way.
-  Future<void> markAllRead() async {
-    final current = state.value;
-    if (current == null || current.every((n) => n.read)) return;
+  Future<void> markAllRead() => _markShownRead(state.value);
+
+  /// Mark exactly [rows]' unread notifications read, by id.
+  ///
+  /// Never "everything": posting no ids marked rows the user had never been
+  /// shown — past the first page, or arrived between the reload and this call —
+  /// and a row marked read unseen never surfaces as new again.
+  Future<void> _markShownRead(List<AppNotification>? rows) async {
+    if (rows == null) return;
+    final unread = [for (final n in rows) if (!n.read) n.id];
+    if (unread.isEmpty) return;
 
     try {
-      await ref.read(notificationRepositoryProvider).markRead();
+      final repo = ref.read(notificationRepositoryProvider);
+      for (var i = 0; i < unread.length; i += _kMarkReadBatch) {
+        final end = i + _kMarkReadBatch > unread.length ? unread.length : i + _kMarkReadBatch;
+        await repo.markRead(ids: unread.sublist(i, end));
+      }
     } catch (_) {
       // Nothing to show: nobody asked for this write, and the bell staying lit
       // is the correct outcome of a badge clear that did not land.

@@ -396,7 +396,14 @@ def test_a_user_with_no_device_costs_no_request(monkeypatch, client: TestClient)
     "response",
     [
         _Resp(404, {"error": {"status": "UNREGISTERED"}}),
-        _Resp(400, {"error": {"details": [{"errorCode": "INVALID_ARGUMENT"}]}}),
+        _Resp(400, {"error": {
+            "status": "INVALID_ARGUMENT",
+            "message": "The registration token is not a valid FCM registration token",
+            "details": [{"errorCode": "INVALID_ARGUMENT"}],
+        }}),
+        _Resp(400, {"error": {"status": "INVALID_ARGUMENT", "details": [
+            {"fieldViolations": [{"field": "message.token"}]},
+        ]}}),
     ],
 )
 def test_a_dead_token_is_pruned(monkeypatch, client: TestClient, response):
@@ -415,6 +422,13 @@ def test_a_dead_token_is_pruned(monkeypatch, client: TestClient, response):
         _Resp(500, {"error": {"status": "INTERNAL"}}),
         _Resp(503, {}),
         _Resp(401, {"error": {"status": "UNAUTHENTICATED"}}),
+        # A malformed payload is our bug, not a dead device.
+        _Resp(400, {"error": {
+            "status": "INVALID_ARGUMENT",
+            "message": "Invalid value at 'message.data[0].value'",
+            "details": [{"errorCode": "INVALID_ARGUMENT"},
+                        {"fieldViolations": [{"field": "message.data[0].value"}]}],
+        }}),
     ],
 )
 def test_a_transient_failure_keeps_the_token(

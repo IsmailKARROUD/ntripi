@@ -21,6 +21,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:social_flutter/core/api/api_client.dart';
 import 'package:social_flutter/core/api/api_endpoints.dart';
+import 'package:social_flutter/core/storage/secure_storage.dart';
 import 'package:social_flutter/features/notifications/domain/app_notification.dart';
 
 /// Set once Firebase.initializeApp has succeeded. Everything below refuses to
@@ -32,13 +33,15 @@ bool _firebaseReady = false;
 /// device to unregister. One device, one token; a refresh replaces it.
 String? _registeredToken;
 
-/// Where a tap should navigate, parked until a router exists to consume it.
+/// Where a cold-start tap should navigate, as the future getInitialMessage()
+/// answers with.
 ///
-/// A cold start from a terminated app delivers the tap through
-/// getInitialMessage() before the widget tree — and therefore go_router — is
-/// built. Navigating then is a no-op that silently swallows the tap, which is
-/// the single most common real-world path.
-String? _pendingRoute;
+/// A cold start from a terminated app delivers the tap before go_router can
+/// act on it, and the splash screen then navigates on its own. Parking a plain
+/// value and draining it after the first frame lost every tap: the platform
+/// reply arrives after that frame, and splash's go('/profile/me') would have
+/// overridden it anyway. Splash awaits this instead — see takeInitialPushRoute.
+Future<String?>? _initialRoute;
 
 /// Must be top-level (not a closure or a method): Flutter spawns a separate
 /// isolate for background messages and can only reach an entry point by name.
@@ -120,31 +123,68 @@ void attachPushListeners({
   });
 
   // Cold start: the app was terminated. Parked rather than navigated — see
-  // _pendingRoute.
-  messaging.getInitialMessage().then((message) {
-    if (message == null) return;
-    _pendingRoute = _routeFor(message);
-  });
+  // _initialRoute.
+  _initialRoute = messaging
+      .getInitialMessage()
+      .then((message) => message == null ? null : _routeFor(message))
+      .catchError((Object _) => null);
+
+  // _registeredToken lives in memory, so after a restart sign-out had no
+  // device to unregister (the previous user's pushes kept arriving for the
+  // next one) and a token rotation was never re-sent. Re-adopt the
+  // registration when the OS already said yes; this never prompts.
+  unawaited(_readoptRegistration(currentLocale));
 
   // Foreground messages are deliberately unhandled. Android suppresses the tray
   // entry while the app is open, and NotificationPoller's badge and SFX cue
   // already announce the arrival — a second cue would double up.
 }
 
-/// Hand over a route parked by a cold start, if any. Consumes it.
-String? takePendingRoute() {
-  final route = _pendingRoute;
-  _pendingRoute = null;
-  return route;
+/// The route a cold-start tap asked for, if any. Consumes it, so a second
+/// caller (or a later splash) gets null.
+Future<String?> takeInitialPushRoute() async {
+  final pending = _initialRoute;
+  _initialRoute = null;
+  if (pending == null) return null;
+  return pending;
+}
+
+/// Re-send this device's token when push was granted on an earlier run and
+/// somebody is signed in. Doing so also keeps the server's last_seen_at fresh,
+/// which is what DEVICE_TOKEN_RETENTION_DAYS purges on.
+Future<void> _readoptRegistration(String Function() currentLocale) async {
+  try {
+    if (await readRefreshToken() == null) return;
+    final messaging = FirebaseMessaging.instance;
+    final settings = await messaging.getNotificationSettings();
+    if (settings.authorizationStatus != AuthorizationStatus.authorized &&
+        settings.authorizationStatus != AuthorizationStatus.provisional) {
+      return;
+    }
+    final token = await messaging.getToken();
+    if (token != null) await _sendToken(token, locale: currentLocale());
+  } catch (e) {
+    debugPrint('Push re-registration skipped: $e');
+  }
 }
 
 /// Stop pushing to this device. MUST be called on sign-out: a token that
 /// outlives the session delivers the previous user's notifications — including
 /// moderation notices — to whoever signs in next on the same phone.
 Future<void> unregisterForPush() async {
-  final token = _registeredToken;
+  var token = _registeredToken;
   _registeredToken = null;
-  if (kIsWeb || token == null) return;
+  if (kIsWeb || !_firebaseReady) return;
+  // Not registered in THIS run (a restart, or re-adoption still in flight):
+  // the device may still be registered from an earlier one, so ask FCM.
+  if (token == null) {
+    try {
+      token = await FirebaseMessaging.instance.getToken();
+    } catch (_) {
+      token = null;
+    }
+  }
+  if (token == null) return;
 
   try {
     // Server first: the local token is worthless if the row survives, and the

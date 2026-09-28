@@ -40,6 +40,7 @@ from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
 from app.errors import ApiError
+from app.database import upsert_insert
 from app.models.text_moderation_cache import TextModerationCache
 from app.models.text_moderation_decision import TextModerationDecision
 from app.services import moderation_policy
@@ -342,22 +343,25 @@ def _store_cache(
     db: Session, key: str, decision: PolicyDecision, result, settings: "Settings"
 ) -> None:
     """Insert the verdict, unless an identical key already landed (a concurrent
-    request scanning the same text)."""
-    exists = db.execute(
-        select(TextModerationCache.cache_key).where(TextModerationCache.cache_key == key)
-    ).scalar_one_or_none()
-    if exists is not None:
-        return
+    request scanning the same text).
+
+    ON CONFLICT DO NOTHING rather than a lookup first: two people posting the
+    same short text at once both saw no row, and the second commit failed the
+    primary key — failing that user's write over a cache entry."""
     now = datetime.now(timezone.utc)
-    db.add(TextModerationCache(
-        cache_key=key,
-        outcome=decision.outcome,
-        scores=result.scores,
-        provider=result.provider,
-        model=result.model,
-        created_at=now,
-        expires_at=now + timedelta(days=settings.TEXT_MODERATION_CACHE_TTL_DAYS),
-    ))
+    db.execute(
+        upsert_insert(db, TextModerationCache)
+        .values(
+            cache_key=key,
+            outcome=decision.outcome,
+            scores=result.scores,
+            provider=result.provider,
+            model=result.model,
+            created_at=now,
+            expires_at=now + timedelta(days=settings.TEXT_MODERATION_CACHE_TTL_DAYS),
+        )
+        .on_conflict_do_nothing(index_elements=[TextModerationCache.cache_key])
+    )
 
 
 def _write_decision(

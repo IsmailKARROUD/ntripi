@@ -18,14 +18,14 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import Response
 
-from app.middleware import STATIC_PREFIXES as _SKIP_PREFIXES
+from app.middleware import is_static_path
 
 
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next) -> Response:
         response = await call_next(request)
 
-        if any(request.url.path.startswith(p) for p in _SKIP_PREFIXES):
+        if is_static_path(request.url.path):
             return response
 
         response.headers["X-Content-Type-Options"] = "nosniff"

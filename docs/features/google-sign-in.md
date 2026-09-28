@@ -36,8 +36,14 @@ Flips `email_verified = True` if Google says the address is verified. 403
 
 **2 — Link to an existing account** (`auth_service.py:233`): matched on email,
 **and only if Google reports `email_verified`** — otherwise anyone could claim
-an address they do not control. Keeps `password_hash`, producing a dual-method
-account that can then delete itself with either credential.
+an address they do not control. A **verified** account keeps `password_hash`,
+producing a dual-method account that can then delete itself with either
+credential. **An unverified one loses its password and every session**
+(`unverified_password_dropped_on_google_link` in `security_audit_log`):
+registration needs no verification, so the password may belong to someone who
+squatted the owner's address first, and linking used to hand that person the
+account the moment the owner signed in. The owner can set a new password through
+forgot-password. See [decisions.md](../decisions.md).
 
 **3 — New account** (`auth_service.py:257`):
 - Requires `tos_accepted` → **400 `tos_required`** otherwise.

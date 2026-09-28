@@ -498,3 +498,26 @@ def test_sweep_purges_long_dead_claims(client: TestClient):
 
     assert counters["edit_locks_purged"] == 1
     assert client.get(f"/itineraries/{itin_id}/lock", headers=hdrs).json()["lock"] is None
+
+
+def test_losing_a_first_claim_race_is_a_423_not_a_500(client: TestClient, monkeypatch):
+    """FOR UPDATE locks nothing while no claim row exists, so two first claims
+    could both pass the check; the loser's INSERT hit the primary key as a 500.
+    Simulated by hiding the winner's row from the loser's initial lookup."""
+    from app.services import edit_lock_service
+
+    itinerary_id, owner_hdrs, _ = _owner_with_itinerary(client)
+    bob_hdrs, _ = _add_editor(client, itinerary_id, owner_hdrs, "bobby", "bob@example.com")
+    acquire_edit_lock(client, itinerary_id, owner_hdrs)
+
+    real_get_lock = edit_lock_service.get_lock
+    calls = {"n": 0}
+
+    def racing_get_lock(db, itin_id, *, for_update=False):
+        calls["n"] += 1
+        # The loser's check ran before the winner's row was visible.
+        return None if calls["n"] == 1 else real_get_lock(db, itin_id, for_update=for_update)
+
+    monkeypatch.setattr(edit_lock_service, "get_lock", racing_get_lock)
+    response = client.post(f"/itineraries/{itinerary_id}/lock", json={}, headers=bob_hdrs)
+    assert response.status_code == 423, response.text

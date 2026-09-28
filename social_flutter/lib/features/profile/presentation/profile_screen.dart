@@ -183,19 +183,20 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         : const <VisitedLocation>[];
 
     return RefreshIndicator(
-      onRefresh: () async {
-        if (widget.isSelf) {
-          ref.read(myProfileProvider.notifier).refresh();
-          ref.read(myItinerariesProvider.notifier).refresh();
-          ref.read(followRequestsProvider.notifier).refresh();
-        } else {
-          ref.read(userProfileProvider(widget.userId!).notifier).refresh();
-          ref.read(userItinerariesProvider(widget.userId!).notifier).refresh();
-        }
-        if (user.coverImageUrl == null) {
-          ref.read(userLocationsProvider(user.id).notifier).refresh();
-        }
-      },
+      // Awaited: fired and forgotten, the spinner vanished at once while the
+      // data was still on its way.
+      onRefresh: () => Future.wait([
+        if (widget.isSelf) ...[
+          ref.read(myProfileProvider.notifier).refresh(),
+          ref.read(myItinerariesProvider.notifier).refresh(),
+          ref.read(followRequestsProvider.notifier).refresh(),
+        ] else ...[
+          ref.read(userProfileProvider(widget.userId!).notifier).refresh(),
+          ref.read(userItinerariesProvider(widget.userId!).notifier).refresh(),
+        ],
+        if (user.coverImageUrl == null)
+          ref.read(userLocationsProvider(user.id).notifier).refresh(),
+      ]),
       child: CustomScrollView(
         slivers: [
           SliverToBoxAdapter(

@@ -528,10 +528,11 @@ guarded on the dialect being PostgreSQL. See
   a UNIQUE constraint, so multiple WhatsApp-only signups are possible while
   email-only signups are deduplicated. Whether that asymmetry is intended is not
   stated anywhere.
-- **`security_audit_log` is written but never read.** Only two `event_type`
+- **`security_audit_log` is written but never read.** Three `event_type`
   values are ever stored (`"password_change"`, `"password_change_failed"`,
-  `auth_service.py:521,542`), and no endpoint, admin lane or query in `app/`
-  reads the table. Write-only for direct-SQL support triage, or an unfinished
+  and — since 2026-09-28 — `"unverified_password_dropped_on_google_link"`, all in
+  `auth_service.py`), and no endpoint, admin lane or query in `app/` reads the
+  table. Write-only for direct-SQL support triage, or an unfinished
   feature, is not recorded.
 - **`refresh_tokens.rotated_to` is written and never read**
   (`refresh_token_service.py:109`); its docstring calls it informational.

@@ -9,7 +9,10 @@ test-only routes so the test reflects production behaviour faithfully.
 
 from fastapi.testclient import TestClient
 
-from conftest import auth_headers, locked_headers, register_user
+from conftest import (
+    auth_headers, concurrency_part, etag_from_updated_at, locked_headers,
+    register_user,
+)
 
 
 class TestETagMiddleware:
@@ -156,10 +159,13 @@ class TestETagMiddleware:
         )
         assert detail.status_code == 200
         endpoint_etag = detail.headers["etag"]
+        # "<updated_at>;<body hash>" — the part before ';' is still the
+        # If-Match concurrency token.
+        assert concurrency_part(endpoint_etag) == concurrency_part(
+            etag_from_updated_at(detail.json()["updated_at"])
+        )
 
-        # The endpoint's ETag is a quoted ISO datetime — different format
-        # from a body hash, but byte-comparable. The middleware should leave
-        # it alone, and the 304 round-trip should still work with it.
+        # An unchanged body still earns a 304 against it.
         revisit = client.get(
             f"/itineraries/{itin_id}",
             headers={
@@ -217,4 +223,36 @@ class TestETagMiddleware:
         assert any(
             a["content"] == "remember sunscreen"
             for a in revisit.json().get("annotations", [])
+        )
+
+    def test_a_strangers_rating_reaches_a_cached_viewer(self, client: TestClient):
+        """The aggregate is written without moving updated_at (it must not 412
+        the owner), so a 304 keyed on updated_at alone served the old average
+        to every device that had the detail cached."""
+        owner = register_user(client, "alice1", "alice@test.com")
+        rater = register_user(client, "bobby1", "bob@test.com")
+        itin_id = client.post(
+            "/itineraries/",
+            json={"title": "Trip", "visibility": "public"},
+            headers=auth_headers(owner["access_token"]),
+        ).json()["id"]
+
+        first = client.get(f"/itineraries/{itin_id}",
+                           headers=auth_headers(owner["access_token"]))
+        assert first.json()["rating_count"] == 0
+
+        rated = client.post(f"/itineraries/{itin_id}/ratings", json={"stars": 4},
+                            headers=auth_headers(rater["access_token"]))
+        assert rated.status_code in (200, 201), rated.text
+
+        revisit = client.get(
+            f"/itineraries/{itin_id}",
+            headers={**auth_headers(owner["access_token"]),
+                     "If-None-Match": first.headers["etag"]},
+        )
+        assert revisit.status_code == 200
+        assert revisit.json()["rating_count"] == 1
+        # ...while the owner's open editor keeps its token.
+        assert concurrency_part(revisit.headers["etag"]) == concurrency_part(
+            first.headers["etag"]
         )

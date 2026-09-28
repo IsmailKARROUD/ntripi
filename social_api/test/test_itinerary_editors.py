@@ -239,14 +239,41 @@ class TestViewIsAPrerequisite:
 
         response = _grant(client, itin_id, owner_hdrs, bob_id, grant_view=True)
 
-        assert response.status_code == 409, response.text
-        assert response.json()["can_fix_with_allowlist"] is False
+        # Indistinguishable from a missing account, like every lookup across a block.
+        assert response.status_code == 404, response.text
+        assert response.json()["code"] == "user_not_found"
         assert client.get(f"/itineraries/{itin_id}/allowed-users",
                           headers=owner_hdrs).json() == []
         assert client.get(f"/itineraries/{itin_id}/editors",
                           headers=owner_hdrs).json() == []
         assert client.get("/notifications",
                           headers=bob_hdrs).json()["notifications"] == []
+
+    def test_granting_to_someone_who_blocked_you_does_not_say_so(self, client: TestClient):
+        """A public trip everyone can see answered 409 editor_cannot_view with
+        visibility=public — an explanation only a block can produce."""
+        owner_hdrs, owner_id, bob_hdrs, bob_id = _cast(client)
+        itin_id = _itinerary(client, owner_hdrs, visibility="public")
+        assert client.post(f"/users/{owner_id}/block",
+                           headers=bob_hdrs).status_code in (201, 204)
+
+        response = _grant(client, itin_id, owner_hdrs, bob_id)
+        assert response.status_code == 404
+        assert response.json()["code"] == "user_not_found"
+
+    def test_losing_the_allowlist_row_releases_their_claim(self, client: TestClient):
+        """On a restricted trip that row is what let them edit; their claim would
+        otherwise block every other editor until the TTL."""
+        owner_hdrs, _, bob_hdrs, bob_id = _cast(client)
+        itin_id = _itinerary(client, owner_hdrs)
+        _grant(client, itin_id, owner_hdrs, bob_id)
+        acquire_edit_lock(client, itin_id, bob_hdrs)
+
+        client.delete(f"/itineraries/{itin_id}/allowed-users/{bob_id}",
+                      headers=owner_hdrs)
+
+        assert client.get(f"/itineraries/{itin_id}/lock",
+                          headers=owner_hdrs).json()["lock"] is None
 
     def test_losing_the_allowlist_row_revokes_editing(self, client: TestClient):
         """The grant row survives; the ability does not. Nothing revoked it —

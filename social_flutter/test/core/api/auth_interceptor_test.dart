@@ -20,6 +20,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http_mock_adapter/http_mock_adapter.dart';
 import 'package:social_flutter/core/api/api_client.dart';
 import 'package:social_flutter/core/api/api_endpoints.dart';
+import 'package:social_flutter/core/api/cache_key.dart';
 import 'package:social_flutter/core/auth/token_manager.dart';
 
 String _jwtWithExp(int unixSeconds) {
@@ -239,6 +240,95 @@ void main() {
     });
   });
 
+  group('onError 401 retry failure', () {
+    test(
+        'Given a refresh succeeds, When the retried request fails on its own, '
+        'Then the caller gets the retry\'s error, not the original 401',
+        () async {
+      // The retry ran with a fresh token, so its 412 is the truth — reporting
+      // the 401 and bouncing to /login lost the reload dialog entirely.
+      final futureExp = DateTime.now()
+              .add(const Duration(minutes: 10))
+              .millisecondsSinceEpoch ~/
+          1000;
+      FlutterSecureStorage.setMockInitialValues({
+        'ntripi_access_token': _jwtWithExp(futureExp),
+        'ntripi_refresh_token': 'old-refresh',
+      });
+      final stack = makeStack();
+      stack.adapter.onPatch(
+        '/itineraries/x',
+        (server) => server.reply(401, {'detail': 'expired'}),
+        data: {'title': 't'},
+      );
+      stack.bareAdapter.onPost(
+        kRefreshEndpoint,
+        (server) => server.reply(200, {
+          'access_token': _jwtWithExp(futureExp + 60),
+          'refresh_token': 'new-refresh',
+          'refresh_expires_at': DateTime.now()
+              .add(const Duration(days: 30))
+              .toUtc()
+              .toIso8601String(),
+          'token_type': 'bearer',
+          'user_id': 'u',
+          'username': 'alice',
+        }),
+        data: {'refresh_token': 'old-refresh'},
+      );
+      stack.bareAdapter.onPatch(
+        '/itineraries/x',
+        (server) => server.reply(
+            412, {'code': 'itinerary_stale', 'detail': 'itinerary modified'}),
+        data: {'title': 't'},
+      );
+
+      await expectLater(
+        stack.dio.patch('/itineraries/x', data: {'title': 't'}),
+        throwsA(isA<DioException>()
+            .having((e) => e.response?.statusCode, 'status', 412)),
+      );
+    });
+  });
+
+  group('cache partitioning', () {
+    test('Given a signed-in request, Then its account is stamped for the cache key',
+        () async {
+      final futureExp = DateTime.now()
+              .add(const Duration(minutes: 10))
+              .millisecondsSinceEpoch ~/
+          1000;
+      FlutterSecureStorage.setMockInitialValues({
+        'ntripi_access_token': _jwtWithExp(futureExp),
+      });
+      final stack = makeStack();
+      Object? subject;
+      stack.dio.interceptors.add(InterceptorsWrapper(onRequest: (options, handler) {
+        subject = options.extra[kCacheSubjectExtra];
+        handler.next(options);
+      }));
+      stack.adapter.onGet('/users/me', (server) => server.reply(200, {}));
+
+      await stack.dio.get('/users/me');
+      expect(subject, 'u');
+    });
+
+    test('Given two accounts, When they fetch the same URL, Then the keys differ', () {
+      RequestOptions forAccount(String? sub) => RequestOptions(
+            path: '/users/me',
+            baseUrl: kApiBaseUrl,
+            extra: {if (sub != null) kCacheSubjectExtra: sub},
+          );
+      final a = ntripiCacheKey(forAccount('alice'));
+      final b = ntripiCacheKey(forAccount('bob'));
+      expect(a, isNot(b));
+      expect(ntripiCacheKey(forAccount('alice')), a);
+      // Signed out: the plain URL key, exactly as before.
+      expect(ntripiCacheKey(forAccount(null)),
+          isNot(anyOf(a, b)));
+    });
+  });
+
   group('offline tolerance', () {
     test(
         'when refresh fails with network error, request flies with auth_skipped',
@@ -289,9 +379,17 @@ void main() {
         }),
       );
 
+      Object? subject;
+      stack.dio.interceptors.add(InterceptorsWrapper(onRequest: (options, handler) {
+        subject = options.extra[kCacheSubjectExtra];
+        handler.next(options);
+      }));
+
       final response = await stack.dio.get('/users/me');
       expect(response.statusCode, 200);
       expect(sawAuthSkipped, isTrue);
+      // The expired token still names the account whose cache must answer.
+      expect(subject, 'u');
 
       // Tokens preserved — session may still be alive.
       const storage = FlutterSecureStorage();

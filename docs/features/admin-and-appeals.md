@@ -69,6 +69,11 @@ is reversible.
 **Automated rows carry `content_snapshot=None`** and no raw text, email or
 display name. Operator rows keep their snapshot.
 
+**One action, one row.** An operator hide of a rating, a profile or a queued text
+flag goes through `moderation_actions.auto_hide(admin=…)`, which writes the single
+operator row. Until 2026-09-28 it wrote a system `hide` and then an operator
+`hide`, so the author saw the same violation twice.
+
 **Never write an itinerary's moderation state from outside the owner's request
 without `set_preserving_etag`** — 13 call sites go through it.
 
@@ -80,8 +85,10 @@ without `set_preserving_etag`** — 13 call sites go through it.
   only thing between a false positive and a silenced user.
 - **Filing an appeal writes its own `appeal_filed` log row** — proof the contest
   path was available and used.
-- **One pending appeal per item.** An **upheld** appeal locks it for
+- **One pending appeal per item.** An **upheld or reduced** appeal locks it for
   `REAPPEAL_COOLDOWN = 30 days`, measured from `updated_at` (the decision time).
+  `reduced` counts because reducing a hide changes nothing; left out (before
+  2026-09-28) the same appeal could be re-filed the moment it was answered.
 - `_owns_target` (`appeal_service.py:83`) is the IDOR guard. A soft-deleted
   itinerary still carries `user_id`, so a removed trip stays appealable.
 - **`_action_still_active`**: `ban` → `not user.is_active`; `delete` →
@@ -90,7 +97,7 @@ without `set_preserving_etag`** — 13 call sites go through it.
 - **Three decisions:**
   | Decision | Effect |
   |---|---|
-  | `restore` | clears `deleted_at` + `hidden_at`, sets `approved` via `set_preserving_etag`; un-bans if the original was a ban; clears the classifier queue |
+  | `restore` | for a content takedown: clears `deleted_at` + `hidden_at`, sets `approved` via `set_preserving_etag`, clears the classifier queue and dismisses the target's pending reports; for a `ban`: un-bans; for a `warn`: nothing else. A warn or ban appeal no longer un-hides a profile hidden on its own account (possibly under an escalation) |
   | `uphold` | status only; starts the 30-day cooldown |
   | `reduce` | a ban becomes a warning; a `delete` becomes a hide; **already in `HIDE_FAMILY` → honestly says the same as uphold** ("nothing to reduce it to") |
 - `appeal.updated_at` is set **explicitly**, because SQLite has no `onupdate`
@@ -108,7 +115,12 @@ without `set_preserving_etag`** — 13 call sites go through it.
 
 `app/services/sweep_service.py`. **Idempotent by construction**;
 `pg_try_advisory_lock(8215309471002117)` makes concurrent runs impossible
-(skipped on SQLite).
+(skipped on SQLite). **The lock is taken and released on a dedicated connection**
+held for the run: an advisory lock belongs to one physical connection, and the
+sweep's session returns its connection to the pool at every commit — the unlock
+used to run on a different one, leave the lock held by an idle pooled
+connection, and make most later runs answer `skipped: locked` (SLA hides quietly
+stopped).
 
 **One of two drivers is required, or SLA auto-hide and post-outage re-checks
 never run:**
@@ -126,20 +138,28 @@ loop re-raises `CancelledError`; swallowing it would break Starlette's lifespan.
 
 1. **SLA enforcement** — pending reports older than `MODERATION_SLA_HOURS`,
    oldest first, batch 200. Target gone → close as `auto_hidden`; otherwise
-   `auto_hide(action="auto_hide_sla")`.
+   `auto_hide(action="auto_hide_sla")`. A takedown settles **every** pending
+   report on its target and a reversal (unhide, restore, granted appeal) dismisses
+   the rest, so the sweep no longer re-hides what a moderator restored — see
+   [content-reports.md](content-reports.md).
 2. **Post-outage re-check** — `moderation_status == 'pending'` rows across
-   itinerary title/description, rating notes and user display_name/bio, batch 100
-   across all three. A verdict → `auto_reject`; still pending → leave it;
-   `approved`/`flagged` → **assigned, not escalate-only**, because `pending`
-   means there was never a verdict to escalate from.
+   itineraries (title, description, period note **and every stop, annotation and
+   leg field that rolls up to it**), rating notes and users (username,
+   display_name, bio), batch 100 across all three. Until 2026-09-28 only the
+   header fields and display_name/bio were re-scanned and the row approved. A
+   verdict → `auto_reject`; still pending → leave it; `approved`/`flagged` →
+   **assigned, not escalate-only**, because `pending` means there was never a
+   verdict to escalate from — except that clean text never approves an itinerary
+   whose unscanned cover still waits in the flagged queue.
 3. **Housekeeping** — expired `text_moderation_cache`; **reviewed**
    `text_moderation_decisions` past retention (**unreviewed rows are the queue
    and are never purged**); expired bug reports; notifications; idle device
    tokens; dead edit locks.
 
 Emails are collected during the transaction and sent **after** the commit, each
-wrapped. **The re-check does not touch images** — a fail-open image scan sets
-`pending`, and only the *text* fields get re-scanned.
+wrapped. **The re-check does not scan images** — a fail-open upload
+(`error_allowed`) is listed in `/admin/flagged` as "Not scanned" for a human, and
+its itinerary stays `pending` until that review.
 
 `SWEEP_TOKEN` unset ⇒ the endpoint **404s**, and `secrets.compare_digest` runs
 **unconditionally** — including for a missing or short header — so response time
@@ -185,7 +205,18 @@ Migrations: `e190f1dcbf2c` created both; `cc74b2080cbf` allowed rating targets;
 `bulk_resolve` only accepts `dismiss` / `delete`, silently skips non-pending
 rows, and for rating or profile targets calls `hide_reported_target(commit=False)`
 — the previous branch closed them as `content_removed` **without touching the
-content**.
+content**. Bulk `dismiss` **skips a report whose target is legally escalated**,
+the guard the single-report route already had (the checkbox is on every row), and
+bulk `delete` shares `soft_delete_itinerary`'s side effects — the author's
+notification and appeal email — which it skipped until 2026-09-28.
+
+**The flagged queue** (`/admin/flagged`) lists soft-flagged scans and uploads the
+provider never saw (`error_allowed`, shown as "Not scanned"). *Approve* clears the
+image, not the itinerary: it lowers `flagged` to `approved` only when no other
+text flag or queued image stands on it, and leaves `pending` for the sweep.
+*Remove* first hashes the object at the key and compares it with the scan's
+`image_hash`; a mismatch means the uploader has already replaced it, so nothing
+is deleted or rejected and the row is closed with a note.
 
 `sla_class`: `SLA_WARN=12h` → `sla-warn`, `SLA_LATE=24h` → `sla-late`, `None` →
 `sla-ok` (neutral, not "freshly actioned").

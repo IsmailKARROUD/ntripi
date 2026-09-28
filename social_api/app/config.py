@@ -18,6 +18,8 @@ from functools import lru_cache
 from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+from app.constants.report_reasons import REPORT_REASONS
+
 # Accepted values for TEXT_MODERATION_PROVIDER. "local" needs no network;
 # "disabled" is the dev/test default and skips every scan.
 TEXT_MODERATION_PROVIDERS = ("openai", "local", "disabled")
@@ -65,6 +67,12 @@ class Settings(BaseSettings):
     # List apex and wildcard separately — the wildcard alone does not match the apex
     # in Starlette's TrustedHostMiddleware.
     ALLOWED_HOSTS: str = "ntripi.app,*.ntripi.app"
+
+    # Header that carries the real client IP, set by the edge proxy and never by
+    # the client. X-Forwarded-For cannot serve: Cloudflare appends to a caller's
+    # copy, so its leftmost entry is caller-chosen. Empty = trust X-Forwarded-For
+    # alone (only safe where nothing sits in front of the proxy tier).
+    CLIENT_IP_HEADER: str = "cf-connecting-ip"
 
     # Base URL used to construct share links sent via the share sheet.
     # In production: SHARE_BASE_URL=https://ntripi.app
@@ -291,6 +299,19 @@ class Settings(BaseSettings):
         return self
 
     @model_validator(mode="after")
+    def _validate_sweep_deadline(self) -> "Settings":
+        # In-process, a report can wait the SLA plus one whole interval before a
+        # run sees it; past 24h that breaches the deadline the SLA exists for.
+        if (
+            self.SWEEP_IN_PROCESS
+            and self.MODERATION_SLA_HOURS * 60 + self.SWEEP_INTERVAL_MINUTES > 24 * 60
+        ):
+            raise ValueError(
+                "MODERATION_SLA_HOURS plus SWEEP_INTERVAL_MINUTES must stay within 24h"
+            )
+        return self
+
+    @model_validator(mode="after")
     def _validate_notification_retention(self) -> "Settings":
         # A cap below the read window would silently shorten it — a
         # misconfiguration that looks like working retention right up until
@@ -333,6 +354,13 @@ class Settings(BaseSettings):
             if not _ or not count.strip().isdigit() or int(count) < 1:
                 raise ValueError(
                     f"REPORT_HIDE_THRESHOLDS entry {pair!r} must be 'category:positive_int'"
+                )
+            # A typo ("harrassment:2") used to parse fine and silently disable
+            # auto-hide for the real category.
+            if name.strip() not in REPORT_REASONS:
+                raise ValueError(
+                    f"REPORT_HIDE_THRESHOLDS category {name.strip()!r} is not one of "
+                    f"{', '.join(REPORT_REASONS)}"
                 )
             thresholds[name.strip()] = int(count)
         return thresholds

@@ -23,7 +23,7 @@ Security note on follow request routes:
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy import select
+from sqlalchemy import delete, select, update
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -193,9 +193,17 @@ def unfollow_user(
         )
 
     was_accepted = follow.status == FollowStatus.accepted
-    db.delete(follow)
+    # A statement, not db.delete(): two concurrent unfollows both loaded the row,
+    # and the ORM only warns when the second DELETE matches nothing — so both
+    # decremented. The rowcount says whether THIS request removed it.
+    removed = db.execute(
+        delete(Follow)
+        .where(Follow.id == follow.id)
+        .execution_options(synchronize_session=False)
+    ).rowcount
+    db.expunge(follow)
 
-    if was_accepted:
+    if removed and was_accepted:
         bump_follow_counters(db, current_user, db.get(User, user_id), -1)
 
     db.commit()
@@ -286,8 +294,20 @@ def accept_follow_request(
             code="follow_request_already_accepted", detail="This follow request has already been accepted.",
         )
 
-    # Accept the request and update counters.
-    follow.status = FollowStatus.accepted
+    # Flip it conditionally, in SQL: two concurrent accepts (a double tap) both
+    # passed the check above, and each added a follower to both counters.
+    flipped = db.execute(
+        update(Follow)
+        .where(Follow.id == follow.id, Follow.status == FollowStatus.pending)
+        .values(status=FollowStatus.accepted)
+        .execution_options(synchronize_session=False)
+    ).rowcount
+    if not flipped:
+        raise ApiError(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            code="follow_request_already_accepted", detail="This follow request has already been accepted.",
+        )
+    db.expire(follow, ["status"])
 
     bump_follow_counters(db, db.get(User, follow.follower_id), current_user, 1)
 

@@ -219,17 +219,14 @@ class _ProfileEditFormState extends ConsumerState<ProfileEditForm> {
       if (!mounted) return;
       widget.onSaved();
     } catch (e) {
-      // Re-enable the form and surface the error. A moderation rejection shows
-      // the real backend (AWS) reason via the same extractErrorMessage path
-      // used elsewhere, so the user knows their image was refused; other
-      // failures keep the generic retry message.
+      // Re-enable the form and surface the error. extractErrorMessage maps
+      // every coded failure (a refused bio, a moderated image) and has its own
+      // generic fallback — this used to say "Could not load itineraries."
+      // for anything but an image rejection.
       if (!mounted) return;
       setState(() => _saving = false);
-      final message = apiErrorCode(e) == 'image_moderation_rejected'
-          ? extractErrorMessage(e, l10n)
-          : l10n.couldNotLoadItineraries;
       messenger?.showSnackBar(
-        SnackBar(content: Text(message)),
+        SnackBar(content: Text(extractErrorMessage(e, l10n))),
       );
     }
   }

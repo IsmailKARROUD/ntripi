@@ -26,12 +26,13 @@ code, with links to the feature that exercises each rule.
 
 ### Startup validators that **raise**
 
-Four misconfigurations refuse to boot rather than degrade silently:
+Five misconfigurations refuse to boot rather than degrade silently:
 
 | Validator | Refuses | Why |
 |---|---|---|
 | `SECRET_KEY` `Field(min_length=32)` | a key under 32 chars | a weak or placeholder signing key must never reach traffic. `openssl rand -hex 32` |
-| `_validate_text_moderation` | an unknown `TEXT_MODERATION_PROVIDER`; `openai` with no `OPENAI_API_KEY`; an unparseable `REPORT_HIDE_THRESHOLDS` | a silent downgrade to the wordlist is worse than not booting |
+| `_validate_text_moderation` | an unknown `TEXT_MODERATION_PROVIDER`; `openai` with no `OPENAI_API_KEY`; an unparseable `REPORT_HIDE_THRESHOLDS`, or one naming a category that is not in `constants/report_reasons.py` | a silent downgrade to the wordlist is worse than not booting; a typo'd category silently disabled auto-hide for the real one |
+| `_validate_sweep_deadline` | with `SWEEP_IN_PROCESS`, `MODERATION_SLA_HOURS × 60 + SWEEP_INTERVAL_MINUTES > 24 × 60` | a report can wait the SLA plus one whole interval before a run sees it — past 24h the deadline the SLA exists for is breached |
 | `_validate_notification_retention` | `NOTIFICATION_MAX_AGE_DAYS < NOTIFICATION_RETENTION_DAYS` | it would silently shorten the read window |
 | `_validate_edit_lock_windows` | `TTL <= IDLE`; `IDLE < 2 × HEARTBEAT`; `HEARTBEAT < 5` | a claim that became takeable before it read as inactive would be stolen from someone the UI still showed as editing |
 
@@ -149,6 +150,12 @@ discoverable way to learn the constraints. Logged in
   still cannot save from.
 - **409 `edit_lock_lost` and 423 `itinerary_locked` must never be collapsed** —
   one says protect unsaved input, the other says offer to wait.
+- **Compare `If-Match` as an instant (`_concurrency_token`), never as a string** —
+  Dart and Python spell the same `updated_at` differently one time in a thousand.
+- **An endpoint-set ETag is suffixed with the body hash by `ETagMiddleware`**; only
+  the part before `;` is the concurrency token.
+- **Every client surface that saves itinerary content claims the edit lock
+  first** — the owner included, and the stop page included.
 
 → [etag-concurrency.md](features/etag-concurrency.md)
 
@@ -193,8 +200,15 @@ external scheduler) **or SLA auto-hide and post-outage re-checks never run.**
 - **`privacy@ntripi.app` is the GDPR controller contact**, hardcoded in all six
   legal modules.
 - **Account deletion is a hard delete** with a documented set of `SET NULL`
-  evidence columns — see
+  evidence columns, and it erases the account's stored images too — except while
+  the account is under an open legal escalation, and except taken-down or
+  escalated itinerary covers — see
   [accounts-and-profiles.md](features/accounts-and-profiles.md).
+- **The client's HTTP cache is per account.** Keys are `<JWT sub>:<url>`
+  (`core/api/cache_key.dart`) and sign-out cleans the store; every keep-alive
+  user-scoped provider is in `auth_provider.dart`'s reset list, run on sign-in
+  and sign-out. A new user-scoped provider that is not added there leaks one
+  account's data to the next person on the device.
 - **A rating survives its author anonymised** (`user_id` SET NULL) so the trip
   keeps its score.
 - **Bug-report screenshot retention is a privacy duty, not housekeeping** — a
@@ -240,6 +254,9 @@ non-negotiables:
 
 - **`ProxyHeadersMiddleware` outermost** — without it, rate limiting throttles
   every user from the same Railway proxy IP.
+- **Never key a per-IP limit on X-Forwarded-For alone** — behind Cloudflare its
+  leftmost entry is caller-chosen. `ClientIPHeaderMiddleware` sets the client
+  from `CLIENT_IP_HEADER` (`cf-connecting-ip`), just inside ProxyHeaders.
 - **Never set `ALLOWED_HOSTS` to `*`** in production.
 - **Never use `allow_origin_regex=".*"`, `allow_methods=["*"]` or
   `allow_headers=["*"]`** in CORS — explicit lists only.
@@ -253,7 +270,8 @@ non-negotiables:
   import.
 - **Never run the container as root** — keep `USER appuser`.
 - **Register a new static mount in `app/middleware/__init__.py`'s
-  `STATIC_PREFIXES`**, not in each middleware.
+  `STATIC_PREFIXES`**, not in each middleware, and test paths with
+  `is_static_path` — a bare `startswith` matched `/appeal` as `/app`.
 
 ---
 

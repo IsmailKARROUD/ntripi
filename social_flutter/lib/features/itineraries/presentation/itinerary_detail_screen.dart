@@ -128,10 +128,21 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
   // Polls who holds the edit claim. There is no push channel, so a banner that
   // never re-asks would show a person who finished editing ten minutes ago.
   Timer? _lockPoll;
+  // The lock notifier this screen is attached to — held in a field because
+  // dispose() must not touch ref (see CLAUDE.md), and re-pointed from build()
+  // if an invalidation (sign-out) swaps the instance.
+  EditLockNotifier? _lockNotifier;
 
   @override
   void initState() {
     super.initState();
+    final lockNotifier = ref.read(editLockProvider(widget.itineraryId).notifier);
+    _lockNotifier = lockNotifier;
+    lockNotifier.attach();
+    // A claim this device already holds is an editing session in progress —
+    // the screen was rebuilt under it (router.go() after deleting a stop), so
+    // resume it rather than show read mode over a live heartbeat.
+    _editMode = ref.read(editLockProvider(widget.itineraryId)).holdsClaim;
     // Immediately, then on an interval: the first read is what makes the
     // banner correct on arrival, and the interval is only the worst case.
     unawaited(_pollLock());
@@ -144,10 +155,11 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
   @override
   void dispose() {
     _lockPoll?.cancel();
-    // The claim is NOT released here. dispose also runs when the stop form
-    // pushes over this screen is torn down by a router.go(), and dropping the
-    // claim on the way into an editor is exactly backwards. Leaving edit mode
-    // releases it; otherwise the heartbeat stops and the TTL takes care of it.
+    // Not a release: dispose also runs when a router.go() rebuilds this screen
+    // under a stop form, and dropping the claim on the way into an editor is
+    // exactly backwards. detach() hands it back only if no screen re-attaches
+    // within the grace period — before, the heartbeat simply kept running.
+    _lockNotifier?.detach();
     super.dispose();
   }
 
@@ -155,6 +167,9 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
   /// could not refresh is better than an error over something nobody asked for.
   Future<void> _pollLock() async {
     if (!mounted) return;
+    // A backgrounded app has nobody to show the banner to.
+    final lifecycle = WidgetsBinding.instance.lifecycleState;
+    if (lifecycle != null && lifecycle != AppLifecycleState.resumed) return;
     // Our own heartbeat is fresher than any poll while we hold it.
     if (ref.read(editLockProvider(widget.itineraryId)).holdsClaim) return;
     await ref.read(editLockProvider(widget.itineraryId).notifier).peek();
@@ -173,6 +188,13 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
   /// which is the honest state when no write would be accepted.
   Future<void> _enterEditMode({bool takeover = false}) async {
     final notifier = ref.read(editLockProvider(widget.itineraryId).notifier);
+    // Already ours (a screen rebuilt by router.go(), or a claim taken from the
+    // stop page): asking again only earned a 423 saying we were editing
+    // "elsewhere" — from this very device.
+    if (!takeover && ref.read(editLockProvider(widget.itineraryId)).holdsClaim) {
+      if (mounted) setState(() => _editMode = true);
+      return;
+    }
     bool claimed;
     try {
       claimed = await notifier.acquire(takeover: takeover);
@@ -211,6 +233,10 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
   // after a successful save. updateHeader mutates the provider in place, so the
   // row here rebuilds with the new text — no explicit refresh needed.
   Future<void> _editDescription(String? current) async {
+    // Reached from the read-mode long-press too, and its PATCH needs a claim —
+    // same round trip as _editRecommendedPeriod, before the user types.
+    if (!_editMode) await _enterEditMode();
+    if (!mounted || !_editMode) return;
     final l10n = AppLocalizations.of(context)!;
     await editMarkdownField(
       context,
@@ -377,6 +403,9 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
   }
 
   Future<void> _editItineraryAnnotation(ItineraryAnnotation annotation) async {
+    // The read-mode long-press lands here; without a claim the save 428s.
+    if (!_editMode) await _enterEditMode();
+    if (!mounted || !_editMode) return;
     await showAnnotationScreen(
       context,
       isEdit: true,
@@ -569,6 +598,12 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
   Widget build(BuildContext context) {
     final nt = context.nt;
     final l10n = AppLocalizations.of(context)!;
+    // An invalidation (sign-out) builds a fresh notifier; attach to that one so
+    // dispose() detaches from the instance that is actually alive.
+    final lockNotifier = ref.watch(editLockProvider(widget.itineraryId).notifier);
+    if (!identical(lockNotifier, _lockNotifier)) {
+      _lockNotifier = lockNotifier..attach();
+    }
     final itineraryAsync =
         ref.watch(itineraryDetailProvider(widget.itineraryId));
     final currentUserId = ref.watch(myProfileProvider).value?.id;
@@ -801,8 +836,11 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                         // Flip the list into edit mode first so returning from
                         // the form lands on the editable list, not read mode.
                         onLongPressEditStop: mayEdit && !_editMode
-                            ? (stop) {
-                                _enterEditMode();
+                            ? (stop) async {
+                                // Awaited: pushed at once, a refused claim still
+                                // opened a form that could only fail on Save.
+                                await _enterEditMode();
+                                if (!context.mounted || !_editMode) return;
                                 context.push(
                                   '/itineraries/${widget.itineraryId}/stops/${stop.id}/edit',
                                 );

@@ -31,6 +31,10 @@ single-use opaque tokens; none of them ever stores a raw token.
   (`auth_service.py:388`).
 - Completing a reset **revokes every refresh token** for that user
   (`auth_service.py:423`) and records the new hash in `password_history`.
+- **A reset or an in-app change retires every other outstanding reset link**
+  (`email_token_service.retire_unused`). Each forgot-password request mints its
+  own; until 2026-09-28 one left in an old email could reset the password again
+  for the rest of its 30 minutes.
 - Rate-limited **3/hour**.
 
 ### In-app change
@@ -129,8 +133,8 @@ Change-password errors all arrive as 403/400 with the generic
   set", "current password incorrect", "can't reuse a recent password" and
   "password appeared in a breach" all arrive as `auth_error`, and all four
   surface on the same screen needing different UI.
-- **`security_audit_log` is write-only.** It holds exactly two `event_type`
-  values and **nothing in `app/` reads the table** — no endpoint, no admin lane,
+- **`security_audit_log` is write-only.** It holds three `event_type` values
+  (the two password-change events and the Google-link password drop) and **nothing in `app/` reads the table** — no endpoint, no admin lane,
   no query.
 - `PWNED_CHECK_ENABLED` is absent from `.env.example`.
 

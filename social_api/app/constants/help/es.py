@@ -706,7 +706,9 @@ Solo el **propietario** puede añadir o quitar editores. Un editor no puede recl
                 kind=KIND_STEP,
                 body="""Editar exige poder ver primero. Si invitas a alguien que no puede, Ntripi pregunta si además quieres darle acceso, en vez de fallar.
 
-Decir que sí lo añade a la lista de permitidos de ese viaje y nada más. Nunca amplía la visibilidad del viaje: convertir «seguidores» en «personas concretas» dejaría fuera en silencio a todos los demás, así que eso sigue siendo una decisión que tomas de forma deliberada.""",
+Decir que sí lo añade a la lista de permitidos de ese viaje y nada más. Nunca amplía la visibilidad del viaje: convertir «seguidores» en «personas concretas» dejaría fuera en silencio a todos los demás, así que eso sigue siendo una decisión que tomas de forma deliberada.
+
+Si el viaje es solo para seguidores o solo para ti, una lista de permitidos no serviría de nada: Ntripi ofrece entonces **Cambiar visibilidad**, que abre el ajuste de quién puede ver el viaje. Elige ahí, guarda y vuelve a invitar a esa persona.""",
             ),
             Block(
                 anchor="one-at-a-time",
@@ -752,7 +754,7 @@ Recupera el viaje y guarda, o copia tu texto y pégalo cuando la otra persona ha
             "bloqueo",
         ),
         related=("share-an-itinerary-privately", "plan-alternative-options", "troubleshooting"),
-        updated="2026-09-01",
+        updated="2026-09-28",
         cta="Planifica tu próximo viaje con quienes van a hacerlo.",
     ),
     Article(
@@ -1337,7 +1339,9 @@ Las comprobaciones automáticas envían el contenido y nada más: ni identificad
                 kind=KIND_FAQ,
                 body="""En la pantalla de edición de tu perfil, en Seguridad ▸ **Eliminar cuenta**. Lo confirmas con tu contraseña, o con Google si así inicias sesión.
 
-La eliminación es permanente y se lleva tus viajes con ella. Los viajes que otras personas guardaron dejan de funcionar, ya que un marcador es un puntero y no una copia.""",
+La eliminación es permanente y se lleva tus viajes con ella. Los viajes que otras personas guardaron dejan de funcionar, ya que un marcador es un puntero y no una copia.
+
+Tu foto de perfil, tu portada y las fotos de portada de tus viajes se borran a la vez.""",
             ),
             Block(
                 anchor="requests",
@@ -1378,7 +1382,9 @@ La misma dirección cubre las solicitudes de rectificación, limitación y oposi
                 kind=KIND_FAQ,
                 body="""Usa **He olvidado mi contraseña** en la pantalla de acceso. Llega un enlace de restablecimiento por correo y es válido durante un rato corto.
 
-Si no llega nada, mira en la carpeta de spam y confirma que usas la dirección con la que te registraste. Si te registraste con Google, puede que no tengas contraseña: inicia sesión con Google.""",
+Si no llega nada, mira en la carpeta de spam y confirma que usas la dirección con la que te registraste. Si te registraste con Google, puede que no tengas contraseña: inicia sesión con Google.
+
+Cada solicitud envía un enlace nuevo. En cuanto eliges una contraseña nueva, todos los enlaces anteriores dejan de funcionar.""",
             ),
             Block(
                 anchor="verify-email",
@@ -1386,7 +1392,9 @@ Si no llega nada, mira en la carpeta de spam y confirma que usas la dirección c
                 kind=KIND_FAQ,
                 body="""Esas tres cosas necesitan un correo verificado. Busca el enlace de verificación en tu bandeja de entrada, o usa el aviso de tu perfil para enviar otro.
 
-Iniciar sesión con Google en la misma dirección también la verifica. El requisito es lo que mantiene las cuentas desechables fuera de las valoraciones y de las listas de seguidores.""",
+Iniciar sesión con Google en la misma dirección también la verifica. El requisito es lo que mantiene las cuentas desechables fuera de las valoraciones y de las listas de seguidores.
+
+Si habías puesto una contraseña en una cuenta que nunca verificaste y después inicias sesión con Google, esa contraseña se elimina y se cierran las demás sesiones: te protege si otra persona registró tu dirección antes que tú. Usa **He olvidado mi contraseña** para elegir una nueva.""",
             ),
             Block(
                 anchor="changing-password",
@@ -1439,7 +1447,7 @@ Es permanente, y se lleva tus viajes con ella. Si solo quieres desaparecer de la
             "16",
         ),
         related=("your-data-and-privacy", "troubleshooting"),
-        updated="2026-09-01",
+        updated="2026-09-28",
     ),
     Article(
         slug="report-and-block",

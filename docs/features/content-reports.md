@@ -39,8 +39,18 @@ csam:1, sexual_content:1, violence_threat:1,
 hate_speech:2, harassment:2, other:3, spam:4
 ```
 
-- **It is parsed at startup** (`config.py:290` calls the property so a typo fails
-  at boot) and a malformed entry raises.
+- **It is parsed at startup** (`config.py` calls the property so a typo fails
+  at boot): a malformed entry raises, and so does a category that is not one of
+  the canonical reasons (`constants/report_reasons.py`) — `harrassment:2` used to
+  parse fine and silently disable auto-hide for harassment.
+- **A takedown settles every pending report on its target, and a reversal
+  dismisses the rest.** `auto_hide` resolves them all (`auto_hidden`, or
+  `content_hidden` for an operator), as do `hide_itinerary` and the soft deletes;
+  unhide, restore and a granted appeal resolve what is left as `dismissed`.
+  Closing only the report that tipped the threshold left its siblings pending,
+  and ~20h later the SLA sweep re-hid content a moderator had restored. A target
+  under an open legal escalation keeps its reports — they close from the Legal
+  lane, with a note.
 - **The count drops by one (floor 1)** when the content is already flagged or a
   classifier score corroborates the reason.
 - Reporter **reputation weighting is explicitly out of scope**, with the

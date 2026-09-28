@@ -25,6 +25,10 @@ server-side; the client renders state and may be stale or hostile.
   power to delegate it. An editor **may** remove themselves.
 - **`GET /editors` is readable by editors too** — someone sharing a document
   should see who else holds a pen.
+- **Across a block in either direction the grant answers 404 `user_not_found`**
+  (`require_not_blocked_or_404`), the same body as a missing account. The 409
+  below, naming `visibility: public`, could only have meant the target had
+  blocked the owner (until 2026-09-28).
 - **Granting to someone who cannot view answers 409 `editor_cannot_view`** with
   `extra = {visibility, can_fix_with_allowlist}`. That is a question, not an
   error: the client asks the owner and re-posts with `grant_view: true`.
@@ -43,6 +47,10 @@ server-side; the client renders state and may be stale or hostile.
   It must never change `visibility` — `followers → restricted` would silently cut
   off every follower, and `only_me → anything` is a privacy decision the owner
   has to make deliberately.
+- **Removing someone from the allowlist releases their claim when it ends their
+  edit rights** (a restricted trip, where the allowlist row is what let them see
+  it) — the same reason `remove_editor` releases; before 2026-09-28 their claim
+  blocked every other editor until the TTL.
 - **Revoking also deletes that user's lock row**, in the same transaction
   (`itineraries.py:1162`) — otherwise a removed editor's claim blocks everyone
   until the TTL runs out.
@@ -74,6 +82,10 @@ server-side; the client renders state and may be stale or hostile.
   counts down against absolute timestamps; it never derives it.
 - **The GET body carries absolute timestamps and no remaining-seconds field**, so
   it stays byte-identical between polls and `ETagMiddleware` can answer 304.
+- **A lost first-claim race answers 423, not 500.** `FOR UPDATE` locks nothing
+  while no claim row exists, so two first claims could both pass the check; the
+  insert is `ON CONFLICT DO NOTHING` (`database.upsert_insert`) and the loser is
+  told who won, exactly as if it had arrived second.
 - **`takeover` defaults `false` on every displacing path.** A takeable claim, your
   own other device, and the owner's immediate reclaim all need the explicit flag,
   so a steal is always a deliberate second call the UI confirmed. `may_displace`
@@ -223,6 +235,24 @@ showed as editing.
   the detail screen being covered by the stop form. **The token is memory only** —
   any takeover rotates it, so persisting it would only create a way to resurrect
   a dead session.
+- **The claim follows the screens editing under it.** The detail screen
+  `attach()`es in `initState` and `detach()`es in `dispose` (through a notifier
+  held in a field — never `ref` in dispose). When the last screen detaches, the
+  claim is released after `kEditLockDetachGrace` (3 s) unless one re-attaches — a
+  `router.go()` that rebuilds the detail screen does, well within it. Before
+  2026-09-28 nothing stopped the heartbeat: a claim left behind by a push tap or a
+  deleted itinerary stayed "active" for as long as the app lived.
+- **A rebuilt detail screen resumes a claim it already holds** (starts in edit
+  mode), and `_enterEditMode` never re-acquires a held claim — asking again used
+  to earn a 423 saying this very device was editing "elsewhere".
+- **The heartbeat stops for good on 403 and 404.** 403 means edit rights were
+  revoked (the server checks them before the claim) and is surfaced as a lost
+  claim; 404 means the itinerary is gone. Both used to be swallowed as dropped
+  pings. The heartbeat, and the detail screen's lock poll, also skip while the app
+  is not in the foreground; a matching token past its TTL is honoured when the
+  user comes back.
+- **Sign-out releases every claim this device holds** (`releaseAllEditClaims`),
+  before the access token is discarded.
 - **`EditorsScreen`** — route `/itineraries/:id/editors`; `editorsProvider`
   (`AsyncNotifierProvider.family`).
 - **`sharedWithMeProvider`** stays a **separate provider** from
@@ -253,7 +283,22 @@ showed as editing.
 - **Any surface that pushes an editing route claims the lock first.**
   `_openStopForm` and `_openDetailsForm` do the round trip before pushing and
   abandon the push if the claim is refused — the "someone else is editing" banner
-  is the honest answer at that point, not an error after the user has typed.
+  is the honest answer at that point, not an error after the user has typed. The
+  read-mode long-presses on the description and on an itinerary-level note claim
+  the same way, and the long-press on a stop awaits the claim before pushing its
+  form (until 2026-09-28 all three could open an editor whose Save 428'd).
+- **The stop page gates edit chrome on `mayEdit`, not ownership, and claims per
+  edit.** It has no edit mode, so `_withClaim` wraps the pencil, the notes and
+  note long-presses and the leg editor: it acquires only when this device holds
+  no claim (the detail screen underneath may), says who is in the way on refusal,
+  and releases only a claim it took itself. Owner-only gating handed an editor
+  the report flag instead of the pencil.
+- **"Change visibility" in the grant dialog opens the picker.** For an `only_me`
+  or `followers` trip the dialog's confirm pops `EditorsScreenResult.openVisibility`
+  and the Edit Itinerary form opens its visibility picker; the button used to just
+  close the dialog. The results list's `Flexible` sits outside `OfflineGate`,
+  whose offline `AbsorbPointer` otherwise broke the Flex parent data and crashed
+  the dialog when the signal dropped (`test/widgets/editors_dialog_offline_test.dart`).
 - **A lock loss must never pop a route or clear a controller.** The ejected user
   is mid-edit and their unsaved text is now the only copy: `EditLockLostNotice` is
   a **persistent banner** — not a snackbar, it has to still be visible two minutes

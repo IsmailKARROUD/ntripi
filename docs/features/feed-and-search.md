@@ -41,7 +41,9 @@ our database.
 
 ### User search — `GET /users/search`
 
-- Matches `username_lower ILIKE` **OR** `display_name ILIKE`.
+- Matches `username_lower ILIKE` **OR** `display_name ILIKE`, with `%`, `_` and
+  `\` escaped so the query matches literally — `q="_"` used to match every
+  account.
 - **Blocked accounts are filtered in the query, not after** (`users.py:373`). Two
   reasons: a blocked account must be *unfindable*, not merely unopenable —
   leaving it in the results tells the blocked user the account still exists — and
@@ -92,7 +94,11 @@ page.
 ## Flutter surface
 
 - **`FeedScreen`** — route `/feed`, its own shell branch (branch 5).
-  - `feedProvider` — `AsyncNotifierProvider`, the page.
+  - `feedProvider` — `AsyncNotifierProvider`, the loaded pages. `loadMore` skips
+    ids already shown (one trip published between pages shifted every row down
+    one and repeated the last card), drops a page that belongs to a list rebuilt
+    under it by a sort change, and never throws — it runs from the scroll
+    listener.
   - `feedSortProvider` — `NotifierProvider`, the Top/Recent toggle.
   - `feedRepositoryProvider` → `FeedRepository`.
   - `FeedCard` + `OwnerAttributionRow` render each row.

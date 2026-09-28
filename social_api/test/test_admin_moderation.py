@@ -318,6 +318,50 @@ class TestBulkActions:
         assert resp.status_code == 303
         assert _itinerary_row(scenario["itinerary_id"]).deleted_at is not None
 
+    def test_bulk_dismiss_skips_a_legally_escalated_report(self, client, scenario):
+        """The single-report route refuses this; the bulk form did not, and its
+        checkbox sits on every row — a CSAM report closed from the routine queue."""
+        import uuid as _uuid
+        from app.models.legal_escalation import LegalEscalation
+
+        db = TestingSessionLocal()
+        try:
+            db.add(LegalEscalation(
+                target_type="itinerary",
+                target_id=_uuid.UUID(scenario["itinerary_id"]),
+                source="report",
+            ))
+            db.commit()
+        finally:
+            db.close()
+
+        resp = client.post(
+            "/admin/reports/bulk",
+            data={"action": "dismiss", "reason": "spam wave",
+                  "report_ids": [scenario["report_id"]]},
+            auth=ADMIN_BASIC, follow_redirects=False,
+        )
+        assert resp.status_code == 303
+        db = TestingSessionLocal()
+        try:
+            assert db.query(ContentReport).one().resolution == "pending"
+        finally:
+            db.close()
+
+    def test_bulk_delete_tells_the_author(self, client, scenario):
+        """soft_delete_itinerary notifies and emails an appeal link; the bulk
+        delete did neither, so the author was never told."""
+        client.post(
+            "/admin/reports/bulk",
+            data={"action": "delete", "reason": "coordinated abuse",
+                  "report_ids": [scenario["report_id"]]},
+            auth=ADMIN_BASIC, follow_redirects=False,
+        )
+        feed = client.get(
+            "/notifications", headers=auth_headers(scenario["author"]["access_token"])
+        ).json()["notifications"]
+        assert [(n["type"], n["subtype"]) for n in feed] == [("moderation_action", "delete")]
+
     def test_bulk_requires_a_reason(self, client, scenario):
         resp = client.post(
             "/admin/reports/bulk",
@@ -370,6 +414,93 @@ def _flagged_row(log_id: str) -> ImageModerationLog:
 
 
 class TestFlaggedQueue:
+
+    def test_unscanned_uploads_are_in_the_queue(self, client, scenario):
+        """An upload during a provider outage is stored as error_allowed and the
+        itinerary marked pending "for later review" — which nothing performed."""
+        import uuid as _uuid
+
+        db = TestingSessionLocal()
+        try:
+            db.add(ImageModerationLog(
+                image_hash="b" * 64, target_kind="itinerary_cover",
+                target_itinerary_id=_uuid.UUID(scenario["itinerary_id"]),
+                action="error_allowed", labels=[],
+            ))
+            db.commit()
+        finally:
+            db.close()
+        resp = client.get("/admin/flagged", auth=ADMIN_BASIC)
+        assert "Not scanned" in resp.text
+
+    def test_approving_an_image_keeps_a_moderators_reject(self, client, scenario):
+        """Clearing the image used to assign "approved" to the whole itinerary,
+        undoing a text flag or an earlier reject."""
+        import uuid as _uuid
+
+        db = TestingSessionLocal()
+        try:
+            db.get(Itinerary, _uuid.UUID(scenario["itinerary_id"])).moderation_status = "rejected"
+            db.commit()
+        finally:
+            db.close()
+        log_id = _seed_flagged("itinerary_cover", itinerary_id=scenario["itinerary_id"])
+        client.post(
+            f"/admin/flagged/{log_id}/action",
+            data={"action": "approve", "reason": "image is fine"},
+            auth=ADMIN_BASIC, follow_redirects=False,
+        )
+        assert _flagged_row(log_id).reviewed_at is not None
+        assert _itinerary_row(scenario["itinerary_id"]).moderation_status == "rejected"
+
+    def test_remove_spares_a_replacement_uploaded_since(self, client, scenario):
+        """Keys are fixed per entity, so the flagged object's path may now hold
+        the user's newer, separately scanned image."""
+        import asyncio
+        from app.storage.factory import storage
+
+        key = f"itineraries/{scenario['itinerary_id']}.jpg"
+        asyncio.run(storage().save(key, _make_jpeg(), "image/jpeg"))
+        log_id = _seed_flagged("itinerary_cover", itinerary_id=scenario["itinerary_id"])
+        resp = client.post(
+            f"/admin/flagged/{log_id}/action",
+            data={"action": "remove", "reason": "explicit"},
+            auth=ADMIN_BASIC, follow_redirects=False,
+        )
+        assert "already+replaced" in resp.headers["location"] or "already%20replaced" in resp.headers["location"]
+        assert asyncio.run(storage().read(key)) is not None
+        assert _itinerary_row(scenario["itinerary_id"]).moderation_status != "rejected"
+        assert _flagged_row(log_id).reviewed_at is not None
+        asyncio.run(storage().delete(key))
+
+    def test_retention_keeps_unreviewed_queue_rows(self, client, scenario):
+        import uuid as _uuid
+        from datetime import datetime, timedelta, timezone
+        from types import SimpleNamespace
+        from app.services import moderation_service
+
+        old = datetime.now(timezone.utc) - timedelta(days=120)
+        queued = _seed_flagged("itinerary_cover", itinerary_id=scenario["itinerary_id"])
+        reviewed = _seed_flagged("itinerary_cover", itinerary_id=scenario["itinerary_id"])
+        db = TestingSessionLocal()
+        try:
+            for log_id in (queued, reviewed):
+                db.get(ImageModerationLog, _uuid.UUID(log_id)).created_at = old
+            db.get(ImageModerationLog, _uuid.UUID(reviewed)).reviewed_at = old
+            db.commit()
+            ctx = SimpleNamespace(
+                target_kind="avatar", itinerary_id=None,
+                uploader=SimpleNamespace(id=_uuid.UUID(scenario["author"]["user_id"])),
+            )
+            # Any new scan runs the opportunistic purge.
+            moderation_service._log_decision(
+                db, image_hash="c" * 64, ctx=ctx, action="approved", labels=[],
+            )
+            db.commit()
+        finally:
+            db.close()
+        assert _flagged_row(queued) is not None
+        assert _flagged_row(reviewed) is None
 
     def test_queue_lists_only_unreviewed_flags(self, client, scenario):
         _seed_flagged("itinerary_cover", itinerary_id=scenario["itinerary_id"])

@@ -149,7 +149,10 @@ abstract class FollowListNotifier extends AsyncNotifier<List<FollowerListItem>> 
       if (!ref.mounted) return;
       _offset += next.length;
       _hasMore = next.length == kFollowListPageSize;
-      state = AsyncData([...current, ...next]);
+      // A follow arriving between pages shifts every row down one, so the
+      // next page repeats the last one — skip ids already shown.
+      final seen = {for (final user in current) user.id};
+      state = AsyncData([...current, ...next.where((user) => !seen.contains(user.id))]);
     } catch (_) {
       // Called unawaited from a scroll listener: keep the rows already shown,
       // and the next scroll to the bottom retries.

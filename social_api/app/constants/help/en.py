@@ -900,7 +900,7 @@ ARTICLES: tuple[Article, ...] = (
         ),
         category="building",
         schema=SCHEMA_HOWTO,
-        updated="2026-09-01",
+        updated="2026-09-28",
         keywords=(
             "collaborate", "collaboration", "together", "shared", "editor",
             "editors", "invite", "group", "friends", "family", "co-edit",
@@ -941,7 +941,11 @@ ARTICLES: tuple[Article, ...] = (
                     "Saying yes adds them to that trip's allowlist and nothing "
                     "else. It never widens the trip's visibility — turning "
                     "\"followers\" into \"specific people\" would silently cut off "
-                    "everyone else, so that stays a decision you make deliberately."
+                    "everyone else, so that stays a decision you make deliberately.\n\n"
+                    "If the trip is set to followers or to only you, an allowlist "
+                    "cannot help, so Ntripi offers **Change visibility** instead, "
+                    "which opens the setting for who can see the trip. Choose there, "
+                    "save, and invite them again."
                 ),
             ),
             Block(
@@ -1803,7 +1807,7 @@ ARTICLES: tuple[Article, ...] = (
         ),
         category="account",
         schema=SCHEMA_FAQ,
-        updated="2026-09-01",
+        updated="2026-09-28",
         keywords=(
             "login", "log in", "sign in", "password", "forgot password", "reset",
             "google", "apple", "verify", "verification", "email", "locked out",
@@ -1826,7 +1830,9 @@ ARTICLES: tuple[Article, ...] = (
                     "If no mail arrives, check the spam folder and confirm you are "
                     "using the address you signed up with. If you signed up with "
                     "Google, you may have no password at all — sign in with Google "
-                    "instead."
+                    "instead.\n\n"
+                    "Each request sends a fresh link. Once you have set a new "
+                    "password, every older link stops working."
                 ),
             ),
             Block(
@@ -1839,7 +1845,12 @@ ARTICLES: tuple[Article, ...] = (
                     "to send another.\n\n"
                     "Signing in with Google on the same address also verifies it. "
                     "The requirement is what keeps throwaway accounts out of the "
-                    "ratings and out of people's followers."
+                    "ratings and out of people's followers.\n\n"
+                    "If you set a password on an account you never verified and "
+                    "then sign in with Google, that password is removed and your "
+                    "other sessions are signed out — it protects you if someone else "
+                    "registered your address first. Use **Forgot password** to set "
+                    "a new one."
                 ),
             ),
             Block(
@@ -1884,7 +1895,8 @@ ARTICLES: tuple[Article, ...] = (
                 body=(
                     "Profile ▸ edit ▸ **Security ▸ Delete account**, confirmed with "
                     "your password or with Google.\n\n"
-                    "It is permanent, and it takes your trips with it. If you only "
+                    "It is permanent, and it takes your trips — and your profile "
+                    "photo, cover and trip covers — with it. If you only "
                     "want to disappear from view, setting your trips to [only "
                     "me](/help/share-an-itinerary-privately) and making your account "
                     "private is reversible where deletion is not."

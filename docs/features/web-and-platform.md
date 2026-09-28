@@ -21,23 +21,31 @@ the whole application sits inside.
 | Code order (first added = innermost) | Runtime request order (outermost first) |
 |---|---|
 | `LanguageCookieMiddleware` | `ProxyHeadersMiddleware` |
-| `ETagMiddleware` | `TrustedHostMiddleware` |
-| `CORSMiddleware` | `ContentSizeLimitMiddleware` |
-| `SecurityHeadersMiddleware` | `SecurityHeadersMiddleware` |
-| `ContentSizeLimitMiddleware` | `CORSMiddleware` |
-| `TrustedHostMiddleware` | `ETagMiddleware` |
+| `ETagMiddleware` | `ClientIPHeaderMiddleware` |
+| `CORSMiddleware` | `TrustedHostMiddleware` |
+| `SecurityHeadersMiddleware` | `ContentSizeLimitMiddleware` |
+| `ContentSizeLimitMiddleware` | `SecurityHeadersMiddleware` |
+| `TrustedHostMiddleware` | `CORSMiddleware` |
+| `ClientIPHeaderMiddleware` | `ETagMiddleware` |
 | `ProxyHeadersMiddleware` | `LanguageCookieMiddleware` → handlers |
 
-> **Note:** `CLAUDE.md`'s table omits `LanguageCookieMiddleware`, which
-> `main.py:211` adds **first** and which is therefore the innermost layer. It
-> touches only `text/html` responses, so it does not affect the security
-> ordering — but the runtime order has seven layers, not six.
+`LanguageCookieMiddleware` is added **first** and is therefore the innermost
+layer. It touches only `text/html` responses, so it does not affect the security
+ordering.
 
-- **`ProxyHeadersMiddleware` must be outermost** — it rewrites
-  `X-Forwarded-For` into `request.client.host` so rate limiting (`slowapi`) and
-  `TrustedHostMiddleware` see the real client IP, not Railway's internal proxy IP.
-  **`trusted_hosts="*"` is safe** because Railway does not expose the container to
-  the internet directly.
+- **`ProxyHeadersMiddleware` is outermost** — it rewrites `X-Forwarded-Proto`
+  into the scheme (HSTS needs it) and `X-Forwarded-For` into
+  `request.client.host`. With `trusted_hosts="*"` uvicorn 0.41 takes the
+  **leftmost** X-Forwarded-For entry, and Cloudflare appends to a client-supplied
+  header rather than replacing it — so on its own that value is caller-chosen.
+- **`ClientIPHeaderMiddleware` (`app/middleware/client_ip.py`) has the last word
+  on the client IP**, which every `slowapi` limit keys on. It sets
+  `request.client` from `CLIENT_IP_HEADER` (default `cf-connecting-ip`), a header
+  Cloudflare overwrites; absent or unparseable, the X-Forwarded-For answer stands
+  (local dev). Until 2026-09-28 any caller could forge its IP and walk past the
+  login, register, forgot-password, report and appeal limits. A request that
+  reaches Railway directly, bypassing Cloudflare, can still forge either header —
+  closing that is edge configuration. See [decisions.md](../decisions.md).
 - **`TrustedHostMiddleware`** reads `ALLOWED_HOSTS` (comma-separated). **The apex
   domain and the wildcard must both be listed separately**
   (`ntripi.app,*.ntripi.app`) — Starlette's wildcard does not match the bare
@@ -53,7 +61,9 @@ the whole application sits inside.
     a JSON API.
   - **HSTS carries no `includeSubDomains`** — Cloudflare and `*.r2.dev` are not
     fully ours.
-  - It skips `STATIC_PREFIXES`.
+  - It skips `STATIC_PREFIXES`, matched on a segment boundary
+    (`is_static_path`) — a bare `startswith("/app")` also skipped `/appeal/…`
+    and `/appeals/…`, leaving the public appeal form frameable until 2026-09-28.
 - **`CORSMiddleware` uses explicit method and header lists, never `["*"]`.**
   Methods `GET POST PATCH DELETE OPTIONS`; headers `Content-Type`,
   `Authorization`, `If-Match`, `If-None-Match`, **`X-Edit-Lock`** — dropping the

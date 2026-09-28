@@ -11,7 +11,7 @@ from __future__ import annotations
 import uuid
 from datetime import datetime, timedelta, timezone
 
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.orm import Session
 
 from app.models.email_token import EmailToken
@@ -63,3 +63,22 @@ def consume(db: Session, raw_token: str, purpose: str) -> uuid.UUID:
 
     row.used_at = datetime.now(timezone.utc)
     return row.user_id
+
+
+def retire_unused(db: Session, user_id: uuid.UUID, purpose: str) -> None:
+    """Stamp every still-unused token of `purpose` for this user as used.
+
+    A password reset or change must retire the OTHER reset links too — each
+    forgot-password request mints its own, and one left in an old email would
+    otherwise still reset the password for the rest of its 30 minutes. The
+    caller commits.
+    """
+    db.execute(
+        update(EmailToken)
+        .where(
+            EmailToken.user_id == user_id,
+            EmailToken.purpose == purpose,
+            EmailToken.used_at.is_(None),
+        )
+        .values(used_at=datetime.now(timezone.utc))
+    )

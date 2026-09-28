@@ -235,6 +235,46 @@ class TestAccountDeletion:
         assert body["rating_count"] == 2
         assert abs(body["rating_avg"] - 4.0) < 0.01
 
+    def test_delete_erases_the_users_images_but_not_evidence(self, client):
+        """Public URLs outlive the rows: a "permanently deleted" account's photos
+        stayed reachable. A cover a moderator took down is kept as evidence."""
+        import asyncio
+        import io
+        import uuid as _uuid
+        from PIL import Image
+        from conftest import TestingSessionLocal
+        from app.models.itinerary import Itinerary
+        from app.storage.factory import storage
+
+        def jpeg():
+            buf = io.BytesIO()
+            Image.new("RGB", (800, 800), color=(10, 120, 90)).save(buf, format="JPEG")
+            return buf.getvalue()
+
+        alice = register_ok(client, "alice", "alice@x.com")
+        hdrs = auth_headers(alice["access_token"])
+        assert client.post("/users/me/avatar", files={"file": ("a.jpg", jpeg(), "image/jpeg")},
+                           headers=hdrs).status_code == 200
+        kept, gone = create_itinerary(client, alice["access_token"]), create_itinerary(client, alice["access_token"])
+        for itin in (kept["id"], gone["id"]):
+            r = client.post(f"/itineraries/{itin}/image",
+                            files={"file": ("c.jpg", jpeg(), "image/jpeg")}, headers=hdrs)
+            assert r.status_code == 200, r.text
+        db = TestingSessionLocal()
+        try:
+            db.get(Itinerary, _uuid.UUID(kept["id"])).moderation_status = "rejected"
+            db.commit()
+        finally:
+            db.close()
+
+        assert delete_account(client, alice["access_token"], "test1234").status_code == 204
+
+        read = lambda key: asyncio.run(storage().read(key))  # noqa: E731
+        assert read(f"avatars/{alice['user_id']}.jpg") is None
+        assert read(f"itineraries/{gone['id']}.jpg") is None
+        assert read(f"itineraries/{kept['id']}.jpg") is not None
+        asyncio.run(storage().delete(f"itineraries/{kept['id']}.jpg"))
+
     def test_deleted_user_cannot_login(self, client):
         alice = register_ok(client, "alice", "alice@x.com")
         delete_account(client, alice["access_token"], "test1234")

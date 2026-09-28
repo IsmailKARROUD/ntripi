@@ -190,9 +190,21 @@ class _Feed extends ConsumerWidget {
     // Optimistic while the stream seeds — never falsely lock the UI.
     final online = ref.watch(isOnlineProvider).value ?? true;
 
+    final notifier = ref.watch(notificationsProvider.notifier);
+
     return RefreshIndicator(
-      onRefresh: () => ref.read(notificationsProvider.notifier).refresh(),
-      child: ListView(
+      onRefresh: () => notifier.refresh(),
+      child: NotificationListener<ScrollNotification>(
+        // Older rows are paged in as the list nears its end — the feed used to
+        // stop at the first page with no way to reach the rest.
+        onNotification: (scroll) {
+          if (scroll.metrics.axis == Axis.vertical &&
+              scroll.metrics.extentAfter < 400) {
+            unawaited(notifier.loadMore());
+          }
+          return false;
+        },
+        child: ListView(
         padding: const EdgeInsets.only(top: 16, bottom: 80),
         children: [
           SectionLabel(
@@ -222,9 +234,15 @@ class _Feed extends ConsumerWidget {
               ),
             ],
           ),
+          if (notifier.hasMore)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 20),
+              child: Center(child: NTripiRingLoader(size: 36)),
+            ),
           const SizedBox(height: 8),
           _ClearAllButton(enabled: notifications.isNotEmpty),
         ],
+      ),
       ),
     );
   }
@@ -258,14 +276,17 @@ class _Feed extends ConsumerWidget {
   /// Shared by the swipe and the ✕. Nothing is sent yet — dismiss() only queues
   /// the DELETE, which is what makes UNDO real rather than a second write.
   void _delete(BuildContext context, WidgetRef ref, AppNotification n) {
-    if (!ref.read(notificationsProvider.notifier).dismiss(n.id)) return;
+    // Captured now: dismissing the last row swaps this widget for the empty
+    // view, and a ref read from the undo callback then threw on an unmounted
+    // widget — UNDO silently did nothing. The notifier is keep-alive.
+    final notifier = ref.read(notificationsProvider.notifier);
+    if (!notifier.dismiss(n.id)) return;
     showUndoableActionSnackbar(
       context: context,
       // Same constant as the queued timer, or UNDO outlives its own window.
       duration: kNotificationUndoWindow,
       message: AppLocalizations.of(context)!.notificationDeleted,
-      onUndo: () async =>
-          ref.read(notificationsProvider.notifier).undoDismiss(n.id),
+      onUndo: () async => notifier.undoDismiss(n.id),
     );
   }
 }

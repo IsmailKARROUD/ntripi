@@ -188,6 +188,7 @@ class ItineraryDetailNotifier extends AsyncNotifier<Itinerary> {
     final created = await ref
         .read(itineraryRepositoryProvider)
         .addStop(arg, data, etag: _etag, lockToken: _lockToken);
+    _listsChanged();
     await refresh();
     return created;
   }
@@ -197,7 +198,17 @@ class ItineraryDetailNotifier extends AsyncNotifier<Itinerary> {
     await ref
         .read(itineraryRepositoryProvider)
         .updateStop(arg, stopId, data, etag: _etag, lockToken: _lockToken);
+    _listsChanged();
     await refresh();
+  }
+
+  /// The list rows show this trip's title, cover, stop count and totals, and
+  /// both lists are keep-alive — without this a rename or a new stop stayed
+  /// invisible in the Itineraries tab until a manual pull.
+  void _listsChanged() {
+    if (!ref.mounted) return;
+    ref.invalidate(myItinerariesProvider);
+    ref.invalidate(sharedWithMeProvider);
   }
 
   /// Commit a batch reorder in one server transaction.
@@ -262,6 +273,7 @@ class ItineraryDetailNotifier extends AsyncNotifier<Itinerary> {
     await ref
         .read(itineraryRepositoryProvider)
         .deleteStop(arg, stopId, etag: _etag, lockToken: _lockToken);
+    _listsChanged();
     await refresh();
   }
 
@@ -271,6 +283,7 @@ class ItineraryDetailNotifier extends AsyncNotifier<Itinerary> {
         .read(itineraryRepositoryProvider)
         .updateItinerary(arg, data, etag: _etag, lockToken: _lockToken);
     if (!ref.mounted) return updated; // disposed mid-request (logout)
+    _listsChanged();
     state.whenData((current) {
       // The PATCH response is an ItinerarySummary, which omits `description` and
       // the recommended-period fields alike, so `updated` is always null for
@@ -552,6 +565,9 @@ class MyRatingNotifier extends AsyncNotifier<MyRating?> {
         .submitRating(arg, rating);
     if (!ref.mounted) return; // disposed mid-request (logout)
     state = AsyncData(saved);
+    // The ratings page is keep-alive too: rating from it left its list,
+    // averages and histogram without the review just written.
+    ref.invalidate(ratingsPageProvider(arg));
     await ref.read(itineraryDetailProvider(arg).notifier).refresh();
   }
 
@@ -559,6 +575,7 @@ class MyRatingNotifier extends AsyncNotifier<MyRating?> {
     await ref.read(itineraryRepositoryProvider).deleteMyRating(arg);
     if (!ref.mounted) return; // disposed mid-request (logout)
     state = const AsyncData(null);
+    ref.invalidate(ratingsPageProvider(arg));
     await ref.read(itineraryDetailProvider(arg).notifier).refresh();
   }
 }

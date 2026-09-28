@@ -29,7 +29,7 @@ from __future__ import annotations
 import logging
 from datetime import datetime, timedelta, timezone
 
-from sqlalchemy import delete, select, text
+from sqlalchemy import Connection, delete, select, text
 from sqlalchemy.orm import Session
 
 from app.models.content_report import ContentReport
@@ -40,7 +40,7 @@ from app.models.text_moderation_cache import TextModerationCache
 from app.models.text_moderation_decision import TextModerationDecision
 from app.models.user import User
 from app.services import (
-    bug_report_service, edit_lock_service, moderation_actions,
+    admin_service, bug_report_service, edit_lock_service, moderation_actions,
     notification_service, text_moderation_service,
 )
 from app.services.moderation_email_service import build_reason, send_auto_action_email
@@ -63,7 +63,8 @@ def run_moderation_sweep(db: Session, settings) -> dict:
     Skips immediately if another run holds the lock — the next scheduled tick
     will pick the work up, which is preferable to two runs racing.
     """
-    if not _acquire_lock(db):
+    held, lock_conn = _acquire_lock(db)
+    if not held:
         logger.info("moderation sweep skipped — another run holds the lock")
         return {"skipped": "locked"}
 
@@ -97,7 +98,7 @@ def run_moderation_sweep(db: Session, settings) -> dict:
         db.rollback()
         raise
     finally:
-        _release_lock(db)
+        _release_lock(lock_conn)
 
     logger.info("moderation sweep finished: %s", counters)
     return counters
@@ -165,9 +166,31 @@ def _enforce_sla(db: Session, settings, counters: dict, notifications: list) -> 
 # 2. Post-outage re-check
 # ---------------------------------------------------------------------------
 
-# Which text belongs to each target type — the same fields the write path scans.
+# Which text belongs to each target type — every field the write paths scan.
 def _itinerary_fields(row: Itinerary) -> dict:
-    return {"title": row.title, "description": row.description}
+    """The header AND everything that rolls up to the itinerary's status. A stop
+    note or a leg written during an outage makes the itinerary 'pending' just as
+    a title does; re-scanning only the header approved that text unread."""
+    fields = {
+        "title": row.title,
+        "description": row.description,
+        "recommended_period_note": row.recommended_period_note,
+    }
+    # Sorted, so the joined document (and its cache key) is stable across runs.
+    for stop in sorted(row.stops, key=lambda s: str(s.id)):
+        fields[f"stop:{stop.id}:place_name"] = stop.place_name
+        fields[f"stop:{stop.id}:place_address"] = stop.place_address
+        fields[f"stop:{stop.id}:notes"] = stop.notes
+        for note in sorted(stop.annotations, key=lambda a: str(a.id)):
+            fields[f"annotation:{note.id}"] = note.content
+    for note in sorted(row.annotations, key=lambda a: str(a.id)):
+        fields[f"itinerary_annotation:{note.id}"] = note.content
+    for segment in sorted(row.segments, key=lambda s: str(s.id)):
+        for leg in sorted(segment.legs, key=lambda leg: str(leg.id)):
+            fields[f"leg:{leg.id}:line"] = leg.line
+            fields[f"leg:{leg.id}:direction"] = leg.direction
+            fields[f"leg:{leg.id}:notes"] = leg.notes
+    return fields
 
 
 def _rating_fields(row: ItineraryRating) -> dict:
@@ -175,7 +198,8 @@ def _rating_fields(row: ItineraryRating) -> dict:
 
 
 def _user_fields(row: User) -> dict:
-    return {"display_name": row.display_name, "bio": row.bio}
+    # username too: registration scans it, so an outage there left it unscanned.
+    return {"username": row.username, "display_name": row.display_name, "bio": row.bio}
 
 
 _RECHECK_SOURCES = (
@@ -234,6 +258,16 @@ def _recheck_pending(db: Session, settings, counters: dict, notifications: list)
                     notifications, status="hidden",
                     escalate_decision_id=ctx.decision_id,
                 )
+                continue
+
+            # An upload the image provider never saw is still unreviewed: clean
+            # text alone must not approve the itinerary that carries it.
+            if (
+                ctx.status == "approved"
+                and target_type == moderation_actions.TARGET_ITINERARY
+                and admin_service.has_queued_image(db, row.id)
+            ):
+                counters["still_pending"] += 1
                 continue
 
             # 'approved' or 'flagged' — the re-check produced a real verdict, so
@@ -336,24 +370,46 @@ def _is_postgres(db: Session) -> bool:
     return db.get_bind().dialect.name == "postgresql"
 
 
-def _acquire_lock(db: Session) -> bool:
-    """Session-scoped advisory lock. SQLite (tests, local dev) has no equivalent
-    and is single-process anyway, so the lock is skipped there."""
+def _acquire_lock(db: Session) -> tuple[bool, Connection | None]:
+    """Take the sweep lock on a connection of its own. Returns (held, conn).
+
+    An advisory lock belongs to one physical connection, and the sweep's session
+    hands its connection back to the pool at every commit — so the unlock used to
+    run on whichever connection came next, the lock stayed held by an idle pooled
+    one, and most later runs answered skipped/locked while SLA hides stopped. A
+    dedicated connection held for the whole run keeps take and release together.
+
+    SQLite (tests, local dev) has no equivalent and is single-process anyway, so
+    the lock is skipped there.
+    """
     if not _is_postgres(db):
-        return True
-    return bool(
-        db.execute(
+        return True, None
+    conn = db.get_bind().connect()
+    try:
+        held = bool(conn.execute(
             text("SELECT pg_try_advisory_lock(:key)"), {"key": SWEEP_LOCK_KEY}
-        ).scalar()
-    )
+        ).scalar())
+        # Ends the implicit transaction only; a session-level lock survives it.
+        conn.commit()
+    except Exception:
+        conn.close()
+        raise
+    if not held:
+        conn.close()
+        return False, None
+    return True, conn
 
 
-def _release_lock(db: Session) -> None:
-    if not _is_postgres(db):
+def _release_lock(conn: Connection | None) -> None:
+    if conn is None:
         return
     try:
-        db.execute(text("SELECT pg_advisory_unlock(:key)"), {"key": SWEEP_LOCK_KEY})
-        db.commit()
+        conn.execute(text("SELECT pg_advisory_unlock(:key)"), {"key": SWEEP_LOCK_KEY})
+        conn.commit()
     except Exception:
-        # The lock is session-scoped, so a dropped connection releases it anyway.
         logger.exception("failed to release the moderation sweep lock")
+        # Discarding the physical connection is what releases the lock for sure;
+        # returning it to the pool would leave it held by an idle connection.
+        conn.invalidate()
+    finally:
+        conn.close()

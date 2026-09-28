@@ -145,6 +145,11 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
   // Annotations collected before the stop is created (create mode only)
   final List<_PendingAnnotation> _pendingAnnotations = [];
 
+  // Set once a create-mode Save has created the stop. If a queued annotation
+  // then fails, the form stays open; Save again must finish THIS stop rather
+  // than create a second one (and re-post the annotations that already landed).
+  Stop? _createdStop;
+
   // false while showing read-only view; flips to true when owner taps edit
   bool _isEditing = false;
 
@@ -633,7 +638,7 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
 
-    if (!widget.isEditMode) {
+    if (!widget.isEditMode && _createdStop == null) {
       final duplicate = _findDuplicate();
       if (duplicate != null) {
         final l10n = AppLocalizations.of(context)!;
@@ -706,16 +711,35 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
       if (widget.isEditMode) {
         await notifier.updateStop(widget.stopId!, data);
       } else {
-        // Use the created stop's real id — a top/mid insert is not last in
-        // rank order, so guessing stops.lastOrNull attached annotations to a
-        // pre-existing stop.
-        final newStop = await notifier.addStop(data);
-        // Submit any annotations queued before the stop existed.
-        for (final pending in _pendingAnnotations) {
+        final created = _createdStop;
+        final Stop newStop;
+        if (created == null) {
+          // Use the created stop's real id — a top/mid insert is not last in
+          // rank order, so guessing stops.lastOrNull attached annotations to a
+          // pre-existing stop.
+          newStop = await notifier.addStop(data);
+          _createdStop = newStop;
+        } else {
+          // A retry after a failed annotation: the stop exists, so save any
+          // field edits onto it. The placement keys belong to creation only —
+          // on a PATCH, track_id means "move".
+          newStop = created;
+          await notifier.updateStop(newStop.id, {
+            for (final entry in data.entries)
+              if (!const {
+                'track_id', 'after_stop_id', 'after_track_id', 'before_track_id',
+              }.contains(entry.key))
+                entry.key: entry.value,
+          });
+        }
+        // Submit any annotations queued before the stop existed, dropping each
+        // from the queue as it lands so a retry posts only what is left.
+        for (final pending in List.of(_pendingAnnotations)) {
           await notifier.addAnnotation(newStop.id, {
             'type': pending.type.name,
             'content': pending.content,
           });
+          if (mounted) setState(() => _pendingAnnotations.remove(pending));
         }
       }
 

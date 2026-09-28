@@ -14,6 +14,7 @@
 
 import 'package:dio/dio.dart';
 import 'package:dio_cache_interceptor/dio_cache_interceptor.dart';
+import 'package:social_flutter/core/api/cache_key.dart';
 
 /// Status codes whose cached body must be destroyed, not merely bypassed.
 const kEvictCacheFor = [403, 404, 410];
@@ -32,9 +33,7 @@ class CacheEvictInterceptor extends Interceptor {
         kEvictCacheFor.contains(status)) {
       try {
         // Must match the keyBuilder DioCacheInterceptor is configured with.
-        await store.delete(CacheOptions.defaultCacheKeyBuilder(
-          err.requestOptions,
-        ));
+        await store.delete(ntripiCacheKey(err.requestOptions));
       } catch (_) {
         // A store failure must not turn a 404 into an unhandled error — the
         // response is already correct, this is only cleanup.

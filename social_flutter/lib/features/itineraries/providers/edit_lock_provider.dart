@@ -20,6 +20,8 @@
 
 import 'dart:async';
 
+import 'package:dio/dio.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:social_flutter/core/connectivity/connectivity_service.dart';
 import 'package:social_flutter/features/itineraries/data/itinerary_repository.dart';
@@ -31,6 +33,36 @@ import 'package:social_flutter/features/itineraries/domain/edit_lock.dart';
 /// authority. The authority is the save, which fails cleanly regardless of how
 /// stale this happens to be.
 const kEditLockPollInterval = Duration(seconds: 30);
+
+/// How long a claim outlives the last screen editing under it. Long enough for
+/// a router.go() that rebuilds the detail screen to re-attach; short enough
+/// that a claim nobody is looking at stops blocking other editors at once.
+const kEditLockDetachGrace = Duration(seconds: 3);
+
+/// Itineraries this device holds a claim on, so sign-out can hand every one
+/// back while it still has an access token to do it with.
+final Set<String> _heldClaims = {};
+
+/// Release every claim this device holds. Called by sign-out before the tokens
+/// go; never throws.
+Future<void> releaseAllEditClaims(Ref ref) async {
+  for (final id in _heldClaims.toList()) {
+    await ref.read(editLockProvider(id).notifier).release();
+  }
+}
+
+/// Whether the app is in front of the user. A heartbeat from the background
+/// kept a claim "active" for hours after the user walked away; the server still
+/// honours a matching token past its TTL when they come back. Unknown (no
+/// binding, as in a plain unit test) reads as foreground.
+bool _appInForeground() {
+  try {
+    final state = WidgetsBinding.instance.lifecycleState;
+    return state == null || state == AppLifecycleState.resumed;
+  } catch (_) {
+    return true;
+  }
+}
 
 /// Why the client is not currently able to save.
 enum EditSessionProblem {
@@ -97,13 +129,39 @@ class EditLockNotifier extends Notifier<EditSession> {
   final String arg;
 
   Timer? _heartbeat;
+  Timer? _releaseTimer;
+  int _attached = 0;
 
   @override
   EditSession build() {
     // The notifier outlives every screen that uses it, so the timer has to be
     // torn down here rather than in any one widget's dispose.
-    ref.onDispose(_stopHeartbeat);
+    ref.onDispose(() {
+      _stopHeartbeat();
+      _releaseTimer?.cancel();
+      _heldClaims.remove(arg);
+    });
     return const EditSession();
+  }
+
+  /// A screen editing under this claim is on screen. Paired with [detach].
+  void attach() {
+    _attached++;
+    _releaseTimer?.cancel();
+    _releaseTimer = null;
+  }
+
+  /// The screen is gone. When the last one leaves, the claim is handed back
+  /// after [kEditLockDetachGrace] — nothing used to stop the heartbeat, so a
+  /// claim left behind by a router.go() or a push tap stayed "active" for as
+  /// long as the app lived and no other editor could take it.
+  void detach() {
+    if (_attached > 0) _attached--;
+    if (_attached > 0 || !state.holdsClaim) return;
+    _releaseTimer?.cancel();
+    _releaseTimer = Timer(kEditLockDetachGrace, () {
+      if (_attached == 0 && ref.mounted) unawaited(release());
+    });
   }
 
   ItineraryRepository get _repo => ref.read(itineraryRepositoryProvider);
@@ -119,6 +177,7 @@ class EditLockNotifier extends Notifier<EditSession> {
       final claim = await _repo.acquireLock(arg, takeover: takeover);
       if (!ref.mounted) return false;
       state = EditSession(token: claim.token, lock: claim.lock);
+      _heldClaims.add(arg);
       _startHeartbeat(claim.heartbeatInterval);
       return true;
     } on ItineraryLockedException catch (e) {
@@ -142,6 +201,8 @@ class EditLockNotifier extends Notifier<EditSession> {
   Future<void> release() async {
     final token = state.token;
     _stopHeartbeat();
+    _releaseTimer?.cancel();
+    _heldClaims.remove(arg);
     if (ref.mounted) state = const EditSession();
     if (token == null) return;
     try {
@@ -177,6 +238,7 @@ class EditLockNotifier extends Notifier<EditSession> {
   /// having to know a provider exists.
   void markLost(EditLock? holder) {
     _stopHeartbeat();
+    _heldClaims.remove(arg);
     if (!ref.mounted) return;
     state = EditSession(lock: holder ?? state.lock, problem: EditSessionProblem.lost);
   }
@@ -202,6 +264,7 @@ class EditLockNotifier extends Notifier<EditSession> {
     // claim decays and the user finds out from the save, which is the same
     // answer this ping would have given.
     if (!isOnlineNowRef(ref)) return;
+    if (!_appInForeground()) return;
 
     try {
       final lock = await _repo.heartbeatLock(arg, token);
@@ -211,6 +274,18 @@ class EditLockNotifier extends Notifier<EditSession> {
       // The point of pinging: hear about a takeover before the user tries to
       // save, so the "your session was taken over" banner is already up.
       markLost(e.holder);
+    } on DioException catch (e) {
+      // Both are final, not dropped pings: 403 means edit rights were revoked
+      // (the server checks them before the claim), 404 that the itinerary is
+      // gone. Swallowing them pinged a dead claim for the rest of the session.
+      final status = e.response?.statusCode;
+      if (status == 403) {
+        markLost(null);
+      } else if (status == 404) {
+        _stopHeartbeat();
+        _heldClaims.remove(arg);
+        if (ref.mounted) state = const EditSession();
+      }
     } catch (_) {
       // A dropped ping is normal. EDIT_LOCK_IDLE_SECONDS is two intervals wide
       // precisely so one miss is not treated as anything.

@@ -91,3 +91,20 @@ def test_report_thresholds_are_overridable():
 def test_malformed_thresholds_fail_at_startup_not_at_report_time(value):
     with pytest.raises(ValidationError):
         _settings(REPORT_HIDE_THRESHOLDS=value)
+
+
+def test_an_unknown_threshold_category_fails_at_startup():
+    """A typo used to parse fine and silently disable auto-hide for the real
+    category."""
+    with pytest.raises(ValidationError):
+        _settings(REPORT_HIDE_THRESHOLDS="harrassment:2")
+
+
+def test_in_process_sweep_must_fit_the_24h_deadline():
+    # A report can wait the SLA plus one whole interval before a run sees it.
+    with pytest.raises(ValidationError):
+        _settings(SWEEP_IN_PROCESS=True, MODERATION_SLA_HOURS=22,
+                  SWEEP_INTERVAL_MINUTES=180)
+    _settings(SWEEP_IN_PROCESS=True, MODERATION_SLA_HOURS=22, SWEEP_INTERVAL_MINUTES=120)
+    # An external scheduler's cadence is not ours to check.
+    _settings(SWEEP_IN_PROCESS=False, MODERATION_SLA_HOURS=22, SWEEP_INTERVAL_MINUTES=180)

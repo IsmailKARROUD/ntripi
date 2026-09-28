@@ -19,7 +19,8 @@ from datetime import datetime, timezone
 import pytest
 
 from conftest import (
-    TestingSessionLocal, auth_headers, locked_headers, register_user,
+    TestingSessionLocal, auth_headers, concurrency_part, locked_headers,
+    register_user,
 )
 from app.config import get_settings
 from app.models.content_report import ContentReport
@@ -351,7 +352,8 @@ def test_auto_hide_does_not_bump_the_authors_etag(client, author, reporters):
     after = client.get(
         f"/itineraries/{itinerary}", headers=auth_headers(author["access_token"])
     ).headers["ETag"]
-    assert before == after
+    # The header's body-hash half moves with the hide; the If-Match half must not.
+    assert concurrency_part(before) == concurrency_part(after)
 
     # And the author's in-flight edit still succeeds with the old ETag.
     response = client.post(

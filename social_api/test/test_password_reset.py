@@ -76,6 +76,25 @@ def test_reset_token_is_single_use(client, monkeypatch):
     assert "Password updated" not in second.text  # consumed → invalid page
 
 
+def test_a_reset_retires_every_other_outstanding_link(client, monkeypatch):
+    """Each forgot-password request mints its own link; one left in an old email
+    must not reset the password again after the user already chose a new one."""
+    register_user(client, "twolinks", "twolinks@example.com")
+    sent = _capture_emails(monkeypatch)
+    client.post("/auth/forgot-password", json={"email": "twolinks@example.com"})
+    client.post("/auth/forgot-password", json={"email": "twolinks@example.com"})
+    first, second = (_token_from(m["html"]) for m in sent)
+
+    used = client.post("/web/reset-password", data={
+        "token": second, "password": "newpass456", "password_confirm": "newpass456"})
+    assert "Password updated" in used.text
+    stale = client.post("/web/reset-password", data={
+        "token": first, "password": "hijack789x", "password_confirm": "hijack789x"})
+    assert "Password updated" not in stale.text
+    assert client.post("/auth/login", json={
+        "identifier": "twolinks@example.com", "password": "newpass456"}).status_code == 200
+
+
 def test_reset_password_mismatch_shows_error(client, monkeypatch):
     register_user(client, "mism", "mism@example.com")
     sent = _capture_emails(monkeypatch)

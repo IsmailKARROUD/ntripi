@@ -248,7 +248,20 @@ def login_or_register_google(
                 "This email is already registered. Sign in with your password.",
                 http_status=409,
             )
-        existing.google_sub = google_sub  # keep password_hash — both methods stay valid
+        if not existing.email_verified:
+            # Nobody ever proved they own this address — registration needs no
+            # verification, so the password may be an attacker's who signed up on
+            # the victim's email first. Google has just proved ownership: lock
+            # that password and its sessions out rather than hand them the
+            # account the moment the real owner signs in.
+            existing.password_hash = None
+            refresh_token_service.revoke_all_for_user(db, existing.id)
+            _record_security_event(
+                db, existing.id, "unverified_password_dropped_on_google_link",
+                None, None,
+            )
+        # A verified account keeps its password — both methods stay valid.
+        existing.google_sub = google_sub
         existing.email_verified = True
         db.commit()
         db.refresh(existing)
@@ -423,6 +436,9 @@ def reset_password(db: Session, token: str, new_password: str) -> None:
     user.password_hash = hash_password(new_password)
     _record_password_history(db, user.id, user.password_hash)
     refresh_token_service.revoke_all_for_user(db, user.id)
+    email_token_service.retire_unused(
+        db, user.id, email_token_service.PURPOSE_PASSWORD_RESET
+    )
     db.commit()
 
 
@@ -539,6 +555,9 @@ def change_password(
     user.password_hash = hash_password(new_password)
     _record_password_history(db, user.id, user.password_hash)
     refresh_token_service.revoke_all_for_user(db, user.id)
+    email_token_service.retire_unused(
+        db, user.id, email_token_service.PURPOSE_PASSWORD_RESET
+    )
     _record_security_event(db, user.id, "password_change", ip, user_agent)
     db.commit()
 

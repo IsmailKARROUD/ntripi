@@ -232,13 +232,27 @@ class TestImageUrlLockdown:
             headers=hdrs)
         assert resp.status_code == 422
 
-    def test_own_storage_avatar_url_accepted(self, client: TestClient):
+    def test_another_storage_url_rejected(self, client: TestClient):
+        """The prefix check alone let anyone wear another user's avatar, or
+        republish their own taken-down cover, which stays in storage."""
         alice = register_user(client, "alice_url3", "url3@test.com")
         hdrs = auth_headers(alice["access_token"])
-        resp = client.patch(
-            "/users/me", json={"avatar_url": "/uploads/avatars/abc.jpg"},
-            headers=hdrs)
+        for key in ("avatar_url", "cover_image_url"):
+            resp = client.patch(
+                "/users/me", json={key: "/uploads/avatars/somebody-else.jpg"},
+                headers=hdrs)
+            assert resp.status_code == 422
+            assert resp.json()["code"] == "image_url_not_allowed"
+
+    def test_resending_the_current_url_is_accepted(self, client: TestClient):
+        alice = register_user(client, "alice_url5", "url5@test.com")
+        hdrs = auth_headers(alice["access_token"])
+        uploaded = _upload(client, hdrs, "/users/me/avatar", _make_jpeg())
+        assert uploaded.status_code == 200, uploaded.text
+        current = client.get("/users/me", headers=hdrs).json()["avatar_url"]
+        resp = client.patch("/users/me", json={"avatar_url": current}, headers=hdrs)
         assert resp.status_code == 200
+        assert resp.json()["avatar_url"] == current
 
     def test_null_avatar_url_accepted(self, client: TestClient):
         alice = register_user(client, "alice_url4", "url4@test.com")

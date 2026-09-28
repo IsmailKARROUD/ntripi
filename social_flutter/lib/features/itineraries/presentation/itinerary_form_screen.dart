@@ -45,6 +45,7 @@ import 'package:social_flutter/features/itineraries/domain/itinerary.dart';
 import 'package:social_flutter/features/itineraries/domain/recommended_period.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/cover_image_field.dart';
 import 'package:social_flutter/features/itineraries/presentation/recommended_period_screen.dart';
+import 'package:social_flutter/features/itineraries/presentation/editors_screen.dart';
 import 'package:social_flutter/features/itineraries/presentation/visibility_screen.dart';
 import 'package:social_flutter/features/itineraries/providers/edit_lock_provider.dart';
 import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
@@ -479,6 +480,16 @@ class _ItineraryFormScreenState extends ConsumerState<ItineraryFormScreen> {
     if (picked != null && mounted) setState(() => _visibility = picked);
   }
 
+  Future<void> _openEditors() async {
+    final result = await context.push<EditorsScreenResult>(
+        '/itineraries/${widget.itineraryId}/editors');
+    // The grant was refused until the trip is visible to them; the owner asked
+    // to change who can see it, and that picker lives here.
+    if (result == EditorsScreenResult.openVisibility && mounted) {
+      await _showVisibilityPicker();
+    }
+  }
+
   Future<void> _showRecommendedPeriodPicker() async {
     final picked = await Navigator.push<RecommendedPeriod>(
       context,
@@ -795,8 +806,7 @@ class _ItineraryFormScreenState extends ConsumerState<ItineraryFormScreen> {
                           icon: Icons.edit_note_rounded,
                           label: l10n.editorsTitle,
                           value: '',
-                          onTap: () => context.push(
-                              '/itineraries/${widget.itineraryId}/editors'),
+                          onTap: _openEditors,
                         ),
                       ],
                     ],

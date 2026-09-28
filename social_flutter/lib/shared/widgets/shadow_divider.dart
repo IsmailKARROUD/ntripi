@@ -21,7 +21,9 @@ class ShadowDivider extends StatelessWidget {
       height: height,
       margin: EdgeInsetsDirectional.only(start: indent, end: endIndent),
       decoration: BoxDecoration(
-        color: Theme.of(context).dividerColor.withValues(alpha: 0.6),
+        // nt.border, not dividerColor: the theme never sets dividerColor, so
+        // that getter falls through to M3's outlineVariant grey.
+        color: context.nt.border.withValues(alpha: 0.6),
         boxShadow: [
           BoxShadow(
             color: context.nt.shadow.withValues(alpha: 0.125),

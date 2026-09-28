@@ -79,6 +79,40 @@ class TestOrdering:
         with pytest.raises(ValueError):
             key_between("b", "a")
 
+    def test_tail_appends_never_saturate(self):
+        """Past 'z' the old code returned a fixed "zV", so the 28th append to
+        the end of a column collided with the 27th forever."""
+        k = key_between(None, None)
+        for _ in range(500):
+            nxt = key_between(k, None)
+            assert nxt > k
+            k = nxt
+
+    def test_head_prepends_stay_ordered(self):
+        k = key_between(None, None)
+        for _ in range(500):
+            prev = key_between(None, k)
+            assert prev < k
+            k = prev
+
+    def test_random_inserts_stay_strictly_ordered(self):
+        import random
+        rng = random.Random(7)
+        keys = [key_between(None, None)]
+        for _ in range(2000):
+            j = rng.randrange(len(keys) + 1)
+            lo = keys[j - 1] if j > 0 else None
+            hi = keys[j] if j < len(keys) else None
+            k = key_between(lo, hi)
+            assert (lo is None or lo < k) and (hi is None or k < hi)
+            keys.insert(j, k)
+        assert keys == sorted(set(keys))
+
+    def test_n_keys_after_a_maxed_digit(self):
+        ks = n_keys_between("zV", None, 5)
+        assert ks == sorted(set(ks))
+        assert ks[0] > "zV"
+
 
 # ---------------------------------------------------------------------------
 # API smoke test
@@ -1219,6 +1253,24 @@ class TestUnanchoredTrackAndLastLeg:
         detail = client.get(f"/itineraries/{itinerary_id}", headers=hdrs).json()
         names = [t["stops"][0]["place_name"] for t in detail["tracks"]]
         assert names == ["A", "B", "C"]
+
+    def test_thirty_tail_appends_all_land_in_order(self, client: TestClient):
+        """The 28th append used to answer 409 rank_collision on every retry."""
+        from conftest import edit_now
+        hdrs, itinerary_id = self._itinerary(client)
+        last_track = None
+        names = [f"S{i:02d}" for i in range(30)]
+        for name in names:
+            body = {"place_name": name}
+            if last_track is not None:
+                body["after_track_id"] = last_track
+            r = client.post(f"/itineraries/{itinerary_id}/stops", json=body,
+                            headers=edit_now(client, itinerary_id, hdrs))
+            assert r.status_code == 201, r.text
+            last_track = r.json()["track_id"]
+
+        detail = client.get(f"/itineraries/{itinerary_id}", headers=hdrs).json()
+        assert [t["stops"][0]["place_name"] for t in detail["tracks"]] == names
 
     def test_deleting_the_last_leg_deletes_its_segment(self, client: TestClient):
         from conftest import edit_now

@@ -733,3 +733,137 @@ every rating); a separate cache validator on the detail GET (changes the header
 the Flutter client and the test helpers echo back as `If-Match`); moving the
 aggregates to their own table (a migration and a join on every feed read, for a
 number that tolerates being a minute stale).
+
+---
+
+### 2026-09-28 — The detail GET's cache validator carries a body hash
+
+Supersedes the *Consequences* and the rejected "separate cache validator" of
+[2026-09-26 — The rating aggregate does not move the itinerary's ETag](#2026-09-26--the-rating-aggregate-does-not-move-the-itinerarys-etag).
+
+**Context.** `GET /itineraries/{id}` set `ETag = updated_at`, and `ETagMiddleware`
+answered `If-None-Match` with 304 against it. The rating aggregate, moderator
+hides and the owner's hidden state all change the body without moving
+`updated_at` (by design, so the owner's editor does not 412), so every device
+that had the detail cached kept the old average and the old hidden flag until
+somebody edited the content. The earlier entry accepted this as "a minute stale";
+in practice it was stale until the next content edit, indefinitely. The Flutter
+client builds `If-Match` from the body's `updated_at` (`itinerary.dart`), not from
+the header, so the header was never the client's concurrency token.
+**Decision.** When an endpoint sets its own ETag, the middleware emits
+`"<endpoint token>;<sha256[:16] of body>"` and compares `If-None-Match` against
+that composite. `require_etag` reads only the part before `;`
+(`_concurrency_token`), so a consumer that echoes the GET header as `If-Match` —
+the test helpers do — keeps working.
+**Consequences.** A 304 now means the body really is unchanged, and the detail
+keeps its bandwidth saving. Tests that asserted the GET header survives a
+moderation action compare the concurrency half (`conftest.concurrency_part`)
+instead.
+**Alternatives rejected.** Never 304-ing the detail (correct, but ships the
+largest payload in the app on every open); bumping `updated_at` on ratings and
+hides (412s the owner — the reason the earlier entry exists).
+
+---
+
+### 2026-09-28 — If-Match is compared as an instant, not a string
+
+**Context.** `_normalize_etag` collapsed quotes, `W/` and `Z` ↔ `+00:00`, then
+byte-compared. Dart's `toIso8601String()` drops the sub-millisecond digits when
+they are zero (`.123Z`) where Python writes `.123000+00:00`, so about one save in
+a thousand produced an itinerary the app could never save again — a reload
+returns the same `updated_at`.
+**Decision.** `require_etag` parses both sides with `datetime.fromisoformat` and
+compares instants, falling back to the normalised string for anything that is not
+a datetime. The middleware keeps its string compare (its values are hashes).
+**Alternatives rejected.** Normalising the fractional digits by string surgery
+(one more format edge each time a client changes its serializer).
+
+---
+
+### 2026-09-28 — The client IP comes from CF-Connecting-IP
+
+**Context.** `ProxyHeadersMiddleware(trusted_hosts="*")` makes uvicorn 0.41 take
+the **leftmost** `X-Forwarded-For` entry. Cloudflare appends to a client-supplied
+header rather than replacing it, so any caller could name its own IP and walk
+past every per-IP rate limit (login, register, forgot-password, reports,
+appeals).
+**Decision.** `ClientIPHeaderMiddleware`, just inside ProxyHeaders, sets
+`request.client` from `CLIENT_IP_HEADER` (default `cf-connecting-ip`), which
+Cloudflare overwrites. Absent or unparseable, the X-Forwarded-For answer stands
+(local dev, a non-Cloudflare deploy). ProxyHeaders stays for `X-Forwarded-Proto`.
+**Consequences.** Behind the proxied zone the key every limit uses is the real
+client. A request that reaches Railway directly, bypassing Cloudflare, can still
+forge either header — closing that is edge configuration, not app code.
+**Alternatives rejected.** A trusted-proxy CIDR list for uvicorn (standards-based,
+but a wrong or stale list puts every user behind one IP and one rate-limit
+bucket, and the Railway ranges are not published as a contract).
+
+---
+
+### 2026-09-28 — Linking Google to an unverified password account drops the password
+
+**Context.** Registration needs no email verification, so anyone could register a
+password on someone else's address. When the real owner later signed in with
+Google, step 2 of `google_sign_in` linked the account and marked it verified,
+keeping the squatter's password and sessions — a pre-account takeover.
+**Decision.** Linking onto an account whose email was never verified clears
+`password_hash`, revokes every refresh token and records
+`unverified_password_dropped_on_google_link`. A verified account keeps both
+methods, as before.
+**Consequences.** A legitimate user who registered with a password but never
+verified, then signs in with Google, loses the password and their other
+sessions; forgot-password (now deliverable, the email being verified) sets a new
+one.
+**Alternatives rejected.** Refusing to link (strands the real owner behind an
+account they cannot prove is theirs); keeping the password but demanding it on
+first Google sign-in (the squatter knows it; the owner does not).
+
+---
+
+### 2026-09-28 — The HTTP cache is partitioned by account
+
+**Context.** The Hive-backed Dio cache (7-day `maxStale`) keyed entries by URL
+alone, and was never cleaned. `/users/me`, `/itineraries/me` and
+`/notifications` are the same URL for everybody, and the interceptor's offline
+branch always falls back to the cache, so the next person to sign in on a device
+was served the previous account's profile (email, date of birth), private trips
+and notifications. Sign-out also reset only seven of the ~20 keep-alive
+user-scoped providers, and a session ending on the interceptor's forced path
+(expiry, suspension) reset none.
+**Decision.** Cache keys are `<JWT sub>:<url key>` (`core/api/cache_key.dart`),
+the account stamped by AuthInterceptor on every request — from the expired token
+too, so offline still finds the account's own entries. Sign-out also
+`clean()`s the store. One list of user-scoped providers is reset on sign-in and
+on sign-out, and `hasSessionProvider` re-reads storage whenever tokens are wiped
+(`sessionEnded`).
+**Alternatives rejected.** Cleaning the store only on sign-out (misses the forced
+paths); cleaning on every sign-in (throws away the offline warm cache when the
+same person signs back in after an expiry).
+
+---
+
+### 2026-09-28 — Hiding or restoring content settles every pending report on it
+
+**Context.** `auto_hide` resolved only the report that tipped the threshold, and
+un-hide, restore and a granted appeal resolved none. The rest stayed `pending`,
+so ~20h later the SLA sweep hid content a moderator or an appeal had just
+restored.
+**Decision.** Any takedown resolves every pending report on the target
+(`auto_hidden` for the system, `content_hidden` / `content_removed` for an
+operator); a reversal resolves the rest as `dismissed`. A target under an open
+legal escalation keeps its reports — they close from the Legal lane, with a note.
+**Consequences.** A report filed after a restore is new evidence and still acts.
+
+---
+
+### 2026-09-28 — Account deletion erases the account's images, except evidence
+
+**Context.** `DELETE /users/me` cascaded the rows but left every stored image
+(avatar, profile cover, itinerary covers) publicly reachable at its stable URL.
+**Decision.** After the commit, best-effort, the avatar, the profile cover and
+the cover of every owned itinerary are deleted from storage — except while the
+account is under an open legal escalation (nothing is deleted), and except the
+cover of any itinerary that was taken down or is escalated in its own right.
+**Alternatives rejected.** Deleting everything (destroys what the CSAM runbook
+requires preserved); leaving the objects (the "permanent deletion" the privacy
+policy describes would not be true).

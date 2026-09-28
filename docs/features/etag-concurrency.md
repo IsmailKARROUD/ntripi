@@ -32,13 +32,20 @@ because one endpoint emits both.
   with detail `"itinerary modified, please reload"`.
 - **`_touch_itinerary` (`itineraries.py:128`) bumps it manually** because
   SQLAlchemy's `onupdate` does not fire when only a child row changed.
-- **`_normalize_etag` (`dependencies.py:137`) handles three intermediary
-  mutations** before the byte compare:
+- **`If-Match` is compared as an instant, not a string** (`_concurrency_token`,
+  `dependencies.py`). `_normalize_etag` first strips the intermediary mutations,
+  then both sides are parsed with `datetime.fromisoformat`:
   | Problem | Source |
   |---|---|
   | surrounding whitespace | proxies |
   | `W/` weak-validator prefix | Cloudflare, when it recompresses the body |
   | trailing `Z` vs `+00:00` | Dart's `toIso8601String()` vs Python's `isoformat()` |
+  | `.123Z` vs `.123000+00:00` | Dart drops the sub-millisecond digits when they are zero |
+  | `;<body hash>` suffix | the GET's cache validator (below) — ignored |
+
+  The fourth row is why this is a parse, not a string compare: until 2026-09-28
+  about one save in a thousand produced an itinerary the app could never save
+  again, because a reload returns the same `updated_at`.
 - **The row is loaded `SELECT … FOR UPDATE`** (`dependencies.py:168`) so two
   concurrent requests cannot both pass the check and both write. Silently skipped
   on SQLite, which is what the test suite runs on.
@@ -79,16 +86,22 @@ is in [collaborative-editing.md](collaborative-editing.md#the-guard).
 - **Skips the static mounts** — `STATIC_PREFIXES = ("/uploads", "/static",
   "/app")`, shared with the security-headers middleware via
   `app/middleware/__init__.py` so a new static mount is registered once, not
-  twice.
+  twice. Matched on a segment boundary (`is_static_path`): a bare
+  `startswith("/app")` also swallowed `/appeal/…` and `/appeals/…`.
 - Buffers the body, hashes it, and sets `ETag` to `sha256(body)[:16]` — an
   **opaque 16-char token**, unrelated to the concurrency format.
 - Sets `Cache-Control: private, no-cache`.
 - When the client returns the value in `If-None-Match`, replies **304 with an
   empty body**.
-- **If an endpoint already set its own `ETag`, the middleware leaves it alone.**
-  `GET /itineraries/{id}` sets the ISO concurrency token, and the 304 round-trip
-  still works against it because the middleware runs `_normalize_etag` on **both**
-  sides of the comparison — so Cloudflare's `W/` downgrade still matches.
+- **If an endpoint set its own `ETag`, the middleware suffixes the body hash:**
+  `"<endpoint token>;<sha256[:16]>"`. `GET /itineraries/{id}` sets the ISO
+  concurrency token, and on its own that token cannot validate a cache — the
+  rating aggregate and moderator hides change the body while deliberately leaving
+  `updated_at` alone, so a 304 against it served stale averages and a stale
+  `hidden` flag indefinitely (until 2026-09-28). `require_etag` reads only the
+  part before `;`, so the header still works as an `If-Match`. `_normalize_etag`
+  runs on **both** sides of the 304 comparison, so Cloudflare's `W/` downgrade
+  still matches.
 - **It also preserves an endpoint-set `Cache-Control`**, which is what lets the
   help centre's machine surfaces be `public, max-age=3600` while help HTML must
   never be.
@@ -146,7 +159,7 @@ No endpoints of its own. It applies to:
 ## OPEN QUESTIONS
 
 - **The two mechanisms share a header name and a normalisation function but not a
-  value format.** `_normalize_etag` is applied to both, and it is written for the
+  value format** (the detail GET's header now carries both, joined by `;`). `_normalize_etag` is applied to both, and it is written for the
   ISO form (it rewrites a trailing `Z`). Applied to a 16-hex body hash the `Z`
   branch can never fire, so it is harmless — but whether one function serving two
   formats is intentional economy or an accident is not recorded anywhere.

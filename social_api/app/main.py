@@ -36,6 +36,7 @@ from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
 from app.config import get_settings
 from app.errors import ApiError
 from app.limiter import limiter
+from app.middleware.client_ip import ClientIPHeaderMiddleware
 from app.middleware.etag import ETagMiddleware
 from app.middleware.language import LanguageCookieMiddleware
 from app.middleware.security_headers import SecurityHeadersMiddleware
@@ -224,8 +225,8 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 # ---------------------------------------------------------------------------
 # Middleware stack (add_middleware is LIFO — last added = outermost)
 # ---------------------------------------------------------------------------
-# Desired request order: ProxyHeaders → TrustedHost → ContentSizeLimit →
-#   SecurityHeaders → CORS → ETag → handlers
+# Desired request order: ProxyHeaders → ClientIPHeader → TrustedHost →
+#   ContentSizeLimit → SecurityHeaders → CORS → ETag → LanguageCookie → handlers
 
 # Language cookie + Vary: Accept-Language on HTML (innermost — touches only
 # text/html responses, never the JSON API, so it does not affect the security
@@ -264,10 +265,15 @@ app.add_middleware(ContentSizeLimitMiddleware)
 allowed_hosts = [h.strip() for h in settings.ALLOWED_HOSTS.split(",") if h.strip()]
 app.add_middleware(TrustedHostMiddleware, allowed_hosts=allowed_hosts)
 
-# ProxyHeaders (outermost — must run first to rewrite X-Forwarded-For into
-# request.client.host before TrustedHost and slowapi read the client IP).
-# trusted_hosts="*" is safe: Railway does not expose the container directly
-# to the public internet; all traffic passes through its proxy tier.
+# Client IP from CLIENT_IP_HEADER (CF-Connecting-IP) — just inside ProxyHeaders
+# so it has the last word on request.client.host, which slowapi keys every
+# per-IP limit on. X-Forwarded-For alone is caller-forgeable behind Cloudflare.
+app.add_middleware(ClientIPHeaderMiddleware, header=settings.CLIENT_IP_HEADER)
+
+# ProxyHeaders (outermost — rewrites X-Forwarded-Proto into the scheme, which
+# HSTS needs, and X-Forwarded-For into the client as the fallback when the
+# header above is absent). trusted_hosts="*" is safe for the scheme: Railway
+# does not expose the container directly; all traffic passes its proxy tier.
 app.add_middleware(ProxyHeadersMiddleware, trusted_hosts="*")
 
 

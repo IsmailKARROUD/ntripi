@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:social_flutter/core/auth/token_manager.dart';
+import 'package:social_flutter/core/push/push_service.dart';
 import 'package:social_flutter/core/services/sfx_service.dart';
 import 'package:social_flutter/core/storage/secure_storage.dart';
 import 'package:social_flutter/core/ui/app_theme.dart';
@@ -59,10 +60,20 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
     await brandFlash;
     if (!mounted) return;
 
-    if (hasLiveRefresh) {
-      context.go('/profile/me');
-    } else {
+    if (!hasLiveRefresh) {
       context.go('/login');
+      return;
+    }
+    // A tray tap that launched the app: land on it, over home so Back still
+    // goes somewhere. getInitialMessage has had the whole brand flash to
+    // answer; the timeout only guards a platform channel that never does.
+    final pushRoute = await takeInitialPushRoute()
+        .timeout(const Duration(seconds: 1), onTimeout: () => null);
+    if (!mounted) return;
+    final router = GoRouter.of(context);
+    router.go('/profile/me');
+    if (pushRoute != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => router.push(pushRoute));
     }
   }
 

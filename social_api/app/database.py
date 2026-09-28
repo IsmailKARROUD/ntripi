@@ -72,3 +72,18 @@ def get_db():
         yield db
     finally:
         db.close()
+
+
+def upsert_insert(db, model):
+    """An INSERT for `model` that supports on_conflict_do_nothing / _do_update.
+
+    For check-then-insert paths that race: two requests both see "no row" and
+    the second INSERT is a unique violation — a 500 on a write that should have
+    been idempotent. PostgreSQL and SQLite (the test suite) both speak ON
+    CONFLICT, through the same API on their own dialect constructs.
+    """
+    if db.get_bind().dialect.name == "postgresql":
+        from sqlalchemy.dialects.postgresql import insert
+    else:
+        from sqlalchemy.dialects.sqlite import insert
+    return insert(model)

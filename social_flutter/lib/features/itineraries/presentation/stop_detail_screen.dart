@@ -22,6 +22,7 @@ import 'package:social_flutter/features/itineraries/presentation/widgets/link_pr
 import 'package:social_flutter/features/itineraries/presentation/widgets/long_press_to_edit.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/markdown_notes_editor.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/open_in_maps_sheet.dart';
+import 'package:social_flutter/features/itineraries/providers/edit_lock_provider.dart';
 import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
 import 'package:social_flutter/features/profile/providers/profile_provider.dart';
 import 'package:social_flutter/features/reports/domain/report_target.dart';
@@ -90,7 +91,11 @@ class StopDetailScreen extends ConsumerWidget {
           totalStops: totalStops,
           currency: itinerary.currency,
           itineraryId: itineraryId,
-          isOwner: currentUserId != null && itinerary.userId == currentUserId,
+          // Owner OR granted editor — the same mayEdit the detail screen uses.
+          // Owner-only here handed an editor the report flag instead of the
+          // pencil, breaking the can-edit vs report invariant.
+          canEdit: (currentUserId != null && itinerary.userId == currentUserId) ||
+              itinerary.canEdit,
           inboundSegment: inbound,
           outboundSegment: outbound,
           allStops: itinerary.stops,
@@ -106,7 +111,7 @@ class _StopDetailView extends ConsumerWidget {
   final int totalStops;
   final String currency;
   final String itineraryId;
-  final bool isOwner;
+  final bool canEdit;
   final TransitSegment? inboundSegment;
   final TransitSegment? outboundSegment;
   final List<Stop> allStops;
@@ -117,20 +122,69 @@ class _StopDetailView extends ConsumerWidget {
     required this.totalStops,
     required this.currency,
     required this.itineraryId,
-    required this.isOwner,
+    required this.canEdit,
     this.inboundSegment,
     this.outboundSegment,
     required this.allStops,
   });
 
+  /// Run [edit] holding this itinerary's edit claim.
+  ///
+  /// This page has no edit mode, yet every write from it needs X-Edit-Lock —
+  /// without the claim the stop form and the annotation editor 428'd on Save.
+  /// Acquires only when this device holds none (the detail screen underneath
+  /// may already), says who is in the way on refusal, and hands back only a
+  /// claim it took itself.
+  Future<void> _withClaim(
+    BuildContext context,
+    WidgetRef ref,
+    Future<void> Function() edit,
+  ) async {
+    final l10n = AppLocalizations.of(context)!;
+    final messenger = ScaffoldMessenger.of(context);
+    final notifier = ref.read(editLockProvider(itineraryId).notifier);
+    final tookIt = !ref.read(editLockProvider(itineraryId)).holdsClaim;
+    if (tookIt) {
+      final bool claimed;
+      try {
+        claimed = await notifier.acquire();
+      } catch (e) {
+        messenger.showSnackBar(SnackBar(content: Text(extractErrorMessage(e, l10n))));
+        return;
+      }
+      if (!claimed) {
+        final holder = ref.read(editLockProvider(itineraryId)).lock;
+        messenger.showSnackBar(SnackBar(
+          content: Text(holder == null
+              ? l10n.apiErrorItineraryLocked
+              : holder.isYou
+                  ? l10n.editLockYouElsewhere
+                  : l10n.editLockSomeoneEditing(holder.displayLabel)),
+        ));
+        return;
+      }
+    }
+    try {
+      await edit();
+    } finally {
+      if (tookIt) await notifier.release();
+    }
+  }
+
+  Future<void> _openStopForm(BuildContext context, WidgetRef ref) => _withClaim(
+        context,
+        ref,
+        () => context.push<void>('/itineraries/$itineraryId/stops/${stop.id}/edit'),
+      );
+
   // Mirrors _editAnnotation in itinerary_detail_screen — this screen has no
-  // edit mode, so the owner's long-press is the only way in from here.
+  // edit mode, so the long-press is the only way in from here.
   Future<void> _editAnnotation(
     BuildContext context,
     WidgetRef ref,
     Annotation annotation,
   ) =>
-      showAnnotationScreen(
+      _withClaim(context, ref, () => showAnnotationScreen(
         context,
         isEdit: true,
         initialContent: annotation.content,
@@ -142,7 +196,7 @@ class _StopDetailView extends ConsumerWidget {
             .read(itineraryDetailProvider(itineraryId).notifier)
             .updateAnnotation(stop.id, annotation.id,
                 content: result.content, type: result.type),
-      );
+      ));
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -169,14 +223,10 @@ class _StopDetailView extends ConsumerWidget {
               totalStops: totalStops,
               // A shared/deep link can open this page as the only route.
               onBack: () => context.popOr('/itineraries/$itineraryId'),
-              onEdit: isOwner
-                  ? () => context.push(
-                        '/itineraries/$itineraryId/stops/${stop.id}/edit',
-                      )
-                  : null,
+              onEdit: canEdit ? () => _openStopForm(context, ref) : null,
               // Wire-reported as the parent itinerary; the stop id rides in
               // the report notes (hiding is itinerary-level).
-              onReport: isOwner
+              onReport: canEdit
                   ? null
                   : () => showReportContentSheet(
                         context,
@@ -265,7 +315,7 @@ class _StopDetailView extends ConsumerWidget {
                             padding: const EdgeInsets.only(bottom: 8),
                             child: _AnnotationFullRow(
                               annotation: a,
-                              onReport: isOwner
+                              onReport: canEdit
                                   ? null
                                   : () => showReportContentSheet(
                                         context,
@@ -273,7 +323,7 @@ class _StopDetailView extends ConsumerWidget {
                                         ReportTarget.stopAnnotation(
                                             itineraryId, stop.id, a.id),
                                       ),
-                              onLongPressEdit: isOwner
+                              onLongPressEdit: canEdit
                                   ? () => _editAnnotation(context, ref, a)
                                   : null,
                             ),
@@ -300,12 +350,16 @@ class _StopDetailView extends ConsumerWidget {
                         direction: _TransitDirection.inbound,
                         currency: currency,
                         allStops: allStops,
-                        onEditLeg: isOwner
-                            ? (i) => LegEditor(
-                                  ref: ref,
-                                  itineraryId: itineraryId,
-                                  segment: inboundSegment!,
-                                ).editLeg(context, i)
+                        onEditLeg: canEdit
+                            ? (i) => _withClaim(
+                                  context,
+                                  ref,
+                                  () => LegEditor(
+                                    ref: ref,
+                                    itineraryId: itineraryId,
+                                    segment: inboundSegment!,
+                                  ).editLeg(context, i),
+                                )
                             : null,
                       ),
                     if (inboundSegment != null && outboundSegment != null)
@@ -316,12 +370,16 @@ class _StopDetailView extends ConsumerWidget {
                         direction: _TransitDirection.outbound,
                         currency: currency,
                         allStops: allStops,
-                        onEditLeg: isOwner
-                            ? (i) => LegEditor(
-                                  ref: ref,
-                                  itineraryId: itineraryId,
-                                  segment: outboundSegment!,
-                                ).editLeg(context, i)
+                        onEditLeg: canEdit
+                            ? (i) => _withClaim(
+                                  context,
+                                  ref,
+                                  () => LegEditor(
+                                    ref: ref,
+                                    itineraryId: itineraryId,
+                                    segment: outboundSegment!,
+                                  ).editLeg(context, i),
+                                )
                             : null,
                       ),
                   ],
@@ -340,10 +398,7 @@ class _StopDetailView extends ConsumerWidget {
               child: LongPressToEdit(
                 // Notes live on the stop itself, so the shortcut is the stop
                 // form rather than a dedicated notes editor.
-                onEdit: isOwner
-                    ? () => context.push(
-                        '/itineraries/$itineraryId/stops/${stop.id}/edit')
-                    : null,
+                onEdit: canEdit ? () => _openStopForm(context, ref) : null,
                 child: _SectionCard(
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),

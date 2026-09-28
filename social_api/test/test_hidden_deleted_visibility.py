@@ -18,8 +18,8 @@ import pytest
 from fastapi.testclient import TestClient
 
 from conftest import (
-    ADMIN_BASIC, TestingSessionLocal, admin_session, auth_headers, edit_now,
-    locked_headers, make_admin, register_user,
+    ADMIN_BASIC, TestingSessionLocal, admin_session, auth_headers,
+    concurrency_part, edit_now, locked_headers, make_admin, register_user,
 )
 from app.models.content_report import ContentReport
 from app.models.itinerary import Itinerary
@@ -280,7 +280,9 @@ class TestEtagPreservation:
 
         after = client.get(f"/itineraries/{world['itinerary_id']}", headers=headers)
         assert after.json()["hidden"] is True
-        assert after.headers["etag"] == etag
+        # The cache validator moves (the body did), the concurrency token must not.
+        assert after.headers["etag"] != etag
+        assert concurrency_part(after.headers["etag"]) == concurrency_part(etag)
 
         # And the pre-hide token is still accepted by a real mutation.
         resp = client.post(

@@ -102,6 +102,16 @@ constraint regardless.
   after a **five-second undo window**, so a retry or a row the sweep already took
   must not raise. Deletion is **hard** — a notification is a nudge, not evidence,
   and a moderation notice it pointed at survives on `/settings/account-status`.
+- **The client marks read by id, never "everything".** `POST /notifications/read`
+  with no `ids` marks every unread row; the app used to send exactly that, so rows
+  past the first page, or arriving between the reload and the POST, were marked
+  read without ever being shown. Since 2026-09-28 `markAllRead` names the unread
+  rows actually loaded (batches of 200, the request's cap), and each page loaded
+  by scrolling is marked as it arrives.
+- **The feed pages** — 30 rows at a time (`kNotificationPageSize`), more loaded as
+  the list nears its end, ids already shown skipped. It used to stop at the first
+  page with no way to reach older rows. A background `silentRefresh` re-reads the
+  first page only and keeps the older pages already loaded.
 - `_resolve` resolves actor and entity in **two queries per page, not 2N**;
   actor display names go through `public_profile_text`; `entity_title` is null
   when the entity is gone.
@@ -172,10 +182,19 @@ Unset, nothing is sent, nothing raises, and the poll is the only channel.
 - **Sign-out must `DELETE /devices/{token}`, before the repository call that
   discards the access token.** A token that outlives the session delivers the
   previous user's notifications — including moderation notices — to whoever signs
-  in next.
-- **Dead tokens are pruned on `UNREGISTERED` / `INVALID_ARGUMENT` only.** A 500, a
-  503 or a 401 from a misconfigured key is transient and must never cost a
-  working device its registration — unrecoverable without a reinstall. `_post`
+  in next. The registered token lives in memory, so after a restart it used to be
+  unknown and sign-out unregistered nothing: on launch `attachPushListeners` now
+  re-adopts the registration when the OS already granted permission (never
+  prompting) and a session exists, and `unregisterForPush` falls back to
+  `getToken()`. Re-sending on launch also keeps `last_seen_at` fresh for
+  `DEVICE_TOKEN_RETENTION_DAYS`, and makes `onTokenRefresh` work after a restart.
+- **Dead tokens are pruned on `UNREGISTERED`, and on `INVALID_ARGUMENT` only when
+  the error names the token** (a `message.token` field violation, or "registration
+  token" in the message). FCM answers `INVALID_ARGUMENT` for a malformed
+  *payload* too, and pruning on the bare code would have unregistered every
+  device of every recipient over a bug of ours. A 500, a 503 or a 401 from a
+  misconfigured key is transient and must never cost a working device its
+  registration — unrecoverable without a reinstall. `_post`
   returns `sent` / `dead` / `failed` / `unreachable`; on `unreachable` the whole
   notification is **abandoned**, because this runs inline in the user's request
   and that bounds the delay at **one** timeout rather than one per device.
@@ -339,16 +358,23 @@ project that holds the Sign-In OAuth clients. FCM carries no per-message charge.
   allows exactly one per install and a denial is only reversible in Settings, so
   it lands when the user has just shown they want notifications — not at launch,
   in front of an app they have not seen.
-- **A cold start's tap is parked, not navigated.** `getInitialMessage()` resolves
-  before the widget tree (and therefore go_router) exists; `takePendingRoute()` is
-  drained from a post-frame callback. This is the most common real-world path and
-  the easiest to lose.
+- **A cold start's tap is routed by the splash screen.** `attachPushListeners`
+  keeps `getInitialMessage()`'s answer as a future; splash awaits
+  `takeInitialPushRoute()` after its brand flash, then goes home and pushes the
+  route over it, so Back still lands somewhere. The old post-frame drain lost
+  every such tap: the platform reply arrives after the first frame, and splash's
+  own `go('/profile/me')` overrode it anyway. This is the most common real-world
+  path and the easiest to lose.
 - **Tap routing reuses `notificationRoute()`** (`app_notification.dart`), a free
   function precisely because a push arrives as a bare `data` map with no
   `AppNotification`. A tray tap and a feed tap must never disagree.
 - **Foreground messages are deliberately unhandled** — Android suppresses the
   tray entry while the app is open, and the poller's badge plus
   `Sfx.newNotification` already announce the arrival.
+- **UNDO captures the notifier before the snackbar shows.** Dismissing the only
+  row swaps the feed for the empty view; reading `ref` from the unmounted feed in
+  the undo callback threw, and UNDO silently did nothing
+  (`test/widgets/notification_undo_last_row_test.dart`).
 - **`NotificationType.fromString` degrades unknown values** to a generic
   renderable row. Opening the screen clears the badge but **does not** flip the
   local rows — erasing the unread tint in the frame the user arrived to read it

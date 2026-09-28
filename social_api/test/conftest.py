@@ -29,6 +29,14 @@ Why 'function' scope for fixtures?
   database and a clean state — tests can't interfere with each other.
 """
 
+import os
+
+# Before the app (and its settings) load. The suite must never reach a real mail
+# provider: a developer .env with EMAIL_BACKEND=resend mailed every test address
+# — several are real @gmail.com domains, and OPERATOR_EMAIL is the live ops
+# inbox — and burned the monthly quota. Env vars override .env.
+os.environ["EMAIL_BACKEND"] = "console"
+
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine, event
@@ -385,3 +393,13 @@ def etag_from_updated_at(updated_at_iso: str) -> str:
 
     ts = datetime.fromisoformat(updated_at_iso.replace("Z", "+00:00"))
     return _etag_value(SimpleNamespace(updated_at=ts))
+
+
+def concurrency_part(etag_header: str) -> str:
+    """The concurrency token inside a GET /itineraries/{id} ETag header.
+
+    The header is "<updated_at>;<body hash>" (ETagMiddleware), so it changes
+    whenever the body does — a moderator hide included. What must NOT move on
+    such a change is the part before `;`, which is what If-Match is judged on.
+    """
+    return etag_header.strip().removeprefix("W/").strip('"').split(";", 1)[0]

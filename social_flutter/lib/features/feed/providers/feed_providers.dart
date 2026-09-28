@@ -63,9 +63,21 @@ class FeedNotifier extends AsyncNotifier<List<FeedItem>> {
           .read(feedRepositoryProvider)
           .getFeed(sort: sort.value, offset: _offset);
       if (!ref.mounted) return; // disposed mid-request (logout)
+      // A sort change or refresh rebuilt the list under this request; its page
+      // belongs to the old one.
+      if (!identical(state.value, current)) return;
       _offset += next.length;
       _hasMore = next.length == kFeedPageSize;
-      state = AsyncData([...current, ...next]);
+      // One trip published between pages shifts every row down one, so the
+      // next page repeats the last card — skip ids already shown.
+      final seen = {for (final item in current) item.itinerary.id};
+      state = AsyncData([
+        ...current,
+        ...next.where((item) => !seen.contains(item.itinerary.id)),
+      ]);
+    } catch (_) {
+      // Called unawaited from the scroll listener, where a throw is an
+      // unhandled error; the rows shown stay, and the next scroll retries.
     } finally {
       _loadingMore = false;
     }

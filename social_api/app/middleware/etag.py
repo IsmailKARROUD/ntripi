@@ -14,10 +14,13 @@ Why a body hash instead of `updated_at`?
     A body hash works for every response shape without schema coupling.
 
 Endpoints that need ETag for *concurrency* (If-Match) still set their own
-ETag explicitly (see `_etag_value` in `app/dependencies.py`). This middleware
-detects that and leaves their header alone, so the existing flow keeps
-working unchanged. The same holds for `Cache-Control`: an endpoint that sets
-one keeps it, so a public document is not forced down to `private, no-cache`.
+ETag explicitly (see `_etag_value` in `app/dependencies.py`). That token alone
+cannot validate a cache: a rating or a moderator hide changes the body while
+deliberately leaving `updated_at` alone, so a 304 against it served stale
+averages indefinitely. The middleware therefore emits `"<token>;<body hash>"`
+for those — `require_etag` reads only the part before `;`, so the header still
+works as an If-Match. An endpoint that sets `Cache-Control` keeps it, so a
+public document is not forced down to `private, no-cache`.
 """
 
 import hashlib
@@ -28,7 +31,7 @@ from starlette.responses import Response
 from starlette.types import ASGIApp
 
 from app.dependencies import _normalize_etag
-from app.middleware import STATIC_PREFIXES as _STATIC_PREFIXES
+from app.middleware import is_static_path
 
 
 class ETagMiddleware(BaseHTTPMiddleware):
@@ -41,7 +44,7 @@ class ETagMiddleware(BaseHTTPMiddleware):
         # Fast bail-outs that avoid buffering the response body unnecessarily.
         if request.method != "GET":
             return await call_next(request)
-        if any(request.url.path.startswith(p) for p in _STATIC_PREFIXES):
+        if is_static_path(request.url.path):
             return await call_next(request)
 
         response = await call_next(request)
@@ -59,13 +62,15 @@ class ETagMiddleware(BaseHTTPMiddleware):
         # return non-streaming bodies, so this is cheap (one chunk) in practice.
         body = b"".join([chunk async for chunk in response.body_iterator])
 
-        # Preserve a manually-set ETag (e.g. `GET /itineraries/{id}` emits one
-        # that doubles as the If-Match concurrency token). Otherwise derive
-        # one from the body so every endpoint participates in 304 caching.
-        etag = response.headers.get("etag")
-        if etag is None:
-            digest = hashlib.sha256(body).hexdigest()[:16]
+        # A manually-set ETag (`GET /itineraries/{id}`) is the If-Match
+        # concurrency token, which moderation and the rating aggregate leave
+        # unmoved — suffix the body hash so a 304 still means "body unchanged".
+        digest = hashlib.sha256(body).hexdigest()[:16]
+        endpoint_etag = response.headers.get("etag")
+        if endpoint_etag is None:
             etag = f'"{digest}"'
+        else:
+            etag = f'"{_normalize_etag(endpoint_etag)};{digest}"'
 
         # `no-cache` here means "store but always revalidate" — exactly what
         # we want for the Dio cache interceptor: it will keep the body around

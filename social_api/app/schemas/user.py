@@ -11,7 +11,9 @@ Schema hierarchy:
 
 import uuid
 from datetime import date, datetime
-from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
+from pydantic import (
+    BaseModel, ConfigDict, EmailStr, Field, field_validator, model_validator,
+)
 import re
 
 
@@ -116,6 +118,13 @@ class UserUpdateRequest(BaseModel):
     def _check_display_name(cls, v: str | None) -> str | None:
         from app.validators.username import validate_display_name
         return validate_display_name(v)
+
+    @model_validator(mode="after")
+    def _no_null_columns(self) -> "UserUpdateRequest":
+        from app.validators.not_null import reject_explicit_nulls
+        return reject_explicit_nulls(self, (
+            "is_private", "notify_ratings", "notify_saves", "notify_follow_accepted",
+        ))
 
     @field_validator("avatar_url", "cover_image_url")
     @classmethod

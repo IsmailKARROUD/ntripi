@@ -12,14 +12,16 @@ Also pins the IDOR guard: an appeal target must belong to the person appealing.
 from __future__ import annotations
 
 import uuid
+from datetime import datetime, timedelta, timezone
 
 import pytest
 
 from conftest import (
-    ADMIN_BASIC, TestingSessionLocal, admin_session, auth_headers, make_admin,
-    register_user,
+    ADMIN_BASIC, TestingSessionLocal, admin_session, auth_headers,
+    concurrency_part, make_admin, register_user,
 )
 from app.models.appeal import Appeal
+from app.models.content_report import ContentReport
 from app.models.itinerary import Itinerary
 from app.models.itinerary_rating import ItineraryRating
 from app.models.moderation_log import ModerationLog
@@ -264,7 +266,7 @@ def test_a_granted_appeal_preserves_the_authors_etag(
     after = client.get(
         f"/itineraries/{itinerary}", headers=auth_headers(author["access_token"])
     ).headers["ETag"]
-    assert before == after
+    assert concurrency_part(before) == concurrency_part(after)
 
 
 def test_a_denied_appeal_leaves_the_content_hidden(client, author, reporters, moderator):
@@ -304,6 +306,83 @@ def test_every_appeal_decision_writes_exactly_one_audit_row(
 
     assert actions.count("appeal_restore") == 1
     assert actions.count("appeal_filed") == 1
+
+
+def test_every_report_on_the_target_closes_with_the_hide(client, author, reporters):
+    """Only the report that tipped the threshold used to close; a sibling left
+    pending had the SLA sweep re-hide the trip after a moderator restored it."""
+    itinerary = _itinerary(client, author["access_token"])
+    # Below its own threshold — this one alone hides nothing.
+    _auto_hide(client, itinerary, reporters[1]["access_token"], reason="spam")
+    assert _row(Itinerary, itinerary).hidden_at is None
+    _auto_hide(client, itinerary, reporters[0]["access_token"])
+
+    db = TestingSessionLocal()
+    try:
+        assert {r.resolution for r in db.query(ContentReport).all()} == {"auto_hidden"}
+    finally:
+        db.close()
+
+
+def test_restored_content_is_not_taken_down_again_by_the_sla_sweep(
+    client, author, reporters, moderator
+):
+    from app.config import get_settings
+    from app.services import sweep_service
+
+    itinerary = _itinerary(client, author["access_token"])
+    _auto_hide(client, itinerary, reporters[1]["access_token"], reason="spam")
+    _auto_hide(client, itinerary, reporters[0]["access_token"])
+    _appeal(client, author["access_token"], "itinerary", itinerary)
+    _decide(client, _appeal_id(), "restore")
+
+    db = TestingSessionLocal()
+    try:
+        stale = datetime.now(timezone.utc) - timedelta(hours=23)
+        for report in db.query(ContentReport).all():
+            report.created_at = stale
+        db.commit()
+        sweep_service.run_moderation_sweep(db, get_settings())
+    finally:
+        db.close()
+
+    assert _row(Itinerary, itinerary).hidden_at is None
+
+
+def test_a_reduced_hide_cannot_be_re_appealed_at_once(
+    client, author, reporters, moderator
+):
+    """Reducing a hide changes nothing, yet "reduced" escaped the 30-day
+    cooldown — the same appeal could be re-filed the moment it was answered."""
+    itinerary = _itinerary(client, author["access_token"])
+    _auto_hide(client, itinerary, reporters[0]["access_token"])
+    _appeal(client, author["access_token"], "itinerary", itinerary)
+    _decide(client, _appeal_id(), "reduce")
+
+    again = _appeal(client, author["access_token"], "itinerary", itinerary)
+    assert again.status_code == 429
+    assert again.json()["code"] == "appeal_cooldown"
+
+
+def test_restoring_a_warning_does_not_unhide_the_profile(client, author, moderator):
+    """Accepting a warn appeal used to set the profile back to approved — including
+    one hidden separately, e.g. under a legal escalation."""
+    from app.services import admin_service
+
+    db = TestingSessionLocal()
+    try:
+        user = db.get(User, uuid.UUID(author["user_id"]))
+        user.moderation_status = "hidden"
+        db.commit()
+        admin_service.warn_user(
+            db, db.get(User, uuid.UUID(moderator["user_id"])), user, "be nicer",
+        )
+    finally:
+        db.close()
+
+    assert _appeal(client, author["access_token"], "user", author["user_id"]).status_code == 201
+    assert _decide(client, _appeal_id(), "restore").status_code == 303
+    assert _row(User, author["user_id"]).moderation_status == "hidden"
 
 
 # ---------------------------------------------------------------------------

@@ -176,6 +176,11 @@ def recalculate_rating(itinerary: Itinerary, db: Session) -> None:
 
     The caller is responsible for committing the session.
     """
+    # Lock the row before counting (FOR UPDATE; ignored by SQLite). Callers load
+    # it unlocked and may spend a moderation call first, so without the lock an
+    # owner's save in between was rolled back when set_preserving_etag wrote the
+    # stale updated_at, and two first ratings at once both counted N+1.
+    db.refresh(itinerary, attribute_names=["updated_at"], with_for_update=True)
     row = db.execute(
         select(
             func.count(ItineraryRating.id).label("cnt"),

@@ -23,7 +23,15 @@ or moving one item writes exactly one row.
   same answer.
 - `_INITIAL = "a0"` for an empty list — it leaves room above and below.
   `key_between(None, None) → "a0"`, `key_between("a0", None) → "b"`,
-  `key_between("a0", "b") → "aV"`, `key_between("a0", "a1") → "a01"`.
+  `key_between("a0", "b") → "a1"`, `key_between("a0", "c") → "b"`,
+  `key_between("a0", "a1") → "a01"`.
+- **Appending past a maxed digit keeps going.** When `a`'s digit is already `z`,
+  the key keeps it and steps above `a`'s *next* digit (`"z" → "z1"`,
+  `"zV" → "zW"`). Until 2026-09-28 it returned a fixed `"zV"` whatever followed,
+  so appends went `… z → zV → zV`: the 28th stop or track added at the end
+  collided forever (`409 rank_collision` on every retry, a 500 on a move). Pinned
+  by 500 tail appends, 500 head prepends and 2000 random inserts in
+  `test_fractional_indexing_smoke.py`.
 - `key_between` raises `ValueError` if `a >= b`. The router turns that into
   **412 `itinerary_stale`**, not a 422: out-of-order anchors mean the client's
   view of the list is stale.
@@ -149,7 +157,20 @@ passed that, not the stale itinerary.
 - **Any editing route claims the edit lock before pushing.** `_openStopForm` does
   the round trip first and abandons the push if the claim is refused — no form
   claims a lock for itself, so a route pushed without one looks editable and then
-  428s on Save. See [collaborative-editing.md](collaborative-editing.md).
+  428s on Save. The stop page (`StopDetailScreen`) now claims per edit and shows
+  its edit chrome to editors too. See [collaborative-editing.md](collaborative-editing.md).
+- **A create that half-failed is finished, not repeated.** `StopFormScreen`
+  remembers the stop its Save created (`_createdStop`) and drops each queued note
+  as it lands. If a note then fails (a moderation 422, say), Save again updates
+  that stop (placement keys stripped — on a PATCH `track_id` means "move") and
+  posts only the notes left; it used to offer "Add anyway" and create a second
+  stop.
+- **A parallel group survives losing the stop on screen.** `ParallelStopGroup`'s
+  State outlives rebuilds (a per-track `GlobalKey`), so deleting or moving out the
+  parallel being viewed left its page index past the new end — a RangeError in
+  build. `didUpdateWidget` clamps the index and rebuilds the page view with a
+  controller already on the new page (`expandable_page_view` sizes an internal
+  list by the old item count).
 - Inserting a track between two adjacent tracks joined by a segment shows a
   confirmation first, then deletes the segment(s) — see
   [transit-segments.md](transit-segments.md).

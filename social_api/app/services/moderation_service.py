@@ -37,7 +37,7 @@ from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 from typing import TYPE_CHECKING, Any
 
-from sqlalchemy import delete
+from sqlalchemy import delete, or_
 from sqlalchemy.orm import Session
 
 from app.models.image_moderation_log import ImageModerationLog
@@ -235,6 +235,13 @@ def _log_decision(
         # stored, so this row and its hash are the only surviving evidence of a
         # reportable event. See docs/csam_response_runbook.md.
         ImageModerationLog.action != PRESERVED_ACTION,
+        # An unreviewed queue row is the moderator queue itself; purging it left
+        # the image live and quietly out of review (the text purge already keeps
+        # unreviewed decisions for the same reason).
+        or_(
+            ImageModerationLog.reviewed_at.is_not(None),
+            ImageModerationLog.action.notin_(("flagged", "error_allowed")),
+        ),
     ))
 
 

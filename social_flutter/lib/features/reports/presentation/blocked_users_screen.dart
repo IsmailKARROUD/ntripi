@@ -27,13 +27,25 @@ class BlockedUsersScreen extends ConsumerWidget {
       appBar: AppBar(title: Text(l10n.blockedUsers)),
       body: blocked.when(
         loading: () => const Center(child: NTripiRingLoader()),
-        error: (_, _) => Center(
+        // The real reason and a way to ask again — this said "Could not load
+        // itineraries." and offered nothing to tap.
+        error: (error, _) => Center(
           child: Padding(
             padding: const EdgeInsets.all(24),
-            child: Text(
-              l10n.couldNotLoadItineraries,
-              style: TextStyle(color: nt.text2),
-              textAlign: TextAlign.center,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  extractErrorMessage(error, l10n),
+                  style: TextStyle(color: nt.text2),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 12),
+                TextButton(
+                  onPressed: () => ref.invalidate(blockedUsersProvider),
+                  child: Text(l10n.retry),
+                ),
+              ],
             ),
           ),
         ),

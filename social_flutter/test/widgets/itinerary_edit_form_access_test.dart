@@ -99,7 +99,12 @@ class _FakeEditLock extends EditLockNotifier {
   _FakeEditLock(super.arg);
 
   @override
-  EditSession build() => const EditSession();
+  EditSession build() {
+    // super.build registers the real teardown, which cancels the detach
+    // grace timer when the container goes.
+    super.build();
+    return const EditSession();
+  }
 
   @override
   Future<bool> acquire({bool takeover = false}) async {

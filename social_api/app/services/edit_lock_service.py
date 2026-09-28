@@ -32,6 +32,7 @@ from fastapi import status
 from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
+from app.database import upsert_insert
 from app.errors import ApiError
 from app.models.itinerary import Itinerary
 from app.models.itinerary_edit_lock import ItineraryEditLock
@@ -226,15 +227,23 @@ def claim(
         db.flush()
 
     raw = new_raw_token()
-    lock = ItineraryEditLock(
-        itinerary_id=itinerary.id,
-        user_id=user.id,
-        token_hash=hash_token(raw),
-        acquired_at=now,
-        last_heartbeat_at=now,
-    )
-    db.add(lock)
-    db.flush()
+    # ON CONFLICT DO NOTHING, not a plain add: FOR UPDATE above locks nothing
+    # while no row exists, so two first claims both got here and the loser's
+    # flush was a 500. The loser is now told who won, as if it had come second.
+    inserted = db.execute(
+        upsert_insert(db, ItineraryEditLock)
+        .values(
+            itinerary_id=itinerary.id,
+            user_id=user.id,
+            token_hash=hash_token(raw),
+            acquired_at=now,
+            last_heartbeat_at=now,
+        )
+        .on_conflict_do_nothing(index_elements=[ItineraryEditLock.itinerary_id])
+    ).rowcount
+    lock = get_lock(db, itinerary.id)
+    if not inserted:
+        raise locked_error(to_view(db, lock, user.id, settings))
     return lock, raw
 
 

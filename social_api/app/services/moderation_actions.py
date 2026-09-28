@@ -168,6 +168,8 @@ def auto_hide(
     reason: str,
     report: ContentReport | None = None,
     status: str = "hidden",
+    admin: User | None = None,
+    snapshot: dict | None = None,
 ) -> ModerationLog | None:
     """Hide `target` and audit it. Returns the log row, or None if it was already
     hidden (making a repeat run a genuine no-op).
@@ -179,12 +181,24 @@ def auto_hide(
 
     Does NOT commit — the caller owns the transaction so the hide, the audit row,
     and any report resolution land together.
+
+    `admin` makes the audit row that operator's (carrying `snapshot`); without
+    it the row is a system one, which never carries a snapshot.
     """
+    # An operator's hide resolves as content_hidden: auto_hidden records that no
+    # human acted.
+    resolution = "content_hidden" if admin is not None else "auto_hidden"
+
     if is_hidden(target_type, target):
-        # Still close the report: the content is down, which is what the reporter
-        # asked for, and leaving it pending would keep tripping the SLA sweep.
+        # Still close the reports: the content is down, which is what the
+        # reporters asked for, and leaving them pending would keep tripping the
+        # SLA sweep.
         if report is not None and report.resolution == "pending":
-            admin_service._resolve_report(report, "auto_hidden")
+            admin_service._resolve_report(report, resolution)
+        if target is not None:
+            admin_service.resolve_pending_reports(
+                db, target_type, _target_id(target_type, target), resolution,
+            )
         return None
 
     now = datetime.now(timezone.utc)
@@ -204,7 +218,13 @@ def auto_hide(
                 recalculate_rating(itinerary, db)
 
     if report is not None:
-        admin_service._resolve_report(report, "auto_hidden")
+        admin_service._resolve_report(report, resolution)
+    # Every other report on this target asked for the same thing; left pending,
+    # they would have the SLA sweep re-hide the content after a moderator or an
+    # appeal restored it.
+    admin_service.resolve_pending_reports(
+        db, target_type, _target_id(target_type, target), resolution,
+    )
 
     # Below the already-hidden early return, so a repeat sweep cannot stack up
     # duplicate notices. actor stays None — this is the system acting, and
@@ -221,6 +241,11 @@ def auto_hide(
             entity_id=_target_id(target_type, target),
         )
 
+    if admin is not None:
+        return admin_service.log_action(
+            db, admin, target_type, _target_id(target_type, target), action, reason,
+            snapshot,
+        )
     return log_system_action(db, target_type, _target_id(target_type, target), action, reason)
 
 

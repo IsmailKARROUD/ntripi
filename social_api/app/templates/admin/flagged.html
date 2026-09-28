@@ -55,6 +55,7 @@
           {% endif %}
         </td>
         <td class="snippet muted">
+          {% if r.log.action == 'error_allowed' %}Not scanned — the moderation provider was unavailable at upload.{% endif %}
           {% for label in r.log.labels %}
             {{ label.get('name') }} ({{ '%.0f'|format(label.get('confidence', 0)) }}%){% if not loop.last %}, {% endif %}
           {% endfor %}

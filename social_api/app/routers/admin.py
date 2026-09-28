@@ -455,7 +455,11 @@ async def admin_flagged_action(
     if action == "approve":
         admin_service.approve_flagged(db, admin, log_row, reason)
     elif action == "remove":
-        await admin_service.remove_flagged_image(db, admin, log_row, reason)
+        if not await admin_service.remove_flagged_image(db, admin, log_row, reason):
+            return _redirect(
+                "/admin/flagged",
+                notice="The uploader has already replaced that image — nothing was removed.",
+            )
     elif action in ("warn", "ban"):
         uploader = (
             db.get(User, log_row.uploader_user_id)

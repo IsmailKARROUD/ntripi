@@ -66,8 +66,14 @@ Three details are load-bearing:
 - It then **`db.expire()`s the attribute**, which is why the loaded object still
   reads correctly afterwards.
 
-The **one exception** is `delete_my_account`'s bulk `UPDATE`s — see
-[accounts-and-profiles.md](accounts-and-profiles.md).
+The **one exception** is `delete_my_account`'s bulk `UPDATE`s (clamped the same
+way) — see [accounts-and-profiles.md](accounts-and-profiles.md).
+
+**The state change that justifies a bump is conditional too.** Accept flips the
+row with `UPDATE … WHERE status = 'pending'` and bumps only if it changed a row;
+unfollow deletes with a statement and bumps only if it removed one. Two
+concurrent accepts (a double tap) or two concurrent unfollows used to both pass
+the Python check and count twice.
 
 ### Privacy and leak avoidance
 
@@ -131,7 +137,8 @@ Note the follows router has **no prefix** — its paths are literal `/users/…`
   | `followingProvider` | `AsyncNotifierProvider.family` | who a user follows, paged |
 - **The two lists page like the feed.** Both notifiers extend
   `FollowListNotifier`: `kFollowListPageSize` (50) rows per request, `loadMore()`
-  appends at the current offset and `hasMore` drives a trailing loader.
+  appends at the current offset, skipping ids already shown (a follow between
+  pages shifts every row down one), and `hasMore` drives a trailing loader.
   `FollowListScreen` asks for the next page as a tab nears its end. Before
   2026-09-26 the app sent no `limit`, so every list silently stopped at the
   server's default 20.

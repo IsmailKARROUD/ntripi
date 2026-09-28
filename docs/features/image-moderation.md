@@ -32,7 +32,9 @@ happens at the Cloudflare edge and has **no app config** — see
   pre-v7 and v7 Rekognition top-level names are listed so a model upgrade does
   not silently stop rejecting.
 - **Fail-open is deliberate**: an AWS outage must not block every upload. The
-  `pending` status is what the sweep's post-outage re-check looks for.
+  upload joins `/admin/flagged` as "Not scanned" (`QUEUE_IMAGE_ACTIONS`), and the
+  itinerary stays `pending` — the sweep's text re-check will not approve it while
+  that review is outstanding. Until 2026-09-28 nothing reviewed these at all.
 - **The cover endpoints never lower `itineraries.moderation_status`.** The column
   also carries text-tier flags and a moderator's `rejected`, and the owner's
   request cannot tell which tier raised it. So `upload_itinerary_image` writes the
@@ -67,8 +69,12 @@ the backend is the authority.** It is currently **inert on both platforms**:
 
 ### Audit retention
 
-- **`LOG_RETENTION = 90 days`**, but `PRESERVED_ACTION = "rejected_csam"` rows
-  are **never purged, downgraded, or touched**. On a CSAM takedown the object is
+- **`LOG_RETENTION = 90 days`, for reviewed rows only.** An unreviewed
+  `flagged` / `error_allowed` row is the moderator queue; purging it (as happened
+  until 2026-09-28) left the image live and quietly out of review — the text purge
+  already kept unreviewed decisions for the same reason.
+- **`PRESERVED_ACTION = "rejected_csam"` rows** are **never purged, downgraded, or
+  touched**. On a CSAM takedown the object is
   deleted in the same action, so the row and its SHA-256 are the only surviving
   evidence and their retention is a legal duty.
 - Automated rows carry no raw text, email or display name.

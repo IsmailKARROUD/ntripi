@@ -93,7 +93,8 @@ Extracted in the 2026-07 dedup refactor. Before writing a query/response block i
 - **`app/services/token_util.py`** — `hash_token` / `as_aware_utc` / `new_raw_token` for every opaque-token service (refresh, email). New token types must use these.
 - **`app/services/image_service.py`** — `process_and_store(raw, key, processor, *, cache_bust)` for all image uploads. `cache_bust=True` for user avatar/cover (stable keys need `?v=`), `False` for itinerary covers (never carried `?v=`).
 - **`app/services/share_service.py`** — `build_share_url(itinerary, settings)` for the public share URL; never rebuild the f-string. Also `absolute_storage_url(key, settings)` — the only way to turn a storage key into a URL fit to leave the site (emails, Jira tickets, OG crawlers). Filesystem storage returns a relative `/uploads/…`; R2 is already absolute and passes through.
-- **`app/middleware/__init__.py`** — `STATIC_PREFIXES` shared by ETag + security-headers middleware; add new static mounts there, not in each middleware.
+- **`app/middleware/__init__.py`** — `STATIC_PREFIXES` shared by ETag + security-headers middleware; add new static mounts there, not in each middleware, and test a path with `is_static_path()` (segment boundary) — a bare `startswith("/app")` also matched `/appeal` and `/appeals` and stripped their security headers.
+- **`app/database.py`** — `upsert_insert(db, model)` for any check-then-insert that can race (a dialect `INSERT` with `on_conflict_do_nothing` / `_do_update`, same API on Postgres and the SQLite suite). Used by device registration, the text-moderation cache and the first edit-lock claim — each was a 500 when two requests both saw "no row".
 - **`app/routers/itineraries.py` router-private helpers** (keep router-private; don't re-inline):
   - `_etag_json_response(schema_cls, obj, itinerary, status_code)` — every response that carries the concurrency ETag. In `reorder_itinerary`, pass the freshly reloaded detail, not the stale itinerary.
   - `_require_viewable(itinerary, viewer_id, db, detail=…)` — the only 403 access gate (wraps `can_view_itinerary`). `get_itinerary` passes its historical divergent wording explicitly — do not "fix" it.
@@ -109,16 +110,20 @@ Extracted in the 2026-07 dedup refactor. Before writing a query/response block i
 
 ```
 Code order (first added → innermost):     Runtime request order (outermost first):
-  ETagMiddleware                    →        ProxyHeadersMiddleware
+  LanguageCookieMiddleware          →        ProxyHeadersMiddleware
+  ETagMiddleware                    →        ClientIPHeaderMiddleware
   CORSMiddleware                    →        TrustedHostMiddleware
   SecurityHeadersMiddleware         →        ContentSizeLimitMiddleware
   ContentSizeLimitMiddleware        →        SecurityHeadersMiddleware
   TrustedHostMiddleware             →        CORSMiddleware
-  ProxyHeadersMiddleware            →        ETagMiddleware
+  ClientIPHeaderMiddleware          →        ETagMiddleware
+  ProxyHeadersMiddleware            →        LanguageCookieMiddleware
 ```
 
 Key rules:
-- **`ProxyHeadersMiddleware`** (`uvicorn.middleware.proxy_headers`) must be outermost — it rewrites `X-Forwarded-For` into `request.client.host` so rate limiting (`slowapi`) and `TrustedHostMiddleware` see the real client IP, not Railway's internal proxy IP. `trusted_hosts="*"` is safe because Railway does not expose the container to the internet directly.
+- **`ProxyHeadersMiddleware`** (`uvicorn.middleware.proxy_headers`) is outermost — it rewrites `X-Forwarded-Proto` into the scheme (HSTS needs it) and `X-Forwarded-For` into `request.client.host`. With `trusted_hosts="*"` uvicorn 0.41 takes the **leftmost** X-Forwarded-For entry, and Cloudflare *appends* to a client-supplied header, so on its own that IP is caller-chosen.
+- **`ClientIPHeaderMiddleware`** (`app/middleware/client_ip.py`), just inside ProxyHeaders, has the last word on `request.client`: it takes `CLIENT_IP_HEADER` (default `cf-connecting-ip`, which Cloudflare overwrites) and falls back to the X-Forwarded-For answer when the header is absent (local dev). Every `slowapi` limit keys on this — before 2026-09-28 any caller could forge its IP past login/register/report/appeal limits. A request that reaches Railway directly can still forge either header; closing that is edge config.
+- **`LanguageCookieMiddleware`** is added first, so it is innermost; it touches only `text/html` responses and does not affect the security ordering.
 - **`TrustedHostMiddleware`** reads `ALLOWED_HOSTS` from settings (comma-separated). The apex domain and wildcard must both be listed separately (`ntripi.app,*.ntripi.app`) — Starlette's wildcard does not match the bare apex.
 - **`SecurityHeadersMiddleware`** (`app/middleware/security_headers.py`) applies `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, `Content-Security-Policy: frame-ancestors 'none'`, and (HTTPS only) `Strict-Transport-Security: max-age=31536000`. CSP uses only `frame-ancestors` — `default-src 'self'` is meaningless for a JSON API.
 - **`CORSMiddleware`** must use explicit method and header lists — never `["*"]`. Current whitelist: methods `GET POST PATCH DELETE OPTIONS`; headers `Content-Type Authorization If-Match If-None-Match`.
@@ -148,13 +153,13 @@ Key rules:
 - Every GET returns `ETag` header. Every mutation requires `If-Match` header.
 - Only the owner's editing session may move `updated_at`: moderation writes, lock heartbeats and the rating aggregate (`recalculate_rating`) all go through `set_preserving_etag` or leave it alone, or a stranger's action 412s the owner's open editor.
 - Missing `If-Match` → 428. Mismatch → 412 `{"detail":"itinerary modified, please reload"}`.
-- `_normalize_etag()` handles three intermediary mutations: whitespace, `W/` weak prefix (added by Cloudflare when it recompresses), and `Z` ↔ `+00:00` timezone serialization.
+- `_normalize_etag()` strips three intermediary mutations: whitespace, `W/` weak prefix (added by Cloudflare when it recompresses), and `Z` ↔ `+00:00` timezone serialization. **`require_etag` then compares instants, not strings** (`_concurrency_token`, `datetime.fromisoformat` on both sides): Dart drops the sub-millisecond digits when they are zero (`.123Z` vs Python's `.123000+00:00`), and a byte compare left ~1 in 1000 itineraries permanently unsaveable. Anything after `;` (the GET's body-hash suffix, below) is ignored.
 - Dependency: `require_etag` in `app/dependencies.py` (SELECT FOR UPDATE + ownership + ETag compare).
 
 ### ETag / If-None-Match (cache validation, bandwidth-saving)
 - `ETagMiddleware` in `app/middleware/etag.py` hashes every GET JSON response body to a 16-char opaque ETag and sets `Cache-Control: private, no-cache`. When the client returns the value via `If-None-Match`, the middleware replies `304 Not Modified` with an empty body.
 - The middleware skips non-GET, non-JSON, non-2xx responses, and the `/uploads`, `/static`, `/app` static mounts.
-- If an endpoint sets its own `ETag` header (e.g. `GET /itineraries/{id}` reusing the concurrency token), the middleware leaves it alone — the 304 round-trip still works against the endpoint-set ISO value via `_normalize_etag`.
+- If an endpoint sets its own `ETag` header (e.g. `GET /itineraries/{id}` reusing the concurrency token), the middleware emits **`"<that token>;<body hash>"`** and 304s against the composite. The token alone could not validate a cache: the rating aggregate and moderator hides change the body without moving `updated_at`, so viewers kept stale averages and a stale `hidden` flag indefinitely. `require_etag` reads only the part before `;`, so the header still works as an `If-Match`; tests compare it with `conftest.concurrency_part()`.
 - The middleware uses `_normalize_etag` on both sides of the comparison, so Cloudflare's `W/` weak downgrade still matches.
 - Flutter side: `CachePolicy.request` in `lib/core/api/api_client.dart` honors `Cache-Control` + `ETag` automatically — no per-call changes.
 
@@ -243,7 +248,7 @@ When inserting a new track between two adjacent tracks that have a segment conne
 
 ## Testing
 
-**Backend:** `client` fixture in `test/conftest.py` (fresh SQLite per test). Every itinerary write needs `If-Match` + `X-Edit-Lock` — use conftest's `edit_now` / `locked_headers`, never bare `auth_headers`. The six files once parked under `pytest.mark.skip("rewriting after fractional-indexing refactor")` run again (2026-09-26); new itinerary/ordering tests go in `test/test_fractional_indexing_smoke.py`.
+**Backend:** `client` fixture in `test/conftest.py` (fresh SQLite per test). conftest forces `EMAIL_BACKEND=console` before the app loads — a developer `.env` with `resend` otherwise mails every test address (some are real `@gmail.com` domains, and `OPERATOR_EMAIL` is the live ops inbox). Every itinerary write needs `If-Match` + `X-Edit-Lock` — use conftest's `edit_now` / `locked_headers`, never bare `auth_headers`. The six files once parked under `pytest.mark.skip("rewriting after fractional-indexing refactor")` run again (2026-09-26); new itinerary/ordering tests go in `test/test_fractional_indexing_smoke.py`.
 
 **Flutter:** `http_mock_adapter` for Dio mocking. `FlutterSecureStorage.setMockInitialValues({})` for auth state.
 
@@ -253,7 +258,7 @@ When inserting a new track between two adjacent tracks that have a segment conne
 
 Railway (single Dockerfile) + Cloudflare DNS + Let's Encrypt SSL.
 
-Railway env vars: `DATABASE_URL=${{Postgres.DATABASE_URL}}` · `SECRET_KEY` · `ALGORITHM=HS256` · `ACCESS_TOKEN_EXPIRE_MINUTES=1440` · `DEBUG=False` · `SHARE_BASE_URL=https://ntripi.app` · `ALLOWED_ORIGINS=https://ntripi.app` · `STORAGE_BACKEND=r2` · `R2_ACCESS_KEY_ID` · `R2_SECRET_ACCESS_KEY` · `R2_BUCKET` · `R2_ENDPOINT` · `R2_PUBLIC_URL=https://images.ntripi.app` (proxied custom domain — never `pub-*.r2.dev`) · `STORAGE_PUBLIC_URL_PREFIX=/uploads` (keep set: legacy relative URLs still validate against it). Filesystem fallback for local dev only: `STORAGE_BACKEND=filesystem` + `STORAGE_FILESYSTEM_PATH=/app/uploads`.
+Railway env vars: `DATABASE_URL=${{Postgres.DATABASE_URL}}` · `SECRET_KEY` · `ALGORITHM=HS256` · `ACCESS_TOKEN_EXPIRE_MINUTES=1440` · `DEBUG=False` · `SHARE_BASE_URL=https://ntripi.app` · `ALLOWED_ORIGINS=https://ntripi.app` · `STORAGE_BACKEND=r2` · `R2_ACCESS_KEY_ID` · `R2_SECRET_ACCESS_KEY` · `R2_BUCKET` · `R2_ENDPOINT` · `R2_PUBLIC_URL=https://images.ntripi.app` (proxied custom domain — never `pub-*.r2.dev`) · `STORAGE_PUBLIC_URL_PREFIX=/uploads` (keep set: legacy relative URLs still validate against it) · `CLIENT_IP_HEADER=cf-connecting-ip` (the default; the header every rate limit keys on — keep it while the app sits behind Cloudflare). Filesystem fallback for local dev only: `STORAGE_BACKEND=filesystem` + `STORAGE_FILESYSTEM_PATH=/app/uploads`.
 
 Optional: `FEED_TOP_MIN_RATINGS=3` — minimum rating count for an itinerary to appear in the "Top" discovery feed (defaults to 3; lower it while the catalogue is young).
 
@@ -404,11 +409,11 @@ Delivery for the notification feed above, on iOS and Android. **OFF unless `FCM_
 - **Locale lives on `device_tokens`, not on `users`** — one account can be a phone in French and a tablet in English, and it costs no new user column. Normalised on the way in (`fr-CA` → `fr`, junk → `en`), never 422.
 - **The actor falls back to `@username`, not to "Someone".** Same as the feed. `push_i18n`'s localised "Someone" is only for rows with no actor at all; using it for a user who never set a display name would make an ordinary person anonymous.
 - **`device_tokens.token` is UNIQUE, not `(user_id, token)`.** FCM reassigns a token to whichever account is signed in on that install, so registering is an upsert that MOVES the row. Otherwise two people sharing a phone leave the first still receiving the second's notifications.
-- **Sign-out must `DELETE /devices/{token}`**, before the repository call that discards the access token. A token that outlives the session delivers the previous user's notifications — including moderation notices — to whoever signs in next.
-- **Dead tokens are pruned on `UNREGISTERED` / `INVALID_ARGUMENT` only.** A 500, a 503, or a 401 from a misconfigured key is transient and must never cost a working device its registration — that is unrecoverable without a reinstall. The sweep additionally purges rows idle past `DEVICE_TOKEN_RETENTION_DAYS` (an uninstall never tells us).
+- **Sign-out must `DELETE /devices/{token}`**, before the repository call that discards the access token. A token that outlives the session delivers the previous user's notifications — including moderation notices — to whoever signs in next. `_registeredToken` is memory-only, so on launch `attachPushListeners` **re-adopts** the registration when the OS already granted permission and a session exists (`getNotificationSettings()` never prompts), and `unregisterForPush` falls back to `getToken()` — after a restart it used to unregister nothing.
+- **Dead tokens are pruned on `UNREGISTERED`, and on `INVALID_ARGUMENT` only when the error names the token** (a `message.token` field violation or "registration token" in the message) — FCM also answers `INVALID_ARGUMENT` for a malformed *payload*. A 500, a 503, or a 401 from a misconfigured key is transient and must never cost a working device its registration — that is unrecoverable without a reinstall. The sweep additionally purges rows idle past `DEVICE_TOKEN_RETENTION_DAYS` (an uninstall never tells us).
 - **Client is mobile-only and fails silent.** Every entry point in `lib/core/push/` is `kIsWeb`-guarded, and `initFirebase()` swallows a missing `google-services.json` so the app still launches without push. `PushGateway` (in `MaterialApp.router`'s builder, beside `NotificationPoller`) owns the router and locale; `push_service.dart` owns the FCM plumbing.
 - **The permission prompt is asked on `/notifications` and nowhere else.** iOS allows exactly one per install and a denial is only reversible in Settings, so it lands when the user has just shown they want notifications — not at launch, in front of an app they have not seen.
-- **A cold start's tap is parked, not navigated.** `getInitialMessage()` resolves before the widget tree (and therefore go_router) exists; `takePendingRoute()` is drained from a post-frame callback. This is the most common real-world path and the easiest to lose.
+- **A cold start's tap is routed by the splash screen.** `getInitialMessage()`'s answer is kept as a future; splash awaits `takeInitialPushRoute()` after its brand flash, goes home, then pushes the route over it. A post-frame drain lost every such tap — the platform reply lands after the first frame, and splash's own `go('/profile/me')` overrode it. This is the most common real-world path and the easiest to lose.
 - **Tap routing reuses `notificationRoute()`** (`app_notification.dart`), a free function precisely because a push arrives as a bare `data` map with no `AppNotification`. A tray tap and a feed tap must never disagree.
 - Foreground messages are deliberately unhandled: Android suppresses the tray entry while the app is open, and the poller's badge + `Sfx.newNotification` already announce the arrival.
 
@@ -615,6 +620,14 @@ because those write sibling tables, never itinerary content.
   provider because the claim must survive the detail screen being covered by the
   stop form. The token is **memory only** — any takeover rotates it, so
   persisting it would only create a way to resurrect a dead session.
+- **The claim follows the screens editing under it.** The detail screen
+  `attach()`es in `initState` and `detach()`es in `dispose` (notifier held in a
+  field); when the last screen detaches the claim is released after
+  `kEditLockDetachGrace` unless one re-attaches — a `router.go()` rebuild does.
+  A rebuilt detail screen resumes a claim it already holds, and `_enterEditMode`
+  never re-acquires a held one. The heartbeat stops for good on 403 (rights
+  revoked → lost) and 404 (itinerary gone), and skips while the app is
+  backgrounded. Sign-out calls `releaseAllEditClaims` before the tokens go.
 - `mayEdit = isOwner || itinerary.canEdit`. Ownership is OR-ed in because it is
   the one case the client can derive itself, and a summary payload (no `can_edit`
   key) must not take the owner's own pencil away.
@@ -642,7 +655,12 @@ because those write sibling tables, never itinerary content.
   then 428s on Save. `_openStopForm` and `_openDetailsForm` both do the round
   trip before pushing and abandon the push if the claim is refused — the
   "someone else is editing" banner is the honest answer at that point, not an
-  error after the user has typed. Self-removal pops `true` from the form so the
+  error after the user has typed. The read-mode long-presses (description,
+  itinerary note, a stop) claim — and await the claim — the same way.
+  **The stop page has no edit mode**, so its edits run through `_withClaim`:
+  acquire only when this device holds none, name the holder on refusal, release
+  only a claim it took. Its edit chrome gates on `mayEdit`, not ownership.
+  Self-removal pops `true` from the form so the
   detail screen leaves edit mode and refetches (`can_edit` has just flipped).
 - **A lock loss must never pop a route or clear a controller.** The ejected user
   is mid-edit and their unsaved text is now the only copy: `EditLockLostNotice`
@@ -934,7 +952,7 @@ For each article the change touches:
 - Do NOT reword a `push_i18n` string without rewording its `.arb` twin — a tray entry and its feed row are the same sentence
 - Do NOT name a reporter, a reason, or a report count in push text — the tray entry is visible on a lock screen
 - Do NOT ask for notification permission at launch — iOS grants exactly one prompt per install and a denial is only undoable in Settings
-- Do NOT navigate from `getInitialMessage()` — go_router does not exist yet on a cold start; park the route and drain it post-frame
+- Do NOT navigate from `getInitialMessage()`, and do NOT drain it from a post-frame callback — the reply lands after the first frame and splash navigates anyway; splash awaits `takeInitialPushRoute()`
 - Do NOT let push failures surface to the user or block a write — it fails open like `email_service`, and the poll still corrects the badge within a minute
 - Do NOT make `NotificationPoller` conditional on push — best-effort delivery is exactly why the backstop exists
 - Do NOT give `moderation_action` an actor or an inline appeal button — it would out the reporter and give appeals a second home away from `/settings/account-status`
@@ -1060,5 +1078,13 @@ For each article the change touches:
 - Do NOT catch `asyncio.CancelledError` in exception handlers — re-raise it; intercepting it breaks Starlette's lifespan
 - Do NOT add new rate-limited endpoints without importing `limiter` from `app/limiter.py` (not from `app/main.py` — circular import)
 - Do NOT run the container as root — the Dockerfile creates `appuser` and must keep `USER appuser`
-- Do NOT store tokens or sensitive user data in Riverpod provider state — use `flutter_secure_storage` only; call `ref.invalidate()` on user-specific providers in `AuthNotifier.logout()`
+- Do NOT store tokens or sensitive user data in Riverpod provider state — use `flutter_secure_storage` only
+- Do NOT add a keep-alive user-scoped provider without adding it to `_userScopedProviders` in `auth_provider.dart` — that list is reset on sign-in and sign-out, and a provider missing from it shows one account's data to the next person on the device
+- Do NOT key the HTTP cache on the URL alone — `ntripiCacheKey` (`core/api/cache_key.dart`) prefixes the JWT `sub`, and every `CacheOptions` (including `forceRefreshOptions()`, whose options replace the interceptor's) and `CacheEvictInterceptor` must use it
+- Do NOT compare an `If-Match` as a string — `_concurrency_token` compares instants; Dart and Python spell the same `updated_at` differently one time in a thousand
+- Do NOT key a rate limit on X-Forwarded-For alone behind Cloudflare — its leftmost entry is caller-chosen; `ClientIPHeaderMiddleware` sets the client from `CLIENT_IP_HEADER`
+- Do NOT close only the report in hand when content is hidden or restored — `admin_service.resolve_pending_reports` settles the target's other pending reports, or the SLA sweep re-hides what a moderator restored
+- Do NOT approve an itinerary's status from an image review or a clean text re-check while another unreviewed signal stands on it — `approve_flagged` lowers only `flagged`, and the re-check leaves `pending` while an unscanned upload waits in `/admin/flagged`
+- Do NOT write two audit rows for one operator hide — pass `admin=` to `moderation_actions.auto_hide`
+- Do NOT let a background timer (heartbeat, poll) run while the app is not resumed, or outlive every screen that needs it — `EditLockNotifier.attach()`/`detach()`
 - Do NOT call `ref.read` / `ref.watch` / `ref.invalidate` inside `State.dispose()` — it throws at runtime; capture the notifier in a field from `build` and call it from there

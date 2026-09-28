@@ -709,7 +709,9 @@ Seul le **propriétaire** peut ajouter ou retirer des éditeurs. Un éditeur ne 
                 kind=KIND_STEP,
                 body="""Modifier suppose de pouvoir d’abord voir. Si vous invitez quelqu’un qui ne le peut pas, Ntripi demande s’il faut aussi lui donner l’accès, plutôt que d’échouer.
 
-Répondre oui l’ajoute à la liste d’autorisation de ce voyage, et rien d’autre. Cela n’élargit jamais la visibilité du voyage — transformer « abonnés » en « personnes précises » couperait silencieusement tous les autres, cela reste donc une décision que vous prenez délibérément.""",
+Répondre oui l’ajoute à la liste d’autorisation de ce voyage, et rien d’autre. Cela n’élargit jamais la visibilité du voyage — transformer « abonnés » en « personnes précises » couperait silencieusement tous les autres, cela reste donc une décision que vous prenez délibérément.
+
+Si le voyage est réservé aux abonnés ou à vous seul, une liste d’autorisation n’y changerait rien : Ntripi propose alors **Changer la visibilité**, qui ouvre le réglage de qui peut voir le voyage. Choisissez-y, enregistrez, puis invitez la personne à nouveau.""",
             ),
             Block(
                 anchor="one-at-a-time",
@@ -755,7 +757,7 @@ Reprenez le voyage et enregistrez, ou copiez votre texte et collez-le quand l’
             "verrou",
         ),
         related=("share-an-itinerary-privately", "plan-alternative-options", "troubleshooting"),
-        updated="2026-09-01",
+        updated="2026-09-28",
         cta="Planifiez votre prochain voyage avec ceux qui le feront.",
     ),
     Article(
@@ -1342,7 +1344,9 @@ Les vérifications automatiques envoient le contenu et rien d’autre — pas d�
                 kind=KIND_FAQ,
                 body="""Sur l’écran de modification de votre profil, sous Sécurité ▸ **Supprimer le compte**. Vous confirmez avec votre mot de passe, ou avec Google si c’est ainsi que vous vous connectez.
 
-La suppression est définitive et emporte vos voyages avec elle. Les voyages que d’autres avaient enregistrés cessent de fonctionner, puisqu’un favori est un renvoi et non une copie.""",
+La suppression est définitive et emporte vos voyages avec elle. Les voyages que d’autres avaient enregistrés cessent de fonctionner, puisqu’un favori est un renvoi et non une copie.
+
+Votre photo de profil, votre couverture et les photos de couverture de vos voyages sont effacées en même temps.""",
             ),
             Block(
                 anchor="requests",
@@ -1383,7 +1387,9 @@ La même adresse couvre les demandes de rectification, de limitation et d’oppo
                 kind=KIND_FAQ,
                 body="""Utilisez **Mot de passe oublié** sur l’écran de connexion. Un lien de réinitialisation arrive par e-mail et reste valable un court moment.
 
-Si aucun message n’arrive, regardez dans les indésirables et vérifiez que vous utilisez bien l’adresse avec laquelle vous vous êtes inscrit. Si vous vous êtes inscrit avec Google, vous n’avez peut-être aucun mot de passe — connectez-vous avec Google.""",
+Si aucun message n’arrive, regardez dans les indésirables et vérifiez que vous utilisez bien l’adresse avec laquelle vous vous êtes inscrit. Si vous vous êtes inscrit avec Google, vous n’avez peut-être aucun mot de passe — connectez-vous avec Google.
+
+Chaque demande envoie un nouveau lien. Dès que vous avez choisi un nouveau mot de passe, tous les liens plus anciens cessent de fonctionner.""",
             ),
             Block(
                 anchor="verify-email",
@@ -1391,7 +1397,9 @@ Si aucun message n’arrive, regardez dans les indésirables et vérifiez que vo
                 kind=KIND_FAQ,
                 body="""Ces trois actions exigent une adresse e-mail vérifiée. Cherchez le lien de vérification dans votre boîte de réception, ou utilisez la bannière de votre profil pour en renvoyer un.
 
-Se connecter avec Google sur la même adresse la vérifie aussi. Cette exigence est ce qui tient les comptes jetables à l’écart des évaluations et des listes d’abonnés.""",
+Se connecter avec Google sur la même adresse la vérifie aussi. Cette exigence est ce qui tient les comptes jetables à l’écart des évaluations et des listes d’abonnés.
+
+Si vous aviez créé un mot de passe sur un compte jamais vérifié, vous connecter ensuite avec Google supprime ce mot de passe et déconnecte les autres sessions — cela vous protège si quelqu’un d’autre avait inscrit votre adresse avant vous. Utilisez **Mot de passe oublié** pour en choisir un nouveau.""",
             ),
             Block(
                 anchor="changing-password",
@@ -1444,7 +1452,7 @@ C’est définitif, et cela emporte vos voyages. Si vous voulez seulement dispar
             "16 ans",
         ),
         related=("your-data-and-privacy", "troubleshooting"),
-        updated="2026-09-01",
+        updated="2026-09-28",
     ),
     Article(
         slug="report-and-block",

@@ -36,14 +36,8 @@ class _PushGatewayState extends ConsumerState<PushGateway> {
       currentLocale: () => ref.read(localeProvider).languageCode,
       onRoute: appRouter.go,
     );
-
-    // A cold start from a terminated app resolves its tap before the router
-    // exists, so push_service parks the route rather than dropping it. Drained
-    // after the first frame, once appRouter has something to navigate.
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final route = takePendingRoute();
-      if (route != null && mounted) appRouter.go(route);
-    });
+    // A cold start's tap is not drained here: the splash screen owns the first
+    // navigation, so it awaits takeInitialPushRoute() itself.
   }
 
   @override

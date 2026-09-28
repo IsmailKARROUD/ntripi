@@ -17,6 +17,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:social_flutter/core/api/api_client.dart';
 import 'package:social_flutter/core/api/api_endpoints.dart';
 import 'package:social_flutter/core/ui/app_theme.dart';
@@ -101,13 +102,24 @@ class EditorsScreen extends ConsumerWidget {
     );
   }
 
-  void _openAddDialog(BuildContext context, WidgetRef ref) {
-    showDialog<void>(
+  Future<void> _openAddDialog(BuildContext context, WidgetRef ref) async {
+    final outcome = await showDialog<_AddEditorOutcome>(
       context: context,
       builder: (_) => _AddEditorDialog(itineraryId: itineraryId),
     );
+    // "Change visibility" has to land somewhere: the picker belongs to the Edit
+    // Itinerary form this screen was pushed from, so hand the request back to
+    // it. The button used to just close the dialog.
+    if (outcome == _AddEditorOutcome.openVisibility && context.mounted) {
+      context.pop(EditorsScreenResult.openVisibility);
+    }
   }
 }
+
+/// What [EditorsScreen] pops with when it needs the form behind it to act.
+enum EditorsScreenResult { openVisibility }
+
+enum _AddEditorOutcome { openVisibility }
 
 class _EditorList extends ConsumerWidget {
   const _EditorList({required this.itineraryId, required this.editors});
@@ -277,12 +289,15 @@ class _AddEditorDialogState extends ConsumerState<_AddEditorDialog> {
       // only_me / followers: the fix is a visibility change, which is the
       // owner's decision to make deliberately on its own screen — doing it
       // here would quietly change who else can see the trip.
-      await ConfirmDialog.show(
+      final open = await ConfirmDialog.show(
         context,
         title: l10n.editorsGrantViewTitle,
         message: l10n.editorsChangeVisibilityMessage(label),
         confirmLabel: l10n.editorsOpenVisibility,
       );
+      if (open == true && mounted) {
+        Navigator.pop(context, _AddEditorOutcome.openVisibility);
+      }
       return;
     }
 
@@ -323,9 +338,12 @@ class _AddEditorDialogState extends ConsumerState<_AddEditorDialog> {
                 child: NTripiRingLoader(size: 22),
               )
             else
-              OfflineGate(
-                builder: (online) => Flexible(
-                  child: ListView.builder(
+              // Flexible OUTSIDE the gate: offline, OfflineGate wraps its child
+              // in an AbsorbPointer, and a Flexible under that is no longer a
+              // Flex child — a ParentData crash the moment the signal dropped.
+              Flexible(
+                child: OfflineGate(
+                  builder: (online) => ListView.builder(
                     shrinkWrap: true,
                     itemCount: _results.length,
                     itemBuilder: (_, index) {

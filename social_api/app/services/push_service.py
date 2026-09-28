@@ -366,9 +366,9 @@ def _drop_pending_pushes(session: Session, previous_transaction: Any) -> None:
 def _is_dead_token(resp: Any) -> bool:
     """True when FCM says this specific registration token is gone.
 
-    404/UNREGISTERED is the uninstall case; 400/INVALID_ARGUMENT means the
-    string is not a token we can ever deliver to. Anything else — including a
-    500 — is transient and must NOT cost the user their registration.
+    404/UNREGISTERED is the uninstall case; 400/INVALID_ARGUMENT naming the
+    token means the string is not one we can ever deliver to. Anything else —
+    a payload error, a 500 — must NOT cost the user their registration.
     """
     if resp.status_code not in (400, 404):
         return False
@@ -376,10 +376,19 @@ def _is_dead_token(resp: Any) -> bool:
         error = resp.json().get("error", {})
     except Exception:
         return False
-    if error.get("status") in _DEAD_TOKEN_CODES:
+    details = [d for d in error.get("details", []) if isinstance(d, dict)]
+    codes = {error.get("status")} | {d.get("errorCode") for d in details}
+    if "UNREGISTERED" in codes:
         return True
-    return any(
-        detail.get("errorCode") in _DEAD_TOKEN_CODES
-        for detail in error.get("details", [])
-        if isinstance(detail, dict)
+    if "INVALID_ARGUMENT" not in codes:
+        return False
+    # FCM answers INVALID_ARGUMENT for a malformed PAYLOAD too — pruning on the
+    # code alone would unregister every device of every recipient over a bug of
+    # ours. Only an error that names the token says the token itself is bad.
+    names_token = any(
+        violation.get("field") == "message.token"
+        for detail in details
+        for violation in detail.get("fieldViolations", [])
+        if isinstance(violation, dict)
     )
+    return names_token or "registration token" in (error.get("message") or "").lower()

@@ -22,7 +22,8 @@ HOW THE ALGORITHM WORKS:
   Examples:
     key_between(None, None)  → "a0"       (initial key for an empty list)
     key_between("a0", None)  → "b"        (one step after a0)
-    key_between("a0", "b")   → "aV"       (midpoint — 'V' is index 31, halfway)
+    key_between("a0", "b")   → "a1"       ('a'/'b' adjacent: keep 'a', step above '0')
+    key_between("a0", "c")   → "b"        (gap of 2: midpoint digit)
     key_between("a0", "a1")  → "a01"      (adjacent digits: extend one level)
 
 WHY TEXT COLLATE "C" IN POSTGRES?
@@ -97,13 +98,14 @@ def key_between(a: str | None, b: str | None) -> str:
             # b provides no upper constraint. Step one digit above a.
             if av < _N - 1:
                 result.append(_DIGITS[av + 1])
-            else:
-                # a's digit is already at the maximum — we can't go one higher
-                # at this position, so write it and add a midpoint extra digit
-                # so future inserts have room on both sides.
-                result.append(_DIGITS[av])
-                result.append(_DIGITS[_N // 2])
-            return "".join(result)
+                return "".join(result)
+            # a's digit is already the maximum, so nothing fits above it at this
+            # position — keep it and step above a's NEXT digit instead. Returning
+            # a fixed "zV" here ignored the rest of a, so key_between("zV", None)
+            # answered "zV" and the 28th tail append collided forever.
+            result.append(_DIGITS[av])
+            i += 1
+            continue
 
         # Treat missing digits as the minimum digit.
         bv = _idx(b[i]) if i < b_len else 0

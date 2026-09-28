@@ -1,6 +1,6 @@
 # API error codes
 
-Every machine-readable error code the backend raises. **63 codes.**
+Every machine-readable error code the backend raises. **64 codes.**
 
 ## How the mechanism works
 
@@ -29,7 +29,7 @@ Two service layers raise their own exception types that routers convert to
 3. `code == 'text_moderation_rejected'` → `moderationRejectionMessage()`, which
    turns the `categories` in `extra` into plain language.
 4. `localizedApiError(code, l10n)` (`lib/core/api/api_error_codes.dart`) — a
-   localized string for **49 of the 63 codes**.
+   localized string for **49 of the 64 codes**.
 5. Fall back to the server's `detail` string — **English, untranslated**.
 6. Fall back to a generic message.
 
@@ -106,6 +106,17 @@ from the router. `DateOfBirthField` refuses both before anything is sent, and a
 |---|---|---|---|
 | `cannot_block_self` | 400 | `users.py:625` | localized |
 
+### Profile
+
+| Code | Status | Raised at | Client |
+|---|---|---|---|
+| `image_url_not_allowed` | 422 | `users.py` (`update_my_profile`) | — |
+
+`PATCH /users/me` may clear `avatar_url` / `cover_image_url` or resend the value
+already stored, never point either somewhere new: the old prefix-only check let
+anyone wear another user's avatar, or republish their own taken-down cover. New
+images go through the upload endpoints, which scan them.
+
 A blocked or banned profile answers **404 with the same body as a deleted one**,
 so the blocked user is never told. There is no dedicated code for it.
 
@@ -151,7 +162,9 @@ reaches `extractErrorMessage`. See
 to claim and cannot" — answerable by waiting or taking over. 409
 `edit_lock_lost` means "you believed you held it and do not" — protect the
 unsaved input. `editor_cannot_view` carries `{visibility, can_fix_with_allowlist}`
-in `extra`: it is a question, not an error.
+in `extra`: it is a question, not an error. Across a block in either direction
+`POST /editors` answers **404 `user_not_found`** instead (since 2026-09-28): a
+409 naming `visibility: public` could only mean the target had blocked the owner.
 
 ### Stops, tracks, segments, legs
 
@@ -200,7 +213,7 @@ All raised via `AppealError` in `services/appeal_service.py`.
 | `appeal_reason_too_long` | 422 | `appeal_service.py:133` | — |
 | `appeal_target_not_found` | 404 | `appeal_service.py:140` | localized |
 | `appeal_already_pending` | 409 | `appeal_service.py:155` | localized |
-| `appeal_cooldown` | **429** | `appeal_service.py:163` | localized |
+| `appeal_cooldown` | **429** | `appeal_service.py:163` | localized — 30 days after an appeal was decided `upheld` **or `reduced`** (a reduced hide changes nothing, so it used to be re-appealable at once) |
 | `appeal_already_decided` | 409 | `appeal_service.py:327` | — |
 
 ### Bug reports and waitlist
@@ -214,7 +227,7 @@ All raised via `AppealError` in `services/appeal_service.py`.
 
 ## Unmapped codes
 
-These **11** have no `localizedApiError` case. None of them can reach an app
+These **12** have no `localizedApiError` case. None of them can reach an app
 user, which is why they stay unmapped — a string in six languages for a message
 nobody can see is dead weight:
 
@@ -228,6 +241,7 @@ nobody can see is dead weight:
 | `google_reauth_required` | the Google delete path always sends a fresh token |
 | `reauth_required` | fail-closed branch for an account with neither a password nor a provider |
 | `unauthorized`, `not_found` | raised only by `/internal/moderation-sweep`, which has no app client |
+| `image_url_not_allowed` | the app never PATCHes an image URL — it uploads through `/users/me/avatar` and `/users/me/cover` |
 
 If a client change makes one of these reachable, it moves out of this table in
 the same commit. `underage`, `dob_required` and `google_account_mismatch` were

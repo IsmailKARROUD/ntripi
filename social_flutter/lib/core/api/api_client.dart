@@ -27,6 +27,7 @@ import 'package:go_router/go_router.dart';
 import 'package:social_flutter/core/api/api_endpoints.dart';
 import 'package:social_flutter/core/api/api_error_codes.dart';
 import 'package:social_flutter/core/api/cache_evict_interceptor.dart';
+import 'package:social_flutter/core/api/cache_key.dart';
 import 'package:social_flutter/core/auth/token_manager.dart';
 import 'package:social_flutter/core/storage/secure_storage.dart';
 import 'package:social_flutter/features/itineraries/data/itinerary_repository.dart';
@@ -35,6 +36,10 @@ import 'package:social_flutter/l10n/app_localizations.dart';
 /// Singleton Dio instance used throughout the app.
 /// Lazily initialised via [createDioClient].
 late final Dio dio;
+
+/// The disk cache behind [dio], or null on web. Held so sign-out can wipe it:
+/// its entries are one account's responses.
+CacheStore? httpCacheStore;
 
 /// Bare Dio with no AuthInterceptor — used by TokenManager for /auth/refresh
 /// (calling /auth/refresh through the AuthInterceptor would recurse) and by
@@ -74,6 +79,9 @@ Options forceRefreshOptions() => Options(
         // step with createDioClient's.
         hitCacheOnErrorExcept: kNeverServeStaleFor,
         maxStale: Duration(days: 7),
+        // Also replaced wholesale — without it a refreshed body landed under
+        // the account-less key and never reached the account's own entry.
+        keyBuilder: ntripiCacheKey,
       ).toExtra(),
     );
 
@@ -113,6 +121,7 @@ Dio createDioClient({
   // queues behind the outer interceptor). bareDio is the natural choice.
   instance.interceptors.add(AuthInterceptor(tokenManager, bareDio));
 
+  httpCacheStore = cacheStore;
   if (cacheStore != null) {
     instance.interceptors.add(
       DioCacheInterceptor(
@@ -122,7 +131,7 @@ Dio createDioClient({
           hitCacheOnErrorExcept: kNeverServeStaleFor,
           maxStale: const Duration(days: 7),
           priority: CachePriority.normal,
-          keyBuilder: CacheOptions.defaultCacheKeyBuilder,
+          keyBuilder: ntripiCacheKey,
         ),
       ),
     );
@@ -208,6 +217,8 @@ class AuthInterceptor extends Interceptor {
       final token = await _tokenManager.getValidAccessToken();
       if (token != null) {
         options.headers['Authorization'] = 'Bearer $token';
+        // Whose cache entry this is — see cache_key.dart.
+        options.extra[kCacheSubjectExtra] = jwtSubject(token);
       }
       handler.next(options);
     } on NetworkUnavailableException {
@@ -216,6 +227,9 @@ class AuthInterceptor extends Interceptor {
       // serves the most recent stored response. We do NOT delete tokens
       // or navigate — the session is still potentially alive.
       options.extra[kAuthSkippedExtra] = true;
+      // The expired token still names the account, and offline is exactly
+      // when the cache must find that account's entries.
+      options.extra[kCacheSubjectExtra] = jwtSubject(await readToken());
       handler.next(options);
     } on SessionExpiredException {
       // Refresh token rejected by the server — session is dead.
@@ -271,27 +285,45 @@ class AuthInterceptor extends Interceptor {
     // Server rejected our access token mid-flight (token was valid by
     // local check but revoked server-side, or `exp` slipped past during
     // the request). Try one refresh + retry, then give up.
+    final String newAccess;
     try {
-      final newAccess = await _tokenManager.forceRefresh();
-      final retryOptions = err.requestOptions;
-      retryOptions.headers['Authorization'] = 'Bearer $newAccess';
+      newAccess = await _tokenManager.forceRefresh();
+    } on SessionExpiredException {
+      // TokenManager has already cleared storage — just navigate.
+      _goToLogin();
+      handler.next(err);
+      return;
+    } on NetworkUnavailableException {
+      // Couldn't refresh, but session may still be alive — don't logout.
+      handler.next(err);
+      return;
+    }
+
+    final retryOptions = err.requestOptions;
+    retryOptions.headers['Authorization'] = 'Bearer $newAccess';
+    // A FormData body is consumed by the first send, and Dio refuses to
+    // finalize it twice — without a copy every upload that crossed a token
+    // expiry failed its retry.
+    final sent = retryOptions.data;
+    if (sent is FormData) retryOptions.data = sent.clone();
+    try {
       // Fire the retry on _retryDio (no AuthInterceptor) so we don't
       // recurse — and to avoid Dio's interceptor lock deadlocking against
       // the onError that's currently awaiting us.
       final response = await _retryDio.fetch(retryOptions);
       handler.resolve(response);
-      return;
-    } on SessionExpiredException {
-      // TokenManager has already cleared storage — just navigate.
-      _goToLogin();
-    } on NetworkUnavailableException {
-      // Couldn't refresh, but session may still be alive — don't logout.
+    } on DioException catch (retryError) {
+      // The retry ran with a fresh token, so its own answer (412, 409, 422,
+      // 5xx…) is the one the caller must see — reporting the original 401 and
+      // bouncing to /login lost the 412 dialog and the lock-lost notice. Only
+      // a fresh token still being refused means the session is gone.
+      final data = retryError.response?.data;
+      final codeless = !(data is Map && data['code'] is String);
+      if (retryError.response?.statusCode == 401 && codeless) _goToLogin();
+      handler.next(retryError);
     } catch (_) {
-      // Retry itself failed (e.g. another 401) — bail to login.
-      _goToLogin();
+      handler.next(err);
     }
-
-    handler.next(err);
   }
 }
 

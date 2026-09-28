@@ -16,11 +16,12 @@ stored image files are deliberately left in place — both are legal/safety evid
 from __future__ import annotations
 
 import hashlib
+import html
 import logging
 import uuid
 from datetime import datetime, timedelta, timezone
 
-from sqlalchemy import func, select
+from sqlalchemy import func, select, update
 from sqlalchemy.orm import Session, selectinload
 from sqlalchemy.orm.attributes import flag_modified
 
@@ -148,6 +149,30 @@ def _resolve_report(report: ContentReport | None, resolution: str) -> None:
         report.resolved_at = datetime.now(timezone.utc)
 
 
+def resolve_pending_reports(
+    db: Session, target_type: str, target_id: uuid.UUID | None, resolution: str,
+) -> None:
+    """Close every still-pending report on one target.
+
+    Content is hidden or cleared once but can carry many reports. Closing only
+    the one in hand left the rest pending, and the SLA sweep then re-hid content
+    a moderator had just restored. A target under an open legal escalation keeps
+    its reports: those close from the Legal lane, with a note. Caller commits.
+    """
+    if target_id is None or target_has_open_escalation(db, target_type, target_id):
+        return
+    db.flush()  # a report resolved in memory must not be overwritten below
+    db.execute(
+        update(ContentReport)
+        .where(
+            ContentReport.target_type == target_type,
+            ContentReport.target_id == target_id,
+            ContentReport.resolution == "pending",
+        )
+        .values(resolution=resolution, resolved_at=datetime.now(timezone.utc))
+    )
+
+
 # ---------------------------------------------------------------------------
 # Emails (best-effort, sent after commit)
 # ---------------------------------------------------------------------------
@@ -161,6 +186,9 @@ def _send_moderation_email(
     target_id: uuid.UUID | None,
 ) -> None:
     """Notify a user about an action against them, with an appeal link.
+
+    `body` is HTML: callers escape every interpolated value (titles are
+    user-written, reasons operator-written).
 
     Imported lazily: auth_service pulls in the whole auth stack, and admin_service
     is imported by the admin router at startup.
@@ -221,6 +249,7 @@ def hide_itinerary(
     snapshot = snapshot_itinerary(itinerary, report)
     set_preserving_etag(itinerary, hidden_at=datetime.now(timezone.utc))
     _resolve_report(report, "content_hidden")
+    resolve_pending_reports(db, TARGET_ITINERARY, itinerary.id, "content_hidden")
     log_action(db, admin, TARGET_ITINERARY, itinerary.id, "hide", reason, snapshot)
     # actor stays None: the author is owed the notice, not the moderator's name.
     notification_service.notify(
@@ -245,6 +274,9 @@ def _reverse_takedown(
     set_preserving_etag(
         itinerary, hidden_at=None, deleted_at=None, moderation_status="approved",
     )
+    # A human just judged the content: reports left pending would have the SLA
+    # sweep take it down again within the day.
+    resolve_pending_reports(db, TARGET_ITINERARY, itinerary.id, "dismissed")
     log_action(db, admin, TARGET_ITINERARY, itinerary.id, action, reason, snapshot)
     db.commit()
 
@@ -265,10 +297,23 @@ def soft_delete_itinerary(
 ) -> None:
     """Hard penalty — invisible to everyone including the owner. The row and its
     stored image are intentionally preserved as evidence."""
+    send_email = _stage_soft_delete(db, admin, itinerary, reason, report)
+    db.commit()
+    send_email()
+
+
+def _stage_soft_delete(
+    db: Session, admin: User, itinerary: Itinerary, reason: str,
+    report: ContentReport | None,
+):
+    """Everything a soft delete writes, minus the commit. Returns the author's
+    email as a callable to run after the commit — shared with bulk_resolve, whose
+    deletes used to skip both the notification and the appeal link."""
     snapshot = snapshot_itinerary(itinerary, report)
     owner = db.get(User, itinerary.user_id)
     set_preserving_etag(itinerary, deleted_at=datetime.now(timezone.utc))
     _resolve_report(report, "content_removed")
+    resolve_pending_reports(db, TARGET_ITINERARY, itinerary.id, "content_removed")
     log = log_action(db, admin, TARGET_ITINERARY, itinerary.id, "delete", reason, snapshot)
     # This path does not go through moderation_actions.auto_hide, so it needs
     # its own notify. actor stays None — see hide_itinerary.
@@ -276,16 +321,19 @@ def soft_delete_itinerary(
         db, user_id=itinerary.user_id, type="moderation_action", subtype="delete",
         entity_type=TARGET_ITINERARY, entity_id=itinerary.id,
     )
-    db.commit()
 
-    if owner is not None:
+    def send_email() -> None:
+        if owner is None:
+            return
         _send_moderation_email(
             owner,
             "Your content was removed",
-            f"An itinerary you posted (“{snapshot['title']}”) was removed by a "
-            f"moderator. Reason: {reason}",
+            f"An itinerary you posted (“{html.escape(snapshot['title'] or '')}”) was "
+            f"removed by a moderator. Reason: {html.escape(reason)}",
             log, TARGET_ITINERARY, itinerary.id,
         )
+
+    return send_email
 
 
 def warn_user(
@@ -309,7 +357,7 @@ def warn_user(
         user,
         "You've received a moderation warning",
         f"A moderator reviewed your activity on Ntripi and issued a warning. "
-        f"Reason: {reason}. Further violations may lead to suspension.",
+        f"Reason: {html.escape(reason)}. Further violations may lead to suspension.",
         log, TARGET_USER, user.id,
     )
 
@@ -340,7 +388,7 @@ def ban_user(
     _send_moderation_email(
         user,
         "Your account has been suspended",
-        f"Your Ntripi account has been suspended by a moderator. Reason: {reason}",
+        f"Your Ntripi account has been suspended by a moderator. Reason: {html.escape(reason)}",
         log, TARGET_USER, user.id,
     )
 
@@ -370,7 +418,13 @@ def bulk_resolve(
     from app.services import moderation_actions  # lazy: circular otherwise
 
     handled = 0
+    emails = []
     for report in reports:
+        # Same guard the single-report route enforces: an escalated report closes
+        # from the Legal page only — the checkbox is on every row of the queue.
+        if action == "dismiss" and has_open_escalation(db, report):
+            continue
+
         target = moderation_actions.load_target(db, report.target_type, report.target_id)
         itinerary = target if report.target_type == TARGET_ITINERARY else None
 
@@ -393,13 +447,16 @@ def bulk_resolve(
         elif itinerary.deleted_at is not None:
             _resolve_report(report, "content_removed")
         else:
-            snapshot = snapshot_itinerary(itinerary, report)
-            set_preserving_etag(itinerary, deleted_at=datetime.now(timezone.utc))
-            _resolve_report(report, "content_removed")
-            log_action(db, admin, TARGET_ITINERARY, itinerary.id, "delete", reason, snapshot)
+            emails.append(_stage_soft_delete(db, admin, itinerary, reason, report))
         handled += 1
 
     db.commit()
+    # After the commit, like every moderation email: an outage must not undo it.
+    for send_email in emails:
+        try:
+            send_email()
+        except Exception:
+            logger.exception("bulk delete author email failed")
     return handled
 
 
@@ -414,7 +471,16 @@ def approve_flagged(db: Session, admin: User, log_row: ImageModerationLog, reaso
         db.get(Itinerary, log_row.target_itinerary_id)
         if log_row.target_itinerary_id else None
     )
-    if itinerary is not None and itinerary.deleted_at is None:
+    # The image is cleared, not the itinerary: assigning "approved" outright wiped
+    # text flags and a moderator's reject. Lower only a flag nothing else still
+    # stands behind. 'pending' is left for the sweep, which re-scans the text and
+    # approves once no unscanned image remains (sweep_service._recheck_pending).
+    if (
+        itinerary is not None
+        and itinerary.deleted_at is None
+        and itinerary.moderation_status == "flagged"
+        and not _itinerary_has_open_signal(db, itinerary.id, except_log=log_row.id)
+    ):
         set_preserving_etag(itinerary, moderation_status="approved")
 
     log_action(
@@ -427,14 +493,71 @@ def approve_flagged(db: Session, admin: User, log_row: ImageModerationLog, reaso
     db.commit()
 
 
+def _itinerary_has_open_signal(db: Session, itinerary_id, *, except_log) -> bool:
+    """True while another unreviewed moderation signal stands on this itinerary:
+    a text flag still in the moderator queue, or a second queued image."""
+    text_open = db.execute(
+        select(TextModerationDecision.id).where(
+            TextModerationDecision.target_type == TARGET_ITINERARY,
+            TextModerationDecision.target_id == itinerary_id,
+            TextModerationDecision.outcome == "review",
+            TextModerationDecision.reviewed_at.is_(None),
+        ).limit(1)
+    ).first() is not None
+    return text_open or has_queued_image(db, itinerary_id, except_log=except_log)
+
+
+def has_queued_image(db: Session, itinerary_id, *, except_log=None) -> bool:
+    """True while an image on this itinerary still waits for a human — a
+    soft-flagged scan, or an upload the provider never saw."""
+    stmt = select(ImageModerationLog.id).where(
+        ImageModerationLog.target_itinerary_id == itinerary_id,
+        ImageModerationLog.action.in_(QUEUE_IMAGE_ACTIONS),
+        ImageModerationLog.reviewed_at.is_(None),
+    )
+    if except_log is not None:
+        stmt = stmt.where(ImageModerationLog.id != except_log)
+    return db.execute(stmt.limit(1)).first() is not None
+
+
+def _flagged_image_key(log_row: ImageModerationLog) -> str | None:
+    if log_row.target_kind == "itinerary_cover":
+        return f"itineraries/{log_row.target_itinerary_id}.jpg" if log_row.target_itinerary_id else None
+    if log_row.uploader_user_id is None:
+        return None
+    folder = "avatars" if log_row.target_kind == "avatar" else "covers"
+    return f"{folder}/{log_row.uploader_user_id}.jpg"
+
+
 async def remove_flagged_image(
     db: Session, admin: User, log_row: ImageModerationLog, reason: str,
-) -> None:
+) -> bool:
     """Take a flagged image down. Unlike content soft-delete, the *file* is
-    removed here — the scan record (hash + labels) remains as the evidence."""
+    removed here — the scan record (hash + labels) remains as the evidence.
+
+    Returns False, removing nothing, when the object at the key is no longer the
+    one that was flagged: keys are fixed per entity, so a replacement uploaded
+    since then sits at the same path — scanned on its own — and deleting it
+    would take down the user's clean image and reject the whole itinerary.
+    """
+    key = _flagged_image_key(log_row)
+    if key is not None:
+        current = await storage().read(key)
+        if current is not None and hashlib.sha256(current).hexdigest() != log_row.image_hash:
+            log_row.reviewed_at = datetime.now(timezone.utc)
+            log_action(
+                db, admin,
+                TARGET_ITINERARY if log_row.target_itinerary_id else TARGET_USER,
+                log_row.target_itinerary_id or log_row.uploader_user_id,
+                "dismiss", f"{reason} (already replaced by the uploader)",
+                {"image_hash": log_row.image_hash, "target_kind": log_row.target_kind},
+            )
+            db.commit()
+            return False
+
     log_row.reviewed_at = datetime.now(timezone.utc)
     snapshot = {"image_hash": log_row.image_hash, "target_kind": log_row.target_kind}
-    key: str | None = None
+    key = None
     target_type = TARGET_USER
     target_id = log_row.uploader_user_id
 
@@ -470,6 +593,7 @@ async def remove_flagged_image(
             await storage().delete(key)
         except Exception:  # storage outage must not undo the committed takedown
             logger.exception("failed deleting moderated image %s", key)
+    return True
 
 
 # ---------------------------------------------------------------------------
@@ -485,11 +609,17 @@ def pending_reports(db: Session) -> list[ContentReport]:
     ).scalars().all())
 
 
+# The image rows a human still owes a look: soft-flagged scans, and uploads the
+# scan never saw because the provider was down. The second set used to be in no
+# queue at all — marked 'pending' "for later review" that nothing performed.
+QUEUE_IMAGE_ACTIONS = ("flagged", "error_allowed")
+
+
 def flagged_queue(db: Session) -> list[ImageModerationLog]:
     return list(db.execute(
         select(ImageModerationLog)
         .where(
-            ImageModerationLog.action == "flagged",
+            ImageModerationLog.action.in_(QUEUE_IMAGE_ACTIONS),
             ImageModerationLog.reviewed_at.is_(None),
         )
         .order_by(ImageModerationLog.created_at.asc())
@@ -660,14 +790,11 @@ def resolve_text_flag(
         if target is None:
             db.commit()
             return
+        # admin= stamps the single audit row as the operator's: a human made
+        # this call, and a second system row would double the author's record.
         moderation_actions.auto_hide(
             db, decision.target_type, target, action="hide", reason=reason,
-        )
-        # Re-stamp as an operator action: a human made this call, so the audit
-        # trail must name them rather than reading as another automated hide.
-        log_action(
-            db, admin, decision.target_type, decision.target_id, "hide", reason,
-            {"decision_id": str(decision.id)},
+            admin=admin, snapshot={"decision_id": str(decision.id)},
         )
     else:
         raise ValueError(f"unsupported text-flag action: {action}")
@@ -677,10 +804,14 @@ def resolve_text_flag(
 
 def has_open_escalation(db: Session, report: ContentReport) -> bool:
     """True if this report's target has an unresolved legal escalation."""
+    return target_has_open_escalation(db, report.target_type, report.target_id)
+
+
+def target_has_open_escalation(db: Session, target_type: str, target_id) -> bool:
     return db.execute(
         select(LegalEscalation.id).where(
-            LegalEscalation.target_type == report.target_type,
-            LegalEscalation.target_id == report.target_id,
+            LegalEscalation.target_type == target_type,
+            LegalEscalation.target_id == target_id,
             LegalEscalation.closed_at.is_(None),
         ).limit(1)
     ).first() is not None
@@ -699,16 +830,13 @@ def hide_reported_target(
 
     # report=None deliberately: auto_hide would close it as 'auto_hidden', which
     # would mislabel a human's deliberate call as a threshold trip — and once
-    # resolved, _resolve_report below could no longer correct it.
+    # resolved, _resolve_report below could no longer correct it. admin= makes
+    # the one audit row name the human (a second, system row showed the author
+    # the same violation twice).
+    _resolve_report(report, "content_hidden")
     moderation_actions.auto_hide(
         db, report.target_type, target, action="hide", reason=reason,
-    )
-    _resolve_report(report, "content_hidden")
-    # Re-stamp as an operator action so the audit trail names the human who
-    # decided, rather than reading as another automated hide.
-    log_action(
-        db, admin, report.target_type, report.target_id, "hide", reason,
-        {"report_id": str(report.id)},
+        admin=admin, snapshot={"report_id": str(report.id)},
     )
     if commit:
         db.commit()
@@ -730,6 +858,7 @@ def unhide_target(
         snapshot_rating(target) if target_type == TARGET_RATING else snapshot_user(target)
     )
     moderation_actions.restore_target(db, target_type, target)
+    resolve_pending_reports(db, target_type, target.id, "dismissed")
     log_action(db, admin, target_type, target.id, "unhide", reason, snapshot)
     db.commit()
 
@@ -936,7 +1065,7 @@ def nav_counts(db: Session) -> dict:
         ),
         "flagged": _count(
             select(func.count(ImageModerationLog.id)).where(
-                ImageModerationLog.action == "flagged",
+                ImageModerationLog.action.in_(QUEUE_IMAGE_ACTIONS),
                 ImageModerationLog.reviewed_at.is_(None),
             )
         ),
@@ -971,7 +1100,7 @@ def overview_counts(db: Session) -> dict:
         ),
         "flagged_uploads": _count(
             select(func.count(ImageModerationLog.id)).where(
-                ImageModerationLog.action == "flagged",
+                ImageModerationLog.action.in_(QUEUE_IMAGE_ACTIONS),
                 ImageModerationLog.reviewed_at.is_(None),
             )
         ),

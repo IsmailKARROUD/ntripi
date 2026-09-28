@@ -18,6 +18,7 @@
 
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 const _kAccessTokenKey = 'ntripi_access_token';
@@ -82,16 +83,43 @@ Future<void> saveTokens({
   );
 }
 
+/// Bumped every time the tokens are wiped, whoever wiped them.
+///
+/// Sign-out goes through AuthNotifier, but a session also ends on paths with no
+/// Riverpod ref — TokenManager on a rejected refresh, the interceptor on a
+/// suspension. Anything that caches "is somebody signed in?" listens here, or it
+/// keeps answering yes after the tokens are gone.
+final ValueNotifier<int> sessionEnded = ValueNotifier<int>(0);
+
 /// Wipe everything — logout path.
 Future<void> clearAllTokens() async {
   await _storage.delete(key: _kAccessTokenKey);
   await _storage.delete(key: _kRefreshTokenKey);
   await _storage.delete(key: _kRefreshExpiresAtKey);
+  sessionEnded.value++;
 }
 
 // ---------------------------------------------------------------------------
 // JWT introspection
 // ---------------------------------------------------------------------------
+
+/// The account a JWT was issued to (its `sub`), or null if [token] is absent or
+/// unreadable. Deliberately ignores `exp`: an expired token still says whose
+/// session this device holds, which is what the HTTP cache keys on offline.
+String? jwtSubject(String? token) {
+  if (token == null) return null;
+  try {
+    final parts = token.split('.');
+    if (parts.length != 3) return null;
+    final payload = jsonDecode(
+      utf8.decode(base64Url.decode(base64Url.normalize(parts[1]))),
+    ) as Map<String, dynamic>;
+    final sub = payload['sub'];
+    return sub is String && sub.isNotEmpty ? sub : null;
+  } catch (_) {
+    return null;
+  }
+}
 
 /// Returns true if [token] has passed its `exp` JWT claim.
 /// Treats malformed or claim-less tokens as expired so they are evicted.

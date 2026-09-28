@@ -114,8 +114,9 @@ def test_invalid_token_returns_401(client, monkeypatch):
 # ---------------------------------------------------------------------------
 
 def test_links_to_existing_password_account_when_verified(client, monkeypatch):
-    # Unverified password account first.
-    existing = register_user(client, "linkme", "link@example.com", verified=False)
+    # A verified password account: the owner proved the address, so both
+    # sign-in methods stay valid after linking.
+    existing = register_user(client, "linkme", "link@example.com", verified=True)
 
     _patch_google(monkeypatch, sub="g-link", email="link@example.com",
                   email_verified=True, name="Linked")
@@ -132,6 +133,29 @@ def test_links_to_existing_password_account_when_verified(client, monkeypatch):
     login = client.post("/auth/login",
                         json={"identifier": "link@example.com", "password": "test1234"})
     assert login.status_code == 200
+
+
+def test_linking_an_unverified_account_locks_out_its_password(client, monkeypatch):
+    """Pre-account takeover: anyone can register a password on someone else's
+    email. When the real owner then signs in with Google, the account becomes
+    theirs — the squatter's password and sessions must stop working."""
+    squatter = register_user(client, "squatter", "victim@example.com", verified=False)
+    _patch_google(monkeypatch, sub="g-victim", email="victim@example.com",
+                  email_verified=True)
+    r = _google(client)
+    assert r.status_code == 200, r.json()
+    assert r.json()["user_id"] == squatter["user_id"]
+
+    user = _get_user("victim@example.com")
+    assert user.google_sub == "g-victim"
+    assert user.password_hash is None
+
+    login = client.post("/auth/login",
+                        json={"identifier": "victim@example.com", "password": "test1234"})
+    assert login.status_code == 401
+    refreshed = client.post("/auth/refresh",
+                            json={"refresh_token": squatter["refresh_token"]})
+    assert refreshed.status_code == 401
 
 
 def test_unverified_google_email_does_not_claim_existing_account(client, monkeypatch):

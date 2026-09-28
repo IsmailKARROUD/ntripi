@@ -1015,6 +1015,12 @@ def remove_allowed_user(
                             code="allowlist_user_not_found", detail="User not found in allowlist")
 
     db.delete(entry)
+    db.flush()
+    # On a restricted trip the allowlist row is also what lets an editor see it,
+    # so removing it can revoke edit rights; a claim they still hold would block
+    # every other editor until the TTL (remove_editor releases for the same reason).
+    if not can_edit_itinerary(itinerary, user_id, db):
+        edit_lock_service.release_for_user(db, itinerary_id, user_id)
     db.commit()
 
 
@@ -1067,6 +1073,9 @@ def add_editor(
     # get_active_user_or_404, not a bare db.get — the allowlist endpoint's bare
     # lookup lets a banned account onto the list, which is not worth copying.
     target = get_active_user_or_404(db, body.user_id)
+    # Same 404 across a block: the editor_cannot_view answer below would
+    # otherwise tell the owner that this person had blocked them.
+    require_not_blocked_or_404(db, current_user.id, target.id)
 
     if target.id == itinerary.user_id:
         raise ApiError(status_code=status.HTTP_400_BAD_REQUEST,

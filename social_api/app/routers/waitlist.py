@@ -11,7 +11,7 @@ from __future__ import annotations
 from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel, EmailStr, field_validator
+from pydantic import BaseModel, EmailStr, Field, field_validator
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -24,7 +24,9 @@ router = APIRouter(tags=["Waitlist"])
 
 class WaitlistJoinBody(BaseModel):
     email: EmailStr | None = None
-    whatsapp: str | None = None
+    # Bounded to the String(50) column: past it Postgres raises DataError, an
+    # unauthenticated 500 that the SQLite suite cannot see.
+    whatsapp: str | None = Field(None, max_length=50)
     platform: Literal["ios", "android", "both"] = "both"
 
     @field_validator("whatsapp")

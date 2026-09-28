@@ -25,7 +25,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.constants import push_i18n
-from app.database import get_db
+from app.database import get_db, upsert_insert
 from app.dependencies import get_current_user
 from app.models.device_token import DeviceToken
 from app.models.user import User
@@ -51,28 +51,30 @@ def register_device(
     locale = push_i18n.normalize(payload.locale)
     now = datetime.now(timezone.utc)
 
-    existing = db.execute(
-        select(DeviceToken).where(DeviceToken.token == payload.token)
-    ).scalar_one_or_none()
-
-    if existing is not None:
-        # Reassignment, not a duplicate — see the module docstring.
-        existing.user_id = current_user.id
-        existing.platform = payload.platform
-        existing.locale = locale
-        existing.last_seen_at = now
-    else:
-        db.add(
-            DeviceToken(
-                user_id=current_user.id,
-                token=payload.token,
-                platform=payload.platform,
-                locale=locale,
-                created_at=now,
-                last_seen_at=now,
-            )
+    # One atomic upsert, not select-then-insert: launch and a token refresh
+    # routinely arrive together, and the loser of that race hit the UNIQUE token
+    # as a 500. A conflict is a reassignment, not a duplicate — see the module
+    # docstring.
+    db.execute(
+        upsert_insert(db, DeviceToken)
+        .values(
+            user_id=current_user.id,
+            token=payload.token,
+            platform=payload.platform,
+            locale=locale,
+            created_at=now,
+            last_seen_at=now,
         )
-
+        .on_conflict_do_update(
+            index_elements=[DeviceToken.token],
+            set_={
+                "user_id": current_user.id,
+                "platform": payload.platform,
+                "locale": locale,
+                "last_seen_at": now,
+            },
+        )
+    )
     db.commit()
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 

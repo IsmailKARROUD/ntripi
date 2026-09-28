@@ -155,11 +155,16 @@ def create_appeal(
             code="appeal_already_pending", http_status=409,
         )
 
-    # A rejected appeal locks the item for 30 days.
+    # A decided appeal locks the item for 30 days. "reduced" counts: on a hide it
+    # changes nothing (hide is already the lightest penalty), so leaving it out
+    # let the same appeal be re-filed the moment it was answered, indefinitely.
     cutoff = _now() - REAPPEAL_COOLDOWN
-    if any(a.status == "upheld" and _as_aware(a.updated_at) > cutoff for a in existing):
+    if any(
+        a.status in ("upheld", "reduced") and _as_aware(a.updated_at) > cutoff
+        for a in existing
+    ):
         raise AppealError(
-            "You can only appeal this item again 30 days after a rejected appeal.",
+            "You can only appeal this item again 30 days after your last appeal was decided.",
             code="appeal_cooldown", http_status=429,
         )
 
@@ -343,6 +348,10 @@ def decide_appeal(
     body = ""
 
     if decision == "restore":
+        # Only a content takedown restores content. Accepting a warn or ban
+        # appeal used to un-hide the profile as well — including one hidden on
+        # its own account, under an open escalation — and clear its text flags.
+        takedown = original_action not in ("warn", "ban")
         if itinerary is not None:
             # Reversing a takedown also clears the moderation status that would
             # otherwise keep the itinerary marked as bad content.
@@ -350,13 +359,18 @@ def decide_appeal(
                 itinerary, deleted_at=None, hidden_at=None,
                 moderation_status="approved",
             )
-        else:
+        elif takedown:
             _restore_non_itinerary_target(db, appeal)
         if original_action == "ban" and user is not None:
             user.is_active = True
-        # A restored item is no longer a queue item — leaving the decision
-        # unreviewed would keep it in the moderator's list forever.
-        _mark_decisions_reviewed(db, appeal.target_type, appeal.target_id)
+        if takedown:
+            # A restored item is no longer a queue item — leaving the decision
+            # unreviewed would keep it in the moderator's list forever. Nor may
+            # its old reports have the SLA sweep take it down again.
+            _mark_decisions_reviewed(db, appeal.target_type, appeal.target_id)
+            admin_service.resolve_pending_reports(
+                db, appeal.target_type, appeal.target_id, "dismissed",
+            )
         appeal.status = "restored"
         heading = "Your appeal was accepted"
         body = "We reviewed your appeal and reversed the action."

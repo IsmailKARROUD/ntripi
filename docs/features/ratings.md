@@ -30,10 +30,20 @@ not information anyone could use.
   through `admin_service.set_preserving_etag`, because `updated_at` is the
   itinerary's `If-Match` ETag and a rater or a moderator is never the owner's
   editing session — before 2026-09-26 every rating 412'd the owner's open editor.
-  Trade-off: the detail GET's validator is that same ETag, so a viewer holding a
-  cached detail can see a stale average until a content edit or a pull-to-refresh
-  (which skips the conditional GET). The rater's own post-submit refresh is
-  always fresh. See [decisions.md](../decisions.md).
+  The detail GET's cache validator carries a body hash beside that token (since
+  2026-09-28), so a viewer with a cached detail still sees the new average on the
+  next open. See [decisions.md](../decisions.md) and
+  [etag-concurrency.md](etag-concurrency.md).
+- **The aggregate locks the itinerary row before counting.** `recalculate_rating`
+  starts with `db.refresh(itinerary, ["updated_at"], with_for_update=True)`. The
+  rating upsert loads the itinerary unlocked and spends a moderation call first;
+  without the lock an owner's save in between was rolled back when
+  `set_preserving_etag` wrote the stale `updated_at` (a spurious 412 on their next
+  save), and two concurrent first ratings both counted N+1.
+- **Rating from the Ratings page refreshes it.** `MyRatingNotifier.submitRating` /
+  `deleteRating` invalidate `ratingsPageProvider` (keep-alive) as well as the
+  detail; before 2026-09-28 the list, averages and histogram the rater was
+  looking at stayed without their review.
 - **Hidden ratings are excluded from the public aggregate, including the
   author's own.** `recalculate_rating` passes `visible_rating_criteria(None)` —
   no viewer — because an aggregate is public and even its author's hidden rating

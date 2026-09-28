@@ -14,7 +14,7 @@ collapses the formats before byte comparison.
 from dataclasses import dataclass
 from datetime import datetime, timezone
 
-from app.dependencies import _etag_value, _normalize_etag
+from app.dependencies import _concurrency_token, _etag_value, _normalize_etag
 
 
 @dataclass
@@ -79,3 +79,37 @@ class TestNormalizeEtag:
         assert _normalize_etag(e) == _normalize_etag(client_native)
         assert _normalize_etag(e) == _normalize_etag(client_dart)
         assert _normalize_etag(e) == _normalize_etag(client_weak)
+
+
+class TestConcurrencyToken:
+    def test_dart_drops_zero_sub_millisecond_digits(self):
+        """Dart writes ".123Z" where Python writes ".123000+00:00" — a string
+        compare 412'd those saves forever, since a reload returns the same
+        updated_at."""
+        server = _etag_value(_FakeItinerary(
+            datetime(2026, 5, 12, 14, 23, 11, 123000, tzinfo=timezone.utc)
+        ))
+        assert server == '"2026-05-12T14:23:11.123000+00:00"'
+        assert _concurrency_token('"2026-05-12T14:23:11.123Z"') == _concurrency_token(server)
+
+    def test_whole_second_updated_at(self):
+        server = _etag_value(_FakeItinerary(
+            datetime(2026, 5, 12, 14, 23, 11, tzinfo=timezone.utc)
+        ))
+        assert _concurrency_token('"2026-05-12T14:23:11.000Z"') == _concurrency_token(server)
+
+    def test_body_hash_suffix_is_ignored(self):
+        # The GET's header is "<token>;<body hash>" — still a valid If-Match.
+        assert (
+            _concurrency_token('W/"2026-05-12T14:23:11+00:00;abcd1234abcd1234"')
+            == _concurrency_token('"2026-05-12T14:23:11Z"')
+        )
+
+    def test_different_instants_differ(self):
+        assert (
+            _concurrency_token('"2026-05-12T14:23:11.123Z"')
+            != _concurrency_token('"2026-05-12T14:23:11.124Z"')
+        )
+
+    def test_garbage_falls_back_to_the_string(self):
+        assert _concurrency_token('"not-a-date"') == "not-a-date"

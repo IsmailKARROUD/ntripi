@@ -688,7 +688,10 @@ class _ImagePreview extends StatelessWidget {
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
-                  colors: [Colors.transparent, Colors.black26],
+                  colors: [
+                    Colors.transparent,
+                    NtripiBrand.backdrop.withValues(alpha: 0.26),
+                  ],
                 ),
               ),
             ),

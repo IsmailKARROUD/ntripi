@@ -141,11 +141,28 @@ username, refresh_expires_at}`.
   the access/refresh pair; storage is `flutter_secure_storage` only
   (`core/storage/secure_storage.dart`) — **never Riverpod state**.
 - **`AuthInterceptor`** (`core/api/api_client.dart`) refreshes transparently
-  before expiry and, on a **codeless** 401, clears the token and redirects to
-  `/login`. A **coded** 401 is passed through to the caller.
-- `AuthNotifier.logout()` must `ref.invalidate()` every user-specific provider,
-  and must `DELETE /devices/{token}` **before** discarding the access token — see
-  [notifications.md](notifications.md).
+  before expiry and, on a **codeless** 401, refreshes once and retries. A
+  **coded** 401 is passed through to the caller. **The retry's own answer is what
+  the caller sees**: until 2026-09-28 any failure of the retried request (412,
+  409, 422, 5xx, a timeout) bounced the user to `/login` and reported the original
+  401. Only a fresh token still being refused (a codeless 401 on the retry) means
+  the session is gone. A multipart body is cloned before the retry — Dio refuses to
+  finalize the same `FormData` twice, which failed every upload that crossed a
+  token expiry.
+- **The interceptor stamps the account (JWT `sub`) on every request** for the
+  HTTP cache key (`core/api/cache_key.dart`) — from the expired token too, so
+  offline still finds that account's entries. See
+  [accounts-and-profiles.md](accounts-and-profiles.md).
+- **One reset list for sign-in and sign-out.** `_userScopedProviders` in
+  `auth_provider.dart` names every keep-alive user-specific provider (feed,
+  follow requests and lists, blocked users, profiles, itinerary detail, ratings,
+  editors, allowlist, edit locks, …); `setAuthenticated` and `logout` both
+  invalidate it. Sign-out also releases this device's edit claims and
+  `DELETE /devices/{token}` **before** discarding the access token (see
+  [notifications.md](notifications.md)), then cleans the HTTP cache store.
+- **`hasSessionProvider` follows `sessionEnded`**, bumped by `clearAllTokens()`
+  whoever calls it — the interceptor's forced paths (a rejected refresh, a
+  suspension) have no ref, and the provider used to keep answering "signed in".
 - Login leads with Google/Apple; email sign-up is a secondary button.
 
 ## Known gaps / TODOs
