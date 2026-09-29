@@ -171,6 +171,13 @@ passed that, not the stale itinerary.
   build. `didUpdateWidget` clamps the index and rebuilds the page view with a
   controller already on the new page (`expandable_page_view` sizes an internal
   list by the old item count).
+- **A parallel page is never wrapped in `IntrinsicHeight`.** `ExpandablePageView`
+  already lays each page out unconstrained (an `OverflowBox`, 0 → ∞) and measures
+  it, so a card takes its natural height without help. `StopCard`'s read-mode
+  notes use a `LayoutBuilder` (the "view more" overflow check), which throws on
+  an intrinsic query: from May until 2026-09-29 every parallel track with notes
+  collapsed to 0 px in view mode and re-threw on each relayout, freezing the
+  app. Regression test: `test/widgets/parallel_stop_group_layout_test.dart`.
 - Inserting a track between two adjacent tracks joined by a segment shows a
   confirmation first, then deletes the segment(s) — see
   [transit-segments.md](transit-segments.md).

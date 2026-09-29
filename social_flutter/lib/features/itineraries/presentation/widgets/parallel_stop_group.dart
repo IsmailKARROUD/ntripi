@@ -199,9 +199,12 @@ class _ParallelStopGroupState extends State<ParallelStopGroup> {
                       setState(() => _currentPage = i);
                       widget.onPageChanged?.call(i);
                     },
+                    // No IntrinsicHeight: the page view already measures each
+                    // page unconstrained, and read-mode notes use a LayoutBuilder,
+                    // which throws on intrinsic queries and collapsed the group to 0 px.
                     itemBuilder: (_, i) => Align(
                         alignment: Alignment.topCenter,
-                        child: IntrinsicHeight(child: _buildStopCard(widget.stops[i]))),
+                        child: _buildStopCard(widget.stops[i])),
                   )
                   : _buildStopCard(widget.stops.first),
             ),
