@@ -154,6 +154,19 @@ passed that, not the stale itinerary.
   `waypoint`; the real role is assigned after deserialisation by
   `Itinerary._parseTracks()`. **Always use `PlaceType.fromString()`** — it handles
   legacy values and returns null for unknowns.
+- **The place type is what a stop looks like in the list and on the map.**
+  `StopCard`'s number badge is tinted and ringed in `PlaceType.color(nt)` with
+  the type's icon on its trailing-bottom corner (a `PositionedDirectional`, so it
+  flips for Arabic). The detail screen's map marker takes the same color and
+  icon. Two rules keep it legible: the digit stays `nt.bark`, never the place
+  color, because Sight and Play & watch fall under 4.5:1 for 14 px text; and a
+  glyph drawn on a place-color fill is `nt.surface`, which is white on the
+  saturated light palette and black on the pastel dark one. The corner icon
+  carries a `Semantics` label, so a screen reader announces the row as
+  "3, Sleep, …". An untyped stop keeps the plain `nt.mist` badge, and its marker
+  keeps the start/middle/end color (`_markerColors`). The reorder sheets number
+  whole tracks, which can mix types, so they stay neutral. Regression test:
+  `test/widgets/stop_card_place_type_test.dart`.
 - **Any editing route claims the edit lock before pushing.** `_openStopForm` does
   the round trip first and abandons the push if the claim is refused — no form
   claims a lock for itself, so a route pushed without one looks editable and then

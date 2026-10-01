@@ -175,6 +175,7 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
     await ref.read(editLockProvider(widget.itineraryId).notifier).peek();
   }
 
+  // Fallback for untyped stops only — a typed stop's marker wears its place color.
   static Map<StopType, Color> _markerColors(NtripiColors nt) => {
         StopType.origin: nt.forest,
         StopType.waypoint: nt.canopy,
@@ -1400,16 +1401,17 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                                             ),
                                           MarkerLayer(
                                             markers: mappableStops.map((stop) {
-                                              final color =
+                                              final type = stop.placeType;
+                                              final color = type?.color(nt) ??
                                                   _markerColors(nt)[
-                                                          stop.type] ??
-                                                      nt.text2;
+                                                      stop.type] ??
+                                                  nt.text2;
                                               return Marker(
                                                 point: LatLng(
                                                     stop.lat!, stop.lng!),
                                                 child: Container(
                                                   padding:
-                                                      const EdgeInsets.all(3),
+                                                      const EdgeInsets.all(4),
                                                   decoration: BoxDecoration(
                                                     color: color,
                                                     shape: BoxShape.circle,
@@ -1417,9 +1419,13 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                                                         color: nt.overlayChrome,
                                                         width: 2),
                                                   ),
-                                                  child: Icon(Icons.place,
-                                                      color: nt.overlayChrome,
-                                                      size: 10),
+                                                  child: Icon(
+                                                      type?.icon ?? Icons.place,
+                                                      // Same rule as StopCard's badge: surface contrasts with both place palettes.
+                                                      color: type == null
+                                                          ? nt.overlayChrome
+                                                          : nt.surface,
+                                                      size: 12),
                                                 ),
                                               );
                                             }).toList(),

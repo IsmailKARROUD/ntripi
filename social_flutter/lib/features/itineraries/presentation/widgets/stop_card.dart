@@ -2,7 +2,8 @@
 //
 // Renders as a plain padded row (no Card border) because it always lives
 // inside a parent SectionCard. The visual split between read and edit mode:
-//   read  — number circle · name/address · inline notes · anno mini-dots
+//   read  — number circle (place-type tint + corner icon) · name/address ·
+//           inline notes · anno mini-dots
 //   edit  — same but with an edit IconButton on the right and full annotation
 //            chips (with add-note affordance) instead of dots
 
@@ -65,23 +66,7 @@ class StopCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // ── Number badge ─────────────────────────────────────────────────
-            Container(
-              width: 32,
-              height: 32,
-              decoration: BoxDecoration(
-                color: nt.mist,
-                shape: BoxShape.circle,
-              ),
-              alignment: Alignment.center,
-              child: Text(
-                '$trackIndex',
-                style: TextStyle(
-                  color: nt.forest,
-                  fontWeight: FontWeight.w800,
-                  fontSize: 14,
-                ),
-              ),
-            ),
+            _NumberBadge(trackIndex: trackIndex, placeType: stop.placeType),
             const SizedBox(width: 12),
 
             // ── Main content ─────────────────────────────────────────────────
@@ -367,6 +352,68 @@ class _AnnotationChipsRow extends StatelessWidget {
               ),
             ),
           ),
+      ],
+    );
+  }
+}
+
+// Track number, tinted by the stop's place type with its icon on the corner.
+// An untyped stop keeps the plain mist circle.
+class _NumberBadge extends StatelessWidget {
+  final int trackIndex;
+  final PlaceType? placeType;
+  const _NumberBadge({required this.trackIndex, required this.placeType});
+
+  @override
+  Widget build(BuildContext context) {
+    final nt = context.nt;
+    final type = placeType;
+    final c = type?.color(nt);
+
+    final circle = Container(
+      width: 32,
+      height: 32,
+      decoration: BoxDecoration(
+        color: c?.withValues(alpha: 0.14) ?? nt.mist,
+        shape: BoxShape.circle,
+        border: c == null ? null : Border.all(color: c, width: 1.5),
+      ),
+      alignment: Alignment.center,
+      child: Text(
+        '$trackIndex',
+        style: TextStyle(
+          // Never the place color: Sight/Play & watch fall under 4.5:1 at 14 px.
+          color: c == null ? nt.forest : nt.bark,
+          fontWeight: FontWeight.w800,
+          fontSize: 14,
+        ),
+      ),
+    );
+    if (type == null) return circle;
+
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        circle,
+        PositionedDirectional(
+          end: -3,
+          bottom: -3,
+          child: Semantics(
+            label: type.label(AppLocalizations.of(context)!),
+            child: Container(
+              width: 16,
+              height: 16,
+              decoration: BoxDecoration(
+                color: c,
+                shape: BoxShape.circle,
+                border: Border.all(color: nt.surface, width: 1.5),
+              ),
+              alignment: Alignment.center,
+              // surface is white on the saturated light palette, black on the pastel dark one.
+              child: Icon(type.icon, size: 10, color: nt.surface),
+            ),
+          ),
+        ),
       ],
     );
   }
