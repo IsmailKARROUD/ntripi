@@ -305,6 +305,124 @@ void main() {
     });
   });
 
+  group('after a save', () {
+    testWidgets('the form closes once the PATCH answers', (tester) async {
+      final updateGate = Completer<void>();
+      final repo = await _pump(
+          tester, const ItineraryFormScreen(itineraryId: 'itin-1'),
+          viewerId: 'user-1', canEdit: true, updateGate: updateGate);
+
+      await tester.enterText(find.byType(TextFormField), 'Trip renamed');
+      await tester.tap(find.text('Save'));
+      await tester.pump();
+
+      // Still open while the request is in flight.
+      expect(repo.lastUpdate, isNotNull);
+      expect(find.byType(ItineraryFormScreen), findsOneWidget);
+
+      updateGate.complete();
+      await tester.pumpAndSettle();
+
+      expect(find.byType(ItineraryFormScreen), findsNothing);
+      expect(find.text('beneath'), findsOneWidget);
+    });
+
+    testWidgets('opened from the detail screen, it returns there',
+        (tester) async {
+      tester.view.physicalSize = const Size(1200, 3200);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final repo = _FakeRepo(canEdit: true);
+      final router = GoRouter(
+        initialLocation: '/itineraries/itin-1',
+        routes: [
+          GoRoute(
+              path: '/',
+              builder: (_, _) => const Scaffold(body: Text('beneath'))),
+          GoRoute(
+              path: '/itineraries/:id',
+              builder: (_, s) =>
+                  ItineraryDetailScreen(itineraryId: s.pathParameters['id']!)),
+          GoRoute(
+              path: '/itineraries/:id/edit',
+              builder: (_, s) =>
+                  ItineraryFormScreen(itineraryId: s.pathParameters['id']!)),
+        ],
+      );
+      await tester.pumpWidget(ProviderScope(
+        overrides: [
+          itineraryRepositoryProvider.overrideWithValue(repo),
+          myProfileProvider.overrideWith(() => _FakeMyProfile(userId: 'user-1')),
+          isOnlineProvider.overrideWith((ref) => Stream.value(true)),
+          editLockProvider.overrideWith2((id) => _FakeEditLock(id)),
+        ],
+        child: MaterialApp.router(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          routerConfig: router,
+        ),
+      ));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byIcon(Icons.tune_rounded));
+      await tester.pumpAndSettle();
+      expect(find.byType(ItineraryFormScreen), findsOneWidget);
+
+      await tester.enterText(find.byType(TextFormField), 'Trip renamed');
+      await tester.tap(find.text('Save'));
+      await tester.pumpAndSettle();
+
+      expect(repo.lastUpdate, isNotNull);
+      expect(find.byType(ItineraryFormScreen), findsNothing);
+      expect(find.byType(ItineraryDetailScreen), findsOneWidget);
+    });
+
+    testWidgets('a cold entry straight to /edit still closes onto the trip',
+        (tester) async {
+      tester.view.physicalSize = const Size(1200, 3200);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final repo = _FakeRepo(canEdit: true);
+      final router = GoRouter(
+        initialLocation: '/itineraries/itin-1/edit',
+        routes: [
+          GoRoute(
+              path: '/itineraries/:id',
+              builder: (_, s) =>
+                  ItineraryDetailScreen(itineraryId: s.pathParameters['id']!)),
+          GoRoute(
+              path: '/itineraries/:id/edit',
+              builder: (_, s) =>
+                  ItineraryFormScreen(itineraryId: s.pathParameters['id']!)),
+        ],
+      );
+      await tester.pumpWidget(ProviderScope(
+        overrides: [
+          itineraryRepositoryProvider.overrideWithValue(repo),
+          myProfileProvider.overrideWith(() => _FakeMyProfile(userId: 'user-1')),
+          isOnlineProvider.overrideWith((ref) => Stream.value(true)),
+          editLockProvider.overrideWith2((id) => _FakeEditLock(id)),
+        ],
+        child: MaterialApp.router(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          routerConfig: router,
+        ),
+      ));
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byType(TextFormField), 'Trip renamed');
+      await tester.tap(find.text('Save'));
+      await tester.pumpAndSettle();
+
+      expect(repo.lastUpdate, isNotNull);
+      expect(find.byType(ItineraryFormScreen), findsNothing);
+      expect(find.byType(ItineraryDetailScreen), findsOneWidget);
+    });
+  });
+
   // A note-only period: shortLabel falls through to the note, so the expected
   // string is the same in all six locales — no date formatting to pin down.
   const period = RecommendedPeriod(note: 'Shoulder season');

@@ -245,6 +245,20 @@ class _ItineraryFormScreenState extends ConsumerState<ItineraryFormScreen> {
     );
   }
 
+  // Every way out of the form. A cold entry straight to its URL (a web reload)
+  // has nothing underneath, and pop() then throws a GoError — an Error, which
+  // `on Exception` in _save does not catch, so a successful save left the form
+  // open with no message.
+  void _close([Object? result]) {
+    if (context.canPop()) {
+      context.pop(result);
+    } else {
+      context.go(widget.itineraryId == null
+          ? '/itineraries'
+          : '/itineraries/${widget.itineraryId}');
+    }
+  }
+
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -257,7 +271,7 @@ class _ItineraryFormScreenState extends ConsumerState<ItineraryFormScreen> {
     if (widget.mode == ItineraryFormMode.edit &&
         _initialSnapshot != null &&
         !_isDirty) {
-      context.pop();
+      _close();
       return;
     }
 
@@ -346,7 +360,7 @@ class _ItineraryFormScreenState extends ConsumerState<ItineraryFormScreen> {
             .read(itineraryDetailProvider(widget.itineraryId!).notifier)
             .updateHeader(data);
         if (!mounted) return;
-        context.pop();
+        _close();
       }
     } on Exception catch (e) {
       if (!mounted) return;
@@ -440,14 +454,8 @@ class _ItineraryFormScreenState extends ConsumerState<ItineraryFormScreen> {
       SnackBar(content: Text(l10n.editorsLeft)),
     );
     // `true` tells the detail screen underneath to leave edit mode and refetch.
-    // View access is untouched, so the trip itself stays open behind us — and
-    // on a cold entry straight to /edit there is nobody underneath to hand the
-    // result to, so go there instead of letting pop() throw.
-    if (context.canPop()) {
-      context.pop(true);
-    } else {
-      context.go('/itineraries/${widget.itineraryId}');
-    }
+    // View access is untouched, so the trip itself stays open behind us.
+    _close(true);
   }
 
   // ── Picker helpers ──────────────────────────────────────────────────────────
@@ -582,7 +590,7 @@ class _ItineraryFormScreenState extends ConsumerState<ItineraryFormScreen> {
       canPop: (!_isDirty && !_saving) || _leftAsEditor,
       onPopInvokedWithResult: (didPop, _) async {
         if (didPop) return;
-        if (await _confirmDiscard() && context.mounted) context.pop();
+        if (await _confirmDiscard() && context.mounted) _close();
       },
       child: SavingOverlay(
         saving: _saving,
