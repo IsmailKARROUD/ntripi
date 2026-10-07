@@ -92,6 +92,9 @@ class ItineraryRating(Base):
     # phishing vectors on public itineraries.
     note: Mapped[str | None] = mapped_column(Text, nullable=True)
 
+    # Language of `note`, detected at save time; NULL = not detected.
+    source_lang: Mapped[str | None] = mapped_column(Text, nullable=True)
+
     # Moderation state of `note`. Ratings carry their own status rather than
     # rolling up to the itinerary: a stranger's abusive review must never take
     # down the owner's trip. 'hidden'/'rejected' notes are filtered from other

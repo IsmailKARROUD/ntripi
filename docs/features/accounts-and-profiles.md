@@ -210,4 +210,5 @@ itinerary_id, stop_id}]}` — derived from the user's stops, filtered by
 - [feed-and-search.md](feed-and-search.md) — search, and `public_profile_text`
 - [legal-and-age-gate.md](legal-and-age-gate.md) — `date_of_birth`, `tos_current`
 - [admin-and-appeals.md](admin-and-appeals.md) — `is_active`, `moderation_status`
+- [translations.md](translations.md) — account deletion cascades a user's trips' translations
 - [reference/data-model.md](../reference/data-model.md)

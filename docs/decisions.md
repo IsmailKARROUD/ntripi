@@ -930,3 +930,42 @@ fast-langdetect — weaker than lingua's high-accuracy mode on short titles).
 Pinning lingua 2.1.1 (no 3.14 wheel, so the dev venv could not install it).
 `python:3.13-slim` (works, but keeps development and production on different
 interpreters, the gap that hid this in the first place).
+
+---
+
+### 2026-10-07 — Source language is detected at save time; translations cascade from their itinerary
+
+**Context.** Translating user content needs two things before any provider is
+called: knowing which language a text is in (to decide whether a reader is
+offered "See translation" without asking anyone), and a cache whose rows can
+never outlive the text they were made from — a translation of a deleted review
+is a copy of deleted personal data. Six tables hold translatable prose, so the
+cache key has to be polymorphic, and a polymorphic key cannot carry a foreign
+key. Meanwhile a stop delete removes its annotations and its segments' legs
+through database cascades the application never sees.
+**Decision.** Language is detected locally with `lingua-language-detector`
+(all 75 languages, high-accuracy mode, minimum relative distance 0.1) on every
+write and stored as `source_lang`; an undetected text stays NULL. Translations
+live in `content_translations`, keyed by `(content_type, content_id, field,
+target_lang, source_hash)` — the source text itself is never stored. Every row
+also carries `itinerary_id` as a real FK with `ON DELETE CASCADE`, because every
+translatable row belongs to exactly one itinerary. An edit calls
+`sync_translations`, which deletes the translations whose hash its new text no
+longer matches; a delete below the itinerary calls
+`purge_orphans(db, itinerary_id)`, which deletes whatever lost its content row.
+**Consequences.** Deleting a trip or an account removes its translations in the
+database, so no future delete path can forget them. The seven delete paths below
+the itinerary make one call each and never need to know what cascaded. Stale
+translations are unreachable even before they are deleted, because lookups match
+the current hash. Detection costs about 66 MB of resident memory with every
+language loaded (measured on macOS against a 14-language sample) and a few
+milliseconds per save. On short trip titles about one confident answer in forty
+is wrong and a quarter are left undetected, which errs toward offering the
+button.
+**Alternatives rejected.** Explicit per-type deletes on every path (a stop
+delete would have to enumerate what the database cascaded, and the next new
+delete path would forget). Detecting through the translation provider on first
+request (every reader would pay a request just to learn whether to show a
+button). A minimum relative distance of 0.0 (about one wrong answer in ten on
+short titles). A detection list limited to the six app languages (other
+languages get forced onto a neighbour, and a wrong match hides the button).

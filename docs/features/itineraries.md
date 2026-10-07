@@ -127,6 +127,7 @@ registered from the same router under the `/users` prefix.
 - [image-pipeline.md](image-pipeline.md) — the cover image
 - [text-moderation.md](text-moderation.md) — title and description are scanned
 - [feed-and-search.md](feed-and-search.md) · [sharing.md](sharing.md)
+- [translations.md](translations.md) — title, description and period note carry `source_lang`; their translations cascade with the trip
 - [reference/data-model.md](../reference/data-model.md)
 
 ## OPEN QUESTIONS

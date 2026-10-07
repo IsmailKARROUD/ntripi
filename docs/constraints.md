@@ -26,7 +26,7 @@ code, with links to the feature that exercises each rule.
 
 ### Startup validators that **raise**
 
-Five misconfigurations refuse to boot rather than degrade silently:
+Six misconfigurations refuse to boot rather than degrade silently:
 
 | Validator | Refuses | Why |
 |---|---|---|
@@ -35,6 +35,7 @@ Five misconfigurations refuse to boot rather than degrade silently:
 | `_validate_sweep_deadline` | with `SWEEP_IN_PROCESS`, `MODERATION_SLA_HOURS × 60 + SWEEP_INTERVAL_MINUTES > 24 × 60` | a report can wait the SLA plus one whole interval before a run sees it — past 24h the deadline the SLA exists for is breached |
 | `_validate_notification_retention` | `NOTIFICATION_MAX_AGE_DAYS < NOTIFICATION_RETENTION_DAYS` | it would silently shorten the read window |
 | `_validate_edit_lock_windows` | `TTL <= IDLE`; `IDLE < 2 × HEARTBEAT`; `HEARTBEAT < 5` | a claim that became takeable before it read as inactive would be stolen from someone the UI still showed as editing |
+| `_validate_translation_detect_langs` | a `TRANSLATION_DETECT_LANGS` that is neither `all` nor a list of two-letter codes | a typo would otherwise surface on the first save that needs a language |
 
 Two more refuse at first use rather than at import: **`STORAGE_BACKEND=r2` with
 any `R2_*` var missing raises**, and an unknown `STORAGE_BACKEND` raises — and
@@ -209,6 +210,11 @@ external scheduler) **or SLA auto-hide and post-outage re-checks never run.**
   user-scoped provider is in `auth_provider.dart`'s reset list, run on sign-in
   and sign-out. A new user-scoped provider that is not added there leaks one
   account's data to the next person on the device.
+- **A translation is derived data and dies with its source.** An edit drops
+  the translations of the text it replaced (`sync_translations`), a delete
+  below the itinerary purges them (`purge_orphans`), and deleting a trip or an
+  account cascades through `content_translations.itinerary_id`. The table
+  holds no user reference and never stores the source text — only its hash.
 - **A rating survives its author anonymised** (`user_id` SET NULL) so the trip
   keeps its score.
 - **Bug-report screenshot retention is a privacy duty, not housekeeping** — a
@@ -365,6 +371,7 @@ block appears a second time anywhere, extract it instead of copying.**
 | `services/share_service.py` | `build_share_url`, `build_profile_share_url`, `absolute_storage_url`, `absolutize_stored_url` |
 | `services/ordering.py` | `key_between`, `n_keys_between` |
 | `services/itinerary_access.py` | `can_view_itinerary`, `can_edit_itinerary`, `public_listing_criteria`, `visible_rating_criteria`, `recalculate_rating` |
+| `services/translation_service.py` | `REGISTRY` — the one list of translatable fields; `sync_translations` — **every write of translatable text calls it** before the commit; `purge_orphans` — **every delete below the itinerary calls it** after the flush; `source_hash` |
 | `app/middleware/__init__.py` | `STATIC_PREFIXES` |
 | `routers/itineraries.py` (router-private, keep them so) | `_etag_json_response`, `_require_viewable`, `_two_phase_renumber`, `_require_stops_in_itinerary`, the annotation CRUD helpers |
 | `schemas/itinerary.py` | `_NOTE_TYPE_PATTERN`, `_PLACE_TYPE_PATTERN`, `_VISIBILITY`, `_AnnotationCreateBase` / `_AnnotationUpdateBase` |

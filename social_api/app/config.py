@@ -168,6 +168,13 @@ class Settings(BaseSettings):
     # never purged — they are the moderator queue).
     TEXT_MODERATION_LOG_RETENTION_DAYS: int = 90
 
+    # ── Translation of user content ─────────────────────────────────────────
+    # Languages the save-time detector may answer with: "all" (lingua's 75) or
+    # comma-separated ISO 639-1 codes. A shorter list loads fewer models, but
+    # text in a language outside it is then forced onto its nearest neighbour
+    # in the list — which can hide "See translation" from a reader who needs it.
+    TRANSLATION_DETECT_LANGS: str = "all"
+
     # Hours after which an unreviewed report is auto-actioned. The DSA clock is
     # 24h from when the report is *filed*, and the sweep only runs periodically,
     # so the cap is 22 to leave margin for a missed run during a deploy.
@@ -339,6 +346,28 @@ class Settings(BaseSettings):
         if self.EDIT_LOCK_HEARTBEAT_SECONDS < 5:
             raise ValueError("EDIT_LOCK_HEARTBEAT_SECONDS must be >= 5")
         return self
+
+    @model_validator(mode="after")
+    def _validate_translation_detect_langs(self) -> "Settings":
+        # Parse now so a typo fails at boot, not on the first save that
+        # needs a language.
+        self.translation_detect_langs  # noqa: B018
+        return self
+
+    @property
+    def translation_detect_langs(self) -> list[str] | None:
+        """TRANSLATION_DETECT_LANGS as lowercase ISO 639-1 codes, or None for
+        every language the detector knows."""
+        raw = self.TRANSLATION_DETECT_LANGS.strip().lower()
+        if raw == "all":
+            return None
+        codes = [code.strip() for code in raw.split(",") if code.strip()]
+        if not codes or any(len(code) != 2 or not code.isalpha() for code in codes):
+            raise ValueError(
+                "TRANSLATION_DETECT_LANGS must be 'all' or comma-separated "
+                "two-letter ISO 639-1 codes"
+            )
+        return codes
 
     @property
     def report_hide_thresholds(self) -> dict[str, int]:

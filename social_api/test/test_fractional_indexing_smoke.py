@@ -1130,15 +1130,15 @@ class TestRatingModerationStatusExposure:
         page = self._page(client, alice["access_token"], itinerary_id)
         assert page.json()["ratings"][0]["moderation_status"] == "approved"
 
-    def test_moderation_status_is_the_last_json_key(self, client: TestClient):
+    def test_new_fields_are_appended_in_order(self, client: TestClient):
         """Field order is JSON key order and part of the API contract — a new
-        field has to be appended, never inserted."""
+        field has to be appended, never inserted. Each addition lands after the
+        previous one: id, then moderation_status, then source_lang."""
         alice, _, itinerary_id = self._setup(client)
 
         page = self._page(client, alice["access_token"], itinerary_id)
         keys = list(page.json()["ratings"][0].keys())
-        assert keys[-1] == "moderation_status"
-        assert keys[-2] == "id"
+        assert keys[-3:] == ["id", "moderation_status", "source_lang"]
 
 
 # ---------------------------------------------------------------------------

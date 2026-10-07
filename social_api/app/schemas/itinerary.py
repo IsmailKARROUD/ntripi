@@ -121,6 +121,10 @@ class ItineraryAnnotationResponse(BaseModel):
     content: str
     created_at: datetime
     updated_at: datetime
+    # Appended last: field order is JSON key order. Detected language of
+    # `content`, or null — the client offers "See translation" when it differs
+    # from (or does not know) the viewer's language.
+    source_lang: Optional[str] = None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -140,6 +144,9 @@ class AnnotationResponse(BaseModel):
     content: str
     created_at: datetime
     updated_at: datetime
+    # Appended last (JSON key order is part of the contract). Detected
+    # language of `content`, or null.
+    source_lang: Optional[str] = None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -281,6 +288,9 @@ class StopResponse(BaseModel):
     notes: Optional[str]
     created_at: datetime
     annotations: list[AnnotationResponse] = []
+    # Appended last (JSON key order is part of the contract). Detected
+    # language of `notes` — never of the place name — or null.
+    source_lang: Optional[str] = None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -352,6 +362,9 @@ class TransportLegResponse(BaseModel):
     notes: Optional[str]
     note_type: Optional[str]
     created_at: datetime
+    # Appended last (JSON key order is part of the contract). Detected
+    # language of `notes`, or null.
+    source_lang: Optional[str] = None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -569,6 +582,8 @@ class RatingWithUser(BaseModel):
     # the router. A hidden review is already filtered from other viewers, and
     # 'pending'/'flagged' are internal states that must never reach any client.
     moderation_status: str = "approved"
+    # Appended last, like `id`. Detected language of `note`, or null.
+    source_lang: Optional[str] = None
 
 
 class RatingDistribution(BaseModel):
@@ -635,6 +650,10 @@ class ItineraryDetail(ItinerarySummary):
     # The live edit lock is deliberately NOT here — it changes on every heartbeat
     # while this response's ETag is updated_at, so it gets its own endpoint.
     can_edit: bool = False
+    # Appended last, after can_edit. Detected language of title + description
+    # + period note, or null. Detail only: ItinerarySummary stays unchanged,
+    # since a new key there would reorder /me, /saved and /feed.
+    source_lang: Optional[str] = None
 
 
 # ---------------------------------------------------------------------------

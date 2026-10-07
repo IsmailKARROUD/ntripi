@@ -75,6 +75,10 @@ class TransportLeg(Base):
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     note_type: Mapped[str | None] = mapped_column(String(10), nullable=True)
 
+    # Language of `notes` only (line and direction are place names), detected
+    # at save time; NULL = not detected.
+    source_lang: Mapped[str | None] = mapped_column(Text, nullable=True)
+
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         server_default=func.now(),

@@ -101,4 +101,5 @@ normally reads them.
 - [collaborative-editing.md](collaborative-editing.md) — the write guard
 - [etag-concurrency.md](etag-concurrency.md) — why every write touches `updated_at`
 - [text-moderation.md](text-moderation.md) — both tables are scanned, and roll up
+- [translations.md](translations.md) — both tables carry `source_lang`; an edit or delete drops the note's translations
 - [reference/data-model.md](../reference/data-model.md)

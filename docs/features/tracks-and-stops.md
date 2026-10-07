@@ -219,6 +219,7 @@ passed that, not the stale itinerary.
 - [collaborative-editing.md](collaborative-editing.md) — the write guard and lock
 - [etag-concurrency.md](etag-concurrency.md) — why bad anchors answer 412
 - [text-moderation.md](text-moderation.md) — stop name, address and notes are scanned
+- [translations.md](translations.md) — stop notes carry `source_lang` (never the place name); deleting a stop purges what cascaded
 - [reference/data-model.md](../reference/data-model.md)
 
 ## OPEN QUESTIONS

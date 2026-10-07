@@ -58,6 +58,9 @@ class Annotation(Base):
     # would be meaningless.
     content: Mapped[str] = mapped_column(Text, nullable=False)
 
+    # Language of `content`, detected at save time; NULL = not detected.
+    source_lang: Mapped[str | None] = mapped_column(Text, nullable=True)
+
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         server_default=func.now(),

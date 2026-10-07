@@ -106,6 +106,10 @@ class Stop(Base):
     )
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
 
+    # Language of `notes` only — a French place name must not make English
+    # notes read as French. Detected at save time; NULL = not detected.
+    source_lang: Mapped[str | None] = mapped_column(Text, nullable=True)
+
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         server_default=func.now(),

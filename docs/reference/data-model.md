@@ -1,7 +1,7 @@
 # Data model — all tables
 
 Every table in the schema, extracted from `social_api/app/models/` via SQLAlchemy
-metadata. **30 tables.** Each row links to the feature doc that owns it.
+metadata. **31 tables.** Each row links to the feature doc that owns it.
 
 Conventions that hold everywhere:
 
@@ -49,6 +49,7 @@ Conventions that hold everywhere:
 | `text_moderation_decisions` | [text-moderation.md](../features/text-moderation.md) | audit trail *and* moderator queue |
 | `notifications` | [notifications.md](../features/notifications.md) | in-app feed row (structured reference) |
 | `device_tokens` | [notifications.md](../features/notifications.md) | FCM registration per install |
+| `content_translations` | [translations.md](../features/translations.md) | machine translation of one field, cached per source-text hash |
 | `bug_reports` | [bug-reports.md](../features/bug-reports.md) | in-app bug ticket + screenshot key |
 | `waitlist` | [web-and-platform.md](../features/web-and-platform.md) | pre-launch signup |
 
@@ -171,6 +172,7 @@ Conventions that hold everywhere:
 | `recommended_periods` | JSON | nullable |
 | `recommended_weekdays` | JSON | nullable |
 | `recommended_period_note` | TEXT | nullable |
+| `source_lang` | TEXT | nullable — ISO 639-1 language of title + description + period note, detected at save time; NULL = not detected |
 | `moderation_status` | VARCHAR(20) | NOT NULL, default `approved` |
 | `hidden_at` | TIMESTAMPTZ | nullable — moderator-hidden → owner-only |
 | `deleted_at` | TIMESTAMPTZ | nullable — soft delete → invisible to **everyone**, owner included |
@@ -206,6 +208,7 @@ Conventions that hold everywhere:
 | `cost` | NUMERIC(10,2) | NOT NULL, default `0.00` |
 | `is_free` | BOOLEAN | NOT NULL, default `false` — distinct from `cost = 0` |
 | `notes` | TEXT | nullable |
+| `source_lang` | TEXT | nullable — language of `notes` only, never of the place name |
 
 - UNIQUE `uq_stop_rank (track_id, rank)`
 - **There is no `type`, `position`, or `parallel_position` column.** Stop role is
@@ -214,14 +217,16 @@ Conventions that hold everywhere:
 ### `annotations` (stop-level)
 
 `id` PK · `stop_id` FK → `stops.id` CASCADE (indexed) · `type` VARCHAR(20) NOT NULL ·
-`content` TEXT NOT NULL · `created_at` · `updated_at`.
+`content` TEXT NOT NULL · `source_lang` TEXT (language of `content`, nullable) ·
+`created_at` · `updated_at`.
 
 - CHECK `ck_annotation_type`: `type IN ('advice','caution','avoid','info')`
 
 ### `itinerary_annotations` (trip-wide)
 
 `id` PK · `itinerary_id` FK → `itineraries.id` CASCADE (indexed) · `type` VARCHAR(20) ·
-`content` TEXT · `created_at` · `updated_at`. Same four types.
+`content` TEXT · `source_lang` TEXT (nullable) · `created_at` · `updated_at`. Same
+four types.
 
 ### `transit_segments`
 
@@ -251,6 +256,7 @@ Conventions that hold everywhere:
 | `is_free` | BOOLEAN | NOT NULL, default `false` |
 | `notes` | TEXT | nullable |
 | `note_type` | VARCHAR(10) | nullable — same four annotation types |
+| `source_lang` | TEXT | nullable — language of `notes` only (`line` and `direction` are place names) |
 
 - CHECK `ck_leg_mode`: `walk, bus, tram, metro, train, taxi, uber, bike, ferry, car, airplane`
 - CHECK `ck_leg_note_type`; UNIQUE `uq_leg_position (segment_id, position)`
@@ -265,6 +271,7 @@ Conventions that hold everywhere:
 | `stars` | SMALLINT | NOT NULL, 1–5 |
 | `safety_stars`, `experience_stars`, `accessibility_stars`, `family_friendly_stars`, `crowdedness_stars` | SMALLINT | nullable, 1–5 each; NULL = not rated |
 | `note` | TEXT | nullable |
+| `source_lang` | TEXT | nullable — language of `note` |
 | `moderation_status` | VARCHAR(20) | NOT NULL, default `approved` — per-rating, so an abusive review cannot take the trip down |
 
 - 7 CHECK constraints: one per star column plus the moderation status
@@ -301,6 +308,34 @@ trailing column ("itineraries I can edit"), which the allowlist is not.
 - Index `ix_itinerary_edit_locks_heartbeat (last_heartbeat_at)`
 - **No `expires_at` column** — staleness is derived at read time, so raising the
   TTL takes effect on claims that already exist.
+
+---
+
+## Translation
+
+### `content_translations`
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | UUID | PK |
+| `itinerary_id` | UUID | NOT NULL, indexed, FK → `itineraries.id` **CASCADE** — every translatable row belongs to one itinerary, so deleting a trip or an account removes its translations in the database |
+| `content_type` | TEXT | NOT NULL — `itinerary`, `itinerary_annotation`, `stop`, `stop_annotation`, `rating`, `transport_leg` |
+| `content_id` | UUID | NOT NULL, **no FK** — polymorphic across six tables |
+| `field` | TEXT | NOT NULL — `title`, `description`, `recommended_period_note`, `content`, `notes`, `note` |
+| `target_lang` | TEXT | NOT NULL — ISO 639-1 |
+| `source_hash` | TEXT | NOT NULL — sha256 of the normalised source text; **the source text itself is never stored** |
+| `source_lang` | TEXT | nullable — the language the provider saw |
+| `translated_text` | TEXT | NOT NULL |
+| `provider`, `model` | TEXT | which engine produced it |
+| `created_at` | TIMESTAMPTZ | |
+
+- CHECK `ck_content_translation_type`, CHECK `ck_content_translation_field`
+- UNIQUE `uq_content_translation (content_type, content_id, field, target_lang, source_hash)`
+  — its leading columns also serve every per-content lookup
+- **No user reference.** A translation is derived from content and is deleted
+  with it: by the FK cascade for a trip or an account, by
+  `translation_service.purge_orphans` for anything deleted below the itinerary,
+  and by `sync_translations` when an edit replaces the text it was made from.
 
 ---
 

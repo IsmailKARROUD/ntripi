@@ -562,15 +562,16 @@ class TestCanEditFlag:
         assert can_edit(bob_hdrs) is True
         assert can_edit(auth_headers(carol["access_token"])) is False
 
-    def test_can_edit_is_the_last_json_key(self, client: TestClient):
+    def test_can_edit_was_appended_not_inserted(self, client: TestClient):
         """Field order is JSON key order and that is part of the contract —
-        can_edit was appended, never inserted."""
+        can_edit was appended, never inserted, and every later field lands
+        after it (source_lang, for translation)."""
         owner_hdrs, _, _, _ = _cast(client)
         itin_id = _itinerary(client, owner_hdrs)
 
         body = client.get(f"/itineraries/{itin_id}", headers=owner_hdrs).json()
 
-        assert list(body)[-1] == "can_edit"
+        assert list(body)[-2:] == ["can_edit", "source_lang"]
 
 
 # ---------------------------------------------------------------------------

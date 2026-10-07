@@ -124,6 +124,7 @@ endpoints are defined in the backend for future API consumers."*
 - [text-moderation.md](text-moderation.md) — leg line/direction/notes are scanned
 - [annotations.md](annotations.md) — `note_type` reuses the same four types
 - [backlog.md](../backlog.md)
+- [translations.md](translations.md) — leg notes carry `source_lang`; replacing a segment's legs purges their translations
 - [reference/data-model.md](../reference/data-model.md)
 
 ## OPEN QUESTIONS

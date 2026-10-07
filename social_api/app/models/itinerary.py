@@ -112,6 +112,11 @@ class Itinerary(Base):
     # The "why" — one line, moderated like any other stored user prose.
     recommended_period_note: Mapped[str | None] = mapped_column(Text, nullable=True)
 
+    # ISO 639-1 language of title + description + period note, detected at
+    # save time (services/language_detection.py). NULL = not detected
+    # confidently; the client then still offers "See translation".
+    source_lang: Mapped[str | None] = mapped_column(Text, nullable=True)
+
     # Combined moderation state for this itinerary's cover image AND its text
     # (title, description, and its stops / annotations / transport legs, which
     # roll up here because hiding is itinerary-level):

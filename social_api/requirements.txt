@@ -29,3 +29,8 @@ markdown-it-py==3.0.0
 # Each release pins one scikit-learn version: 1.6.1 pinned a scikit-learn with
 # no Python 3.14 wheel, so it could not install on the runtime image.
 alt-profanity-check==1.9.1
+# Detects which language user text is written in, at save time, so the client
+# knows when to offer "See translation" (services/language_detection.py).
+# Rust-backed with every language model bundled — a ~170 MB wheel — and needs
+# Python >= 3.12.
+lingua-language-detector==2.2.0

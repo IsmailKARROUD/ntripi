@@ -157,4 +157,5 @@ ratings: [RatingWithUser]}`.
 - [admin-and-appeals.md](admin-and-appeals.md) — `/admin/ratings/{id}/unhide`
 - [notifications.md](notifications.md) — `itinerary_rated`, first rating only
 - [accounts-and-profiles.md](accounts-and-profiles.md) — SET NULL on deletion
+- [translations.md](translations.md) — `note` carries `source_lang`; an anonymised review keeps its translations
 - [reference/data-model.md](../reference/data-model.md)

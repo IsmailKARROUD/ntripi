@@ -107,6 +107,7 @@ from app.services.text_moderation_service import (
     apply_author_edit_status, apply_moderation_status, attach_target,
     moderate_or_422,
 )
+from app.services.translation_service import purge_orphans, sync_translations
 from app.services.user_service import get_active_user_or_404, public_profile_text
 from app.storage.factory import storage
 from app.errors import ApiError
@@ -295,6 +296,7 @@ def _apply_annotation_fields(annotation, body) -> None:
 
 def _save_annotation(annotation, itinerary: Itinerary, db: Session):
     db.add(annotation)  # no-op for an already-persistent annotation on update
+    sync_translations(db, annotation)
     _touch_itinerary(itinerary)
     db.commit()
     db.refresh(annotation)
@@ -303,6 +305,8 @@ def _save_annotation(annotation, itinerary: Itinerary, db: Session):
 
 def _delete_annotation(annotation, itinerary: Itinerary, db: Session) -> None:
     db.delete(annotation)
+    db.flush()
+    purge_orphans(db, itinerary.id)
     _touch_itinerary(itinerary)
     db.commit()
 
@@ -641,6 +645,7 @@ def create_itinerary(
         # A minors hit publishes hidden rather than queued — see moderation_policy.
         hidden_at=datetime.now(timezone.utc) if ctx.escalate else None,
     )
+    sync_translations(db, itinerary)
     db.add(itinerary)
     db.flush()
     # The scan ran before this row existed, so its decision has no target yet.
@@ -877,6 +882,7 @@ def update_itinerary(
     # every ItineraryUpdate field whose name matches a column lands as-is here.
     for field, value in update_data.items():
         setattr(itinerary, field, value)
+    sync_translations(db, itinerary, changed=update_data)
 
     db.commit()
     db.refresh(itinerary)
@@ -1377,6 +1383,7 @@ def add_stop(
                 rank=stop_rank,
                 **stop_fields,
             )
+            sync_translations(db, stop)
             db.add(stop)
             db.flush()
             break  # success — exit the retry loop
@@ -1431,6 +1438,7 @@ def update_stop(
     )
     for field, value in scalar_fields.items():
         setattr(stop, field, value)
+    sync_translations(db, stop, changed=scalar_fields)
 
     # Handle move / reorder.
     target_track_id = body.track_id
@@ -1501,6 +1509,8 @@ def delete_stop(
     db.flush()
 
     _delete_track_if_empty(track_id, db)
+    # The stop took its annotations and its segments' legs with it.
+    purge_orphans(db, itinerary.id)
     _recalculate_totals(itinerary, db)
     db.commit()
     db.refresh(itinerary)
@@ -1620,6 +1630,8 @@ def reorder_itinerary(
         if seg is not None:
             db.delete(seg)
     db.flush()
+    if body.segments_to_delete:
+        purge_orphans(db, itinerary.id)
 
     _recalculate_totals(itinerary, db)
     db.commit()
@@ -1820,6 +1832,7 @@ def upsert_rating(
         )
         db.add(rating)
 
+    sync_translations(db, rating)
     db.flush()
     # A first-time rating is scanned before its row exists — point the decision
     # at it now so the moderator queue knows what it refers to.
@@ -1869,6 +1882,7 @@ def delete_my_rating(
 
     db.delete(rating)
     db.flush()
+    purge_orphans(db, itinerary.id)
     recalculate_rating(itinerary, db)
     db.commit()
 
@@ -1971,6 +1985,7 @@ def get_ratings_page(
             ItineraryRating.updated_at,
             ItineraryRating.user_id,
             ItineraryRating.moderation_status.label("rating_moderation_status"),
+            ItineraryRating.source_lang,
             User.username,
             User.display_name,
             User.avatar_url,
@@ -2031,6 +2046,7 @@ def get_ratings_page(
                 ),
                 avatar_url=row.avatar_url,
             ),
+            source_lang=row.source_lang,
         )
         for row in rows
         if row.user_id not in hidden_raters
@@ -2077,6 +2093,7 @@ def create_segment(
 
     for leg_data in body.legs:
         leg = TransportLeg(segment_id=segment.id, **leg_data.model_dump())
+        sync_translations(db, leg)
         db.add(leg)
 
     db.flush()
@@ -2140,6 +2157,7 @@ def update_segment(
 
     for leg_data in body.legs:
         leg = TransportLeg(segment_id=segment.id, **leg_data.model_dump())
+        sync_translations(db, leg)
         db.add(leg)
 
     try:
@@ -2149,6 +2167,8 @@ def update_segment(
         raise ApiError(status_code=status.HTTP_409_CONFLICT,
                             code="segment_already_exists", detail="A segment between these two stops already exists.")
 
+    # Every leg was replaced, so the old legs' translations have no row left.
+    purge_orphans(db, itinerary.id)
     _recalculate_segment_totals(segment, db)
     _recalculate_totals(itinerary, db)
     db.commit()
@@ -2169,6 +2189,7 @@ def delete_segment(
 
     db.delete(segment)
     db.flush()
+    purge_orphans(db, itinerary.id)
     _recalculate_totals(itinerary, db)
     db.commit()
 
@@ -2193,6 +2214,7 @@ def add_leg(
     _moderate_itinerary_text(_leg_text_fields([body]), itinerary, db, current_user)
 
     leg = TransportLeg(segment_id=segment.id, **body.model_dump())
+    sync_translations(db, leg)
     db.add(leg)
     try:
         db.flush()
@@ -2231,6 +2253,7 @@ def update_leg(
     )
     for field, value in update_data.items():
         setattr(leg, field, value)
+    sync_translations(db, leg, changed=update_data)
 
     _recalculate_segment_totals(segment, db)
     _recalculate_totals(itinerary, db)
@@ -2264,6 +2287,7 @@ def delete_leg(
         db.flush()
     else:
         _recalculate_segment_totals(segment, db)
+    purge_orphans(db, itinerary.id)
     _recalculate_totals(itinerary, db)
     db.commit()
 
