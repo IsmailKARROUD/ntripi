@@ -1,10 +1,11 @@
 # Translations
 
-**Status:** in progress — groundwork only. Source-language detection and the
-translation cache's lifecycle are built; **nothing translates yet, and nothing is
-visible to users.**
+**Status:** in progress. Source-language detection, the translation cache's
+lifecycle and the engine chain are built; **no endpoint calls the engines yet,
+and nothing is visible to users.**
 **Tables:** `content_translations` · `source_lang` on six content tables
-**Config:** `TRANSLATION_DETECT_LANGS`
+**Config:** `TRANSLATION_DETECT_LANGS`, `TRANSLATION_PROVIDERS` and the other
+`TRANSLATION_*` / `AZURE_TRANSLATOR_*` settings below
 
 ## Purpose
 
@@ -81,6 +82,45 @@ outlive, or drift from, the text they were made from.
   translation stay.
 - **No user reference** anywhere in `content_translations`.
 
+### The engines
+
+- **`translation_service.run_chain(fields, target_lang, settings)`** translates
+  a batch: each engine in `TRANSLATION_PROVIDERS` order gets only the fields the
+  engines before it could not translate, split into batches it can take. A
+  field nobody translated is reported back, never invented.
+- **Two engines** (`services/translation_providers.py`), behind one
+  `Translator` protocol — a new provider is a class plus an entry in
+  `_FACTORIES`:
+
+  | Name | What | Notes |
+  |---|---|---|
+  | `openai` | Responses API, `TRANSLATION_MODEL` (default `gpt-6-luna`) | strict `json_schema` built from the batch's keys; `store: false`; `reasoning.effort` from `TRANSLATION_REASONING_EFFORT` (empty omits it); a 429 `insufficient_quota` counts as quota exhausted |
+  | `azure` | Azure AI Translator, REST v3 | a bare `[{"Text": …}]` array, no `from` so Azure reports the source per text; `zh` is sent as `zh-Hans`; a 403 means the free tier's characters are spent |
+
+- **What leaves the server** is the texts, the target language and what the
+  engine needs to process them — never a user id, an email, a content id or a
+  field name. OpenAI receives the texts under opaque keys (`t0`, `t1`, …) and
+  is told not to store the response.
+- **Every translation is checked before it counts**
+  (`services/translation_validation.py`): not empty; every URL and @mention
+  kept verbatim; the same emoji and pictographic symbols; the same number of
+  non-empty lines; and a length ratio inside 0.3–3.5 (0.12–7 when either side
+  is Chinese, Japanese or Korean; skipped under 12 characters). A failure sends
+  that field — only that field — to the next engine.
+- **Output moderation**, when text moderation is on and
+  `TRANSLATION_MODERATE_OUTPUT` is true: the batch's translations are scored in
+  one call (`score_many`) and anything the policy would `reject` or
+  `hide_escalate` fails. A translation is machine output served to every later
+  reader, so an instruction hidden in the source must not be able to talk a
+  model into caching something nobody typed. **It fails closed** — with no
+  classifier answering, nothing new is translated and the original stays on
+  screen. No decision rows are written: this is not user content.
+- **An engine that fails a batch is not retried for the rest of the request**
+  — an outage or an empty quota does not clear in a second.
+- **Logs carry sizes and outcomes only**: provider, model, field count,
+  characters in and out, latency, and failure reasons by count. Never a text,
+  a key or a content id.
+
 ### API contract
 
 `source_lang` is **appended last** to `ItineraryDetail` (after `can_edit`),
@@ -122,6 +162,13 @@ None yet.
 | Var | Default | Notes |
 |---|---|---|
 | `TRANSLATION_DETECT_LANGS` | `all` | `all`, or comma-separated ISO 639-1 codes; a malformed value **raises at startup**. A shorter list loads fewer models, but text in another language is then forced onto its nearest neighbour in the list |
+| `TRANSLATION_PROVIDERS` | empty | engines in the order to try them: `openai`, `azure`. Empty = translation off. An unknown or repeated name, or a provider without its key, **raises at startup** |
+| `TRANSLATION_MODEL` | `gpt-6-luna` | reuses `OPENAI_API_KEY` |
+| `TRANSLATION_REASONING_EFFORT` | `none` | empty omits the parameter; the lowest value differs per model (`minimal` for the gpt-5 family) |
+| `TRANSLATION_TIMEOUT_SECONDS` | `10.0` | per engine call; must be positive |
+| `AZURE_TRANSLATOR_KEY` / `_REGION` / `_ENDPOINT` | — / — / `https://api.cognitive.microsofttranslator.com` | the region is required for a regional or multi-service resource |
+| `TRANSLATION_SUPPORTED_LANGS` | `en,fr,es,de,ar,zh` | target languages; each must be in `constants/translation_languages.py`, or startup **raises** |
+| `TRANSLATION_MODERATE_OUTPUT` | `True` | only acts while `TEXT_MODERATION_PROVIDER` is not `disabled` |
 
 ## Known gaps / TODOs
 
@@ -129,6 +176,10 @@ None yet.
   leg notes to a viewer today.
 - **lingua reports Chinese without telling Simplified from Traditional** — both
   are stored as `zh`.
+- **Azure's quota is read off HTTP 403.** Microsoft documents a 403 as
+  "often" meaning the free characters are spent; a 403 for another reason (a
+  resource misconfigured in the portal) reads the same way, and the field falls
+  through to `unavailable` like any other failure.
 - **Rows that stay undetected are re-read by every backfill run.** Harmless
   (the run is bounded and changes nothing for them), but not free.
 
@@ -139,5 +190,7 @@ None yet.
   [transit-segments.md](transit-segments.md) — the translatable fields
 - [accounts-and-profiles.md](accounts-and-profiles.md) — account deletion, and
   the anonymised review
+- [text-moderation.md](text-moderation.md) — `score_many` vets every
+  translation before it is cached
 - [reference/data-model.md](../reference/data-model.md#content_translations)
 - [decisions.md](../decisions.md) — why the cache cascades from the itinerary

@@ -26,7 +26,7 @@ code, with links to the feature that exercises each rule.
 
 ### Startup validators that **raise**
 
-Six misconfigurations refuse to boot rather than degrade silently:
+Seven misconfigurations refuse to boot rather than degrade silently:
 
 | Validator | Refuses | Why |
 |---|---|---|
@@ -36,6 +36,7 @@ Six misconfigurations refuse to boot rather than degrade silently:
 | `_validate_notification_retention` | `NOTIFICATION_MAX_AGE_DAYS < NOTIFICATION_RETENTION_DAYS` | it would silently shorten the read window |
 | `_validate_edit_lock_windows` | `TTL <= IDLE`; `IDLE < 2 × HEARTBEAT`; `HEARTBEAT < 5` | a claim that became takeable before it read as inactive would be stolen from someone the UI still showed as editing |
 | `_validate_translation_detect_langs` | a `TRANSLATION_DETECT_LANGS` that is neither `all` nor a list of two-letter codes | a typo would otherwise surface on the first save that needs a language |
+| `_validate_translation` | an unknown or repeated name in `TRANSLATION_PROVIDERS`; `openai` with no `OPENAI_API_KEY`; `azure` with no `AZURE_TRANSLATOR_KEY`; a `TRANSLATION_SUPPORTED_LANGS` code missing from `constants/translation_languages.py`; a non-positive timeout | the same stance as text moderation: a setup that would quietly translate nothing must not boot |
 
 Two more refuse at first use rather than at import: **`STORAGE_BACKEND=r2` with
 any `R2_*` var missing raises**, and an unknown `STORAGE_BACKEND` raises — and
@@ -195,6 +196,11 @@ external scheduler) **or SLA auto-hide and post-outage re-checks never run.**
 
 - **Data minimisation in provider payloads** — the OpenAI request body carries the
   text and the model name and nothing else.
+- **A translation engine receives the texts, the target language and what it
+  needs to process them — never a user id, an email, a content id or a field
+  name.** OpenAI gets the texts under opaque keys (`t0`, `t1`, …) with
+  `store: false`; Azure gets a bare array. Translation logs carry sizes and
+  outcomes only, never text.
 - **`text_moderation_cache` holds no raw text and no user reference.**
 - **Automated `moderation_log` rows carry `content_snapshot=None`** and no raw
   text, email or display name. Operator rows keep their snapshot.

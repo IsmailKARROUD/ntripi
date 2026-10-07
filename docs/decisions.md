@@ -969,3 +969,36 @@ request (every reader would pay a request just to learn whether to show a
 button). A minimum relative distance of 0.0 (about one wrong answer in ten on
 short titles). A detection list limited to the six app languages (other
 languages get forced onto a neighbour, and a wrong match hides the button).
+
+---
+
+### 2026-10-07 — User content is translated on the server: OpenAI first, Azure as fallback
+
+**Context.** Readers need trips and reviews in their own language on iOS,
+Android and web. A translation of a public trip is read by many people, so
+whatever produces it should do so once, the same way for everyone, and be
+cheap. User text can also carry instructions aimed at whatever model reads it.
+**Decision.** Translation runs on the backend behind a `Translator` protocol
+(`services/translation_providers.py`), with engines and their order chosen by
+`TRANSLATION_PROVIDERS`. The primary engine is a small OpenAI model
+(`TRANSLATION_MODEL`, default `gpt-6-luna` — OpenAI's model for cost-sensitive,
+high-volume work at the time) called through the Responses API with a strict
+JSON schema built from the batch, `store: false`, and the texts under opaque
+keys; the fallback is Azure AI Translator v3 on its free tier. Every output must
+pass `translation_validation` — and, with text moderation on, the moderation
+policy — before it counts; a field that fails moves to the next engine, and a
+field every engine fails is answered as unavailable and never cached.
+**Consequences.** Swapping or adding an engine (DeepL) is a class and a config
+value. A model coaxed by a hidden instruction into producing something else
+fails the checks and falls through to Azure, which does not follow
+instructions. Output moderation fails closed: during a classifier outage
+nothing new is translated, and readers keep the original. `OPENAI_API_KEY` is
+shared with moderation, and both now call OpenAI through
+`services/openai_http.py`.
+**Alternatives rejected.** On-device translation (ML Kit) — unavailable on
+Flutter web and different output per device. On-device language models — the
+same, plus their size. DeepL, for now — Azure already covers the fallback role, and the
+interface makes DeepL one class and a config value whenever it is wanted.
+Translating everything automatically on write — most of it would never be read
+in most languages. Trusting the model's output unchecked — it is served to
+every later reader from the cache.

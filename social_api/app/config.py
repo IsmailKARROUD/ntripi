@@ -19,10 +19,15 @@ from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from app.constants.report_reasons import REPORT_REASONS
+from app.constants.translation_languages import TARGET_LANGUAGES
 
 # Accepted values for TEXT_MODERATION_PROVIDER. "local" needs no network;
 # "disabled" is the dev/test default and skips every scan.
 TEXT_MODERATION_PROVIDERS = ("openai", "local", "disabled")
+
+# Accepted names in TRANSLATION_PROVIDERS, which a deployment lists in the
+# order they should be tried.
+TRANSLATION_PROVIDER_NAMES = ("openai", "azure")
 
 
 class Settings(BaseSettings):
@@ -174,6 +179,29 @@ class Settings(BaseSettings):
     # text in a language outside it is then forced onto its nearest neighbour
     # in the list — which can hide "See translation" from a reader who needs it.
     TRANSLATION_DETECT_LANGS: str = "all"
+    # Engines that translate, tried in the order listed: comma-separated names
+    # from TRANSLATION_PROVIDER_NAMES. Empty (the default) = translation is off.
+    # A provider listed without its key refuses to boot — the same stance as
+    # TEXT_MODERATION_PROVIDER.
+    TRANSLATION_PROVIDERS: str = ""
+    # OpenAI model used with structured outputs. Reuses OPENAI_API_KEY.
+    TRANSLATION_MODEL: str = "gpt-6-luna"
+    # Sent as reasoning.effort; empty omits the parameter. The lowest accepted
+    # value depends on the model: "none" for gpt-6-luna, "minimal" for gpt-5.
+    TRANSLATION_REASONING_EFFORT: str = "none"
+    TRANSLATION_TIMEOUT_SECONDS: float = 10.0
+    # Azure AI Translator (REST v3), the fallback. REGION is required for a
+    # regional or multi-service resource and optional for a global one.
+    AZURE_TRANSLATOR_KEY: str | None = None
+    AZURE_TRANSLATOR_REGION: str | None = None
+    AZURE_TRANSLATOR_ENDPOINT: str = "https://api.cognitive.microsofttranslator.com"
+    # Languages a reader may translate into: the app's own locales. Each must
+    # be in constants/translation_languages.py.
+    TRANSLATION_SUPPORTED_LANGS: str = "en,fr,es,de,ar,zh"
+    # When text moderation is on, score every translation before it is cached.
+    # A translation is machine output served to every later reader, so text an
+    # instruction hidden in the source talked a model into must not be.
+    TRANSLATION_MODERATE_OUTPUT: bool = True
 
     # Hours after which an unreviewed report is auto-actioned. The DSA clock is
     # 24h from when the report is *filed*, and the sweep only runs periodically,
@@ -353,6 +381,64 @@ class Settings(BaseSettings):
         # needs a language.
         self.translation_detect_langs  # noqa: B018
         return self
+
+    @model_validator(mode="after")
+    def _validate_translation(self) -> "Settings":
+        """Refuse a translation setup that would quietly translate nothing: an
+        unknown provider, a provider without its key, or a target language the
+        prompts and Azure codes do not cover."""
+        providers = self.translation_providers
+        if "openai" in providers and not self.OPENAI_API_KEY:
+            raise ValueError(
+                "TRANSLATION_PROVIDERS includes 'openai', which requires OPENAI_API_KEY"
+            )
+        if "azure" in providers and not self.AZURE_TRANSLATOR_KEY:
+            raise ValueError(
+                "TRANSLATION_PROVIDERS includes 'azure', which requires AZURE_TRANSLATOR_KEY"
+            )
+        self.translation_supported_langs  # noqa: B018 — parse now
+        if self.TRANSLATION_TIMEOUT_SECONDS <= 0:
+            raise ValueError("TRANSLATION_TIMEOUT_SECONDS must be positive")
+        return self
+
+    @property
+    def translation_providers(self) -> list[str]:
+        """TRANSLATION_PROVIDERS as lowercase names, in the order to try them."""
+        names = [
+            name.strip().lower()
+            for name in self.TRANSLATION_PROVIDERS.split(",")
+            if name.strip()
+        ]
+        unknown = [name for name in names if name not in TRANSLATION_PROVIDER_NAMES]
+        if unknown:
+            raise ValueError(
+                f"TRANSLATION_PROVIDERS: unknown provider {', '.join(unknown)}; "
+                f"expected names from {', '.join(TRANSLATION_PROVIDER_NAMES)}"
+            )
+        if len(set(names)) != len(names):
+            raise ValueError("TRANSLATION_PROVIDERS lists a provider twice")
+        return names
+
+    @property
+    def translation_enabled(self) -> bool:
+        return bool(self.translation_providers)
+
+    @property
+    def translation_supported_langs(self) -> list[str]:
+        """TRANSLATION_SUPPORTED_LANGS as lowercase ISO 639-1 codes."""
+        codes = [
+            code.strip().lower()
+            for code in self.TRANSLATION_SUPPORTED_LANGS.split(",")
+            if code.strip()
+        ]
+        unknown = [code for code in codes if code not in TARGET_LANGUAGES]
+        if not codes or unknown:
+            raise ValueError(
+                "TRANSLATION_SUPPORTED_LANGS must list codes from "
+                f"constants/translation_languages.py ({', '.join(TARGET_LANGUAGES)})"
+                + (f"; unknown: {', '.join(unknown)}" if unknown else "")
+            )
+        return codes
 
     @property
     def translation_detect_langs(self) -> list[str] | None:

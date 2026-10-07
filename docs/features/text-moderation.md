@@ -39,6 +39,11 @@ pending`**:
   else** — no user id, email, or content id, ever.
 - The operator is emailed when the chain degrades (fallback, or all-down),
   throttled to one per hour per level.
+- **`score_many(texts)`** is the batch form both providers implement — one
+  OpenAI request for a list of texts. Translation uses it to vet machine
+  output before caching; it writes no decision row and escalates nothing
+  ([translations.md](translations.md)). Both providers call OpenAI through
+  `services/openai_http.py`, the one place that speaks HTTP to it.
 
 ### Blocking calls are correct here
 
@@ -208,6 +213,7 @@ read the queue: `GET /admin/text-flags` and
 - [itineraries.md](itineraries.md) · [ratings.md](ratings.md) · [annotations.md](annotations.md) · [tracks-and-stops.md](tracks-and-stops.md) · [transit-segments.md](transit-segments.md) — the scanned fields
 - [authentication.md](authentication.md) · [google-sign-in.md](google-sign-in.md) — the signup scans
 - [accounts-and-profiles.md](accounts-and-profiles.md) — display_name and bio
+- [translations.md](translations.md) — translations are scored with `score_many` before they are cached
 
 ## OPEN QUESTIONS
 
