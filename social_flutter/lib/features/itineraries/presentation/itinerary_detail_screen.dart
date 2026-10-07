@@ -637,7 +637,6 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
       },
       child: Scaffold(
         backgroundColor: nt.surface,
-        resizeToAvoidBottomInset: false,
         body: SafeArea(
           top: false, // cover hero extends behind status bar
           child: Center(

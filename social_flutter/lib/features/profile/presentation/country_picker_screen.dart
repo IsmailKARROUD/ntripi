@@ -62,7 +62,6 @@ class _CountryPickerScreenState extends State<CountryPickerScreen> {
     final langCode = Localizations.localeOf(context).languageCode;
     final filtered = _filtered(langCode);
     return Scaffold(
-      resizeToAvoidBottomInset: false,
       backgroundColor: nt.surface,
       appBar: AppBar(
         backgroundColor: nt.surface,

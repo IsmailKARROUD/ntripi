@@ -523,6 +523,8 @@ class _CropScreenState extends State<_CropScreen> {
   Widget build(BuildContext context) {
     final nt = context.nt;
     return Scaffold(
+      // Never resize: the crop frame's geometry is the crop math, and a keyboard
+      // left open behind this overlay must not move it mid-crop.
       resizeToAvoidBottomInset: false,
       backgroundColor: NtripiBrand.backdrop,
       appBar: AppBar(

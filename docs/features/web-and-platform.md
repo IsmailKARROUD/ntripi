@@ -234,6 +234,11 @@ ProviderScope
   `/forgot-password`, `/suspended`, and every `/itineraries/:id/...` detail route)
   sit outside it. `/profile/:userId` is declared **after** the shell so
   `/profile/me` wins.
+- **The shell owns the keyboard for its tabs.** Its Scaffold lifts the tabs above
+  the keyboard and the MediaQuery it hands them carries **no** keyboard inset
+  (`.removeViewInsets`), so a tab's own Scaffold has nothing left to lift and
+  keeps the default. A root-level route has no shell above it and lifts itself.
+  The full contract is in [constraints.md](../constraints.md#keyboard).
 - The app is **locked to portrait**.
 - **Build-time config is `--dart-define`**: `API_BASE_URL`, `SHARE_BASE_URL`,
   `GOOGLE_MAPS_EMBED_API_KEY`.

@@ -18,6 +18,7 @@ import 'package:social_flutter/core/ui/app_theme.dart';
 import 'package:social_flutter/features/bug_report/domain/bug_report_diagnostics.dart';
 import 'package:social_flutter/l10n/app_localizations.dart';
 import 'package:social_flutter/shared/widgets/editorial_widgets.dart';
+import 'package:social_flutter/shared/widgets/keyboard_avoidance.dart';
 import 'package:social_flutter/shared/widgets/loaders.dart';
 import 'package:social_flutter/shared/widgets/offline_gate.dart';
 
@@ -100,7 +101,8 @@ class _BugReportSheetState extends State<BugReportSheet> {
             // Clears the package's drag handle, which is stacked over us.
             widget.scrollController != null ? 24 : 16,
             16,
-            MediaQuery.viewInsetsOf(context).bottom + 16,
+            // No keyboard inset: the package already lifts its sheet above it.
+            16,
           ),
           children: [
             Text(
@@ -147,7 +149,9 @@ class _BugReportSheetState extends State<BugReportSheet> {
 
             // ── What happened ──────────────────────────────────────────────
             const SizedBox(height: 14),
-            TextField(
+            // The whole box and its counter, not just the caret line.
+            RevealTogether(
+              child: TextField(
               controller: _messageController,
               enabled: !_saving,
               maxLength: 2000,
@@ -168,6 +172,7 @@ class _BugReportSheetState extends State<BugReportSheet> {
                   borderSide: BorderSide(color: nt.border),
                 ),
               ),
+            ),
             ),
 
             // What we attach is stated up front — the user cannot redact the

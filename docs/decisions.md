@@ -867,3 +867,38 @@ cover of any itinerary that was taken down or is escalated in its own right.
 **Alternatives rejected.** Deleting everything (destroys what the CSAM runbook
 requires preserved); leaving the objects (the "permanent deletion" the privacy
 policy describes would not be true).
+
+---
+
+### 2026-10-01 — The shell consumes the keyboard inset; nothing below it compensates
+
+**Context.** The bottom-nav shell rebuilt its tabs' MediaQuery with
+`MediaQuery.removePadding(context: context, …)` from its own build context —
+above its Scaffold — which put back the keyboard inset that Scaffold had just
+consumed (f871566, 2026-05-11). Every tab saw the keyboard twice and lifted a
+second time, so e3404d2 set `resizeToAvoidBottomInset: false` on 18 screens and
+c86c105 wrote the comment "inner screens use false … without double-counting".
+When 3a822fb moved the itinerary routes to the root navigator, those screens
+kept `false` and lost keyboard avoidance entirely: the stop form's notes, the
+description editor and the annotation editor were typed blind. Sheets failed
+the same way: rate, report and leg padded by the inset *inside* their scroll
+view under a 0.7 height cap, which cancels it.
+**Decision.** One contract, in `shared/widgets/keyboard_avoidance.dart`, held by
+`test/keyboard_avoidance_guard_test.dart`. Whoever lifts content above the
+keyboard removes the inset from what it passes down (the shell now calls
+`.removeViewInsets`). Screens keep the default `resizeToAvoidBottomInset` — only
+the map picker and the crop overlay may not, each with a stated reason. Sheets
+lift through `KeyboardSafeSheetBody` / `AboveKeyboard`. A field and the text that
+belongs to it are revealed as one unit by `RevealTogether`, a render object that
+widens the field's own `showOnScreen` request in transit — the move the
+framework's pinned headers make — and stands aside when the group is taller
+than the viewport, so a long note keeps its caret.
+**Consequences.** All 19 compensating flags are gone. A screen pushed on both
+navigators (the markdown editor: the description from detail, the bio from the
+profile tab) is right on both. A sheet opened from a tab no longer pads for a
+keyboard the shell has already accounted for.
+**Alternatives rejected.** A `scrollPadding` number per field (tuned for one
+screen, explains nothing, drifts). Flipping flags per screen (cannot serve a
+screen pushed on two navigators). A global focus listener calling
+`Scrollable.ensureVisible` (races EditableText's own reveal — the last request
+wins). A keyboard package (a new dependency, and the shell would still leak).

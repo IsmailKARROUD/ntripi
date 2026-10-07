@@ -46,7 +46,6 @@ class RatingsHubScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: nt.surface,
-      resizeToAvoidBottomInset: false,
       appBar: AppBar(backgroundColor: nt.surface, title: Text(AppLocalizations.of(context)!.ratingsTitle)),
       body: Center(
         child: ConstrainedBox(

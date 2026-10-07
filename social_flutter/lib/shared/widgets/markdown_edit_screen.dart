@@ -149,7 +149,6 @@ class _MarkdownEditScreenState extends State<MarkdownEditScreen> {
       child: SavingOverlay(
         saving: _saving,
         child: Scaffold(
-        resizeToAvoidBottomInset: false,
         backgroundColor: nt.surface,
         appBar: AppBar(
           backgroundColor: nt.surface,

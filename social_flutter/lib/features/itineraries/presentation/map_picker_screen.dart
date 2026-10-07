@@ -399,7 +399,9 @@ class _MapPickerScreenState extends ConsumerState<MapPickerScreen> {
             if (!_listVisible) setState(() => _listVisible = true);
           },
         ),
-        suggestionsAsync.when(
+        // Flexible: the list shrinks (and scrolls) rather than run under the keyboard.
+        Flexible(
+          child: suggestionsAsync.when(
           // Refreshes ("search this area", widening loop) must show progress,
           // not the stale list — Riverpod's default would skip loading.
           skipLoadingOnRefresh: false,
@@ -438,6 +440,7 @@ class _MapPickerScreenState extends ConsumerState<MapPickerScreen> {
             }
             return const SizedBox.shrink();
           },
+        ),
         ),
         if (_showSearchArea)
           Padding(
@@ -509,7 +512,10 @@ class _MapPickerScreenState extends ConsumerState<MapPickerScreen> {
           borderRadius: BorderRadius.circular(14),
           side: BorderSide(color: nt.border),
         ),
-        child: Column(
+        // Shrink-wrapped: as tall as its rows until the keyboard bounds it.
+        child: ListView(
+          shrinkWrap: true,
+          padding: EdgeInsets.zero,
           children: [
             for (var i = 0; i < suggestions.length; i++) ...[
               if (i > 0) const Divider(height: 1, indent: 52),
@@ -678,6 +684,8 @@ class _MapPickerScreenState extends ConsumerState<MapPickerScreen> {
     final searchResults =
         ref.watch(mapPlaceSearchProvider).value ?? const <PlaceSuggestion>[];
     return Scaffold(
+      // Never resize: relayouting the live map every keyboard frame freezes it
+      // (see /map-picker in app_router.dart); the search overlay bounds itself.
       resizeToAvoidBottomInset: false,
       appBar: AppBar(
         title: Text(AppLocalizations.of(context)!.mapPickLocationTitle),
@@ -823,12 +831,18 @@ class _MapPickerScreenState extends ConsumerState<MapPickerScreen> {
             ],
           ),
 
-          // Search bar + suggestions (or the instruction banner when idle)
+          // Search bar + suggestions (or the instruction banner when idle).
+          // The page never resizes, so the overlay stops at the keyboard itself.
           Positioned(
             top: 16,
             left: 16,
             right: 16,
-            child: _buildSearchOverlay(context),
+            bottom: MediaQuery.viewInsetsOf(context).bottom + 16,
+            // Sized to its content, so the empty area below lets taps reach the map.
+            child: Align(
+              alignment: Alignment.topCenter,
+              child: _buildSearchOverlay(context),
+            ),
           ),
 
           // Location FABs stacked above the place-info card in one column so

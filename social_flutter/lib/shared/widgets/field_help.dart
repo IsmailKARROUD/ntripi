@@ -142,8 +142,15 @@ void showFieldHelp(
   if (left < horizontalMargin) left = horizontalMargin;
   if (left > maxLeft) left = maxLeft;
 
-  final spaceBelow =
-      screenSize.height - safePadding.bottom - iconBottomY - verticalGap;
+  final overlay = Overlay.of(context, rootOverlay: true);
+  // Measured in the full-window overlay the popover lands in: the anchor may sit
+  // in a tab whose keyboard inset the shell has already consumed.
+  final keyboard = MediaQuery.viewInsetsOf(overlay.context).bottom;
+  final spaceBelow = screenSize.height -
+      safePadding.bottom -
+      keyboard -
+      iconBottomY -
+      verticalGap;
   final showAbove = spaceBelow < estimatedPopoverHeight;
 
   // Tuck the card closer to the anchor when a beak bridges the gap.
@@ -158,7 +165,6 @@ void showFieldHelp(
   final beakLeft = (iconCenterX - left - beakWidth / 2)
       .clamp(14.0, popoverWidth - beakWidth - 14.0);
 
-  final overlay = Overlay.of(context, rootOverlay: true);
   late OverlayEntry entry;
   bool dismissed = false;
   void dismiss() {

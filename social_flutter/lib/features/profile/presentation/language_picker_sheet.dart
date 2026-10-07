@@ -5,6 +5,7 @@ import 'package:social_flutter/core/ui/app_theme.dart';
 import 'package:social_flutter/l10n/app_localizations.dart';
 import 'package:social_flutter/shared/data/languages.dart';
 import 'package:social_flutter/shared/widgets/editorial_widgets.dart';
+import 'package:social_flutter/shared/widgets/keyboard_avoidance.dart';
 
 // Mirrors the backend cap in social_api/app/schemas/user.py (_check_languages).
 const int _kMaxLanguages = 60;
@@ -23,6 +24,7 @@ Future<List<String>?> showLanguagePickerSheet(
   return showModalBottomSheet<List<String>>(
     context: context,
     isScrollControlled: true,
+    useSafeArea: true,
     backgroundColor: Colors.transparent,
     builder: (ctx) => _LanguagePickerSheet(initialSelected: selected),
   );
@@ -114,6 +116,9 @@ class _LanguagePickerSheetState extends State<_LanguagePickerSheet> {
         if (didPop) return;
         Navigator.of(context).pop(_selected.toList());
       },
+      // The search field autofocuses: the whole frame rests on the keyboard,
+      // rigidly, rather than letting the keyboard cover its lower half.
+      child: AboveKeyboard(
       // Material, not a coloured DecoratedBox: the rows are ListTiles, which
       // paint their background and ink splash on the nearest Material ancestor
       // — a coloured box in between hides both (Flutter asserts on it).
@@ -221,12 +226,8 @@ class _LanguagePickerSheetState extends State<_LanguagePickerSheet> {
                 ),
               Expanded(
                 child: ListView.builder(
-                  // The keyboard overlays the sheet rather than resizing it, so
-                  // pad the scroll extent by its height or the last rows can
-                  // never be scrolled out from behind it.
-                  padding: EdgeInsets.only(bottom: media.viewInsets.bottom),
-                  // Scrolling the list puts the keyboard away, which is the only
-                  // way back to the full-height list once search has focus.
+                  // Scrolling the list puts the keyboard away: the user has
+                  // moved from searching to browsing.
                   keyboardDismissBehavior:
                       ScrollViewKeyboardDismissBehavior.onDrag,
                   itemCount: filtered.length,
@@ -268,6 +269,7 @@ class _LanguagePickerSheetState extends State<_LanguagePickerSheet> {
             ],
           ),
         ),
+      ),
       ),
     );
   }

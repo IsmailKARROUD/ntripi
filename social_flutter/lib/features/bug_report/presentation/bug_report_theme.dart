@@ -43,8 +43,9 @@ FeedbackThemeData ntripiFeedbackTheme(NtripiColors nt) {
       color: nt.text2,
     ),
     bottomSheetTextInputStyle: TextStyle(fontSize: 15, color: nt.bark),
-    // Draggable so the sheet can be pulled up over the keyboard while typing a
-    // long report. This is what hands our builder its ScrollController.
+    // Draggable so the sheet can be pulled taller while typing a long report
+    // (the package already keeps it above the keyboard). This is what hands
+    // our builder its ScrollController.
     sheetIsDraggable: true,
     // Roomier than the 0.25 default: the sheet carries a category list and a
     // multi-line field, not just one text box.

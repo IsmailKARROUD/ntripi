@@ -109,6 +109,9 @@ class _TypedConfirmDialogState extends State<_TypedConfirmDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
+      // The keyboard leaves a short window little room for a long message and
+      // the field under it: scroll rather than overflow.
+      scrollable: true,
       title: Text(widget.title),
       content: Column(
         mainAxisSize: MainAxisSize.min,

@@ -81,7 +81,6 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     return Scaffold(
-      resizeToAvoidBottomInset: false,
       // Brand splash — deliberately identical in light and dark mode.
       backgroundColor: NtripiBrand.forest,
       body: Stack(

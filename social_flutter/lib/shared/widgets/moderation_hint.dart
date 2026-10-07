@@ -13,6 +13,7 @@ import 'package:flutter/material.dart';
 import 'package:social_flutter/core/moderation/text_precheck.dart';
 import 'package:social_flutter/core/ui/app_theme.dart';
 import 'package:social_flutter/l10n/app_localizations.dart';
+import 'package:social_flutter/shared/widgets/keyboard_avoidance.dart';
 
 class ModerationHint extends StatefulWidget {
   final TextEditingController controller;
@@ -39,6 +40,9 @@ class _ModerationHintState extends State<ModerationHint> {
 
   Timer? _timer;
   bool _flagged = false;
+  // Focus inside the field means the keyboard is up and can cover the advisory.
+  bool _focusInside = false;
+  final _advisoryKey = GlobalKey();
 
   @override
   void initState() {
@@ -71,20 +75,41 @@ class _ModerationHintState extends State<ModerationHint> {
     setState(() => _flagged = flagged);
   }
 
+  // The advisory appears while the writer pauses — keyboard up — so bring it
+  // into view once it has finished growing; RevealTogether takes the field too.
+  void _revealAdvisory() {
+    if (!_flagged || !_focusInside) return;
+    _advisoryKey.currentContext?.findRenderObject()?.showOnScreen(
+          duration: const Duration(milliseconds: 180),
+          curve: Curves.easeOut,
+        );
+  }
+
   @override
   Widget build(BuildContext context) {
     final nt = context.nt;
     final l10n = AppLocalizations.of(context)!;
 
-    return Column(
+    // The field and its advisory are one unit for the keyboard.
+    return RevealTogether(
+      child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        widget.child,
+        // Observes focus only — never takes it or joins the traversal order.
+        Focus(
+          canRequestFocus: false,
+          skipTraversal: true,
+          includeSemantics: false,
+          onFocusChange: (focused) => _focusInside = focused,
+          child: widget.child,
+        ),
         AnimatedSize(
           duration: const Duration(milliseconds: 180),
           alignment: Alignment.topLeft,
+          onEnd: _revealAdvisory,
           child: _flagged
               ? Padding(
+                  key: _advisoryKey,
                   padding: const EdgeInsets.only(top: 8),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -116,6 +141,7 @@ class _ModerationHintState extends State<ModerationHint> {
               : const SizedBox.shrink(),
         ),
       ],
+      ),
     );
   }
 }

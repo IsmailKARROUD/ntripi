@@ -135,7 +135,6 @@ class _ItineraryListScreenState extends ConsumerState<ItineraryListScreen> {
       tint: nt.surface,
       child: Scaffold(
       backgroundColor: nt.surface,
-      resizeToAvoidBottomInset: false,
       body: SafeArea(
         child: Center(
           child: ConstrainedBox(

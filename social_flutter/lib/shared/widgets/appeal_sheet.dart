@@ -11,6 +11,7 @@ import 'package:social_flutter/core/api/api_client.dart';
 import 'package:social_flutter/core/ui/app_theme.dart';
 import 'package:social_flutter/features/profile/providers/profile_provider.dart';
 import 'package:social_flutter/l10n/app_localizations.dart';
+import 'package:social_flutter/shared/widgets/keyboard_avoidance.dart';
 
 /// Opens the appeal composer for [targetType]/[targetId].
 ///
@@ -27,14 +28,11 @@ Future<bool> showAppealSheet(
   final submitted = await showModalBottomSheet<bool>(
     context: context,
     isScrollControlled: true,
+    useSafeArea: true,
     showDragHandle: true,
-    builder: (sheetContext) => Padding(
-      padding: EdgeInsets.only(
-        left: 20,
-        right: 20,
-        top: 4,
-        bottom: MediaQuery.of(sheetContext).viewInsets.bottom + 20,
-      ),
+    // Scrolls, so a short window or large text can no longer overflow it.
+    builder: (_) => KeyboardSafeSheetBody(
+      padding: const EdgeInsets.fromLTRB(20, 4, 20, 20),
       child: AppealSheet(targetType: targetType, targetId: targetId),
     ),
   );
@@ -134,15 +132,18 @@ class _AppealSheetState extends ConsumerState<AppealSheet> {
           style: TextStyle(fontSize: 13, color: nt.text2),
         ),
         const SizedBox(height: 14),
-        TextField(
-          key: const Key('appealReasonField'),
-          controller: _controller,
-          maxLines: 5,
-          maxLength: 2000,
-          enabled: !_busy,
-          decoration: InputDecoration(
-            labelText: l10n.appealReasonLabel,
-            errorText: _error,
+        // The whole box, counter and error rise above the keyboard together.
+        RevealTogether(
+          child: TextField(
+            key: const Key('appealReasonField'),
+            controller: _controller,
+            maxLines: 5,
+            maxLength: 2000,
+            enabled: !_busy,
+            decoration: InputDecoration(
+              labelText: l10n.appealReasonLabel,
+              errorText: _error,
+            ),
           ),
         ),
         const SizedBox(height: 8),

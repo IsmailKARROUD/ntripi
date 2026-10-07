@@ -53,6 +53,7 @@ import 'package:social_flutter/features/profile/providers/profile_provider.dart'
 import 'package:social_flutter/core/utils/platform_utils.dart';
 import 'package:social_flutter/l10n/app_localizations.dart';
 import 'package:social_flutter/shared/widgets/editorial_widgets.dart';
+import 'package:social_flutter/shared/widgets/keyboard_avoidance.dart';
 import 'package:social_flutter/shared/widgets/loaders.dart';
 import 'package:social_flutter/shared/widgets/offline_gate.dart';
 import 'package:social_flutter/shared/widgets/saving_overlay.dart';
@@ -464,6 +465,7 @@ class _ItineraryFormScreenState extends ConsumerState<ItineraryFormScreen> {
     final picked = await showModalBottomSheet<String>(
       context: context,
       isScrollControlled: true,
+      useSafeArea: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -595,7 +597,6 @@ class _ItineraryFormScreenState extends ConsumerState<ItineraryFormScreen> {
       child: SavingOverlay(
         saving: _saving,
         child: Scaffold(
-      resizeToAvoidBottomInset: false,
       backgroundColor: nt.surface,
       body: Center(
         child: ConstrainedBox(
@@ -1025,7 +1026,10 @@ class _CurrencyPickerSheetState extends State<_CurrencyPickerSheet> {
             c.name.toLowerCase().contains(_query.toLowerCase()))
         .toList();
 
-    return DraggableScrollableSheet(
+    // The search field autofocuses, so the sheet's fractions must apply to the
+    // space above the keyboard or its lower rows sit under it.
+    return AboveKeyboard(
+      child: DraggableScrollableSheet(
       initialChildSize: 0.65,
       minChildSize: 0.4,
       maxChildSize: 0.9,
@@ -1096,6 +1100,7 @@ class _CurrencyPickerSheetState extends State<_CurrencyPickerSheet> {
             ),
           ),
         ],
+      ),
       ),
     );
   }

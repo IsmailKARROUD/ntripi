@@ -16,6 +16,7 @@ import 'package:social_flutter/features/reports/data/report_repository.dart';
 import 'package:social_flutter/features/reports/domain/report_target.dart';
 import 'package:social_flutter/l10n/app_localizations.dart';
 import 'package:social_flutter/shared/widgets/editorial_widgets.dart';
+import 'package:social_flutter/shared/widgets/keyboard_avoidance.dart';
 import 'package:social_flutter/shared/widgets/loaders.dart';
 import 'package:social_flutter/shared/widgets/offline_gate.dart';
 import 'package:social_flutter/shared/widgets/saving_overlay.dart';
@@ -56,9 +57,6 @@ Future<void> showReportContentSheet(
     isScrollControlled: true,
     useSafeArea: true,
     showDragHandle: true,
-    constraints: BoxConstraints(
-      maxHeight: MediaQuery.of(context).size.height * 0.7,
-    ),
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
     ),
@@ -131,10 +129,8 @@ class _ReportContentSheetState extends State<_ReportContentSheet> {
       child: SavingOverlay(
         saving: _saving,
         loaderSize: 40,
-        child: SingleChildScrollView(
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.of(context).viewInsets.bottom + 16,
-          ),
+        // Capped at 70 % of the screen — above the keyboard, not including it.
+        child: KeyboardSafeSheetBody(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -173,7 +169,9 @@ class _ReportContentSheetState extends State<_ReportContentSheet> {
               // ── Notes (optional) ─────────────────────────────────────────
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
-                child: TextField(
+                // The whole box and its counter, not just the caret line.
+                child: RevealTogether(
+                  child: TextField(
                   controller: _notesController,
                   enabled: !_saving,
                   maxLength: 2000,
@@ -192,6 +190,7 @@ class _ReportContentSheetState extends State<_ReportContentSheet> {
                       borderSide: BorderSide(color: nt.border),
                     ),
                   ),
+                ),
                 ),
               ),
 

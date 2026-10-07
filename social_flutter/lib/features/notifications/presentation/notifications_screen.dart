@@ -140,7 +140,6 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
 
     return Scaffold(
       backgroundColor: nt.surface,
-      resizeToAvoidBottomInset: false,
       body: Center(
         child: ConstrainedBox(
           constraints: BoxConstraints(

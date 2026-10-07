@@ -171,7 +171,6 @@ class _DeleteAccountScreenState extends ConsumerState<DeleteAccountScreen> {
       tint: nt.surface,
       child: Scaffold(
         backgroundColor: nt.surface,
-        resizeToAvoidBottomInset: false,
         body: Center(
           child: ConstrainedBox(
             constraints: BoxConstraints(

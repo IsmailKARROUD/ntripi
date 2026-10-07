@@ -107,7 +107,6 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
       tint: nt.surface,
       child: Scaffold(
       backgroundColor: nt.surface,
-      resizeToAvoidBottomInset: false,
       body: Center(
         child: ConstrainedBox(
           constraints: BoxConstraints(

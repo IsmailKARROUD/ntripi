@@ -12,14 +12,16 @@ import 'package:social_flutter/core/api/api_client.dart';
 import 'package:social_flutter/core/ui/app_theme.dart';
 import 'package:social_flutter/core/ui/destructive_actions.dart';
 import 'package:social_flutter/features/itineraries/domain/annotation.dart';
-import 'package:social_flutter/features/itineraries/presentation/widgets/annotation_form_dialog.dart'
-    show AnnotationFormResult;
 import 'package:social_flutter/l10n/app_localizations.dart';
 import 'package:social_flutter/shared/widgets/editorial_widgets.dart';
+import 'package:social_flutter/shared/widgets/keyboard_avoidance.dart';
 import 'package:social_flutter/shared/widgets/loaders.dart';
 import 'package:social_flutter/shared/widgets/moderation_hint.dart';
 import 'package:social_flutter/shared/widgets/offline_gate.dart';
 import 'package:social_flutter/shared/widgets/saving_overlay.dart';
+
+/// What the editor returns on Save.
+typedef AnnotationFormResult = ({String content, AnnotationType type});
 
 class AnnotationScreen extends StatefulWidget {
   final bool isEdit;
@@ -145,7 +147,6 @@ class _AnnotationScreenState extends State<AnnotationScreen> {
       child: SavingOverlay(
         saving: _saving,
         child: Scaffold(
-      resizeToAvoidBottomInset: false,
       backgroundColor: nt.surface,
       body: Column(children: [
         SafeArea(
@@ -322,6 +323,12 @@ class _AnnotationScreenState extends State<AnnotationScreen> {
               ),
             ),
           ),
+          // The box and the "keep it short" hint under it rise above the
+          // keyboard together, not just the caret line.
+          RevealTogether(
+            child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
           // Margin moved out to the Padding so the advisory hint lines up with
           // the card it belongs to rather than the screen edge.
           Padding(
@@ -365,6 +372,9 @@ class _AnnotationScreenState extends State<AnnotationScreen> {
             child: Text(
               l10n.annotationKeepShortHint,
               style: TextStyle(fontSize: 11, color: nt.text2),
+            ),
+          ),
+            ],
             ),
           ),
         ],

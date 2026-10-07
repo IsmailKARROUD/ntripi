@@ -169,6 +169,11 @@ Key rules:
 - Three async states always: loading, error, data (and empty)
 - Never `ListView` inside `Column` — use `CustomScrollView` + Slivers
 - Grounds, chrome widgets and color tokens: **UX Conventions → Surfaces and Chrome**
+- **Keyboard avoidance is one contract** (`shared/widgets/keyboard_avoidance.dart`, held by `test/keyboard_avoidance_guard_test.dart`):
+  1. **Whoever lifts content above the keyboard removes the inset from what it passes down.** Scaffold does; the bottom-nav shell does — it rebuilds its tabs' MediaQuery from a context *above* its Scaffold, so it calls `.removeViewInsets` itself (until 2026-10-01 it did not: every tab lifted twice, and 18 screens hid that with `resizeToAvoidBottomInset: false`, which left the root-navigator screens with no avoidance at all); `AboveKeyboard` does.
+  2. **Screens keep the default `resizeToAvoidBottomInset`.** `false` only for a page that must not reflow — the map picker (live map) and the cover crop overlay — allowlisted with the reason.
+  3. **A sheet with a field lifts its body with `KeyboardSafeSheetBody`** (inset outside the scroll view, cap on the content; show it `isScrollControlled` + `useSafeArea`). A dialog with a field must shrink: `scrollable: true`, or a `Flexible` list.
+  4. **A field and the text that belongs to it are revealed as one unit** with `RevealTogether` — a render object widening the field's own `showOnScreen` request, standing aside when the group is taller than the viewport. `ModerationHint` already wraps every prose field in one.
 - Owner UI elements via explicit `currentUser?.id == itinerary.ownerId`
 - `ItineraryStaleException` thrown by repository on 412 — presentation catches and shows reload dialog
 - **Never touch `ref` in `State.dispose()`** — `ref` resolves through `BuildContext`, which is already deactivated by then, so `ref.read(...)` throws `StateError: Using "ref" when a widget is about to or has been unmounted is unsafe`. To call a notifier on the way out, hold it in a field: `NotifierType? _notifier;` assigned in `build` via `ref.watch(someProvider.notifier)` (watched, not read once in `initState` — an invalidation swaps the instance and `dispose` must reach the live one), then call `_notifier?.method()` in `dispose`. Safe only because the provider is not `autoDispose`, so the notifier's own `ref` outlives the screen; an `autoDispose` provider needs `ref.keepAlive()` or the work moved into the notifier's `ref.onDispose`. Live example: `notifications_screen.dart` flushing the deferred-delete queue.
@@ -1071,6 +1076,10 @@ For each article the change touches:
 - Do NOT use `Theme.of(context).dividerColor` for a hairline — the theme sets `dividerTheme.color` but never `dividerColor`, so it falls through to M3's `outlineVariant` grey; use `nt.border`
 - Do NOT use `nt.ratingRed` or `colorScheme.error` for a destructive affordance — `nt.danger` is the token; `colorScheme` is only for on-colors that have none
 - Do NOT report a sheet's failure with a `ScaffoldMessenger` snackbar — it draws behind the modal barrier and is never seen; use an inline error row
+- Do NOT set `resizeToAvoidBottomInset: false` to fix a gap above the keyboard — the gap is a leaked inset, and on the root navigator `false` leaves the keyboard over the screen; only a page that must not reflow may, and `keyboard_avoidance_guard_test.dart` makes it say why
+- Do NOT rebuild a MediaQuery from a context above a Scaffold that consumed the keyboard inset without `.removeViewInsets(removeBottom: true)` — `MediaQuery.removePadding(context: outer)` hands the keyboard to every descendant a second time
+- Do NOT pad a sheet by the keyboard inside its scroll view, or cap a field sheet with `showModalBottomSheet(constraints:)` — the cap cancels the padding and the field stays under the keyboard, counted as visible; use `KeyboardSafeSheetBody`
+- Do NOT give a field a `scrollPadding` number to show what sits under it — wrap the field and that text in `RevealTogether`
 - Do NOT omit `ProxyHeadersMiddleware` when deploying behind Railway/Cloudflare — rate limiting will throttle all users from the same proxy IP without it
 - Do NOT remove `ALLOWED_HOSTS` or set it to `*` in production — always whitelist `ntripi.app,*.ntripi.app`
 - Do NOT set `SECRET_KEY` shorter than 32 characters — startup will refuse to start

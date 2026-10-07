@@ -118,4 +118,45 @@ void main() {
 
     expect(find.text(hintTitle(tester)), findsNothing);
   });
+
+  testWidgets('a hint that appears while typing is brought above the keyboard',
+      (tester) async {
+    // It appears once the writer pauses — that is, with the keyboard up, under
+    // a field that has just been lifted to rest on it. Nothing else would move
+    // it into view until the next keystroke.
+    tester.view.physicalSize = const Size(400, 800);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(
+          body: ListView(children: [
+            const SizedBox(height: 440),
+            ModerationHint(
+              controller: controller,
+              checker: flagsEverything,
+              child: TextField(controller: controller, minLines: 2, maxLines: 2),
+            ),
+            const SizedBox(height: 600),
+          ]),
+        ),
+      ),
+    );
+    await tester.showKeyboard(find.byType(TextField));
+    const keyboardTop = 800.0 - 300;
+    tester.view.viewInsets = const FakeViewPadding(bottom: 300);
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextField), 'something rude');
+    await tester.pump(pastDebounce);
+    await tester.pumpAndSettle();
+
+    // Its last line, not just its title: a warning cut in half is not seen.
+    final body = AppLocalizations.of(tester.element(find.byType(TextField)))!
+        .moderationHintBody;
+    expect(tester.getRect(find.text(body)).bottom,
+        lessThanOrEqualTo(keyboardTop));
+  });
 }

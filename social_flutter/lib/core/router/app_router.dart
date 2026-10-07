@@ -380,6 +380,12 @@ final appRouter = GoRouter(
   ],
 );
 
+/// The shell on its own, so a test can pin its keyboard contract without the
+/// whole router (whose redirect reads secure storage).
+@visibleForTesting
+Widget appShellForTesting(StatefulNavigationShell navigationShell) =>
+    _AppShell(navigationShell: navigationShell);
+
 /// Shell with persistent bottom navigation bar.
 class _AppShell extends ConsumerStatefulWidget {
   final StatefulNavigationShell navigationShell;
@@ -406,9 +412,8 @@ class _AppShellState extends ConsumerState<_AppShell> {
             .watch(isOnlineProvider)
             .maybeWhen(data: (online) => online, orElse: () => true);
     return Scaffold(
-      // resizeToAvoidBottomInset: true (default) — the outer scaffold shrinks its
-      // body to exactly the space above the keyboard. Inner screens use false so
-      // they simply fill this pre-shrunk space without double-counting.
+      // Resizes (the default) to lift the tabs above the keyboard, and hands them
+      // no keyboard inset — so a tab's own Scaffold has nothing left to lift.
       body: Column(
         children: [
           if (_showDownloadBanner)
@@ -424,10 +429,15 @@ class _AppShellState extends ConsumerState<_AppShell> {
           // indicator inset; without this the child SafeArea re-adds it and
           // leaves an empty strip of surface above the bar.
           Expanded(
-            child: MediaQuery.removePadding(
-              context: context,
-              removeTop: _showDownloadBanner || isOffline,
-              removeBottom: true,
+            child: MediaQuery(
+              // Built from this context, above the Scaffold, so the keyboard
+              // inset it consumed must go too or every tab lifts a second time.
+              data: MediaQuery.of(context)
+                  .removePadding(
+                    removeTop: _showDownloadBanner || isOffline,
+                    removeBottom: true,
+                  )
+                  .removeViewInsets(removeBottom: true),
               child: widget.navigationShell,
             ),
           ),

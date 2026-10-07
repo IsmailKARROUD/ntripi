@@ -57,7 +57,6 @@ class _FeedScreenState extends ConsumerState<FeedScreen> {
 
     return Scaffold(
       backgroundColor: nt.surface,
-      resizeToAvoidBottomInset: false,
       body: SafeArea(
         child: Center(
           child: ConstrainedBox(

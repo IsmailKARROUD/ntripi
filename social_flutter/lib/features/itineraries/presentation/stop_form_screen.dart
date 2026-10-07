@@ -1121,7 +1121,6 @@ class _StopFormScreenState extends ConsumerState<StopFormScreen> {
         saving: _saving,
         child: Scaffold(
           backgroundColor: nt.surface,
-          resizeToAvoidBottomInset: false,
           body: Align(
             alignment: Alignment.topCenter,
             child: ConstrainedBox(

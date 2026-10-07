@@ -4,6 +4,10 @@
 // is anchored to the bottom of the window — so raising the keyboard (which
 // pads the list) or typing a query that narrows it to a couple of rows walked
 // the sheet's top edge, and the Done button with it, up and down the screen.
+//
+// The keyboard now lifts the frame whole (AboveKeyboard) instead of covering
+// its lower half: the height never changes, only where it rests. Before, on the
+// root navigator the autofocused search field sat under the keyboard.
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:social_flutter/core/ui/app_theme.dart';
@@ -46,17 +50,23 @@ void main() {
     showLanguagePickerSheet(ctx);
     await tester.pumpAndSettle();
 
-    const expected = Rect.fromLTRB(0, 400, 400, 800); // 50% of an 800pt screen
-    expect(_sheetRect(tester), expected);
+    // 50% of an 800pt screen.
+    expect(_sheetRect(tester), const Rect.fromLTRB(0, 400, 400, 800));
 
+    // The keyboard lifts the frame whole: same height, resting on its top edge.
     tester.view.viewInsets = const FakeViewPadding(bottom: 336);
     await tester.pumpAndSettle();
-    expect(_sheetRect(tester), expected, reason: 'keyboard must not move it');
+    const lifted = Rect.fromLTRB(0, 64, 400, 464);
+    expect(_sheetRect(tester), lifted,
+        reason: 'the keyboard must lift the frame, never resize it');
+    expect(tester.getRect(find.byType(TextField)).bottom,
+        lessThanOrEqualTo(464),
+        reason: 'the autofocused search field must be above the keyboard');
 
     // A query narrowing the list to a row or two must not shrink the frame.
     await tester.enterText(find.byType(TextField), 'zulu');
     await tester.pumpAndSettle();
-    expect(_sheetRect(tester), expected, reason: 'filtering must not move it');
+    expect(_sheetRect(tester), lifted, reason: 'filtering must not move it');
   });
 
   testWidgets('the language cap is announced inside the sheet', (tester) async {

@@ -72,13 +72,9 @@ class _GoogleTosConsentSheetState extends State<_GoogleTosConsentSheet> {
     final l10n = AppLocalizations.of(context)!;
 
     return SafeArea(
+      // No keyboard inset: nothing here takes text (the date opens a picker).
       child: Padding(
-        padding: EdgeInsets.only(
-          left: 20,
-          right: 20,
-          top: 12,
-          bottom: MediaQuery.of(context).viewInsets.bottom + 20,
-        ),
+        padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,

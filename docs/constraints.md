@@ -413,6 +413,35 @@ block appears a second time anywhere, extract it instead of copying.**
 - **A sheet that fails must say so inline.** `ScaffoldMessenger` snackbars render
   behind the modal barrier and are never seen.
 
+### Keyboard
+
+One contract, in `shared/widgets/keyboard_avoidance.dart`, held by
+`test/keyboard_avoidance_guard_test.dart`.
+
+- **Whoever lifts content above the keyboard removes the inset from what it
+  passes down.** Scaffold does; the bottom-nav shell and `AboveKeyboard` do too.
+  The shell rebuilds its tabs' MediaQuery from a context *above* its Scaffold, so
+  it must strip the inset itself — until 2026-10-01 it did not, and every tab
+  lifted twice.
+- **Screens keep the default `resizeToAvoidBottomInset`.** `false` only for a
+  page that must not reflow — the map picker (a live map relayouting every
+  keyboard frame froze the device) and the cover crop overlay — each allowlisted
+  with its reason. On the root navigator `false` means no keyboard avoidance at
+  all.
+- **A sheet with a field lifts its body with `KeyboardSafeSheetBody`**: the inset
+  outside the scroll view, the cap on the content, shown with
+  `isScrollControlled` + `useSafeArea`. Inset padding *inside* a scroll view is
+  cancelled once a height cap stops the sheet growing, and the field stays under
+  the keyboard counted as visible. A dialog with a field must be able to shrink:
+  `scrollable: true`, or a `Flexible` list that absorbs the space.
+- **A field and the text that belongs to it are revealed as one unit** with
+  `RevealTogether` (already inside `ModerationHint`) — never a `scrollPadding`
+  number. It stands aside for a group taller than the viewport, so a long note
+  keeps its caret.
+- **An overlay outside every Scaffold reads the inset from the full-window
+  overlay's context** (`field_help`'s popover): under the shell, the anchor's own
+  context reads 0.
+
 ### Destructive actions
 
 Three tiers, and **never an inline `showDialog`**:

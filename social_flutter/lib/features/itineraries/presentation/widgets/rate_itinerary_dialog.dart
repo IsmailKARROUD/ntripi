@@ -18,6 +18,7 @@ import 'package:social_flutter/features/itineraries/presentation/widgets/markdow
 import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
 import 'package:social_flutter/l10n/app_localizations.dart';
 import 'package:social_flutter/shared/widgets/editorial_widgets.dart';
+import 'package:social_flutter/shared/widgets/keyboard_avoidance.dart';
 import 'package:social_flutter/shared/widgets/moderation_hint.dart';
 import 'package:social_flutter/shared/widgets/loaders.dart';
 import 'package:social_flutter/shared/widgets/offline_gate.dart';
@@ -35,10 +36,6 @@ Future<void> showRateItineraryDialog(
     isScrollControlled: true,
     useSafeArea: true,
     showDragHandle: true,
-    // Cap at 70 % of screen height so it never takes over the screen.
-    constraints: BoxConstraints(
-      maxHeight: MediaQuery.of(context).size.height * 0.7,
-    ),
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
     ),
@@ -170,10 +167,8 @@ class _RateItinerarySheetState extends State<_RateItinerarySheet> {
       child: SavingOverlay(
         saving: _saving,
         loaderSize: 40,
-        child: SingleChildScrollView(
-      padding: EdgeInsets.only(
-        bottom: MediaQuery.of(context).viewInsets.bottom + 16,
-      ),
+        // Capped at 70 % of the screen — above the keyboard, not including it.
+        child: KeyboardSafeSheetBody(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,

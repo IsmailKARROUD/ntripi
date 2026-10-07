@@ -65,7 +65,6 @@ class DimensionRatingsScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: nt.surface,
-      resizeToAvoidBottomInset: false,
       body: Column(
         children: [
           SafeArea(

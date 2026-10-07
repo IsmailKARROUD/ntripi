@@ -11,7 +11,8 @@
 // Duration is split into two fields (h + min) and combined to duration_min on
 //   submit — typing "90" as raw minutes is error-prone for long trips.
 //
-// isScrollControlled: true keeps the cost/notes fields above the keyboard.
+// KeyboardSafeSheetBody keeps the cost/notes fields above the keyboard — inset
+// padding inside the scroll view (the old way) died once the 0.7 cap was hit.
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -22,6 +23,7 @@ import 'package:social_flutter/core/ui/toggle_feedback.dart';
 import 'package:social_flutter/features/itineraries/domain/transport_leg.dart';
 import 'package:social_flutter/shared/widgets/duration_picker_sheet.dart';
 import 'package:social_flutter/shared/widgets/editorial_widgets.dart';
+import 'package:social_flutter/shared/widgets/keyboard_avoidance.dart';
 import 'package:social_flutter/l10n/app_localizations.dart';
 
 // Modes that use numbered/named transit lines and directions.
@@ -62,6 +64,7 @@ class LegFormDialog extends ConsumerStatefulWidget {
     return showModalBottomSheet<Map<String, dynamic>>(
       context: context,
       isScrollControlled: true,
+      useSafeArea: true,
       showDragHandle: true,
       builder: (_) => LegFormDialog(existing: existing),
     );
@@ -308,15 +311,7 @@ class _LegFormDialogState extends ConsumerState<LegFormDialog> {
           Navigator.of(context).pop(); // null result == cancel, matches contract
         }
       },
-      child: ConstrainedBox(
-      constraints: BoxConstraints(
-        maxHeight: MediaQuery.of(context).size.height * 0.70,
-      ),
-      child: SafeArea(
-      child: SingleChildScrollView(
-        padding: EdgeInsets.only(
-          bottom: MediaQuery.of(context).viewInsets.bottom + 16,
-        ),
+      child: KeyboardSafeSheetBody(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -488,7 +483,9 @@ class _LegFormDialogState extends ConsumerState<LegFormDialog> {
 
             // ── THOUGHTS ──────────────────────────────────────────────────
             SectionLabel(label: l10n.thoughtsLabel),
-            SectionCard(
+            // The whole card rises above the keyboard, not just the caret line.
+            RevealTogether(
+              child: SectionCard(
               clipBehavior: Clip.antiAlias,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -513,6 +510,7 @@ class _LegFormDialogState extends ConsumerState<LegFormDialog> {
                   ),
                 ),
               ],
+            ),
             ),
 
             const SizedBox(height: 16),
@@ -556,8 +554,6 @@ class _LegFormDialogState extends ConsumerState<LegFormDialog> {
             ),
           ],
         ),
-      ),
-      ),
       ),
     );
   }
