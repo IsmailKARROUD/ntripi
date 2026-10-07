@@ -36,7 +36,7 @@ Seven misconfigurations refuse to boot rather than degrade silently:
 | `_validate_notification_retention` | `NOTIFICATION_MAX_AGE_DAYS < NOTIFICATION_RETENTION_DAYS` | it would silently shorten the read window |
 | `_validate_edit_lock_windows` | `TTL <= IDLE`; `IDLE < 2 × HEARTBEAT`; `HEARTBEAT < 5` | a claim that became takeable before it read as inactive would be stolen from someone the UI still showed as editing |
 | `_validate_translation_detect_langs` | a `TRANSLATION_DETECT_LANGS` that is neither `all` nor a list of two-letter codes | a typo would otherwise surface on the first save that needs a language |
-| `_validate_translation` | an unknown or repeated name in `TRANSLATION_PROVIDERS`; `openai` with no `OPENAI_API_KEY`; `azure` with no `AZURE_TRANSLATOR_KEY`; a `TRANSLATION_SUPPORTED_LANGS` code missing from `constants/translation_languages.py`; a non-positive timeout | the same stance as text moderation: a setup that would quietly translate nothing must not boot |
+| `_validate_translation` | an unknown or repeated name in `TRANSLATION_PROVIDERS`; `openai` with no `OPENAI_API_KEY`; `azure` with no `AZURE_TRANSLATOR_KEY`; a `TRANSLATION_SUPPORTED_LANGS` code missing from `constants/translation_languages.py`; a `TRANSLATION_PRETRANSLATE_LANGS` code that is not supported; a non-positive timeout; an hourly limit under 1 or a negative budget (`Field` bounds) | the same stance as text moderation: a setup that would quietly translate nothing must not boot |
 
 Two more refuse at first use rather than at import: **`STORAGE_BACKEND=r2` with
 any `R2_*` var missing raises**, and an unknown `STORAGE_BACKEND` raises — and
@@ -44,7 +44,7 @@ any `R2_*` var missing raises**, and an unknown `STORAGE_BACKEND` raises — and
 
 ### The "unset = invisible" pattern
 
-Four subsystems return **404** or render nothing when unconfigured, rather than
+Five subsystems return **404** or render nothing when unconfigured, rather than
 returning 401/403 — the feature is invisible, not merely locked:
 
 | Unset | Effect |
@@ -53,6 +53,7 @@ returning 401/403 — the feature is invisible, not merely locked:
 | `SWEEP_TOKEN` | `POST /internal/moderation-sweep` 404s |
 | any of the four `JIRA_*` | the "Create Jira issue" button is not rendered |
 | `FCM_PROJECT_ID` / `FCM_SERVICE_ACCOUNT_JSON` | push is off; nothing sent, nothing raised |
+| `TRANSLATION_PROVIDERS` | `POST /translations` 404s; `GET /translations/config` answers `enabled: false`, so no client offers the button |
 
 ### `OPERATOR_EMAIL` is the one to actually set
 
@@ -129,6 +130,11 @@ discoverable way to learn the constraints. Logged in
   ladder.
 - A blocked, banned or deleted profile all **404 identically**, so the blocked
   user is never told.
+- **Translation follows the same ladder and stops short of takedowns.** A
+  reader only ever has translated what `can_view_itinerary` (and, for a review,
+  `can_view_rating`) lets them read, and content under a takedown is never
+  translated, even for its author. Missing, forbidden and taken down all
+  answer `not_found`.
 
 → [visibility-and-access.md](features/visibility-and-access.md) ·
 [collaborative-editing.md](features/collaborative-editing.md) ·
@@ -206,6 +212,11 @@ external scheduler) **or SLA auto-hide and post-outage re-checks never run.**
   text, email or display name. Operator rows keep their snapshot.
 - **`privacy@ntripi.app` is the GDPR controller contact**, hardcoded in all six
   legal modules.
+- **Every third party that receives user data is named in Privacy §5, in all six
+  languages, before it receives any.** An undisclosed processor is a GDPR breach
+  and a store-label mismatch, so a new one ships behind its config flag until
+  the policy that names it is deployed — translation's engines are pinned by
+  `test_privacy_names_every_translation_engine`.
 - **Account deletion is a hard delete** with a documented set of `SET NULL`
   evidence columns, and it erases the account's stored images too — except while
   the account is under an open legal escalation, and except taken-down or
@@ -295,6 +306,7 @@ non-negotiables:
 | **A trailing composite-PK column is not covered either** | `saved_itineraries` and `itinerary_allowed_users` are keyed `(itinerary_id, user_id)`, so `WHERE user_id = ?` cannot use the PK index. `ix_itinerary_editors_user` is the precedent |
 | **Never compute a denormalised counter in Python** | read-then-write loses concurrent updates under READ COMMITTED; the increment belongs in the `UPDATE` |
 | **Never compute rating averages in Python** — use SQL `AVG()` | same |
+| **A limit is enforced in the same statement that counts** — `INSERT … ON CONFLICT DO UPDATE … WHERE total + n <= limit RETURNING` (`translation_usage`) | a check-then-increment lets two concurrent requests both pass a cap they jointly exceed |
 | **`rank` columns must be `TEXT COLLATE "C"`** | locale-aware collation orders upper/lowercase differently from the ordering service |
 | **Clamp with `case()`, not `GREATEST()`** | the suite runs on SQLite, which has no `GREATEST` |
 | Pool `pool_size=10`, `max_overflow=20`, `pool_pre_ping=True`; statement timeout **30 s** | Alembic uses its own `NullPool` engine and is unaffected |

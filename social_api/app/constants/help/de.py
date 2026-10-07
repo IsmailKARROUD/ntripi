@@ -82,6 +82,15 @@ CATEGORIES: tuple[Category, ...] = (
 
 RELEASES: tuple[Release, ...] = (
     Release(
+        version="0.4.0",
+        date="2026-10-07",
+        headline="Reisen in Ihrer Sprache lesen",
+        entries=(
+            "**Übersetzung anzeigen** unter einer Reise, einem Stopp oder einer Rezension übersetzt sie in Ihre App-Sprache; **Original anzeigen** schaltet zurück.",
+            "**Feed-Titel in Ihrer Sprache.** Titel öffentlicher Reisen kommen bereits übersetzt an — außer sie sind in einer Sprache, die Sie sprechen.",
+        ),
+    ),
+    Release(
         version="0.3.0",
         date="2026-09-01",
         headline="Gemeinsames Bearbeiten, Push-Benachrichtigungen und ein Hilfebereich",
@@ -607,7 +616,9 @@ Notizen auf Reiseebene stehen oben, vor den Stopps, weil man sie meist lesen mus
                 heading="Farbige Notizen und das Notizfeld",
                 body="""Jeder Stopp hat außerdem ein einfaches **Notizfeld**. Nutzen Sie es für eigene Merkzettel — eine Buchungsnummer, was zu bestellen ist.
 
-Nehmen Sie eine farbige Notiz für alles, worauf ein Leser *reagieren* muss. Der Unterschied liegt darin, ob es leicht zu übergehen sein soll.""",
+Nehmen Sie eine farbige Notiz für alles, worauf ein Leser *reagieren* muss. Der Unterschied liegt darin, ob es leicht zu übergehen sein soll.
+
+Wer die App in einer anderen Sprache nutzt, kann beide mit **Übersetzung anzeigen** übersetzen.""",
             ),
         ),
         keywords=(
@@ -625,8 +636,11 @@ Nehmen Sie eine farbige Notiz für alles, worauf ein Leser *reagieren* muss. Der
             "sicherheit",
             "betrug",
         ),
-        related=("add-places-to-an-itinerary", "plan-a-trip-itinerary"),
-        updated="2026-09-01",
+        related=(
+            "add-places-to-an-itinerary", "plan-a-trip-itinerary",
+            "read-trips-in-another-language",
+        ),
+        updated="2026-10-07",
         cta="Schreiben Sie auf, was Ihnen jemand hätte sagen sollen.",
     ),
     Article(
@@ -985,7 +999,9 @@ Die E-Mail-Pflicht hält Wegwerfkonten aus den Noten heraus.""",
                 kind=KIND_FAQ,
                 body="""Ja — im Bewertungsdialog gibt es ein Kommentarfeld, und das ist der Teil, den andere Reisende wirklich lesen. Die Note sagt, wie es lief; der Kommentar sagt, warum.
 
-Kommentare unterliegen wie alles Veröffentlichte den [Community-Richtlinien](/guidelines).""",
+Kommentare unterliegen wie alles Veröffentlichte den [Community-Richtlinien](/guidelines).
+
+Unter einer Rezension in einer anderen Sprache steht **Übersetzung anzeigen**.""",
             ),
             Block(
                 anchor="disagreeing",
@@ -1009,8 +1025,11 @@ Verstößt eine Bewertung gegen die Richtlinien, statt Ihnen nur zu missfallen, 
             "überfüllt",
             "andrang",
         ),
-        related=("save-trips-and-find-new-ones", "report-and-block"),
-        updated="2026-09-01",
+        related=(
+            "save-trips-and-find-new-ones", "report-and-block",
+            "read-trips-in-another-language",
+        ),
+        updated="2026-10-07",
         cta="Bewerten Sie eine Reise, die Sie wirklich gemacht haben.",
     ),
     Article(
@@ -1061,6 +1080,12 @@ Teilen Sie sie per [Link](/help/share-a-trip-link) mit denen, die dort waren —
 
 Eine private Reise steht bewusst in keinem Feed und in keiner Suche; der einzige Weg dorthin ist eine Einladung oder ein Link von jemandem, der sie sehen kann.""",
             ),
+            Block(
+                anchor="translated-titles",
+                heading="Warum steht der Titel einer Reise in meiner Sprache?",
+                kind=KIND_FAQ,
+                body="""Die Titel öffentlicher Reisen werden vorab in jede App-Sprache übersetzt. Ein kleines Übersetzungssymbol neben einem Titel kennzeichnet eine Übersetzung, und ein Tipp darauf zeigt das Original — siehe [eine Reise in einer anderen Sprache lesen](/help/read-trips-in-another-language#feed-titles).""",
+            ),
         ),
         keywords=(
             "speichern",
@@ -1076,9 +1101,103 @@ Eine private Reise steht bewusst in keinem Feed und in keiner Suche; der einzige
             "trend",
             "stöbern",
         ),
-        related=("rate-a-trip", "share-an-itinerary-privately"),
-        updated="2026-09-01",
+        related=(
+            "rate-a-trip", "share-an-itinerary-privately",
+            "read-trips-in-another-language",
+        ),
+        updated="2026-10-07",
         cta="Finden Sie eine Reise, die es zu klauen lohnt.",
+    ),
+    Article(
+        slug="read-trips-in-another-language",
+        title="So lesen Sie eine Reise in einer anderen Sprache",
+        summary="Übersetzen Sie Reisen, Stopp-Notizen und Rezensionen mit einem Tipp in Ihre App-Sprache — und kehren Sie jederzeit zum Original zurück.",
+        category="community",
+        schema=SCHEMA_FAQ,
+        intro="Tippen Sie unter der Beschreibung einer Reise, bei einem Stopp oder unter einer Rezension auf **Übersetzung anzeigen**, und der Text erscheint in der Sprache Ihrer App. **Original anzeigen** stellt ihn wieder her. Titel im Feed sind womöglich schon für Sie übersetzt; das kleine Übersetzungssymbol daneben zeigt, welche Fassung Sie lesen.",
+        blocks=(
+            Block(
+                anchor="see-translation",
+                heading="Wie übersetze ich etwas?",
+                kind=KIND_FAQ,
+                body="""Suchen Sie nach **Übersetzung anzeigen**:
+
+- bei einer Reise unter der Beschreibung — Titel, Beschreibung, beste Reisezeit und die Notizen zur ganzen Reise werden zusammen übersetzt;
+- bei einem Stopp unter Dauer und Kosten — seine Notizen und seine farbigen Notizen zusammen;
+- unter jeder Rezension auf der Seite „Bewertungen“.
+
+Die Übersetzung ersetzt den Text und ist mit **Automatisch übersetzt** gekennzeichnet. Tippen Sie auf **Original anzeigen**, um zurückzukehren; erneutes Umschalten geht sofort, weil die Übersetzung erhalten bleibt.""",
+            ),
+            Block(
+                anchor="which-language",
+                heading="In welche Sprache wird übersetzt?",
+                kind=KIND_FAQ,
+                body="""Immer in die Sprache, auf die die App eingestellt ist: Englisch, Französisch, Arabisch, Deutsch, Spanisch oder Chinesisch. Um eine Reise in einer anderen zu lesen, ändern Sie zuerst die App-Sprache in den [Einstellungen](/help/app-settings#language).
+
+Das Original kann in fast jeder Sprache sein.""",
+            ),
+            Block(
+                anchor="what-is-translated",
+                heading="Was wird übersetzt und was nicht?",
+                kind=KIND_FAQ,
+                body="""Übersetzt werden: Titel und Beschreibungen von Reisen, der Hinweis zur besten Reisezeit, Notizen zur Reise und zu Stopps sowie Rezensionen.
+
+Nicht übersetzt werden: Ortsnamen und Adressen, die so bleiben, wie sie geschrieben wurden, damit sie zu Schildern und Karte passen; Benutzer- und Anzeigenamen; und Verkehrsangaben.""",
+            ),
+            Block(
+                anchor="feed-titles",
+                heading="Warum sind manche Titel im Feed schon in meiner Sprache?",
+                kind=KIND_FAQ,
+                body="""Die Titel öffentlicher Reisen werden vorab übersetzt, damit der Feed sie in Ihrer Sprache zeigen kann, ohne dass Sie danach fragen.
+
+Ein Titel in einer Sprache, die Sie in Ihrem Profil als gesprochen angeben, erscheint wie geschrieben, mit einem kleinen Übersetzungssymbol, das Sie für die Übersetzung antippen können. Jeder andere Titel erscheint übersetzt, mit hervorgehobenem Symbol als Hinweis — tippen Sie darauf für das Original.""",
+            ),
+            Block(
+                anchor="no-button",
+                heading="Warum fehlt die Schaltfläche „Übersetzung anzeigen“?",
+                kind=KIND_FAQ,
+                body="""Meist, weil der Text schon in Ihrer App-Sprache ist. Konnte Ntripi die Sprache eines Textes nicht bestimmen, wird die Schaltfläche trotzdem angeboten und verschwindet, wenn die Übersetzung zeigt, dass er ohnehin in Ihrer Sprache war.
+
+Es gibt sie auch nicht, während Sie eine Reise bearbeiten — Sie bearbeiten immer das Original —, nicht bei einer Reise, die über einen geteilten Link im Browser geöffnet wurde, und nicht, wenn Übersetzung für Ihre App-Sprache nicht verfügbar ist.""",
+            ),
+            Block(
+                anchor="when-it-fails",
+                heading="Was, wenn eine Übersetzung nicht klappt?",
+                kind=KIND_FAQ,
+                body="""Das Original bleibt stehen, mit einer Zeile, die den Grund nennt:
+
+- **Die Übersetzung ist gerade nicht verfügbar** — nichts geht verloren; versuchen Sie es später erneut.
+- **Übersetzungslimit erreicht** — jedes Konto hat ein stündliches Kontingent, das normales Lesen selten erreicht. Es setzt sich innerhalb der Stunde zurück.
+- **Übersetzung fehlgeschlagen** — meist liegt es an der Verbindung. Prüfen Sie sie und tippen Sie erneut auf **Übersetzung anzeigen**.
+
+Übersetzungen werden maschinell erstellt. Liest sich eine seltsam, ist **Original anzeigen** nur einen Tipp entfernt.""",
+            ),
+            Block(
+                anchor="privacy",
+                heading="Wer sieht den Text, den ich übersetzen lasse?",
+                kind=KIND_FAQ,
+                body="""Der Text geht an einen Übersetzungsdienst — OpenAI oder ersatzweise Azure AI Translator von Microsoft — zusammen mit der Zielsprache und sonst nichts: kein Name, kein Konto, kein Verweis auf die Reise.
+
+Jede Übersetzung wird mit dem Text gespeichert, aus dem sie entstanden ist, und für die nächste Person wiederverwendet, die dieselbe Sprache anfordert. Sie wird gelöscht, wenn der Autor das Original bearbeitet oder löscht, und von der Moderation ausgeblendete Inhalte werden nie übersetzt. Einzelheiten stehen in der [Datenschutzerklärung](/privacy).""",
+            ),
+        ),
+        keywords=(
+            "übersetzen",
+            "übersetzung",
+            "übersetzer",
+            "fremdsprache",
+            "andere sprache",
+            "maschinelle übersetzung",
+            "automatisch übersetzen",
+            "mehrsprachig",
+            "originaltext",
+        ),
+        related=(
+            "app-settings", "save-trips-and-find-new-ones", "rate-a-trip",
+            "your-data-and-privacy",
+        ),
+        updated="2026-10-07",
+        cta="Lesen Sie die Reise, egal in welcher Sprache sie geschrieben ist.",
     ),
     Article(
         slug="notifications",
@@ -1163,7 +1282,9 @@ Einen Moderationshinweis zu löschen löscht nicht die Entscheidung — die blei
                 heading="Sprache",
                 body="""Ntripi gibt es auf Englisch, Französisch, Arabisch, Deutsch, Spanisch und Chinesisch. Die App folgt der Sprache Ihres Geräts, wenn es eine der sechs ist, und hier können Sie das überstimmen.
 
-Arabisch stellt die gesamte Oberfläche auf rechts-nach-links um. Die Wahl gilt auch für die Rechtsdokumente und für diesen Hilfebereich, wenn Sie ihn aus der App heraus öffnen.""",
+Arabisch stellt die gesamte Oberfläche auf rechts-nach-links um. Die Wahl gilt auch für die Rechtsdokumente und für diesen Hilfebereich, wenn Sie ihn aus der App heraus öffnen.
+
+Die App-Sprache ist auch die Sprache, in die **Übersetzung anzeigen** übersetzt — siehe [eine Reise in einer anderen Sprache lesen](/help/read-trips-in-another-language).""",
             ),
             Block(
                 anchor="theme",
@@ -1210,8 +1331,10 @@ Passwort ändern oder Konto löschen finden Sie im Bearbeitungsbildschirm Ihres 
             "haptik",
             "voreinstellungen",
         ),
-        related=("app-map", "notifications", "permissions"),
-        updated="2026-09-01",
+        related=(
+            "app-map", "notifications", "permissions", "read-trips-in-another-language",
+        ),
+        updated="2026-10-07",
         cta="Machen Sie die App zu Ihrer.",
     ),
     Article(
@@ -1327,7 +1450,9 @@ Ihr Geburtsdatum ist für andere Nutzer nie sichtbar, bei keiner Einstellung. Ih
                 kind=KIND_FAQ,
                 body="""Nicht routinemäßig. Texte und Bilder werden beim Veröffentlichen automatisch geprüft, und ein Mensch sieht sich nur etwas an, wenn es gemeldet oder von diesen Prüfungen markiert wurde.
 
-Automatische Prüfungen senden den Inhalt und sonst nichts — keine Nutzerkennung, keine E-Mail-Adresse, keinen Namen.""",
+Automatische Prüfungen senden den Inhalt und sonst nichts — keine Nutzerkennung, keine E-Mail-Adresse, keinen Namen.
+
+Wenn jemand Ihre Reise in seiner Sprache lesen möchte, geht ihr Text auf dieselbe Weise an einen Übersetzungsdienst — der Text und die Zielsprache, sonst nichts. [Mehr zu Übersetzungen](/help/read-trips-in-another-language#privacy).""",
             ),
             Block(
                 anchor="deleting",
@@ -1361,8 +1486,11 @@ Dieselbe Adresse deckt Anträge auf Berichtigung, Einschränkung und Widerspruch
             "anzeigen",
             "wer kann sehen",
         ),
-        related=("permissions", "sign-in-and-account-security", "share-an-itinerary-privately"),
-        updated="2026-09-01",
+        related=(
+            "permissions", "sign-in-and-account-security",
+            "share-an-itinerary-privately", "read-trips-in-another-language",
+        ),
+        updated="2026-10-07",
     ),
     Article(
         slug="sign-in-and-account-security",
@@ -1817,6 +1945,6 @@ Meldungen werden der gemeldeten Person nicht gezeigt.""",
             "verlauf",
         ),
         related=("getting-started", "contact"),
-        updated="2026-09-01",
+        updated="2026-10-07",
     ),
 )

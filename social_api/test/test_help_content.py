@@ -13,7 +13,9 @@ import re
 import pytest
 from fastapi.testclient import TestClient
 
-from app.constants.help import article, articles, by_category, categories, en
+from app.constants.help import (
+    article, articles, by_category, categories, en, releases,
+)
 from app.constants.help.models import KIND_FAQ, KIND_STEP
 from app.constants.help import _MODULES
 from app.i18n import SUPPORTED
@@ -162,6 +164,14 @@ class TestTranslationFallback:
             assert [(b.anchor, b.kind) for b in art.blocks] == [
                 (b.anchor, b.kind) for b in src.blocks
             ], art.slug
+
+    @pytest.mark.parametrize("lang", TRANSLATED)
+    def test_every_language_lists_every_release(self, lang):
+        """releases() falls back whole, not per entry, and each translated module
+        carries its own list — so an entry added to en.py alone left that
+        language's What's New silently a release behind."""
+        english = [(r.version, r.date) for r in releases("en")]
+        assert [(r.version, r.date) for r in releases(lang)] == english
 
     @pytest.mark.parametrize("lang", TRANSLATED)
     def test_categories_keep_their_id_and_icon(self, lang):

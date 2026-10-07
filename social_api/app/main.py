@@ -42,7 +42,7 @@ from app.middleware.language import LanguageCookieMiddleware
 from app.middleware.security_headers import SecurityHeadersMiddleware
 from app.routers import (
     admin, appeals, auth, bug_reports, devices, users, follows, internal,
-    itineraries, notifications, share, web, waitlist, reports,
+    itineraries, notifications, share, translations, web, waitlist, reports,
 )
 # Aliased: `help` is a builtin, and shadowing it inside main is a trap for the
 # next person who reaches for it in a debugger.
@@ -292,6 +292,7 @@ app.include_router(bug_reports.router)  # POST /bug-reports — in-app bug repor
 app.include_router(notifications.router)  # /notifications — in-app notification feed
 app.include_router(devices.router)  # /devices — FCM push registration
 app.include_router(appeals.router)  # /appeals — user appeals against moderation
+app.include_router(translations.router)  # /translations — read content in your language
 app.include_router(admin.router)    # /admin — internal moderation dashboard (HTML)
 app.include_router(internal.router) # /internal/moderation-sweep — scheduler-triggered
 app.include_router(help_pages.router)  # /help — public documentation

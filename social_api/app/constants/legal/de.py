@@ -190,7 +190,7 @@ Um Ihnen E-Mails zu Ihrem Konto zu senden — Verifizierung, Passwort-Zurückset
 Um Probleme zu beheben, die Sie uns melden.
 
 
-4. AUTOMATISCHE INHALTSMODERATION
+4. AUTOMATISCHE INHALTSMODERATION UND ÜBERSETZUNG
 
 Von Ihnen veröffentlichte Inhalte werden automatisch geprüft, bevor sie sichtbar werden, mithilfe von Diensten anderer Unternehmen.
 
@@ -204,6 +204,14 @@ Ist eine Prüfung nicht verfügbar, wird der Inhalt gespeichert und zur Überpr�
 
 Das Ergebnis einer Moderationsprüfung halten wir in einem kurzlebigen Zwischenspeicher. Dieser enthält keinen Rohtext und keinen Verweis auf die Person, die ihn geschrieben hat.
 
+Übersetzung: Wenn Sie angemeldet sind, können Sie sich eine Reiseroute, die Notizen und Anmerkungen einer Station oder eine Rezension in der Sprache Ihrer App anzeigen lassen. Der betreffende Text wird dann zur Übersetzung an OpenAI gesendet — oder an Azure AI Translator von Microsoft, wenn OpenAI nicht antworten kann. Die Titel öffentlicher Reiserouten werden vorab in jede Sprache der App übersetzt, damit „Entdecken“ sie in Ihrer Sprache zeigen kann.
+
+Die Anfrage enthält den Text, die Zielsprache und bei OpenAI den Namen des Modells — sonst nichts: keine Kontokennung, keine E-Mail-Adresse, keine Inhaltskennung. OpenAI verwendet diese Anfragen nicht zum Training seiner Modelle und kann sie bis zu 30 Tage aufbewahren, um Missbrauch zu erkennen, bevor es sie löscht. Der Übersetzungsdienst von Microsoft speichert den Text, den er übersetzt, nicht.
+
+Bevor eine Übersetzung angezeigt wird, durchläuft sie dieselbe Moderationsprüfung wie der Text, aus dem sie entstanden ist. Inhalte, die durch die Moderation ausgeblendet oder entfernt wurden, werden nie zur Übersetzung gesendet.
+
+Eine Übersetzung wird zusammen mit dem Inhalt gespeichert, den sie übersetzt: Jeder Text wird nur einmal pro Sprache übersetzt und allen angezeigt, die diese Sprache anfordern.
+
 
 5. WER IHRE DATEN AUSSERDEM ERHÄLT
 
@@ -213,7 +221,9 @@ Railway — Anwendungshosting und Datenbank.
 
 Cloudflare — DNS, Content Delivery Network, Bildspeicher (R2) und der oben beschriebene Abgleich rechtswidriger Bilder.
 
-OpenAI — Textmoderation, wie oben beschrieben.
+OpenAI — Textmoderation und Übersetzung, wie oben beschrieben.
+
+Microsoft (Azure AI Translator) — Übersetzung, wenn OpenAI nicht antworten kann, wie oben beschrieben.
 
 Amazon Web Services — Bildmoderation, wie oben beschrieben.
 
@@ -277,6 +287,8 @@ Moderationsaufzeichnungen werden 90 Tage nach Abschluss des Vorgangs gelöscht, 
 Benachrichtigungen in der App werden 90 Tage nach dem Lesen gelöscht. Ungelesene bleiben erhalten.
 
 Fehlerberichte und ihre Aufnahmen werden gelöscht, sobald der Bericht geschlossen und ausgelaufen ist.
+
+Übersetzungen werden gelöscht, wenn der übersetzte Text geändert oder gelöscht wird.
 
 
 11. IHRE RECHTE

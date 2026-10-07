@@ -19,7 +19,8 @@ class FakeTranslator:
     def __init__(self, name: str = "fake", *, fail: Exception | None = None,
                  overrides: dict[str, str | None] | None = None,
                  source_lang: str | None = "en",
-                 max_batch_fields: int = 50, max_batch_chars: int = 100_000) -> None:
+                 max_batch_fields: int = 50, max_batch_chars: int = 100_000,
+                 daily_char_budget: int | None = None) -> None:
         self.name = name
         self.model = f"{name}-model"
         self.fail = fail
@@ -27,6 +28,7 @@ class FakeTranslator:
         self.source_lang = source_lang
         self.max_batch_fields = max_batch_fields
         self.max_batch_chars = max_batch_chars
+        self.daily_char_budget = daily_char_budget
         self.calls: list[tuple[dict[str, str], str]] = []
 
     def translate(self, fields: dict[str, str], target_lang: str) -> TranslationResult:

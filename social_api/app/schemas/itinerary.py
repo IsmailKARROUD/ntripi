@@ -622,8 +622,19 @@ class ItinerarySummary(BaseModel):
 # ItineraryFeedItem extends ItinerarySummary with owner attribution — the discovery
 # feed lists itineraries across users, so each card needs to show who authored it.
 # RaterInfo is reused (same user_id/username/display_name/avatar_url shape).
+class TitleTranslation(BaseModel):
+    lang: str
+    text: str
+
+
 class ItineraryFeedItem(ItinerarySummary):
     owner: RaterInfo
+    # Appended after owner — field order is JSON key order. The detected
+    # language of the trip, and the cached title translation for the `lang` the
+    # feed was asked in, when one exists for the current title. Null on
+    # shared-with-me, which takes no language.
+    source_lang: Optional[str] = None
+    title_translation: Optional[TitleTranslation] = None
 
 
 # ItineraryDetail extends ItinerarySummary with tracks (ordered) + segments.

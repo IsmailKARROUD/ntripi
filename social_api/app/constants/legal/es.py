@@ -190,7 +190,7 @@ Para enviarte correos sobre tu cuenta: verificación, restablecimiento de contra
 Para corregir los problemas que nos comunicas.
 
 
-4. MODERACIÓN AUTOMÁTICA DE CONTENIDO
+4. MODERACIÓN AUTOMÁTICA Y TRADUCCIÓN DE CONTENIDO
 
 El contenido que publicas se comprueba automáticamente antes de hacerse visible, mediante servicios operados por otras empresas.
 
@@ -204,6 +204,14 @@ Cuando una comprobación no está disponible, el contenido se almacena y se pone
 
 Guardamos el veredicto de una comprobación de moderación en una caché de corta duración, que no contiene texto en bruto ni ninguna referencia a la persona que lo escribió.
 
+Traducción: si has iniciado sesión, puedes pedir leer un itinerario, las notas y anotaciones de una parada o una reseña en el idioma de tu aplicación. El texto en cuestión se envía entonces a OpenAI para traducirlo, o al servicio Azure AI Translator de Microsoft cuando OpenAI no puede responder. Los títulos de los itinerarios públicos se traducen de antemano a cada uno de los idiomas de la aplicación, para que Descubrir pueda mostrarlos en el tuyo.
+
+La solicitud contiene el texto, el idioma al que traducirlo y, en el caso de OpenAI, el nombre del modelo, y nada más: ningún identificador de cuenta, ninguna dirección de correo, ningún identificador de contenido. OpenAI no utiliza estas solicitudes para entrenar sus modelos y puede conservarlas hasta 30 días para detectar abusos antes de eliminarlas. El traductor de Microsoft no almacena el texto que traduce.
+
+Antes de mostrarse, una traducción pasa la misma comprobación de moderación que el texto del que procede. El contenido que la moderación ha ocultado o retirado nunca se envía a traducir.
+
+Una traducción se guarda junto al contenido que traduce: cada texto se traduce una sola vez por idioma y se muestra a cada lector que pide ese idioma.
+
 
 5. QUIÉN MÁS RECIBE TUS DATOS
 
@@ -213,7 +221,9 @@ Railway — alojamiento de la aplicación y base de datos.
 
 Cloudflare — DNS, red de distribución de contenido, almacenamiento de imágenes (R2) y el análisis de imágenes ilegales descrito arriba.
 
-OpenAI — moderación de texto, según lo descrito arriba.
+OpenAI — moderación de texto y traducción, según lo descrito arriba.
+
+Microsoft (Azure AI Translator) — traducción cuando OpenAI no puede responder, según lo descrito arriba.
 
 Amazon Web Services — moderación de imágenes, según lo descrito arriba.
 
@@ -277,6 +287,8 @@ Los registros de moderación se eliminan a los 90 días una vez cerrado el asunt
 Los avisos dentro de la aplicación se eliminan 90 días después de que los hayas leído. Los no leídos se conservan.
 
 Los informes de errores y sus capturas se eliminan una vez cerrado el informe y transcurrido su plazo.
+
+Las traducciones se eliminan cuando el texto que traducen se modifica o se elimina.
 
 
 11. TUS DERECHOS

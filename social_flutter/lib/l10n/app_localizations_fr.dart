@@ -3383,4 +3383,35 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get editLockOwnerCanReclaim =>
       'Ce voyage est le vôtre — vous pouvez reprendre à tout moment.';
+
+  @override
+  String get translationSeeTranslation => 'Voir la traduction';
+
+  @override
+  String get translationSeeOriginal => 'Voir l\'original';
+
+  @override
+  String get translationAutoTranslated => 'Traduit automatiquement';
+
+  @override
+  String get translationTranslating => 'Traduction…';
+
+  @override
+  String get translationUnavailable =>
+      'La traduction n\'est pas disponible pour le moment.';
+
+  @override
+  String get translationRateLimited =>
+      'Vous avez atteint la limite de traductions. Veuillez réessayer plus tard.';
+
+  @override
+  String get translationFailed =>
+      'Impossible de traduire. Vérifiez votre connexion et réessayez.';
+
+  @override
+  String get translationTranslatedMarker => 'Titre traduit';
+
+  @override
+  String get apiErrorTranslationLanguageUnsupported =>
+      'La traduction vers cette langue n\'est pas disponible.';
 }

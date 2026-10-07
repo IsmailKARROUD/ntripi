@@ -1,6 +1,6 @@
 # API error codes
 
-Every machine-readable error code the backend raises. **64 codes.**
+Every machine-readable error code the backend raises. **65 codes.**
 
 ## How the mechanism works
 
@@ -215,6 +215,19 @@ All raised via `AppealError` in `services/appeal_service.py`.
 | `appeal_already_pending` | 409 | `appeal_service.py:155` | localized |
 | `appeal_cooldown` | **429** | `appeal_service.py:163` | localized — 30 days after an appeal was decided `upheld` **or `reduced`** (a reduced hide changes nothing, so it used to be re-appealable at once) |
 | `appeal_already_decided` | 409 | `appeal_service.py:327` | — |
+
+### Translations
+
+| Code | Status | Raised at | Client |
+|---|---|---|---|
+| `translation_language_unsupported` | 400 | `translations.py:63` | localized |
+
+A well-formed language code the deployment does not offer
+(`TRANSLATION_SUPPORTED_LANGS`) is a policy refusal, so 400; a malformed one
+fails the schema's `pattern=` with a 422. The app only ever asks for a language
+`GET /translations/config` listed, so in practice this answers a stale client.
+With `TRANSLATION_PROVIDERS` unset the endpoint 404s with no code — the feature
+is invisible, not refused.
 
 ### Bug reports and waitlist
 

@@ -25,6 +25,7 @@ import 'package:social_flutter/features/profile/providers/profile_provider.dart'
 import 'package:social_flutter/features/profile/providers/user_locations_provider.dart';
 import 'package:social_flutter/features/reports/data/report_repository.dart';
 import 'package:social_flutter/features/search/providers/search_provider.dart';
+import 'package:social_flutter/features/translation/providers/translation_providers.dart';
 
 /// Provides the AuthRepository — the single instance for the app lifetime.
 /// Receives both the main Dio (auth-aware) for login/register and the bare
@@ -66,6 +67,9 @@ final List<ProviderOrFamily> _userScopedProviders = [
   allowedUsersProvider,
   // Disposing each notifier also cancels its heartbeat timer.
   editLockProvider,
+  // A translation is of something this account was allowed to read.
+  translationConfigProvider,
+  contentTranslationProvider,
 ];
 
 void _resetUserScopedState(Ref ref) {

@@ -1066,5 +1066,14 @@
   "editLockReclaimed": "Vuelves a estar editando",
   "editLockCopyText": "Copiar mi texto",
   "editLockCopied": "Copiado",
-  "editLockOwnerCanReclaim": "Este viaje es tuyo: puedes tomar el control en cualquier momento."
+  "editLockOwnerCanReclaim": "Este viaje es tuyo: puedes tomar el control en cualquier momento.",
+  "translationSeeTranslation": "Ver traducción",
+  "translationSeeOriginal": "Ver original",
+  "translationAutoTranslated": "Traducido automáticamente",
+  "translationTranslating": "Traduciendo…",
+  "translationUnavailable": "La traducción no está disponible en este momento.",
+  "translationRateLimited": "Has alcanzado el límite de traducciones. Inténtalo de nuevo más tarde.",
+  "translationFailed": "No se pudo traducir. Comprueba tu conexión e inténtalo de nuevo.",
+  "translationTranslatedMarker": "Título traducido",
+  "apiErrorTranslationLanguageUnsupported": "La traducción a este idioma no está disponible."
 }

@@ -128,7 +128,7 @@ Key rules:
 - **`TrustedHostMiddleware`** reads `ALLOWED_HOSTS` from settings (comma-separated). The apex domain and wildcard must both be listed separately (`ntripi.app,*.ntripi.app`) — Starlette's wildcard does not match the bare apex.
 - **`SecurityHeadersMiddleware`** (`app/middleware/security_headers.py`) applies `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, `Content-Security-Policy: frame-ancestors 'none'`, and (HTTPS only) `Strict-Transport-Security: max-age=31536000`. CSP uses only `frame-ancestors` — `default-src 'self'` is meaningless for a JSON API.
 - **`CORSMiddleware`** must use explicit method and header lists — never `["*"]`. Current whitelist: methods `GET POST PATCH DELETE OPTIONS`; headers `Content-Type Authorization If-Match If-None-Match`.
-- **Rate limiting** (`slowapi`) — the limiter singleton lives in `app/limiter.py` to avoid circular imports (main.py imports routers; routers cannot import from main.py). Import `limiter` in router files; call `app.state.limiter = limiter` in `main.py`. Current limits: register 5/hour, login 10/minute, search 30/minute. In-memory store — sufficient for single-instance Railway; needs Redis if horizontally scaled.
+- **Rate limiting** (`slowapi`) — the limiter singleton lives in `app/limiter.py` to avoid circular imports (main.py imports routers; routers cannot import from main.py). Import `limiter` in router files; call `app.state.limiter = limiter` in `main.py`. Current limits: register 5/hour, login 10/minute, search 30/minute, `POST /translations` 60/minute. In-memory store — sufficient for single-instance Railway; needs Redis if horizontally scaled.
 - **Generic exception handler** must re-raise `asyncio.CancelledError`, `KeyboardInterrupt`, and `SystemExit` — intercepting these breaks Starlette's lifespan and async request lifecycle.
 
 ### Config Invariants
@@ -337,6 +337,21 @@ Detection is Cloudflare's, at serve time; the app's whole job is the response �
 - `pending` and `flagged` are internal and are NOT surfaced to the author. Only `hidden` is, with a reason and a one-tap appeal.
 
 ---
+
+## Translation ("See translation")
+
+Readers translate trips, stop notes and annotations, and reviews into their app language — server-side, cached per source hash, one tap per content group. **OFF unless `TRANSLATION_PROVIDERS` is set**: unset, `POST /translations` 404s, `GET /translations/config` answers `enabled: false`, the feed carries no title translations, and the app draws no button. Reference: `docs/features/translations.md`.
+
+- **The client names content and never sends text.** The body is `{target_lang, items: [{content_type, content_id, fields}]}`; the server loads the text itself, so the access check is on exactly what gets translated.
+- **Access is the viewer ladder, plus takedown.** `translate_items` checks `can_view_itinerary` once per trip and `can_view_rating` per review. Hidden, rejected or soft-deleted content answers `not_found` **even to its author** — a takedown is never handed to a third party. Missing, forbidden and taken-down are indistinguishable.
+- **Engines run in `TRANSLATION_PROVIDERS` order** (`openai,azure`): OpenAI's Responses API with a strict schema, opaque keys and `store: false`; Azure v3 (`zh` is sent as `zh-Hans`). Every output passes `translation_validation` and, with moderation on, output moderation, which fails closed. A failed field falls to the next engine; a field every engine fails is `unavailable` and never cached.
+- **The request's transaction ends before any engine call** (`db.commit()` in `translate_items`) — no pooled connection waits on a provider.
+- **Cost is capped in Postgres** (`translation_usage.py`): fields per user per clock hour (cache misses only) and characters per engine per UTC day, each an atomic conditional upsert committed on its own.
+- **Public titles are translated ahead of time** by a `BackgroundTasks` job (`pretranslate_title`, its own session via `_session_factory`) on a public create, a publish, or a public title change — nothing else schedules it.
+- **The feed's language rides in the query** (`?lang=`), never in `Accept-Language`: the client's HTTP cache keys on the URL.
+- **Client** (`lib/features/translation/`): one `TranslationToggle` per group — a trip's header with its trip-wide notes, a stop with its notes and annotations, one review — and every `TranslatableText` in the group watches the same `contentTranslationProvider((type, id, lang))`. Read mode only. The notifier keeps only final answers, each with the text it was made from; a 404/400 re-reads `translationConfigProvider`. Both providers are in `_userScopedProviders`.
+- **Feed titles** (`FeedTitle`): a title in one of the reader's profile `languages` shows as written with a toggle; any other shows translated with a lit marker. Neither is a request.
+- **Every engine is named in Privacy §4 and §5, in all six languages** — `test_privacy_names_every_translation_engine`.
 
 ## Bug Reports (shake to report)
 
@@ -857,8 +872,9 @@ For each article the change touches:
   is not in it.
 - **Add a `Release` to `RELEASES` for `/help/whats-new` — in all six modules.**
   `releases()` falls back *whole*, not per entry, and each translated module
-  carries its own list, so an entry added only to `en.py` silently leaves the
-  other five showing an outdated What's New with no test to catch it.
+  carries its own list, so an entry added only to `en.py` leaves the other five
+  showing an outdated What's New — `test_every_language_lists_every_release`
+  fails the suite for it.
 - **Fix the in-app FAQ when the change contradicts one of its eight answers.**
   It is built from `AppLocalizations` (`faq*Q` / `faq*A` in the `.arb` files),
   ships with the binary and cannot be corrected by a deploy — which is exactly
@@ -906,6 +922,15 @@ For each article the change touches:
 - Do NOT send anything but the text to a moderation provider — no user id, email, or content id
 - Do NOT send a content id, a field name or a user reference to a translation engine — OpenAI gets the texts under opaque keys (`t0`…) with `store: false`, Azure a bare array; and never log a text, in or out
 - Do NOT cache a translation that skipped `translation_validation` or, with moderation on, output moderation — it is machine output served to every later reader; a failed check falls to the next engine, never into the cache
+- Do NOT accept text from the client for translation — name the content and load it server-side, or the access check is on something other than what is sent
+- Do NOT translate content under a takedown, even for its author — `translate_items` answers `not_found`; translating it hands taken-down text to a third party
+- Do NOT hold a database transaction open across an engine call — `translate_items` commits before `run_chain`
+- Do NOT count translation usage in Python or in slowapi — the conditional upserts in `translation_usage.py` are the only counters, and a refused reservation counts nothing
+- Do NOT schedule title pre-translation from any path but a public create, a publish or a public title change — drafts are `only_me`, and collaborative saves are frequent
+- Do NOT put the feed's language in `Accept-Language` — the client cache keys on the URL, so `?lang=` must be part of it
+- Do NOT keep an `unavailable` or `rate_limited` answer in the client's translation state — the next tap must ask again, or one dropped request hides the button until sign-out
+- Do NOT show a translation in edit mode — `TranslatableText(enabled: !_editMode)`; whoever edits reads the original
+- Do NOT add a translation engine without naming it in Privacy §4 and §5, in all six languages, in the same commit — an undisclosed processor is a GDPR breach
 - Do NOT write an itinerary's moderation state from outside the owner's request without `set_preserving_etag` — it 412s their open editor
 - Do NOT assign a text verdict on an author's edit — `apply_author_edit_status`; assigning let any edit un-hide a taken-down profile or review
 - Do NOT write `rating_count` / `rating_avg` directly — `recalculate_rating` preserves the ETag; a raw write 412s the owner every time someone rates
@@ -1026,7 +1051,7 @@ For each article the change touches:
 - Do NOT ship a user-facing change without updating `app/constants/help/` in the same commit — an article describing last month's UI is worse than none, because the reader follows it, finds the step missing, and concludes the app is broken
 - Do NOT edit help prose in `en.py` alone — `articles()` falls back per slug, so each translated module keeps serving its own stale text and only a *missing* slug fails the suite
 - Do NOT leave `updated` untouched after editing an article — bumping it in all six is what makes the structure test catch a one-language edit, and it is `dateModified` in the JSON-LD
-- Do NOT add a `Release` entry to `en.py` only — `releases()` falls back whole rather than per entry, so the other five languages go on showing an outdated What's New and nothing fails
+- Do NOT add a `Release` entry to `en.py` only — `releases()` falls back whole rather than per entry, so the other five languages go on showing an outdated What's New; `test_every_language_lists_every_release` now fails for it
 - Do NOT leave a contradicted in-app FAQ answer to the next release — it ships with the binary, so unlike the web centre a deploy cannot correct it
 - Do NOT apply the client text filter to titles or place names — European place names false-positive
 - Do NOT let a client-side filter block submission, mutate text, or clear a compose field

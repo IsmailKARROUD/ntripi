@@ -190,7 +190,7 @@ To email you about your account — verification, password reset, and moderation
 To fix problems you report to us.
 
 
-4. AUTOMATED CONTENT MODERATION
+4. AUTOMATED CONTENT MODERATION AND TRANSLATION
 
 Content you publish is checked automatically before it becomes visible, using services run by other companies.
 
@@ -204,6 +204,14 @@ Where a check is unavailable, content is stored and queued for review rather tha
 
 We keep the verdict of a moderation check in a short-lived cache. The cache stores no raw text and no reference to the person who wrote it.
 
+Translation: if you are signed in, you can ask to read an itinerary, a stop's notes and annotations, or a review in the language your app is set to. The text you asked about is then sent to OpenAI to be translated, or to Microsoft's Azure AI Translator when OpenAI cannot answer. The titles of public itineraries are translated in advance into each of the app's languages, so that Discover can show them in yours.
+
+The request carries the text, the language to translate it into and, for OpenAI, the name of the model — nothing else: no account identifier, no email address, no content identifier. OpenAI does not use these requests to train its models, and may keep them for up to 30 days to detect abuse before deleting them. Microsoft's translator does not store the text it translates.
+
+Before it is shown, a translation passes the same moderation check as the text it was made from. Content that moderation has hidden or removed is never sent for translation.
+
+A translation is stored with the content it translates, so each text is translated only once per language and shown to every reader who asks for that language.
+
 
 5. WHO ELSE RECEIVES YOUR DATA
 
@@ -213,7 +221,9 @@ Railway — application hosting and the database.
 
 Cloudflare — DNS, the content delivery network, image storage (R2), and the illegal-image scanning described above.
 
-OpenAI — text moderation, as described above.
+OpenAI — text moderation and translation, as described above.
+
+Microsoft (Azure AI Translator) — translation when OpenAI cannot answer, as described above.
 
 Amazon Web Services — image moderation, as described above.
 
@@ -277,6 +287,8 @@ Moderation records are deleted after 90 days once the matter is closed, with one
 In-app notifications are deleted 90 days after you have read them. Unread ones are kept.
 
 Bug reports and their screenshots are deleted once the report is closed and has aged out.
+
+Translations are deleted when the text they translate is edited or deleted.
 
 
 11. YOUR RIGHTS

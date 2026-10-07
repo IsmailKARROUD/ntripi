@@ -159,3 +159,11 @@ ratings: [RatingWithUser]}`.
 - [accounts-and-profiles.md](accounts-and-profiles.md) — SET NULL on deletion
 - [translations.md](translations.md) — `note` carries `source_lang`; an anonymised review keeps its translations
 - [reference/data-model.md](../reference/data-model.md)
+
+## OPEN QUESTIONS
+
+- **An anonymised review keeps its text.** `delete_my_account` nulls
+  `user_id` and nothing else, so the `note` (and its cached translations)
+  survive, while the ToS and Privacy §10 say a deleted account's ratings are kept
+  as "score only". See
+  [legal-and-age-gate.md](legal-and-age-gate.md#open-questions).

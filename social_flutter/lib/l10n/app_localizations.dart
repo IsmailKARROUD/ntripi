@@ -5841,6 +5841,60 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'You own this trip — you can take over at any time.'**
   String get editLockOwnerCanReclaim;
+
+  /// Link under user-written text (a trip, a stop's notes, a review) that swaps it for a machine translation into the app language.
+  ///
+  /// In en, this message translates to:
+  /// **'See translation'**
+  String get translationSeeTranslation;
+
+  /// No description provided for @translationSeeOriginal.
+  ///
+  /// In en, this message translates to:
+  /// **'See original'**
+  String get translationSeeOriginal;
+
+  /// Label shown while a machine translation is on screen, followed by ' · ' and translationSeeOriginal.
+  ///
+  /// In en, this message translates to:
+  /// **'Automatically translated'**
+  String get translationAutoTranslated;
+
+  /// No description provided for @translationTranslating.
+  ///
+  /// In en, this message translates to:
+  /// **'Translating…'**
+  String get translationTranslating;
+
+  /// No description provided for @translationUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Translation isn\'t available right now.'**
+  String get translationUnavailable;
+
+  /// No description provided for @translationRateLimited.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'ve reached the translation limit. Please try again later.'**
+  String get translationRateLimited;
+
+  /// No description provided for @translationFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t translate. Check your connection and try again.'**
+  String get translationFailed;
+
+  /// Screen-reader label of the small translate icon beside a feed card title that is shown translated.
+  ///
+  /// In en, this message translates to:
+  /// **'Translated title'**
+  String get translationTranslatedMarker;
+
+  /// No description provided for @apiErrorTranslationLanguageUnsupported.
+  ///
+  /// In en, this message translates to:
+  /// **'Translation into this language isn\'t available.'**
+  String get apiErrorTranslationLanguageUnsupported;
 }
 
 class _AppLocalizationsDelegate

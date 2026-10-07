@@ -71,6 +71,9 @@ class RatingWithUser {
   /// the viewer's own row — every other row arrives as `approved`.
   final ModerationStatus moderationStatus;
 
+  /// Language the server detected for [note], or null when it could not tell.
+  final String? sourceLang;
+
   const RatingWithUser({
     required this.score,
     this.scoreSafety,
@@ -83,6 +86,7 @@ class RatingWithUser {
     required this.user,
     this.id,
     this.moderationStatus = ModerationStatus.approved,
+    this.sourceLang,
   });
 
   /// Returns the score for the given dimension, or null if not rated.
@@ -118,6 +122,7 @@ class RatingWithUser {
         id: json['id'] as String?,
         moderationStatus:
             ModerationStatus.fromString(json['moderation_status'] as String?),
+        sourceLang: json['source_lang'] as String?,
       );
 
   Map<String, dynamic> toJson() => {
@@ -132,6 +137,7 @@ class RatingWithUser {
         'user': user.toJson(),
         if (id != null) 'id': id,
         'moderation_status': moderationStatus.wireValue,
+        if (sourceLang != null) 'source_lang': sourceLang,
       };
 }
 

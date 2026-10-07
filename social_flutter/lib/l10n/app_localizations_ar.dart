@@ -3360,4 +3360,34 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get editLockOwnerCanReclaim => 'هذه رحلتك — يمكنك الاستلام في أي وقت.';
+
+  @override
+  String get translationSeeTranslation => 'عرض الترجمة';
+
+  @override
+  String get translationSeeOriginal => 'عرض النص الأصلي';
+
+  @override
+  String get translationAutoTranslated => 'مترجم آليًا';
+
+  @override
+  String get translationTranslating => 'جارٍ الترجمة…';
+
+  @override
+  String get translationUnavailable => 'الترجمة غير متاحة حاليًا.';
+
+  @override
+  String get translationRateLimited =>
+      'لقد بلغت حد الترجمة. يُرجى المحاولة لاحقًا.';
+
+  @override
+  String get translationFailed =>
+      'تعذّرت الترجمة. تحقق من اتصالك وحاول مجددًا.';
+
+  @override
+  String get translationTranslatedMarker => 'عنوان مترجم';
+
+  @override
+  String get apiErrorTranslationLanguageUnsupported =>
+      'الترجمة إلى هذه اللغة غير متاحة.';
 }

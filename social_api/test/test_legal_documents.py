@@ -44,6 +44,17 @@ class TestDocumentBodies:
         assert "Ntripi" in get_tos(lang)
         assert len(get_tos(lang).splitlines()) > 20
 
+    @pytest.mark.parametrize("lang", SUPPORTED)
+    def test_privacy_names_every_translation_engine(self, lang):
+        # TRANSLATION_PROVIDERS may name either engine, and an undisclosed
+        # processor is a GDPR breach — in every language the policy ships in,
+        # not only the authoritative one. Brand names are never translated.
+        body = get_privacy(lang)
+        # Chinese sets the parentheses full-width, as for its other processors.
+        assert "Microsoft (Azure AI Translator)" in body or (
+            "Microsoft（Azure AI Translator）" in body
+        )
+
     def test_tos_keeps_the_ratings_retention_clause(self):
         # privacy.py and migration e493ea56a71b both cite the ToS as the
         # consent basis for keeping anonymised ratings. Dropping it would cut

@@ -22,10 +22,11 @@ class FeedRepository {
     required String sort,
     int limit = kFeedPageSize,
     int offset = 0,
+    String? lang,
     bool forceRefresh = false,
   }) async {
     final response = await _dio.get<List<dynamic>>(
-      feedEndpoint(sort: sort, limit: limit, offset: offset),
+      feedEndpoint(sort: sort, limit: limit, offset: offset, lang: lang),
       options: forceRefresh ? forceRefreshOptions() : null,
     );
     return (response.data ?? [])

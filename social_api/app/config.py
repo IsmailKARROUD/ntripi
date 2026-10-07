@@ -202,6 +202,17 @@ class Settings(BaseSettings):
     # A translation is machine output served to every later reader, so text an
     # instruction hidden in the source talked a model into must not be.
     TRANSLATION_MODERATE_OUTPUT: bool = True
+    # Fields one reader may send to an engine per clock hour. Only cache misses
+    # count — a translation someone already paid for is free to read.
+    TRANSLATION_USER_HOURLY_LIMIT: int = Field(default=200, ge=1)
+    # Characters per UTC day each engine may be sent. Past it the engine is
+    # skipped until midnight UTC; with every engine past its budget, readers keep
+    # the original. The Azure default keeps the F0 tier inside its 2M chars/month.
+    TRANSLATION_DAILY_CHAR_BUDGET: int = Field(default=500_000, ge=0)  # OpenAI
+    AZURE_TRANSLATOR_DAILY_CHAR_BUDGET: int = Field(default=60_000, ge=0)
+    # Public trip titles are translated into these in the background, on
+    # publish and on a title change, so feed cards need no request. Empty = off.
+    TRANSLATION_PRETRANSLATE_LANGS: str = "en,fr,es,de,ar,zh"
 
     # Hours after which an unreviewed report is auto-actioned. The DSA clock is
     # 24h from when the report is *filed*, and the sweep only runs periodically,
@@ -397,6 +408,15 @@ class Settings(BaseSettings):
                 "TRANSLATION_PROVIDERS includes 'azure', which requires AZURE_TRANSLATOR_KEY"
             )
         self.translation_supported_langs  # noqa: B018 — parse now
+        unsupported = [
+            code for code in self.translation_pretranslate_langs
+            if code not in self.translation_supported_langs
+        ]
+        if unsupported:
+            raise ValueError(
+                "TRANSLATION_PRETRANSLATE_LANGS must be a subset of "
+                f"TRANSLATION_SUPPORTED_LANGS; not supported: {', '.join(unsupported)}"
+            )
         if self.TRANSLATION_TIMEOUT_SECONDS <= 0:
             raise ValueError("TRANSLATION_TIMEOUT_SECONDS must be positive")
         return self
@@ -439,6 +459,15 @@ class Settings(BaseSettings):
                 + (f"; unknown: {', '.join(unknown)}" if unknown else "")
             )
         return codes
+
+    @property
+    def translation_pretranslate_langs(self) -> list[str]:
+        """TRANSLATION_PRETRANSLATE_LANGS as lowercase codes; empty = off."""
+        return [
+            code.strip().lower()
+            for code in self.TRANSLATION_PRETRANSLATE_LANGS.split(",")
+            if code.strip()
+        ]
 
     @property
     def translation_detect_langs(self) -> list[str] | None:

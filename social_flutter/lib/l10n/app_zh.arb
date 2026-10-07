@@ -1066,5 +1066,14 @@
   "editLockReclaimed": "你又在编辑了",
   "editLockCopyText": "复制我的文字",
   "editLockCopied": "已复制",
-  "editLockOwnerCanReclaim": "这是你的行程——你可以随时接管。"
+  "editLockOwnerCanReclaim": "这是你的行程——你可以随时接管。",
+  "translationSeeTranslation": "查看翻译",
+  "translationSeeOriginal": "查看原文",
+  "translationAutoTranslated": "自动翻译",
+  "translationTranslating": "翻译中…",
+  "translationUnavailable": "暂时无法翻译。",
+  "translationRateLimited": "你已达到翻译次数上限，请稍后再试。",
+  "translationFailed": "翻译失败。请检查网络连接后重试。",
+  "translationTranslatedMarker": "已翻译的标题",
+  "apiErrorTranslationLanguageUnsupported": "暂不支持翻译成该语言。"
 }

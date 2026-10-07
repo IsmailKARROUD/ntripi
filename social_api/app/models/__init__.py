@@ -32,6 +32,7 @@ from app.models.bug_report import BugReport
 from app.models.notification import Notification
 from app.models.device_token import DeviceToken
 from app.models.content_translation import ContentTranslation
+from app.models.translation_usage import TranslationProviderUsage, TranslationUserUsage
 
 __all__ = [
     "User", "RefreshToken", "EmailToken", "PasswordHistory", "SecurityAuditLog",
@@ -43,5 +44,5 @@ __all__ = [
     "ImageModerationLog", "ModerationLog", "Appeal",
     "TextModerationCache", "TextModerationDecision", "LegalEscalation",
     "UserBlock", "BugReport", "Notification", "DeviceToken",
-    "ContentTranslation",
+    "ContentTranslation", "TranslationUserUsage", "TranslationProviderUsage",
 ]

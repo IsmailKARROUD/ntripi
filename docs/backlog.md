@@ -75,6 +75,19 @@ The backend is safe unconfigured: with `FCM_PROJECT_ID` or
 `FCM_SERVICE_ACCOUNT_JSON` unset, nothing is sent and nothing raises, and the
 60-second poll behaves exactly as before. → [features/notifications.md](features/notifications.md)
 
+### in-progress — translation is code-complete but switched off
+
+Every layer ships dark (2026-10-07): `POST /translations` 404s and the app draws
+no button until `TRANSLATION_PROVIDERS` is set. Switching it on is operator
+work, in this order: run `scripts/backfill_source_lang.py` (dry run first) in
+the Railway container; create the Azure Translator F0 resource and set
+`AZURE_TRANSLATOR_KEY` / `_REGION`; add an OpenAI budget alert; deploy Privacy
+2.3 and the help article **before** enabling (an undisclosed processor is a
+GDPR breach); set `TRANSLATION_PROVIDERS=openai,azure`; smoke-test in `fr` and
+`ar`; then update the App Store privacy label and Play Data safety for
+Microsoft. Not yet done: a manual end-to-end run against real keys.
+→ [features/translations.md](features/translations.md#operations)
+
 ### planned — the Google birthday half of the age gate is blocked externally
 
 `user.birthday.read` is a **sensitive scope** requiring Google verification
@@ -313,6 +326,13 @@ one image serving a staging environment. → [constraints.md](constraints.md#kno
 will refuse to boot. Full list in
 [constraints.md](constraints.md#envexample-is-14-settings-behind).
 
+### planned — the ratings clause says "score only", but deletion keeps the review text
+
+The ToS and Privacy §10 promise a deleted account's ratings are kept as "score
+only"; `delete_my_account` nulls `user_id` and leaves the `note` (and its cached
+translations). Either the deletion clears the note or both documents change. →
+[features/legal-and-age-gate.md](features/legal-and-age-gate.md#open-questions)
+
 ### idea — `POST /waitlist/join` has no rate limit
 
 Every other public POST does. Its body schema is also the only one defined inline
@@ -358,6 +378,80 @@ visible from the repository — it is DNS state. → [constraints.md](constraint
 
 ---
 
+## Translation
+
+Deferred when "See translation" shipped (2026-10-07). →
+[features/translations.md](features/translations.md)
+
+### idea — DeepL as a third engine
+
+`translation_providers.py` takes a new engine as one class plus a
+`_FACTORIES` entry and a name in `TRANSLATION_PROVIDER_NAMES`. Azure already
+covers the fallback role at no cost, so there was nothing to gain yet.
+
+### idea — a translation language other than the app's
+
+The target is always the app language, on both sides. A reader who wants the
+app in English but trips in Spanish has no way to say so. Translations are
+already wrapped in a `Directionality` by their own language, so the client
+would render one correctly.
+
+### idea — stop names
+
+Excluded because nothing records whether the author typed a name or the form
+imported it from Nominatim or a Google Maps link — translating an imported
+place name breaks the match with signs and maps. Needs a provenance column on
+`stops` first.
+
+### idea — leg notes for viewers
+
+`transport_legs.notes` is translatable on the server, but only
+`leg_form_dialog.dart` ever shows leg notes. Showing them to viewers comes
+first; the client half of translating them follows, and `TransportLeg` gains
+its `sourceLang` then.
+
+### idea — the surfaces that still show originals
+
+Saved, profile and shared-with-me lists (the feed alone carries
+`title_translation`); the profile bio (not in the registry); the public
+`/share/*` page (signed-out visitors get nothing, by decision).
+
+### idea — originals laid out by their own language
+
+An Arabic review in an English app renders left to right. Only translations
+are wrapped by their language; originals take the app's direction. The
+detected `source_lang` is already on every row.
+
+### idea — a "translate" button in `/admin`
+
+Moderators read reports in languages they may not speak. It would need its own
+budget line, since it is not a reader's quota.
+
+### idea — expiry for cached translations
+
+Rows live as long as their source text. A TTL would let a better model replace
+old answers; nothing needs it yet.
+
+### idea — Microsoft attribution
+
+Microsoft *recommends* a "Translated by Microsoft" line on Azure output; it is
+not required. The client does not know which engine answered a field (the
+`provider` key is parsed but not shown).
+
+### idea — three-letter spoken-language codes
+
+Profile `languages` allow 2–3 letter codes; lingua returns ISO 639-1. A reader
+who listed a three-letter code never matches, so the feed shows them the
+translated title.
+
+### idea — Simplified and Traditional Chinese
+
+lingua reports `zh` without telling them apart, and `zh` is the one Chinese
+target (`zh-Hans` at Azure). A reader of the Simplified app gets no toggle on
+Traditional text detected as `zh`.
+
+---
+
 ## Roadmap
 
 ### idea — the three features named in the root README
@@ -380,12 +474,13 @@ that this build does not ship, so it is deliberately not accepted."*
 `DEVICE_PLATFORMS = ("ios", "android")`. The same note appears at
 `core/push/push_service.dart:10`. Web is poll-only by design.
 
-### idea — `/help/whats-new` holds one release entry
+### idea — `/help/whats-new` is thin
 
-`RELEASES` has a single entry, so the page is thin. Note the trap: `releases()`
-falls back **whole**, not per entry, so an entry added only to `en.py` silently
-leaves the other five languages showing an outdated What's New **with no test to
-catch it**. → [features/help-centre.md](features/help-centre.md)
+`RELEASES` holds two entries (`0.3.0`, `0.4.0`). The trap that came with it —
+`releases()` falls back **whole**, so an entry added only to `en.py` left the
+other five languages an outdated What's New — is closed:
+`test_every_language_lists_every_release` fails the suite for it.
+→ [features/help-centre.md](features/help-centre.md)
 
 ### idea — housekeeping
 

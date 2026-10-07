@@ -4,10 +4,13 @@
 // Providers:
 //   feedSortProvider — current sort mode (Top / Recent). Watched by FeedNotifier
 //                      so flipping the toggle re-fetches page 0 automatically.
-//   feedProvider     — paginated list of FeedItem with infinite scroll.
+//   feedProvider     — paginated list of FeedItem with infinite scroll. It
+//                      also watches the app language: cards carry titles
+//                      translated into it, so a language change re-fetches.
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:social_flutter/core/connectivity/connectivity_service.dart';
+import 'package:social_flutter/core/providers/locale_provider.dart';
 import 'package:social_flutter/features/feed/data/feed_repository.dart';
 import 'package:social_flutter/features/feed/domain/feed_item.dart';
 
@@ -43,9 +46,12 @@ class FeedNotifier extends AsyncNotifier<List<FeedItem>> {
     // Watching the sort provider means changing it re-runs build() on this same
     // notifier instance, re-fetching page 0 and resetting the offset for free.
     final sort = ref.watch(feedSortProvider);
+    // In the URL, not Accept-Language: the HTTP cache keys on the URL, so one
+    // cached page per language rather than one language served to all.
+    final lang = ref.watch(localeProvider.select((l) => l.languageCode));
     final first = await ref
         .read(feedRepositoryProvider)
-        .getFeed(sort: sort.value, offset: 0);
+        .getFeed(sort: sort.value, offset: 0, lang: lang);
     _offset = first.length;
     _hasMore = first.length == kFeedPageSize;
     return first;
@@ -59,9 +65,11 @@ class FeedNotifier extends AsyncNotifier<List<FeedItem>> {
     _loadingMore = true;
     try {
       final sort = ref.read(feedSortProvider);
-      final next = await ref
-          .read(feedRepositoryProvider)
-          .getFeed(sort: sort.value, offset: _offset);
+      final next = await ref.read(feedRepositoryProvider).getFeed(
+            sort: sort.value,
+            offset: _offset,
+            lang: ref.read(localeProvider).languageCode,
+          );
       if (!ref.mounted) return; // disposed mid-request (logout)
       // A sort change or refresh rebuilt the list under this request; its page
       // belongs to the old one.
@@ -93,6 +101,7 @@ class FeedNotifier extends AsyncNotifier<List<FeedItem>> {
       final first = await ref.read(feedRepositoryProvider).getFeed(
             sort: sort.value,
             offset: 0,
+            lang: ref.read(localeProvider).languageCode,
             forceRefresh: true,
           );
       _offset = first.length;

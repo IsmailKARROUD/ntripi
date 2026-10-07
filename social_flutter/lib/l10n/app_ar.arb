@@ -1437,5 +1437,14 @@
   "editLockReclaimed": "عُدتَ إلى التحرير",
   "editLockCopyText": "نسخ نصّي",
   "editLockCopied": "تم النسخ",
-  "editLockOwnerCanReclaim": "هذه رحلتك — يمكنك الاستلام في أي وقت."
+  "editLockOwnerCanReclaim": "هذه رحلتك — يمكنك الاستلام في أي وقت.",
+  "translationSeeTranslation": "عرض الترجمة",
+  "translationSeeOriginal": "عرض النص الأصلي",
+  "translationAutoTranslated": "مترجم آليًا",
+  "translationTranslating": "جارٍ الترجمة…",
+  "translationUnavailable": "الترجمة غير متاحة حاليًا.",
+  "translationRateLimited": "لقد بلغت حد الترجمة. يُرجى المحاولة لاحقًا.",
+  "translationFailed": "تعذّرت الترجمة. تحقق من اتصالك وحاول مجددًا.",
+  "translationTranslatedMarker": "عنوان مترجم",
+  "apiErrorTranslationLanguageUnsupported": "الترجمة إلى هذه اللغة غير متاحة."
 }

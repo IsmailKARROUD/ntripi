@@ -100,8 +100,12 @@ sign-out — see [authentication.md](authentication.md#flutter-surface). Before
    braces over the `ON DELETE SET NULL`.
 4. `db.delete(user)`; the cascade removes itineraries, stops, annotations,
    allowlist and editor rows, locks, follows, blocks, notifications, device
-   tokens, saves, appeals, refresh and email tokens, password history, and the
-   security audit log.
+   tokens, saves, appeals, refresh and email tokens, password history, the
+   security audit log, the cached translations of every owned itinerary (they
+   hang off `content_translations.itinerary_id`) and the hourly translation
+   counter. A review the account wrote elsewhere survives anonymised, with its
+   note and that note's translations — see
+   [ratings.md](ratings.md#open-questions).
 5. **Erase the images, after the commit, best-effort.** The keys are collected
    before the delete (`_erasable_image_keys`): the avatar, the profile cover, and
    every owned itinerary's cover — **except** while the account is under an open

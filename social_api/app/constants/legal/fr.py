@@ -190,7 +190,7 @@ Pour vous envoyer des e-mails concernant votre compte — vérification, réinit
 Pour corriger les problèmes que vous nous signalez.
 
 
-4. MODÉRATION AUTOMATIQUE DES CONTENUS
+4. MODÉRATION AUTOMATIQUE ET TRADUCTION DES CONTENUS
 
 Le contenu que vous publiez est vérifié automatiquement avant d'être visible, à l'aide de services exploités par d'autres entreprises.
 
@@ -204,6 +204,14 @@ Lorsqu'une vérification est indisponible, le contenu est stocké et mis en file
 
 Nous conservons le verdict d'une vérification de modération dans un cache de courte durée. Ce cache ne contient aucun texte brut ni aucune référence à la personne qui l'a écrit.
 
+Traduction : si vous êtes connecté, vous pouvez demander à lire un itinéraire, les notes et annotations d'une étape ou un avis dans la langue de votre application. Le texte concerné est alors envoyé à OpenAI pour être traduit, ou au service Azure AI Translator de Microsoft lorsqu'OpenAI ne peut pas répondre. Les titres des itinéraires publics sont traduits à l'avance dans chacune des langues de l'application, afin que Découvrir puisse les afficher dans la vôtre.
+
+La requête contient le texte, la langue vers laquelle le traduire et, pour OpenAI, le nom du modèle — rien d'autre : aucun identifiant de compte, aucune adresse e-mail, aucun identifiant de contenu. OpenAI n'utilise pas ces requêtes pour entraîner ses modèles et peut les conserver jusqu'à 30 jours afin de détecter les abus, avant de les supprimer. Le traducteur de Microsoft ne conserve pas le texte qu'il traduit.
+
+Avant d'être affichée, une traduction passe la même vérification de modération que le texte dont elle est issue. Un contenu masqué ou retiré par la modération n'est jamais envoyé pour traduction.
+
+Une traduction est conservée avec le contenu qu'elle traduit : chaque texte n'est traduit qu'une fois par langue, puis présenté à chaque lecteur qui demande cette langue.
+
 
 5. QUI D'AUTRE REÇOIT VOS DONNÉES
 
@@ -213,7 +221,9 @@ Railway — hébergement de l'application et base de données.
 
 Cloudflare — DNS, réseau de diffusion de contenu, stockage d'images (R2) et l'analyse d'images illégales décrite ci-dessus.
 
-OpenAI — modération de texte, comme décrit ci-dessus.
+OpenAI — modération de texte et traduction, comme décrit ci-dessus.
+
+Microsoft (Azure AI Translator) — traduction lorsqu'OpenAI ne peut pas répondre, comme décrit ci-dessus.
 
 Amazon Web Services — modération d'images, comme décrit ci-dessus.
 
@@ -277,6 +287,8 @@ Les enregistrements de modération sont supprimés au bout de 90 jours une fois 
 Les notifications dans l'application sont supprimées 90 jours après leur lecture. Celles qui n'ont pas été lues sont conservées.
 
 Les rapports de bogue et leurs captures sont supprimés une fois le rapport clos et sorti des archives.
+
+Les traductions sont supprimées lorsque le texte qu'elles traduisent est modifié ou supprimé.
 
 
 11. VOS DROITS

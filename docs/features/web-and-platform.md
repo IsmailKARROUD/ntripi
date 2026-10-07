@@ -86,7 +86,7 @@ ordering.
 |---|---|
 | 5/hour | `POST /auth/register`, `/auth/change-password`, `/web/appeal-request`, `/bug-reports` |
 | 10/minute | `/auth/login`, `/auth/google`, `/users/me/avatar`, `/users/me/cover-image`, `/admin/login`, `/internal/moderation-sweep` |
-| 60/minute | `/auth/refresh` |
+| 60/minute | `/auth/refresh`, `POST /translations` |
 | 3/hour | `/auth/forgot-password`, `/auth/resend-verification` |
 | 10/hour | `/auth/accept-tos`, `/appeals`, `/web/appeal`, `POST /reports` |
 | 30/minute | `GET /users/search`, `GET /itineraries/feed` |

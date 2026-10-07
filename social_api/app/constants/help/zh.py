@@ -82,6 +82,15 @@ CATEGORIES: tuple[Category, ...] = (
 
 RELEASES: tuple[Release, ...] = (
     Release(
+        version="0.4.0",
+        date="2026-10-07",
+        headline="用你的语言阅读行程",
+        entries=(
+            "行程、停靠点或点评下方的**查看翻译**会将其翻译成你的应用语言；**查看原文**即可切回。",
+            "**动态标题使用你的语言。**公开行程的标题会预先翻译好——除非它本就是你会说的语言。",
+        ),
+    ),
+    Release(
         version="0.3.0",
         date="2026-09-01",
         headline="协作编辑、推送通知和帮助中心",
@@ -603,7 +612,9 @@ ARTICLES: tuple[Article, ...] = (
                 heading="彩色提示与备注字段的区别",
                 body="""每个停靠点还有一个普通的**备注**字段。那个留给你自己的备忘——预订号、点什么菜。
 
-凡是读者需要*据此行动*的内容，请用彩色提示。区别就在于：它是不是应该容易被跳过。""",
+凡是读者需要*据此行动*的内容，请用彩色提示。区别就在于：它是不是应该容易被跳过。
+
+应用设为其他语言的读者，可以用**查看翻译**翻译这两种内容。""",
             ),
         ),
         keywords=(
@@ -619,8 +630,11 @@ ARTICLES: tuple[Article, ...] = (
             "安全",
             "骗局",
         ),
-        related=("add-places-to-an-itinerary", "plan-a-trip-itinerary"),
-        updated="2026-09-01",
+        related=(
+            "add-places-to-an-itinerary", "plan-a-trip-itinerary",
+            "read-trips-in-another-language",
+        ),
+        updated="2026-10-07",
         cta="把你当初希望有人告诉你的事写下来。",
     ),
     Article(
@@ -978,7 +992,9 @@ ARTICLES: tuple[Article, ...] = (
                 kind=KIND_FAQ,
                 body="""可以——评分对话框里有一个评价字段，而那才是其他旅行者真正会读的部分。分数说的是过程如何；评价说的是为什么。
 
-评价和其他所有发布的内容一样，受[社区准则](/guidelines)约束。""",
+评价和其他所有发布的内容一样，受[社区准则](/guidelines)约束。
+
+用其他语言写的点评下方有**查看翻译**。""",
             ),
             Block(
                 anchor="disagreeing",
@@ -1002,8 +1018,11 @@ ARTICLES: tuple[Article, ...] = (
             "拥挤",
             "人多",
         ),
-        related=("save-trips-and-find-new-ones", "report-and-block"),
-        updated="2026-09-01",
+        related=(
+            "save-trips-and-find-new-ones", "report-and-block",
+            "read-trips-in-another-language",
+        ),
+        updated="2026-10-07",
         cta="给一趟你真正走过的行程打分。",
     ),
     Article(
@@ -1054,6 +1073,12 @@ ARTICLES: tuple[Article, ...] = (
 
 私密行程按设计不出现在任何动态或搜索里；通往它的唯一途径，是一份邀请，或者一个来自能看到它的人的链接。""",
             ),
+            Block(
+                anchor="translated-titles",
+                heading="为什么行程标题是我的语言？",
+                kind=KIND_FAQ,
+                body="""公开行程的标题会预先翻译成应用的每一种语言。标题旁的小翻译图标表示这是译文，点一下即可看原文——详见[阅读用其他语言写的行程](/help/read-trips-in-another-language#feed-titles)。""",
+            ),
         ),
         keywords=(
             "保存",
@@ -1067,9 +1092,104 @@ ARTICLES: tuple[Article, ...] = (
             "最新",
             "浏览",
         ),
-        related=("rate-a-trip", "share-an-itinerary-privately"),
-        updated="2026-09-01",
+        related=(
+            "rate-a-trip", "share-an-itinerary-privately",
+            "read-trips-in-another-language",
+        ),
+        updated="2026-10-07",
         cta="找一趟值得借鉴的行程。",
+    ),
+    Article(
+        slug="read-trips-in-another-language",
+        title="如何阅读用其他语言写的行程",
+        summary="一键把行程、停靠点备注和点评翻译成应用语言，随时切回原文。",
+        category="community",
+        schema=SCHEMA_FAQ,
+        intro="在行程描述下方、停靠点页面或点评下方点**查看翻译**，文本就会切换为应用所设的语言。点**查看原文**即可切回。动态里的部分标题可能已为你翻译好；标题旁的小翻译图标会告诉你正在看哪个版本。",
+        blocks=(
+            Block(
+                anchor="see-translation",
+                heading="怎样翻译内容？",
+                kind=KIND_FAQ,
+                body="""找到**查看翻译**：
+
+- 行程页面，在描述下方——标题、描述、最佳出行时间和整条行程的彩色提示会一起翻译；
+- 停靠点页面，在时长和费用下方——它的备注和彩色提示一起翻译；
+- 评分页面上每条点评的下方。
+
+译文会替换原文，并标有**自动翻译**。点**查看原文**即可切回；再次切换是即时的，因为译文会被保留。""",
+            ),
+            Block(
+                anchor="which-language",
+                heading="会翻译成哪种语言？",
+                kind=KIND_FAQ,
+                body="""始终是应用所设的语言：英语、法语、阿拉伯语、德语、西班牙语或中文。想用其他语言阅读，请先在[设置](/help/app-settings#language)中更改应用语言。
+
+原文几乎可以是任何语言。""",
+            ),
+            Block(
+                anchor="what-is-translated",
+                heading="哪些内容会翻译，哪些不会？",
+                kind=KIND_FAQ,
+                body="""会翻译：行程标题与描述、最佳出行时间的说明、行程和停靠点的备注与提示，以及点评。
+
+不会翻译：地名和地址——保持原样，才能和路牌、地图对得上；用户名和显示名称；以及交通信息。""",
+            ),
+            Block(
+                anchor="feed-titles",
+                heading="为什么动态里有些标题已经是我的语言？",
+                kind=KIND_FAQ,
+                body="""公开行程的标题会预先翻译，这样动态无需你开口就能用你的语言显示它们。
+
+如果标题的语言是你在个人资料中列为会说的语言，它会按原样显示，旁边有一个小翻译图标，点一下可看译文。其他标题会显示为译文，图标高亮以作提示——点一下即可看原文。""",
+            ),
+            Block(
+                anchor="no-button",
+                heading="为什么没有“查看翻译”按钮？",
+                kind=KIND_FAQ,
+                body="""通常是因为文本已经是你的应用语言。如果 Ntripi 无法判断某段文本的语言，按钮仍会出现；若翻译发现它本来就是你的语言，按钮便会消失。
+
+你编辑行程时也不会出现——你编辑的始终是原文；在浏览器中通过分享链接打开的行程上没有它；应用语言暂不支持翻译时也没有。""",
+            ),
+            Block(
+                anchor="when-it-fails",
+                heading="翻译不成功怎么办？",
+                kind=KIND_FAQ,
+                body="""原文会留在屏幕上，并有一行说明原因：
+
+- **暂时无法翻译**——什么都没有丢失，请稍后再试。
+- **你已达到翻译次数上限**——每个账户每小时有一定额度，正常阅读很少用完，一小时内就会恢复。
+- **翻译失败**——通常是网络问题。检查网络后再点一次**查看翻译**。
+
+译文由机器生成。如果读起来别扭，点一下**查看原文**就行。""",
+            ),
+            Block(
+                anchor="privacy",
+                heading="我请求翻译的文本会被谁看到？",
+                kind=KIND_FAQ,
+                body="""文本会发送给翻译服务——OpenAI，或作为备用的 Microsoft Azure AI Translator——连同目标语言一起，别无其他：没有姓名、没有账户，也没有指向行程的链接。
+
+每条译文都与其原文一同保存，下一位请求同一语言的读者会直接复用。作者编辑或删除原文时，译文随之删除；被审核隐藏的内容绝不会被翻译。详情见[隐私政策](/privacy)。""",
+            ),
+        ),
+        keywords=(
+            "翻译",
+            "译文",
+            "外语",
+            "原文",
+            "语言",
+            "其他语言",
+            "机器翻译",
+            "自动翻译",
+            "多语言",
+            "看不懂",
+        ),
+        related=(
+            "app-settings", "save-trips-and-find-new-ones", "rate-a-trip",
+            "your-data-and-privacy",
+        ),
+        updated="2026-10-07",
+        cta="无论用什么语言写的，都能读懂这条行程。",
     ),
     Article(
         slug="notifications",
@@ -1153,7 +1273,9 @@ ARTICLES: tuple[Article, ...] = (
                 heading="语言",
                 body="""‏Ntripi 提供英语、法语、阿拉伯语、德语、西班牙语和中文。当你设备的语言是这六种之一时，应用会跟随它，你也可以在这里手动指定。
 
-阿拉伯语会把整个界面切换为从右到左。当你从应用中打开法律文件和这个帮助中心时，这个选择也会一并带过去。""",
+阿拉伯语会把整个界面切换为从右到左。当你从应用中打开法律文件和这个帮助中心时，这个选择也会一并带过去。
+
+应用语言也是**查看翻译**所翻译成的语言——详见[阅读用其他语言写的行程](/help/read-trips-in-another-language)。""",
             ),
             Block(
                 anchor="theme",
@@ -1200,8 +1322,10 @@ ARTICLES: tuple[Article, ...] = (
             "触感",
             "偏好",
         ),
-        related=("app-map", "notifications", "permissions"),
-        updated="2026-09-01",
+        related=(
+            "app-map", "notifications", "permissions", "read-trips-in-another-language",
+        ),
+        updated="2026-10-07",
         cta="把这个应用调成你自己的样子。",
     ),
     Article(
@@ -1316,7 +1440,9 @@ ARTICLES: tuple[Article, ...] = (
                 kind=KIND_FAQ,
                 body="""不会例行阅读。文字和图片在发布时会被自动检查，只有当内容被举报，或被这些检查标记出来时，才会有人去看。
 
-自动检查只发送内容本身，别的什么都不发——没有用户 ID，没有邮箱，也没有姓名。""",
+自动检查只发送内容本身，别的什么都不发——没有用户 ID，没有邮箱，也没有姓名。
+
+当有人请求用他的语言阅读你的行程时，行程文本会以同样的方式发送给翻译服务——只有文本和目标语言，别无其他。[了解翻译的更多信息](/help/read-trips-in-another-language#privacy)。""",
             ),
             Block(
                 anchor="deleting",
@@ -1348,8 +1474,11 @@ ARTICLES: tuple[Article, ...] = (
             "广告",
             "谁能看到",
         ),
-        related=("permissions", "sign-in-and-account-security", "share-an-itinerary-privately"),
-        updated="2026-09-01",
+        related=(
+            "permissions", "sign-in-and-account-security",
+            "share-an-itinerary-privately", "read-trips-in-another-language",
+        ),
+        updated="2026-10-07",
     ),
     Article(
         slug="sign-in-and-account-security",
@@ -1802,6 +1931,6 @@ ARTICLES: tuple[Article, ...] = (
             "历史",
         ),
         related=("getting-started", "contact"),
-        updated="2026-09-01",
+        updated="2026-10-07",
     ),
 )

@@ -1518,5 +1518,23 @@
   "editLockReclaimed": "You're editing again",
   "editLockCopyText": "Copy my text",
   "editLockCopied": "Copied",
-  "editLockOwnerCanReclaim": "You own this trip — you can take over at any time."
+  "editLockOwnerCanReclaim": "You own this trip — you can take over at any time.",
+  "translationSeeTranslation": "See translation",
+  "@translationSeeTranslation": {
+    "description": "Link under user-written text (a trip, a stop's notes, a review) that swaps it for a machine translation into the app language."
+  },
+  "translationSeeOriginal": "See original",
+  "translationAutoTranslated": "Automatically translated",
+  "@translationAutoTranslated": {
+    "description": "Label shown while a machine translation is on screen, followed by ' · ' and translationSeeOriginal."
+  },
+  "translationTranslating": "Translating…",
+  "translationUnavailable": "Translation isn't available right now.",
+  "translationRateLimited": "You've reached the translation limit. Please try again later.",
+  "translationFailed": "Couldn't translate. Check your connection and try again.",
+  "translationTranslatedMarker": "Translated title",
+  "@translationTranslatedMarker": {
+    "description": "Screen-reader label of the small translate icon beside a feed card title that is shown translated."
+  },
+  "apiErrorTranslationLanguageUnsupported": "Translation into this language isn't available."
 }

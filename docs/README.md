@@ -73,8 +73,8 @@ last month's behaviour is worse than none, because the reader follows it.**
 
 | Document | What it is |
 |---|---|
-| [reference/data-model.md](reference/data-model.md) | All **31 tables**: columns, keys, FK on-delete behaviour, indexes, plus the **migration-only objects** the test suite cannot see |
-| [reference/error-codes.md](reference/error-codes.md) | All **63 error codes**: HTTP status, raise site, and whether the client localizes it |
+| [reference/data-model.md](reference/data-model.md) | All **33 tables**: columns, keys, FK on-delete behaviour, indexes, plus the **migration-only objects** the test suite cannot see |
+| [reference/error-codes.md](reference/error-codes.md) | All **65 error codes**: HTTP status, raise site, and whether the client localizes it |
 
 ### Features
 
@@ -133,7 +133,7 @@ last month's behaviour is worse than none, because the reader follows it.**
 |---|---|
 | [notifications.md](features/notifications.md) | Eight in-app types, the poll and badge, FCM push, device tokens, retention |
 | [bug-reports.md](features/bug-reports.md) | Shake-to-report, the screenshot pipeline, `/admin/bugs`, the Jira hand-off |
-| [help-centre.md](features/help-centre.md) | `/help` — 26 articles rendered five ways — plus sitewide canonical, hreflang and sitemap |
+| [help-centre.md](features/help-centre.md) | `/help` — 27 articles rendered five ways — plus sitewide canonical, hreflang and sitemap |
 
 #### Platform
 
@@ -164,7 +164,7 @@ for schema and endpoint detail. They remain useful for setup instructions.
 | Document | Status |
 |---|---|
 | [`README.md`](../README.md) | Setup and local-run instructions are current. **Stale**: the JWT lifetime, `ACCESS_TOKEN_EXPIRE_MINUTES`, the 401 behaviour, the ratings list, the repo tree, the test table, and the `is_private` default |
-| [`social_api/README.md`](../social_api/README.md) | Its **Key Design Decisions** section is good and has been folded into [decisions.md](decisions.md). **Stale**: documents 11 of 31 tables and omits roughly 60 endpoints |
+| [`social_api/README.md`](../social_api/README.md) | Its **Key Design Decisions** section is good and has been folded into [decisions.md](decisions.md). **Stale**: documents 11 of 33 tables and omits roughly 60 endpoints |
 | [`social_flutter/README.md`](../social_flutter/README.md) | **Stale**: still presents transit segments as a current feature |
 
 Every drifted claim is itemised in
@@ -178,7 +178,7 @@ Measured from the code, not estimated.
 
 | | |
 |---|---|
-| Backend | 251 Python files · **31 tables** · 16 routers · **147 routes** · **63 error codes** · 54 migrations |
+| Backend | 251 Python files · **33 tables** · 17 routers · **149 routes** · **65 error codes** · 55 migrations |
 | Frontend | 217 Dart files · 10 feature directories · **58 providers** · **36 live screens** · 5 shell branches |
 | Localization | 6 languages · 956 keys, complete in all six |
 | Help centre | 26 articles · 8 categories · 6 languages |

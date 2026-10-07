@@ -6,7 +6,7 @@
 
 ## Purpose
 
-Public documentation at `/help` — **26 articles** across **8 categories**, written
+Public documentation at `/help` — **27 articles** across **8 categories**, written
 once and rendered five ways: HTML for people, Markdown for AI assistants, JSON-LD
 for search engines, a search index, and the sitemap. Nothing is authored twice.
 `services/seo.py` additionally owns canonical URLs, hreflang and the sitemap
@@ -229,17 +229,19 @@ articles have no such consumer, which is why Markdown is free here.
 **8 categories**: `getting-started`, `building`, `sharing`, `community`,
 `account`, `safety`, `troubleshooting`, `about`.
 
-**26 slugs**: getting-started · plan-a-trip-itinerary · app-map ·
+**27 slugs**: getting-started · plan-a-trip-itinerary · app-map ·
 plan-alternative-options · add-places-to-an-itinerary ·
 add-locations-from-google-maps · plan-transport-between-stops ·
 travel-notes-and-warnings · trip-cover-photos · plan-a-trip-with-friends ·
 share-an-itinerary-privately · share-a-trip-link · follow-and-private-accounts ·
-rate-a-trip · save-trips-and-find-new-ones · notifications · app-settings ·
-permissions · your-data-and-privacy · sign-in-and-account-security ·
-report-and-block · hidden-content-and-appeals · troubleshooting · report-a-bug ·
-contact · whats-new
+rate-a-trip · save-trips-and-find-new-ones · read-trips-in-another-language ·
+notifications · app-settings · permissions · your-data-and-privacy ·
+sign-in-and-account-security · report-and-block · hidden-content-and-appeals ·
+troubleshooting · report-a-bug · contact · whats-new
 
-**`RELEASES` currently holds 1 entry.**
+**`RELEASES` currently holds 2 entries** — `0.3.0` and `0.4.0` (translation).
+`0.4.0` was dated the day it was written; set the real version and date when it
+ships.
 
 ## Every user-facing change updates the help centre (CRITICAL)
 
@@ -301,5 +303,6 @@ For each article the change touches:
 - [sharing.md](sharing.md) — why `/share/*` is absent from the sitemap
 - [etag-concurrency.md](etag-concurrency.md) — the `Cache-Control` preservation rule
 - [bug-reports.md](bug-reports.md) — the Support row's destination
+- [translations.md](translations.md) — `read-trips-in-another-language`, the article that explains it
 - [admin-and-appeals.md](admin-and-appeals.md) — why `robots.txt` names no crawlers
 - [constraints.md](../constraints.md)

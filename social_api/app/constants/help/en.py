@@ -94,6 +94,17 @@ CATEGORIES: tuple[Category, ...] = (
 
 RELEASES: tuple[Release, ...] = (
     Release(
+        version="0.4.0",
+        date="2026-10-07",
+        headline="Read trips in your language",
+        entries=(
+            "**See translation** under a trip, a stop or a review translates it into "
+            "your app language; **See original** switches back.",
+            "**Feed titles in your language.** Public trip titles arrive already "
+            "translated — unless they are in a language you speak.",
+        ),
+    ),
+    Release(
         version="0.3.0",
         date="2026-09-01",
         headline="Collaborative editing, push notifications and a help centre",
@@ -753,12 +764,15 @@ ARTICLES: tuple[Article, ...] = (
         ),
         category="building",
         schema=SCHEMA_HOWTO,
-        updated="2026-09-01",
+        updated="2026-10-07",
         keywords=(
             "note", "notes", "warning", "warnings", "tip", "tips", "advice",
             "caution", "avoid", "info", "annotation", "safety", "scam",
         ),
-        related=("add-places-to-an-itinerary", "plan-a-trip-itinerary"),
+        related=(
+            "add-places-to-an-itinerary", "plan-a-trip-itinerary",
+            "read-trips-in-another-language",
+        ),
         cta="Write down what you wish someone had told you.",
         intro=(
             "The things that go wrong on a trip are rarely in the guidebook. "
@@ -813,7 +827,9 @@ ARTICLES: tuple[Article, ...] = (
                     "Every stop also has a plain **notes** field. Use that for your "
                     "own reminders — a booking reference, what to order.\n\n"
                     "Use a coloured note for anything a reader needs to *act* on. "
-                    "The difference is whether it should be easy to skim past."
+                    "The difference is whether it should be easy to skim past.\n\n"
+                    "Readers whose app is set to another language can translate both "
+                    "with **See translation**."
                 ),
             ),
         ),
@@ -1255,12 +1271,15 @@ ARTICLES: tuple[Article, ...] = (
         ),
         category="community",
         schema=SCHEMA_FAQ,
-        updated="2026-09-01",
+        updated="2026-10-07",
         keywords=(
             "rating", "ratings", "rate", "review", "reviews", "stars", "score",
             "safety", "accessibility", "family friendly", "crowded", "crowdedness",
         ),
-        related=("save-trips-and-find-new-ones", "report-and-block"),
+        related=(
+            "save-trips-and-find-new-ones", "report-and-block",
+            "read-trips-in-another-language",
+        ),
         cta="Rate a trip you have actually done.",
         intro=(
             "A rating is one required **overall** score out of five, and up to five "
@@ -1318,7 +1337,9 @@ ARTICLES: tuple[Article, ...] = (
                     "other travellers actually read. A score says how it went; the "
                     "note says why.\n\n"
                     "Notes are subject to the [community "
-                    "guidelines](/guidelines) like anything else published."
+                    "guidelines](/guidelines) like anything else published.\n\n"
+                    "A review written in another language has **See translation** "
+                    "under it."
                 ),
             ),
             Block(
@@ -1345,12 +1366,15 @@ ARTICLES: tuple[Article, ...] = (
         ),
         category="community",
         schema=SCHEMA_FAQ,
-        updated="2026-09-01",
+        updated="2026-10-07",
         keywords=(
             "save", "saved", "bookmark", "favourite", "favorite", "feed",
             "discover", "explore", "top", "recent", "trending", "browse",
         ),
-        related=("rate-a-trip", "share-an-itinerary-privately"),
+        related=(
+            "rate-a-trip", "share-an-itinerary-privately",
+            "read-trips-in-another-language",
+        ),
         cta="Find a trip worth stealing.",
         intro=(
             "The **Feed** tab shows public trips from everyone. Anything worth "
@@ -1416,6 +1440,150 @@ ARTICLES: tuple[Article, ...] = (
                     "A private trip is in no feed and no search by design; the only "
                     "way to it is an invitation or a link from someone who can see "
                     "it."
+                ),
+            ),
+            Block(
+                anchor="translated-titles",
+                heading="Why is a trip's title in my language?",
+                kind=KIND_FAQ,
+                body=(
+                    "Titles of public trips are translated ahead of time into each app "
+                    "language. A small translate icon beside a title marks a "
+                    "translation, and tapping it shows the original — see [reading a "
+                    "trip in another "
+                    "language](/help/read-trips-in-another-language#feed-titles)."
+                ),
+            ),
+        ),
+    ),
+    Article(
+        slug="read-trips-in-another-language",
+        title="How to read a trip written in another language",
+        summary=(
+            "Translate trips, stop notes and reviews into your app language with one "
+            "tap, and switch back to the original whenever you like."
+        ),
+        category="community",
+        schema=SCHEMA_FAQ,
+        updated="2026-10-07",
+        keywords=(
+            "translate", "translator", "translation", "foreign language",
+            "other language", "machine translation", "auto translate", "multilingual",
+            "original text",
+        ),
+        related=(
+            "app-settings", "save-trips-and-find-new-ones", "rate-a-trip",
+            "your-data-and-privacy",
+        ),
+        cta="Read the trip, whatever language it was written in.",
+        intro=(
+            "Tap **See translation** under a trip's description, on a stop, or under a "
+            "review, and the text switches to the language your app is set to. **See "
+            "original** switches it back. Titles in the feed may already be translated "
+            "for you; the small translate icon beside them shows which version you are "
+            "reading."
+        ),
+        blocks=(
+            Block(
+                anchor="see-translation",
+                heading="How do I translate something?",
+                kind=KIND_FAQ,
+                body=(
+                    "Look for **See translation**:\n\n"
+                    "- on a trip, under its description — the title, the description, "
+                    "the best time to visit and the trip-wide notes are translated "
+                    "together;\n"
+                    "- on a stop, under its time and cost — its notes and its coloured "
+                    "notes together;\n"
+                    "- under each review on the Ratings page.\n\n"
+                    "The translation replaces the text and is marked **Automatically "
+                    "translated**. Tap **See original** to go back; switching again is "
+                    "instant, because the translation is kept."
+                ),
+            ),
+            Block(
+                anchor="which-language",
+                heading="Which language does it translate into?",
+                kind=KIND_FAQ,
+                body=(
+                    "Always the language the app is set to: English, French, Arabic, "
+                    "German, Spanish or Chinese. To read a trip in another one, change "
+                    "the app language in [settings](/help/app-settings#language) "
+                    "first.\n\n"
+                    "The original can be in almost any language."
+                ),
+            ),
+            Block(
+                anchor="what-is-translated",
+                heading="What gets translated, and what doesn't?",
+                kind=KIND_FAQ,
+                body=(
+                    "Translated: trip titles and descriptions, the best-time-to-visit "
+                    "note, trip-wide and stop notes, and reviews.\n\n"
+                    "Not translated: place names and addresses, which stay as written "
+                    "so they still match the signs and the map; usernames and display "
+                    "names; and transport details."
+                ),
+            ),
+            Block(
+                anchor="feed-titles",
+                heading="Why are some feed titles already in my language?",
+                kind=KIND_FAQ,
+                body=(
+                    "Titles of public trips are translated ahead of time, so the feed "
+                    "can show them in your language without you asking.\n\n"
+                    "A title written in a language you list as spoken on your profile "
+                    "shows as written, with a small translate icon you can tap for the "
+                    "translation. Any other title shows translated, with the icon lit "
+                    "to say so — tap it for the original."
+                ),
+            ),
+            Block(
+                anchor="no-button",
+                heading="Why is there no See translation button?",
+                kind=KIND_FAQ,
+                body=(
+                    "Usually because the text is already in your app language. When "
+                    "Ntripi could not tell which language a text is in, the button is "
+                    "offered anyway, and disappears if the translation finds it was in "
+                    "your language all along.\n\n"
+                    "There is no button while you are editing a trip — you always edit "
+                    "the original — nor on a trip opened from a shared link in a "
+                    "browser, nor when translation is unavailable for your app "
+                    "language."
+                ),
+            ),
+            Block(
+                anchor="when-it-fails",
+                heading="What if a translation doesn't work?",
+                kind=KIND_FAQ,
+                body=(
+                    "The original stays on screen, with a line saying why:\n\n"
+                    "- **Translation isn't available right now** — nothing is lost; "
+                    "try again later.\n"
+                    "- **You've reached the translation limit** — each account has an "
+                    "hourly allowance, which ordinary reading rarely reaches. It "
+                    "resets within the hour.\n"
+                    "- **Couldn't translate** — usually the connection. Check it and "
+                    "tap **See translation** again.\n\n"
+                    "Translations are made by machine. If one reads oddly, **See "
+                    "original** is one tap away."
+                ),
+            ),
+            Block(
+                anchor="privacy",
+                heading="Who sees the text I ask to translate?",
+                kind=KIND_FAQ,
+                body=(
+                    "The text goes to a translation service — OpenAI, or Microsoft's "
+                    "Azure AI Translator as a backup — with the language to translate "
+                    "it into, and nothing else: no name, no account, no link to the "
+                    "trip.\n\n"
+                    "Each translation is stored with the text it was made from and "
+                    "reused for the next reader who asks for the same language. It is "
+                    "deleted when the author edits or deletes the original, and "
+                    "content hidden by moderation is never translated. The [privacy "
+                    "policy](/privacy) has the details."
                 ),
             ),
         ),
@@ -1523,12 +1691,14 @@ ARTICLES: tuple[Article, ...] = (
             "changes."
         ),
         category="account",
-        updated="2026-09-01",
+        updated="2026-10-07",
         keywords=(
             "settings", "language", "translate", "dark mode", "light mode",
             "theme", "sound", "sounds", "haptics", "vibration", "preferences",
         ),
-        related=("app-map", "notifications", "permissions"),
+        related=(
+            "app-map", "notifications", "permissions", "read-trips-in-another-language",
+        ),
         cta="Make the app yours.",
         intro=(
             "The gear on your own profile opens everything. Settings are stored on "
@@ -1545,7 +1715,10 @@ ARTICLES: tuple[Article, ...] = (
                     "that is one of the six, and you can override it here.\n\n"
                     "Arabic switches the whole interface to right-to-left. The "
                     "choice also travels with legal documents and this help centre "
-                    "when you open them from the app."
+                    "when you open them from the app.\n\n"
+                    "The app language is also the one **See translation** translates "
+                    "into — see [reading a trip in another "
+                    "language](/help/read-trips-in-another-language)."
                 ),
             ),
             Block(
@@ -1714,13 +1887,15 @@ ARTICLES: tuple[Article, ...] = (
         ),
         category="account",
         schema=SCHEMA_FAQ,
-        updated="2026-09-01",
+        updated="2026-10-07",
         keywords=(
             "privacy", "data", "gdpr", "delete account", "remove", "export",
             "personal data", "tracking", "ads", "advertising", "who can see",
         ),
-        related=("permissions", "sign-in-and-account-security",
-                 "share-an-itinerary-privately"),
+        related=(
+            "permissions", "sign-in-and-account-security",
+            "share-an-itinerary-privately", "read-trips-in-another-language",
+        ),
         intro=(
             "Ntripi stores what you type and what you upload, plus what it needs to "
             "sign you in. There is no advertising, no third-party ad tracking, and "
@@ -1767,7 +1942,11 @@ ARTICLES: tuple[Article, ...] = (
                     "published, and a person only looks at something when it is "
                     "reported or flagged by those checks.\n\n"
                     "Automated checks send the content and nothing else — no user "
-                    "id, no email, no name."
+                    "id, no email, no name.\n\n"
+                    "When someone asks to read your trip in their language, its text "
+                    "goes to a translation service the same way — the text and the "
+                    "target language, nothing else. [More on "
+                    "translations](/help/read-trips-in-another-language#privacy)."
                 ),
             ),
             Block(
@@ -2393,7 +2572,7 @@ ARTICLES: tuple[Article, ...] = (
         ),
         category="about",
         schema=SCHEMA_RELEASES,
-        updated="2026-09-01",
+        updated="2026-10-07",
         keywords=(
             "changelog", "release notes", "updates", "new", "version", "changes",
             "what changed", "history",

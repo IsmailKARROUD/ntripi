@@ -41,7 +41,7 @@ from app.models.text_moderation_decision import TextModerationDecision
 from app.models.user import User
 from app.services import (
     admin_service, bug_report_service, edit_lock_service, moderation_actions,
-    notification_service, text_moderation_service,
+    notification_service, text_moderation_service, translation_service,
 )
 from app.services.moderation_email_service import build_reason, send_auto_action_email
 
@@ -80,6 +80,7 @@ def run_moderation_sweep(db: Session, settings) -> dict:
         "notifications_purged": 0,
         "device_tokens_purged": 0,
         "edit_locks_purged": 0,
+        "translations_purged": 0,
     }
     try:
         notifications: list[dict] = []
@@ -360,6 +361,10 @@ def _purge(db: Session, settings, counters: dict) -> None:
     # as takeable, since staleness is derived from last_heartbeat_at at read
     # time rather than stored.
     counters["edit_locks_purged"] = edit_lock_service.purge_expired(db, settings)
+
+    # The safety net behind every delete path's own purge_orphans, plus
+    # translations of moderator-removed trips and stale usage counters.
+    counters["translations_purged"] = translation_service.purge_for_sweep(db)
 
 
 # ---------------------------------------------------------------------------

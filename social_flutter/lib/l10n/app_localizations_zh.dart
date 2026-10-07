@@ -3148,4 +3148,31 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get editLockOwnerCanReclaim => '这是你的行程——你可以随时接管。';
+
+  @override
+  String get translationSeeTranslation => '查看翻译';
+
+  @override
+  String get translationSeeOriginal => '查看原文';
+
+  @override
+  String get translationAutoTranslated => '自动翻译';
+
+  @override
+  String get translationTranslating => '翻译中…';
+
+  @override
+  String get translationUnavailable => '暂时无法翻译。';
+
+  @override
+  String get translationRateLimited => '你已达到翻译次数上限，请稍后再试。';
+
+  @override
+  String get translationFailed => '翻译失败。请检查网络连接后重试。';
+
+  @override
+  String get translationTranslatedMarker => '已翻译的标题';
+
+  @override
+  String get apiErrorTranslationLanguageUnsupported => '暂不支持翻译成该语言。';
 }

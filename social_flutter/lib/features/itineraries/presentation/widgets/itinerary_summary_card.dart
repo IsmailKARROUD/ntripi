@@ -19,11 +19,23 @@ class ItinerarySummaryCard extends ConsumerWidget {
   /// Optional long-press callback (e.g. for delete confirmation).
   final VoidCallback? onLongPress;
 
+  /// Replaces the title text — the feed passes its translated title here.
+  final Widget? title;
+
   const ItinerarySummaryCard({
     super.key,
     required this.itinerary,
     this.onLongPress,
+    this.title,
   });
+
+  /// The title's style, for a [title] that must read as the card's own.
+  static TextStyle titleStyle(NtripiColors nt) => TextStyle(
+        fontSize: 16,
+        fontWeight: FontWeight.w700,
+        color: nt.bark,
+        letterSpacing: -0.2,
+      );
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -73,16 +85,12 @@ class ItinerarySummaryCard extends ConsumerWidget {
                   Row(
                     children: [
                       Expanded(
-                        child: Text(
-                          itinerary.title,
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w700,
-                            color: nt.bark,
-                            letterSpacing: -0.2,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
+                        child: title ??
+                            Text(
+                              itinerary.title,
+                              style: titleStyle(nt),
+                              overflow: TextOverflow.ellipsis,
+                            ),
                       ),
                       if (itinerary.ratingAvg != null) ...[
                         const SizedBox(width: 8),

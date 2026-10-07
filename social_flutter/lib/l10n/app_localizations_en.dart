@@ -3320,4 +3320,35 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get editLockOwnerCanReclaim =>
       'You own this trip — you can take over at any time.';
+
+  @override
+  String get translationSeeTranslation => 'See translation';
+
+  @override
+  String get translationSeeOriginal => 'See original';
+
+  @override
+  String get translationAutoTranslated => 'Automatically translated';
+
+  @override
+  String get translationTranslating => 'Translating…';
+
+  @override
+  String get translationUnavailable =>
+      'Translation isn\'t available right now.';
+
+  @override
+  String get translationRateLimited =>
+      'You\'ve reached the translation limit. Please try again later.';
+
+  @override
+  String get translationFailed =>
+      'Couldn\'t translate. Check your connection and try again.';
+
+  @override
+  String get translationTranslatedMarker => 'Translated title';
+
+  @override
+  String get apiErrorTranslationLanguageUnsupported =>
+      'Translation into this language isn\'t available.';
 }

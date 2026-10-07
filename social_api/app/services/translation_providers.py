@@ -62,6 +62,9 @@ class Translator(Protocol):
     # One call never carries more than this — the chain splits a bigger batch.
     max_batch_fields: int
     max_batch_chars: int
+    # Characters this engine may be sent per UTC day; None = unlimited. Each
+    # engine reads its own setting, so a new one brings its own budget.
+    daily_char_budget: int | None
 
     def translate(self, fields: dict[str, str], target_lang: str) -> TranslationResult:
         """Translate every value of `fields` into `target_lang`. Raises
@@ -113,6 +116,7 @@ class OpenAITranslator:
         self._timeout = settings.TRANSLATION_TIMEOUT_SECONDS
         self._effort = settings.TRANSLATION_REASONING_EFFORT.strip()
         self.model = settings.TRANSLATION_MODEL
+        self.daily_char_budget = settings.TRANSLATION_DAILY_CHAR_BUDGET
 
     def translate(self, fields: dict[str, str], target_lang: str) -> TranslationResult:
         # Opaque keys: the caller's keys may name content, and must not leave.
@@ -253,6 +257,7 @@ class AzureTranslator:
         self._region = settings.AZURE_TRANSLATOR_REGION
         self._endpoint = settings.AZURE_TRANSLATOR_ENDPOINT.rstrip("/")
         self._timeout = settings.TRANSLATION_TIMEOUT_SECONDS
+        self.daily_char_budget = settings.AZURE_TRANSLATOR_DAILY_CHAR_BUDGET
 
     def translate(self, fields: dict[str, str], target_lang: str) -> TranslationResult:
         keys = list(fields)

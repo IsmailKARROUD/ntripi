@@ -66,6 +66,10 @@ class Annotation {
   final DateTime createdAt;
   final DateTime updatedAt;
 
+  /// Language the server detected for this text (ISO 639-1), or null when
+  /// it could not tell — decides whether "See translation" is offered.
+  final String? sourceLang;
+
   const Annotation({
     required this.id,
     required this.stopId,
@@ -73,6 +77,7 @@ class Annotation {
     required this.content,
     required this.createdAt,
     required this.updatedAt,
+    this.sourceLang,
   });
 
   factory Annotation.fromJson(Map<String, dynamic> json) {
@@ -83,6 +88,7 @@ class Annotation {
       content: json['content'] as String,
       createdAt: DateTime.parse(json['created_at'] as String),
       updatedAt: DateTime.parse(json['updated_at'] as String),
+      sourceLang: json['source_lang'] as String?,
     );
   }
 
@@ -94,6 +100,7 @@ class Annotation {
       'content': content,
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
+      if (sourceLang != null) 'source_lang': sourceLang,
     };
   }
 
@@ -109,6 +116,7 @@ class Annotation {
       content: content ?? this.content,
       createdAt: createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      sourceLang: sourceLang,
     );
   }
 }

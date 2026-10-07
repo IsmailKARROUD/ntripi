@@ -18,7 +18,7 @@ for one.
 | Document | Version | Date |
 |---|---|---|
 | Terms of Service | **3.1** | 2026-08-08 |
-| Privacy Policy | **2.2** | 2026-08-13 |
+| Privacy Policy | **2.3** | 2026-10-07 |
 | Community Guidelines | **1.1** | 2026-08-06 |
 
 - **Bodies live in `app/constants/legal/<lang>.py`, one module per *language*
@@ -47,6 +47,14 @@ for one.
 - **`GET /auth/tos?lang=` returns all three documents plus their notices in one
   response.** Three consumers share it: the signup agreement, the Google consent
   sheet, and the re-acceptance gate.
+- **Privacy §5 names every third party that receives user data, in every
+  language** — an undisclosed processor is a GDPR breach and a store-label
+  mismatch. Translation (2.3) added Microsoft (Azure AI Translator) and widened
+  OpenAI to "moderation and translation"; §4 became "Automated content
+  moderation **and translation**" rather than gaining a section, because §5 and
+  §11 are cited by number in the bodies, six times over.
+  `test_privacy_names_every_translation_engine` fails a language that drops
+  Microsoft.
 
 ### Acceptance
 
@@ -183,7 +191,13 @@ New error codes: `tos_required`, `underage`, `dob_required`.
 - **App Store privacy nutrition label and Play Data safety both need the DOB
   declared** — outstanding.
 - **The six-language translations still need counsel review**, and English is
-  authoritative in the meantime.
+  authoritative in the meantime — the 2.3 translation paragraphs included.
+- **ToS §12's list of service categories names neither push notifications nor
+  translation.** It defers to the Privacy Policy for the list, and changing ToS
+  text needs a `TOS_VERSION` bump, which sends every user through the
+  re-acceptance gate — so it waits for the next ToS change that needs one.
+- **App Store privacy label and Play Data safety must name Microsoft** before
+  translation is switched on.
 - Tests: `test_legal_documents.py`, `test_tos_acceptance.py`, `test_age_gate.py`,
   `test_web_i18n.py` all run.
 
@@ -196,3 +210,14 @@ New error codes: `tos_required`, `underage`, `dob_required`.
 - [help-centre.md](help-centre.md) — shares `i18n.py` `SUPPORTED` and the SEO layer
 - [web-and-platform.md](web-and-platform.md) — the server-rendered legal pages
 - [reference/error-codes.md](../reference/error-codes.md#registration-tos-and-age-gate)
+- [translations.md](translations.md) — the two engines Privacy §4 and §5 disclose
+
+## OPEN QUESTIONS
+
+- **The ratings clause says "score only", but account deletion keeps the review
+  text.** The ToS ("anonymized form (score only, no identifying information)")
+  and Privacy §10 ("score only, no user link") both say so, while
+  `delete_my_account` only nulls `itinerary_ratings.user_id`: the `note` — and
+  now its cached translations — survive. Either the deletion should clear the
+  note, or both documents should say the text is kept. Undecided; the documents
+  were left as they are in 2.3.

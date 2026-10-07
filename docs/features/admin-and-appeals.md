@@ -246,7 +246,10 @@ Errors: 422 `appeal_reason_required` / `appeal_reason_too_long`, 404
 
 Counters: `sla_hidden, sla_already_hidden, rechecked, still_pending,
 recheck_hidden, cache_purged, decisions_purged, bug_reports_purged,
-notifications_purged, device_tokens_purged, edit_locks_purged`.
+notifications_purged, device_tokens_purged, edit_locks_purged,
+translations_purged` — the last covers orphaned translations, translations of
+removed trips and stale translation usage counters
+([translations.md](translations.md#housekeeping)).
 
 ## Config
 

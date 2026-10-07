@@ -84,6 +84,8 @@ import 'package:social_flutter/features/itineraries/presentation/widgets/leg_for
 import 'package:social_flutter/features/itineraries/presentation/widgets/edit_lock_banner.dart';
 import 'package:social_flutter/features/itineraries/providers/edit_lock_provider.dart';
 import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
+import 'package:social_flutter/features/translation/presentation/translatable_text.dart';
+import 'package:social_flutter/features/translation/providers/translation_providers.dart';
 import 'package:social_flutter/l10n/app_localizations.dart';
 import 'package:social_flutter/shared/widgets/itinerary_cover_placeholder.dart';
 import 'package:social_flutter/shared/widgets/visibility_badge.dart';
@@ -670,6 +672,29 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                   final allStops = itinerary.stops;
                   final tracks = itinerary.tracks;
                   final canEdit = mayEdit && _editMode;
+                  // One toggle swaps the header and every trip-wide note.
+                  final TranslationAnchor translationAnchor =
+                      (contentType: 'itinerary', contentId: itinerary.id);
+                  final translationMembers = [
+                    TranslationMember(
+                      contentType: 'itinerary',
+                      contentId: itinerary.id,
+                      sourceLang: itinerary.sourceLang,
+                      fields: {
+                        'title': itinerary.title,
+                        'description': itinerary.description,
+                        'recommended_period_note':
+                            itinerary.recommendedPeriod?.note,
+                      },
+                    ),
+                    for (final a in itinerary.annotations)
+                      TranslationMember(
+                        contentType: 'itinerary_annotation',
+                        contentId: a.id,
+                        sourceLang: a.sourceLang,
+                        fields: {'content': a.content},
+                      ),
+                  ];
 
                   // Freshly created + still empty → drop the owner straight into
                   // the first-stop form. Pushed from here rather than from the
@@ -1126,7 +1151,9 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                                         itinerary.recommendedPeriod)
                                     : null,
                                 child: _RecommendedPeriodRow(
-                                    period: itinerary.recommendedPeriod!),
+                                  period: itinerary.recommendedPeriod!,
+                                  itineraryId: itinerary.id,
+                                ),
                               ),
                             ),
                           ),
@@ -1156,8 +1183,25 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                                         _editDescription(itinerary.description)
                                     : null,
                                 child: _DescriptionRow(
-                                    description: itinerary.description!),
+                                  description: itinerary.description!,
+                                  itineraryId: itinerary.id,
+                                ),
                               ),
+                            ),
+                          ),
+
+                        // ── See translation ────────────────────────────────
+                        // Under the description, so it precedes the trip-wide
+                        // notes it also covers. Read mode only, and never on a
+                        // trip under takedown: the server refuses it even to
+                        // its owner, the only reader who can still open it.
+                        if (!_editMode && !itinerary.hidden)
+                          SliverToBoxAdapter(
+                            child: TranslationToggle(
+                              anchor: translationAnchor,
+                              members: translationMembers,
+                              padding:
+                                  const EdgeInsets.fromLTRB(16, 10, 16, 0),
                             ),
                           ),
 
@@ -1237,47 +1281,60 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                                         runSpacing: 6,
                                         children: itinerary.annotations
                                             .map(
-                                              (a) => AnnotationChip(
-                                                annotation: Annotation(
-                                                  id: a.id,
-                                                  stopId: a.itineraryId,
-                                                  type: a.type,
-                                                  content: a.content,
-                                                  createdAt: a.createdAt,
-                                                  updatedAt: a.updatedAt,
-                                                ),
-                                                onEdit: canEdit
-                                                    ? () =>
-                                                        _editItineraryAnnotation(
-                                                            a)
-                                                    : null,
-                                                onDelete: canEdit
-                                                    ? () =>
-                                                        _deleteItineraryAnnotation(
-                                                            a)
-                                                    : null,
-                                                // Built from the outer `a`:
-                                                // the adapted Annotation above
-                                                // carries the itinerary id in
-                                                // its stopId field.
-                                                onReport: mayEdit
-                                                    ? null
-                                                    : () =>
-                                                        showReportContentSheet(
-                                                          context,
-                                                          ref,
-                                                          ReportTarget
-                                                              .itineraryAnnotation(
-                                                            widget.itineraryId,
-                                                            a.id,
-                                                          ),
-                                                        ),
-                                                onLongPressEdit: mayEdit &&
-                                                        !_editMode
-                                                    ? () =>
-                                                        _editItineraryAnnotation(
-                                                            a)
-                                                    : null,
+                                              (a) => TranslatableText(
+                                                anchor: translationAnchor,
+                                                contentType:
+                                                    'itinerary_annotation',
+                                                contentId: a.id,
+                                                field: 'content',
+                                                original: a.content,
+                                                enabled: !_editMode,
+                                                builder: (context, content) =>
+                                                    AnnotationChip(
+                                                      annotation: Annotation(
+                                                        id: a.id,
+                                                        stopId: a.itineraryId,
+                                                        type: a.type,
+                                                        // The translation in read
+                                                        // mode; editing works on
+                                                        // the outer `a`.
+                                                        content: content,
+                                                        createdAt: a.createdAt,
+                                                        updatedAt: a.updatedAt,
+                                                      ),
+                                                      onEdit: canEdit
+                                                          ? () =>
+                                                              _editItineraryAnnotation(
+                                                                  a)
+                                                          : null,
+                                                      onDelete: canEdit
+                                                          ? () =>
+                                                              _deleteItineraryAnnotation(
+                                                                  a)
+                                                          : null,
+                                                      // Built from the outer `a`:
+                                                      // the adapted Annotation above
+                                                      // carries the itinerary id in
+                                                      // its stopId field.
+                                                      onReport: mayEdit
+                                                          ? null
+                                                          : () =>
+                                                              showReportContentSheet(
+                                                                context,
+                                                                ref,
+                                                                ReportTarget
+                                                                    .itineraryAnnotation(
+                                                                  widget.itineraryId,
+                                                                  a.id,
+                                                                ),
+                                                              ),
+                                                      onLongPressEdit: mayEdit &&
+                                                              !_editMode
+                                                          ? () =>
+                                                              _editItineraryAnnotation(
+                                                                  a)
+                                                          : null,
+                                                    ),
                                               ),
                                             )
                                             .toList(),
@@ -1507,8 +1564,9 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
 // system; the owner sees _DescriptionEditRow instead.
 class _DescriptionRow extends StatelessWidget {
   final String description;
+  final String itineraryId;
 
-  const _DescriptionRow({required this.description});
+  const _DescriptionRow({required this.description, required this.itineraryId});
 
   @override
   Widget build(BuildContext context) {
@@ -1543,7 +1601,14 @@ class _DescriptionRow extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 2),
-                InertMarkdownBody(data: description),
+                TranslatableText(
+                  anchor: (contentType: 'itinerary', contentId: itineraryId),
+                  contentType: 'itinerary',
+                  contentId: itineraryId,
+                  field: 'description',
+                  original: description,
+                  builder: (context, text) => InertMarkdownBody(data: text),
+                ),
               ],
             ),
           ),
@@ -1801,14 +1866,22 @@ class _CoverHeroState extends State<_CoverHero> {
               children: [
                 VisibilityBadge(visibility: itinerary.visibility, onDark: true),
                 const SizedBox(height: 8),
-                Text(
-                  itinerary.title,
-                  style: const TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w700,
-                    color: NtripiBrand.chrome,
-                    letterSpacing: -0.3,
-                    height: 1.1,
+                TranslatableText(
+                  anchor: (contentType: 'itinerary', contentId: itinerary.id),
+                  contentType: 'itinerary',
+                  contentId: itinerary.id,
+                  field: 'title',
+                  original: itinerary.title,
+                  enabled: !widget.editMode,
+                  builder: (context, title) => Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w700,
+                      color: NtripiBrand.chrome,
+                      letterSpacing: -0.3,
+                      height: 1.1,
+                    ),
                   ),
                 ),
               ],
@@ -2071,8 +2144,9 @@ class _OwnerRow extends ConsumerWidget {
 // Read-only variant; the owner sees _RecommendedPeriodEditRow instead.
 class _RecommendedPeriodRow extends StatelessWidget {
   final RecommendedPeriod period;
+  final String itineraryId;
 
-  const _RecommendedPeriodRow({required this.period});
+  const _RecommendedPeriodRow({required this.period, required this.itineraryId});
 
   @override
   Widget build(BuildContext context) {
@@ -2132,9 +2206,17 @@ class _RecommendedPeriodRow extends StatelessWidget {
                 ],
                 if (note != null && note.isNotEmpty) ...[
                   const SizedBox(height: 4),
-                  Text(
-                    note,
-                    style: TextStyle(fontSize: 12.5, color: nt.text2),
+                  TranslatableText(
+                    anchor: (contentType: 'itinerary', contentId: itineraryId),
+                    contentType: 'itinerary',
+                    contentId: itineraryId,
+                    field: 'recommended_period_note',
+                    // Untrimmed: the same string the toggle's member names.
+                    original: period.note!,
+                    builder: (context, text) => Text(
+                      text.trim(),
+                      style: TextStyle(fontSize: 12.5, color: nt.text2),
+                    ),
                   ),
                 ],
               ],

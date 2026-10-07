@@ -27,6 +27,8 @@ import 'package:social_flutter/features/itineraries/providers/itinerary_provider
 import 'package:social_flutter/features/profile/providers/profile_provider.dart';
 import 'package:social_flutter/features/reports/domain/report_target.dart';
 import 'package:social_flutter/features/reports/presentation/report_content_sheet.dart';
+import 'package:social_flutter/features/translation/presentation/translatable_text.dart';
+import 'package:social_flutter/features/translation/providers/translation_providers.dart';
 import 'package:social_flutter/l10n/app_localizations.dart';
 import 'package:social_flutter/shared/utils/duration_format.dart';
 import 'package:social_flutter/shared/widgets/loaders.dart';
@@ -99,6 +101,8 @@ class StopDetailScreen extends ConsumerWidget {
           inboundSegment: inbound,
           outboundSegment: outbound,
           allStops: itinerary.stops,
+          // A trip under takedown is never translated, even for its owner.
+          translatable: !itinerary.hidden,
         );
       },
     );
@@ -115,6 +119,7 @@ class _StopDetailView extends ConsumerWidget {
   final TransitSegment? inboundSegment;
   final TransitSegment? outboundSegment;
   final List<Stop> allStops;
+  final bool translatable;
 
   const _StopDetailView({
     required this.stop,
@@ -126,6 +131,7 @@ class _StopDetailView extends ConsumerWidget {
     this.inboundSegment,
     this.outboundSegment,
     required this.allStops,
+    required this.translatable,
   });
 
   /// Run [edit] holding this itinerary's edit claim.
@@ -210,6 +216,25 @@ class _StopDetailView extends ConsumerWidget {
     final hasMapLink = stop.mapUrl != null && isGoogleMapsUrl(stop.mapUrl!);
     final hasCoords = stop.lat != null && stop.lng != null;
     final showMapPreview = hasMapLink || hasCoords;
+    // One toggle swaps the notes and every annotation. Place names are never
+    // translated: nothing records whether the author typed or imported one.
+    final TranslationAnchor translationAnchor =
+        (contentType: 'stop', contentId: stop.id);
+    final translationMembers = [
+      TranslationMember(
+        contentType: 'stop',
+        contentId: stop.id,
+        sourceLang: stop.sourceLang,
+        fields: {'notes': stop.notes},
+      ),
+      for (final a in stop.annotations)
+        TranslationMember(
+          contentType: 'stop_annotation',
+          contentId: a.id,
+          sourceLang: a.sourceLang,
+          fields: {'content': a.content},
+        ),
+    ];
 
     return Scaffold(
       backgroundColor: nt.surface,
@@ -297,6 +322,17 @@ class _StopDetailView extends ConsumerWidget {
             ),
           ),
 
+          // ── See translation ────────────────────────────────────────────────
+          // Above the annotations and notes it covers, so it is seen before
+          // the text rather than after scrolling past it.
+          if (translatable)
+            SliverToBoxAdapter(
+              child: TranslationToggle(
+                anchor: translationAnchor,
+                members: translationMembers,
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+              ),
+            ),
 
           // ── Annotations ────────────────────────────────────────────────────
           if (hasAnnotations) ...[
@@ -315,6 +351,7 @@ class _StopDetailView extends ConsumerWidget {
                             padding: const EdgeInsets.only(bottom: 8),
                             child: _AnnotationFullRow(
                               annotation: a,
+                              translationAnchor: translationAnchor,
                               onReport: canEdit
                                   ? null
                                   : () => showReportContentSheet(
@@ -402,7 +439,15 @@ class _StopDetailView extends ConsumerWidget {
                 child: _SectionCard(
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
-                    child: InertMarkdownBody(data: stop.notes!),
+                    child: TranslatableText(
+                      anchor: translationAnchor,
+                      contentType: 'stop',
+                      contentId: stop.id,
+                      field: 'notes',
+                      original: stop.notes!,
+                      builder: (context, notes) =>
+                          InertMarkdownBody(data: notes),
+                    ),
                   ),
                 ),
               ),
@@ -747,6 +792,9 @@ class _StopStat extends StatelessWidget {
 class _AnnotationFullRow extends StatelessWidget {
   final Annotation annotation;
 
+  /// The stop's translation group, which this note's text follows.
+  final TranslationAnchor translationAnchor;
+
   /// Long-press to report. No visible affordance on purpose — the row has no
   /// menu and a flag glyph on every note would drown the content.
   final VoidCallback? onReport;
@@ -757,6 +805,7 @@ class _AnnotationFullRow extends StatelessWidget {
 
   const _AnnotationFullRow({
     required this.annotation,
+    required this.translationAnchor,
     this.onReport,
     this.onLongPressEdit,
   });
@@ -805,12 +854,19 @@ class _AnnotationFullRow extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 4),
-                  Text(
-                    annotation.content,
-                    style: TextStyle(
-                      fontSize: 13.5,
-                      color: nt.bark,
-                      height: 1.5,
+                  TranslatableText(
+                    anchor: translationAnchor,
+                    contentType: 'stop_annotation',
+                    contentId: annotation.id,
+                    field: 'content',
+                    original: annotation.content,
+                    builder: (context, content) => Text(
+                      content,
+                      style: TextStyle(
+                        fontSize: 13.5,
+                        color: nt.bark,
+                        height: 1.5,
+                      ),
                     ),
                   ),
                 ],

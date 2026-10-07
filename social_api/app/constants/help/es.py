@@ -82,6 +82,15 @@ CATEGORIES: tuple[Category, ...] = (
 
 RELEASES: tuple[Release, ...] = (
     Release(
+        version="0.4.0",
+        date="2026-10-07",
+        headline="Lee los viajes en tu idioma",
+        entries=(
+            "**Ver traducción**, bajo un viaje, una parada o una reseña, lo traduce al idioma de tu aplicación; **Ver original** lo devuelve.",
+            "**Títulos del feed en tu idioma.** Los títulos de los viajes públicos llegan ya traducidos, salvo que estén en un idioma que hablas.",
+        ),
+    ),
+    Release(
         version="0.3.0",
         date="2026-09-01",
         headline="Edición colaborativa, notificaciones push y un centro de ayuda",
@@ -607,7 +616,9 @@ Las notas del viaje se muestran arriba, antes de las paradas, porque normalmente
                 heading="Notas de color frente al campo de notas",
                 body="""Cada parada tiene además un campo de **notas** normal. Úsalo para tus propios recordatorios: una referencia de reserva, qué pedir.
 
-Usa una nota de color para todo aquello sobre lo que un lector deba *actuar*. La diferencia está en si debe ser fácil o no pasarlo por alto.""",
+Usa una nota de color para todo aquello sobre lo que un lector deba *actuar*. La diferencia está en si debe ser fácil o no pasarlo por alto.
+
+Quienes tengan la aplicación en otro idioma pueden traducir ambas con **Ver traducción**.""",
             ),
         ),
         keywords=(
@@ -625,8 +636,11 @@ Usa una nota de color para todo aquello sobre lo que un lector deba *actuar*. La
             "seguridad",
             "estafa",
         ),
-        related=("add-places-to-an-itinerary", "plan-a-trip-itinerary"),
-        updated="2026-09-01",
+        related=(
+            "add-places-to-an-itinerary", "plan-a-trip-itinerary",
+            "read-trips-in-another-language",
+        ),
+        updated="2026-10-07",
         cta="Escribe lo que te habría gustado que te contaran.",
     ),
     Article(
@@ -987,7 +1001,9 @@ El requisito del correo es lo que mantiene las cuentas desechables fuera de las 
                 kind=KIND_FAQ,
                 body="""Sí: el cuadro de valoración tiene un campo de comentario, y es la parte que otros viajeros leen de verdad. La puntuación dice cómo fue; el comentario dice por qué.
 
-Los comentarios están sujetos a las [normas de la comunidad](/guidelines) como todo lo que se publica.""",
+Los comentarios están sujetos a las [normas de la comunidad](/guidelines) como todo lo que se publica.
+
+Una reseña escrita en otro idioma lleva **Ver traducción** debajo.""",
             ),
             Block(
                 anchor="disagreeing",
@@ -1012,8 +1028,11 @@ Si una valoración incumple las normas en vez de limitarse a no gustarte, [denú
             "aglomeración",
             "masificación",
         ),
-        related=("save-trips-and-find-new-ones", "report-and-block"),
-        updated="2026-09-01",
+        related=(
+            "save-trips-and-find-new-ones", "report-and-block",
+            "read-trips-in-another-language",
+        ),
+        updated="2026-10-07",
         cta="Valora un viaje que hayas hecho de verdad.",
     ),
     Article(
@@ -1064,6 +1083,12 @@ Compártelo por [enlace](/help/share-a-trip-link) con quienes hayan estado allí
 
 Un viaje privado no está en ningún feed ni en ninguna búsqueda, por diseño; el único camino hacia él es una invitación o un enlace de alguien que puede verlo.""",
             ),
+            Block(
+                anchor="translated-titles",
+                heading="¿Por qué el título de un viaje está en mi idioma?",
+                kind=KIND_FAQ,
+                body="""Los títulos de los viajes públicos se traducen de antemano a cada idioma de la aplicación. Un pequeño icono de traducción junto a un título indica que es una traducción, y al tocarlo ves el original: consulta [leer un viaje en otro idioma](/help/read-trips-in-another-language#feed-titles).""",
+            ),
         ),
         keywords=(
             "guardar",
@@ -1079,9 +1104,103 @@ Un viaje privado no está en ningún feed ni en ninguna búsqueda, por diseño; 
             "tendencias",
             "navegar",
         ),
-        related=("rate-a-trip", "share-an-itinerary-privately"),
-        updated="2026-09-01",
+        related=(
+            "rate-a-trip", "share-an-itinerary-privately",
+            "read-trips-in-another-language",
+        ),
+        updated="2026-10-07",
         cta="Encuentra un viaje que merezca la pena copiar.",
+    ),
+    Article(
+        slug="read-trips-in-another-language",
+        title="Cómo leer un viaje escrito en otro idioma",
+        summary="Traduce viajes, notas de paradas y reseñas al idioma de la aplicación con un toque, y vuelve al original cuando quieras.",
+        category="community",
+        schema=SCHEMA_FAQ,
+        intro="Toca **Ver traducción** bajo la descripción de un viaje, en una parada o bajo una reseña, y el texto pasa al idioma de tu aplicación. **Ver original** lo devuelve. Puede que algunos títulos del feed ya estén traducidos para ti; el pequeño icono de traducción a su lado indica qué versión estás leyendo.",
+        blocks=(
+            Block(
+                anchor="see-translation",
+                heading="¿Cómo traduzco algo?",
+                kind=KIND_FAQ,
+                body="""Busca **Ver traducción**:
+
+- en un viaje, bajo su descripción: el título, la descripción, la mejor época para viajar y las notas de todo el viaje se traducen juntos;
+- en una parada, bajo su duración y coste: sus notas y sus notas de color, juntas;
+- bajo cada reseña, en la página Valoraciones.
+
+La traducción sustituye al texto y lleva la marca **Traducido automáticamente**. Toca **Ver original** para volver; cambiar de nuevo es instantáneo, porque la traducción se conserva.""",
+            ),
+            Block(
+                anchor="which-language",
+                heading="¿A qué idioma se traduce?",
+                kind=KIND_FAQ,
+                body="""Siempre al idioma de la aplicación: inglés, francés, árabe, alemán, español o chino. Para leer un viaje en otro, cambia primero el idioma de la aplicación en los [ajustes](/help/app-settings#language).
+
+El original puede estar en casi cualquier idioma.""",
+            ),
+            Block(
+                anchor="what-is-translated",
+                heading="¿Qué se traduce y qué no?",
+                kind=KIND_FAQ,
+                body="""Se traducen: los títulos y descripciones de los viajes, la nota sobre la mejor época para viajar, las notas del viaje y de las paradas, y las reseñas.
+
+No se traducen: los nombres de lugares y las direcciones, que se quedan tal como se escribieron para que sigan coincidiendo con los carteles y el mapa; los nombres de usuario y los nombres visibles; y los datos de transporte.""",
+            ),
+            Block(
+                anchor="feed-titles",
+                heading="¿Por qué algunos títulos del feed ya están en mi idioma?",
+                kind=KIND_FAQ,
+                body="""Los títulos de los viajes públicos se traducen de antemano, para que el feed pueda mostrarlos en tu idioma sin que lo pidas.
+
+Un título escrito en un idioma que indicas en tu perfil que hablas se muestra tal como se escribió, con un pequeño icono de traducción que puedes tocar para ver la traducción. Cualquier otro título se muestra traducido, con el icono resaltado para indicarlo: tócalo para ver el original.""",
+            ),
+            Block(
+                anchor="no-button",
+                heading="¿Por qué no aparece el botón Ver traducción?",
+                kind=KIND_FAQ,
+                body="""Normalmente porque el texto ya está en el idioma de tu aplicación. Cuando Ntripi no ha podido saber en qué idioma está un texto, el botón aparece igualmente, y desaparece si la traducción descubre que ya estaba en tu idioma.
+
+Tampoco hay botón mientras editas un viaje —siempre editas el original—, ni en un viaje abierto desde un enlace compartido en un navegador, ni cuando la traducción no está disponible para el idioma de tu aplicación.""",
+            ),
+            Block(
+                anchor="when-it-fails",
+                heading="¿Y si una traducción no funciona?",
+                kind=KIND_FAQ,
+                body="""El original se queda en pantalla, con una línea que explica por qué:
+
+- **La traducción no está disponible en este momento**: no se pierde nada; inténtalo más tarde.
+- **Has alcanzado el límite de traducciones**: cada cuenta tiene un cupo por hora que la lectura normal rara vez alcanza. Se renueva en menos de una hora.
+- **No se pudo traducir**: casi siempre es la conexión. Compruébala y vuelve a tocar **Ver traducción**.
+
+Las traducciones las hace una máquina. Si alguna suena rara, **Ver original** está a un toque.""",
+            ),
+            Block(
+                anchor="privacy",
+                heading="¿Quién ve el texto que pido traducir?",
+                kind=KIND_FAQ,
+                body="""El texto va a un servicio de traducción —OpenAI, o Azure AI Translator de Microsoft como respaldo— con el idioma al que traducirlo, y nada más: ni nombre, ni cuenta, ni enlace al viaje.
+
+Cada traducción se guarda junto al texto del que procede y se reutiliza para el siguiente lector que pida el mismo idioma. Se elimina cuando el autor edita o borra el original, y el contenido ocultado por la moderación nunca se traduce. La [política de privacidad](/privacy) tiene los detalles.""",
+            ),
+        ),
+        keywords=(
+            "traducir",
+            "traducción",
+            "traductor",
+            "idioma extranjero",
+            "otro idioma",
+            "traducción automática",
+            "multilingüe",
+            "texto original",
+            "versión original",
+        ),
+        related=(
+            "app-settings", "save-trips-and-find-new-ones", "rate-a-trip",
+            "your-data-and-privacy",
+        ),
+        updated="2026-10-07",
+        cta="Lee el viaje, esté en el idioma que esté.",
     ),
     Article(
         slug="notifications",
@@ -1166,7 +1285,9 @@ Borrar un aviso de moderación no borra la decisión: esa se queda en **Ajustes 
                 heading="Idioma",
                 body="""Ntripi está disponible en inglés, francés, árabe, alemán, español y chino. Sigue el idioma de tu dispositivo cuando es uno de los seis, y aquí puedes cambiarlo.
 
-El árabe pasa toda la interfaz a derecha-izquierda. La elección viaja también con los documentos legales y con este centro de ayuda cuando los abres desde la aplicación.""",
+El árabe pasa toda la interfaz a derecha-izquierda. La elección viaja también con los documentos legales y con este centro de ayuda cuando los abres desde la aplicación.
+
+El idioma de la aplicación es también al que traduce **Ver traducción**: consulta [leer un viaje en otro idioma](/help/read-trips-in-another-language).""",
             ),
             Block(
                 anchor="theme",
@@ -1214,8 +1335,10 @@ Cambiar tu contraseña o eliminar tu cuenta está en la pantalla de edición de 
             "háptica",
             "preferencias",
         ),
-        related=("app-map", "notifications", "permissions"),
-        updated="2026-09-01",
+        related=(
+            "app-map", "notifications", "permissions", "read-trips-in-another-language",
+        ),
+        updated="2026-10-07",
         cta="Haz que la aplicación sea tuya.",
     ),
     Article(
@@ -1331,7 +1454,9 @@ Tu fecha de nacimiento nunca es visible para otro usuario, en ningún ajuste. Tu
                 kind=KIND_FAQ,
                 body="""No de forma rutinaria. Los textos y las imágenes se comprueban automáticamente al publicarse, y una persona solo mira algo cuando se denuncia o cuando esas comprobaciones lo marcan.
 
-Las comprobaciones automáticas envían el contenido y nada más: ni identificador de usuario, ni correo, ni nombre.""",
+Las comprobaciones automáticas envían el contenido y nada más: ni identificador de usuario, ni correo, ni nombre.
+
+Cuando alguien pide leer tu viaje en su idioma, su texto va del mismo modo a un servicio de traducción: el texto y el idioma de destino, nada más. [Más sobre las traducciones](/help/read-trips-in-another-language#privacy).""",
             ),
             Block(
                 anchor="deleting",
@@ -1365,8 +1490,11 @@ La misma dirección cubre las solicitudes de rectificación, limitación y oposi
             "publicidad",
             "quién puede ver",
         ),
-        related=("permissions", "sign-in-and-account-security", "share-an-itinerary-privately"),
-        updated="2026-09-01",
+        related=(
+            "permissions", "sign-in-and-account-security",
+            "share-an-itinerary-privately", "read-trips-in-another-language",
+        ),
+        updated="2026-10-07",
     ),
     Article(
         slug="sign-in-and-account-security",
@@ -1824,6 +1952,6 @@ Las denuncias no se le muestran a la persona denunciada.""",
             "historial",
         ),
         related=("getting-started", "contact"),
-        updated="2026-09-01",
+        updated="2026-10-07",
     ),
 )

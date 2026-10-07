@@ -96,6 +96,11 @@ class Itinerary {
   /// write, so a stale true costs a clean 403 rather than a bad save.
   final bool canEdit;
 
+  /// Language the server detected for title + description + period note
+  /// (ISO 639-1), or null when it could not tell. Detail and feed payloads
+  /// carry it; other summaries do not.
+  final String? sourceLang;
+
   const Itinerary({
     required this.id,
     required this.userId,
@@ -118,6 +123,7 @@ class Itinerary {
     this.moderationStatus = ModerationStatus.approved,
     this.recommendedPeriod,
     this.canEdit = false,
+    this.sourceLang,
   });
 
   factory Itinerary.fromJson(Map<String, dynamic> json) {
@@ -158,6 +164,7 @@ class Itinerary {
       // so this stays null there rather than becoming an empty period.
       recommendedPeriod: RecommendedPeriod.fromItineraryJson(json),
       canEdit: json['can_edit'] as bool? ?? false,
+      sourceLang: json['source_lang'] as String?,
     );
   }
 
@@ -239,6 +246,7 @@ class Itinerary {
       'hidden': hidden,
       'moderation_status': moderationStatus.wireValue,
       if (recommendedPeriod != null) ...recommendedPeriod!.toPayload(),
+      if (sourceLang != null) 'source_lang': sourceLang,
     };
   }
 
@@ -270,6 +278,7 @@ class Itinerary {
     // Explicit clear — the `??` fallback below can't null a field, only replace it.
     bool clearRecommendedPeriod = false,
     bool? canEdit,
+    String? sourceLang,
   }) {
     return Itinerary(
       id: id ?? this.id,
@@ -296,6 +305,7 @@ class Itinerary {
           ? null
           : (recommendedPeriod ?? this.recommendedPeriod),
       canEdit: canEdit ?? this.canEdit,
+      sourceLang: sourceLang ?? this.sourceLang,
     );
   }
 

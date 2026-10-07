@@ -11,6 +11,10 @@ class ItineraryAnnotation {
   final DateTime createdAt;
   final DateTime updatedAt;
 
+  /// Language the server detected for this text (ISO 639-1), or null when
+  /// it could not tell — decides whether "See translation" is offered.
+  final String? sourceLang;
+
   const ItineraryAnnotation({
     required this.id,
     required this.itineraryId,
@@ -18,6 +22,7 @@ class ItineraryAnnotation {
     required this.content,
     required this.createdAt,
     required this.updatedAt,
+    this.sourceLang,
   });
 
   factory ItineraryAnnotation.fromJson(Map<String, dynamic> json) {
@@ -28,6 +33,7 @@ class ItineraryAnnotation {
       content: json['content'] as String,
       createdAt: DateTime.parse(json['created_at'] as String),
       updatedAt: DateTime.parse(json['updated_at'] as String),
+      sourceLang: json['source_lang'] as String?,
     );
   }
 
@@ -43,6 +49,7 @@ class ItineraryAnnotation {
       content: content ?? this.content,
       createdAt: createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      sourceLang: sourceLang,
     );
   }
 }

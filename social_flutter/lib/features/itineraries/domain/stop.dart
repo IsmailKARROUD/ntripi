@@ -163,6 +163,10 @@ class Stop {
   final List<Annotation> annotations;
   final DateTime createdAt;
 
+  /// Language the server detected for [notes] — never the place name — or
+  /// null when it could not tell.
+  final String? sourceLang;
+
   const Stop({
     required this.id,
     required this.itineraryId,
@@ -181,6 +185,7 @@ class Stop {
     this.notes,
     this.annotations = const [],
     required this.createdAt,
+    this.sourceLang,
   });
 
 
@@ -207,6 +212,7 @@ class Stop {
               .toList() ??
           [],
       createdAt: DateTime.parse(json['created_at'] as String),
+      sourceLang: json['source_lang'] as String?,
     );
   }
 
@@ -228,6 +234,7 @@ class Stop {
       'is_free': isFree,
       if (notes != null) 'notes': notes,
       'created_at': createdAt.toIso8601String(),
+      if (sourceLang != null) 'source_lang': sourceLang,
     };
   }
 
@@ -249,6 +256,7 @@ class Stop {
     String? notes,
     List<Annotation>? annotations,
     DateTime? createdAt,
+    String? sourceLang,
   }) {
     return Stop(
       id: id ?? this.id,
@@ -268,6 +276,7 @@ class Stop {
       notes: notes ?? this.notes,
       annotations: annotations ?? this.annotations,
       createdAt: createdAt ?? this.createdAt,
+      sourceLang: sourceLang ?? this.sourceLang,
     );
   }
 

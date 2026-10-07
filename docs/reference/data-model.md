@@ -1,7 +1,7 @@
 # Data model — all tables
 
 Every table in the schema, extracted from `social_api/app/models/` via SQLAlchemy
-metadata. **31 tables.** Each row links to the feature doc that owns it.
+metadata. **33 tables.** Each row links to the feature doc that owns it.
 
 Conventions that hold everywhere:
 
@@ -50,6 +50,8 @@ Conventions that hold everywhere:
 | `notifications` | [notifications.md](../features/notifications.md) | in-app feed row (structured reference) |
 | `device_tokens` | [notifications.md](../features/notifications.md) | FCM registration per install |
 | `content_translations` | [translations.md](../features/translations.md) | machine translation of one field, cached per source-text hash |
+| `translation_user_usage` | [translations.md](../features/translations.md) | fields one reader sent to an engine, per clock hour |
+| `translation_provider_usage` | [translations.md](../features/translations.md) | characters sent to each engine, per UTC day |
 | `bug_reports` | [bug-reports.md](../features/bug-reports.md) | in-app bug ticket + screenshot key |
 | `waitlist` | [web-and-platform.md](../features/web-and-platform.md) | pre-launch signup |
 
@@ -336,6 +338,23 @@ trailing column ("itineraries I can edit"), which the allowlist is not.
   with it: by the FK cascade for a trip or an account, by
   `translation_service.purge_orphans` for anything deleted below the itinerary,
   and by `sync_translations` when an edit replaces the text it was made from.
+
+### `translation_user_usage`
+
+`user_id` UUID FK → `users.id` **CASCADE** · `hour_start` TIMESTAMPTZ (the UTC
+clock hour) · `fields` INTEGER NOT NULL. **PK `(user_id, hour_start)`** — its
+leading column doubles as the FK index.
+
+### `translation_provider_usage`
+
+`provider` TEXT · `day` DATE (UTC) · `chars` BIGINT NOT NULL. **PK
+`(provider, day)`**. Names no one.
+
+- **Both are written only by one atomic conditional upsert**
+  (`services/translation_usage.py`): the UPDATE fires only while the new total
+  stays within the limit, so a refused reservation counts nothing and a total
+  can never pass its cap. Read-then-write would lose concurrent increments.
+- The sweep purges reader rows after 2 days and engine rows after 90.
 
 ---
 

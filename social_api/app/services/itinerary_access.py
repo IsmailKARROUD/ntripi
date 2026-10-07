@@ -164,6 +164,32 @@ def can_edit_itinerary(
     return granted is not None
 
 
+def can_view_rating(
+    rating: ItineraryRating,
+    viewer_id: uuid.UUID,
+    db: Session,
+) -> bool:
+    """
+    Returns True if viewer_id may read this review.
+
+    The row-level twin of get_ratings_page's query filters — keep the two in
+    lock-step: the trip must be viewable (the one access ladder runs first), a
+    review under takedown is visible to its own author only, and a review by
+    someone blocked in either direction is invisible.
+    """
+    itinerary = db.get(Itinerary, rating.itinerary_id)
+    if itinerary is None or not can_view_itinerary(itinerary, viewer_id, db):
+        return False
+    if rating.user_id == viewer_id:
+        return True
+    if rating.moderation_status in HIDDEN_STATUSES:
+        return False
+
+    from app.services.block_service import is_blocked_either_way
+
+    return not is_blocked_either_way(db, viewer_id, rating.user_id)
+
+
 def recalculate_rating(itinerary: Itinerary, db: Session) -> None:
     """
     Recomputes rating_avg and rating_count from the itinerary_ratings table

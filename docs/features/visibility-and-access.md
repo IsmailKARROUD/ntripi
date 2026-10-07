@@ -118,6 +118,7 @@ cannot use the PK index. Full columns in
 - [feed-and-search.md](feed-and-search.md) — the main `public_listing_criteria` consumer
 - [sharing.md](sharing.md) — public pages resolve access without a viewer
 - [admin-and-appeals.md](admin-and-appeals.md) — sets `hidden_at` / `deleted_at`
+- [translations.md](translations.md) — translation follows this ladder, adds `can_view_rating`, and refuses takedowns even for their author
 - [reference/data-model.md](../reference/data-model.md)
 
 ## OPEN QUESTIONS

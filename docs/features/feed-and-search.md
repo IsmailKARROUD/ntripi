@@ -28,6 +28,14 @@ our database.
   |---|---|
   | `recent` (default) | `created_at DESC, id DESC` |
   | `top` | `rating_avg DESC, rating_count DESC, created_at DESC, id DESC`, **and** `rating_count >= FEED_TOP_MIN_RATINGS` |
+- **`?lang=xx` adds each card's cached title translation.** Every item carries
+  the trip's `source_lang`, and — when translation is on, `lang` is a supported
+  target and the cache holds a translation of the **current** title —
+  `title_translation: {lang, text}`. One extra query per page
+  (`translation_service.title_translations_for`). A query parameter, not
+  `Accept-Language`, so the URL stays the client cache's whole key. Public
+  titles are translated ahead of time, so a card rarely waits on anyone
+  ([translations.md](translations.md#titles-translated-ahead-of-the-reader)).
 - **`id DESC` is the final tie-breaker on both**, so pagination is stable when
   timestamps or averages collide.
 - **The `top` threshold stops a single 5-star trip dominating.** It is an env var
@@ -83,7 +91,7 @@ Being migration-only, **neither is exercised by the test suite** — see
 
 | Method | Path | Auth | Query | Response |
 |---|---|---|---|---|
-| GET | `/itineraries/feed` | user, 30/min | `sort=top\|recent` (default `recent`), `limit` 1–50 (default 20), `offset` ≥0 | `list[ItineraryFeedItem]` |
+| GET | `/itineraries/feed` | user, 30/min | `sort=top\|recent` (default `recent`), `limit` 1–50 (default 20), `offset` ≥0, `lang` optional (`^[a-z]{2}$`) | `list[ItineraryFeedItem]` — `…, owner, source_lang, title_translation` |
 | GET | `/users/search` | user, 30/min | `q` (min 1 char), `limit` 1–100 (default 20), `offset` ≥0 | `list[UserSearchResult]` |
 
 `ItineraryFeedItem` = `ItinerarySummary` + `owner: RaterInfo`.
@@ -100,8 +108,15 @@ page.
     under it by a sort change, and never throws — it runs from the scroll
     listener.
   - `feedSortProvider` — `NotifierProvider`, the Top/Recent toggle.
+  - `feedProvider` also watches the app language and sends it as `lang` on
+    every page and refresh, so a language change refetches page 0 under its own
+    cache key.
   - `feedRepositoryProvider` → `FeedRepository`.
-  - `FeedCard` + `OwnerAttributionRow` render each row.
+  - `FeedCard` + `OwnerAttributionRow` render each row. A card with a
+    `title_translation` in the app language renders `FeedTitle`: the title as
+    written when its language is among the reader's profile `languages`, else
+    the translation with a lit marker — either way one tap, with no request,
+    flips it ([translations.md](translations.md#flutter-surface)).
 - **`SearchScreen`** — route `/search`, shell branch 1, with nested
   `/search/profile/:userId` and its `followers` / `following` children.
   - `searchQueryProvider` — `NotifierProvider`, the query string.
@@ -132,4 +147,5 @@ page.
 - [accounts-and-profiles.md](accounts-and-profiles.md) — `public_profile_text`, profile reads
 - [saved-itineraries.md](saved-itineraries.md) · [sharing.md](sharing.md)
 - [etag-concurrency.md](etag-concurrency.md) — 304 on both
+- [translations.md](translations.md) — the title translation on each card
 - [reference/data-model.md](../reference/data-model.md)

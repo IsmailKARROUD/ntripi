@@ -1066,5 +1066,14 @@
   "editLockReclaimed": "Du bearbeitest wieder",
   "editLockCopyText": "Meinen Text kopieren",
   "editLockCopied": "Kopiert",
-  "editLockOwnerCanReclaim": "Diese Reise gehört dir – du kannst jederzeit übernehmen."
+  "editLockOwnerCanReclaim": "Diese Reise gehört dir – du kannst jederzeit übernehmen.",
+  "translationSeeTranslation": "Übersetzung anzeigen",
+  "translationSeeOriginal": "Original anzeigen",
+  "translationAutoTranslated": "Automatisch übersetzt",
+  "translationTranslating": "Wird übersetzt…",
+  "translationUnavailable": "Die Übersetzung ist gerade nicht verfügbar.",
+  "translationRateLimited": "Du hast das Übersetzungslimit erreicht. Bitte versuche es später erneut.",
+  "translationFailed": "Übersetzung fehlgeschlagen. Prüfe deine Verbindung und versuche es erneut.",
+  "translationTranslatedMarker": "Übersetzter Titel",
+  "apiErrorTranslationLanguageUnsupported": "Übersetzungen in diese Sprache sind nicht verfügbar."
 }

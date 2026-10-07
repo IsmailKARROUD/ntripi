@@ -91,11 +91,27 @@ const kMyItinerariesEndpoint = '/itineraries/me';
 const kItinerariesEndpoint = '/itineraries/';
 
 /// Public discovery feed. [sort] is 'recent' or 'top'.
-String feedEndpoint({required String sort, int limit = 20, int offset = 0}) =>
-    '/itineraries/feed?sort=$sort&limit=$limit&offset=$offset';
+///
+/// [lang] asks for each card's cached title translation into that language. It
+/// rides in the query, not in Accept-Language, because the HTTP cache is keyed
+/// by URL: a language change must be a different cache entry.
+String feedEndpoint({
+  required String sort,
+  int limit = 20,
+  int offset = 0,
+  String? lang,
+}) =>
+    '/itineraries/feed?sort=$sort&limit=$limit&offset=$offset'
+    '${lang == null ? '' : '&lang=$lang'}';
 
 /// List the authenticated user's saved (bookmarked) itineraries, newest first.
 const kSavedItinerariesEndpoint = '/itineraries/saved';
+
+/// Whether the server translates content, and into which languages.
+const kTranslationsConfigEndpoint = '/translations/config';
+
+/// Translate named content (never text) into the reader's language.
+const kTranslationsEndpoint = '/translations';
 
 /// List itineraries the authenticated user may edit but does not own. Returns
 /// feed-shaped rows (summary + owner attribution), newest first.

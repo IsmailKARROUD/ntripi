@@ -59,6 +59,8 @@ String? localizedApiError(String code, AppLocalizations l10n) {
       'editor_exists' => l10n.apiErrorEditorExists,
       'editor_not_found' => l10n.apiErrorEditorNotFound,
       'editor_is_owner' => l10n.apiErrorEditorIsOwner,
+      'translation_language_unsupported' =>
+        l10n.apiErrorTranslationLanguageUnsupported,
       _ => null,
     };
 }

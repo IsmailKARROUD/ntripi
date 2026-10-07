@@ -1002,3 +1002,90 @@ interface makes DeepL one class and a config value whenever it is wanted.
 Translating everything automatically on write — most of it would never be read
 in most languages. Trusting the model's output unchecked — it is served to
 every later reader from the cache.
+
+---
+
+### 2026-10-07 — Translation cost is capped in Postgres; public titles are translated ahead of time
+
+**Context.** Every translation that misses the cache is a paid call, and a
+reader or a script could ask for thousands. The feed shows many titles at once,
+and translating each card on demand would cost a request per card.
+**Decision.** Two caps, both counted by one atomic conditional upsert
+(`INSERT … ON CONFLICT DO UPDATE … WHERE total + n <= limit RETURNING`): fields
+per reader per clock hour, counting only cache misses, and characters per
+engine per UTC day. A refused reservation counts nothing; an engine past its
+budget, or reporting its own quota spent, is skipped until midnight UTC; with
+every engine spent the reader keeps the original. Public trip titles are
+translated into `TRANSLATION_PRETRANSLATE_LANGS` by a FastAPI background task
+when the title first becomes readable to strangers — a public trip created, a
+trip published, a public title changed — and the feed carries the cached
+translation for `?lang=`.
+**Consequences.** Spend is bounded per reader and per day without Redis, and the
+counters survive restarts and would hold across instances. Drafts default to
+`only_me`, so editing one never spends a translation. A background task is lost
+if the process restarts mid-flight; the reader's tap is the fallback. The feed
+does one extra query per page.
+**Alternatives rejected.** Counting in slowapi's in-memory store (lost on every
+deploy, wrong across instances, and it cannot tell a cache hit from a miss).
+Check-then-increment in Python (two concurrent requests both pass a cap they
+jointly exceed). Pre-translating on every save (collaborative editing saves
+often, and most of those trips are private drafts). Pre-translating every
+field (most descriptions are never read in most languages). `Accept-Language`
+for the feed (the client caches by URL, so a language change would serve the
+previous language's titles).
+
+---
+
+### 2026-10-07 — One "See translation" per content group; the feed decides by spoken languages
+
+**Context.** A trip header is up to four translatable fields plus any number of
+one-line note chips with no room for a link of their own; a toggle per field
+would litter the screen and spend a request per tap. The feed shows many titles
+at once. And a reader's app language is not the only language they read.
+**Decision.** One toggle per content group — a trip's header with its trip-wide
+notes, a stop with its notes and annotations, one review — backed by a
+keep-alive `contentTranslationProvider` family keyed by the group's anchor and
+the target language. The target is always the app language. The client keeps
+only final answers (translated, same language, empty), each with the text it was
+made from: an edited text falls back to its original, and a transient failure —
+unavailable, rate limited, a failed request — is asked again on the next tap. A
+404 or 400 from the POST re-reads the config, which removes the button. Feed
+titles never cost a request: a title in one of the reader's profile `languages`
+shows as written with a toggle; any other shows translated with a lit marker.
+**Consequences.** One tap is one request for a whole section of a page, and a
+failure never sticks. Unsetting `TRANSLATION_PROVIDERS` takes every button away
+within one request. Both providers are reset on sign-in and sign-out, so one
+account's translations never reach the next. A feed card's flip lives in the
+card and resets when the card is rebuilt.
+**Alternatives rejected.** A toggle per field (a request per field, and chips
+have no room). Translating everything into the app language automatically (it
+pays for text nobody asked to read in translation, and replaces the author's
+words by default). A separate translation-language setting (a second language
+control before anyone asked for one — backlog). Keeping failures in the client
+state (a dropped connection would hide the button until sign-out).
+
+---
+
+### 2026-10-07 — Privacy 2.3 discloses translation in §4 and §5; the ToS stays at 3.1
+
+**Context.** Translation sends user text to OpenAI and, as fallback, Microsoft.
+Privacy §5 is the list of every processor and §4 already describes what the
+moderation calls carry. ToS §12 names categories of third-party services and
+defers to the Privacy Policy for the list. Only `TOS_VERSION` is recorded per
+user, so a ToS change sends everyone through the re-acceptance gate.
+**Decision.** Privacy 2.3, in all six languages: §4 becomes "Automated content
+moderation and translation" and says what a translation request carries, what
+each engine keeps (OpenAI: not used for training, kept up to 30 days for abuse
+monitoring; Microsoft: no-trace), that translations pass the same moderation
+check, and that taken-down content is never sent; §5 adds Microsoft (Azure AI
+Translator) and widens OpenAI to moderation and translation; §10 says when a
+translation is deleted. The ToS is untouched.
+**Consequences.** Section numbers stay put — §5 and §11 are cited by number
+inside the bodies. ToS §12's category list now misses translation, as it
+already missed push notifications, until a ToS change that needs a version bump
+anyway. `test_privacy_names_every_translation_engine` fails any language that
+drops Microsoft.
+**Alternatives rejected.** A new "Translation" section with every later
+section renumbered (six languages of cross-references to keep in step). Bumping
+`TOS_VERSION` to add one word to §12 (every user re-accepts a document whose
+list defers to the Privacy Policy anyway).

@@ -25,6 +25,8 @@ import 'package:social_flutter/shared/widgets/loaders.dart';
 import 'package:social_flutter/shared/widgets/moderation_hidden_banner.dart';
 import 'package:social_flutter/shared/widgets/user_avatar.dart';
 import 'package:social_flutter/core/utils/platform_utils.dart';
+import 'package:social_flutter/features/translation/presentation/translatable_text.dart';
+import 'package:social_flutter/features/translation/providers/translation_providers.dart';
 import 'package:social_flutter/l10n/app_localizations.dart';
 
 // Keep the old name exported so the router import doesn't break.
@@ -755,7 +757,12 @@ class RatingListTile extends ConsumerWidget {
                 Padding(
                   padding: const EdgeInsetsDirectional.only(
                       start: 72, end: 16, bottom: 4),
-                  child: _ReviewNote(note: rating.note!),
+                  child: _ReviewNote(
+                    note: rating.note!,
+                    ratingId: rating.id,
+                    sourceLang: rating.sourceLang,
+                    translatable: !showHiddenBanner,
+                  ),
                 ),
               if (showHiddenBanner)
                 ModerationHiddenBanner(
@@ -781,10 +788,25 @@ class RatingListTile extends ConsumerWidget {
 
 /// One-line preview of a rater's note that expands to full markdown on tap —
 /// mirrors the expandable-notes pattern in stop_card.dart (`_ReadNotesSection`).
+/// Each review is its own translation group, with its toggle underneath.
 class _ReviewNote extends StatefulWidget {
   final String note;
 
-  const _ReviewNote({required this.note});
+  /// Null only for a response cached before reviews carried ids: there is
+  /// nothing to name in a translation request, so no toggle.
+  final String? ratingId;
+  final String? sourceLang;
+
+  /// False for the author's own hidden review — content under a takedown is
+  /// never sent for translation, not even for its author.
+  final bool translatable;
+
+  const _ReviewNote({
+    required this.note,
+    this.ratingId,
+    this.sourceLang,
+    this.translatable = true,
+  });
 
   @override
   State<_ReviewNote> createState() => _ReviewNoteState();
@@ -795,6 +817,39 @@ class _ReviewNoteState extends State<_ReviewNote> {
 
   @override
   Widget build(BuildContext context) {
+    final id = widget.ratingId;
+    if (id == null || !widget.translatable) return _note(context, widget.note);
+    final TranslationAnchor anchor = (contentType: 'rating', contentId: id);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        TranslatableText(
+          anchor: anchor,
+          contentType: 'rating',
+          contentId: id,
+          field: 'note',
+          original: widget.note,
+          builder: _note,
+        ),
+        TranslationToggle(
+          anchor: anchor,
+          members: [
+            TranslationMember(
+              contentType: 'rating',
+              contentId: id,
+              sourceLang: widget.sourceLang,
+              fields: {'note': widget.note},
+            ),
+          ],
+          padding: const EdgeInsets.only(top: 4),
+        ),
+      ],
+    );
+  }
+
+  /// The note as shown — its original, or the translation.
+  Widget _note(BuildContext context, String note) {
     final nt = context.nt;
     final l10n = AppLocalizations.of(context)!;
     final style = TextStyle(fontSize: 13, height: 1.4, color: nt.text2);
@@ -807,7 +862,7 @@ class _ReviewNoteState extends State<_ReviewNote> {
     return LayoutBuilder(
       builder: (context, constraints) {
         final tp = TextPainter(
-          text: TextSpan(text: widget.note, style: style),
+          text: TextSpan(text: note, style: style),
           maxLines: 1,
           // must match the rendered Text's direction or the overflow check lies for Arabic notes
           textDirection: Directionality.of(context),
@@ -819,7 +874,7 @@ class _ReviewNoteState extends State<_ReviewNote> {
           mainAxisSize: MainAxisSize.min,
           children: [
             if (_expanded)
-              InertMarkdownBody(data: widget.note)
+              InertMarkdownBody(data: note)
             else
               GestureDetector(
                 // tapping the one-line preview reveals the rest — no-op when it already fits
@@ -827,7 +882,7 @@ class _ReviewNoteState extends State<_ReviewNote> {
                     overflows ? () => setState(() => _expanded = true) : null,
                 behavior: HitTestBehavior.opaque,
                 child: Text(
-                  widget.note,
+                  note,
                   style: style,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,

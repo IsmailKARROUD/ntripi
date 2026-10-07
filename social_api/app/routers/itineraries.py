@@ -31,7 +31,9 @@ from decimal import Decimal
 from datetime import datetime, timezone
 from typing import Literal
 
-from fastapi import APIRouter, Depends, File, HTTPException, Query, Request, UploadFile, status
+from fastapi import (
+    APIRouter, BackgroundTasks, Depends, File, HTTPException, Query, Request, UploadFile, status,
+)
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse, Response
 from sqlalchemy import func, select
@@ -87,13 +89,14 @@ from app.schemas.itinerary import (
     StopCreate,
     StopResponse,
     StopUpdate,
+    TitleTranslation,
     TransitSegmentCreate,
     TransitSegmentResponse,
     TransportLegCreate,
     TransportLegResponse,
     TransportLegUpdate,
 )
-from app.services import edit_lock_service, notification_service
+from app.services import edit_lock_service, notification_service, translation_service
 from app.services.block_service import blocked_user_ids, require_not_blocked_or_404
 from app.services.image_service import ImageProcessingError, process_and_store, process_cover_image
 from app.services.moderation_service import ModerationContext, ModerationRejectedError
@@ -615,6 +618,7 @@ def _get_leg_or_404(leg_id, segment_id, db):
              summary="Create a new itinerary")
 def create_itinerary(
     body: ItineraryCreate,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
     current_user: User = Depends(require_verified_email),  # high-value: verified email required
 ) -> ItinerarySummary:
@@ -657,7 +661,25 @@ def create_itinerary(
     )
     db.commit()
     db.refresh(itinerary)
+    _schedule_title_pretranslation(background_tasks, itinerary, was_public=False, old_title=None)
     return itinerary  # type: ignore[return-value]
+
+
+def _schedule_title_pretranslation(background_tasks: BackgroundTasks, itinerary: Itinerary,
+                                   *, was_public: bool, old_title: str | None) -> None:
+    # Only a title strangers can read, and only when it is new to them: a trip
+    # just published or a public title just changed. Drafts are only_me, so
+    # saving one never spends a translation.
+    settings = get_settings()
+    if not settings.translation_enabled or not settings.translation_pretranslate_langs:
+        return
+    if itinerary.visibility != "public":
+        return
+    if was_public and itinerary.title == old_title:
+        return
+    background_tasks.add_task(
+        translation_service.pretranslate_title, itinerary.id, settings,
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -686,7 +708,8 @@ def list_my_itineraries(
 # ---------------------------------------------------------------------------
 
 def _to_feed_item(itinerary: Itinerary, owner: User,
-                  viewer_id: uuid.UUID | None = None) -> ItineraryFeedItem:
+                  viewer_id: uuid.UUID | None = None,
+                  title_translation: TitleTranslation | None = None) -> ItineraryFeedItem:
     # Reuse ItinerarySummary's field mapping for the base, then graft on the
     # owner (same RaterInfo shape the ratings endpoint builds).
     return ItineraryFeedItem(
@@ -699,6 +722,8 @@ def _to_feed_item(itinerary: Itinerary, owner: User,
             display_name=public_profile_text(owner, viewer_id)[0],
             avatar_url=owner.avatar_url,
         ),
+        source_lang=itinerary.source_lang,
+        title_translation=title_translation,
     )
 
 
@@ -710,6 +735,9 @@ def list_feed(
     sort: Literal["top", "recent"] = Query("recent"),
     limit: int = Query(20, ge=1, le=50),
     offset: int = Query(0, ge=0),
+    # The reader's language, for cached title translations. A query parameter,
+    # not Accept-Language: the URL is the client cache's whole key.
+    lang: str | None = Query(None, pattern=r"^[a-z]{2}$"),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
     settings: Settings = Depends(get_settings),
@@ -745,8 +773,19 @@ def list_feed(
         )
 
     rows = db.execute(query.limit(limit).offset(offset)).all()
+    titles = (
+        translation_service.title_translations_for(db, [it for it, _ in rows], lang)
+        if lang and settings.translation_enabled
+        and lang in settings.translation_supported_langs
+        else {}
+    )
     return [
-        _to_feed_item(itinerary, owner, current_user.id) for itinerary, owner in rows
+        _to_feed_item(
+            itinerary, owner, current_user.id,
+            TitleTranslation(lang=lang, text=titles[itinerary.id])
+            if itinerary.id in titles else None,
+        )
+        for itinerary, owner in rows
     ]
 
 
@@ -855,6 +894,7 @@ def get_itinerary(
 def update_itinerary(
     itinerary_id: uuid.UUID,
     body: ItineraryUpdate,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
     itinerary: Itinerary = Depends(require_edit_access),
@@ -878,6 +918,8 @@ def update_itinerary(
         },
         itinerary, db, current_user,
     )
+    was_public = itinerary.visibility == "public"
+    old_title = itinerary.title
     # model_dump already flattened the nested period windows to plain dicts, so
     # every ItineraryUpdate field whose name matches a column lands as-is here.
     for field, value in update_data.items():
@@ -886,6 +928,9 @@ def update_itinerary(
 
     db.commit()
     db.refresh(itinerary)
+    _schedule_title_pretranslation(
+        background_tasks, itinerary, was_public=was_public, old_title=old_title,
+    )
     return itinerary  # type: ignore[return-value]
 
 
@@ -2016,6 +2061,8 @@ def get_ratings_page(
 
     # A review carries its author's name, avatar and prose — the last surface
     # where a blocked account was still fully visible on a third party's page.
+    # itinerary_access.can_view_rating is this page's row-level twin: keep the
+    # two in lock-step.
     hidden_raters = set(blocked_user_ids(db, current_user.id))
 
     ratings = [
