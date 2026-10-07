@@ -902,3 +902,31 @@ screen, explains nothing, drifts). Flipping flags per screen (cannot serve a
 screen pushed on two navigators). A global focus listener calling
 `Scrollable.ensureVisible` (races EditableText's own reveal — the last request
 wins). A keyboard package (a new dependency, and the shell would still leak).
+
+---
+
+### 2026-10-07 — Production runs Python 3.14, the development interpreter
+
+**Context.** The runtime image was `python:3.11-slim` while the development venv
+ran 3.14, so the suite never ran on the interpreter that shipped. Translating
+user content needs source-language detection with `lingua-language-detector`:
+its current release (2.2.0) requires Python ≥3.12, and the last release that
+supports 3.11 (2.1.1) has no 3.14 wheel — no single version served both. A 3.14
+image could not install `alt-profanity-check==1.6.1` either: it pins
+scikit-learn 1.6.1, which has no cp314 wheel, which is also why the moderation
+fallback had never been installed in the dev venv at all.
+**Decision.** The runtime stage moves to `python:3.14-slim`, and
+`alt-profanity-check` to 1.9.1 (it pins scikit-learn 1.9.1, which ships cp314
+wheels).
+**Consequences.** Every requirement and every transitive dependency resolves to a
+prebuilt manylinux x86_64 wheel for cp314 — nothing compiles at build time. The
+local moderation classifier now actually runs in development; before, every
+fallback attempt there raised and fell through to `pending`. The suite passes
+both on the dev venv and on a venv holding exactly what the image resolves
+(1898 passed, 4 skipped). Transitive dependencies are still unpinned — see
+[backlog.md](backlog.md#idea--transitive-dependencies-resolve-fresh-on-every-build).
+**Alternatives rejected.** Staying on 3.11 with another detector (py3langid,
+fast-langdetect — weaker than lingua's high-accuracy mode on short titles).
+Pinning lingua 2.1.1 (no 3.14 wheel, so the dev venv could not install it).
+`python:3.13-slim` (works, but keeps development and production on different
+interpreters, the gap that hid this in the first place).

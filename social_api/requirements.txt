@@ -26,4 +26,6 @@ markdown-it-py==3.0.0
 # Offline fallback classifier for text moderation — used when the primary
 # provider is unreachable, so a vendor outage never leaves text unscanned.
 # Pulls in scikit-learn; that weight is the price of a no-network fallback.
-alt-profanity-check==1.6.1
+# Each release pins one scikit-learn version: 1.6.1 pinned a scikit-learn with
+# no Python 3.14 wheel, so it could not install on the runtime image.
+alt-profanity-check==1.9.1

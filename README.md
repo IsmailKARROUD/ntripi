@@ -73,7 +73,7 @@ Ntripi/
 
 | Tool        | Version | Notes                     |
 |-------------|---------|---------------------------|
-| Python      | 3.11+   |                           |
+| Python      | 3.14    | what production runs      |
 | PostgreSQL  | 14+     |                           |
 | Flutter SDK | 3.3+    |                           |
 | Docker      | any     | optional, for prod builds |

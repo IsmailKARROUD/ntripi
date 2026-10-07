@@ -200,8 +200,9 @@ HTTPS is enforced at the TLD level — `.app` is on the HSTS preload list.
   must keep `USER appuser`.
 - `CMD` runs `alembic upgrade head` before uvicorn, so **migrations run at
   deploy**.
-- `HEALTHCHECK` uses Python's stdlib, because `curl` is not guaranteed in
-  `python:3.11-slim`.
+- The runtime stage is `python:3.14-slim`, the same interpreter as the
+  development venv (see [decisions.md](../decisions.md)). `HEALTHCHECK` uses
+  Python's stdlib, because `curl` is not guaranteed in a slim image.
 - **The filesystem backend needs a persistent volume at `/app/uploads`** or
   images vanish on redeploy.
 - **`docs/` is in `.dockerignore`**, so this folder never enters the image.

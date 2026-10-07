@@ -435,7 +435,7 @@ User B switches private → public:
 ## Local Setup
 
 ### Prerequisites
-- Python 3.11+
+- Python 3.14 (what production runs)
 - PostgreSQL running locally
 
 ### Steps

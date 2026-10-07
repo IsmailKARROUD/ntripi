@@ -15,7 +15,9 @@ RUN flutter build web \
     --dart-define=GOOGLE_MAPS_EMBED_API_KEY=AIzaSyD8gF4G_w7voK0YPHA_Y234sgXInsrU__8
 
 # ─────────── Stage 2: Python runtime ───────────
-FROM python:3.11-slim
+# 3.14 matches the dev venv; lingua-language-detector (source-language
+# detection) needs >= 3.12, so the old 3.11 image could not run it.
+FROM python:3.14-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
@@ -45,7 +47,7 @@ USER appuser
 ENV PORT=8000
 EXPOSE 8000
 
-# Use Python's stdlib for the health probe — curl is not guaranteed in python:3.11-slim
+# Use Python's stdlib for the health probe — curl is not guaranteed in python:*-slim
 HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
     CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:${PORT:-8000}/health')"
 

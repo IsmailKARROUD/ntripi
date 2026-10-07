@@ -318,6 +318,18 @@ will refuse to boot. Full list in
 Every other public POST does. Its body schema is also the only one defined inline
 in a router rather than in `schemas/`.
 
+### idea — transitive dependencies resolve fresh on every build
+
+`requirements.txt` pins only top-level packages and the Dockerfile runs a plain
+`pip install -r`, so every Railway build installs the newest versions the
+dependencies allow. FastAPI 0.135.1 asks only for `starlette>=0.46.0`: on
+2026-10-07 the image resolved **Starlette 1.7.0** while the dev venv tested
+0.52.1, and 27 other transitive packages differed (cryptography 46 → 50,
+websockets 16 → 17, …). The suite happened to pass against that resolution
+(1898 passed), but nothing keeps the next build's set equal to the tested one. A
+constraints file generated from the tested venv and installed with `-c` would
+make the image reproducible. → [web-and-platform.md](features/web-and-platform.md)
+
 ### idea — Redis-backed rate limiting, gated on horizontal scaling
 
 The in-memory store is documented as single-instance-only in **four** places
