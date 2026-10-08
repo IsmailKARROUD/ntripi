@@ -17,6 +17,8 @@
 //                       section to jump straight to its editor (LongPressToEdit)
 //   _editMode = true  → interleaved list with inline edit/delete buttons and
 //                       inline separators between stops
+//   Edit mode is this device holding the edit claim, wherever it was taken —
+//   editing from a stop's page claims the trip, and this screen follows.
 //
 // Mutations are immediate — every stop/segment/annotation change PATCHes on
 // save from its own form or sheet. Reordering is not deferred either: it runs
@@ -623,6 +625,15 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
     // see it, the cover, the editor list.
     final mayEdit = isOwner || (itineraryAsync.value?.canEdit ?? false);
     final lockSession = ref.watch(editLockProvider(widget.itineraryId));
+    // A claim taken elsewhere — the stop page, while this screen was covered —
+    // is this screen's edit mode too, or the user comes back to read mode over
+    // a live heartbeat. Only the acquire edge: a lost claim keeps edit mode so
+    // the banner can offer it back, and exiting already clears it.
+    ref.listen(editLockProvider(widget.itineraryId), (previous, next) {
+      if (next.holdsClaim && !(previous?.holdsClaim ?? false) && !_editMode) {
+        setState(() => _editMode = true);
+      }
+    });
 
     final ownerUserId = itineraryAsync.value?.userId ?? '';
 

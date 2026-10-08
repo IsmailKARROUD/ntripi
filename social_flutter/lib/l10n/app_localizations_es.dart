@@ -27,6 +27,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get dismiss => 'Descartar';
 
   @override
+  String get ok => 'Aceptar';
+
+  @override
   String get seeAll => 'Ver todo';
 
   @override

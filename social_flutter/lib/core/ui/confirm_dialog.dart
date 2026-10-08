@@ -11,7 +11,9 @@ enum ConfirmTone { defaultTone, danger }
 /// cancel mean; this widget holds no state and only reports the choice.
 ///
 /// Use [ConfirmDialog.show] to display it — it returns `true` when confirmed,
-/// and `false` when cancelled or dismissed (scrim tap / back).
+/// and `false` when cancelled or dismissed (scrim tap / back). For something
+/// the user has to read but cannot act on, [ConfirmDialog.inform] shows the same
+/// modal with a single button.
 class ConfirmDialog extends StatelessWidget {
   const ConfirmDialog({
     super.key,
@@ -21,6 +23,7 @@ class ConfirmDialog extends StatelessWidget {
     this.confirmLabel,
     this.cancelLabel,
     this.tone = ConfirmTone.defaultTone,
+    this.informOnly = false,
   });
 
   final String title;
@@ -32,6 +35,9 @@ class ConfirmDialog extends StatelessWidget {
   final String? cancelLabel;
   final ConfirmTone tone;
 
+  /// No confirm button: [cancelLabel] (default "OK") is the only way out.
+  final bool informOnly;
+
   static Future<bool> show(
     BuildContext context, {
     required String title,
@@ -41,16 +47,9 @@ class ConfirmDialog extends StatelessWidget {
     String? cancelLabel,
     ConfirmTone tone = ConfirmTone.defaultTone,
   }) async {
-    // showGeneralDialog (not showDialog) so we control the scrim tint and the
-    // fade + scale + translate entrance the design calls for.
-    final result = await showGeneralDialog<bool>(
-      context: context,
-      barrierDismissible: true,
-      barrierLabel:
-          MaterialLocalizations.of(context).modalBarrierDismissLabel,
-      barrierColor: context.nt.scrim,
-      transitionDuration: const Duration(milliseconds: 220),
-      pageBuilder: (_, __, ___) => ConfirmDialog(
+    final result = await _present(
+      context,
+      ConfirmDialog(
         title: title,
         message: message,
         icon: icon,
@@ -58,6 +57,41 @@ class ConfirmDialog extends StatelessWidget {
         cancelLabel: cancelLabel,
         tone: tone,
       ),
+    );
+    return result ?? false; // scrim tap / back dismiss → cancelled
+  }
+
+  /// The same modal with one calm button and nothing to confirm. Completes
+  /// when it is closed, however that happens.
+  static Future<void> inform(
+    BuildContext context, {
+    required String title,
+    String? message,
+    IconData icon = Icons.info_outline_rounded,
+    String? dismissLabel,
+  }) =>
+      _present(
+        context,
+        ConfirmDialog(
+          title: title,
+          message: message,
+          icon: icon,
+          cancelLabel: dismissLabel,
+          informOnly: true,
+        ),
+      );
+
+  static Future<bool?> _present(BuildContext context, ConfirmDialog dialog) {
+    // showGeneralDialog (not showDialog) so we control the scrim tint and the
+    // fade + scale + translate entrance the design calls for.
+    return showGeneralDialog<bool>(
+      context: context,
+      barrierDismissible: true,
+      barrierLabel:
+          MaterialLocalizations.of(context).modalBarrierDismissLabel,
+      barrierColor: context.nt.scrim,
+      transitionDuration: const Duration(milliseconds: 220),
+      pageBuilder: (_, __, ___) => dialog,
       transitionBuilder: (_, animation, __, child) {
         final curved = CurvedAnimation(parent: animation, curve: Curves.easeOut);
         return FadeTransition(
@@ -73,7 +107,6 @@ class ConfirmDialog extends StatelessWidget {
         );
       },
     );
-    return result ?? false; // scrim tap / back dismiss → cancelled
   }
 
   @override
@@ -141,7 +174,8 @@ class ConfirmDialog extends StatelessWidget {
                 children: [
                   Expanded(
                     child: _ConfirmButton(
-                      label: cancelLabel ?? l10n.cancel,
+                      label: cancelLabel ??
+                          (informOnly ? l10n.ok : l10n.cancel),
                       // calm/safe action: sand fill, bordered, dark text
                       background: nt.sand,
                       foreground: nt.bark,
@@ -150,21 +184,23 @@ class ConfirmDialog extends StatelessWidget {
                       onTap: () => Navigator.of(context).pop(false),
                     ),
                   ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: _ConfirmButton(
-                      label: confirmLabel ?? l10n.confirmButton,
-                      // committing action: tone-accent fill; on-colors keep
-                      // contrast when dark mode lightens the accents
-                      background: accent,
-                      foreground: isDanger
-                          ? Theme.of(context).colorScheme.onError
-                          : Theme.of(context).colorScheme.onPrimary,
-                      fontWeight: FontWeight.w700,
-                      shadowColor: accent.withValues(alpha: 0.30),
-                      onTap: () => Navigator.of(context).pop(true),
+                  if (!informOnly) ...[
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: _ConfirmButton(
+                        label: confirmLabel ?? l10n.confirmButton,
+                        // committing action: tone-accent fill; on-colors keep
+                        // contrast when dark mode lightens the accents
+                        background: accent,
+                        foreground: isDanger
+                            ? Theme.of(context).colorScheme.onError
+                            : Theme.of(context).colorScheme.onPrimary,
+                        fontWeight: FontWeight.w700,
+                        shadowColor: accent.withValues(alpha: 0.30),
+                        onTap: () => Navigator.of(context).pop(true),
+                      ),
                     ),
-                  ),
+                  ],
                 ],
               ),
             ],

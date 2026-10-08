@@ -88,6 +88,7 @@ RELEASES: tuple[Release, ...] = (
         entries=(
             "**Voir la traduction**, sous un voyage, une étape ou un avis, le traduit dans la langue de votre application ; **Voir l’original** le rétablit.",
             "**Les titres du fil dans votre langue.** Les titres des voyages publics arrivent déjà traduits — sauf s’ils sont dans une langue que vous parlez.",
+            "**Reprendre la main depuis une étape.** Toucher le crayon d’une étape que quelqu’un d’autre modifie indique désormais qui, et propose de reprendre la main ; modifier une étape depuis sa page lance aussi la modification de tout le voyage.",
         ),
     ),
     Release(
@@ -740,7 +741,9 @@ L’alternative, c’est deux personnes qui écrivent dans la même étape et l�
                 kind=KIND_STEP,
                 body="""Si le voyage est resté inactif un moment, toute personne pouvant le modifier peut le reprendre. En tant que propriétaire, vous pouvez toujours le reprendre — y compris depuis votre propre autre appareil, ce qui est la raison habituelle d’un blocage.
 
-Reprendre la main est toujours une deuxième étape délibérée, jamais automatique.""",
+Reprendre la main est toujours une deuxième étape délibérée, jamais automatique.
+
+Vous pouvez aussi reprendre la main depuis la page d’une étape. Touchez le crayon : si quelqu’un d’autre a le voyage, Ntripi vous dit qui, et propose **Reprendre** dès que vous en avez le droit. Modifier une étape depuis sa page lance la modification de tout le voyage : vous revenez donc au voyage toujours en cours de modification.""",
             ),
             Block(
                 anchor="losing-the-lock",
@@ -771,7 +774,7 @@ Reprenez le voyage et enregistrez, ou copiez votre texte et collez-le quand l’
             "verrou",
         ),
         related=("share-an-itinerary-privately", "plan-alternative-options", "troubleshooting"),
-        updated="2026-09-28",
+        updated="2026-10-08",
         cta="Planifiez votre prochain voyage avec ceux qui le feront.",
     ),
     Article(

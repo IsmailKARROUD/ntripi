@@ -1,8 +1,13 @@
-// presentation/stop_detail_screen.dart — Read-only detail view for one stop.
+// presentation/stop_detail_screen.dart — Detail view for one stop.
 //
 // Shows the stop's hero header, time/cost/rating stats, notes, annotations
 // (with full message bodies), inbound/outbound transit, and photos grid.
 // Navigation: tapping a stop row in the detail view pushes this screen.
+//
+// No edit mode of its own — it follows the trip's, which is this device holding
+// the edit claim. Editing from here claims the trip first, so the trip page is
+// in edit mode when the user goes back; a trip somebody else holds answers with
+// a pop-up naming them, and offers the takeover when the server allows one.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -11,11 +16,13 @@ import 'package:social_flutter/core/api/api_client.dart';
 import 'package:social_flutter/core/router/navigation_ext.dart';
 import 'package:social_flutter/core/services/currency.dart';
 import 'package:social_flutter/core/ui/app_theme.dart';
+import 'package:social_flutter/core/ui/confirm_dialog.dart';
 import 'package:social_flutter/features/itineraries/data/link_preview_service.dart';
 import 'package:social_flutter/features/itineraries/domain/annotation.dart';
 import 'package:social_flutter/features/itineraries/domain/stop.dart';
 import 'package:social_flutter/features/itineraries/domain/transit_segment.dart';
 import 'package:social_flutter/features/itineraries/presentation/annotation_screen.dart';
+import 'package:social_flutter/features/itineraries/presentation/widgets/edit_lock_banner.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/edit_pencil_button.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/leg_editor.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/link_preview_card.dart';
@@ -33,7 +40,7 @@ import 'package:social_flutter/l10n/app_localizations.dart';
 import 'package:social_flutter/shared/utils/duration_format.dart';
 import 'package:social_flutter/shared/widgets/loaders.dart';
 
-class StopDetailScreen extends ConsumerWidget {
+class StopDetailScreen extends ConsumerStatefulWidget {
   final String itineraryId;
   final String stopId;
 
@@ -44,10 +51,47 @@ class StopDetailScreen extends ConsumerWidget {
   });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<StopDetailScreen> createState() => _StopDetailScreenState();
+}
+
+class _StopDetailScreenState extends ConsumerState<StopDetailScreen> {
+  // Editing from here can start the trip's editing session, so the claim has
+  // to follow this screen as it follows the trip page — opened from a link with
+  // no trip page underneath, nothing else would ever hand it back. A field
+  // because dispose() must not touch ref (see CLAUDE.md).
+  EditLockNotifier? _lockNotifier;
+
+  @override
+  void initState() {
+    super.initState();
+    final lockNotifier = ref.read(editLockProvider(widget.itineraryId).notifier);
+    _lockNotifier = lockNotifier;
+    lockNotifier.attach();
+  }
+
+  @override
+  void dispose() {
+    // Not a release: going back to the trip page keeps the session the user
+    // started here; detach() hands it back only once no screen is left on it.
+    _lockNotifier?.detach();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final itineraryId = widget.itineraryId;
+    final stopId = widget.stopId;
+    // An invalidation (sign-out) builds a fresh notifier; attach to that one so
+    // dispose() detaches from the instance that is actually alive.
+    final lockNotifier = ref.watch(editLockProvider(itineraryId).notifier);
+    if (!identical(lockNotifier, _lockNotifier)) {
+      _lockNotifier = lockNotifier..attach();
+    }
     final itineraryAsync =
         ref.watch(itineraryDetailProvider(itineraryId));
     final currentUserId = ref.watch(myProfileProvider).value?.id;
+    // The trip's edit mode, wherever it was entered: this device holds the claim.
+    final editing = ref.watch(editLockProvider(itineraryId)).holdsClaim;
 
     return itineraryAsync.when(
       loading: () => const Scaffold(
@@ -86,6 +130,8 @@ class StopDetailScreen extends ConsumerWidget {
         final outbound = itinerary.segments
             .where((s) => s.fromStopId == stop!.id)
             .firstOrNull;
+        final isOwner =
+            currentUserId != null && itinerary.userId == currentUserId;
 
         return _StopDetailView(
           stop: stop,
@@ -93,11 +139,12 @@ class StopDetailScreen extends ConsumerWidget {
           totalStops: totalStops,
           currency: itinerary.currency,
           itineraryId: itineraryId,
+          isOwner: isOwner,
           // Owner OR granted editor — the same mayEdit the detail screen uses.
           // Owner-only here handed an editor the report flag instead of the
           // pencil, breaking the can-edit vs report invariant.
-          canEdit: (currentUserId != null && itinerary.userId == currentUserId) ||
-              itinerary.canEdit,
+          mayEdit: isOwner || itinerary.canEdit,
+          editing: editing,
           inboundSegment: inbound,
           outboundSegment: outbound,
           allStops: itinerary.stops,
@@ -115,7 +162,13 @@ class _StopDetailView extends ConsumerWidget {
   final int totalStops;
   final String currency;
   final String itineraryId;
-  final bool canEdit;
+  final bool isOwner;
+
+  /// Owner or granted editor — may edit at all, whatever mode the trip is in.
+  final bool mayEdit;
+
+  /// The trip is in edit mode: this device holds its claim.
+  final bool editing;
   final TransitSegment? inboundSegment;
   final TransitSegment? outboundSegment;
   final List<Stop> allStops;
@@ -127,70 +180,119 @@ class _StopDetailView extends ConsumerWidget {
     required this.totalStops,
     required this.currency,
     required this.itineraryId,
-    required this.canEdit,
+    required this.isOwner,
+    required this.mayEdit,
+    required this.editing,
     this.inboundSegment,
     this.outboundSegment,
     required this.allStops,
     required this.translatable,
   });
 
-  /// Run [edit] holding this itinerary's edit claim.
+  /// Run [edit] with the trip in edit mode, claiming it first unless this
+  /// device already holds the claim.
   ///
-  /// This page has no edit mode, yet every write from it needs X-Edit-Lock —
-  /// without the claim the stop form and the annotation editor 428'd on Save.
-  /// Acquires only when this device holds none (the detail screen underneath
-  /// may already), says who is in the way on refusal, and hands back only a
-  /// claim it took itself.
-  Future<void> _withClaim(
+  /// Every write from this page needs X-Edit-Lock and no editor claims one for
+  /// itself, so the claim comes before the push. It is kept afterwards: editing
+  /// from here enters the trip's edit mode, exactly as a long-press on the trip
+  /// page does, and the user leaves it with ✓ there.
+  Future<void> _inEditMode(
     BuildContext context,
     WidgetRef ref,
     Future<void> Function() edit,
   ) async {
-    final l10n = AppLocalizations.of(context)!;
-    final messenger = ScaffoldMessenger.of(context);
-    final notifier = ref.read(editLockProvider(itineraryId).notifier);
-    final tookIt = !ref.read(editLockProvider(itineraryId)).holdsClaim;
-    if (tookIt) {
+    if (!ref.read(editLockProvider(itineraryId)).holdsClaim) {
+      final l10n = AppLocalizations.of(context)!;
+      final messenger = ScaffoldMessenger.of(context);
       final bool claimed;
       try {
-        claimed = await notifier.acquire();
+        claimed =
+            await ref.read(editLockProvider(itineraryId).notifier).acquire();
       } catch (e) {
-        messenger.showSnackBar(SnackBar(content: Text(extractErrorMessage(e, l10n))));
+        messenger.showSnackBar(
+            SnackBar(content: Text(extractErrorMessage(e, l10n))));
         return;
       }
+      // ref and context both die with the page.
+      if (!context.mounted) return;
       if (!claimed) {
-        final holder = ref.read(editLockProvider(itineraryId)).lock;
-        messenger.showSnackBar(SnackBar(
-          content: Text(holder == null
-              ? l10n.apiErrorItineraryLocked
-              : holder.isYou
-                  ? l10n.editLockYouElsewhere
-                  : l10n.editLockSomeoneEditing(holder.displayLabel)),
-        ));
+        await _offerTakeOver(context, ref);
         return;
       }
     }
-    try {
-      await edit();
-    } finally {
-      if (tookIt) await notifier.release();
-    }
+    await edit();
   }
 
-  Future<void> _openStopForm(BuildContext context, WidgetRef ref) => _withClaim(
+  /// Somebody else holds the trip — or this user, on another device. Say who,
+  /// in the banner's words, and offer the takeover the trip page's banner
+  /// would: an owner always, your own other device always, an editor once the
+  /// server calls the claim takeable. Confirming is the deliberate step; it
+  /// only claims the trip, and the user then taps Edit.
+  Future<void> _offerTakeOver(BuildContext context, WidgetRef ref) async {
+    final l10n = AppLocalizations.of(context)!;
+    final session = ref.read(editLockProvider(itineraryId));
+    final holder = session.lock;
+    if (holder == null) {
+      await ConfirmDialog.inform(
+        context,
+        icon: Icons.lock_outline_rounded,
+        title: l10n.apiErrorItineraryLocked,
+      );
+      return;
+    }
+    final (:headline, :subline) = editLockCopy(holder, l10n, isOwner: isOwner);
+    if (!isOwner && !session.canTakeOverNow) {
+      await ConfirmDialog.inform(
+        context,
+        icon: Icons.lock_outline_rounded,
+        title: headline,
+        message: subline,
+      );
+      return;
+    }
+    final confirmed = await ConfirmDialog.show(
+      context,
+      icon: Icons.lock_outline_rounded,
+      title: headline,
+      message: holder.isYou ? l10n.editLockMoveHereMessage : subline,
+      confirmLabel: holder.isYou ? l10n.editLockMoveHere : l10n.editLockTakeOver,
+    );
+    if (!confirmed || !context.mounted) return;
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      final claimed = await ref
+          .read(editLockProvider(itineraryId).notifier)
+          .acquire(takeover: true);
+      if (claimed || !context.mounted) return;
+    } catch (e) {
+      messenger.showSnackBar(
+          SnackBar(content: Text(extractErrorMessage(e, l10n))));
+      return;
+    }
+    // Refused after all: the server's answer moved while the pop-up was open.
+    final current = ref.read(editLockProvider(itineraryId)).lock;
+    messenger.showSnackBar(SnackBar(
+      content: Text(current == null
+          ? l10n.apiErrorItineraryLocked
+          : editLockCopy(current, l10n, isOwner: isOwner).headline),
+    ));
+  }
+
+  Future<void> _openStopForm(BuildContext context, WidgetRef ref) =>
+      _inEditMode(
         context,
         ref,
         () => context.push<void>('/itineraries/$itineraryId/stops/${stop.id}/edit'),
       );
 
-  // Mirrors _editAnnotation in itinerary_detail_screen — this screen has no
-  // edit mode, so the long-press is the only way in from here.
+  // Mirrors _editAnnotation in itinerary_detail_screen — a note has no button
+  // of its own here, so the long-press is the only way into one.
   Future<void> _editAnnotation(
     BuildContext context,
     WidgetRef ref,
     Annotation annotation,
   ) =>
-      _withClaim(context, ref, () => showAnnotationScreen(
+      _inEditMode(context, ref, () => showAnnotationScreen(
         context,
         isEdit: true,
         initialContent: annotation.content,
@@ -248,10 +350,11 @@ class _StopDetailView extends ConsumerWidget {
               totalStops: totalStops,
               // A shared/deep link can open this page as the only route.
               onBack: () => context.popOr('/itineraries/$itineraryId'),
-              onEdit: canEdit ? () => _openStopForm(context, ref) : null,
+              // In either mode: from read mode it claims the trip first.
+              onEdit: mayEdit ? () => _openStopForm(context, ref) : null,
               // Wire-reported as the parent itinerary; the stop id rides in
               // the report notes (hiding is itinerary-level).
-              onReport: canEdit
+              onReport: mayEdit
                   ? null
                   : () => showReportContentSheet(
                         context,
@@ -324,8 +427,9 @@ class _StopDetailView extends ConsumerWidget {
 
           // ── See translation ────────────────────────────────────────────────
           // Above the annotations and notes it covers, so it is seen before
-          // the text rather than after scrolling past it.
-          if (translatable)
+          // the text rather than after scrolling past it. Read mode only, as
+          // on the trip page: whoever is editing reads what they are changing.
+          if (translatable && !editing)
             SliverToBoxAdapter(
               child: TranslationToggle(
                 anchor: translationAnchor,
@@ -352,7 +456,8 @@ class _StopDetailView extends ConsumerWidget {
                             child: _AnnotationFullRow(
                               annotation: a,
                               translationAnchor: translationAnchor,
-                              onReport: canEdit
+                              translate: !editing,
+                              onReport: mayEdit
                                   ? null
                                   : () => showReportContentSheet(
                                         context,
@@ -360,7 +465,7 @@ class _StopDetailView extends ConsumerWidget {
                                         ReportTarget.stopAnnotation(
                                             itineraryId, stop.id, a.id),
                                       ),
-                              onLongPressEdit: canEdit
+                              onLongPressEdit: mayEdit
                                   ? () => _editAnnotation(context, ref, a)
                                   : null,
                             ),
@@ -387,8 +492,8 @@ class _StopDetailView extends ConsumerWidget {
                         direction: _TransitDirection.inbound,
                         currency: currency,
                         allStops: allStops,
-                        onEditLeg: canEdit
-                            ? (i) => _withClaim(
+                        onEditLeg: mayEdit
+                            ? (i) => _inEditMode(
                                   context,
                                   ref,
                                   () => LegEditor(
@@ -407,8 +512,8 @@ class _StopDetailView extends ConsumerWidget {
                         direction: _TransitDirection.outbound,
                         currency: currency,
                         allStops: allStops,
-                        onEditLeg: canEdit
-                            ? (i) => _withClaim(
+                        onEditLeg: mayEdit
+                            ? (i) => _inEditMode(
                                   context,
                                   ref,
                                   () => LegEditor(
@@ -435,7 +540,7 @@ class _StopDetailView extends ConsumerWidget {
               child: LongPressToEdit(
                 // Notes live on the stop itself, so the shortcut is the stop
                 // form rather than a dedicated notes editor.
-                onEdit: canEdit ? () => _openStopForm(context, ref) : null,
+                onEdit: mayEdit ? () => _openStopForm(context, ref) : null,
                 child: _SectionCard(
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
@@ -445,6 +550,7 @@ class _StopDetailView extends ConsumerWidget {
                       contentId: stop.id,
                       field: 'notes',
                       original: stop.notes!,
+                      enabled: !editing,
                       builder: (context, notes) =>
                           InertMarkdownBody(data: notes),
                     ),
@@ -467,8 +573,8 @@ class _StopHero extends StatelessWidget {
   final int stopNumber;
   final int totalStops;
   final VoidCallback onBack;
-  final VoidCallback? onEdit; // null for anyone but the owner
-  final VoidCallback? onReport; // null for the owner — you can't report yourself
+  final VoidCallback? onEdit; // null for anyone who can't edit the trip
+  final VoidCallback? onReport; // null for owner/editors — you can't report yourself
   final VoidCallback? onOpenInMaps; // null when the stop has no coordinates
 
   const _StopHero({
@@ -497,7 +603,7 @@ class _StopHero extends StatelessWidget {
   Widget build(BuildContext context) {
     final nt = context.nt;
     // Long-press anywhere on the hero is a shortcut to the same stop form the
-    // pencil opens; onEdit is already owner-only so no extra gate is needed.
+    // pencil opens; onEdit is already gated on edit rights, so no extra gate.
     return LongPressToEdit(
       onEdit: onEdit,
       child: Container(
@@ -795,6 +901,9 @@ class _AnnotationFullRow extends StatelessWidget {
   /// The stop's translation group, which this note's text follows.
   final TranslationAnchor translationAnchor;
 
+  /// False while the trip is in edit mode — whoever edits reads the original.
+  final bool translate;
+
   /// Long-press to report. No visible affordance on purpose — the row has no
   /// menu and a flag glyph on every note would drown the content.
   final VoidCallback? onReport;
@@ -806,6 +915,7 @@ class _AnnotationFullRow extends StatelessWidget {
   const _AnnotationFullRow({
     required this.annotation,
     required this.translationAnchor,
+    this.translate = true,
     this.onReport,
     this.onLongPressEdit,
   });
@@ -860,6 +970,7 @@ class _AnnotationFullRow extends StatelessWidget {
                     contentId: annotation.id,
                     field: 'content',
                     original: annotation.content,
+                    enabled: translate,
                     builder: (context, content) => Text(
                       content,
                       style: TextStyle(

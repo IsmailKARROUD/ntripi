@@ -21,6 +21,45 @@ import 'package:social_flutter/features/itineraries/domain/edit_lock.dart';
 import 'package:social_flutter/l10n/app_localizations.dart';
 import 'package:social_flutter/shared/widgets/user_avatar.dart';
 
+/// What to say about [lock]: who holds it, and when it can be taken — null when
+/// the action button says it all. Shared by this banner and the stop page's
+/// lock pop-up, so one state is never worded two ways.
+({String headline, String? subline}) editLockCopy(
+  EditLock lock,
+  AppLocalizations l10n, {
+  required bool isOwner,
+}) {
+  final String headline;
+  if (lock.isYou) {
+    headline = l10n.editLockYouElsewhere;
+  } else if (lock.state == EditLockState.active) {
+    headline = l10n.editLockSomeoneEditing(lock.displayLabel);
+  } else {
+    // idle and takeable both read as "away" — the difference between them is
+    // the countdown line below, not the person's status.
+    headline = l10n.editLockSomeoneEditingIdle(lock.displayLabel);
+  }
+
+  final remaining = lock.remainingUntilTakeover();
+  final String? subline;
+  if (lock.isYou) {
+    subline = null; // "Continue here" says everything the second line would.
+  } else if (isOwner) {
+    subline = l10n.editLockOwnerCanReclaim;
+  } else if (remaining == Duration.zero) {
+    subline = l10n.editLockAvailableNow;
+  } else {
+    subline = l10n.editLockAvailableIn(_formatRemaining(remaining));
+  }
+  return (headline: headline, subline: subline);
+}
+
+String _formatRemaining(Duration remaining) {
+  final minutes = remaining.inMinutes;
+  final seconds = remaining.inSeconds % 60;
+  return '$minutes:${seconds.toString().padLeft(2, '0')}';
+}
+
 class EditLockBanner extends StatefulWidget {
   const EditLockBanner({
     super.key,
@@ -69,44 +108,17 @@ class _EditLockBannerState extends State<EditLockBanner> {
     super.dispose();
   }
 
-  String _formatRemaining(Duration remaining) {
-    final minutes = remaining.inMinutes;
-    final seconds = remaining.inSeconds % 60;
-    return '$minutes:${seconds.toString().padLeft(2, '0')}';
-  }
-
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final nt = context.nt;
     final lock = widget.lock;
-    final remaining = lock.remainingUntilTakeover();
+    final (:headline, :subline) =
+        editLockCopy(lock, l10n, isOwner: widget.isOwner);
 
     // cautionBg, not dangerTint: somebody is working, nothing has gone wrong.
     final background = nt.cautionBg;
     final foreground = nt.cautionFg;
-
-    final String headline;
-    if (lock.isYou) {
-      headline = l10n.editLockYouElsewhere;
-    } else if (lock.state == EditLockState.active) {
-      headline = l10n.editLockSomeoneEditing(lock.displayLabel);
-    } else {
-      // idle and takeable both read as "away" — the difference between them is
-      // the countdown line below, not the person's status.
-      headline = l10n.editLockSomeoneEditingIdle(lock.displayLabel);
-    }
-
-    final String? subline;
-    if (lock.isYou) {
-      subline = null; // "Continue here" says everything the second line would.
-    } else if (widget.isOwner) {
-      subline = l10n.editLockOwnerCanReclaim;
-    } else if (remaining == Duration.zero) {
-      subline = l10n.editLockAvailableNow;
-    } else {
-      subline = l10n.editLockAvailableIn(_formatRemaining(remaining));
-    }
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),

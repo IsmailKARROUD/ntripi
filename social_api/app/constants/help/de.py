@@ -88,6 +88,7 @@ RELEASES: tuple[Release, ...] = (
         entries=(
             "**Übersetzung anzeigen** unter einer Reise, einem Stopp oder einer Rezension übersetzt sie in Ihre App-Sprache; **Original anzeigen** schaltet zurück.",
             "**Feed-Titel in Ihrer Sprache.** Titel öffentlicher Reisen kommen bereits übersetzt an — außer sie sind in einer Sprache, die Sie sprechen.",
+            "**Übernehmen von der Seite eines Stopps.** Ein Tipp auf den Stift eines Stopps, den gerade jemand anderes bearbeitet, sagt jetzt, wer es ist, und bietet das Übernehmen an; einen Stopp dort zu bearbeiten, startet außerdem die Bearbeitung der ganzen Reise.",
         ),
     ),
     Release(
@@ -737,7 +738,9 @@ Die Alternative wäre, dass zwei Personen in denselben Stopp tippen und eine dav
                 kind=KIND_STEP,
                 body="""War die Reise eine Weile untätig, darf sie jeder übernehmen, der bearbeiten kann. Als Eigentümer können Sie sie immer zurückholen — auch von Ihrem eigenen zweiten Gerät, was der übliche Grund dafür ist, dass sie feststeckt.
 
-Übernehmen ist immer ein bewusster zweiter Schritt, nie automatisch.""",
+Übernehmen ist immer ein bewusster zweiter Schritt, nie automatisch.
+
+Sie können auch von der Seite eines Stopps aus übernehmen. Tippen Sie dort auf den Stift: Hat jemand anderes die Reise, sagt Ntripi Ihnen, wer, und bietet **Übernehmen** an, sobald Sie das dürfen. Einen Stopp auf seiner Seite zu bearbeiten, startet die Bearbeitung der ganzen Reise — Sie kehren also zu einer Reise zurück, die Sie noch bearbeiten.""",
             ),
             Block(
                 anchor="losing-the-lock",
@@ -767,7 +770,7 @@ Holen Sie die Reise zurück und speichern Sie, oder kopieren Sie Ihren Text hera
             "sperre",
         ),
         related=("share-an-itinerary-privately", "plan-alternative-options", "troubleshooting"),
-        updated="2026-09-28",
+        updated="2026-10-08",
         cta="Planen Sie Ihre nächste Reise mit denen, die mitfahren.",
     ),
     Article(

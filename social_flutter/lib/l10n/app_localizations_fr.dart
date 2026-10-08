@@ -27,6 +27,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get dismiss => 'Ignorer';
 
   @override
+  String get ok => 'OK';
+
+  @override
   String get seeAll => 'Voir tout';
 
   @override

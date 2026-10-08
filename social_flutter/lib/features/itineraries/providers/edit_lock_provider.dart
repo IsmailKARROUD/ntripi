@@ -157,6 +157,12 @@ class EditLockNotifier extends Notifier<EditSession> {
   /// long as the app lived and no other editor could take it.
   void detach() {
     if (_attached > 0) _attached--;
+    _releaseIfUnattended();
+  }
+
+  /// Hand the claim back after [kEditLockDetachGrace] unless a screen is
+  /// editing under it by then.
+  void _releaseIfUnattended() {
     if (_attached > 0 || !state.holdsClaim) return;
     _releaseTimer?.cancel();
     _releaseTimer = Timer(kEditLockDetachGrace, () {
@@ -179,6 +185,9 @@ class EditLockNotifier extends Notifier<EditSession> {
       state = EditSession(token: claim.token, lock: claim.lock);
       _heldClaims.add(arg);
       _startHeartbeat(claim.heartbeatInterval);
+      // The screen that asked may be gone by now (the user backed out while
+      // the claim was in flight), and nothing would ever detach it.
+      _releaseIfUnattended();
       return true;
     } on ItineraryLockedException catch (e) {
       if (!ref.mounted) return false;

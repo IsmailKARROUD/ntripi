@@ -235,16 +235,22 @@ showed as editing.
   the detail screen being covered by the stop form. **The token is memory only** —
   any takeover rotates it, so persisting it would only create a way to resurrect
   a dead session.
-- **The claim follows the screens editing under it.** The detail screen
-  `attach()`es in `initState` and `detach()`es in `dispose` (through a notifier
-  held in a field — never `ref` in dispose). When the last screen detaches, the
-  claim is released after `kEditLockDetachGrace` (3 s) unless one re-attaches — a
-  `router.go()` that rebuilds the detail screen does, well within it. Before
-  2026-09-28 nothing stopped the heartbeat: a claim left behind by a push tap or a
-  deleted itinerary stayed "active" for as long as the app lived.
-- **A rebuilt detail screen resumes a claim it already holds** (starts in edit
-  mode), and `_enterEditMode` never re-acquires a held claim — asking again used
-  to earn a 423 saying this very device was editing "elsewhere".
+- **The claim follows the screens editing under it.** The detail screen and the
+  stop page `attach()` in `initState` and `detach()` in `dispose` (through a
+  notifier held in a field — never `ref` in dispose). When the last screen
+  detaches, the claim is released after `kEditLockDetachGrace` (3 s) unless one
+  re-attaches — a `router.go()` that rebuilds the detail screen does, well within
+  it. A claim that lands after every screen has gone (the user backed out while
+  the acquire was in flight) starts the same grace. Before 2026-09-28 nothing
+  stopped the heartbeat: a claim left behind by a push tap or a deleted itinerary
+  stayed "active" for as long as the app lived.
+- **Edit mode is this device holding the claim, wherever it was taken.** A
+  rebuilt detail screen resumes a claim it already holds (starts in edit mode),
+  and `_enterEditMode` never re-acquires a held claim — asking again used to earn
+  a 423 saying this very device was editing "elsewhere". A claim taken while the
+  detail screen is covered (from the stop page) flips it into edit mode through a
+  `ref.listen` on the acquire edge; a lost claim does not flip it back, so the
+  banner can offer the claim back.
 - **The heartbeat stops for good on 403 and 404.** 403 means edit rights were
   revoked (the server checks them before the claim) and is surfaced as a lost
   claim; 404 means the itinerary is gone. Both used to be swallowed as dropped
@@ -287,12 +293,24 @@ showed as editing.
   read-mode long-presses on the description and on an itinerary-level note claim
   the same way, and the long-press on a stop awaits the claim before pushing its
   form (until 2026-09-28 all three could open an editor whose Save 428'd).
-- **The stop page gates edit chrome on `mayEdit`, not ownership, and claims per
-  edit.** It has no edit mode, so `_withClaim` wraps the pencil, the notes and
-  note long-presses and the leg editor: it acquires only when this device holds
-  no claim (the detail screen underneath may), says who is in the way on refusal,
-  and releases only a claim it took itself. Owner-only gating handed an editor
-  the report flag instead of the pencil.
+- **Editing from the stop page enters the trip's edit mode.** Its chrome gates on
+  `mayEdit`, not ownership (owner-only gating handed an editor the report flag
+  instead of the pencil), in both modes. The pencil, the hero and note
+  long-presses and the leg editor all run through `_inEditMode`: when this device
+  holds no claim it acquires one — never with `takeover` — and **keeps it**, so
+  the detail screen underneath is in edit mode when the user goes back and they
+  leave it with ✓ there. Until 2026-10-08 this was `_withClaim`, which claimed per
+  edit and handed the claim back, so a stop could be edited while the trip stayed
+  in read mode. While the claim is held the page shows originals, never a
+  translation.
+- **A refused claim on the stop page is a pop-up, not a snackbar.** It names the
+  holder in the banner's own words (`editLockCopy`, shared with
+  `EditLockBanner`) and offers the takeover the banner would: the owner always,
+  the user's own other device always (**Continue here**), an editor only once the
+  server calls the claim `takeable`. The pop-up is the confirmation; confirming
+  calls `acquire(takeover: true)` and opens nothing — the user taps Edit after.
+  When takeover is not allowed it is `ConfirmDialog.inform`: when it will be, and
+  a single OK. Regression test: `test/widgets/stop_detail_edit_lock_test.dart`.
 - **"Change visibility" in the grant dialog opens the picker.** For an `only_me`
   or `followers` trip the dialog's confirm pops `EditorsScreenResult.openVisibility`
   and the Edit Itinerary form opens its visibility picker; the button used to just
@@ -312,13 +330,17 @@ showed as editing.
   takeover it does not understand.
 - **`X-Edit-Lock` is never attached from a Dio interceptor.** A blanket one would
   send a dead token onto requests that must not carry one.
-- Regression tests: `test/widgets/itinerary_edit_form_access_test.dart`.
+- Regression tests: `test/widgets/itinerary_edit_form_access_test.dart`,
+  `test/widgets/stop_detail_edit_lock_test.dart`.
 
 ## Known gaps / TODOs
 
 - `moderate_or_422`'s docstring says the caller "must not have added rows to the
   session", but this guard's step 6 writes the heartbeat before the endpoint body
   runs — see OPEN QUESTIONS in [text-moderation.md](text-moderation.md).
+- The stop page has no persistent lock banner. A claim lost while it is open
+  shows nothing until the next Edit (which then explains itself in the pop-up),
+  and the pop-up's "take over in m:ss" is a snapshot, not a ticking countdown.
 
 ## Related
 

@@ -1089,3 +1089,37 @@ drops Microsoft.
 section renumbered (six languages of cross-references to keep in step). Bumping
 `TOS_VERSION` to add one word to §12 (every user re-accepts a document whose
 list defers to the Privacy Policy anyway).
+
+---
+
+### 2026-10-08 — Editing from the stop page enters the trip's edit mode
+
+**Context.** The stop page had no edit mode. Its pencil and long-presses ran
+through `_withClaim`, which took the edit claim for one edit and handed it back,
+so a stop could be edited while the trip itself sat in read mode, and a trip
+someone else held answered with a snackbar that named them and offered no way
+forward. Meanwhile the trip page's edit mode was already, in all but name, this
+device holding the claim: `_editMode` is seeded from `holdsClaim`, entering
+acquires it, leaving releases it.
+**Decision.** Edit mode is the claim, wherever it was taken. The stop page keeps
+its pencil and long-presses for owners and editors; using one from read mode
+acquires the claim and **keeps** it (`_inEditMode`), exactly as a read-mode
+long-press on the trip page does. The trip page follows a claim taken while it
+was covered (`ref.listen` on the acquire edge). A refused claim opens a pop-up
+naming the holder in the banner's words (`editLockCopy`), offering the takeover
+the banner would — owner always, own other device always, an editor once the
+server says `takeable` — or, when it may not, `ConfirmDialog.inform` with when it
+will be. Taking over opens nothing; the user taps Edit after. The stop page
+attaches to the claim like the trip page, and a claim that lands after every
+screen has gone starts the detach grace.
+**Consequences.** The user returns from a stop to a trip still in edit mode and
+leaves it with ✓. Takeover can now start from two places under one rule, and the
+pop-up is its confirmation. The stop page inherits the read-mode-only rule for
+translation. A new `ok` string (all six languages): the existing `dismiss` reads
+"discard" or "ignore" in four of them, wrong beside an editing session.
+**Alternatives rejected.** Hiding the pencil unless the trip was already in edit
+mode (the first proposal — in read mode the only visible way to edit a stop
+would have been back on the trip page). A message-only pop-up sending the user back to the trip page's banner to
+take over (three screens for one decision). Keeping claim-per-edit (editing
+outside edit mode is what this fixes). A separate edit-mode provider (a second
+source of truth beside the claim, free to disagree with it).

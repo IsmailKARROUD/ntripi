@@ -27,6 +27,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get dismiss => '忽略';
 
   @override
+  String get ok => '好的';
+
+  @override
   String get seeAll => '查看全部';
 
   @override

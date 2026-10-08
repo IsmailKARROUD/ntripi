@@ -102,6 +102,9 @@ RELEASES: tuple[Release, ...] = (
             "your app language; **See original** switches back.",
             "**Feed titles in your language.** Public trip titles arrive already "
             "translated — unless they are in a language you speak.",
+            "**Take over from a stop's page.** Tapping the pencil on a stop someone "
+            "else is editing now says who and offers to take over; editing a stop "
+            "there also starts editing the whole trip.",
         ),
     ),
     Release(
@@ -916,7 +919,7 @@ ARTICLES: tuple[Article, ...] = (
         ),
         category="building",
         schema=SCHEMA_HOWTO,
-        updated="2026-09-28",
+        updated="2026-10-08",
         keywords=(
             "collaborate", "collaboration", "together", "shared", "editor",
             "editors", "invite", "group", "friends", "family", "co-edit",
@@ -986,7 +989,12 @@ ARTICLES: tuple[Article, ...] = (
                     "from your own other device, which is the usual reason it is "
                     "stuck.\n\n"
                     "Taking over is always a deliberate second step, never "
-                    "automatic."
+                    "automatic.\n\n"
+                    "You can also take over from a stop's own page. Tap the pencil "
+                    "there: if someone else has the trip, Ntripi says who, and offers "
+                    "**Take over** whenever you are allowed to. Editing a stop from its "
+                    "page starts editing the whole trip, so you come back to the trip "
+                    "still editing it."
                 ),
             ),
             Block(

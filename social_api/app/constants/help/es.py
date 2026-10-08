@@ -88,6 +88,7 @@ RELEASES: tuple[Release, ...] = (
         entries=(
             "**Ver traducción**, bajo un viaje, una parada o una reseña, lo traduce al idioma de tu aplicación; **Ver original** lo devuelve.",
             "**Títulos del feed en tu idioma.** Los títulos de los viajes públicos llegan ya traducidos, salvo que estén en un idioma que hablas.",
+            "**Tomar el relevo desde una parada.** Tocar el lápiz de una parada que otra persona está editando ahora dice quién es y ofrece tomar el control; editar una parada desde su página también empieza a editar todo el viaje.",
         ),
     ),
     Release(
@@ -737,7 +738,9 @@ La alternativa es que dos personas escriban en la misma parada y una de ellas lo
                 kind=KIND_STEP,
                 body="""Si el viaje lleva un rato inactivo, cualquiera que pueda editarlo puede tomarlo. Como propietario siempre puedes recuperarlo, incluso de tu propio segundo dispositivo, que es el motivo habitual de que se quede atascado.
 
-Tomar el relevo es siempre un segundo paso deliberado, nunca automático.""",
+Tomar el relevo es siempre un segundo paso deliberado, nunca automático.
+
+También puedes tomar el relevo desde la página de una parada. Toca el lápiz: si otra persona tiene el viaje, Ntripi te dice quién y te ofrece **Tomar el control** siempre que puedas hacerlo. Editar una parada desde su página empieza a editar todo el viaje, así que vuelves al viaje con la edición todavía activa.""",
             ),
             Block(
                 anchor="losing-the-lock",
@@ -768,7 +771,7 @@ Recupera el viaje y guarda, o copia tu texto y pégalo cuando la otra persona ha
             "bloqueo",
         ),
         related=("share-an-itinerary-privately", "plan-alternative-options", "troubleshooting"),
-        updated="2026-09-28",
+        updated="2026-10-08",
         cta="Planifica tu próximo viaje con quienes van a hacerlo.",
     ),
     Article(

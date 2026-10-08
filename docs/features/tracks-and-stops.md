@@ -170,8 +170,10 @@ passed that, not the stale itinerary.
 - **Any editing route claims the edit lock before pushing.** `_openStopForm` does
   the round trip first and abandons the push if the claim is refused — no form
   claims a lock for itself, so a route pushed without one looks editable and then
-  428s on Save. The stop page (`StopDetailScreen`) now claims per edit and shows
-  its edit chrome to editors too. See [collaborative-editing.md](collaborative-editing.md).
+  428s on Save. The stop page (`StopDetailScreen`) shows its edit chrome to
+  editors too, and editing from it enters the trip's edit mode — the claim is
+  kept, and a trip someone else holds answers with a pop-up that offers the
+  takeover when allowed. See [collaborative-editing.md](collaborative-editing.md).
 - **A create that half-failed is finished, not repeated.** `StopFormScreen`
   remembers the stop its Save created (`_createdStop`) and drops each queued note
   as it lands. If a note then fails (a moderation 422, say), Save again updates

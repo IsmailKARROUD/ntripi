@@ -164,6 +164,11 @@ discoverable way to learn the constraints. Logged in
   the part before `;` is the concurrency token.
 - **Every client surface that saves itinerary content claims the edit lock
   first** — the owner included, and the stop page included.
+- **Edit mode is this device holding the claim, wherever it was taken.** A claim
+  taken from the stop page is the trip's edit mode, and the trip page follows it.
+  No surface claims "just for one edit" and hands the claim back afterwards — it
+  ends from the trip page's exit, sign-out, or the detach grace once no screen is
+  left on it.
 
 → [etag-concurrency.md](features/etag-concurrency.md)
 

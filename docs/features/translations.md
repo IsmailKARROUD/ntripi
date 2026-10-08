@@ -293,7 +293,8 @@ config), `data/translation_repository.dart`,
   translations already held still swap instantly.
 - **Read mode only.** On the trip detail screen every `TranslatableText` takes
   `enabled: !_editMode`, so whoever is editing reads what they are changing. The
-  stop page has no edit mode.
+  stop page follows the trip's edit mode (this device holding the claim): while
+  it holds, the toggle is gone and its notes and annotations show originals.
 - **Never offered on a takedown the client can see** — the author's own hidden
   review, or a trip whose `hidden` flag is set (the trip detail screen and its
   stop pages). The server would answer `not_found`, since a takedown is never

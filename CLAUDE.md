@@ -641,12 +641,16 @@ because those write sibling tables, never itinerary content.
   provider because the claim must survive the detail screen being covered by the
   stop form. The token is **memory only** — any takeover rotates it, so
   persisting it would only create a way to resurrect a dead session.
-- **The claim follows the screens editing under it.** The detail screen
-  `attach()`es in `initState` and `detach()`es in `dispose` (notifier held in a
-  field); when the last screen detaches the claim is released after
+- **The claim follows the screens editing under it.** The detail screen and the
+  stop page `attach()` in `initState` and `detach()` in `dispose` (notifier held
+  in a field); when the last screen detaches the claim is released after
   `kEditLockDetachGrace` unless one re-attaches — a `router.go()` rebuild does.
-  A rebuilt detail screen resumes a claim it already holds, and `_enterEditMode`
-  never re-acquires a held one. The heartbeat stops for good on 403 (rights
+  A claim that lands after every screen has gone starts the same grace.
+  **Edit mode IS this device holding the claim, wherever it was taken**: a
+  rebuilt detail screen resumes a claim it already holds, `_enterEditMode` never
+  re-acquires a held one, and a claim taken while the detail screen is covered
+  (from the stop page) flips it into edit mode via `ref.listen` on the acquire
+  edge. The heartbeat stops for good on 403 (rights
   revoked → lost) and 404 (itinerary gone), and skips while the app is
   backgrounded. Sign-out calls `releaseAllEditClaims` before the tokens go.
 - `mayEdit = isOwner || itinerary.canEdit`. Ownership is OR-ed in because it is
@@ -678,9 +682,15 @@ because those write sibling tables, never itinerary content.
   "someone else is editing" banner is the honest answer at that point, not an
   error after the user has typed. The read-mode long-presses (description,
   itinerary note, a stop) claim — and await the claim — the same way.
-  **The stop page has no edit mode**, so its edits run through `_withClaim`:
-  acquire only when this device holds none, name the holder on refusal, release
-  only a claim it took. Its edit chrome gates on `mayEdit`, not ownership.
+  **Editing from the stop page enters the trip's edit mode.** Its pencil and
+  long-presses gate on `mayEdit` (not ownership) in both modes and run through
+  `_inEditMode`: acquire when this device holds no claim, never with `takeover`,
+  and **keep** it — the user leaves edit mode with ✓ on the trip page. A refused
+  claim is a pop-up in the banner's words (`editLockCopy`) offering the takeover
+  the banner would (owner always, own other device always, an editor only when
+  `takeable`); confirming takes over and opens nothing, and a disallowed takeover
+  is `ConfirmDialog.inform`. While the claim is held the page shows originals.
+  Regression test: `test/widgets/stop_detail_edit_lock_test.dart`.
   Self-removal pops `true` from the form so the
   detail screen leaves edit mode and refetches (`can_edit` has just flipped).
 - **A lock loss must never pop a route or clear a controller.** The ejected user
@@ -1068,6 +1078,8 @@ For each article the change touches:
 - Do NOT gate the whole "Edit Itinerary" form on `isOwner` — it opens on `mayEdit` and hides the owner-only controls individually; refusing the screen would also refuse the title, currency and period an editor may already change
 - Do NOT send `visibility` from a non-owner — the server rejects the key's presence, so an explicit null 403s just like a real value
 - Do NOT push an itinerary editing route without claiming the edit lock first — no form claims one for itself, and the owner needs it as much as an editor does, so the screen looks editable and 428s on Save
+- Do NOT release a claim the stop page took after its edit — a claim is the trip's edit mode, and claim-per-edit is how a stop got edited while the trip sat in read mode
+- Do NOT take over from the stop page without its pop-up's confirmation, or offer the takeover to an editor before the server says `takeable` — the same rule as the trip page's banner, worded by the same `editLockCopy`
 - Do NOT leave a revoked editor's claim standing — it blocks everyone until the TTL for someone who can no longer use it
 - Do NOT add a mutating itinerary endpoint without classifying it in `test_edit_guard_coverage.py` — the test fails until you do, deliberately
 - Do NOT add a READ route to any `test_edit_guard_coverage.py` set — `classified - live` is asserted empty, so a GET listed there fails the suite

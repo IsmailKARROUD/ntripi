@@ -27,6 +27,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get dismiss => 'Verwerfen';
 
   @override
+  String get ok => 'OK';
+
+  @override
   String get seeAll => 'Alle ansehen';
 
   @override
