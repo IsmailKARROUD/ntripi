@@ -17,6 +17,7 @@ import 'package:social_flutter/features/itineraries/presentation/widgets/edit_pe
 import 'package:social_flutter/features/itineraries/presentation/widgets/long_press_to_edit.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/markdown_notes_editor.dart';
 import 'package:social_flutter/l10n/app_localizations.dart';
+import 'package:social_flutter/shared/widgets/expandable_text.dart';
 
 class StopCard extends StatelessWidget {
   final Stop stop;
@@ -141,7 +142,13 @@ class StopCard extends StatelessWidget {
                         ? _EditNotesSection(notes: stop.notes!)
                         : Padding(
                             padding: const EdgeInsets.only(top: 6),
-                            child: _ReadNotesSection(notes: stop.notes!),
+                            // Two-line preview; the card's own tap opens the
+                            // stop, so only the link unfolds it.
+                            child: ExpandableText(
+                              stop.notes!,
+                              expandedBuilder: (context, notes) =>
+                                  InertMarkdownBody(data: notes),
+                            ),
                           ),
 
                   // Annotations
@@ -232,70 +239,6 @@ class _EditNotesSectionState extends State<_EditNotesSection> {
               : const SizedBox(width: double.infinity),
         ),
       ],
-    );
-  }
-}
-
-// 2-line preview with "view more" toggle (read mode).
-class _ReadNotesSection extends StatefulWidget {
-  final String notes;
-  const _ReadNotesSection({required this.notes});
-
-  @override
-  State<_ReadNotesSection> createState() => _ReadNotesSectionState();
-}
-
-class _ReadNotesSectionState extends State<_ReadNotesSection> {
-  bool _expanded = false;
-
-  @override
-  Widget build(BuildContext context) {
-    final nt = context.nt;
-    final style = TextStyle(fontSize: 13, height: 1.4, color: nt.text2);
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final tp = TextPainter(
-          text: TextSpan(text: widget.notes, style: style),
-          maxLines: 2,
-          // must match the rendered Text's direction or the overflow check lies for Arabic notes
-          textDirection: Directionality.of(context),
-        )..layout(maxWidth: constraints.maxWidth);
-
-        final overflows = tp.didExceedMaxLines;
-
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (_expanded)
-              InertMarkdownBody(data: widget.notes)
-            else
-              Text(
-                widget.notes,
-                style: style,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-            if (overflows || _expanded)
-              GestureDetector(
-                onTap: () => setState(() => _expanded = !_expanded),
-                child: Padding(
-                  padding: const EdgeInsets.only(top: 2),
-                  child: Text(
-                    _expanded
-                        ? AppLocalizations.of(context)!.viewLess
-                        : AppLocalizations.of(context)!.viewMore,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: nt.forest,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-              ),
-          ],
-        );
-      },
     );
   }
 }

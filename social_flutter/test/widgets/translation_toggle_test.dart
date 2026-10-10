@@ -75,6 +75,27 @@ TranslationMember _member({String? sourceLang = 'en'}) => TranslationMember(
       fields: const {'notes': _original},
     );
 
+/// Counts taps across rebuilds — stands in for any state the builder's subtree
+/// keeps, such as an unfolded "view more".
+class _Tally extends StatefulWidget {
+  const _Tally(this.text);
+
+  final String text;
+
+  @override
+  State<_Tally> createState() => _TallyState();
+}
+
+class _TallyState extends State<_Tally> {
+  int _taps = 0;
+
+  @override
+  Widget build(BuildContext context) => GestureDetector(
+        onTap: () => setState(() => _taps++),
+        child: Text('${widget.text} · taps: $_taps'),
+      );
+}
+
 Widget _harness({
   required _FakeRepository repository,
   String readerLang = 'fr',
@@ -83,6 +104,7 @@ Widget _harness({
   Stream<bool>? online,
   TranslationMember? member,
   bool textEnabled = true,
+  Widget Function(BuildContext context, String text)? builder,
 }) =>
     ProviderScope(
       retry: (_, _) => null,
@@ -111,7 +133,7 @@ Widget _harness({
                 field: 'notes',
                 original: _original,
                 enabled: textEnabled,
-                builder: (context, text) => Text(text),
+                builder: builder ?? (context, text) => Text(text),
               ),
             ],
           ),
@@ -261,6 +283,30 @@ void main() {
         )
         .first);
     expect(direction.textDirection, TextDirection.rtl);
+  });
+
+  testWidgets(
+      'Given state inside the text, When the group swaps to the translation '
+      'and back, Then that state survives — an unfolded note stays unfolded',
+      (tester) async {
+    await tester.pumpWidget(_harness(
+      repository: repository,
+      builder: (context, text) => _Tally(text),
+    ));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('$_original · taps: 0'));
+    await tester.pump();
+    expect(find.text('$_original · taps: 1'), findsOneWidget);
+
+    await tester.tap(find.text('See translation'));
+    await tester.pumpAndSettle();
+    expect(find.text('fr: translated notes · taps: 1'), findsOneWidget);
+
+    await tester.tap(find.text('Automatically translated · See original',
+        findRichText: true));
+    await tester.pumpAndSettle();
+    expect(find.text('$_original · taps: 1'), findsOneWidget);
   });
 
   testWidgets(

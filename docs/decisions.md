@@ -1123,3 +1123,40 @@ would have been back on the trip page). A message-only pop-up sending the user b
 take over (three screens for one decision). Keeping claim-per-edit (editing
 outside edit mode is what this fixes). A separate edit-mode provider (a second
 source of truth beside the claim, free to disagree with it).
+
+---
+
+### 2026-10-08 — Transport-leg thoughts are shown to readers and translated by the toggle already on screen
+
+**Context.** A leg's notes — "Thoughts" in the leg form — were stored,
+moderated and, since 0.4.0, translatable on the server, but no reader screen
+showed them: both transit views rendered mode, line, time and cost only.
+Showing them meant folding long text, and "view more" already existed twice as
+private copies (`stop_card.dart`, `ratings_page_screen.dart`) whose overflow
+check was a bare `TextPainter` — no inherited style (the theme's DM Sans), no
+text scaler, no bold text — so under large accessibility text a note rendered
+ellipsised with no link to the rest of it.
+**Decision.** Thoughts show under each leg on both surfaces — the trip page's
+read-mode transit card and the stop page's Transit section — through one
+widget, `LegThoughts`, folded to two lines by a new shared `ExpandableText`
+whose check measures with everything `Text` renders with. They are plain text,
+never markdown. Translation adds no toggle: the trip's "See translation" covers
+every leg's thoughts on the trip page, and a stop's covers its inbound and
+outbound legs. `TranslatableText` now returns one tree shape while translation
+is offered, so a swap leaves an unfolded thought unfolded. Both private copies
+of "view more" now use `ExpandableText`.
+**Consequences.** The trip's toggle can be offered when only a leg's thoughts
+are in another language, and a tap then changes text further down the page
+rather than under the toggle; a trip's tap also spends more of the reader's
+200-fields-an-hour allowance. Stop-card and review notes gained the measurement
+fix and a button role on the link. The editable transit card still shows no
+thoughts — the leg's form holds them. Authors who wrote thoughts before today
+never saw them published; the field's help text always described them as
+advice for the reader, and they reach only those who can already read the trip.
+**Alternatives rejected.** A "See translation" inside each transit card (one
+more control per card; one tap for the whole trip matches how trip-wide notes
+already work). Showing the thoughts on the stop page only (the trip page is
+where a reader plans the journey). Rendering them as markdown (the form is a
+plain field, so a typed `#` would become a heading). A third private copy of
+"view more" (the extract-on-second-occurrence rule, and the two copies were
+already measuring wrong).

@@ -105,6 +105,9 @@ RELEASES: tuple[Release, ...] = (
             "**Take over from a stop's page.** Tapping the pencil on a stop someone "
             "else is editing now says who and offers to take over; editing a stop "
             "there also starts editing the whole trip.",
+            "**Thoughts on transport.** What the author wrote about a leg — which "
+            "car to board, where to buy the ticket — now shows under it, folded "
+            "to two lines with **view more**, and translates with the rest.",
         ),
     ),
     Release(
@@ -693,10 +696,11 @@ ARTICLES: tuple[Article, ...] = (
         ),
         category="building",
         schema=SCHEMA_HOWTO,
-        updated="2026-09-01",
+        updated="2026-10-08",
         keywords=(
             "transport", "transit", "bus", "train", "metro", "taxi", "walk",
             "drive", "flight", "connection", "leg", "segment", "how to get there",
+            "thoughts", "tips",
         ),
         related=("add-places-to-an-itinerary", "plan-alternative-options"),
         cta="Map out a journey, connections and all.",
@@ -742,6 +746,19 @@ ARTICLES: tuple[Article, ...] = (
                     "The direction is the detail that matters on the day. Knowing "
                     "you want the M4 is no help on a platform with trains going "
                     "both ways."
+                ),
+            ),
+            Block(
+                anchor="leg-thoughts",
+                heading="Add your thoughts on a leg",
+                kind=KIND_STEP,
+                body=(
+                    "Each leg has a **Thoughts** field for what you would tell a "
+                    "friend making the same journey — which car to board for the "
+                    "exit, where to buy the ticket, a fare that caught you out.\n\n"
+                    "Readers see them under the leg: between the stops on the trip, "
+                    "and on the pages of the two stops it joins. Long ones fold to "
+                    "two lines with **view more**."
                 ),
             ),
             Block(
@@ -1473,7 +1490,7 @@ ARTICLES: tuple[Article, ...] = (
         ),
         category="community",
         schema=SCHEMA_FAQ,
-        updated="2026-10-07",
+        updated="2026-10-08",
         keywords=(
             "translate", "translator", "translation", "foreign language",
             "other language", "machine translation", "auto translate", "multilingual",
@@ -1499,10 +1516,11 @@ ARTICLES: tuple[Article, ...] = (
                 body=(
                     "Look for **See translation**:\n\n"
                     "- on a trip, under its description — the title, the description, "
-                    "the best time to visit and the trip-wide notes are translated "
+                    "the best time to visit, the trip-wide notes and the thoughts on "
+                    "its transport are translated together;\n"
+                    "- on a stop, under its time and cost — its notes, its coloured "
+                    "notes and the thoughts on the transport to and from it "
                     "together;\n"
-                    "- on a stop, under its time and cost — its notes and its coloured "
-                    "notes together;\n"
                     "- under each review on the Ratings page.\n\n"
                     "The translation replaces the text and is marked **Automatically "
                     "translated**. Tap **See original** to go back; switching again is "
@@ -1527,10 +1545,11 @@ ARTICLES: tuple[Article, ...] = (
                 kind=KIND_FAQ,
                 body=(
                     "Translated: trip titles and descriptions, the best-time-to-visit "
-                    "note, trip-wide and stop notes, and reviews.\n\n"
-                    "Not translated: place names and addresses, which stay as written "
-                    "so they still match the signs and the map; usernames and display "
-                    "names; and transport details."
+                    "note, trip-wide and stop notes, thoughts on transport, and "
+                    "reviews.\n\n"
+                    "Not translated: place names and addresses, and a transport "
+                    "line and its direction, which stay as written so they still "
+                    "match the signs and the map; and usernames and display names."
                 ),
             ),
             Block(

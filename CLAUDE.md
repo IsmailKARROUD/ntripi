@@ -169,6 +169,7 @@ Key rules:
 - Manual `fromJson`/`toJson` — no build_runner/json_serializable
 - Three async states always: loading, error, data (and empty)
 - Never `ListView` inside `Column` — use `CustomScrollView` + Slivers
+- **"View more" is one widget** — `ExpandableText` (`shared/widgets/expandable_text.dart`), used by stop-card notes, review notes and a leg's thoughts. Its overflow check measures with everything `Text` renders with (inherited style, text scaler, bold text, direction); the two private copies it replaced measured with less and left long notes unreachable under large accessibility text. Its `LayoutBuilder` throws on an intrinsic query, so never under `IntrinsicHeight`.
 - Grounds, chrome widgets and color tokens: **UX Conventions → Surfaces and Chrome**
 - **Keyboard avoidance is one contract** (`shared/widgets/keyboard_avoidance.dart`, held by `test/keyboard_avoidance_guard_test.dart`):
   1. **Whoever lifts content above the keyboard removes the inset from what it passes down.** Scaffold does; the bottom-nav shell does — it rebuilds its tabs' MediaQuery from a context *above* its Scaffold, so it calls `.removeViewInsets` itself (until 2026-10-01 it did not: every tab lifted twice, and 18 screens hid that with `resizeToAvoidBottomInset: false`, which left the root-navigator screens with no avoidance at all); `AboveKeyboard` does.
@@ -349,7 +350,8 @@ Readers translate trips, stop notes and annotations, and reviews into their app 
 - **Cost is capped in Postgres** (`translation_usage.py`): fields per user per clock hour (cache misses only) and characters per engine per UTC day, each an atomic conditional upsert committed on its own.
 - **Public titles are translated ahead of time** by a `BackgroundTasks` job (`pretranslate_title`, its own session via `_session_factory`) on a public create, a publish, or a public title change — nothing else schedules it.
 - **The feed's language rides in the query** (`?lang=`), never in `Accept-Language`: the client's HTTP cache keys on the URL.
-- **Client** (`lib/features/translation/`): one `TranslationToggle` per group — a trip's header with its trip-wide notes, a stop with its notes and annotations, one review — and every `TranslatableText` in the group watches the same `contentTranslationProvider((type, id, lang))`. Read mode only. The notifier keeps only final answers, each with the text it was made from; a 404/400 re-reads `translationConfigProvider`. Both providers are in `_userScopedProviders`.
+- **Client** (`lib/features/translation/`): one `TranslationToggle` per group — a trip's header with its trip-wide notes and every leg's thoughts, a stop with its notes, annotations and the thoughts on its inbound and outbound legs, one review — and every `TranslatableText` in the group watches the same `contentTranslationProvider((type, id, lang))`. Read mode only. The notifier keeps only final answers, each with the text it was made from; a 404/400 re-reads `translationConfigProvider`. Both providers are in `_userScopedProviders`.
+- **A leg's thoughts never bring a toggle of their own** — `legThoughtsMembers` (`widgets/leg_thoughts.dart`) adds them to the trip's group on the trip page and the stop's on a stop page. `TranslatableText` returns one tree shape (a `Directionality` around the builder) for the original and the translation, so a swap keeps the builder's state — an unfolded "view more" stays unfolded.
 - **Feed titles** (`FeedTitle`): a title in one of the reader's profile `languages` shows as written with a toggle; any other shows translated with a lit marker. Neither is a request.
 - **Every engine is named in Privacy §4 and §5, in all six languages** — `test_privacy_names_every_translation_engine`.
 
@@ -940,6 +942,7 @@ For each article the change touches:
 - Do NOT put the feed's language in `Accept-Language` — the client cache keys on the URL, so `?lang=` must be part of it
 - Do NOT keep an `unavailable` or `rate_limited` answer in the client's translation state — the next tap must ask again, or one dropped request hides the button until sign-out
 - Do NOT show a translation in edit mode — `TranslatableText(enabled: !_editMode)`; whoever edits reads the original
+- Do NOT give a transit card its own "See translation" — a leg's thoughts join the group already on screen, the trip's or the stop's
 - Do NOT add a translation engine without naming it in Privacy §4 and §5, in all six languages, in the same commit — an undisclosed processor is a GDPR breach
 - Do NOT write an itinerary's moderation state from outside the owner's request without `set_preserving_etag` — it 412s their open editor
 - Do NOT assign a text verdict on an author's edit — `apply_author_edit_status`; assigning let any edit un-hide a taken-down profile or review
@@ -1111,6 +1114,8 @@ For each article the change touches:
 - Do NOT pass a `backgroundColor` to a sheet or dialog — `bottomSheetTheme` and `dialogTheme` already say `nt.surface`, so the only thing an explicit one can do is break the rule
 - Do NOT use `nt.sand` as a ground — it is an accent fill that exists to stand out *against* the surface; a sand sheet is what made sheets read as a different app
 - Do NOT re-inline `SectionCard`, `SectionLabel`, `FieldDivider` or `EditorialTopBar` — six private clones had already drifted apart from each other before they were extracted
+- Do NOT re-inline a "view more" overflow check — `ExpandableText` measures with the inherited style and text scaler; a bare `TextPainter` says "fits" while the text is ellipsised
+- Do NOT render a transport leg's thoughts as markdown — the leg form is a plain field, so a typed `#` or `*` must stay a character
 - Do NOT call `.toUpperCase()` on a `SectionLabel` — it uppercases internally, and the call site's own padding will miss the 22 inset every other header uses
 - Do NOT hand-roll a sheet's drag handle — `showDragHandle: true` carries a 48 px tap target and a `Semantics` label that a 36×4 `Container` does not
 - Do NOT use `Theme.of(context).dividerColor` for a hairline — the theme sets `dividerTheme.color` but never `dividerColor`, so it falls through to M3's `outlineVariant` grey; use `nt.border`

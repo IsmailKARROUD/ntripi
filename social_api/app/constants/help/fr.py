@@ -89,6 +89,7 @@ RELEASES: tuple[Release, ...] = (
             "**Voir la traduction**, sous un voyage, une étape ou un avis, le traduit dans la langue de votre application ; **Voir l’original** le rétablit.",
             "**Les titres du fil dans votre langue.** Les titres des voyages publics arrivent déjà traduits — sauf s’ils sont dans une langue que vous parlez.",
             "**Reprendre la main depuis une étape.** Toucher le crayon d’une étape que quelqu’un d’autre modifie indique désormais qui, et propose de reprendre la main ; modifier une étape depuis sa page lance aussi la modification de tout le voyage.",
+            "**Les réflexions sur les transports.** Ce que l’auteur a écrit sur un trajet — dans quelle voiture monter, où acheter le billet — s’affiche désormais dessous, replié sur deux lignes avec **voir plus**, et se traduit avec le reste.",
         ),
     ),
     Release(
@@ -554,6 +555,14 @@ La liaison affiche alors le vrai temps de porte à porte, c’est-à-dire le chi
 La direction est le détail qui compte le jour même. Savoir que vous voulez le M4 n’aide en rien sur un quai où les rames partent dans les deux sens.""",
             ),
             Block(
+                anchor="leg-thoughts",
+                heading="Ajouter vos réflexions sur un trajet",
+                kind=KIND_STEP,
+                body="""Chaque trajet a un champ **Réflexions** pour ce que vous diriez à un ami qui fait le même déplacement — dans quelle voiture monter pour être près de la sortie, où acheter le billet, un tarif qui vous a pris de court.
+
+Les lecteurs les voient sous le trajet : entre les étapes sur le voyage, et sur les pages des deux étapes qu’il relie. Les plus longues se replient sur deux lignes avec **voir plus**.""",
+            ),
+            Block(
                 anchor="orphaned-connections",
                 heading="Pourquoi insérer une étape peut déclencher un avertissement",
                 body="""Une liaison vit *entre deux voisines*. Si vous insérez une nouvelle colonne entre deux qui en ont déjà une, cette liaison n’a plus où se placer.
@@ -575,9 +584,11 @@ Ntripi demande confirmation plutôt que d’abandonner discrètement ce que vous
             "trajet",
             "liaison",
             "comment s’y rendre",
+            "réflexions",
+            "conseils",
         ),
         related=("add-places-to-an-itinerary", "plan-alternative-options"),
-        updated="2026-09-01",
+        updated="2026-10-08",
         cta="Cartographiez un déplacement, correspondances comprises.",
     ),
     Article(
@@ -1131,8 +1142,8 @@ Un voyage privé n’est dans aucun fil ni aucune recherche, par conception ; le
                 kind=KIND_FAQ,
                 body="""Cherchez **Voir la traduction** :
 
-- sur un voyage, sous sa description — le titre, la description, la meilleure période et les notes de tout le voyage sont traduits ensemble ;
-- sur une étape, sous la durée et le coût — ses notes et ses notes colorées ensemble ;
+- sur un voyage, sous sa description — le titre, la description, la meilleure période, les notes de tout le voyage et les réflexions sur ses transports sont traduits ensemble ;
+- sur une étape, sous la durée et le coût — ses notes, ses notes colorées et les réflexions sur les transports qui y mènent et qui en partent ensemble ;
 - sous chaque avis, sur la page Évaluations.
 
 La traduction remplace le texte et porte la mention **Traduit automatiquement**. Touchez **Voir l’original** pour revenir ; repasser à la traduction est instantané, car elle est conservée.""",
@@ -1149,9 +1160,9 @@ L’original peut être dans presque n’importe quelle langue.""",
                 anchor="what-is-translated",
                 heading="Qu’est-ce qui est traduit, et qu’est-ce qui ne l’est pas ?",
                 kind=KIND_FAQ,
-                body="""Traduits : les titres et descriptions des voyages, la note sur la meilleure période, les notes du voyage et des étapes, et les avis.
+                body="""Traduits : les titres et descriptions des voyages, la note sur la meilleure période, les notes du voyage et des étapes, les réflexions sur les transports, et les avis.
 
-Non traduits : les noms de lieux et les adresses, qui restent tels qu’ils ont été écrits pour correspondre aux panneaux et à la carte ; les noms d’utilisateur et les noms affichés ; et les informations de transport.""",
+Non traduits : les noms de lieux et les adresses, ainsi que la ligne et la direction d’un transport, qui restent tels qu’ils ont été écrits pour correspondre aux panneaux et à la carte ; et les noms d’utilisateur et les noms affichés.""",
             ),
             Block(
                 anchor="feed-titles",
@@ -1205,7 +1216,7 @@ Chaque traduction est conservée avec le texte dont elle est issue et réutilis�
             "app-settings", "save-trips-and-find-new-ones", "rate-a-trip",
             "your-data-and-privacy",
         ),
-        updated="2026-10-07",
+        updated="2026-10-08",
         cta="Lisez le voyage, quelle que soit sa langue.",
     ),
     Article(

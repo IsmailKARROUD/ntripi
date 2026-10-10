@@ -58,14 +58,18 @@ class TranslatableText extends ConsumerWidget {
       contentTranslationProvider(translationKey(anchor, lang)).select(
           (state) => state.textFor(contentType, contentId, field, original)),
     );
-    if (translated == null) return builder(context, original);
-    // Laid out by the language it is in. Today that is always the app's own, so
-    // this restates the ambient direction — and keeps it right if the two ever
-    // differ.
+    // The same shape for the original and the translation, so a swap keeps
+    // whatever state the builder's subtree holds — an unfolded "view more"
+    // stays unfolded. A translation is laid out by the language it is in; today
+    // that is always the app's own, so this restates the ambient direction — and
+    // keeps it right if the two ever differ.
     return Directionality(
-      textDirection:
-          isRtlLanguage(lang) ? TextDirection.rtl : TextDirection.ltr,
-      child: builder(context, translated),
+      textDirection: translated == null
+          ? Directionality.of(context)
+          : isRtlLanguage(lang)
+              ? TextDirection.rtl
+              : TextDirection.ltr,
+      child: builder(context, translated ?? original),
     );
   }
 }

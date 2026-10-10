@@ -89,6 +89,7 @@ RELEASES: tuple[Release, ...] = (
             "**Ver traducción**, bajo un viaje, una parada o una reseña, lo traduce al idioma de tu aplicación; **Ver original** lo devuelve.",
             "**Títulos del feed en tu idioma.** Los títulos de los viajes públicos llegan ya traducidos, salvo que estén en un idioma que hablas.",
             "**Tomar el relevo desde una parada.** Tocar el lápiz de una parada que otra persona está editando ahora dice quién es y ofrece tomar el control; editar una parada desde su página también empieza a editar todo el viaje.",
+            "**Impresiones sobre el transporte.** Lo que el autor escribió sobre un tramo — en qué vagón subir, dónde comprar el billete — ahora aparece debajo, plegado en dos líneas con **ver más**, y se traduce con el resto.",
         ),
     ),
     Release(
@@ -552,6 +553,14 @@ La conexión muestra entonces el tiempo real de puerta a puerta, que es el núme
 La dirección es el detalle que importa el día en cuestión. Saber que quieres el M4 no sirve de nada en un andén donde los trenes van en los dos sentidos.""",
             ),
             Block(
+                anchor="leg-thoughts",
+                heading="Añadir tus impresiones sobre un tramo",
+                kind=KIND_STEP,
+                body="""Cada tramo tiene un campo **Impresiones** para lo que le dirías a un amigo que hace el mismo trayecto — en qué vagón subir para quedar cerca de la salida, dónde comprar el billete, una tarifa que te pilló por sorpresa.
+
+Quienes leen el viaje las ven bajo el tramo: entre las paradas del viaje y en las páginas de las dos paradas que une. Las largas se pliegan en dos líneas con **ver más**.""",
+            ),
+            Block(
                 anchor="orphaned-connections",
                 heading="Por qué insertar una parada puede avisarte",
                 body="""Una conexión vive *entre dos vecinas*. Si insertas una columna nueva entre dos que ya tienen una, esa conexión se queda sin sitio.
@@ -573,9 +582,11 @@ Ntripi pregunta antes de hacerlo en vez de descartar en silencio lo que introduj
             "tramo",
             "trayecto",
             "cómo llegar",
+            "impresiones",
+            "consejos",
         ),
         related=("add-places-to-an-itinerary", "plan-alternative-options"),
-        updated="2026-09-01",
+        updated="2026-10-08",
         cta="Traza un desplazamiento, con transbordos incluidos.",
     ),
     Article(
@@ -1128,8 +1139,8 @@ Un viaje privado no está en ningún feed ni en ninguna búsqueda, por diseño; 
                 kind=KIND_FAQ,
                 body="""Busca **Ver traducción**:
 
-- en un viaje, bajo su descripción: el título, la descripción, la mejor época para viajar y las notas de todo el viaje se traducen juntos;
-- en una parada, bajo su duración y coste: sus notas y sus notas de color, juntas;
+- en un viaje, bajo su descripción: el título, la descripción, la mejor época para viajar, las notas de todo el viaje y las impresiones sobre su transporte se traducen juntos;
+- en una parada, bajo su duración y coste: sus notas, sus notas de color y las impresiones sobre el transporte que llega a ella y el que sale, juntas;
 - bajo cada reseña, en la página Valoraciones.
 
 La traducción sustituye al texto y lleva la marca **Traducido automáticamente**. Toca **Ver original** para volver; cambiar de nuevo es instantáneo, porque la traducción se conserva.""",
@@ -1146,9 +1157,9 @@ El original puede estar en casi cualquier idioma.""",
                 anchor="what-is-translated",
                 heading="¿Qué se traduce y qué no?",
                 kind=KIND_FAQ,
-                body="""Se traducen: los títulos y descripciones de los viajes, la nota sobre la mejor época para viajar, las notas del viaje y de las paradas, y las reseñas.
+                body="""Se traducen: los títulos y descripciones de los viajes, la nota sobre la mejor época para viajar, las notas del viaje y de las paradas, las impresiones sobre el transporte y las reseñas.
 
-No se traducen: los nombres de lugares y las direcciones, que se quedan tal como se escribieron para que sigan coincidiendo con los carteles y el mapa; los nombres de usuario y los nombres visibles; y los datos de transporte.""",
+No se traducen: los nombres de lugares y las direcciones, ni la línea y la dirección de un tramo, que se quedan tal como se escribieron para que sigan coincidiendo con los carteles y el mapa; ni los nombres de usuario y los nombres visibles.""",
             ),
             Block(
                 anchor="feed-titles",
@@ -1202,7 +1213,7 @@ Cada traducción se guarda junto al texto del que procede y se reutiliza para el
             "app-settings", "save-trips-and-find-new-ones", "rate-a-trip",
             "your-data-and-privacy",
         ),
-        updated="2026-10-07",
+        updated="2026-10-08",
         cta="Lee el viaje, esté en el idioma que esté.",
     ),
     Article(

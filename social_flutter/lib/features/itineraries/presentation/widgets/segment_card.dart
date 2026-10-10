@@ -5,6 +5,9 @@
 // so it looks visually nested between them.
 // onEdit / onDelete are null in read-only mode; non-null in edit mode.
 //
+// Read mode shows each leg's thoughts under it (LegThoughts), translated with
+// the group named by translationAnchor — the trip's, on the trip page.
+//
 // In edit mode the card supports inline leg management:
 //   - Tap any badge to edit that leg via LegFormDialog.
 //   - Tap the "+" button to add a new leg.
@@ -16,6 +19,8 @@ import 'package:social_flutter/core/services/currency.dart';
 import 'package:social_flutter/core/ui/app_theme.dart';
 import 'package:social_flutter/features/itineraries/domain/transit_segment.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/leg_editor.dart';
+import 'package:social_flutter/features/itineraries/presentation/widgets/leg_thoughts.dart';
+import 'package:social_flutter/features/translation/providers/translation_providers.dart';
 import 'package:social_flutter/l10n/app_localizations.dart';
 import 'package:social_flutter/shared/utils/duration_format.dart';
 import 'package:social_flutter/shared/widgets/loaders.dart';
@@ -28,6 +33,13 @@ class SegmentCard extends ConsumerStatefulWidget {
   final VoidCallback? onEdit;
   final VoidCallback? onDelete;
 
+  /// Read mode: the group whose toggle covers the legs' thoughts. Null shows
+  /// them as written.
+  final TranslationAnchor? translationAnchor;
+
+  /// False while the trip is being edited — whoever edits reads the original.
+  final bool translate;
+
   const SegmentCard({
     super.key,
     required this.segment,
@@ -35,6 +47,8 @@ class SegmentCard extends ConsumerStatefulWidget {
     required this.itineraryId,
     this.onEdit,
     this.onDelete,
+    this.translationAnchor,
+    this.translate = true,
   });
 
   @override
@@ -68,7 +82,14 @@ class _SegmentCardState extends ConsumerState<SegmentCard> {
     final segment = widget.segment;
 
     // Read mode: compact amber transit row matching the design.
-    if (!_isEditable) return _TransitRow(segment: segment, currency: widget.currency);
+    if (!_isEditable) {
+      return _TransitRow(
+        segment: segment,
+        currency: widget.currency,
+        translationAnchor: widget.translationAnchor,
+        translate: widget.translate,
+      );
+    }
 
     // Edit mode: amber editorial container with tappable leg rows.
 
@@ -256,12 +277,20 @@ class _SegmentCardState extends ConsumerState<SegmentCard> {
 }
 
 // Compact amber container shown in read mode between two stops.
-// Shows every leg as its own row; total row appears when legs ≥ 2.
+// Shows every leg as its own row, its thoughts under it; total row appears when
+// legs ≥ 2.
 class _TransitRow extends StatelessWidget {
   final TransitSegment segment;
   final String currency;
+  final TranslationAnchor? translationAnchor;
+  final bool translate;
 
-  const _TransitRow({required this.segment, required this.currency});
+  const _TransitRow({
+    required this.segment,
+    required this.currency,
+    this.translationAnchor,
+    this.translate = true,
+  });
 
   String _fmtCost(double cost, bool isFree, AppLocalizations l10n) {
     if (isFree || cost <= 0) return l10n.freeLegLabel;
@@ -302,44 +331,65 @@ class _TransitRow extends StatelessWidget {
               Divider(height: 1, color: nt.transitBorder, indent: 12),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              child: Row(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(legs[i].mode.icon, size: 16, color: nt.transitIcon),
-                  const SizedBox(width: 8),
-                  Text(
-                    legs[i].mode.label(l10n),
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                      color: nt.transitText,
-                    ),
+                  Row(
+                    children: [
+                      Icon(legs[i].mode.icon,
+                          size: 16, color: nt.transitIcon),
+                      const SizedBox(width: 8),
+                      Text(
+                        legs[i].mode.label(l10n),
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: nt.transitText,
+                        ),
+                      ),
+                      // line / direction if present
+                      if (legs[i].line != null &&
+                          legs[i].line!.isNotEmpty) ...[
+                        const SizedBox(width: 4),
+                        Text(
+                          legs[i].line!,
+                          style:
+                              TextStyle(fontSize: 12, color: nt.transitText),
+                        ),
+                      ],
+                      const Spacer(),
+                      // per-leg duration
+                      if (_fmtMin(legs[i].durationMin, l10n).isNotEmpty) ...[
+                        Text(
+                          _fmtMin(legs[i].durationMin, l10n),
+                          style:
+                              TextStyle(fontSize: 12, color: nt.transitText),
+                        ),
+                        Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 5),
+                          child: Text('·',
+                              style: TextStyle(
+                                  fontSize: 12, color: nt.transitText)),
+                        ),
+                      ],
+                      // per-leg cost
+                      Text(
+                        _fmtCost(legs[i].cost, legs[i].isFree, l10n),
+                        style: TextStyle(fontSize: 12, color: nt.transitText),
+                      ),
+                    ],
                   ),
-                  // line / direction if present
-                  if (legs[i].line != null && legs[i].line!.isNotEmpty) ...[
-                    const SizedBox(width: 4),
-                    Text(
-                      legs[i].line!,
-                      style: TextStyle(fontSize: 12, color: nt.transitText),
-                    ),
-                  ],
-                  const Spacer(),
-                  // per-leg duration
-                  if (_fmtMin(legs[i].durationMin, l10n).isNotEmpty) ...[
-                    Text(
-                      _fmtMin(legs[i].durationMin, l10n),
-                      style: TextStyle(fontSize: 12, color: nt.transitText),
-                    ),
+                  if (legs[i].hasNotes)
                     Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 5),
-                      child: Text('·',
-                          style: TextStyle(fontSize: 12, color: nt.transitText)),
+                      // Under the mode label: 16 icon + 8 gap.
+                      padding: const EdgeInsetsDirectional.only(
+                          start: 24, top: 4),
+                      child: LegThoughts(
+                        leg: legs[i],
+                        anchor: translationAnchor,
+                        translate: translate,
+                      ),
                     ),
-                  ],
-                  // per-leg cost
-                  Text(
-                    _fmtCost(legs[i].cost, legs[i].isFree, l10n),
-                    style: TextStyle(fontSize: 12, color: nt.transitText),
-                  ),
                 ],
               ),
             ),

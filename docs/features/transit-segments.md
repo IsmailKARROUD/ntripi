@@ -8,8 +8,8 @@
 
 A **segment** describes how you get from one stop to the next. A **leg** is one
 mode-hop inside that journey ("walk 5 min, then metro line 4, then walk 3 min").
-Legs carry their own cost, duration and notes, and the segment's totals are the
-sum of them.
+Legs carry their own cost, duration and notes — the author's **Thoughts**, which
+readers see under the leg — and the segment's totals are the sum of them.
 
 ## Rules
 
@@ -96,6 +96,24 @@ endpoints are defined in the backend for future API consumers."*
   `leg_tile.dart`, and the segment rows inside `ItineraryDetailScreen`.
 - **Models** — `TransitSegment`, `TransportLeg`
   (`features/itineraries/domain/`), manual `fromJson`/`toJson`.
+  `TransportLeg.sourceLang` is read-only (the server detects it); `hasNotes`
+  is the one "has thoughts" test.
+- **A leg's `notes` are its "Thoughts"** (the leg form's label), and **readers
+  see them** (since 2026-10-08): under each leg in the trip page's read-mode
+  transit card (`_TransitRow`, `segment_card.dart`) and in the stop page's
+  Transit section (`_TransitFullRow`), both through one widget, `LegThoughts`
+  (`widgets/leg_thoughts.dart`). Folded to two lines by `ExpandableText`, with
+  "… view more" / "view less"; tapping the folded text unfolds it too.
+- **Plain text, never markdown.** The leg form is a plain `TextField` with no
+  toolbar, so a typed `#` or `*` stays a character — unlike stop notes, which
+  are written with the markdown editor and rendered with `InertMarkdownBody`.
+- The editable transit card (the trip page in edit mode) shows no thoughts;
+  tapping a leg opens its form, which holds them. On the stop page the thoughts
+  sit inside the leg row's `LongPressToEdit`, so an owner or editor's long-press
+  on them opens that leg's form.
+- **Translation adds no toggle of its own.** On the trip page the trip's "See
+  translation" covers every leg's thoughts; on a stop page the stop's covers its
+  inbound and outbound legs — see [translations.md](translations.md).
 - `core/services/segment_orphan_service.dart` computes which segments a track
   insertion would orphan, feeding the confirmation dialog.
 
@@ -115,6 +133,14 @@ endpoints are defined in the backend for future API consumers."*
 - The 409 on a duplicate leg position is a bare `HTTPException`
   (`itineraries.py:2172`) with no error code.
 - Dead file to delete: `segment_form_screen.dart`.
+- **The client never writes `note_type`.** `LegFormDialog` has no control for
+  it and `LegEditor.legToMap` omits it, so every segment save — a full replace —
+  writes every leg back with `note_type` NULL. No screen reads it either; only
+  the dead `SegmentFormScreen` ever set it.
+- **A leg's thoughts have no report target of their own.** `ReportTarget` has
+  no leg kind; a viewer reports them through the stop's flag (stop page) or the
+  trip's (trip page). Moderation still scans them on every save and rolls the
+  verdict up to the itinerary.
 
 ## Related
 
@@ -124,7 +150,7 @@ endpoints are defined in the backend for future API consumers."*
 - [text-moderation.md](text-moderation.md) — leg line/direction/notes are scanned
 - [annotations.md](annotations.md) — `note_type` reuses the same four types
 - [backlog.md](../backlog.md)
-- [translations.md](translations.md) — leg notes carry `source_lang`; replacing a segment's legs purges their translations
+- [translations.md](translations.md) — leg notes carry `source_lang`; replacing a segment's legs purges their translations; the trip's and the stop's toggles cover the thoughts
 - [reference/data-model.md](../reference/data-model.md)
 
 ## OPEN QUESTIONS

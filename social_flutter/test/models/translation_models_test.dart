@@ -10,6 +10,7 @@ import 'package:social_flutter/features/itineraries/domain/annotation.dart';
 import 'package:social_flutter/features/itineraries/domain/itinerary.dart';
 import 'package:social_flutter/features/itineraries/domain/itinerary_annotation.dart';
 import 'package:social_flutter/features/itineraries/domain/ratings_page.dart';
+import 'package:social_flutter/features/itineraries/domain/transport_leg.dart';
 import 'package:social_flutter/features/translation/domain/translation.dart';
 
 const _at = '2026-10-07T10:00:00.000000Z';
@@ -188,6 +189,38 @@ void main() {
       });
 
       expect(rating.sourceLang, 'de');
+    });
+
+    test('Given a transport leg, Then source_lang parses and round-trips', () {
+      final leg = TransportLeg.fromJson({
+        'id': 'leg-1',
+        'segment_id': 'seg-1',
+        'position': 1,
+        'mode': 'metro',
+        'notes': 'Prenez la deuxième voiture',
+        'created_at': _at,
+        'source_lang': 'fr',
+      });
+
+      expect(leg.sourceLang, 'fr');
+      expect(leg.hasNotes, isTrue);
+      expect(leg.toJson()['source_lang'], 'fr');
+      expect(leg.copyWith(position: 2).sourceLang, 'fr');
+    });
+
+    test('Given a leg with blank notes, Then it has no thoughts to show', () {
+      final leg = TransportLeg.fromJson({
+        'id': 'leg-1',
+        'segment_id': 'seg-1',
+        'position': 1,
+        'mode': 'walk',
+        'notes': '   ',
+        'created_at': _at,
+      });
+
+      expect(leg.hasNotes, isFalse);
+      expect(leg.sourceLang, isNull);
+      expect(leg.toJson().containsKey('source_lang'), isFalse);
     });
   });
 }

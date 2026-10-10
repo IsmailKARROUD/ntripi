@@ -21,6 +21,7 @@ import 'package:social_flutter/features/itineraries/presentation/widgets/markdow
 import 'package:social_flutter/features/itineraries/presentation/widgets/rate_itinerary_dialog.dart';
 import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
 import 'package:social_flutter/shared/widgets/appeal_sheet.dart';
+import 'package:social_flutter/shared/widgets/expandable_text.dart';
 import 'package:social_flutter/shared/widgets/loaders.dart';
 import 'package:social_flutter/shared/widgets/moderation_hidden_banner.dart';
 import 'package:social_flutter/shared/widgets/user_avatar.dart';
@@ -786,10 +787,9 @@ class RatingListTile extends ConsumerWidget {
   }
 }
 
-/// One-line preview of a rater's note that expands to full markdown on tap —
-/// mirrors the expandable-notes pattern in stop_card.dart (`_ReadNotesSection`).
+/// One-line preview of a rater's note that expands to full markdown on tap.
 /// Each review is its own translation group, with its toggle underneath.
-class _ReviewNote extends StatefulWidget {
+class _ReviewNote extends StatelessWidget {
   final String note;
 
   /// Null only for a response cached before reviews carried ids: there is
@@ -809,16 +809,9 @@ class _ReviewNote extends StatefulWidget {
   });
 
   @override
-  State<_ReviewNote> createState() => _ReviewNoteState();
-}
-
-class _ReviewNoteState extends State<_ReviewNote> {
-  bool _expanded = false;
-
-  @override
   Widget build(BuildContext context) {
-    final id = widget.ratingId;
-    if (id == null || !widget.translatable) return _note(context, widget.note);
+    final id = ratingId;
+    if (id == null || !translatable) return _note(context, note);
     final TranslationAnchor anchor = (contentType: 'rating', contentId: id);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -829,7 +822,7 @@ class _ReviewNoteState extends State<_ReviewNote> {
           contentType: 'rating',
           contentId: id,
           field: 'note',
-          original: widget.note,
+          original: note,
           builder: _note,
         ),
         TranslationToggle(
@@ -838,8 +831,8 @@ class _ReviewNoteState extends State<_ReviewNote> {
             TranslationMember(
               contentType: 'rating',
               contentId: id,
-              sourceLang: widget.sourceLang,
-              fields: {'note': widget.note},
+              sourceLang: sourceLang,
+              fields: {'note': note},
             ),
           ],
           padding: const EdgeInsets.only(top: 4),
@@ -848,60 +841,12 @@ class _ReviewNoteState extends State<_ReviewNote> {
     );
   }
 
-  /// The note as shown — its original, or the translation.
-  Widget _note(BuildContext context, String note) {
-    final nt = context.nt;
-    final l10n = AppLocalizations.of(context)!;
-    final style = TextStyle(fontSize: 13, height: 1.4, color: nt.text2);
-    final linkStyle = TextStyle(
-      fontSize: 12,
-      color: nt.forest,
-      fontWeight: FontWeight.w600,
-    );
-
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final tp = TextPainter(
-          text: TextSpan(text: note, style: style),
-          maxLines: 1,
-          // must match the rendered Text's direction or the overflow check lies for Arabic notes
-          textDirection: Directionality.of(context),
-        )..layout(maxWidth: constraints.maxWidth);
-        final overflows = tp.didExceedMaxLines;
-
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (_expanded)
-              InertMarkdownBody(data: note)
-            else
-              GestureDetector(
-                // tapping the one-line preview reveals the rest — no-op when it already fits
-                onTap:
-                    overflows ? () => setState(() => _expanded = true) : null,
-                behavior: HitTestBehavior.opaque,
-                child: Text(
-                  note,
-                  style: style,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            if (overflows || _expanded)
-              GestureDetector(
-                onTap: () => setState(() => _expanded = !_expanded),
-                child: Padding(
-                  padding: const EdgeInsets.only(top: 2),
-                  child: Text(
-                    _expanded ? l10n.viewLess : l10n.viewMore,
-                    style: linkStyle,
-                  ),
-                ),
-              ),
-          ],
-        );
-      },
-    );
-  }
+  /// The note as shown — its original, or the translation. Tapping the
+  /// one-line preview reveals the rest, as the link does.
+  Widget _note(BuildContext context, String note) => ExpandableText(
+        note,
+        maxLines: 1,
+        expandOnTextTap: true,
+        expandedBuilder: (context, note) => InertMarkdownBody(data: note),
+      );
 }

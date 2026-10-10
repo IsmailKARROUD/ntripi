@@ -416,6 +416,7 @@ block appears a second time anywhere, extract it instead of copying.**
 | **`*.fromString` degrades unknown values** — `ModerationStatus` → `approved`, `NotificationType` → a generic row, `EditLockState` → `active` | a newer backend must never crash a deployed client |
 | **Never use the `--web-renderer` flag** | removed in Flutter 3.29 |
 | **Never run `dart format`** | the repo predates Dart 3.7 tall style; it reflows whole files |
+| **Every "view more" is `ExpandableText`** (`shared/widgets/expandable_text.dart`) — never re-inline a `TextPainter` overflow check, and never place one under `IntrinsicHeight` | a check that measures with less than `Text` renders with — no inherited style, no text scaler — says "fits" while the text is ellipsised, and the rest is unreachable; the two private copies it replaced had done exactly that. Its `LayoutBuilder` throws on an intrinsic query |
 
 ### Surfaces and chrome
 

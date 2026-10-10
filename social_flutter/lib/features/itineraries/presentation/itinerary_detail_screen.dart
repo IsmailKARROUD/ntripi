@@ -64,6 +64,7 @@ import 'package:social_flutter/shared/models/user.dart';
 import 'package:social_flutter/features/itineraries/domain/stop.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/annotation_chip.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/edit_pencil_button.dart';
+import 'package:social_flutter/features/itineraries/presentation/widgets/leg_thoughts.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/long_press_to_edit.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/markdown_notes_editor.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/move_stop_to_track_sheet.dart';
@@ -683,7 +684,8 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                   final allStops = itinerary.stops;
                   final tracks = itinerary.tracks;
                   final canEdit = mayEdit && _editMode;
-                  // One toggle swaps the header and every trip-wide note.
+                  // One toggle swaps the header, every trip-wide note and the
+                  // thoughts in every transit card.
                   final TranslationAnchor translationAnchor =
                       (contentType: 'itinerary', contentId: itinerary.id);
                   final translationMembers = [
@@ -705,6 +707,8 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                         sourceLang: a.sourceLang,
                         fields: {'content': a.content},
                       ),
+                    ...legThoughtsMembers(
+                        itinerary.segments.expand((s) => s.legs)),
                   ];
 
                   // Freshly created + still empty → drop the owner straight into
@@ -812,6 +816,8 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                               currency: itinerary.currency,
                               itineraryId: widget.itineraryId,
                               // no onEdit/onDelete → renders as compact _TransitRow
+                              translationAnchor: translationAnchor,
+                              translate: !_editMode,
                             ),
                           ));
                         }

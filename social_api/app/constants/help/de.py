@@ -89,6 +89,7 @@ RELEASES: tuple[Release, ...] = (
             "**Übersetzung anzeigen** unter einer Reise, einem Stopp oder einer Rezension übersetzt sie in Ihre App-Sprache; **Original anzeigen** schaltet zurück.",
             "**Feed-Titel in Ihrer Sprache.** Titel öffentlicher Reisen kommen bereits übersetzt an — außer sie sind in einer Sprache, die Sie sprechen.",
             "**Übernehmen von der Seite eines Stopps.** Ein Tipp auf den Stift eines Stopps, den gerade jemand anderes bearbeitet, sagt jetzt, wer es ist, und bietet das Übernehmen an; einen Stopp dort zu bearbeiten, startet außerdem die Bearbeitung der ganzen Reise.",
+            "**Gedanken zu Teilstrecken.** Was der Autor zu einer Teilstrecke geschrieben hat — in welchen Wagen man einsteigt, wo man das Ticket kauft — steht jetzt darunter, auf zwei Zeilen gekürzt mit **mehr anzeigen**, und wird mit dem Rest übersetzt.",
         ),
     ),
     Release(
@@ -552,6 +553,14 @@ Die Verbindung zeigt dann die echte Tür-zu-Tür-Zeit, also die Zahl, die entsch
 Die Richtung ist das Detail, auf das es am Tag selbst ankommt. Zu wissen, dass man die M4 will, hilft auf einem Bahnsteig nicht weiter, an dem Züge in beide Richtungen fahren.""",
             ),
             Block(
+                anchor="leg-thoughts",
+                heading="Ihre Gedanken zu einer Teilstrecke festhalten",
+                kind=KIND_STEP,
+                body="""Jede Teilstrecke hat ein Feld **Gedanken** für das, was Sie jemandem auf derselben Fahrt sagen würden — in welchen Wagen man für den Ausgang einsteigt, wo es das Ticket gibt, ein Fahrpreis, der Sie überrascht hat.
+
+Wer die Reise liest, sieht sie unter der Teilstrecke: zwischen den Stopps der Reise und auf den Seiten der beiden Stopps, die sie verbindet. Lange Gedanken werden auf zwei Zeilen gekürzt, mit **mehr anzeigen**.""",
+            ),
+            Block(
                 anchor="orphaned-connections",
                 heading="Warum das Einfügen eines Stopps warnen kann",
                 body="""Eine Verbindung lebt *zwischen zwei Nachbarn*. Fügen Sie eine neue Spalte zwischen zwei ein, die bereits eine haben, hat diese Verbindung keinen Platz mehr.
@@ -573,9 +582,11 @@ Ntripi fragt vorher, statt Ihre Eingabe stillschweigend zu verwerfen. Bestätige
             "teilstrecke",
             "abschnitt",
             "wie komme ich hin",
+            "gedanken",
+            "tipps",
         ),
         related=("add-places-to-an-itinerary", "plan-alternative-options"),
-        updated="2026-09-01",
+        updated="2026-10-08",
         cta="Zeichnen Sie eine Fahrt nach, samt Umstiegen.",
     ),
     Article(
@@ -1125,8 +1136,8 @@ Eine private Reise steht bewusst in keinem Feed und in keiner Suche; der einzige
                 kind=KIND_FAQ,
                 body="""Suchen Sie nach **Übersetzung anzeigen**:
 
-- bei einer Reise unter der Beschreibung — Titel, Beschreibung, beste Reisezeit und die Notizen zur ganzen Reise werden zusammen übersetzt;
-- bei einem Stopp unter Dauer und Kosten — seine Notizen und seine farbigen Notizen zusammen;
+- bei einer Reise unter der Beschreibung — Titel, Beschreibung, beste Reisezeit, die Notizen zur ganzen Reise und die Gedanken zu ihren Teilstrecken werden zusammen übersetzt;
+- bei einem Stopp unter Dauer und Kosten — seine Notizen, seine farbigen Notizen und die Gedanken zu den Teilstrecken dorthin und von dort zusammen;
 - unter jeder Rezension auf der Seite „Bewertungen“.
 
 Die Übersetzung ersetzt den Text und ist mit **Automatisch übersetzt** gekennzeichnet. Tippen Sie auf **Original anzeigen**, um zurückzukehren; erneutes Umschalten geht sofort, weil die Übersetzung erhalten bleibt.""",
@@ -1143,9 +1154,9 @@ Das Original kann in fast jeder Sprache sein.""",
                 anchor="what-is-translated",
                 heading="Was wird übersetzt und was nicht?",
                 kind=KIND_FAQ,
-                body="""Übersetzt werden: Titel und Beschreibungen von Reisen, der Hinweis zur besten Reisezeit, Notizen zur Reise und zu Stopps sowie Rezensionen.
+                body="""Übersetzt werden: Titel und Beschreibungen von Reisen, der Hinweis zur besten Reisezeit, Notizen zur Reise und zu Stopps, Gedanken zu Teilstrecken sowie Rezensionen.
 
-Nicht übersetzt werden: Ortsnamen und Adressen, die so bleiben, wie sie geschrieben wurden, damit sie zu Schildern und Karte passen; Benutzer- und Anzeigenamen; und Verkehrsangaben.""",
+Nicht übersetzt werden: Ortsnamen und Adressen sowie Linie und Fahrtrichtung einer Teilstrecke, die so bleiben, wie sie geschrieben wurden, damit sie zu Schildern und Karte passen; und Benutzer- und Anzeigenamen.""",
             ),
             Block(
                 anchor="feed-titles",
@@ -1199,7 +1210,7 @@ Jede Übersetzung wird mit dem Text gespeichert, aus dem sie entstanden ist, und
             "app-settings", "save-trips-and-find-new-ones", "rate-a-trip",
             "your-data-and-privacy",
         ),
-        updated="2026-10-07",
+        updated="2026-10-08",
         cta="Lesen Sie die Reise, egal in welcher Sprache sie geschrieben ist.",
     ),
     Article(

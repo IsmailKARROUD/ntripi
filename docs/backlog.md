@@ -235,6 +235,12 @@ enumeration-safe body (`/web/appeal-request` has the same shape). →
 - `jira_service._summary` collapses the whole message, not the first line its
   docstring promises.
 - Deleting a transport leg has no confirmation or undo (`leg_form_dialog.dart`).
+- A leg's thoughts, shown to readers since 2026-10-08, have no report target
+  of their own — `ReportTarget` has no leg kind, so a viewer reports the stop
+  or the trip. → [features/transit-segments.md](features/transit-segments.md)
+- The client drops a leg's `note_type` on every segment save: no control writes
+  it and `LegEditor.legToMap` omits it. Give it a control or retire the column.
+  → [features/transit-segments.md](features/transit-segments.md)
 - A request that reaches Railway directly, bypassing Cloudflare, can forge
   `CF-Connecting-IP` as easily as `X-Forwarded-For` — closing that is edge
   configuration (restrict the origin to Cloudflare), not app code. →

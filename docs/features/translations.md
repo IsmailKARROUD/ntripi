@@ -256,8 +256,8 @@ config), `data/translation_repository.dart`,
 
 | Surface | Group (its anchor) | What swaps | Toggle |
 |---|---|---|---|
-| Trip detail | `('itinerary', id)` | hero title, description, best-time note, every trip-wide note chip | under the description; read mode only |
-| Stop page | `('stop', id)` | notes and every annotation — never the place name | under the time and cost stats |
+| Trip detail | `('itinerary', id)` | hero title, description, best-time note, every trip-wide note chip, and every leg's thoughts in the transit cards | under the description; read mode only |
+| Stop page | `('stop', id)` | notes, every annotation and the thoughts on its inbound and outbound transport — never the place name | under the time and cost stats |
 | Ratings page | `('rating', id)`, one per review | the review note | under the note |
 | Feed card | none — the feed page carries it | the title, by the spoken-languages rule | the translate icon beside the title |
 
@@ -266,6 +266,18 @@ config), `data/translation_repository.dart`,
   `contentTranslationProvider((contentType, contentId, targetLang))` notifier,
   so the whole group swaps at once. A one-line note chip has no room for a link
   of its own.
+- **A leg's thoughts join the group already on screen** (2026-10-08) — the
+  trip's on the trip page, the stop's on a stop page — rather than bringing a
+  toggle of their own. `legThoughtsMembers` (`widgets/leg_thoughts.dart`) is
+  what both screens add. One consequence: the trip's toggle is now also offered
+  when only a leg's thoughts are in another language, and a tap then changes
+  text further down the page, not under it. A trip's tap also sends more fields
+  against the reader's hourly allowance — more than 50 members already go out
+  in several requests.
+- **A swap keeps the text's state.** While translation is offered,
+  `TranslatableText` returns one shape — a `Directionality` around the builder
+  — for the original and the translation alike, so state inside the builder
+  survives a swap: an unfolded "view more" stays unfolded.
 - **The toggle is absent when a tap could do nothing:** the config is off or
   unread (`translationConfigProvider` falls back to `TranslationConfig.disabled`),
   the app language is not a server target, or every member's `sourceLang`
@@ -320,12 +332,15 @@ config), `data/translation_repository.dart`,
   auto-retry is off app-wide.
 - `translation_language_unsupported` maps to
   `apiErrorTranslationLanguageUnsupported`.
-- `TransportLeg` carries no `sourceLang`: no screen shows leg notes to a viewer.
+- `TransportLeg.sourceLang` lets both toggles leave out a leg already in the
+  reader's language. Leg thoughts are plain text, so their translation is
+  never rendered as markdown either.
 - Tests: `test/models/translation_models_test.dart`,
   `test/repositories/translation_repository_test.dart`,
   `test/providers/content_translation_test.dart`,
   `test/widgets/translation_toggle_test.dart`,
-  `test/widgets/feed_title_test.dart`.
+  `test/widgets/feed_title_test.dart`,
+  `test/widgets/leg_thoughts_test.dart`.
 
 ## Operations
 
@@ -388,8 +403,6 @@ config), `data/translation_repository.dart`,
   rebuilt, the card goes back to the spoken-languages rule.
 - **Three-letter spoken-language codes never match** a detected ISO 639-1
   code, so those readers get the translated feed title.
-- **Transport-leg notes are translatable on the server only** — no screen shows
-  leg notes to a viewer today.
 - **lingua reports Chinese without telling Simplified from Traditional** — both
   are stored as `zh`.
 - **Azure's quota is read off HTTP 403.** Microsoft documents a 403 as

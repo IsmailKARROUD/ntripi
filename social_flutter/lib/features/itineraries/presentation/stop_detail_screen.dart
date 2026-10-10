@@ -1,7 +1,8 @@
 // presentation/stop_detail_screen.dart — Detail view for one stop.
 //
 // Shows the stop's hero header, time/cost/rating stats, notes, annotations
-// (with full message bodies), inbound/outbound transit, and photos grid.
+// (with full message bodies), inbound/outbound transit with each leg's
+// thoughts, and photos grid.
 // Navigation: tapping a stop row in the detail view pushes this screen.
 //
 // No edit mode of its own — it follows the trip's, which is this device holding
@@ -25,6 +26,7 @@ import 'package:social_flutter/features/itineraries/presentation/annotation_scre
 import 'package:social_flutter/features/itineraries/presentation/widgets/edit_lock_banner.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/edit_pencil_button.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/leg_editor.dart';
+import 'package:social_flutter/features/itineraries/presentation/widgets/leg_thoughts.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/link_preview_card.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/long_press_to_edit.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/markdown_notes_editor.dart';
@@ -318,8 +320,9 @@ class _StopDetailView extends ConsumerWidget {
     final hasMapLink = stop.mapUrl != null && isGoogleMapsUrl(stop.mapUrl!);
     final hasCoords = stop.lat != null && stop.lng != null;
     final showMapPreview = hasMapLink || hasCoords;
-    // One toggle swaps the notes and every annotation. Place names are never
-    // translated: nothing records whether the author typed or imported one.
+    // One toggle swaps the notes, every annotation and the thoughts on the
+    // transport in and out. Place names are never translated: nothing records
+    // whether the author typed or imported one.
     final TranslationAnchor translationAnchor =
         (contentType: 'stop', contentId: stop.id);
     final translationMembers = [
@@ -336,6 +339,10 @@ class _StopDetailView extends ConsumerWidget {
           sourceLang: a.sourceLang,
           fields: {'content': a.content},
         ),
+      ...legThoughtsMembers([
+        ...?inboundSegment?.legs,
+        ...?outboundSegment?.legs,
+      ]),
     ];
 
     return Scaffold(
@@ -492,6 +499,8 @@ class _StopDetailView extends ConsumerWidget {
                         direction: _TransitDirection.inbound,
                         currency: currency,
                         allStops: allStops,
+                        translationAnchor: translationAnchor,
+                        translate: !editing,
                         onEditLeg: mayEdit
                             ? (i) => _inEditMode(
                                   context,
@@ -512,6 +521,8 @@ class _StopDetailView extends ConsumerWidget {
                         direction: _TransitDirection.outbound,
                         currency: currency,
                         allStops: allStops,
+                        translationAnchor: translationAnchor,
+                        translate: !editing,
                         onEditLeg: mayEdit
                             ? (i) => _inEditMode(
                                   context,
@@ -1000,6 +1011,12 @@ class _TransitFullRow extends StatelessWidget {
   final String currency;
   final List<Stop> allStops;
 
+  /// The stop's translation group, which the legs' thoughts follow.
+  final TranslationAnchor translationAnchor;
+
+  /// False while the trip is being edited — whoever edits reads the original.
+  final bool translate;
+
   /// Owner shortcut: long-press a leg row to open its form. Null for viewers.
   final void Function(int legIndex)? onEditLeg;
 
@@ -1008,6 +1025,8 @@ class _TransitFullRow extends StatelessWidget {
     required this.direction,
     required this.currency,
     required this.allStops,
+    required this.translationAnchor,
+    required this.translate,
     this.onEditLeg,
   });
 
@@ -1085,12 +1104,17 @@ class _TransitFullRow extends StatelessWidget {
                     Divider(
                         height: 1, color: nt.transitBorder, indent: 12),
                   LongPressToEdit(
+                    // The thoughts sit inside it too: a long-press on them
+                    // opens the same leg form.
                     onEdit:
                         onEditLeg != null ? () => onEditLeg!(i) : null,
                     child: Padding(
                     padding: const EdgeInsets.symmetric(
                         horizontal: 12, vertical: 10),
-                    child: Row(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                    Row(
                       children: [
                         // Mode icon badge
                         Container(
@@ -1149,6 +1173,19 @@ class _TransitFullRow extends StatelessWidget {
                             ),
                           ],
                         ),
+                      ],
+                    ),
+                    if (legs[i].hasNotes)
+                      Padding(
+                        // Under the mode label: 32 badge + 10 gap.
+                        padding: const EdgeInsetsDirectional.only(
+                            start: 42, top: 6),
+                        child: LegThoughts(
+                          leg: legs[i],
+                          anchor: translationAnchor,
+                          translate: translate,
+                        ),
+                      ),
                       ],
                     ),
                   ),

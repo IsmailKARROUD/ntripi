@@ -70,9 +70,16 @@ class TransportLeg {
   final int? durationMin;
   final double cost;
   final bool isFree;
+
+  /// The author's "Thoughts" on this leg. Plain text — the leg form has no
+  /// markdown toolbar, so it is never rendered as markdown.
   final String? notes;
   final AnnotationType? noteType;
   final DateTime createdAt;
+
+  /// Detected language of [notes] (ISO 639-1), or null when the server could
+  /// not tell. Read-only: the server detects it at save time.
+  final String? sourceLang;
 
   const TransportLeg({
     required this.id,
@@ -87,7 +94,10 @@ class TransportLeg {
     this.notes,
     this.noteType,
     required this.createdAt,
+    this.sourceLang,
   });
+
+  bool get hasNotes => notes != null && notes!.trim().isNotEmpty;
 
   factory TransportLeg.fromJson(Map<String, dynamic> json) {
     final rawNoteType = json['note_type'] as String?;
@@ -106,6 +116,7 @@ class TransportLeg {
           ? AnnotationType.fromString(rawNoteType)
           : null,
       createdAt: DateTime.parse(json['created_at'] as String),
+      sourceLang: json['source_lang'] as String?,
     );
   }
 
@@ -122,6 +133,7 @@ class TransportLeg {
         if (notes != null) 'notes': notes,
         if (noteType != null) 'note_type': noteType!.name,
         'created_at': createdAt.toIso8601String(),
+        if (sourceLang != null) 'source_lang': sourceLang,
       };
 
   TransportLeg copyWith({
@@ -137,6 +149,7 @@ class TransportLeg {
     String? notes,
     AnnotationType? noteType,
     DateTime? createdAt,
+    String? sourceLang,
   }) {
     return TransportLeg(
       id: id ?? this.id,
@@ -151,6 +164,7 @@ class TransportLeg {
       notes: notes ?? this.notes,
       noteType: noteType ?? this.noteType,
       createdAt: createdAt ?? this.createdAt,
+      sourceLang: sourceLang ?? this.sourceLang,
     );
   }
 
