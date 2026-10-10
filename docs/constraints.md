@@ -169,6 +169,10 @@ discoverable way to learn the constraints. Logged in
   No surface claims "just for one edit" and hands the claim back afterwards — it
   ends from the trip page's exit, sign-out, or the detach grace once no screen is
   left on it.
+- **The claim is never handed back under a running save.** Every write carrying
+  it goes through `ItineraryDetailNotifier._write` — the only place the token can
+  be read — and ✓/Back wait on `writesSettled()`. Released first, the write is
+  refused after the screen that would show its error has gone.
 
 → [etag-concurrency.md](features/etag-concurrency.md)
 

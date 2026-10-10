@@ -2,10 +2,10 @@
 // reader.
 //
 // They show under the leg on the trip page's transit card and on the stop page,
-// folded to two lines. No page grows a toggle of its own: the trip's "See
+// folded to two lines — in edit mode too, so nothing the reader sees vanishes
+// from under the editor. No page grows a toggle of its own: the trip's "See
 // translation" covers every transit card, and a stop's covers the transport in
-// and out of it. Whoever is editing reads the original, and the editable
-// transit card shows no thoughts — tapping a leg there opens its form.
+// and out of it. Whoever is editing reads the original.
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -319,13 +319,34 @@ void main() {
     });
 
     testWidgets(
-        'in edit mode the card is the editable one, without thoughts — the '
-        'leg\'s form holds them', (tester) async {
-      await _pump(tester, initial: const EditSession(token: 'lock-token'));
+        'in edit mode the editable card shows them too, as written and folded '
+        '— nothing the reader sees disappears from under the editor',
+        (tester) async {
+      final translations =
+          await _pump(tester, initial: const EditSession(token: 'lock-token'));
 
-      expect(find.text(_thought), findsNothing);
+      expect(find.text(_thought), findsOneWidget);
+      expect(tester.widget<Text>(find.text(_thought)).maxLines, 2);
       expect(find.byType(TranslationToggle, skipOffstage: false),
           findsNothing);
+      expect(translations.requests, isEmpty);
+
+      // The link unfolds them in place; it does not open the leg.
+      await tester.tap(find.text(_viewMore));
+      await tester.pumpAndSettle();
+      expect(find.text(_viewLess), findsOneWidget);
+      expect(find.text('Update Transit'), findsNothing);
+    });
+
+    testWidgets(
+        'in edit mode a tap on the thoughts opens the leg, like the rest of '
+        'its row', (tester) async {
+      await _pump(tester, initial: const EditSession(token: 'lock-token'));
+
+      await tester.tap(find.text(_thought));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Update Transit'), findsOneWidget);
     });
   });
 

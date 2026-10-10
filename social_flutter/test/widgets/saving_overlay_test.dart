@@ -1,18 +1,23 @@
 // test/widgets/saving_overlay_test.dart
 //
 // Isolated widget tests for SavingOverlay.
-// Covers: no overlay when idle, blur + loader when saving, and that the
-// overlay swallows taps aimed at widgets underneath it.
+// Covers: no overlay when idle, blur + loader when saving, that the overlay
+// swallows taps aimed at widgets underneath it, and the optional message.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:social_flutter/shared/widgets/loaders.dart';
 import 'package:social_flutter/shared/widgets/saving_overlay.dart';
 
-Widget _host({required bool saving, required VoidCallback onTap}) {
+Widget _host({
+  required bool saving,
+  required VoidCallback onTap,
+  String? message,
+}) {
   return MaterialApp(
     home: SavingOverlay(
       saving: saving,
+      message: message,
       child: Scaffold(
         body: Center(
           child: ElevatedButton(
@@ -60,6 +65,25 @@ void main() {
       // warnIfMissed: false — the button is intentionally obstructed.
       await tester.tap(find.text('Save'), warnIfMissed: false);
       expect(tapped, 0);
+    });
+
+    testWidgets(
+        'Given a message, Then it is shown under the loader and announced, '
+        'and only while saving', (tester) async {
+      const message = 'Saving your changes…';
+      await tester.pumpWidget(
+          _host(saving: true, onTap: () {}, message: message));
+
+      expect(find.text(message), findsOneWidget);
+      expect(find.byType(NTripiRingLoader), findsOneWidget);
+      final announced = tester.widget<Semantics>(find
+          .ancestor(of: find.text(message), matching: find.byType(Semantics))
+          .first);
+      expect(announced.properties.liveRegion, isTrue);
+
+      await tester.pumpWidget(
+          _host(saving: false, onTap: () {}, message: message));
+      expect(find.text(message), findsNothing);
     });
   });
 }

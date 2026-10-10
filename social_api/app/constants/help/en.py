@@ -106,8 +106,12 @@ RELEASES: tuple[Release, ...] = (
             "else is editing now says who and offers to take over; editing a stop "
             "there also starts editing the whole trip.",
             "**Thoughts on transport.** What the author wrote about a leg — which "
-            "car to board, where to buy the ticket — now shows under it, folded "
-            "to two lines with **view more**, and translates with the rest.",
+            "car to board, where to buy the ticket — now shows under it, while "
+            "you edit too, folded to two lines with **view more**, and translates "
+            "with the rest.",
+            "**Your change is saved before you stop editing.** Tap ✓ while a "
+            "change is still saving and Ntripi says so, then leaves edit mode once "
+            "it is saved. If the save fails you stay in edit mode, with the reason.",
         ),
     ),
     Release(
@@ -696,7 +700,7 @@ ARTICLES: tuple[Article, ...] = (
         ),
         category="building",
         schema=SCHEMA_HOWTO,
-        updated="2026-10-08",
+        updated="2026-10-10",
         keywords=(
             "transport", "transit", "bus", "train", "metro", "taxi", "walk",
             "drive", "flight", "connection", "leg", "segment", "how to get there",
@@ -757,8 +761,9 @@ ARTICLES: tuple[Article, ...] = (
                     "friend making the same journey — which car to board for the "
                     "exit, where to buy the ticket, a fare that caught you out.\n\n"
                     "Readers see them under the leg: between the stops on the trip, "
-                    "and on the pages of the two stops it joins. Long ones fold to "
-                    "two lines with **view more**."
+                    "and on the pages of the two stops it joins. You see them there "
+                    "while you edit, too. Long ones fold to two lines with **view "
+                    "more**."
                 ),
             ),
             Block(
@@ -936,7 +941,7 @@ ARTICLES: tuple[Article, ...] = (
         ),
         category="building",
         schema=SCHEMA_HOWTO,
-        updated="2026-10-08",
+        updated="2026-10-10",
         keywords=(
             "collaborate", "collaboration", "together", "shared", "editor",
             "editors", "invite", "group", "friends", "family", "co-edit",
@@ -993,7 +998,10 @@ ARTICLES: tuple[Article, ...] = (
                     "The alternative is two people typing into the same stop and "
                     "one of them losing everything without being told. Holding it "
                     "is brief — it is released when you leave, and it lapses on its "
-                    "own if you get distracted."
+                    "own if you get distracted.\n\n"
+                    "A change still saving when you tap ✓ is finished first: Ntripi "
+                    "says it is saving and lets go of the trip once the change has "
+                    "landed. If it fails you stay in edit mode, with the reason."
                 ),
             ),
             Block(

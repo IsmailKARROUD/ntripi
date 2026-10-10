@@ -7,6 +7,8 @@
 //   placeSearchProvider        — Nominatim suggestions for the stop form
 //   mapPlaceSearchProvider     — Nominatim suggestions for the map picker
 
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:social_flutter/core/connectivity/connectivity_service.dart';
@@ -154,12 +156,48 @@ class ItineraryDetailNotifier extends AsyncNotifier<Itinerary> {
   /// a reload — a safe fallback.
   String get _etag => state.value?.eTag ?? '';
 
-  /// The edit claim for the X-Edit-Lock header, from the session this device
-  /// holds. Null when no session was started — the server answers 428 and the
-  /// presentation layer surfaces it, which is the right outcome: a mutation
-  /// fired outside edit mode is a client bug, not something to paper over by
-  /// claiming a lock nobody asked for.
-  String? get _lockToken => ref.read(editLockProvider(arg)).token;
+  // Writes carrying this device's claim that are still running, refresh
+  // included, and whether one of them failed since the count was last zero.
+  int _writesInFlight = 0;
+  bool _writeFailed = false;
+  Completer<bool>? _writesSettled;
+
+  /// Whether a write carrying this device's edit claim is still running.
+  bool get hasWritesInFlight => _writesInFlight > 0;
+
+  /// Completes once no write is running: true when every write that ran in
+  /// the meantime landed, false when one failed (its caller shows the error).
+  ///
+  /// Leaving edit mode waits on this. Handing the claim back under a running
+  /// write made the server refuse it — after the screen that would have shown
+  /// the error had gone, so the change was lost without a word.
+  Future<bool> writesSettled() => _writesInFlight == 0
+      ? Future.value(true)
+      : (_writesSettled ??= Completer<bool>()).future;
+
+  /// Runs a write that carries this device's edit claim, counted until it and
+  /// its refresh are done.
+  ///
+  /// The claim reaches [body] as `lockToken` and is readable nowhere else, so
+  /// no write can skip the count. Null when no session was started — the server
+  /// answers 428 and the presentation layer surfaces it, which is the right
+  /// outcome: a mutation fired outside edit mode is a client bug, not something
+  /// to paper over by claiming a lock nobody asked for.
+  Future<T> _write<T>(Future<T> Function(String? lockToken) body) async {
+    if (_writesInFlight++ == 0) _writeFailed = false;
+    try {
+      return await body(ref.read(editLockProvider(arg)).token);
+    } catch (_) {
+      _writeFailed = true;
+      rethrow;
+    } finally {
+      if (--_writesInFlight == 0) {
+        final settled = _writesSettled;
+        _writesSettled = null;
+        settled?.complete(!_writeFailed);
+      }
+    }
+  }
 
   /// Full re-fetch from the server.
   /// Called after every mutation so totals and track structure are up-to-date,
@@ -184,23 +222,25 @@ class ItineraryDetailNotifier extends AsyncNotifier<Itinerary> {
   /// does not need to know about concurrency control. Returns the created
   /// [Stop] so callers can act on its real server-assigned id (e.g. attach
   /// annotations) — the new stop is not necessarily last in rank order.
-  Future<Stop> addStop(Map<String, dynamic> data) async {
-    final created = await ref
-        .read(itineraryRepositoryProvider)
-        .addStop(arg, data, etag: _etag, lockToken: _lockToken);
-    _listsChanged();
-    await refresh();
-    return created;
-  }
+  Future<Stop> addStop(Map<String, dynamic> data) =>
+      _write((lockToken) async {
+        final created = await ref
+            .read(itineraryRepositoryProvider)
+            .addStop(arg, data, etag: _etag, lockToken: lockToken);
+        _listsChanged();
+        await refresh();
+        return created;
+      });
 
   /// Update a stop, then refresh.
-  Future<void> updateStop(String stopId, Map<String, dynamic> data) async {
-    await ref
-        .read(itineraryRepositoryProvider)
-        .updateStop(arg, stopId, data, etag: _etag, lockToken: _lockToken);
-    _listsChanged();
-    await refresh();
-  }
+  Future<void> updateStop(String stopId, Map<String, dynamic> data) =>
+      _write((lockToken) async {
+        await ref
+            .read(itineraryRepositoryProvider)
+            .updateStop(arg, stopId, data, etag: _etag, lockToken: lockToken);
+        _listsChanged();
+        await refresh();
+      });
 
   /// The list rows show this trip's title, cover, stop count and totals, and
   /// both lists are keep-alive — without this a rename or a new stop stayed
@@ -222,18 +262,19 @@ class ItineraryDetailNotifier extends AsyncNotifier<Itinerary> {
     Map<String, List<String>>? stopOrders,
     List<String>? trackOrder,
     List<String>? segmentIdsToDelete,
-  }) async {
-    await ref
-        .read(itineraryRepositoryProvider)
-        .reorderItinerary(
-          arg,
-          stopOrders: stopOrders,
-          trackOrder: trackOrder,
-          segmentIdsToDelete: segmentIdsToDelete,
-          etag: _etag, lockToken: _lockToken,
-        );
-    await refresh();
-  }
+  }) =>
+      _write((lockToken) async {
+        await ref
+            .read(itineraryRepositoryProvider)
+            .reorderItinerary(
+              arg,
+              stopOrders: stopOrders,
+              trackOrder: trackOrder,
+              segmentIdsToDelete: segmentIdsToDelete,
+              etag: _etag, lockToken: lockToken,
+            );
+        await refresh();
+      });
 
   /// Move a stop to a new position.
   ///
@@ -253,7 +294,7 @@ class ItineraryDetailNotifier extends AsyncNotifier<Itinerary> {
     String? targetTrackId,
     String? afterTrackId,
     String? beforeTrackId,
-  }) async {
+  }) {
     final body = <String, dynamic>{
       if (afterStopId != null) 'after_stop_id': afterStopId,
       if (beforeStopId != null) 'before_stop_id': beforeStopId,
@@ -261,27 +302,33 @@ class ItineraryDetailNotifier extends AsyncNotifier<Itinerary> {
       if (afterTrackId != null) 'after_track_id': afterTrackId,
       if (beforeTrackId != null) 'before_track_id': beforeTrackId,
     };
-    final updated = await ref
-        .read(itineraryRepositoryProvider)
-        .updateStop(arg, stopId, body, etag: _etag, lockToken: _lockToken);
-    await refresh();
-    return updated;
+    return _write((lockToken) async {
+      final updated = await ref
+          .read(itineraryRepositoryProvider)
+          .updateStop(arg, stopId, body, etag: _etag, lockToken: lockToken);
+      await refresh();
+      return updated;
+    });
   }
 
   /// Delete a stop, then refresh.
-  Future<void> deleteStop(String stopId) async {
-    await ref
-        .read(itineraryRepositoryProvider)
-        .deleteStop(arg, stopId, etag: _etag, lockToken: _lockToken);
-    _listsChanged();
-    await refresh();
-  }
+  Future<void> deleteStop(String stopId) => _write((lockToken) async {
+        await ref
+            .read(itineraryRepositoryProvider)
+            .deleteStop(arg, stopId, etag: _etag, lockToken: lockToken);
+        _listsChanged();
+        await refresh();
+      });
 
   /// Update itinerary header fields.
-  Future<Itinerary> updateHeader(Map<String, dynamic> data) async {
+  Future<Itinerary> updateHeader(Map<String, dynamic> data) =>
+      _write((lockToken) => _updateHeader(data, lockToken));
+
+  Future<Itinerary> _updateHeader(
+      Map<String, dynamic> data, String? lockToken) async {
     final updated = await ref
         .read(itineraryRepositoryProvider)
-        .updateItinerary(arg, data, etag: _etag, lockToken: _lockToken);
+        .updateItinerary(arg, data, etag: _etag, lockToken: lockToken);
     if (!ref.mounted) return updated; // disposed mid-request (logout)
     _listsChanged();
     state.whenData((current) {
@@ -321,40 +368,44 @@ class ItineraryDetailNotifier extends AsyncNotifier<Itinerary> {
   }
 
   /// Create a transit segment and refresh.
-  Future<void> createSegment(Map<String, dynamic> data) async {
-    await ref
-        .read(itineraryRepositoryProvider)
-        .createSegment(arg, data, etag: _etag, lockToken: _lockToken);
-    await refresh();
-  }
+  Future<void> createSegment(Map<String, dynamic> data) =>
+      _write((lockToken) async {
+        await ref
+            .read(itineraryRepositoryProvider)
+            .createSegment(arg, data, etag: _etag, lockToken: lockToken);
+        await refresh();
+      });
 
   /// Update (replace) a transit segment and refresh.
   Future<void> updateSegment(
     String segmentId,
     Map<String, dynamic> data,
-  ) async {
-    await ref
-        .read(itineraryRepositoryProvider)
-        .updateSegment(arg, segmentId, data,
-            etag: _etag, lockToken: _lockToken);
-    await refresh();
-  }
+  ) =>
+      _write((lockToken) async {
+        await ref
+            .read(itineraryRepositoryProvider)
+            .updateSegment(arg, segmentId, data,
+                etag: _etag, lockToken: lockToken);
+        await refresh();
+      });
 
   /// Delete a transit segment and refresh.
-  Future<void> deleteSegment(String segmentId) async {
-    await ref
-        .read(itineraryRepositoryProvider)
-        .deleteSegment(arg, segmentId, etag: _etag, lockToken: _lockToken);
-    await refresh();
-  }
+  Future<void> deleteSegment(String segmentId) => _write((lockToken) async {
+        await ref
+            .read(itineraryRepositoryProvider)
+            .deleteSegment(arg, segmentId, etag: _etag, lockToken: lockToken);
+        await refresh();
+      });
 
   /// Add a stop-level annotation, then refresh.
-  Future<void> addAnnotation(String stopId, Map<String, dynamic> data) async {
-    await ref
-        .read(itineraryRepositoryProvider)
-        .addAnnotation(arg, stopId, data, etag: _etag, lockToken: _lockToken);
-    await refresh();
-  }
+  Future<void> addAnnotation(String stopId, Map<String, dynamic> data) =>
+      _write((lockToken) async {
+        await ref
+            .read(itineraryRepositoryProvider)
+            .addAnnotation(arg, stopId, data,
+                etag: _etag, lockToken: lockToken);
+        await refresh();
+      });
 
   /// Update a stop-level annotation, then refresh.
   Future<void> updateAnnotation(
@@ -362,61 +413,69 @@ class ItineraryDetailNotifier extends AsyncNotifier<Itinerary> {
     String annotationId, {
     String? content,
     AnnotationType? type,
-  }) async {
-    await ref
-        .read(itineraryRepositoryProvider)
-        .updateAnnotation(
-          arg,
-          stopId,
-          annotationId,
-          content: content,
-          type: type,
-          etag: _etag, lockToken: _lockToken,
-        );
-    await refresh();
-  }
+  }) =>
+      _write((lockToken) async {
+        await ref
+            .read(itineraryRepositoryProvider)
+            .updateAnnotation(
+              arg,
+              stopId,
+              annotationId,
+              content: content,
+              type: type,
+              etag: _etag, lockToken: lockToken,
+            );
+        await refresh();
+      });
 
   /// Delete a stop-level annotation, then refresh.
-  Future<void> deleteAnnotation(String stopId, String annotationId) async {
-    await ref
-        .read(itineraryRepositoryProvider)
-        .deleteAnnotation(arg, stopId, annotationId, etag: _etag, lockToken: _lockToken);
-    await refresh();
-  }
+  Future<void> deleteAnnotation(String stopId, String annotationId) =>
+      _write((lockToken) async {
+        await ref
+            .read(itineraryRepositoryProvider)
+            .deleteAnnotation(arg, stopId, annotationId,
+                etag: _etag, lockToken: lockToken);
+        await refresh();
+      });
 
   /// Add an itinerary-level annotation, then refresh.
-  Future<void> addItineraryAnnotation(Map<String, dynamic> data) async {
-    await ref
-        .read(itineraryRepositoryProvider)
-        .addItineraryAnnotation(arg, data, etag: _etag, lockToken: _lockToken);
-    await refresh();
-  }
+  Future<void> addItineraryAnnotation(Map<String, dynamic> data) =>
+      _write((lockToken) async {
+        await ref
+            .read(itineraryRepositoryProvider)
+            .addItineraryAnnotation(arg, data,
+                etag: _etag, lockToken: lockToken);
+        await refresh();
+      });
 
   /// Update an itinerary-level annotation, then refresh.
   Future<void> updateItineraryAnnotation(
     String annotationId, {
     String? content,
     AnnotationType? type,
-  }) async {
-    await ref
-        .read(itineraryRepositoryProvider)
-        .updateItineraryAnnotation(
-          arg,
-          annotationId,
-          content: content,
-          type: type,
-          etag: _etag, lockToken: _lockToken,
-        );
-    await refresh();
-  }
+  }) =>
+      _write((lockToken) async {
+        await ref
+            .read(itineraryRepositoryProvider)
+            .updateItineraryAnnotation(
+              arg,
+              annotationId,
+              content: content,
+              type: type,
+              etag: _etag, lockToken: lockToken,
+            );
+        await refresh();
+      });
 
   /// Delete an itinerary-level annotation, then refresh.
-  Future<void> deleteItineraryAnnotation(String annotationId) async {
-    await ref
-        .read(itineraryRepositoryProvider)
-        .deleteItineraryAnnotation(arg, annotationId, etag: _etag, lockToken: _lockToken);
-    await refresh();
-  }
+  Future<void> deleteItineraryAnnotation(String annotationId) =>
+      _write((lockToken) async {
+        await ref
+            .read(itineraryRepositoryProvider)
+            .deleteItineraryAnnotation(arg, annotationId,
+                etag: _etag, lockToken: lockToken);
+        await refresh();
+      });
 }
 
 final itineraryDetailProvider =

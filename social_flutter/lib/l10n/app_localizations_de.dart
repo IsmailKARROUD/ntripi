@@ -3368,6 +3368,14 @@ class AppLocalizationsDe extends AppLocalizations {
   String get editLockReclaim => 'Zurückholen versuchen';
 
   @override
+  String get editModeLeaveAfterSave =>
+      'Deine Änderungen werden gespeichert… Du verlässt den Bearbeitungsmodus, sobald sie gespeichert sind.';
+
+  @override
+  String get editModeStayedAfterFailedSave =>
+      'Deine Änderung wurde nicht gespeichert, deshalb bist du noch im Bearbeitungsmodus.';
+
+  @override
   String get editLockReclaimed => 'Du bearbeitest wieder';
 
   @override

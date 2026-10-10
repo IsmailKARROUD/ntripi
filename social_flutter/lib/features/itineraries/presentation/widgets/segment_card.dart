@@ -5,8 +5,9 @@
 // so it looks visually nested between them.
 // onEdit / onDelete are null in read-only mode; non-null in edit mode.
 //
-// Read mode shows each leg's thoughts under it (LegThoughts), translated with
-// the group named by translationAnchor — the trip's, on the trip page.
+// Both modes show each leg's thoughts under it (LegThoughts). Read mode
+// translates them with the group named by translationAnchor — the trip's, on
+// the trip page; edit mode shows them as written.
 //
 // In edit mode the card supports inline leg management:
 //   - Tap any badge to edit that leg via LegFormDialog.
@@ -172,44 +173,63 @@ class _SegmentCardState extends ConsumerState<SegmentCard> {
                 onTap: _saving ? null : () => _editLeg(i),
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(12, 9, 12, 9),
-                  child: Row(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Icon(legs[i].mode.icon, size: 16, color: nt.transitIcon),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(legs[i].mode.label(l10n),
+                      Row(
+                        children: [
+                          Icon(legs[i].mode.icon,
+                              size: 16, color: nt.transitIcon),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(legs[i].mode.label(l10n),
+                                    style: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w700,
+                                        color: nt.transitText)),
+                                if (legs[i].line != null &&
+                                    legs[i].line!.isNotEmpty)
+                                  Text(legs[i].line!,
+                                      style: TextStyle(
+                                          fontSize: 11,
+                                          color: nt.transitIcon)),
+                              ],
+                            ),
+                          ),
+                          if (fmtMin(legs[i].durationMin).isNotEmpty) ...[
+                            Text(fmtMin(legs[i].durationMin),
                                 style: TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w700,
-                                    color: nt.transitText)),
-                            if (legs[i].line != null &&
-                                legs[i].line!.isNotEmpty)
-                              Text(legs[i].line!,
+                                    fontSize: 12, color: nt.transitText)),
+                            Padding(
+                              padding: EdgeInsets.symmetric(horizontal: 4),
+                              child: Text('·',
                                   style: TextStyle(
-                                      fontSize: 11, color: nt.transitIcon)),
+                                      fontSize: 12, color: nt.transitText)),
+                            ),
                           ],
-                        ),
-                      ),
-                      if (fmtMin(legs[i].durationMin).isNotEmpty) ...[
-                        Text(fmtMin(legs[i].durationMin),
-                            style: TextStyle(
-                                fontSize: 12, color: nt.transitText)),
-                        Padding(
-                          padding: EdgeInsets.symmetric(horizontal: 4),
-                          child: Text('·',
+                          Text(fmtCost(legs[i].cost, legs[i].isFree),
                               style: TextStyle(
                                   fontSize: 12, color: nt.transitText)),
+                          const SizedBox(width: 6),
+                          Icon(Icons.chevron_right_rounded,
+                              size: 14, color: nt.transitIcon),
+                        ],
+                      ),
+                      // The same thoughts read mode shows, as written — the
+                      // editor reads the original. A tap on them opens the
+                      // leg like the rest of the row; only the link unfolds.
+                      if (legs[i].hasNotes)
+                        Padding(
+                          padding: const EdgeInsetsDirectional.only(
+                              start: 24, top: 4),
+                          child: LegThoughts(
+                            leg: legs[i],
+                            expandOnTextTap: false,
+                          ),
                         ),
-                      ],
-                      Text(fmtCost(legs[i].cost, legs[i].isFree),
-                          style: TextStyle(
-                              fontSize: 12, color: nt.transitText)),
-                      const SizedBox(width: 6),
-                      Icon(Icons.chevron_right_rounded,
-                          size: 14, color: nt.transitIcon),
                     ],
                   ),
                 ),

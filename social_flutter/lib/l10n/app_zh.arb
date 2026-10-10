@@ -1064,6 +1064,8 @@
   "editLockLostMessage": "{name} 正在编辑，因此此更改未保存。你的文字仍在这里——复制你需要的内容，或尝试收回会话。",
   "editLockLostMessageUnknown": "其他人正在编辑，因此此更改未保存。你的文字仍在这里——复制你需要的内容，或尝试收回会话。",
   "editLockReclaim": "尝试收回",
+  "editModeLeaveAfterSave": "正在保存你的更改…保存完成后会自动退出编辑模式。",
+  "editModeStayedAfterFailedSave": "你的更改未能保存，所以你仍在编辑模式中。",
   "editLockReclaimed": "你又在编辑了",
   "editLockCopyText": "复制我的文字",
   "editLockCopied": "已复制",

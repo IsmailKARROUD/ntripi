@@ -89,7 +89,8 @@ RELEASES: tuple[Release, ...] = (
             "**Ver traducción**, bajo un viaje, una parada o una reseña, lo traduce al idioma de tu aplicación; **Ver original** lo devuelve.",
             "**Títulos del feed en tu idioma.** Los títulos de los viajes públicos llegan ya traducidos, salvo que estén en un idioma que hablas.",
             "**Tomar el relevo desde una parada.** Tocar el lápiz de una parada que otra persona está editando ahora dice quién es y ofrece tomar el control; editar una parada desde su página también empieza a editar todo el viaje.",
-            "**Impresiones sobre el transporte.** Lo que el autor escribió sobre un tramo — en qué vagón subir, dónde comprar el billete — ahora aparece debajo, plegado en dos líneas con **ver más**, y se traduce con el resto.",
+            "**Impresiones sobre el transporte.** Lo que el autor escribió sobre un tramo — en qué vagón subir, dónde comprar el billete — ahora aparece debajo, también mientras editas, plegado en dos líneas con **ver más**, y se traduce con el resto.",
+            "**Tu cambio se guarda antes de dejar de editar.** Si tocas ✓ mientras un cambio aún se está guardando, Ntripi te lo dice y sale del modo de edición en cuanto se guarda. Si falla, sigues en modo de edición, con el motivo.",
         ),
     ),
     Release(
@@ -558,7 +559,7 @@ La dirección es el detalle que importa el día en cuestión. Saber que quieres 
                 kind=KIND_STEP,
                 body="""Cada tramo tiene un campo **Impresiones** para lo que le dirías a un amigo que hace el mismo trayecto — en qué vagón subir para quedar cerca de la salida, dónde comprar el billete, una tarifa que te pilló por sorpresa.
 
-Quienes leen el viaje las ven bajo el tramo: entre las paradas del viaje y en las páginas de las dos paradas que une. Las largas se pliegan en dos líneas con **ver más**.""",
+Quienes leen el viaje las ven bajo el tramo: entre las paradas del viaje y en las páginas de las dos paradas que une. Tú también las ves ahí mientras editas. Las largas se pliegan en dos líneas con **ver más**.""",
             ),
             Block(
                 anchor="orphaned-connections",
@@ -586,7 +587,7 @@ Ntripi pregunta antes de hacerlo en vez de descartar en silencio lo que introduj
             "consejos",
         ),
         related=("add-places-to-an-itinerary", "plan-alternative-options"),
-        updated="2026-10-08",
+        updated="2026-10-10",
         cta="Traza un desplazamiento, con transbordos incluidos.",
     ),
     Article(
@@ -741,7 +742,9 @@ Si el viaje es solo para seguidores o solo para ti, una lista de permitidos no s
                 heading="Por qué solo una persona puede editar a la vez",
                 body="""Cuando abres un viaje para editarlo, lo retienes. Cualquier otra persona ve **«alguien más está editando»** y puede leer pero no guardar.
 
-La alternativa es que dos personas escriban en la misma parada y una de ellas lo pierda todo sin que se lo digan. La retención es breve: se suelta cuando sales y caduca por sí sola si te distraes.""",
+La alternativa es que dos personas escriban en la misma parada y una de ellas lo pierda todo sin que se lo digan. La retención es breve: se suelta cuando sales y caduca por sí sola si te distraes.
+
+Si un cambio aún se está guardando cuando tocas ✓, primero se termina: Ntripi indica que está guardando y suelta el viaje cuando el cambio ha llegado. Si falla, sigues en modo de edición, con el motivo.""",
             ),
             Block(
                 anchor="taking-over",
@@ -782,7 +785,7 @@ Recupera el viaje y guarda, o copia tu texto y pégalo cuando la otra persona ha
             "bloqueo",
         ),
         related=("share-an-itinerary-privately", "plan-alternative-options", "troubleshooting"),
-        updated="2026-10-08",
+        updated="2026-10-10",
         cta="Planifica tu próximo viaje con quienes van a hacerlo.",
     ),
     Article(

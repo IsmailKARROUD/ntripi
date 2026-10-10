@@ -1160,3 +1160,41 @@ where a reader plans the journey). Rendering them as markdown (the form is a
 plain field, so a typed `#` would become a heading). A third private copy of
 "view more" (the extract-on-second-occurrence rule, and the two copies were
 already measuring wrong).
+
+---
+
+### 2026-10-10 — Leaving edit mode waits for the saves that carry the claim; leg thoughts show while editing
+
+**Context.** ✓ (and Back) left edit mode at once and released the edit claim.
+A leg save still on its way carried that claim: when the release reached the
+server first, the save was refused — and the editable card that showed its
+spinner, and would have shown its error, had already been swapped for the
+read-mode one, so the change was lost without a word. Separately, the
+2026-10-08 entry kept a leg's thoughts out of the editable transit card, so
+they vanished the moment the author started editing, which read as a bug.
+**Decision.** Every write that carries the claim goes through
+`ItineraryDetailNotifier._write`, which hands it the token — readable nowhere
+else — and counts it until it and its refresh are done. ✓ and Back go through
+`_requestExitEditMode`: with nothing running it leaves at once; otherwise the
+page goes under `SavingOverlay` with a message, takes no new edit, and leaves
+once every write has landed. A write that failed keeps edit mode and the claim,
+under that write's own error and then one line saying why the page is still
+editing — the only word on it when the save came from the stop page, which has
+no screen left to report on. The editable transit card shows each leg's
+thoughts as written; a tap on them opens the leg, only the link unfolds them.
+This supersedes the 2026-10-08 entry's "the editable transit card still shows
+no thoughts".
+**Consequences.** The guard covers every write that carries the claim on the
+trip page — leg saves, adding or removing a transport, deleting a note, the
+best-time-to-visit save, reorders — and any future one, which cannot reach the
+token another way. A flow that saves twice in a row (deleting orphaned
+segments, then opening the stop form) can still be cut between its writes; it
+is recorded as a known gap. The overlay blocks the whole page while it waits,
+usually for about a second.
+**Alternatives rejected.** Refusing ✓ with "try again in a moment" (it makes
+the user do the waiting the app can do itself). Leaving edit mode at once and
+finishing the save in the background (the read-mode card shows the old values
+until the save lands, and a failure surfaces after the user has moved on).
+Guarding leg saves only (every claim-carrying write had the same race). A
+counter that each call site keeps (one forgotten site reopens the race; routing
+the token through `_write` makes skipping it a compile error).

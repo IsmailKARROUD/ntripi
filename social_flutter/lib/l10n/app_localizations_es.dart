@@ -3342,6 +3342,14 @@ class AppLocalizationsEs extends AppLocalizations {
   String get editLockReclaim => 'Intentar recuperarla';
 
   @override
+  String get editModeLeaveAfterSave =>
+      'Guardando tus cambios… Saldrás del modo de edición en cuanto se guarden.';
+
+  @override
+  String get editModeStayedAfterFailedSave =>
+      'Tu cambio no se guardó, así que sigues en modo de edición.';
+
+  @override
   String get editLockReclaimed => 'Vuelves a estar editando';
 
   @override

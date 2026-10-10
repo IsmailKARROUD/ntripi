@@ -1516,6 +1516,8 @@
   "editLockLostMessage": "{name} is editing now, so this change wasn't saved. Your text is still here — copy anything you need, or try to take the session back.",
   "editLockLostMessageUnknown": "Somebody else is editing now, so this change wasn't saved. Your text is still here — copy anything you need, or try to take the session back.",
   "editLockReclaim": "Try to take it back",
+  "editModeLeaveAfterSave": "Saving your changes… You'll leave edit mode as soon as they're saved.",
+  "editModeStayedAfterFailedSave": "Your change wasn't saved, so you're still in edit mode.",
   "editLockReclaimed": "You're editing again",
   "editLockCopyText": "Copy my text",
   "editLockCopied": "Copied",

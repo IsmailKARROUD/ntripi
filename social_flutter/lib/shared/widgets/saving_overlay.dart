@@ -12,6 +12,7 @@ class SavingOverlay extends StatelessWidget {
     super.key,
     required this.saving,
     required this.child,
+    this.message,
     this.tint,
     this.loaderSize = 56,
     this.borderRadius,
@@ -19,6 +20,10 @@ class SavingOverlay extends StatelessWidget {
 
   final bool saving;
   final Widget child;
+
+  /// Said under the loader — for a wait the user did not start by tapping
+  /// Save, where a bare spinner would not explain itself.
+  final String? message;
 
   /// Scrim color over the blur. Defaults to `nt.surface`, the ground every
   /// route and sheet paints (theme lookups aren't const, so it resolves in
@@ -51,7 +56,35 @@ class SavingOverlay extends StatelessWidget {
                   child: Container(
                     color: (tint ?? nt.surface).withValues(alpha: 0.35),
                     alignment: Alignment.center,
-                    child: NTripiRingLoader(size: loaderSize),
+                    child: message == null
+                        ? NTripiRingLoader(size: loaderSize)
+                        : Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              NTripiRingLoader(size: loaderSize),
+                              const SizedBox(height: 16),
+                              Padding(
+                                padding:
+                                    const EdgeInsets.symmetric(horizontal: 32),
+                                // Announced as it appears: a screen reader
+                                // otherwise hears nothing while taps are
+                                // swallowed.
+                                child: Semantics(
+                                  liveRegion: true,
+                                  child: Text(
+                                    message!,
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                      fontSize: 15,
+                                      height: 1.4,
+                                      fontWeight: FontWeight.w600,
+                                      color: nt.bark,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
                   ),
                 ),
               ),

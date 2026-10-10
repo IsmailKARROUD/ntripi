@@ -1435,6 +1435,8 @@
   "editLockLostMessage": "يحرّر {name} الآن، لذا لم يُحفَظ هذا التغيير. نصّك ما زال هنا — انسخ ما تحتاجه، أو حاوِل استعادة الجلسة.",
   "editLockLostMessageUnknown": "يحرّر شخص آخر الآن، لذا لم يُحفَظ هذا التغيير. نصّك ما زال هنا — انسخ ما تحتاجه، أو حاوِل استعادة الجلسة.",
   "editLockReclaim": "محاولة الاستعادة",
+  "editModeLeaveAfterSave": "جارٍ حفظ تغييراتك… ستخرج من وضع التحرير فور حفظها.",
+  "editModeStayedAfterFailedSave": "لم يُحفَظ تغييرك، لذا ما زلت في وضع التحرير.",
   "editLockReclaimed": "عُدتَ إلى التحرير",
   "editLockCopyText": "نسخ نصّي",
   "editLockCopied": "تم النسخ",

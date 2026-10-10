@@ -107,10 +107,16 @@ endpoints are defined in the backend for future API consumers."*
 - **Plain text, never markdown.** The leg form is a plain `TextField` with no
   toolbar, so a typed `#` or `*` stays a character — unlike stop notes, which
   are written with the markdown editor and rendered with `InertMarkdownBody`.
-- The editable transit card (the trip page in edit mode) shows no thoughts;
-  tapping a leg opens its form, which holds them. On the stop page the thoughts
-  sit inside the leg row's `LongPressToEdit`, so an owner or editor's long-press
-  on them opens that leg's form.
+- **The editable transit card shows them too** (since 2026-10-10), as written —
+  edit mode never translates — so nothing a reader sees disappears from under
+  the person editing it. There a tap on the thoughts opens the leg's form like
+  the rest of its row, and only the link unfolds them
+  (`LegThoughts(expandOnTextTap: false)`). On the stop page the thoughts sit
+  inside the leg row's `LongPressToEdit`, so an owner or editor's long-press on
+  them opens that leg's form.
+- A leg save runs under the edit claim like every other write: ✓ or Back while
+  it runs waits for it before leaving edit mode — see
+  [collaborative-editing.md](collaborative-editing.md).
 - **Translation adds no toggle of its own.** On the trip page the trip's "See
   translation" covers every leg's thoughts; on a stop page the stop's covers its
   inbound and outbound legs — see [translations.md](translations.md).

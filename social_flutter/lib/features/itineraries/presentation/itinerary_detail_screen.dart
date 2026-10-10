@@ -81,6 +81,7 @@ import 'package:social_flutter/shared/widgets/markdown_edit_screen.dart';
 import 'package:social_flutter/shared/widgets/appeal_sheet.dart';
 import 'package:social_flutter/shared/widgets/moderation_hidden_banner.dart';
 import 'package:social_flutter/shared/widgets/offline_gate.dart';
+import 'package:social_flutter/shared/widgets/saving_overlay.dart';
 import 'package:social_flutter/shared/widgets/shadow_divider.dart';
 import 'package:social_flutter/core/utils/platform_utils.dart';
 import 'package:social_flutter/features/itineraries/presentation/widgets/leg_form_dialog.dart';
@@ -111,6 +112,9 @@ class ItineraryDetailScreen extends ConsumerStatefulWidget {
 
 class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
   bool _editMode = false;
+  // ✓ or Back was pressed while a save was running: the page waits for it
+  // under SavingOverlay, then leaves edit mode (_requestExitEditMode).
+  bool _exitPending = false;
   // The best-time PATCH is the one inline save on this screen with no editor of
   // its own to spin in: the picker pops on Done and the write happens here, so
   // without this the row just sits on the old value until the response lands.
@@ -358,6 +362,39 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
   void _exitEditMode() {
     setState(() => _editMode = false);
     unawaited(ref.read(editLockProvider(widget.itineraryId).notifier).release());
+  }
+
+  /// What ✓ and Back do in edit mode: leave it — but never under a save.
+  ///
+  /// A running write carries this device's claim. Handing the claim back then
+  /// made the server refuse the write after the card showing its spinner had
+  /// gone, so the change was lost without a word. Instead the page says it is
+  /// saving and takes no more edits until every write has landed, then leaves;
+  /// a write that failed keeps it in edit mode, under that write's own error.
+  Future<void> _requestExitEditMode() async {
+    if (_exitPending) return;
+    final notifier =
+        ref.read(itineraryDetailProvider(widget.itineraryId).notifier);
+    if (!notifier.hasWritesInFlight) {
+      _exitEditMode();
+      return;
+    }
+    setState(() => _exitPending = true);
+    final saved = await notifier.writesSettled();
+    if (!mounted) return;
+    setState(() => _exitPending = false);
+    if (saved) {
+      if (_editMode) _exitEditMode();
+      return;
+    }
+    // After the failed write's own error, which its caller shows — and the only
+    // word on it when that caller's screen (the stop page) has already gone.
+    await Future<void>.delayed(Duration.zero);
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content:
+          Text(AppLocalizations.of(context)!.editModeStayedAfterFailedSave),
+    ));
   }
 
   /// Closing cue — the mirror of the open cue above.
@@ -647,11 +684,16 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
           _playCloseCue();
           return;
         }
-        _exitEditMode();
+        unawaited(_requestExitEditMode());
       },
       child: Scaffold(
         backgroundColor: nt.surface,
-        body: SafeArea(
+        // Waiting out a save before leaving edit mode: no new edit may start
+        // under a claim about to be handed back, and the wait says why.
+        body: SavingOverlay(
+          saving: _exitPending,
+          message: l10n.editModeLeaveAfterSave,
+          child: SafeArea(
           top: false, // cover hero extends behind status bar
           child: Center(
             child: ConstrainedBox(
@@ -1052,8 +1094,9 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                             onEditDetails: mayEdit ? _openDetailsForm : null,
                             onEnterEdit:
                                 mayEdit && !_editMode ? _enterEditMode : null,
-                            onExitEdit:
-                                mayEdit && _editMode ? _exitEditMode : null,
+                            onExitEdit: mayEdit && _editMode
+                                ? _requestExitEditMode
+                                : null,
                             // Long-press anywhere on the hero is a shortcut to
                             // the same screen the tune button opens — so it
                             // carries the same gate.
@@ -1570,6 +1613,7 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
               ),
             ),
           ),
+        ),
         ),
       ),
     );

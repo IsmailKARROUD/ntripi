@@ -1064,6 +1064,8 @@
   "editLockLostMessage": "{name} está editando ahora, así que este cambio no se guardó. Tu texto sigue aquí: copia lo que necesites o intenta recuperar la sesión.",
   "editLockLostMessageUnknown": "Otra persona está editando ahora, así que este cambio no se guardó. Tu texto sigue aquí: copia lo que necesites o intenta recuperar la sesión.",
   "editLockReclaim": "Intentar recuperarla",
+  "editModeLeaveAfterSave": "Guardando tus cambios… Saldrás del modo de edición en cuanto se guarden.",
+  "editModeStayedAfterFailedSave": "Tu cambio no se guardó, así que sigues en modo de edición.",
   "editLockReclaimed": "Vuelves a estar editando",
   "editLockCopyText": "Copiar mi texto",
   "editLockCopied": "Copiado",

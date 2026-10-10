@@ -1064,6 +1064,8 @@
   "editLockLostMessage": "{name} bearbeitet jetzt, daher wurde diese Änderung nicht gespeichert. Dein Text ist noch da – kopiere, was du brauchst, oder versuche, die Sitzung zurückzuholen.",
   "editLockLostMessageUnknown": "Jemand anderes bearbeitet jetzt, daher wurde diese Änderung nicht gespeichert. Dein Text ist noch da – kopiere, was du brauchst, oder versuche, die Sitzung zurückzuholen.",
   "editLockReclaim": "Zurückholen versuchen",
+  "editModeLeaveAfterSave": "Deine Änderungen werden gespeichert… Du verlässt den Bearbeitungsmodus, sobald sie gespeichert sind.",
+  "editModeStayedAfterFailedSave": "Deine Änderung wurde nicht gespeichert, deshalb bist du noch im Bearbeitungsmodus.",
   "editLockReclaimed": "Du bearbeitest wieder",
   "editLockCopyText": "Meinen Text kopieren",
   "editLockCopied": "Kopiert",

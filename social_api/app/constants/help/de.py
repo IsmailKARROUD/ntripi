@@ -89,7 +89,8 @@ RELEASES: tuple[Release, ...] = (
             "**Übersetzung anzeigen** unter einer Reise, einem Stopp oder einer Rezension übersetzt sie in Ihre App-Sprache; **Original anzeigen** schaltet zurück.",
             "**Feed-Titel in Ihrer Sprache.** Titel öffentlicher Reisen kommen bereits übersetzt an — außer sie sind in einer Sprache, die Sie sprechen.",
             "**Übernehmen von der Seite eines Stopps.** Ein Tipp auf den Stift eines Stopps, den gerade jemand anderes bearbeitet, sagt jetzt, wer es ist, und bietet das Übernehmen an; einen Stopp dort zu bearbeiten, startet außerdem die Bearbeitung der ganzen Reise.",
-            "**Gedanken zu Teilstrecken.** Was der Autor zu einer Teilstrecke geschrieben hat — in welchen Wagen man einsteigt, wo man das Ticket kauft — steht jetzt darunter, auf zwei Zeilen gekürzt mit **mehr anzeigen**, und wird mit dem Rest übersetzt.",
+            "**Gedanken zu Teilstrecken.** Was der Autor zu einer Teilstrecke geschrieben hat — in welchen Wagen man einsteigt, wo man das Ticket kauft — steht jetzt darunter, auch beim Bearbeiten, auf zwei Zeilen gekürzt mit **mehr anzeigen**, und wird mit dem Rest übersetzt.",
+            "**Ihre Änderung wird gespeichert, bevor Sie die Bearbeitung beenden.** Tippen Sie auf ✓, während eine Änderung noch gespeichert wird, sagt Ntripi das und verlässt den Bearbeitungsmodus, sobald sie gespeichert ist. Schlägt das Speichern fehl, bleiben Sie im Bearbeitungsmodus, mit dem Grund.",
         ),
     ),
     Release(
@@ -558,7 +559,7 @@ Die Richtung ist das Detail, auf das es am Tag selbst ankommt. Zu wissen, dass m
                 kind=KIND_STEP,
                 body="""Jede Teilstrecke hat ein Feld **Gedanken** für das, was Sie jemandem auf derselben Fahrt sagen würden — in welchen Wagen man für den Ausgang einsteigt, wo es das Ticket gibt, ein Fahrpreis, der Sie überrascht hat.
 
-Wer die Reise liest, sieht sie unter der Teilstrecke: zwischen den Stopps der Reise und auf den Seiten der beiden Stopps, die sie verbindet. Lange Gedanken werden auf zwei Zeilen gekürzt, mit **mehr anzeigen**.""",
+Wer die Reise liest, sieht sie unter der Teilstrecke: zwischen den Stopps der Reise und auf den Seiten der beiden Stopps, die sie verbindet. Beim Bearbeiten sehen Sie sie dort ebenfalls. Lange Gedanken werden auf zwei Zeilen gekürzt, mit **mehr anzeigen**.""",
             ),
             Block(
                 anchor="orphaned-connections",
@@ -586,7 +587,7 @@ Ntripi fragt vorher, statt Ihre Eingabe stillschweigend zu verwerfen. Bestätige
             "tipps",
         ),
         related=("add-places-to-an-itinerary", "plan-alternative-options"),
-        updated="2026-10-08",
+        updated="2026-10-10",
         cta="Zeichnen Sie eine Fahrt nach, samt Umstiegen.",
     ),
     Article(
@@ -741,7 +742,9 @@ Ist die Reise nur für Follower oder nur für Sie sichtbar, hilft eine Zugriffsl
                 heading="Warum immer nur eine Person bearbeiten kann",
                 body="""Wenn Sie eine Reise zum Bearbeiten öffnen, halten Sie sie. Alle anderen sehen **„jemand anderes bearbeitet gerade“** und können lesen, aber nicht speichern.
 
-Die Alternative wäre, dass zwei Personen in denselben Stopp tippen und eine davon alles verliert, ohne es zu erfahren. Das Halten ist kurz: Es endet, wenn Sie gehen, und läuft von selbst ab, wenn Sie abgelenkt werden.""",
+Die Alternative wäre, dass zwei Personen in denselben Stopp tippen und eine davon alles verliert, ohne es zu erfahren. Das Halten ist kurz: Es endet, wenn Sie gehen, und läuft von selbst ab, wenn Sie abgelenkt werden.
+
+Eine Änderung, die noch gespeichert wird, wenn Sie auf ✓ tippen, wird zuerst abgeschlossen: Ntripi zeigt an, dass gespeichert wird, und gibt die Reise erst frei, wenn die Änderung angekommen ist. Schlägt sie fehl, bleiben Sie im Bearbeitungsmodus, mit dem Grund.""",
             ),
             Block(
                 anchor="taking-over",
@@ -781,7 +784,7 @@ Holen Sie die Reise zurück und speichern Sie, oder kopieren Sie Ihren Text hera
             "sperre",
         ),
         related=("share-an-itinerary-privately", "plan-alternative-options", "troubleshooting"),
-        updated="2026-10-08",
+        updated="2026-10-10",
         cta="Planen Sie Ihre nächste Reise mit denen, die mitfahren.",
     ),
     Article(

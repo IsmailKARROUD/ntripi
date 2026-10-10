@@ -1237,6 +1237,8 @@
   "editLockLostMessage": "{name} modifie maintenant, cette modification n'a donc pas été enregistrée. Votre texte est toujours là — copiez ce dont vous avez besoin, ou essayez de reprendre la session.",
   "editLockLostMessageUnknown": "Quelqu'un d'autre modifie maintenant, cette modification n'a donc pas été enregistrée. Votre texte est toujours là — copiez ce dont vous avez besoin, ou essayez de reprendre la session.",
   "editLockReclaim": "Essayer de reprendre",
+  "editModeLeaveAfterSave": "Enregistrement de vos modifications… Vous quitterez le mode édition dès qu'elles seront enregistrées.",
+  "editModeStayedAfterFailedSave": "Votre modification n'a pas été enregistrée : vous êtes toujours en mode édition.",
   "editLockReclaimed": "Vous modifiez à nouveau",
   "editLockCopyText": "Copier mon texte",
   "editLockCopied": "Copié",

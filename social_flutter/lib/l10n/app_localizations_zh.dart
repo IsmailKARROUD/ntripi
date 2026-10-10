@@ -3141,6 +3141,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get editLockReclaim => '尝试收回';
 
   @override
+  String get editModeLeaveAfterSave => '正在保存你的更改…保存完成后会自动退出编辑模式。';
+
+  @override
+  String get editModeStayedAfterFailedSave => '你的更改未能保存，所以你仍在编辑模式中。';
+
+  @override
   String get editLockReclaimed => '你又在编辑了';
 
   @override

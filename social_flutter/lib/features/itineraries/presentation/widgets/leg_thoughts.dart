@@ -1,9 +1,10 @@
 // widgets/leg_thoughts.dart — a transport leg's "Thoughts", for a reader.
 //
-// Shown under the leg on the trip page's transit card and in the stop page's
-// Transit section — one widget, so the two cannot drift apart. Folded to two
-// lines by ExpandableText. Plain text: the leg form is a plain field with no
-// markdown toolbar, so a typed `#` or `*` has to stay a character.
+// Shown under the leg on the trip page's transit card — in edit mode too, so
+// what the reader sees never disappears from under the person editing it — and
+// in the stop page's Transit section: one widget, so they cannot drift apart.
+// Folded to two lines by ExpandableText. Plain text: the leg form is a plain
+// field with no markdown toolbar, so a typed `#` or `*` has to stay a character.
 //
 // Translation rides the group already on screen — the trip's toggle on the trip
 // page, the stop's on the stop page. legThoughtsMembers is what each screen adds
@@ -34,6 +35,7 @@ class LegThoughts extends StatelessWidget {
     required this.leg,
     this.anchor,
     this.translate = true,
+    this.expandOnTextTap = true,
   });
 
   /// A leg with thoughts ([TransportLeg.hasNotes]).
@@ -44,6 +46,10 @@ class LegThoughts extends StatelessWidget {
 
   /// False while the trip is being edited — whoever edits reads the original.
   final bool translate;
+
+  /// False inside a row whose own tap opens the leg's form (the editable
+  /// transit card): there only the link unfolds the text.
+  final bool expandOnTextTap;
 
   @override
   Widget build(BuildContext context) {
@@ -64,7 +70,7 @@ class LegThoughts extends StatelessWidget {
     final nt = context.nt;
     return ExpandableText(
       text,
-      expandOnTextTap: true,
+      expandOnTextTap: expandOnTextTap,
       style: TextStyle(fontSize: 12.5, height: 1.4, color: nt.text2),
       // The transit palette, not nt.forest: forest falls to ~3.9:1 on the dark
       // transitBg, under AA for 12 px text.

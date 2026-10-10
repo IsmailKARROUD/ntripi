@@ -655,6 +655,16 @@ because those write sibling tables, never itinerary content.
   edge. The heartbeat stops for good on 403 (rights
   revoked → lost) and 404 (itinerary gone), and skips while the app is
   backgrounded. Sign-out calls `releaseAllEditClaims` before the tokens go.
+- **The claim is never handed back under a running save.** Every write that
+  carries it goes through `ItineraryDetailNotifier._write`, which hands it the
+  token (readable nowhere else) and counts it until it and its refresh are done.
+  ✓ and Back call `_requestExitEditMode`: nothing running → leave at once;
+  otherwise `SavingOverlay` with `editModeLeaveAfterSave`, no new edit, and leave
+  once `writesSettled()` answers — a failed write keeps edit mode and the claim,
+  under its own error, then `editModeStayedAfterFailedSave` (the only word on it
+  when the save came from a stop page that has already gone). Released first, the write was refused after the card that
+  would show its error had gone. Regression test:
+  `test/widgets/edit_mode_exit_while_saving_test.dart`.
 - `mayEdit = isOwner || itinerary.canEdit`. Ownership is OR-ed in because it is
   the one case the client can derive itself, and a summary payload (no `can_edit`
   key) must not take the owner's own pencil away.
@@ -1094,6 +1104,8 @@ For each article the change touches:
 - Do NOT offer the long-press delete on a shared row — an editor cannot delete, so the confirm dialog could only earn a 403 after they typed the trip's title into it
 - Do NOT make `DELETE /lock` 404 — it is called from teardown, same rule as the notification DELETE
 - Do NOT pop a route or clear a field when a save returns `edit_lock_lost` — the user's unsaved text is the only copy of it at that moment
+- Do NOT leave edit mode with `_exitEditMode()` from a user action — ✓ and Back go through `_requestExitEditMode`, which waits for `writesSettled()`; releasing the claim under a running write loses that write without a word
+- Do NOT read the edit-lock token outside `ItineraryDetailNotifier._write` — the wrapper is what counts a write as running, and leaving edit mode waits on that count
 - Do NOT attach `X-Edit-Lock` from a Dio interceptor — a blanket one would send a dead token onto requests that must not carry one
 - Do NOT persist the claim token — a takeover rotates it, so storing it only resurrects a dead session
 - Do NOT drop `X-Edit-Lock` from CORS `allow_headers` — the browser preflight fails before the request is sent
@@ -1116,6 +1128,7 @@ For each article the change touches:
 - Do NOT re-inline `SectionCard`, `SectionLabel`, `FieldDivider` or `EditorialTopBar` — six private clones had already drifted apart from each other before they were extracted
 - Do NOT re-inline a "view more" overflow check — `ExpandableText` measures with the inherited style and text scaler; a bare `TextPainter` says "fits" while the text is ellipsised
 - Do NOT render a transport leg's thoughts as markdown — the leg form is a plain field, so a typed `#` or `*` must stay a character
+- Do NOT hide a leg's thoughts in the editable transit card — what readers see must not vanish from under the person editing it; there they show as written, and a tap opens the leg (`LegThoughts(expandOnTextTap: false)`)
 - Do NOT call `.toUpperCase()` on a `SectionLabel` — it uppercases internally, and the call site's own padding will miss the 22 inset every other header uses
 - Do NOT hand-roll a sheet's drag handle — `showDragHandle: true` carries a 48 px tap target and a `Semantics` label that a 36×4 `Container` does not
 - Do NOT use `Theme.of(context).dividerColor` for a hairline — the theme sets `dividerTheme.color` but never `dividerColor`, so it falls through to M3's `outlineVariant` grey; use `nt.border`

@@ -5824,6 +5824,18 @@ abstract class AppLocalizations {
   /// **'Try to take it back'**
   String get editLockReclaim;
 
+  /// No description provided for @editModeLeaveAfterSave.
+  ///
+  /// In en, this message translates to:
+  /// **'Saving your changes… You\'ll leave edit mode as soon as they\'re saved.'**
+  String get editModeLeaveAfterSave;
+
+  /// No description provided for @editModeStayedAfterFailedSave.
+  ///
+  /// In en, this message translates to:
+  /// **'Your change wasn\'t saved, so you\'re still in edit mode.'**
+  String get editModeStayedAfterFailedSave;
+
   /// No description provided for @editLockReclaimed.
   ///
   /// In en, this message translates to:

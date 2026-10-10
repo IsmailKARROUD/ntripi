@@ -3353,6 +3353,14 @@ class AppLocalizationsAr extends AppLocalizations {
   String get editLockReclaim => 'محاولة الاستعادة';
 
   @override
+  String get editModeLeaveAfterSave =>
+      'جارٍ حفظ تغييراتك… ستخرج من وضع التحرير فور حفظها.';
+
+  @override
+  String get editModeStayedAfterFailedSave =>
+      'لم يُحفَظ تغييرك، لذا ما زلت في وضع التحرير.';
+
+  @override
   String get editLockReclaimed => 'عُدتَ إلى التحرير';
 
   @override

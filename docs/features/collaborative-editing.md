@@ -259,6 +259,23 @@ showed as editing.
   user comes back.
 - **Sign-out releases every claim this device holds** (`releaseAllEditClaims`),
   before the access token is discarded.
+- **Leaving edit mode never hands the claim back under a running save**
+  (2026-10-10). Every write that carries the claim goes through
+  `ItineraryDetailNotifier._write`, which hands it the token — readable nowhere
+  else, so no write can skip it — and counts the write until it and its refresh
+  are done (`hasWritesInFlight`, `writesSettled()`). ✓ and Back call
+  `_requestExitEditMode`: with nothing running it leaves at once; otherwise the
+  page goes under `SavingOverlay` with "Saving your changes… You'll leave edit
+  mode as soon as they're saved." (`editModeLeaveAfterSave`), takes no new edit,
+  and leaves once every write has landed. A write that failed keeps the page in
+  edit mode with the claim, under that write's own error and then "Your change
+  wasn't saved, so you're still in edit mode." (`editModeStayedAfterFailedSave`)
+  — the only word on it when the save came from the stop page, already gone, whose
+  `LegEditor` has no screen left to report on. Before, ✓ released
+  at once; if the release reached the server first the write was refused, and
+  its error had no card left to show on — the change was lost without a word.
+  Regression tests: `test/providers/itinerary_writes_in_flight_test.dart`,
+  `test/widgets/edit_mode_exit_while_saving_test.dart`.
 - **`EditorsScreen`** — route `/itineraries/:id/editors`; `editorsProvider`
   (`AsyncNotifierProvider.family`).
 - **`sharedWithMeProvider`** stays a **separate provider** from
@@ -341,6 +358,11 @@ showed as editing.
 - The stop page has no persistent lock banner. A claim lost while it is open
   shows nothing until the next Edit (which then explains itself in the pop-up),
   and the pop-up's "take over in m:ss" is a snapshot, not a ticking countdown.
+- **A flow that saves twice in a row can still be cut between its writes.**
+  Adding a stop between two segment-joined tracks deletes the orphaned
+  segment(s), then opens the stop form; ✓ or Back pressed during the deletes
+  leaves edit mode once they land — before the form opens, which then has no
+  claim to save with. The window is the length of the deletes.
 
 ## Related
 

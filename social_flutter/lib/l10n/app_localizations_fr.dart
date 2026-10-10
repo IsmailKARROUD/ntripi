@@ -3375,6 +3375,14 @@ class AppLocalizationsFr extends AppLocalizations {
   String get editLockReclaim => 'Essayer de reprendre';
 
   @override
+  String get editModeLeaveAfterSave =>
+      'Enregistrement de vos modifications… Vous quitterez le mode édition dès qu\'elles seront enregistrées.';
+
+  @override
+  String get editModeStayedAfterFailedSave =>
+      'Votre modification n\'a pas été enregistrée : vous êtes toujours en mode édition.';
+
+  @override
   String get editLockReclaimed => 'Vous modifiez à nouveau';
 
   @override

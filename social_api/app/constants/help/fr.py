@@ -89,7 +89,8 @@ RELEASES: tuple[Release, ...] = (
             "**Voir la traduction**, sous un voyage, une étape ou un avis, le traduit dans la langue de votre application ; **Voir l’original** le rétablit.",
             "**Les titres du fil dans votre langue.** Les titres des voyages publics arrivent déjà traduits — sauf s’ils sont dans une langue que vous parlez.",
             "**Reprendre la main depuis une étape.** Toucher le crayon d’une étape que quelqu’un d’autre modifie indique désormais qui, et propose de reprendre la main ; modifier une étape depuis sa page lance aussi la modification de tout le voyage.",
-            "**Les réflexions sur les transports.** Ce que l’auteur a écrit sur un trajet — dans quelle voiture monter, où acheter le billet — s’affiche désormais dessous, replié sur deux lignes avec **voir plus**, et se traduit avec le reste.",
+            "**Les réflexions sur les transports.** Ce que l’auteur a écrit sur un trajet — dans quelle voiture monter, où acheter le billet — s’affiche désormais dessous, y compris pendant la modification, replié sur deux lignes avec **voir plus**, et se traduit avec le reste.",
+            "**Votre modification est enregistrée avant la fin de l’édition.** Touchez ✓ pendant qu’une modification s’enregistre encore : Ntripi vous le dit, puis quitte le mode édition une fois l’enregistrement terminé. S’il échoue, vous restez en mode édition, avec la raison.",
         ),
     ),
     Release(
@@ -560,7 +561,7 @@ La direction est le détail qui compte le jour même. Savoir que vous voulez le 
                 kind=KIND_STEP,
                 body="""Chaque trajet a un champ **Réflexions** pour ce que vous diriez à un ami qui fait le même déplacement — dans quelle voiture monter pour être près de la sortie, où acheter le billet, un tarif qui vous a pris de court.
 
-Les lecteurs les voient sous le trajet : entre les étapes sur le voyage, et sur les pages des deux étapes qu’il relie. Les plus longues se replient sur deux lignes avec **voir plus**.""",
+Les lecteurs les voient sous le trajet : entre les étapes sur le voyage, et sur les pages des deux étapes qu’il relie. Vous les y voyez aussi pendant que vous modifiez. Les plus longues se replient sur deux lignes avec **voir plus**.""",
             ),
             Block(
                 anchor="orphaned-connections",
@@ -588,7 +589,7 @@ Ntripi demande confirmation plutôt que d’abandonner discrètement ce que vous
             "conseils",
         ),
         related=("add-places-to-an-itinerary", "plan-alternative-options"),
-        updated="2026-10-08",
+        updated="2026-10-10",
         cta="Cartographiez un déplacement, correspondances comprises.",
     ),
     Article(
@@ -744,7 +745,9 @@ Si le voyage est réservé aux abonnés ou à vous seul, une liste d’autorisat
                 heading="Pourquoi une seule personne peut modifier à la fois",
                 body="""Quand vous ouvrez un voyage pour le modifier, vous le tenez. Toute autre personne voit **« quelqu’un d’autre est en train de modifier »** et peut lire mais pas enregistrer.
 
-L’alternative, c’est deux personnes qui écrivent dans la même étape et l’une des deux qui perd tout sans qu’on le lui dise. Le maintien est bref — il est relâché quand vous partez, et il expire de lui-même si vous êtes distrait.""",
+L’alternative, c’est deux personnes qui écrivent dans la même étape et l’une des deux qui perd tout sans qu’on le lui dise. Le maintien est bref — il est relâché quand vous partez, et il expire de lui-même si vous êtes distrait.
+
+Une modification encore en cours d’enregistrement quand vous touchez ✓ est d’abord terminée : Ntripi indique qu’il enregistre et ne relâche le voyage qu’une fois la modification arrivée. Si elle échoue, vous restez en mode édition, avec la raison.""",
             ),
             Block(
                 anchor="taking-over",
@@ -785,7 +788,7 @@ Reprenez le voyage et enregistrez, ou copiez votre texte et collez-le quand l’
             "verrou",
         ),
         related=("share-an-itinerary-privately", "plan-alternative-options", "troubleshooting"),
-        updated="2026-10-08",
+        updated="2026-10-10",
         cta="Planifiez votre prochain voyage avec ceux qui le feront.",
     ),
     Article(
