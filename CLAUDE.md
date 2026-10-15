@@ -587,7 +587,10 @@ server-side; the client renders state and may be stale or hostile.
   flag, so a steal is always a deliberate second call the UI confirmed.
 - `DELETE /lock` is **idempotent and never 404s** (same rule as the notification
   DELETE — the client fires it from teardown). The owner may release without a
-  token: that is the "unlock it from my other device" path.
+  token: that is the "unlock it from my other device" path. **A token, when
+  sent, ends only the claim it names — the owner's included**: the client hands
+  journalled claims back late, and by then the owner may hold a newer claim on
+  another device.
 - Config: `EDIT_LOCK_HEARTBEAT_SECONDS=30` / `EDIT_LOCK_IDLE_SECONDS=90` /
   `EDIT_LOCK_TTL_SECONDS=300`. A startup validator refuses `TTL <= IDLE` or
   `IDLE < 2 x HEARTBEAT`. `sweep_service._purge` deletes long-dead rows
@@ -641,8 +644,13 @@ because those write sibling tables, never itinerary content.
 - `EditLockNotifier` (`providers/edit_lock_provider.dart`, family by itinerary
   id, **not autoDispose**) owns the token and the heartbeat. It lives in a
   provider because the claim must survive the detail screen being covered by the
-  stop form. The token is **memory only** — any takeover rotates it, so
-  persisting it would only create a way to resurrect a dead session.
+  stop form. Saves and heartbeats use **only the token in memory**. It is also
+  written to `EditClaimJournal` (`data/edit_claim_journal.dart`) until its
+  release lands — secure storage on a device, the tab's `sessionStorage` on the
+  web — and `peek()`/`acquire()` first hand back any journalled claim that is
+  not the live one. Memory dies with the app: before the journal, a claim the
+  app was closed holding read as "you're editing this on another device" from
+  the very device that left it.
 - **The claim follows the screens editing under it.** The detail screen and the
   stop page `attach()` in `initState` and `detach()` in `dispose` (notifier held
   in a field); when the last screen detaches the claim is released after
@@ -1107,7 +1115,7 @@ For each article the change touches:
 - Do NOT leave edit mode with `_exitEditMode()` from a user action — ✓ and Back go through `_requestExitEditMode`, which waits for `writesSettled()`; releasing the claim under a running write loses that write without a word
 - Do NOT read the edit-lock token outside `ItineraryDetailNotifier._write` — the wrapper is what counts a write as running, and leaving edit mode waits on that count
 - Do NOT attach `X-Edit-Lock` from a Dio interceptor — a blanket one would send a dead token onto requests that must not carry one
-- Do NOT persist the claim token — a takeover rotates it, so storing it only resurrects a dead session
+- Do NOT adopt a journalled claim token for a save or a heartbeat — `EditClaimJournal` keeps it only so `DELETE /lock` can hand back a claim the app was closed holding; and do NOT journal it in web `localStorage`, which every tab shares, so a second tab would hand back the first one's live claim
 - Do NOT drop `X-Edit-Lock` from CORS `allow_headers` — the browser preflight fails before the request is sent
 - Do NOT hardcode URLs, secrets, or environment values
 - Do NOT use `passlib` — bcrypt direct only

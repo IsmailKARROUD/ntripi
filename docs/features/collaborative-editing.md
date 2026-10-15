@@ -101,6 +101,12 @@ server-side; the client renders state and may be stale or hostile.
 - **`DELETE /lock` is idempotent and never 404s** — the client fires it from
   teardown. The owner may release **without** a token: that is the "unlock it from
   my other device" path.
+- **A presented token ends only the claim it names — the owner's included**
+  (`edit_lock_service.release`). The client hands some claims back late (the
+  journal, below), and by then the owner may have taken the trip over on another
+  device. Until 2026-10-15 an owner's DELETE ended whatever claim stood, whatever
+  token it carried — which also let ✓ on a device just displaced end the claim
+  that had displaced it.
 - `sweep_service` purges rows older than `TTL × 24` — housekeeping only; a
   surviving row still reads `takeable`.
 
@@ -232,9 +238,23 @@ showed as editing.
 - **`EditLockNotifier`** (`features/itineraries/providers/edit_lock_provider.dart`)
   — `NotifierProvider.family` by itinerary id, **not `autoDispose`**. It owns the
   token and the heartbeat, and lives in a provider because the claim must survive
-  the detail screen being covered by the stop form. **The token is memory only** —
-  any takeover rotates it, so persisting it would only create a way to resurrect
-  a dead session.
+  the detail screen being covered by the stop form. Saves and heartbeats use only
+  the token in memory — the one this run's own claim returned.
+- **A claim this device could not hand back is handed back on the next look**
+  (2026-10-15). `EditClaimJournal` (`features/itineraries/data/edit_claim_journal.dart`)
+  writes each claim down — itinerary id, token, account — from acquire until a
+  release is known to have landed: secure storage on a device, the tab's
+  `sessionStorage` on the web, so a reload hands its claim back and a second tab
+  never hands back the first one's. `peek()` and `acquire()` first release any
+  journalled claim that is not the one held live, and forget it on 204, 403 or
+  404; a network error keeps it for the next look. Before, the token was memory
+  only, so a claim the app was closed holding outlived the app: the next launch
+  was told "You're editing this on another device" about the device that left
+  it, and a plain Edit 423'd, until the row was purged two hours later. A
+  journalled token is only ever sent to `DELETE /lock`, never adopted for a save
+  or a heartbeat, and every storage failure degrades to the old behaviour, never
+  to an error. Regression tests: `test/providers/edit_claim_journal_test.dart`,
+  `test/widgets/edit_lock_relaunch_test.dart`.
 - **The claim follows the screens editing under it.** The detail screen and the
   stop page `attach()` in `initState` and `detach()` in `dispose` (through a
   notifier held in a field — never `ref` in dispose). When the last screen
@@ -258,7 +278,9 @@ showed as editing.
   is not in the foreground; a matching token past its TTL is honoured when the
   user comes back.
 - **Sign-out releases every claim this device holds** (`releaseAllEditClaims`),
-  before the access token is discarded.
+  before the access token is discarded — the held ones and every one this
+  account left in the journal — then empties the journal, so the next account on
+  the device inherits nothing.
 - **Leaving edit mode never hands the claim back under a running save**
   (2026-10-10). Every write that carries the claim goes through
   `ItineraryDetailNotifier._write`, which hands it the token — readable nowhere
@@ -363,6 +385,11 @@ showed as editing.
   segment(s), then opens the stop form; ✓ or Back pressed during the deletes
   leaves edit mode once they land — before the form opens, which then has no
   claim to save with. The window is the length of the deletes.
+- **A web tab closed while editing leaves its claim behind.** The journal entry
+  lives in that tab's `sessionStorage` and closes with it, so a new tab shows
+  "You're editing this on another device" until **Continue here** is tapped or
+  the row is purged. A reload is covered; only a closed tab is not. →
+  [backlog.md](../backlog.md)
 
 ## Related
 

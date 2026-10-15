@@ -91,6 +91,7 @@ RELEASES: tuple[Release, ...] = (
             "**Übernehmen von der Seite eines Stopps.** Ein Tipp auf den Stift eines Stopps, den gerade jemand anderes bearbeitet, sagt jetzt, wer es ist, und bietet das Übernehmen an; einen Stopp dort zu bearbeiten, startet außerdem die Bearbeitung der ganzen Reise.",
             "**Gedanken zu Teilstrecken.** Was der Autor zu einer Teilstrecke geschrieben hat — in welchen Wagen man einsteigt, wo man das Ticket kauft — steht jetzt darunter, auch beim Bearbeiten, auf zwei Zeilen gekürzt mit **mehr anzeigen**, und wird mit dem Rest übersetzt.",
             "**Ihre Änderung wird gespeichert, bevor Sie die Bearbeitung beenden.** Tippen Sie auf ✓, während eine Änderung noch gespeichert wird, sagt Ntripi das und verlässt den Bearbeitungsmodus, sobald sie gespeichert ist. Schlägt das Speichern fehl, bleiben Sie im Bearbeitungsmodus, mit dem Grund.",
+            "**Die App beim Bearbeiten zu schließen, hält die Reise nicht mehr fest.** Wenn Sie sie das nächste Mal öffnen, gibt Ntripi sie zuerst frei, statt anzuzeigen, dass Sie sie auf einem anderen Gerät bearbeiten.",
         ),
     ),
     Release(
@@ -744,7 +745,9 @@ Ist die Reise nur für Follower oder nur für Sie sichtbar, hilft eine Zugriffsl
 
 Die Alternative wäre, dass zwei Personen in denselben Stopp tippen und eine davon alles verliert, ohne es zu erfahren. Das Halten ist kurz: Es endet, wenn Sie gehen, und läuft von selbst ab, wenn Sie abgelenkt werden.
 
-Eine Änderung, die noch gespeichert wird, wenn Sie auf ✓ tippen, wird zuerst abgeschlossen: Ntripi zeigt an, dass gespeichert wird, und gibt die Reise erst frei, wenn die Änderung angekommen ist. Schlägt sie fehl, bleiben Sie im Bearbeitungsmodus, mit dem Grund.""",
+Eine Änderung, die noch gespeichert wird, wenn Sie auf ✓ tippen, wird zuerst abgeschlossen: Ntripi zeigt an, dass gespeichert wird, und gibt die Reise erst frei, wenn die Änderung angekommen ist. Schlägt sie fehl, bleiben Sie im Bearbeitungsmodus, mit dem Grund.
+
+Schließt sich Ntripi, während Sie bearbeiten — Sie wischen die App weg, laden die Seite neu oder Ihr Telefon schließt sie —, gibt Ntripi die Reise frei, sobald Sie sie das nächste Mal öffnen, statt anzuzeigen, dass Sie sie auf einem anderen Gerät bearbeiten.""",
             ),
             Block(
                 anchor="taking-over",
@@ -784,7 +787,7 @@ Holen Sie die Reise zurück und speichern Sie, oder kopieren Sie Ihren Text hera
             "sperre",
         ),
         related=("share-an-itinerary-privately", "plan-alternative-options", "troubleshooting"),
-        updated="2026-10-10",
+        updated="2026-10-15",
         cta="Planen Sie Ihre nächste Reise mit denen, die mitfahren.",
     ),
     Article(

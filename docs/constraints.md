@@ -173,6 +173,10 @@ discoverable way to learn the constraints. Logged in
   it goes through `ItineraryDetailNotifier._write` — the only place the token can
   be read — and ✓/Back wait on `writesSettled()`. Released first, the write is
   refused after the screen that would show its error has gone.
+- **A token-bearing `DELETE /lock` ends only the claim it names** — the owner's
+  included. The client hands journalled claims back late, after a relaunch; an
+  ownership match alone would end the claim the owner has since taken on another
+  device.
 
 → [etag-concurrency.md](features/etag-concurrency.md)
 

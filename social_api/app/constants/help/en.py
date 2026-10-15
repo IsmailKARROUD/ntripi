@@ -112,6 +112,9 @@ RELEASES: tuple[Release, ...] = (
             "**Your change is saved before you stop editing.** Tap ✓ while a "
             "change is still saving and Ntripi says so, then leaves edit mode once "
             "it is saved. If the save fails you stay in edit mode, with the reason.",
+            "**Closing the app while editing no longer leaves the trip held.** The "
+            "next time you open it, Ntripi lets go of it first, instead of telling "
+            "you that you are editing it on another device.",
         ),
     ),
     Release(
@@ -941,7 +944,7 @@ ARTICLES: tuple[Article, ...] = (
         ),
         category="building",
         schema=SCHEMA_HOWTO,
-        updated="2026-10-10",
+        updated="2026-10-15",
         keywords=(
             "collaborate", "collaboration", "together", "shared", "editor",
             "editors", "invite", "group", "friends", "family", "co-edit",
@@ -1001,7 +1004,11 @@ ARTICLES: tuple[Article, ...] = (
                     "own if you get distracted.\n\n"
                     "A change still saving when you tap ✓ is finished first: Ntripi "
                     "says it is saving and lets go of the trip once the change has "
-                    "landed. If it fails you stay in edit mode, with the reason."
+                    "landed. If it fails you stay in edit mode, with the reason.\n\n"
+                    "If Ntripi closes while you are editing — you swipe it away, "
+                    "reload the page, or your phone closes it — the next time you "
+                    "open that trip, Ntripi lets go of it first instead of telling "
+                    "you that you are editing it on another device."
                 ),
             ),
             Block(

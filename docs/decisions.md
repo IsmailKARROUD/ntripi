@@ -1198,3 +1198,45 @@ until the save lands, and a failure surfaces after the user has moved on).
 Guarding leg saves only (every claim-carrying write had the same race). A
 counter that each call site keeps (one forgotten site reopens the race; routing
 the token through `_write` makes skipping it a compile error).
+
+---
+
+### 2026-10-15 — A claim the app could not hand back is handed back on the next look
+
+**Context.** Reported from a test device: enter Edit mode, close the app, reopen
+the same trip, and the banner said "You're editing this on another device". The
+claim token lived only in `EditLockNotifier`'s memory, so it died with the app
+while the claim stayed on the server. The relaunched app held no token, the
+server's `is_you` was all it had to go on, a plain Edit was refused with 423, and
+**Continue here** warned about "your other device" — until the row was purged,
+`TTL × 24` after the last heartbeat (two hours by default). A web reload did the
+same, and so did a release that failed offline.
+**Decision.** `EditClaimJournal` (`features/itineraries/data/edit_claim_journal.dart`)
+writes each claim down — itinerary id, token, account — from the moment it is
+taken until a release is known to have landed: secure storage on a device, the
+tab's `sessionStorage` on the web. Before its first look at a trip and before
+every claim, `EditLockNotifier` hands back any journalled claim that is not the
+one it holds live, and forgets it on 204, 403 or 404; a transient failure keeps
+it for the next look. Sign-out hands back every entry of the account and empties
+the journal. On the server, a token-bearing `DELETE /lock` now ends only the
+claim that token names, the owner's included; a token-less one from the owner
+still force-releases. This supersedes the 2026-08-13 entry's memory-only token.
+**Consequences.** A journalled token is only ever sent to `DELETE /lock` — never
+adopted for a save or a heartbeat — and a stale one is a no-op server-side, so
+nothing can resurrect a session; the rotation that ejects a displaced device is
+untouched. Reopening a trip the app was closed editing lands in read mode with no
+banner, and Edit claims without a takeover. The server change also closes a race
+that predates the journal: an owner's ✓ on a device just displaced, before its
+next heartbeat noticed, ended the claim that had displaced it. Deploy the backend
+first — a new client against the old server would reopen that race on every late
+release. A web tab closed while editing still leaves its claim behind (its
+`sessionStorage` goes with it); recorded as a known gap.
+**Alternatives rejected.** Resuming edit mode on relaunch (re-holds a lock the
+user walked away from, blocking collaborators — and the app restarts at home
+anyway). A device id stored on the claim (a migration, a header and a response
+field, and on the web it still needs a per-tab identity, to answer what one
+DELETE settles). Releasing on `paused`/`detached` (neither is delivered on a
+swipe-kill, and releasing on every backgrounding would hand the trip away during
+a copy-paste). Journalling in `localStorage` on the web (a second tab would hand
+back the first tab's live claim). Rewording the banner alone (honest, but the
+stale claim, the 423 and the takeover dialog would all stay).

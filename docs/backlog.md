@@ -480,6 +480,17 @@ that this build does not ship, so it is deliberately not accepted."*
 `DEVICE_PLATFORMS = ("ios", "android")`. The same note appears at
 `core/push/push_service.dart:10`. Web is poll-only by design.
 
+### idea — a web tab closed while editing still holds the trip
+
+On the web the edit-claim journal lives in the tab's `sessionStorage`
+(2026-10-15) — the one storage that survives a reload without being shared by
+other tabs — so a *closed* tab takes its entry with it, and its claim reads as
+"you, on another device" in the next tab until **Continue here**. The Web Locks
+API could tell a closed tab from a live one: each tab holds a named lock for its
+lifetime, the journal moves to `localStorage`, and an entry whose tab no longer
+holds its lock is a leftover. →
+[features/collaborative-editing.md](features/collaborative-editing.md)
+
 ### idea — `/help/whats-new` is thin
 
 `RELEASES` holds two entries (`0.3.0`, `0.4.0`). The trap that came with it —

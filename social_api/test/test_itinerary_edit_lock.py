@@ -427,6 +427,23 @@ class TestReleaseAndRead:
         response = client.get(f"/itineraries/{itin_id}/lock", headers=owner_hdrs)
         assert response.json()["lock"] is None
 
+    def test_a_stale_token_never_ends_the_claim_that_replaced_it(self, client: TestClient):
+        """The app hands back, on its next look, a claim it was closed holding —
+        and by then the owner may have taken the trip over on another device.
+        The late release names the old session only; ending the owner's current
+        claim with it would eject the device they are typing on."""
+        itin_id, hdrs, _ = _owner_with_itinerary(client)
+        phone_token = acquire_edit_lock(client, itin_id, hdrs)
+        tablet_token = acquire_edit_lock(client, itin_id, hdrs, takeover=True)
+
+        response = client.delete(f"/itineraries/{itin_id}/lock",
+                                 headers={**hdrs, "X-Edit-Lock": phone_token})
+        assert response.status_code == 204
+
+        lock = client.get(f"/itineraries/{itin_id}/lock", headers=hdrs).json()["lock"]
+        assert lock is not None
+        assert _rename(client, itin_id, hdrs, None, tablet_token).status_code == 200
+
     def test_an_editor_cannot_release_another_editors_claim(self, client: TestClient):
         """Silent no-op rather than an error: release is idempotent by design,
         so what matters is that the claim survives."""

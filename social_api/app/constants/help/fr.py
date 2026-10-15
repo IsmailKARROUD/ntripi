@@ -91,6 +91,7 @@ RELEASES: tuple[Release, ...] = (
             "**Reprendre la main depuis une étape.** Toucher le crayon d’une étape que quelqu’un d’autre modifie indique désormais qui, et propose de reprendre la main ; modifier une étape depuis sa page lance aussi la modification de tout le voyage.",
             "**Les réflexions sur les transports.** Ce que l’auteur a écrit sur un trajet — dans quelle voiture monter, où acheter le billet — s’affiche désormais dessous, y compris pendant la modification, replié sur deux lignes avec **voir plus**, et se traduit avec le reste.",
             "**Votre modification est enregistrée avant la fin de l’édition.** Touchez ✓ pendant qu’une modification s’enregistre encore : Ntripi vous le dit, puis quitte le mode édition une fois l’enregistrement terminé. S’il échoue, vous restez en mode édition, avec la raison.",
+            "**Fermer l’application pendant une modification ne retient plus le voyage.** La prochaine fois que vous l’ouvrez, Ntripi le relâche d’abord, au lieu de vous dire que vous le modifiez sur un autre appareil.",
         ),
     ),
     Release(
@@ -747,7 +748,9 @@ Si le voyage est réservé aux abonnés ou à vous seul, une liste d’autorisat
 
 L’alternative, c’est deux personnes qui écrivent dans la même étape et l’une des deux qui perd tout sans qu’on le lui dise. Le maintien est bref — il est relâché quand vous partez, et il expire de lui-même si vous êtes distrait.
 
-Une modification encore en cours d’enregistrement quand vous touchez ✓ est d’abord terminée : Ntripi indique qu’il enregistre et ne relâche le voyage qu’une fois la modification arrivée. Si elle échoue, vous restez en mode édition, avec la raison.""",
+Une modification encore en cours d’enregistrement quand vous touchez ✓ est d’abord terminée : Ntripi indique qu’il enregistre et ne relâche le voyage qu’une fois la modification arrivée. Si elle échoue, vous restez en mode édition, avec la raison.
+
+Si Ntripi se ferme pendant que vous modifiez — vous le fermez d’un geste, vous rechargez la page, ou votre téléphone le ferme —, la prochaine fois que vous ouvrez ce voyage, Ntripi le relâche d’abord, au lieu de vous dire que vous le modifiez sur un autre appareil.""",
             ),
             Block(
                 anchor="taking-over",
@@ -788,7 +791,7 @@ Reprenez le voyage et enregistrez, ou copiez votre texte et collez-le quand l’
             "verrou",
         ),
         related=("share-an-itinerary-privately", "plan-alternative-options", "troubleshooting"),
-        updated="2026-10-10",
+        updated="2026-10-15",
         cta="Planifiez votre prochain voyage avec ceux qui le feront.",
     ),
     Article(

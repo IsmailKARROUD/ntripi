@@ -91,6 +91,7 @@ RELEASES: tuple[Release, ...] = (
             "**Tomar el relevo desde una parada.** Tocar el lápiz de una parada que otra persona está editando ahora dice quién es y ofrece tomar el control; editar una parada desde su página también empieza a editar todo el viaje.",
             "**Impresiones sobre el transporte.** Lo que el autor escribió sobre un tramo — en qué vagón subir, dónde comprar el billete — ahora aparece debajo, también mientras editas, plegado en dos líneas con **ver más**, y se traduce con el resto.",
             "**Tu cambio se guarda antes de dejar de editar.** Si tocas ✓ mientras un cambio aún se está guardando, Ntripi te lo dice y sale del modo de edición en cuanto se guarda. Si falla, sigues en modo de edición, con el motivo.",
+            "**Cerrar la aplicación mientras editas ya no deja el viaje retenido.** La próxima vez que lo abras, Ntripi lo suelta primero, en lugar de decirte que lo estás editando en otro dispositivo.",
         ),
     ),
     Release(
@@ -744,7 +745,9 @@ Si el viaje es solo para seguidores o solo para ti, una lista de permitidos no s
 
 La alternativa es que dos personas escriban en la misma parada y una de ellas lo pierda todo sin que se lo digan. La retención es breve: se suelta cuando sales y caduca por sí sola si te distraes.
 
-Si un cambio aún se está guardando cuando tocas ✓, primero se termina: Ntripi indica que está guardando y suelta el viaje cuando el cambio ha llegado. Si falla, sigues en modo de edición, con el motivo.""",
+Si un cambio aún se está guardando cuando tocas ✓, primero se termina: Ntripi indica que está guardando y suelta el viaje cuando el cambio ha llegado. Si falla, sigues en modo de edición, con el motivo.
+
+Si Ntripi se cierra mientras editas — lo cierras deslizándolo, recargas la página o tu teléfono lo cierra —, la próxima vez que abras ese viaje, Ntripi lo suelta primero, en lugar de decirte que lo estás editando en otro dispositivo.""",
             ),
             Block(
                 anchor="taking-over",
@@ -785,7 +788,7 @@ Recupera el viaje y guarda, o copia tu texto y pégalo cuando la otra persona ha
             "bloqueo",
         ),
         related=("share-an-itinerary-privately", "plan-alternative-options", "troubleshooting"),
-        updated="2026-10-10",
+        updated="2026-10-15",
         cta="Planifica tu próximo viaje con quienes van a hacerlo.",
     ),
     Article(

@@ -301,16 +301,23 @@ def release(
     Idempotent and never raises for a missing or foreign claim: the client fires
     this from teardown, so a retry, or a claim the TTL already gave to somebody
     else, must not surface an error for something the user has finished with.
-    The owner may release without a token — that is the "unlock it from my other
-    device" path.
+
+    A presented token ends only the claim it names — the owner's included. The
+    client delivers some releases late (an app handing back, on its next look
+    at the trip, the claim it was closed holding), and by then the owner may
+    have taken the trip over on another device: matching on ownership alone
+    ended that newer claim under them. The owner may still release WITHOUT a
+    token — that is the "unlock it from my other device" path.
     """
     lock = get_lock(db, itinerary.id, for_update=True)
     if lock is None:
         return False
 
-    is_owner = itinerary.user_id == user.id
-    holds_token = bool(raw_token) and lock.token_hash == hash_token(raw_token)
-    if not (is_owner or holds_token):
+    if raw_token:
+        # A token names one session; a stale one must never end its successor.
+        if lock.token_hash != hash_token(raw_token) or lock.user_id != user.id:
+            return False
+    elif itinerary.user_id != user.id:
         return False
 
     db.delete(lock)
