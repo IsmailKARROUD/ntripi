@@ -7,11 +7,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:social_flutter/core/providers/theme_mode_provider.dart';
-import 'package:social_flutter/core/ui/app_theme.dart';
-import 'package:social_flutter/features/profile/presentation/widgets/profile_settings_sheet.dart';
-import 'package:social_flutter/l10n/app_localizations.dart';
-import 'package:social_flutter/shared/widgets/theme_picker_button.dart';
+import 'package:ntripi/core/providers/theme_mode_provider.dart';
+import 'package:ntripi/core/ui/app_theme.dart';
+import 'package:ntripi/features/profile/presentation/widgets/profile_settings_sheet.dart';
+import 'package:ntripi/l10n/app_localizations.dart';
+import 'package:ntripi/shared/widgets/theme_picker_button.dart';
 
 Widget _host(ProviderContainer container) {
   return UncontrolledProviderScope(

@@ -20,8 +20,8 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:social_flutter/core/api/api_endpoints.dart';
-import 'package:social_flutter/core/storage/secure_storage.dart';
+import 'package:ntripi/core/api/api_endpoints.dart';
+import 'package:ntripi/core/storage/secure_storage.dart';
 
 /// Thrown when the server rejected our refresh token (revoked / unknown /
 /// expired). The session is dead — the caller should navigate to /login.

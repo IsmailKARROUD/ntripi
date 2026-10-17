@@ -5,8 +5,8 @@
 // newer one (value this build has never heard of).
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:social_flutter/features/itineraries/domain/ratings_page.dart';
-import 'package:social_flutter/shared/models/moderation_status.dart';
+import 'package:ntripi/features/itineraries/domain/ratings_page.dart';
+import 'package:ntripi/shared/models/moderation_status.dart';
 
 void main() {
   Map<String, dynamic> ratingJson({Object? status = _absent}) => {

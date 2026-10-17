@@ -11,9 +11,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:social_flutter/core/ui/app_theme.dart';
-import 'package:social_flutter/l10n/app_localizations.dart';
-import 'package:social_flutter/shared/widgets/duration_picker_sheet.dart';
+import 'package:ntripi/core/ui/app_theme.dart';
+import 'package:ntripi/l10n/app_localizations.dart';
+import 'package:ntripi/shared/widgets/duration_picker_sheet.dart';
 
 /// Pumps a themed host and returns a context under its Navigator.
 Future<BuildContext> _pumpHost(WidgetTester tester) async {

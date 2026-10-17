@@ -3,13 +3,13 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:social_flutter/core/auth/token_manager.dart';
-import 'package:social_flutter/core/push/push_service.dart';
-import 'package:social_flutter/core/services/sfx_service.dart';
-import 'package:social_flutter/core/storage/secure_storage.dart';
-import 'package:social_flutter/core/ui/app_theme.dart';
-import 'package:social_flutter/l10n/app_localizations.dart';
-import 'package:social_flutter/shared/widgets/loaders.dart';
+import 'package:ntripi/core/auth/token_manager.dart';
+import 'package:ntripi/core/push/push_service.dart';
+import 'package:ntripi/core/services/sfx_service.dart';
+import 'package:ntripi/core/storage/secure_storage.dart';
+import 'package:ntripi/core/ui/app_theme.dart';
+import 'package:ntripi/l10n/app_localizations.dart';
+import 'package:ntripi/shared/widgets/loaders.dart';
 
 class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});

@@ -15,10 +15,10 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:social_flutter/core/connectivity/connectivity_service.dart';
-import 'package:social_flutter/features/auth/providers/auth_provider.dart';
-import 'package:social_flutter/features/translation/data/translation_repository.dart';
-import 'package:social_flutter/features/translation/domain/translation.dart';
+import 'package:ntripi/core/connectivity/connectivity_service.dart';
+import 'package:ntripi/features/auth/providers/auth_provider.dart';
+import 'package:ntripi/features/translation/data/translation_repository.dart';
+import 'package:ntripi/features/translation/domain/translation.dart';
 
 final translationConfigProvider = FutureProvider<TranslationConfig>((ref) async {
   // Both endpoints need a session; signed out, asking would only earn a 401.

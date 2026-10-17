@@ -6,12 +6,12 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:social_flutter/core/api/api_client.dart';
-import 'package:social_flutter/core/ui/app_theme.dart';
-import 'package:social_flutter/features/reports/data/report_repository.dart';
-import 'package:social_flutter/l10n/app_localizations.dart';
-import 'package:social_flutter/shared/widgets/loaders.dart';
-import 'package:social_flutter/shared/widgets/user_avatar.dart';
+import 'package:ntripi/core/api/api_client.dart';
+import 'package:ntripi/core/ui/app_theme.dart';
+import 'package:ntripi/features/reports/data/report_repository.dart';
+import 'package:ntripi/l10n/app_localizations.dart';
+import 'package:ntripi/shared/widgets/loaders.dart';
+import 'package:ntripi/shared/widgets/user_avatar.dart';
 
 class BlockedUsersScreen extends ConsumerWidget {
   const BlockedUsersScreen({super.key});

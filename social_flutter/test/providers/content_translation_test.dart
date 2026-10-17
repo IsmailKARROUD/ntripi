@@ -18,10 +18,10 @@ import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:social_flutter/features/auth/providers/auth_provider.dart';
-import 'package:social_flutter/features/translation/data/translation_repository.dart';
-import 'package:social_flutter/features/translation/domain/translation.dart';
-import 'package:social_flutter/features/translation/providers/translation_providers.dart';
+import 'package:ntripi/features/auth/providers/auth_provider.dart';
+import 'package:ntripi/features/translation/data/translation_repository.dart';
+import 'package:ntripi/features/translation/domain/translation.dart';
+import 'package:ntripi/features/translation/providers/translation_providers.dart';
 
 typedef _Answer = FutureOr<List<TranslationItemResult>> Function(
     List<TranslationRequestItem> items);

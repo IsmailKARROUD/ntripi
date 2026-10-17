@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:social_flutter/core/ui/app_theme.dart';
+import 'package:ntripi/core/ui/app_theme.dart';
 
 // A themed horizontal divider with a subtle downward shadow to visually
 // separate content sections. Drop-in replacement for Flutter's Divider.

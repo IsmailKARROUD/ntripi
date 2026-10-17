@@ -10,7 +10,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
-import 'package:social_flutter/core/ui/app_theme.dart';
+import 'package:ntripi/core/ui/app_theme.dart';
 
 class ShakePhoneDemo extends StatefulWidget {
   final double size;

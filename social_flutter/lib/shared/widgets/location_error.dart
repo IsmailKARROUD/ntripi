@@ -3,8 +3,8 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:social_flutter/core/services/location_service.dart';
-import 'package:social_flutter/l10n/app_localizations.dart';
+import 'package:ntripi/core/services/location_service.dart';
+import 'package:ntripi/l10n/app_localizations.dart';
 
 /// Shows a localized snackbar for a non-success [LocationOutcome].
 ///

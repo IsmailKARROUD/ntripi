@@ -8,16 +8,16 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:social_flutter/core/ui/app_theme.dart';
-import 'package:social_flutter/shared/widgets/editorial_widgets.dart';
-import 'package:social_flutter/shared/widgets/loaders.dart';
-import 'package:social_flutter/features/itineraries/domain/dimension_key.dart';
-import 'package:social_flutter/features/itineraries/domain/ratings_page.dart';
-import 'package:social_flutter/features/itineraries/presentation/ratings_page_screen.dart';
-import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
-import 'package:social_flutter/features/profile/providers/profile_provider.dart';
-import 'package:social_flutter/core/utils/platform_utils.dart';
-import 'package:social_flutter/l10n/app_localizations.dart';
+import 'package:ntripi/core/ui/app_theme.dart';
+import 'package:ntripi/shared/widgets/editorial_widgets.dart';
+import 'package:ntripi/shared/widgets/loaders.dart';
+import 'package:ntripi/features/itineraries/domain/dimension_key.dart';
+import 'package:ntripi/features/itineraries/domain/ratings_page.dart';
+import 'package:ntripi/features/itineraries/presentation/ratings_page_screen.dart';
+import 'package:ntripi/features/itineraries/providers/itinerary_providers.dart';
+import 'package:ntripi/features/profile/providers/profile_provider.dart';
+import 'package:ntripi/core/utils/platform_utils.dart';
+import 'package:ntripi/l10n/app_localizations.dart';
 
 class DimensionRatingsScreen extends ConsumerWidget {
   final String itineraryId;

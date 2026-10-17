@@ -16,10 +16,10 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:social_flutter/features/itineraries/data/itinerary_repository.dart';
-import 'package:social_flutter/features/itineraries/domain/itinerary.dart';
-import 'package:social_flutter/features/itineraries/domain/stop.dart';
-import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
+import 'package:ntripi/features/itineraries/data/itinerary_repository.dart';
+import 'package:ntripi/features/itineraries/domain/itinerary.dart';
+import 'package:ntripi/features/itineraries/domain/stop.dart';
+import 'package:ntripi/features/itineraries/providers/itinerary_providers.dart';
 
 // ---------------------------------------------------------------------------
 // Test doubles

@@ -23,12 +23,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:social_flutter/core/connectivity/connectivity_service.dart';
-import 'package:social_flutter/core/services/haptics_service.dart';
-import 'package:social_flutter/features/itineraries/domain/my_rating.dart';
-import 'package:social_flutter/features/itineraries/presentation/widgets/rate_itinerary_dialog.dart';
-import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
-import 'package:social_flutter/l10n/app_localizations.dart';
+import 'package:ntripi/core/connectivity/connectivity_service.dart';
+import 'package:ntripi/core/services/haptics_service.dart';
+import 'package:ntripi/features/itineraries/domain/my_rating.dart';
+import 'package:ntripi/features/itineraries/presentation/widgets/rate_itinerary_dialog.dart';
+import 'package:ntripi/features/itineraries/providers/itinerary_providers.dart';
+import 'package:ntripi/l10n/app_localizations.dart';
 
 const _itineraryId = 'itin-1';
 

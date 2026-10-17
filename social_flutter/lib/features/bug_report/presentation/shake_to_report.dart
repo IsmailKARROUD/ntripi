@@ -12,9 +12,9 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shake/shake.dart';
-import 'package:social_flutter/core/router/app_router.dart';
-import 'package:social_flutter/features/bug_report/presentation/bug_report_entry.dart';
-import 'package:social_flutter/features/bug_report/providers/shake_report_enabled_provider.dart';
+import 'package:ntripi/core/router/app_router.dart';
+import 'package:ntripi/features/bug_report/presentation/bug_report_entry.dart';
+import 'package:ntripi/features/bug_report/providers/shake_report_enabled_provider.dart';
 
 /// How long after one shake before another can open the reporter. Covers the
 /// dismissal animation, so a lingering shake cannot immediately reopen it.

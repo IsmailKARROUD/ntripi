@@ -10,19 +10,19 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:social_flutter/core/ui/app_theme.dart';
+import 'package:ntripi/core/ui/app_theme.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:latlong2/latlong.dart';
-import 'package:social_flutter/core/providers/locale_provider.dart';
-import 'package:social_flutter/core/services/geocoding_service.dart';
-import 'package:social_flutter/core/services/location_service.dart';
-import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
-import 'package:social_flutter/l10n/app_localizations.dart';
-import 'package:social_flutter/shared/widgets/device_location_dot.dart';
-import 'package:social_flutter/shared/widgets/loaders.dart';
-import 'package:social_flutter/shared/widgets/location_error.dart';
+import 'package:ntripi/core/providers/locale_provider.dart';
+import 'package:ntripi/core/services/geocoding_service.dart';
+import 'package:ntripi/core/services/location_service.dart';
+import 'package:ntripi/features/itineraries/providers/itinerary_providers.dart';
+import 'package:ntripi/l10n/app_localizations.dart';
+import 'package:ntripi/shared/widgets/device_location_dot.dart';
+import 'package:ntripi/shared/widgets/loaders.dart';
+import 'package:ntripi/shared/widgets/location_error.dart';
 
 class MapPickerScreen extends ConsumerStatefulWidget {
   /// Optional initial coordinates to center the map on.

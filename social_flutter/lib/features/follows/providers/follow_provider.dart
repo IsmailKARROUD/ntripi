@@ -1,10 +1,10 @@
 // features/follows/providers/follow_provider.dart — Follow request state management.
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:social_flutter/core/api/api_client.dart';
-import 'package:social_flutter/core/connectivity/connectivity_service.dart';
-import 'package:social_flutter/features/follows/data/follow_repository.dart';
-import 'package:social_flutter/shared/models/follow.dart';
+import 'package:ntripi/core/api/api_client.dart';
+import 'package:ntripi/core/connectivity/connectivity_service.dart';
+import 'package:ntripi/features/follows/data/follow_repository.dart';
+import 'package:ntripi/shared/models/follow.dart';
 
 /// Provides the FollowRepository singleton.
 final followRepositoryProvider = Provider<FollowRepository>((ref) {

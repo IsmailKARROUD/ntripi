@@ -9,9 +9,9 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:social_flutter/core/providers/locale_provider.dart';
-import 'package:social_flutter/core/push/push_service.dart';
-import 'package:social_flutter/core/router/app_router.dart';
+import 'package:ntripi/core/providers/locale_provider.dart';
+import 'package:ntripi/core/push/push_service.dart';
+import 'package:ntripi/core/router/app_router.dart';
 
 class PushGateway extends ConsumerStatefulWidget {
   final Widget child;

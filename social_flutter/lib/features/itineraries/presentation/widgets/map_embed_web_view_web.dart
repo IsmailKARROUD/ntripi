@@ -3,8 +3,8 @@ import 'dart:html' as html;
 import 'dart:ui_web' as ui_web;
 
 import 'package:flutter/widgets.dart';
-import 'package:social_flutter/core/ui/app_theme.dart';
-import 'package:social_flutter/shared/widgets/loaders.dart';
+import 'package:ntripi/core/ui/app_theme.dart';
+import 'package:ntripi/shared/widgets/loaders.dart';
 
 /// Web renders the Google Maps Embed API directly as a browser `<iframe>` — no
 /// webview_flutter (it has no web backend here). A real browser sends the page

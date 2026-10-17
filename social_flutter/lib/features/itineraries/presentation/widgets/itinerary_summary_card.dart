@@ -5,13 +5,13 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:social_flutter/core/api/api_endpoints.dart';
-import 'package:social_flutter/core/cache/image_cache.dart';
-import 'package:social_flutter/core/ui/app_theme.dart';
-import 'package:social_flutter/features/itineraries/domain/itinerary.dart';
-import 'package:social_flutter/l10n/app_localizations.dart';
-import 'package:social_flutter/shared/widgets/itinerary_cover_placeholder.dart';
-import 'package:social_flutter/shared/widgets/visibility_badge.dart';
+import 'package:ntripi/core/api/api_endpoints.dart';
+import 'package:ntripi/core/cache/image_cache.dart';
+import 'package:ntripi/core/ui/app_theme.dart';
+import 'package:ntripi/features/itineraries/domain/itinerary.dart';
+import 'package:ntripi/l10n/app_localizations.dart';
+import 'package:ntripi/shared/widgets/itinerary_cover_placeholder.dart';
+import 'package:ntripi/shared/widgets/visibility_badge.dart';
 
 class ItinerarySummaryCard extends ConsumerWidget {
   final Itinerary itinerary;

@@ -6,8 +6,8 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:social_flutter/features/profile/presentation/widgets/follow_requests_banner.dart';
-import 'package:social_flutter/l10n/app_localizations.dart';
+import 'package:ntripi/features/profile/presentation/widgets/follow_requests_banner.dart';
+import 'package:ntripi/l10n/app_localizations.dart';
 
 Widget _host({required int count, required VoidCallback onTap}) {
   return MaterialApp(

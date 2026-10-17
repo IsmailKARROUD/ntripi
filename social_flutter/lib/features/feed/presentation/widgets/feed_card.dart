@@ -3,15 +3,15 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:social_flutter/core/providers/locale_provider.dart';
-import 'package:social_flutter/core/ui/app_theme.dart';
-import 'package:social_flutter/features/feed/domain/feed_item.dart';
-import 'package:social_flutter/features/itineraries/presentation/widgets/itinerary_summary_card.dart';
-import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
-import 'package:social_flutter/features/profile/providers/profile_provider.dart';
-import 'package:social_flutter/features/translation/domain/translation.dart';
-import 'package:social_flutter/l10n/app_localizations.dart';
-import 'package:social_flutter/shared/widgets/editorial_widgets.dart';
+import 'package:ntripi/core/providers/locale_provider.dart';
+import 'package:ntripi/core/ui/app_theme.dart';
+import 'package:ntripi/features/feed/domain/feed_item.dart';
+import 'package:ntripi/features/itineraries/presentation/widgets/itinerary_summary_card.dart';
+import 'package:ntripi/features/itineraries/providers/itinerary_providers.dart';
+import 'package:ntripi/features/profile/providers/profile_provider.dart';
+import 'package:ntripi/features/translation/domain/translation.dart';
+import 'package:ntripi/l10n/app_localizations.dart';
+import 'package:ntripi/shared/widgets/editorial_widgets.dart';
 
 class FeedCard extends ConsumerWidget {
   final FeedItem item;

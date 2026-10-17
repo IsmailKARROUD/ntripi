@@ -15,16 +15,16 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
-import 'package:social_flutter/core/connectivity/connectivity_service.dart';
-import 'package:social_flutter/features/feed/domain/feed_item.dart';
-import 'package:social_flutter/features/itineraries/data/itinerary_repository.dart';
-import 'package:social_flutter/features/itineraries/domain/itinerary.dart';
-import 'package:social_flutter/features/itineraries/presentation/itinerary_list_screen.dart';
-import 'package:social_flutter/features/itineraries/presentation/widgets/itinerary_summary_card.dart';
-import 'package:social_flutter/features/itineraries/presentation/widgets/shared_itinerary_card.dart';
-import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
-import 'package:social_flutter/l10n/app_localizations.dart';
-import 'package:social_flutter/shared/widgets/loaders.dart';
+import 'package:ntripi/core/connectivity/connectivity_service.dart';
+import 'package:ntripi/features/feed/domain/feed_item.dart';
+import 'package:ntripi/features/itineraries/data/itinerary_repository.dart';
+import 'package:ntripi/features/itineraries/domain/itinerary.dart';
+import 'package:ntripi/features/itineraries/presentation/itinerary_list_screen.dart';
+import 'package:ntripi/features/itineraries/presentation/widgets/itinerary_summary_card.dart';
+import 'package:ntripi/features/itineraries/presentation/widgets/shared_itinerary_card.dart';
+import 'package:ntripi/features/itineraries/providers/itinerary_providers.dart';
+import 'package:ntripi/l10n/app_localizations.dart';
+import 'package:ntripi/shared/widgets/loaders.dart';
 
 Itinerary _itinerary({
   required String id,

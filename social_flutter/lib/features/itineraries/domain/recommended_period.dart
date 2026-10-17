@@ -17,7 +17,7 @@
 
 import 'package:flutter/foundation.dart' show listEquals;
 import 'package:intl/intl.dart' as intl;
-import 'package:social_flutter/l10n/app_localizations.dart';
+import 'package:ntripi/l10n/app_localizations.dart';
 
 /// Days per month with February at 29 — a window has no year, so a boundary on
 /// the leap day is a real choice. Mirrors _DAYS_IN_MONTH in the backend schema.

@@ -4,10 +4,10 @@
 // They are read-only in Flutter; the backend recalculates them on every
 // segment create / update.
 
-import 'package:social_flutter/core/services/currency.dart';
-import 'package:social_flutter/features/itineraries/domain/transport_leg.dart';
-import 'package:social_flutter/l10n/app_localizations.dart';
-import 'package:social_flutter/shared/utils/duration_format.dart';
+import 'package:ntripi/core/services/currency.dart';
+import 'package:ntripi/features/itineraries/domain/transport_leg.dart';
+import 'package:ntripi/l10n/app_localizations.dart';
+import 'package:ntripi/shared/utils/duration_format.dart';
 
 class TransitSegment {
   final String id;

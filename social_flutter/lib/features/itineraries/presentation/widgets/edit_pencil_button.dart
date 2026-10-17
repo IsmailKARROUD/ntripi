@@ -7,9 +7,9 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:social_flutter/core/connectivity/connectivity_service.dart';
-import 'package:social_flutter/core/ui/app_theme.dart';
-import 'package:social_flutter/shared/widgets/offline_gate.dart';
+import 'package:ntripi/core/connectivity/connectivity_service.dart';
+import 'package:ntripi/core/ui/app_theme.dart';
+import 'package:ntripi/shared/widgets/offline_gate.dart';
 
 class EditPencilButton extends ConsumerWidget {
   final VoidCallback? onTap;

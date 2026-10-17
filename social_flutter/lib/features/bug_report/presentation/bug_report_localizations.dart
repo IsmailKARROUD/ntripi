@@ -10,7 +10,7 @@
 
 import 'package:feedback/feedback.dart';
 import 'package:flutter/material.dart';
-import 'package:social_flutter/l10n/app_localizations.dart';
+import 'package:ntripi/l10n/app_localizations.dart';
 
 class NtripiFeedbackLocalizationsDelegate
     extends LocalizationsDelegate<FeedbackLocalizations> {

@@ -5,13 +5,13 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:social_flutter/core/api/api_client.dart' show extractErrorMessage;
-import 'package:social_flutter/core/ui/app_theme.dart';
-import 'package:social_flutter/core/utils/platform_utils.dart';
-import 'package:social_flutter/features/feed/presentation/widgets/feed_card.dart';
-import 'package:social_flutter/features/feed/providers/feed_providers.dart';
-import 'package:social_flutter/l10n/app_localizations.dart';
-import 'package:social_flutter/shared/widgets/loaders.dart';
+import 'package:ntripi/core/api/api_client.dart' show extractErrorMessage;
+import 'package:ntripi/core/ui/app_theme.dart';
+import 'package:ntripi/core/utils/platform_utils.dart';
+import 'package:ntripi/features/feed/presentation/widgets/feed_card.dart';
+import 'package:ntripi/features/feed/providers/feed_providers.dart';
+import 'package:ntripi/l10n/app_localizations.dart';
+import 'package:ntripi/shared/widgets/loaders.dart';
 
 class FeedScreen extends ConsumerStatefulWidget {
   const FeedScreen({super.key});

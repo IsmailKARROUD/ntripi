@@ -5,13 +5,13 @@
 // now carries. Unknown values from a newer backend must degrade, never throw.
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:social_flutter/features/feed/domain/feed_item.dart';
-import 'package:social_flutter/features/itineraries/domain/annotation.dart';
-import 'package:social_flutter/features/itineraries/domain/itinerary.dart';
-import 'package:social_flutter/features/itineraries/domain/itinerary_annotation.dart';
-import 'package:social_flutter/features/itineraries/domain/ratings_page.dart';
-import 'package:social_flutter/features/itineraries/domain/transport_leg.dart';
-import 'package:social_flutter/features/translation/domain/translation.dart';
+import 'package:ntripi/features/feed/domain/feed_item.dart';
+import 'package:ntripi/features/itineraries/domain/annotation.dart';
+import 'package:ntripi/features/itineraries/domain/itinerary.dart';
+import 'package:ntripi/features/itineraries/domain/itinerary_annotation.dart';
+import 'package:ntripi/features/itineraries/domain/ratings_page.dart';
+import 'package:ntripi/features/itineraries/domain/transport_leg.dart';
+import 'package:ntripi/features/translation/domain/translation.dart';
 
 const _at = '2026-10-07T10:00:00.000000Z';
 

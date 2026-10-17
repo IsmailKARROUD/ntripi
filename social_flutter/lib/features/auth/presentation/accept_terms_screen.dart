@@ -11,18 +11,18 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:social_flutter/core/api/api_client.dart';
-import 'package:social_flutter/core/ui/app_theme.dart';
-import 'package:social_flutter/core/ui/ntripi_logo.dart';
-import 'package:social_flutter/core/utils/platform_utils.dart';
-import 'package:social_flutter/features/auth/presentation/widgets/tos_agreement_row.dart';
-import 'package:social_flutter/features/auth/providers/auth_provider.dart';
-import 'package:social_flutter/features/profile/providers/profile_provider.dart';
-import 'package:social_flutter/l10n/app_localizations.dart';
-import 'package:social_flutter/shared/widgets/date_of_birth_field.dart';
-import 'package:social_flutter/shared/widgets/locale_picker_button.dart';
-import 'package:social_flutter/shared/widgets/saving_overlay.dart';
-import 'package:social_flutter/shared/widgets/theme_picker_button.dart';
+import 'package:ntripi/core/api/api_client.dart';
+import 'package:ntripi/core/ui/app_theme.dart';
+import 'package:ntripi/core/ui/ntripi_logo.dart';
+import 'package:ntripi/core/utils/platform_utils.dart';
+import 'package:ntripi/features/auth/presentation/widgets/tos_agreement_row.dart';
+import 'package:ntripi/features/auth/providers/auth_provider.dart';
+import 'package:ntripi/features/profile/providers/profile_provider.dart';
+import 'package:ntripi/l10n/app_localizations.dart';
+import 'package:ntripi/shared/widgets/date_of_birth_field.dart';
+import 'package:ntripi/shared/widgets/locale_picker_button.dart';
+import 'package:ntripi/shared/widgets/saving_overlay.dart';
+import 'package:ntripi/shared/widgets/theme_picker_button.dart';
 
 class AcceptTermsScreen extends ConsumerStatefulWidget {
   const AcceptTermsScreen({super.key});

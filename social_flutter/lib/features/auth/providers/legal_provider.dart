@@ -8,8 +8,8 @@
 // so the sheet shows the same translation the browser pages would.
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:social_flutter/core/providers/locale_provider.dart';
-import 'package:social_flutter/features/auth/providers/auth_provider.dart';
+import 'package:ntripi/core/providers/locale_provider.dart';
+import 'package:ntripi/features/auth/providers/auth_provider.dart';
 
 /// Which of the three documents a sheet should show.
 enum LegalDoc { terms, guidelines, privacy }

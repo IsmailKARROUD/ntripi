@@ -13,10 +13,10 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:social_flutter/core/ui/app_theme.dart';
-import 'package:social_flutter/features/profile/presentation/profile_identity_facts.dart';
-import 'package:social_flutter/l10n/app_localizations.dart';
-import 'package:social_flutter/shared/models/user.dart';
+import 'package:ntripi/core/ui/app_theme.dart';
+import 'package:ntripi/features/profile/presentation/profile_identity_facts.dart';
+import 'package:ntripi/l10n/app_localizations.dart';
+import 'package:ntripi/shared/models/user.dart';
 
 // ---------------------------------------------------------------------------
 // Helpers

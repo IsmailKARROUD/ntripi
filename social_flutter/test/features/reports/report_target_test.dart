@@ -3,7 +3,7 @@
 // is the prefix on the notes a moderator reads in /admin/reports.
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:social_flutter/features/reports/domain/report_target.dart';
+import 'package:ntripi/features/reports/domain/report_target.dart';
 
 void main() {
   const itineraryId = 'itin-1';

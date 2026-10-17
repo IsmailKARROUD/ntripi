@@ -7,9 +7,9 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:social_flutter/core/ui/app_theme.dart';
-import 'package:social_flutter/l10n/app_localizations.dart';
-import 'package:social_flutter/shared/widgets/expandable_text.dart';
+import 'package:ntripi/core/ui/app_theme.dart';
+import 'package:ntripi/l10n/app_localizations.dart';
+import 'package:ntripi/shared/widgets/expandable_text.dart';
 
 const _viewMore = '... view more';
 const _viewLess = 'view less';

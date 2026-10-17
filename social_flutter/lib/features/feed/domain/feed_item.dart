@@ -5,8 +5,8 @@
 // Itinerary.fromJson for the trip fields and parse the nested `owner` object
 // (RaterInfo shape on the backend) into a lightweight FeedOwner.
 
-import 'package:social_flutter/features/itineraries/domain/itinerary.dart';
-import 'package:social_flutter/features/translation/domain/translation.dart';
+import 'package:ntripi/features/itineraries/domain/itinerary.dart';
+import 'package:ntripi/features/translation/domain/translation.dart';
 
 /// Minimal author info shown on a feed card. Fields are nullable because the
 /// owner may have deleted their account (the backend RaterInfo is all-Optional).

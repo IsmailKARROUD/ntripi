@@ -23,11 +23,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:social_flutter/features/profile/domain/visited_location.dart';
-import 'package:social_flutter/features/profile/presentation/fullscreen_locations_map_screen.dart';
-import 'package:social_flutter/features/profile/presentation/widgets/profile_chrome.dart';
-import 'package:social_flutter/features/profile/providers/user_locations_provider.dart';
-import 'package:social_flutter/l10n/app_localizations.dart';
+import 'package:ntripi/features/profile/domain/visited_location.dart';
+import 'package:ntripi/features/profile/presentation/fullscreen_locations_map_screen.dart';
+import 'package:ntripi/features/profile/presentation/widgets/profile_chrome.dart';
+import 'package:ntripi/features/profile/providers/user_locations_provider.dart';
+import 'package:ntripi/l10n/app_localizations.dart';
 
 VisitedLocation _loc(double lat, double lng) => VisitedLocation(
       lat: lat,

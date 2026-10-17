@@ -10,11 +10,11 @@
 // became plain text it no longer needs a browser to render.
 
 import 'package:flutter/material.dart';
-import 'package:social_flutter/core/ui/app_theme.dart';
-import 'package:social_flutter/features/auth/presentation/widgets/legal_doc_sheet.dart';
-import 'package:social_flutter/features/auth/providers/legal_provider.dart';
-import 'package:social_flutter/l10n/app_localizations.dart';
-import 'package:social_flutter/shared/widgets/field_help.dart';
+import 'package:ntripi/core/ui/app_theme.dart';
+import 'package:ntripi/features/auth/presentation/widgets/legal_doc_sheet.dart';
+import 'package:ntripi/features/auth/providers/legal_provider.dart';
+import 'package:ntripi/l10n/app_localizations.dart';
+import 'package:ntripi/shared/widgets/field_help.dart';
 
 class TosAgreementRow extends StatelessWidget {
   final bool accepted;

@@ -18,17 +18,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:social_flutter/core/ui/confirm_dialog.dart';
-import 'package:social_flutter/features/follows/providers/follow_provider.dart';
-import 'package:social_flutter/features/itineraries/domain/itinerary.dart';
-import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
-import 'package:social_flutter/features/profile/presentation/profile_screen.dart';
-import 'package:social_flutter/features/profile/providers/profile_provider.dart';
-import 'package:social_flutter/l10n/app_localizations.dart';
-import 'package:social_flutter/shared/widgets/loaders.dart';
-import 'package:social_flutter/features/reports/presentation/ugc_actions.dart';
-import 'package:social_flutter/shared/models/follow.dart';
-import 'package:social_flutter/shared/models/user.dart';
+import 'package:ntripi/core/ui/confirm_dialog.dart';
+import 'package:ntripi/features/follows/providers/follow_provider.dart';
+import 'package:ntripi/features/itineraries/domain/itinerary.dart';
+import 'package:ntripi/features/itineraries/providers/itinerary_providers.dart';
+import 'package:ntripi/features/profile/presentation/profile_screen.dart';
+import 'package:ntripi/features/profile/providers/profile_provider.dart';
+import 'package:ntripi/l10n/app_localizations.dart';
+import 'package:ntripi/shared/widgets/loaders.dart';
+import 'package:ntripi/features/reports/presentation/ugc_actions.dart';
+import 'package:ntripi/shared/models/follow.dart';
+import 'package:ntripi/shared/models/user.dart';
 
 // ── Test fixtures ─────────────────────────────────────────────────────────
 

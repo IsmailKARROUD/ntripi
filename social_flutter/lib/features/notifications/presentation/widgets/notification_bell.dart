@@ -8,10 +8,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:social_flutter/core/ui/app_theme.dart';
-import 'package:social_flutter/features/notifications/providers/notification_provider.dart';
-import 'package:social_flutter/features/profile/presentation/widgets/profile_chrome.dart';
-import 'package:social_flutter/l10n/app_localizations.dart';
+import 'package:ntripi/core/ui/app_theme.dart';
+import 'package:ntripi/features/notifications/providers/notification_provider.dart';
+import 'package:ntripi/features/profile/presentation/widgets/profile_chrome.dart';
+import 'package:ntripi/l10n/app_localizations.dart';
 
 class NotificationBell extends ConsumerWidget {
   const NotificationBell({super.key});

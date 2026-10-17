@@ -10,11 +10,11 @@
 // root navigator the autofocused search field sat under the keyboard.
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:social_flutter/core/ui/app_theme.dart';
-import 'package:social_flutter/features/profile/presentation/language_picker_sheet.dart';
-import 'package:social_flutter/l10n/app_localizations.dart';
-import 'package:social_flutter/shared/data/languages.dart';
-import 'package:social_flutter/shared/widgets/editorial_widgets.dart';
+import 'package:ntripi/core/ui/app_theme.dart';
+import 'package:ntripi/features/profile/presentation/language_picker_sheet.dart';
+import 'package:ntripi/l10n/app_localizations.dart';
+import 'package:ntripi/shared/data/languages.dart';
+import 'package:ntripi/shared/widgets/editorial_widgets.dart';
 
 Rect _sheetRect(WidgetTester tester) => tester.getRect(
       find

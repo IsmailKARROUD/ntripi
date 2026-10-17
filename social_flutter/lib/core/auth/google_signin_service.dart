@@ -8,7 +8,7 @@
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:google_sign_in/google_sign_in.dart';
 
-import 'package:social_flutter/core/api/api_endpoints.dart';
+import 'package:ntripi/core/api/api_endpoints.dart';
 
 /// Google's sensitive scope for reading the profile birthday. Sensitive means
 /// the OAuth client must pass Google's verification review before non-test

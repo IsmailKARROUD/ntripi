@@ -10,10 +10,10 @@ import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:package_info_plus/package_info_plus.dart';
-import 'package:social_flutter/core/providers/locale_provider.dart';
-import 'package:social_flutter/core/providers/theme_mode_provider.dart';
-import 'package:social_flutter/core/router/app_router.dart';
-import 'package:social_flutter/features/bug_report/domain/bug_report_diagnostics.dart';
+import 'package:ntripi/core/providers/locale_provider.dart';
+import 'package:ntripi/core/providers/theme_mode_provider.dart';
+import 'package:ntripi/core/router/app_router.dart';
+import 'package:ntripi/features/bug_report/domain/bug_report_diagnostics.dart';
 
 /// Read once per launch — PackageInfo hits a platform channel and never changes.
 final packageInfoProvider = FutureProvider<PackageInfo?>((ref) async {

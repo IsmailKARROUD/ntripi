@@ -5,7 +5,7 @@
 // app and stay in step with it — a server-side FAQ would drift out of sync with
 // whatever version the reader is holding.
 
-import 'package:social_flutter/l10n/app_localizations.dart';
+import 'package:ntripi/l10n/app_localizations.dart';
 
 class FaqEntry {
   final String question;

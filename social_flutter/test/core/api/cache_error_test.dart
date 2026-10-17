@@ -16,8 +16,8 @@ import 'dart:typed_data';
 import 'package:dio/dio.dart';
 import 'package:dio_cache_interceptor/dio_cache_interceptor.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:social_flutter/core/api/api_client.dart';
-import 'package:social_flutter/core/api/cache_evict_interceptor.dart';
+import 'package:ntripi/core/api/api_client.dart';
+import 'package:ntripi/core/api/cache_evict_interceptor.dart';
 
 const _path = '/users/blocked-account-id';
 

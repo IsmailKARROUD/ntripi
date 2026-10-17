@@ -5,10 +5,10 @@
 // are provided (omit them for read-only contexts).
 
 import 'package:flutter/material.dart';
-import 'package:social_flutter/core/ui/app_theme.dart';
-import 'package:social_flutter/features/itineraries/domain/transport_leg.dart';
-import 'package:social_flutter/features/itineraries/presentation/widgets/edit_pencil_button.dart';
-import 'package:social_flutter/l10n/app_localizations.dart';
+import 'package:ntripi/core/ui/app_theme.dart';
+import 'package:ntripi/features/itineraries/domain/transport_leg.dart';
+import 'package:ntripi/features/itineraries/presentation/widgets/edit_pencil_button.dart';
+import 'package:ntripi/l10n/app_localizations.dart';
 
 class LegTile extends StatelessWidget {
   final TransportLeg leg;

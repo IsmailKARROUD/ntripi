@@ -12,7 +12,7 @@
 // authority, so a miss there costs far less than a false positive here.
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:social_flutter/core/moderation/text_precheck.dart';
+import 'package:ntripi/core/moderation/text_precheck.dart';
 
 void main() {
   group('stays quiet on ordinary travel prose', () {

@@ -14,7 +14,7 @@
 
 import 'package:dio/dio.dart';
 import 'package:dio_cache_interceptor/dio_cache_interceptor.dart';
-import 'package:social_flutter/core/api/cache_key.dart';
+import 'package:ntripi/core/api/cache_key.dart';
 
 /// Status codes whose cached body must be destroyed, not merely bypassed.
 const kEvictCacheFor = [403, 404, 410];

@@ -1,4 +1,4 @@
-import 'package:social_flutter/l10n/app_localizations.dart';
+import 'package:ntripi/l10n/app_localizations.dart';
 
 class UsernameValidator {
   static final _pattern =

@@ -1,9 +1,9 @@
 // features/follows/data/follow_repository.dart — Follow/unfollow API calls.
 
 import 'package:dio/dio.dart';
-import 'package:social_flutter/core/api/api_client.dart';
-import 'package:social_flutter/core/api/api_endpoints.dart';
-import 'package:social_flutter/shared/models/follow.dart';
+import 'package:ntripi/core/api/api_client.dart';
+import 'package:ntripi/core/api/api_endpoints.dart';
+import 'package:ntripi/shared/models/follow.dart';
 
 /// Rows per page for the followers / following lists. The server's default is
 /// 20 and its ceiling 100; asking explicitly keeps the client in charge.

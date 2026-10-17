@@ -18,7 +18,7 @@
 //     - All others   → StopType.waypoint
 //   This assignment happens in Itinerary._parseTracks(), not here.
 
-import 'package:social_flutter/features/itineraries/domain/stop.dart';
+import 'package:ntripi/features/itineraries/domain/stop.dart';
 
 class Track {
   /// Maximum number of parallel stops allowed per track.

@@ -17,10 +17,10 @@
 //   overwrites it with the correct value after deserialization.
 
 import 'package:flutter/material.dart';
-import 'package:social_flutter/core/ui/app_theme.dart';
-import 'package:social_flutter/features/itineraries/domain/annotation.dart';
-import 'package:social_flutter/l10n/app_localizations.dart';
-import 'package:social_flutter/shared/utils/duration_format.dart';
+import 'package:ntripi/core/ui/app_theme.dart';
+import 'package:ntripi/features/itineraries/domain/annotation.dart';
+import 'package:ntripi/l10n/app_localizations.dart';
+import 'package:ntripi/shared/utils/duration_format.dart';
 
 enum StopType {
   origin,

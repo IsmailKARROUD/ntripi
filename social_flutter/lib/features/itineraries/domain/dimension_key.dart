@@ -4,7 +4,7 @@
 // Used by DimensionRatingsScreen and client-side filtering helpers.
 
 import 'package:flutter/material.dart';
-import 'package:social_flutter/l10n/app_localizations.dart';
+import 'package:ntripi/l10n/app_localizations.dart';
 
 enum DimensionKey {
   overall,

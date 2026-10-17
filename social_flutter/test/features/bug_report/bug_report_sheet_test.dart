@@ -18,11 +18,11 @@ import 'package:feedback/feedback.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:social_flutter/core/ui/app_theme.dart';
-import 'package:social_flutter/features/bug_report/presentation/bug_report_localizations.dart';
-import 'package:social_flutter/features/bug_report/presentation/bug_report_sheet.dart';
-import 'package:social_flutter/features/bug_report/presentation/bug_report_theme.dart';
-import 'package:social_flutter/l10n/app_localizations.dart';
+import 'package:ntripi/core/ui/app_theme.dart';
+import 'package:ntripi/features/bug_report/presentation/bug_report_localizations.dart';
+import 'package:ntripi/features/bug_report/presentation/bug_report_sheet.dart';
+import 'package:ntripi/features/bug_report/presentation/bug_report_theme.dart';
+import 'package:ntripi/l10n/app_localizations.dart';
 
 /// Mirrors the mount in lib/main.dart: ProviderScope above everything, then
 /// BetterFeedback, then MaterialApp. `home` is what a real screen sees.

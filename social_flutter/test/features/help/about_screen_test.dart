@@ -9,11 +9,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:package_info_plus/package_info_plus.dart';
-import 'package:social_flutter/core/ui/app_theme.dart';
-import 'package:social_flutter/features/bug_report/data/diagnostics_service.dart';
-import 'package:social_flutter/features/help/presentation/about_screen.dart';
-import 'package:social_flutter/l10n/app_localizations.dart';
-import 'package:social_flutter/l10n/app_localizations_en.dart';
+import 'package:ntripi/core/ui/app_theme.dart';
+import 'package:ntripi/features/bug_report/data/diagnostics_service.dart';
+import 'package:ntripi/features/help/presentation/about_screen.dart';
+import 'package:ntripi/l10n/app_localizations.dart';
+import 'package:ntripi/l10n/app_localizations_en.dart';
 
 final _en = AppLocalizationsEn();
 

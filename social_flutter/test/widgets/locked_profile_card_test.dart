@@ -6,8 +6,8 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:social_flutter/features/profile/presentation/widgets/locked_profile_card.dart';
-import 'package:social_flutter/l10n/app_localizations.dart';
+import 'package:ntripi/features/profile/presentation/widgets/locked_profile_card.dart';
+import 'package:ntripi/l10n/app_localizations.dart';
 
 Widget _host({required bool isPending, required String handle}) {
   return MaterialApp(

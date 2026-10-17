@@ -13,15 +13,15 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:social_flutter/core/api/api_client.dart';
-import 'package:social_flutter/core/ui/app_theme.dart';
-import 'package:social_flutter/core/ui/toggle_feedback.dart';
-import 'package:social_flutter/core/utils/platform_utils.dart';
-import 'package:social_flutter/features/bug_report/presentation/bug_report_entry.dart';
-import 'package:social_flutter/features/bug_report/providers/shake_report_enabled_provider.dart';
-import 'package:social_flutter/features/help/presentation/widgets/shake_phone_demo.dart';
-import 'package:social_flutter/l10n/app_localizations.dart';
-import 'package:social_flutter/shared/widgets/editorial_widgets.dart';
+import 'package:ntripi/core/api/api_client.dart';
+import 'package:ntripi/core/ui/app_theme.dart';
+import 'package:ntripi/core/ui/toggle_feedback.dart';
+import 'package:ntripi/core/utils/platform_utils.dart';
+import 'package:ntripi/features/bug_report/presentation/bug_report_entry.dart';
+import 'package:ntripi/features/bug_report/providers/shake_report_enabled_provider.dart';
+import 'package:ntripi/features/help/presentation/widgets/shake_phone_demo.dart';
+import 'package:ntripi/l10n/app_localizations.dart';
+import 'package:ntripi/shared/widgets/editorial_widgets.dart';
 
 // Mirrors the Settings row's handler: the switch and the row's own onTap both
 // go through here, so the acknowledgement cannot be wired to one and not the

@@ -1,6 +1,6 @@
 // features/itineraries/domain/itinerary_annotation.dart — Itinerary-level annotation model.
 
-import 'package:social_flutter/features/itineraries/domain/annotation.dart';
+import 'package:ntripi/features/itineraries/domain/annotation.dart';
 
 /// A user-written note attached to an itinerary (not to a stop).
 class ItineraryAnnotation {

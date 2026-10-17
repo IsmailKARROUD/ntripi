@@ -11,9 +11,9 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:social_flutter/features/search/data/search_repository.dart';
-import 'package:social_flutter/features/search/providers/search_provider.dart';
-import 'package:social_flutter/shared/models/user.dart';
+import 'package:ntripi/features/search/data/search_repository.dart';
+import 'package:ntripi/features/search/providers/search_provider.dart';
+import 'package:ntripi/shared/models/user.dart';
 
 // ---------------------------------------------------------------------------
 // Test doubles

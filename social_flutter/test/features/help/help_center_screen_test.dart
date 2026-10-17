@@ -7,10 +7,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:social_flutter/core/ui/app_theme.dart';
-import 'package:social_flutter/features/help/presentation/help_center_screen.dart';
-import 'package:social_flutter/l10n/app_localizations.dart';
-import 'package:social_flutter/l10n/app_localizations_en.dart';
+import 'package:ntripi/core/ui/app_theme.dart';
+import 'package:ntripi/features/help/presentation/help_center_screen.dart';
+import 'package:ntripi/l10n/app_localizations.dart';
+import 'package:ntripi/l10n/app_localizations_en.dart';
 
 final _en = AppLocalizationsEn();
 

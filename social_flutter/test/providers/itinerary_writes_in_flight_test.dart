@@ -11,11 +11,11 @@ import 'dart:async';
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:social_flutter/features/itineraries/data/itinerary_repository.dart';
-import 'package:social_flutter/features/itineraries/domain/itinerary.dart';
-import 'package:social_flutter/features/itineraries/domain/transit_segment.dart';
-import 'package:social_flutter/features/itineraries/providers/edit_lock_provider.dart';
-import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
+import 'package:ntripi/features/itineraries/data/itinerary_repository.dart';
+import 'package:ntripi/features/itineraries/domain/itinerary.dart';
+import 'package:ntripi/features/itineraries/domain/transit_segment.dart';
+import 'package:ntripi/features/itineraries/providers/edit_lock_provider.dart';
+import 'package:ntripi/features/itineraries/providers/itinerary_providers.dart';
 
 const _itinId = 'itin-1';
 

@@ -1,9 +1,9 @@
 // features/notifications/data/notification_repository.dart — notification API calls.
 
 import 'package:dio/dio.dart';
-import 'package:social_flutter/core/api/api_client.dart';
-import 'package:social_flutter/core/api/api_endpoints.dart';
-import 'package:social_flutter/features/notifications/domain/app_notification.dart';
+import 'package:ntripi/core/api/api_client.dart';
+import 'package:ntripi/core/api/api_endpoints.dart';
+import 'package:ntripi/features/notifications/domain/app_notification.dart';
 
 class NotificationRepository {
   final Dio _dio;

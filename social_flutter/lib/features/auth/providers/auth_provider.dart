@@ -11,21 +11,21 @@
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show ProviderOrFamily;
-import 'package:social_flutter/core/api/api_client.dart';
-import 'package:social_flutter/core/push/push_service.dart';
-import 'package:social_flutter/core/storage/secure_storage.dart';
-import 'package:social_flutter/features/auth/data/auth_repository.dart';
-import 'package:social_flutter/features/feed/providers/feed_providers.dart';
-import 'package:social_flutter/features/follows/providers/follow_provider.dart';
-import 'package:social_flutter/features/itineraries/providers/edit_lock_provider.dart';
-import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
-import 'package:social_flutter/features/itineraries/providers/saved_itineraries_provider.dart';
-import 'package:social_flutter/features/notifications/providers/notification_provider.dart';
-import 'package:social_flutter/features/profile/providers/profile_provider.dart';
-import 'package:social_flutter/features/profile/providers/user_locations_provider.dart';
-import 'package:social_flutter/features/reports/data/report_repository.dart';
-import 'package:social_flutter/features/search/providers/search_provider.dart';
-import 'package:social_flutter/features/translation/providers/translation_providers.dart';
+import 'package:ntripi/core/api/api_client.dart';
+import 'package:ntripi/core/push/push_service.dart';
+import 'package:ntripi/core/storage/secure_storage.dart';
+import 'package:ntripi/features/auth/data/auth_repository.dart';
+import 'package:ntripi/features/feed/providers/feed_providers.dart';
+import 'package:ntripi/features/follows/providers/follow_provider.dart';
+import 'package:ntripi/features/itineraries/providers/edit_lock_provider.dart';
+import 'package:ntripi/features/itineraries/providers/itinerary_providers.dart';
+import 'package:ntripi/features/itineraries/providers/saved_itineraries_provider.dart';
+import 'package:ntripi/features/notifications/providers/notification_provider.dart';
+import 'package:ntripi/features/profile/providers/profile_provider.dart';
+import 'package:ntripi/features/profile/providers/user_locations_provider.dart';
+import 'package:ntripi/features/reports/data/report_repository.dart';
+import 'package:ntripi/features/search/providers/search_provider.dart';
+import 'package:ntripi/features/translation/providers/translation_providers.dart';
 
 /// Provides the AuthRepository — the single instance for the app lifetime.
 /// Receives both the main Dio (auth-aware) for login/register and the bare

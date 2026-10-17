@@ -10,14 +10,14 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:social_flutter/core/connectivity/connectivity_service.dart';
-import 'package:social_flutter/core/providers/locale_provider.dart';
-import 'package:social_flutter/core/ui/app_theme.dart';
-import 'package:social_flutter/features/translation/data/translation_repository.dart';
-import 'package:social_flutter/features/translation/domain/translation.dart';
-import 'package:social_flutter/features/translation/presentation/translatable_text.dart';
-import 'package:social_flutter/features/translation/providers/translation_providers.dart';
-import 'package:social_flutter/l10n/app_localizations.dart';
+import 'package:ntripi/core/connectivity/connectivity_service.dart';
+import 'package:ntripi/core/providers/locale_provider.dart';
+import 'package:ntripi/core/ui/app_theme.dart';
+import 'package:ntripi/features/translation/data/translation_repository.dart';
+import 'package:ntripi/features/translation/domain/translation.dart';
+import 'package:ntripi/features/translation/presentation/translatable_text.dart';
+import 'package:ntripi/features/translation/providers/translation_providers.dart';
+import 'package:ntripi/l10n/app_localizations.dart';
 
 class _FixedLocale extends LocaleNotifier {
   _FixedLocale(this.code);

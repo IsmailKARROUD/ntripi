@@ -12,12 +12,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:social_flutter/core/connectivity/connectivity_service.dart';
-import 'package:social_flutter/core/ui/app_theme.dart';
-import 'package:social_flutter/features/auth/data/auth_repository.dart';
-import 'package:social_flutter/features/auth/presentation/login_screen.dart';
-import 'package:social_flutter/features/auth/providers/auth_provider.dart';
-import 'package:social_flutter/l10n/app_localizations.dart';
+import 'package:ntripi/core/connectivity/connectivity_service.dart';
+import 'package:ntripi/core/ui/app_theme.dart';
+import 'package:ntripi/features/auth/data/auth_repository.dart';
+import 'package:ntripi/features/auth/presentation/login_screen.dart';
+import 'package:ntripi/features/auth/providers/auth_provider.dart';
+import 'package:ntripi/l10n/app_localizations.dart';
 
 /// Fails every login with a fixed backend response. Subclassing the real
 /// repository keeps the provider contract honest — no mocking framework.

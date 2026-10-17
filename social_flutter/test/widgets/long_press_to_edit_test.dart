@@ -5,13 +5,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:social_flutter/core/connectivity/connectivity_service.dart';
-import 'package:social_flutter/features/itineraries/domain/annotation.dart';
-import 'package:social_flutter/features/itineraries/domain/stop.dart';
-import 'package:social_flutter/features/itineraries/presentation/widgets/annotation_chip.dart';
-import 'package:social_flutter/features/itineraries/presentation/widgets/long_press_to_edit.dart';
-import 'package:social_flutter/features/itineraries/presentation/widgets/stop_card.dart';
-import 'package:social_flutter/l10n/app_localizations.dart';
+import 'package:ntripi/core/connectivity/connectivity_service.dart';
+import 'package:ntripi/features/itineraries/domain/annotation.dart';
+import 'package:ntripi/features/itineraries/domain/stop.dart';
+import 'package:ntripi/features/itineraries/presentation/widgets/annotation_chip.dart';
+import 'package:ntripi/features/itineraries/presentation/widgets/long_press_to_edit.dart';
+import 'package:ntripi/features/itineraries/presentation/widgets/stop_card.dart';
+import 'package:ntripi/l10n/app_localizations.dart';
 
 Widget _wrap(Widget child, {required bool online}) => ProviderScope(
       overrides: [

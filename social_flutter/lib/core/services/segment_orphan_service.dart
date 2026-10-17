@@ -16,9 +16,9 @@
 //   reorder that breaks this — including merely reversing the direction —
 //   orphans the segment.
 
-import 'package:social_flutter/features/itineraries/domain/stop.dart';
-import 'package:social_flutter/features/itineraries/domain/track.dart';
-import 'package:social_flutter/features/itineraries/domain/transit_segment.dart';
+import 'package:ntripi/features/itineraries/domain/stop.dart';
+import 'package:ntripi/features/itineraries/domain/track.dart';
+import 'package:ntripi/features/itineraries/domain/transit_segment.dart';
 
 /// Target of a single-stop move. Mirrors the request shape accepted by
 /// `PATCH /itineraries/{id}/stops/{stop_id}`: either an existing track or a

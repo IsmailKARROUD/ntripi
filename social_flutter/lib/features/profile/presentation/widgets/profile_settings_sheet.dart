@@ -4,18 +4,18 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:social_flutter/core/providers/haptics_enabled_provider.dart';
-import 'package:social_flutter/core/providers/locale_provider.dart';
-import 'package:social_flutter/core/providers/sound_effects_enabled_provider.dart';
-import 'package:social_flutter/core/providers/theme_mode_provider.dart';
-import 'package:social_flutter/core/ui/app_theme.dart';
-import 'package:social_flutter/core/ui/toggle_feedback.dart';
-import 'package:social_flutter/features/follows/providers/follow_provider.dart';
-import 'package:social_flutter/features/profile/providers/profile_provider.dart';
-import 'package:social_flutter/features/bug_report/providers/shake_report_enabled_provider.dart';
-import 'package:social_flutter/l10n/app_localizations.dart';
-import 'package:social_flutter/shared/data/app_locales.dart';
-import 'package:social_flutter/shared/widgets/editorial_widgets.dart';
+import 'package:ntripi/core/providers/haptics_enabled_provider.dart';
+import 'package:ntripi/core/providers/locale_provider.dart';
+import 'package:ntripi/core/providers/sound_effects_enabled_provider.dart';
+import 'package:ntripi/core/providers/theme_mode_provider.dart';
+import 'package:ntripi/core/ui/app_theme.dart';
+import 'package:ntripi/core/ui/toggle_feedback.dart';
+import 'package:ntripi/features/follows/providers/follow_provider.dart';
+import 'package:ntripi/features/profile/providers/profile_provider.dart';
+import 'package:ntripi/features/bug_report/providers/shake_report_enabled_provider.dart';
+import 'package:ntripi/l10n/app_localizations.dart';
+import 'package:ntripi/shared/data/app_locales.dart';
+import 'package:ntripi/shared/widgets/editorial_widgets.dart';
 
 void showProfileSettingsSheet(
   BuildContext context, {

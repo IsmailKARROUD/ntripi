@@ -29,8 +29,8 @@
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:social_flutter/core/providers/sound_effects_enabled_provider.dart';
-import 'package:social_flutter/core/services/haptics_service.dart';
+import 'package:ntripi/core/providers/sound_effects_enabled_provider.dart';
+import 'package:ntripi/core/services/haptics_service.dart';
 
 /// The cues the app can play. `path` is relative to `assets/` — see the header.
 /// `haptic` is the tap pattern timed to that sound; both fire from [play].

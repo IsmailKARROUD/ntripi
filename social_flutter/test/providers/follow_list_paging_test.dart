@@ -4,9 +4,9 @@
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:social_flutter/features/follows/data/follow_repository.dart';
-import 'package:social_flutter/features/follows/providers/follow_provider.dart';
-import 'package:social_flutter/shared/models/follow.dart';
+import 'package:ntripi/features/follows/data/follow_repository.dart';
+import 'package:ntripi/features/follows/providers/follow_provider.dart';
+import 'package:ntripi/shared/models/follow.dart';
 
 /// Serves [total] users in pages of [kFollowListPageSize] and records every
 /// offset it was asked for.

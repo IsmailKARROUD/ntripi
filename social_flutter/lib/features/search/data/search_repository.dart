@@ -1,8 +1,8 @@
 // features/search/data/search_repository.dart — Search API calls.
 
 import 'package:dio/dio.dart';
-import 'package:social_flutter/core/api/api_endpoints.dart';
-import 'package:social_flutter/shared/models/user.dart';
+import 'package:ntripi/core/api/api_endpoints.dart';
+import 'package:ntripi/shared/models/user.dart';
 
 class SearchRepository {
   final Dio _dio;

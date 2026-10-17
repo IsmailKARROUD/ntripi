@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:social_flutter/core/ui/app_theme.dart';
-import 'package:social_flutter/shared/models/user.dart';
-import 'package:social_flutter/shared/widgets/follow_button.dart';
+import 'package:ntripi/core/ui/app_theme.dart';
+import 'package:ntripi/shared/models/user.dart';
+import 'package:ntripi/shared/widgets/follow_button.dart';
 
 typedef FollowStateChanged = void Function({
   required bool isFollowing,

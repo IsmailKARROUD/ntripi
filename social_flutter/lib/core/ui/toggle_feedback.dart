@@ -14,7 +14,7 @@
 import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:social_flutter/core/services/sfx_service.dart';
+import 'package:ntripi/core/services/sfx_service.dart';
 
 /// Acknowledges a switch flip with the toggle cue: a sound if sound cues are on,
 /// a selection tap if haptics are, both if both, and nothing if neither.

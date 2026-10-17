@@ -5,8 +5,8 @@
 // profile grid) and the detail-screen hero.
 
 import 'package:flutter/material.dart';
-import 'package:social_flutter/core/ui/app_theme.dart';
-import 'package:social_flutter/l10n/app_localizations.dart';
+import 'package:ntripi/core/ui/app_theme.dart';
+import 'package:ntripi/l10n/app_localizations.dart';
 
 class ItineraryCoverPlaceholder extends StatelessWidget {
   /// Where the "No cover image" pill sits. Default: centered-lower.

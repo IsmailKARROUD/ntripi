@@ -14,10 +14,10 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:social_flutter/core/ui/confirm_dialog.dart';
-import 'package:social_flutter/features/itineraries/domain/recommended_period.dart';
-import 'package:social_flutter/features/itineraries/presentation/recommended_period_screen.dart';
-import 'package:social_flutter/l10n/app_localizations.dart';
+import 'package:ntripi/core/ui/confirm_dialog.dart';
+import 'package:ntripi/features/itineraries/domain/recommended_period.dart';
+import 'package:ntripi/features/itineraries/presentation/recommended_period_screen.dart';
+import 'package:ntripi/l10n/app_localizations.dart';
 
 void main() {
   late AppLocalizations en;

@@ -14,14 +14,14 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:social_flutter/features/feed/domain/feed_item.dart';
-import 'package:social_flutter/features/follows/data/follow_repository.dart';
-import 'package:social_flutter/features/follows/providers/follow_provider.dart';
-import 'package:social_flutter/features/itineraries/data/itinerary_repository.dart';
-import 'package:social_flutter/features/itineraries/domain/itinerary.dart';
-import 'package:social_flutter/features/itineraries/domain/ratings_page.dart';
-import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
-import 'package:social_flutter/shared/models/follow.dart';
+import 'package:ntripi/features/feed/domain/feed_item.dart';
+import 'package:ntripi/features/follows/data/follow_repository.dart';
+import 'package:ntripi/features/follows/providers/follow_provider.dart';
+import 'package:ntripi/features/itineraries/data/itinerary_repository.dart';
+import 'package:ntripi/features/itineraries/domain/itinerary.dart';
+import 'package:ntripi/features/itineraries/domain/ratings_page.dart';
+import 'package:ntripi/features/itineraries/providers/itinerary_providers.dart';
+import 'package:ntripi/shared/models/follow.dart';
 
 // ---------------------------------------------------------------------------
 // Fakes — each one records the forceRefresh flag per call so tests can assert

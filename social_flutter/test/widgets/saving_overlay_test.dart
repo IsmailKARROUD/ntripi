@@ -6,8 +6,8 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:social_flutter/shared/widgets/loaders.dart';
-import 'package:social_flutter/shared/widgets/saving_overlay.dart';
+import 'package:ntripi/shared/widgets/loaders.dart';
+import 'package:ntripi/shared/widgets/saving_overlay.dart';
 
 Widget _host({
   required bool saving,

@@ -5,8 +5,8 @@
 // implementation.
 
 import 'package:flutter/material.dart';
-import 'package:social_flutter/core/ui/app_theme.dart';
-import 'package:social_flutter/shared/widgets/user_avatar.dart';
+import 'package:ntripi/core/ui/app_theme.dart';
+import 'package:ntripi/shared/widgets/user_avatar.dart';
 
 // ── AvatarInitials ────────────────────────────────────────────────────────────
 // 44 px circle — shows the real avatar when available, otherwise the first

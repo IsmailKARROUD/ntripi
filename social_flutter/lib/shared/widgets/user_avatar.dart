@@ -6,7 +6,7 @@
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:social_flutter/core/cache/image_cache.dart';
+import 'package:ntripi/core/cache/image_cache.dart';
 
 class UserAvatar extends StatelessWidget {
   final String? avatarUrl;

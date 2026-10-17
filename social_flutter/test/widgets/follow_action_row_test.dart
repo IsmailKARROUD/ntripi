@@ -8,10 +8,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:social_flutter/features/profile/presentation/widgets/follow_action_row.dart';
-import 'package:social_flutter/l10n/app_localizations.dart';
-import 'package:social_flutter/shared/models/user.dart';
-import 'package:social_flutter/shared/widgets/follow_button.dart';
+import 'package:ntripi/features/profile/presentation/widgets/follow_action_row.dart';
+import 'package:ntripi/l10n/app_localizations.dart';
+import 'package:ntripi/shared/models/user.dart';
+import 'package:ntripi/shared/widgets/follow_button.dart';
 
 User _makeUser({
   bool isPrivate = false,

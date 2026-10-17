@@ -4,7 +4,7 @@
 // can't call the API at all, so the appeal has to happen on the web, authorized
 // by an emailed signed link. The page asks for the account email and sends it.
 
-import 'package:social_flutter/core/api/api_endpoints.dart';
+import 'package:ntripi/core/api/api_endpoints.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 /// Opens the public, tokenless appeal request form in a browser.

@@ -16,21 +16,21 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
-import 'package:social_flutter/core/connectivity/connectivity_service.dart';
-import 'package:social_flutter/features/itineraries/data/itinerary_repository.dart';
-import 'package:social_flutter/features/itineraries/domain/itinerary.dart';
-import 'package:social_flutter/features/itineraries/domain/edit_lock.dart';
-import 'package:social_flutter/features/itineraries/domain/recommended_period.dart';
-import 'package:social_flutter/features/itineraries/presentation/itinerary_detail_screen.dart';
-import 'package:social_flutter/features/itineraries/presentation/itinerary_form_screen.dart';
-import 'package:social_flutter/features/itineraries/presentation/recommended_period_screen.dart';
-import 'package:social_flutter/features/itineraries/presentation/widgets/cover_image_field.dart';
-import 'package:social_flutter/features/itineraries/presentation/widgets/edit_pencil_button.dart';
-import 'package:social_flutter/features/itineraries/providers/edit_lock_provider.dart';
-import 'package:social_flutter/features/profile/providers/profile_provider.dart';
-import 'package:social_flutter/l10n/app_localizations.dart';
-import 'package:social_flutter/shared/models/user.dart';
-import 'package:social_flutter/shared/widgets/loaders.dart';
+import 'package:ntripi/core/connectivity/connectivity_service.dart';
+import 'package:ntripi/features/itineraries/data/itinerary_repository.dart';
+import 'package:ntripi/features/itineraries/domain/itinerary.dart';
+import 'package:ntripi/features/itineraries/domain/edit_lock.dart';
+import 'package:ntripi/features/itineraries/domain/recommended_period.dart';
+import 'package:ntripi/features/itineraries/presentation/itinerary_detail_screen.dart';
+import 'package:ntripi/features/itineraries/presentation/itinerary_form_screen.dart';
+import 'package:ntripi/features/itineraries/presentation/recommended_period_screen.dart';
+import 'package:ntripi/features/itineraries/presentation/widgets/cover_image_field.dart';
+import 'package:ntripi/features/itineraries/presentation/widgets/edit_pencil_button.dart';
+import 'package:ntripi/features/itineraries/providers/edit_lock_provider.dart';
+import 'package:ntripi/features/profile/providers/profile_provider.dart';
+import 'package:ntripi/l10n/app_localizations.dart';
+import 'package:ntripi/shared/models/user.dart';
+import 'package:ntripi/shared/widgets/loaders.dart';
 
 // MAD, not EUR: seeding the picker from the server value used to be a no-op
 // (a List<Currency>.contains(String)), so every save rewrote the currency to

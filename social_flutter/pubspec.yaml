@@ -1,5 +1,5 @@
-name: social_flutter
-description: Ntripi — social media app frontend (Flutter)
+name: ntripi
+description: Ntripi — share, discover and plan travel itineraries.
 publish_to: 'none'
 
 version: 0.3.2+5

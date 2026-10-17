@@ -9,7 +9,7 @@
 
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:social_flutter/core/api/api_client.dart';
+import 'package:ntripi/core/api/api_client.dart';
 
 void main() {
   // A request the DioException needs as scaffolding — value doesn't matter,

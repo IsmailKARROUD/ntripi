@@ -10,15 +10,15 @@
 //   Centralising the logic here ensures consistent behaviour everywhere.
 
 import 'package:dio/dio.dart';
-import 'package:social_flutter/core/ui/app_theme.dart';
+import 'package:ntripi/core/ui/app_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:social_flutter/core/api/api_client.dart';
-import 'package:social_flutter/core/ui/destructive_actions.dart';
-import 'package:social_flutter/features/follows/data/follow_repository.dart';
-import 'package:social_flutter/l10n/app_localizations.dart';
-import 'package:social_flutter/shared/widgets/loaders.dart';
-import 'package:social_flutter/shared/widgets/offline_gate.dart';
+import 'package:ntripi/core/api/api_client.dart';
+import 'package:ntripi/core/ui/destructive_actions.dart';
+import 'package:ntripi/features/follows/data/follow_repository.dart';
+import 'package:ntripi/l10n/app_localizations.dart';
+import 'package:ntripi/shared/widgets/loaders.dart';
+import 'package:ntripi/shared/widgets/offline_gate.dart';
 
 /// Callback invoked after a follow state change.
 /// The calling screen uses this to refresh its data.

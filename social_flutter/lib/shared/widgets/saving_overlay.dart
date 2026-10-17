@@ -1,8 +1,8 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
-import 'package:social_flutter/core/ui/app_theme.dart';
-import 'package:social_flutter/shared/widgets/loaders.dart';
+import 'package:ntripi/core/ui/app_theme.dart';
+import 'package:ntripi/shared/widgets/loaders.dart';
 
 /// Blurs [child] and swallows all pointer events while [saving] is true,
 /// showing a centered [NTripiRingLoader]. Wrap the root widget of any screen

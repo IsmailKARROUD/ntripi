@@ -11,11 +11,11 @@ import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:social_flutter/features/itineraries/data/edit_claim_journal.dart';
-import 'package:social_flutter/features/itineraries/data/edit_claim_store.dart';
-import 'package:social_flutter/features/itineraries/data/itinerary_repository.dart';
-import 'package:social_flutter/features/itineraries/domain/edit_lock.dart';
-import 'package:social_flutter/features/itineraries/providers/edit_lock_provider.dart';
+import 'package:ntripi/features/itineraries/data/edit_claim_journal.dart';
+import 'package:ntripi/features/itineraries/data/edit_claim_store.dart';
+import 'package:ntripi/features/itineraries/data/itinerary_repository.dart';
+import 'package:ntripi/features/itineraries/domain/edit_lock.dart';
+import 'package:ntripi/features/itineraries/providers/edit_lock_provider.dart';
 
 const _me = 'user-1';
 const _itinId = 'itin-1';

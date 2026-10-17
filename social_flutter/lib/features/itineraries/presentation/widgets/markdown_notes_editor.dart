@@ -9,9 +9,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 import 'package:markdown/markdown.dart' as md;
-import 'package:social_flutter/core/ui/app_theme.dart';
-import 'package:social_flutter/l10n/app_localizations.dart';
-import 'package:social_flutter/shared/widgets/field_help.dart';
+import 'package:ntripi/core/ui/app_theme.dart';
+import 'package:ntripi/l10n/app_localizations.dart';
+import 'package:ntripi/shared/widgets/field_help.dart';
 
 class MarkdownNotesEditor extends StatefulWidget {
   final TextEditingController controller;

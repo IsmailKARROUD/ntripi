@@ -12,10 +12,10 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:social_flutter/features/reports/data/report_repository.dart';
-import 'package:social_flutter/features/reports/domain/report_target.dart';
-import 'package:social_flutter/features/reports/presentation/report_content_sheet.dart';
-import 'package:social_flutter/l10n/app_localizations.dart';
+import 'package:ntripi/features/reports/data/report_repository.dart';
+import 'package:ntripi/features/reports/domain/report_target.dart';
+import 'package:ntripi/features/reports/presentation/report_content_sheet.dart';
+import 'package:ntripi/l10n/app_localizations.dart';
 
 /// Fails every report the way the backend did — a 500 carrying FastAPI's
 /// generic detail body.

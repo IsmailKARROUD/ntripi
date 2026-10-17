@@ -7,7 +7,7 @@
 // only way the same row can read correctly in all six locales and can pick up a
 // display name that moderation changed after the fact.
 
-import 'package:social_flutter/l10n/app_localizations.dart';
+import 'package:ntripi/l10n/app_localizations.dart';
 
 /// What happened. `unknown` is deliberate: a newer backend must never crash a
 /// deployed client, so an unrecognised type degrades to a generic row rather

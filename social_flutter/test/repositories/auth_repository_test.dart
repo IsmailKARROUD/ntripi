@@ -11,8 +11,8 @@ import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http_mock_adapter/http_mock_adapter.dart';
-import 'package:social_flutter/core/api/api_endpoints.dart';
-import 'package:social_flutter/features/auth/data/auth_repository.dart';
+import 'package:ntripi/core/api/api_endpoints.dart';
+import 'package:ntripi/features/auth/data/auth_repository.dart';
 
 void main() {
   /// Creates a (main dio, bare dio, adapter-for-main, adapter-for-bare) tuple.

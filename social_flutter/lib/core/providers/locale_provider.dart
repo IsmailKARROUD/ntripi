@@ -2,7 +2,7 @@ import 'dart:ui';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:social_flutter/shared/data/app_locales.dart';
+import 'package:ntripi/shared/data/app_locales.dart';
 
 const _kLocaleKey = 'ntripi_app_locale';
 

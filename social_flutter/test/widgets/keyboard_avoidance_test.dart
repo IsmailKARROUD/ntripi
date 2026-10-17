@@ -9,7 +9,7 @@
 // visible.
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:social_flutter/shared/widgets/keyboard_avoidance.dart';
+import 'package:ntripi/shared/widgets/keyboard_avoidance.dart';
 
 const _keyboard = 300.0;
 const _keyboardTop = 800 - _keyboard;

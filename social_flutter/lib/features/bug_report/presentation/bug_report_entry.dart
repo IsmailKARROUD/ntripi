@@ -8,9 +8,9 @@
 import 'package:feedback/feedback.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:social_flutter/features/bug_report/data/bug_report_repository.dart';
-import 'package:social_flutter/features/bug_report/data/diagnostics_service.dart';
-import 'package:social_flutter/l10n/app_localizations.dart';
+import 'package:ntripi/features/bug_report/data/bug_report_repository.dart';
+import 'package:ntripi/features/bug_report/data/diagnostics_service.dart';
+import 'package:ntripi/l10n/app_localizations.dart';
 
 /// Opens the screenshot + draw + compose flow.
 ///

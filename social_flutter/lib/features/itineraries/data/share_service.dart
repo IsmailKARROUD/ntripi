@@ -1,10 +1,10 @@
 // data/share_service.dart — Builds a share caption and invokes the OS share sheet.
 
 import 'package:share_plus/share_plus.dart';
-import 'package:social_flutter/core/api/api_endpoints.dart';
-import 'package:social_flutter/features/itineraries/domain/itinerary.dart';
-import 'package:social_flutter/l10n/app_localizations.dart';
-import 'package:social_flutter/shared/models/user.dart';
+import 'package:ntripi/core/api/api_endpoints.dart';
+import 'package:ntripi/features/itineraries/domain/itinerary.dart';
+import 'package:ntripi/l10n/app_localizations.dart';
+import 'package:ntripi/shared/models/user.dart';
 
 class ShareService {
   /// Opens the native OS share sheet with the itinerary landing page URL.

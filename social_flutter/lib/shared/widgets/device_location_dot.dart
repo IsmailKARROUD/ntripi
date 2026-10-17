@@ -5,7 +5,7 @@
 // participates in location selection.
 
 import 'package:flutter/material.dart';
-import 'package:social_flutter/core/ui/app_theme.dart';
+import 'package:ntripi/core/ui/app_theme.dart';
 
 class DeviceLocationDot extends StatelessWidget {
   const DeviceLocationDot({super.key});

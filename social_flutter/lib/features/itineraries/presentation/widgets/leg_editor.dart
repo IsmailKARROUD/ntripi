@@ -10,12 +10,12 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:social_flutter/core/api/api_client.dart';
-import 'package:social_flutter/features/itineraries/domain/transit_segment.dart';
-import 'package:social_flutter/features/itineraries/domain/transport_leg.dart';
-import 'package:social_flutter/features/itineraries/presentation/widgets/leg_form_dialog.dart';
-import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
-import 'package:social_flutter/l10n/app_localizations.dart';
+import 'package:ntripi/core/api/api_client.dart';
+import 'package:ntripi/features/itineraries/domain/transit_segment.dart';
+import 'package:ntripi/features/itineraries/domain/transport_leg.dart';
+import 'package:ntripi/features/itineraries/presentation/widgets/leg_form_dialog.dart';
+import 'package:ntripi/features/itineraries/providers/itinerary_providers.dart';
+import 'package:ntripi/l10n/app_localizations.dart';
 
 class LegEditor {
   final WidgetRef ref;

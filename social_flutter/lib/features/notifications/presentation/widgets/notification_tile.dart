@@ -4,10 +4,10 @@
 // from AppLocalizations — this widget only decides how it looks.
 
 import 'package:flutter/material.dart';
-import 'package:social_flutter/core/ui/app_theme.dart';
-import 'package:social_flutter/features/notifications/domain/app_notification.dart';
-import 'package:social_flutter/l10n/app_localizations.dart';
-import 'package:social_flutter/shared/widgets/editorial_widgets.dart';
+import 'package:ntripi/core/ui/app_theme.dart';
+import 'package:ntripi/features/notifications/domain/app_notification.dart';
+import 'package:ntripi/l10n/app_localizations.dart';
+import 'package:ntripi/shared/widgets/editorial_widgets.dart';
 
 class NotificationTile extends StatelessWidget {
   final AppNotification notification;

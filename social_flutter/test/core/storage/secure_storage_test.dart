@@ -8,7 +8,7 @@
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:social_flutter/core/storage/secure_storage.dart';
+import 'package:ntripi/core/storage/secure_storage.dart';
 
 /// Build a 3-part JWT whose payload contains exactly {"exp": exp}.
 String _makeJwt({required int exp}) {

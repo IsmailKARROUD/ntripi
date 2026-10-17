@@ -6,10 +6,10 @@
 // stateless so the tests can drive it as plain function calls.
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:social_flutter/core/services/segment_orphan_service.dart';
-import 'package:social_flutter/features/itineraries/domain/stop.dart';
-import 'package:social_flutter/features/itineraries/domain/track.dart';
-import 'package:social_flutter/features/itineraries/domain/transit_segment.dart';
+import 'package:ntripi/core/services/segment_orphan_service.dart';
+import 'package:ntripi/features/itineraries/domain/stop.dart';
+import 'package:ntripi/features/itineraries/domain/track.dart';
+import 'package:ntripi/features/itineraries/domain/transit_segment.dart';
 
 // ---------------------------------------------------------------------------
 // Fixture builders — concise constructors for value objects.

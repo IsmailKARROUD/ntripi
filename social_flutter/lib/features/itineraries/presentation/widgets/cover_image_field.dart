@@ -32,13 +32,13 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/foundation.dart' show kIsWeb, visibleForTesting;
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:social_flutter/core/api/api_endpoints.dart';
-import 'package:social_flutter/core/cache/image_cache.dart';
-import 'package:social_flutter/core/moderation/nsfw_precheck.dart';
-import 'package:social_flutter/core/ui/app_theme.dart';
-import 'package:social_flutter/core/utils/platform_utils.dart';
-import 'package:social_flutter/l10n/app_localizations.dart';
-import 'package:social_flutter/shared/widgets/loaders.dart';
+import 'package:ntripi/core/api/api_endpoints.dart';
+import 'package:ntripi/core/cache/image_cache.dart';
+import 'package:ntripi/core/moderation/nsfw_precheck.dart';
+import 'package:ntripi/core/ui/app_theme.dart';
+import 'package:ntripi/core/utils/platform_utils.dart';
+import 'package:ntripi/l10n/app_localizations.dart';
+import 'package:ntripi/shared/widgets/loaders.dart';
 
 const _maxFileSizeBytes = 10 * 1024 * 1024; // 10 MB
 

@@ -9,7 +9,7 @@
 // stays crisp at any size and pixel ratio without three density variants.
 import 'package:flutter/material.dart';
 
-import 'package:social_flutter/core/ui/app_theme.dart';
+import 'package:ntripi/core/ui/app_theme.dart';
 
 class GoogleGLogo extends StatelessWidget {
   /// Side length in logical pixels. The mark is square.

@@ -18,10 +18,10 @@ import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http_mock_adapter/http_mock_adapter.dart';
-import 'package:social_flutter/core/api/api_client.dart';
-import 'package:social_flutter/core/api/api_endpoints.dart';
-import 'package:social_flutter/core/api/cache_key.dart';
-import 'package:social_flutter/core/auth/token_manager.dart';
+import 'package:ntripi/core/api/api_client.dart';
+import 'package:ntripi/core/api/api_endpoints.dart';
+import 'package:ntripi/core/api/cache_key.dart';
+import 'package:ntripi/core/auth/token_manager.dart';
 
 String _jwtWithExp(int unixSeconds) {
   String b64(Map<String, dynamic> json) => base64Url

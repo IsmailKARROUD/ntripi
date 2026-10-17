@@ -3,7 +3,7 @@
 // token, and until that claim is released it is a capability on the trip.
 
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:social_flutter/features/itineraries/data/edit_claim_store.dart';
+import 'package:ntripi/features/itineraries/data/edit_claim_store.dart';
 
 // No AndroidOptions: encryptedSharedPreferences is deprecated/ignored in v10+.
 const _storage = FlutterSecureStorage();

@@ -13,8 +13,8 @@ import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http_mock_adapter/http_mock_adapter.dart';
-import 'package:social_flutter/core/api/api_endpoints.dart';
-import 'package:social_flutter/core/auth/token_manager.dart';
+import 'package:ntripi/core/api/api_endpoints.dart';
+import 'package:ntripi/core/auth/token_manager.dart';
 
 /// Build a JWT-shaped string whose payload contains `exp = <unixSeconds>`.
 /// Not signed correctly — that doesn't matter for client-side checks.

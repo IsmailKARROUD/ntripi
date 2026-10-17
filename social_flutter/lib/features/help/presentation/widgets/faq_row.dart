@@ -8,7 +8,7 @@
 // app's own proportions.
 
 import 'package:flutter/material.dart';
-import 'package:social_flutter/core/ui/app_theme.dart';
+import 'package:ntripi/core/ui/app_theme.dart';
 
 class FaqRow extends StatefulWidget {
   final String question;

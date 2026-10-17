@@ -17,9 +17,9 @@ import 'package:dio/dio.dart';
 import 'package:dio_cache_interceptor/dio_cache_interceptor.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http_mock_adapter/http_mock_adapter.dart';
-import 'package:social_flutter/core/api/api_endpoints.dart';
-import 'package:social_flutter/features/follows/data/follow_repository.dart';
-import 'package:social_flutter/features/itineraries/data/itinerary_repository.dart';
+import 'package:ntripi/core/api/api_endpoints.dart';
+import 'package:ntripi/features/follows/data/follow_repository.dart';
+import 'package:ntripi/features/itineraries/data/itinerary_repository.dart';
 
 /// Captures the outgoing RequestOptions so each test can inspect whether the
 /// cache-policy override was attached. Installed before the mock adapter so

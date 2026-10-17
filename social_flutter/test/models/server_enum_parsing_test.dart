@@ -5,8 +5,8 @@
 // screen for every deployed client the day a newer backend ships it.
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:social_flutter/features/itineraries/domain/annotation.dart';
-import 'package:social_flutter/features/itineraries/domain/transport_leg.dart';
+import 'package:ntripi/features/itineraries/domain/annotation.dart';
+import 'package:ntripi/features/itineraries/domain/transport_leg.dart';
 
 void main() {
   group('AnnotationType.fromString', () {

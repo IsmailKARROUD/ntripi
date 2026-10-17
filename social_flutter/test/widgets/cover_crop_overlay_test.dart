@@ -15,8 +15,8 @@ import 'dart:ui' as ui;
 import 'package:feedback/feedback.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:social_flutter/features/itineraries/presentation/widgets/cover_image_field.dart';
-import 'package:social_flutter/l10n/app_localizations.dart';
+import 'package:ntripi/features/itineraries/presentation/widgets/cover_image_field.dart';
+import 'package:ntripi/l10n/app_localizations.dart';
 
 Future<Uint8List> _pngBytes(WidgetTester tester) async {
   late Uint8List bytes;

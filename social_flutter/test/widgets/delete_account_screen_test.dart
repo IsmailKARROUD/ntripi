@@ -12,11 +12,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:social_flutter/features/profile/data/profile_repository.dart';
-import 'package:social_flutter/features/profile/presentation/delete_account_screen.dart';
-import 'package:social_flutter/features/profile/providers/profile_provider.dart';
-import 'package:social_flutter/l10n/app_localizations.dart';
-import 'package:social_flutter/shared/models/user.dart';
+import 'package:ntripi/features/profile/data/profile_repository.dart';
+import 'package:ntripi/features/profile/presentation/delete_account_screen.dart';
+import 'package:ntripi/features/profile/providers/profile_provider.dart';
+import 'package:ntripi/l10n/app_localizations.dart';
+import 'package:ntripi/shared/models/user.dart';
 
 User _user({required bool hasPassword, bool hasGoogle = false}) => User(
       id: 'user-1',

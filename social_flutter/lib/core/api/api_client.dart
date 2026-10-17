@@ -24,14 +24,14 @@ import 'package:dio_cache_interceptor/dio_cache_interceptor.dart';
 import 'package:flutter/widgets.dart';
 import 'package:go_router/go_router.dart';
 
-import 'package:social_flutter/core/api/api_endpoints.dart';
-import 'package:social_flutter/core/api/api_error_codes.dart';
-import 'package:social_flutter/core/api/cache_evict_interceptor.dart';
-import 'package:social_flutter/core/api/cache_key.dart';
-import 'package:social_flutter/core/auth/token_manager.dart';
-import 'package:social_flutter/core/storage/secure_storage.dart';
-import 'package:social_flutter/features/itineraries/data/itinerary_repository.dart';
-import 'package:social_flutter/l10n/app_localizations.dart';
+import 'package:ntripi/core/api/api_endpoints.dart';
+import 'package:ntripi/core/api/api_error_codes.dart';
+import 'package:ntripi/core/api/cache_evict_interceptor.dart';
+import 'package:ntripi/core/api/cache_key.dart';
+import 'package:ntripi/core/auth/token_manager.dart';
+import 'package:ntripi/core/storage/secure_storage.dart';
+import 'package:ntripi/features/itineraries/data/itinerary_repository.dart';
+import 'package:ntripi/l10n/app_localizations.dart';
 
 /// Singleton Dio instance used throughout the app.
 /// Lazily initialised via [createDioClient].

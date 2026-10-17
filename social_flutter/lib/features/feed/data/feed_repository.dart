@@ -5,9 +5,9 @@
 
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:social_flutter/core/api/api_client.dart';
-import 'package:social_flutter/core/api/api_endpoints.dart';
-import 'package:social_flutter/features/feed/domain/feed_item.dart';
+import 'package:ntripi/core/api/api_client.dart';
+import 'package:ntripi/core/api/api_endpoints.dart';
+import 'package:ntripi/features/feed/domain/feed_item.dart';
 
 /// Page size requested per feed fetch. The notifier uses this to decide whether
 /// more pages remain (a short page means we hit the end).

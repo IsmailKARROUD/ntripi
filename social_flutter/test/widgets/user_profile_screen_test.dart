@@ -12,17 +12,17 @@ import 'package:flutter_riverpod/misc.dart'; // Riverpod 3 exports the Override 
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
-import 'package:social_flutter/features/itineraries/domain/itinerary.dart';
-import 'package:social_flutter/features/itineraries/presentation/widgets/itinerary_summary_card.dart';
-import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
-import 'package:social_flutter/features/profile/presentation/profile_screen.dart';
-import 'package:social_flutter/features/profile/presentation/widgets/follow_action_row.dart';
-import 'package:social_flutter/features/profile/presentation/widgets/profile_unavailable_view.dart';
-import 'package:social_flutter/features/profile/providers/profile_provider.dart';
-import 'package:social_flutter/features/reports/presentation/ugc_actions.dart';
-import 'package:social_flutter/l10n/app_localizations.dart';
-import 'package:social_flutter/shared/models/user.dart';
-import 'package:social_flutter/shared/widgets/loaders.dart';
+import 'package:ntripi/features/itineraries/domain/itinerary.dart';
+import 'package:ntripi/features/itineraries/presentation/widgets/itinerary_summary_card.dart';
+import 'package:ntripi/features/itineraries/providers/itinerary_providers.dart';
+import 'package:ntripi/features/profile/presentation/profile_screen.dart';
+import 'package:ntripi/features/profile/presentation/widgets/follow_action_row.dart';
+import 'package:ntripi/features/profile/presentation/widgets/profile_unavailable_view.dart';
+import 'package:ntripi/features/profile/providers/profile_provider.dart';
+import 'package:ntripi/features/reports/presentation/ugc_actions.dart';
+import 'package:ntripi/l10n/app_localizations.dart';
+import 'package:ntripi/shared/models/user.dart';
+import 'package:ntripi/shared/widgets/loaders.dart';
 
 // ignore_for_file: invalid_use_of_internal_member
 

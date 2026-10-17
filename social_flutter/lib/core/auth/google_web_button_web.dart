@@ -9,7 +9,7 @@ import 'package:flutter/widgets.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:google_sign_in_web/web_only.dart' as web;
 
-import 'package:social_flutter/core/auth/google_signin_service.dart';
+import 'package:ntripi/core/auth/google_signin_service.dart';
 
 class GoogleWebButton extends StatefulWidget {
   final void Function(String idToken) onIdToken;

@@ -16,12 +16,12 @@ import 'package:flutter_riverpod/misc.dart'; // Riverpod 3 exports the Override 
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
-import 'package:social_flutter/features/follows/presentation/follow_list_screen.dart';
-import 'package:social_flutter/features/follows/providers/follow_provider.dart';
-import 'package:social_flutter/features/profile/providers/profile_provider.dart';
-import 'package:social_flutter/l10n/app_localizations.dart';
-import 'package:social_flutter/shared/models/follow.dart';
-import 'package:social_flutter/shared/models/user.dart';
+import 'package:ntripi/features/follows/presentation/follow_list_screen.dart';
+import 'package:ntripi/features/follows/providers/follow_provider.dart';
+import 'package:ntripi/features/profile/providers/profile_provider.dart';
+import 'package:ntripi/l10n/app_localizations.dart';
+import 'package:ntripi/shared/models/follow.dart';
+import 'package:ntripi/shared/models/user.dart';
 
 // ── Fixtures ──────────────────────────────────────────────────────────────
 

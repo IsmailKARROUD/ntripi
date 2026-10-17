@@ -11,7 +11,7 @@
 //   - All IDs are Strings (UUID strings). We avoid parsing to a UUID class
 //     to keep serialization simple.
 
-import 'package:social_flutter/shared/models/moderation_status.dart';
+import 'package:ntripi/shared/models/moderation_status.dart';
 
 class User {
   final String id;

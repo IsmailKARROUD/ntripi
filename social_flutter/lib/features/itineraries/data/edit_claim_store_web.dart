@@ -4,7 +4,7 @@
 // not do: every tab shares it, so opening the trip in a second tab would hand
 // back the first tab's claim while it was still being edited under.
 
-import 'package:social_flutter/features/itineraries/data/edit_claim_store.dart';
+import 'package:ntripi/features/itineraries/data/edit_claim_store.dart';
 import 'package:web/web.dart' as web;
 
 class _SessionEditClaimStore implements EditClaimStore {

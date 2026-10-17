@@ -9,10 +9,10 @@
 //                      translated into it, so a language change re-fetches.
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:social_flutter/core/connectivity/connectivity_service.dart';
-import 'package:social_flutter/core/providers/locale_provider.dart';
-import 'package:social_flutter/features/feed/data/feed_repository.dart';
-import 'package:social_flutter/features/feed/domain/feed_item.dart';
+import 'package:ntripi/core/connectivity/connectivity_service.dart';
+import 'package:ntripi/core/providers/locale_provider.dart';
+import 'package:ntripi/features/feed/data/feed_repository.dart';
+import 'package:ntripi/features/feed/domain/feed_item.dart';
 
 /// Feed sort mode. The [value] is the literal sent to the backend `sort` param.
 enum FeedSort {

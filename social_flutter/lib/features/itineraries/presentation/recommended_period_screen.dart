@@ -14,12 +14,12 @@
 
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart' as intl;
-import 'package:social_flutter/core/ui/app_theme.dart';
-import 'package:social_flutter/core/ui/destructive_actions.dart';
-import 'package:social_flutter/features/itineraries/domain/recommended_period.dart';
-import 'package:social_flutter/l10n/app_localizations.dart';
-import 'package:social_flutter/shared/widgets/editorial_widgets.dart';
-import 'package:social_flutter/shared/widgets/moderation_hint.dart';
+import 'package:ntripi/core/ui/app_theme.dart';
+import 'package:ntripi/core/ui/destructive_actions.dart';
+import 'package:ntripi/features/itineraries/domain/recommended_period.dart';
+import 'package:ntripi/l10n/app_localizations.dart';
+import 'package:ntripi/shared/widgets/editorial_widgets.dart';
+import 'package:ntripi/shared/widgets/moderation_hint.dart';
 
 /// Any year works — none is stored. 2024 is a leap year so 29 Feb formats, and
 /// 1 Jan 2024 was a Monday so DateTime(2024, 1, n).weekday == n for ISO 1..7.

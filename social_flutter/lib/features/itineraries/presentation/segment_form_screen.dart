@@ -13,20 +13,20 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:social_flutter/core/api/api_client.dart';
-import 'package:social_flutter/core/utils/platform_utils.dart';
-import 'package:social_flutter/features/itineraries/domain/stop.dart';
-import 'package:social_flutter/features/itineraries/domain/transit_segment.dart';
-import 'package:social_flutter/features/itineraries/domain/transport_leg.dart';
-import 'package:social_flutter/features/itineraries/presentation/widgets/leg_form_dialog.dart';
-import 'package:social_flutter/features/itineraries/presentation/widgets/leg_tile.dart';
-import 'package:social_flutter/features/itineraries/data/itinerary_repository.dart';
-import 'package:social_flutter/features/itineraries/domain/edit_lock.dart';
-import 'package:social_flutter/features/itineraries/presentation/widgets/edit_lock_lost_notice.dart';
-import 'package:social_flutter/features/itineraries/providers/edit_lock_provider.dart';
-import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
-import 'package:social_flutter/core/ui/app_theme.dart';
-import 'package:social_flutter/shared/widgets/field_help.dart';
+import 'package:ntripi/core/api/api_client.dart';
+import 'package:ntripi/core/utils/platform_utils.dart';
+import 'package:ntripi/features/itineraries/domain/stop.dart';
+import 'package:ntripi/features/itineraries/domain/transit_segment.dart';
+import 'package:ntripi/features/itineraries/domain/transport_leg.dart';
+import 'package:ntripi/features/itineraries/presentation/widgets/leg_form_dialog.dart';
+import 'package:ntripi/features/itineraries/presentation/widgets/leg_tile.dart';
+import 'package:ntripi/features/itineraries/data/itinerary_repository.dart';
+import 'package:ntripi/features/itineraries/domain/edit_lock.dart';
+import 'package:ntripi/features/itineraries/presentation/widgets/edit_lock_lost_notice.dart';
+import 'package:ntripi/features/itineraries/providers/edit_lock_provider.dart';
+import 'package:ntripi/features/itineraries/providers/itinerary_providers.dart';
+import 'package:ntripi/core/ui/app_theme.dart';
+import 'package:ntripi/shared/widgets/field_help.dart';
 
 class SegmentFormScreen extends ConsumerStatefulWidget {
   final String itineraryId;

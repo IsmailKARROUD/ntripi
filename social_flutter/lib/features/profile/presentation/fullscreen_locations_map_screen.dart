@@ -9,9 +9,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
-import 'package:social_flutter/core/ui/app_theme.dart';
-import 'package:social_flutter/features/profile/providers/user_locations_provider.dart';
-import 'package:social_flutter/l10n/app_localizations.dart';
+import 'package:ntripi/core/ui/app_theme.dart';
+import 'package:ntripi/features/profile/providers/user_locations_provider.dart';
+import 'package:ntripi/l10n/app_localizations.dart';
 
 class FullscreenLocationsMapScreen extends ConsumerWidget {
   final String userId;

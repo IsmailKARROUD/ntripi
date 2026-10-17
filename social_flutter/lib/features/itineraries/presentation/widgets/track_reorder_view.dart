@@ -10,17 +10,17 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:social_flutter/core/ui/app_theme.dart';
-import 'package:social_flutter/core/api/api_client.dart';
-import 'package:social_flutter/core/services/segment_orphan_service.dart';
-import 'package:social_flutter/core/ui/destructive_actions.dart';
-import 'package:social_flutter/features/itineraries/data/itinerary_repository.dart';
-import 'package:social_flutter/features/itineraries/domain/track.dart';
-import 'package:social_flutter/features/itineraries/domain/transit_segment.dart';
-import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
-import 'package:social_flutter/l10n/app_localizations.dart';
-import 'package:social_flutter/shared/widgets/offline_gate.dart';
-import 'package:social_flutter/shared/widgets/saving_overlay.dart';
+import 'package:ntripi/core/ui/app_theme.dart';
+import 'package:ntripi/core/api/api_client.dart';
+import 'package:ntripi/core/services/segment_orphan_service.dart';
+import 'package:ntripi/core/ui/destructive_actions.dart';
+import 'package:ntripi/features/itineraries/data/itinerary_repository.dart';
+import 'package:ntripi/features/itineraries/domain/track.dart';
+import 'package:ntripi/features/itineraries/domain/transit_segment.dart';
+import 'package:ntripi/features/itineraries/providers/itinerary_providers.dart';
+import 'package:ntripi/l10n/app_localizations.dart';
+import 'package:ntripi/shared/widgets/offline_gate.dart';
+import 'package:ntripi/shared/widgets/saving_overlay.dart';
 
 Future<void> showTrackReorderSheet({
   required BuildContext context,

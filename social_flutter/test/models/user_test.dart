@@ -7,8 +7,8 @@
 // Test naming follows: <method>_<scenario>_<expected result>
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:social_flutter/shared/models/moderation_status.dart';
-import 'package:social_flutter/shared/models/user.dart';
+import 'package:ntripi/shared/models/moderation_status.dart';
+import 'package:ntripi/shared/models/user.dart';
 
 // ---------------------------------------------------------------------------
 // Shared test fixtures

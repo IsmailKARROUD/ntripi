@@ -23,10 +23,10 @@
 import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:social_flutter/core/api/api_client.dart';
-import 'package:social_flutter/core/connectivity/connectivity_service.dart';
-import 'package:social_flutter/features/notifications/data/notification_repository.dart';
-import 'package:social_flutter/features/notifications/domain/app_notification.dart';
+import 'package:ntripi/core/api/api_client.dart';
+import 'package:ntripi/core/connectivity/connectivity_service.dart';
+import 'package:ntripi/features/notifications/data/notification_repository.dart';
+import 'package:ntripi/features/notifications/domain/app_notification.dart';
 
 /// How long a dismissed row can still be brought back. The undo snackbar must
 /// be shown for exactly this long or UNDO outlives the window it undoes.

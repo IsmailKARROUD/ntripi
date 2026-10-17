@@ -1,9 +1,9 @@
 // features/itineraries/domain/ratings_page.dart
 // Domain models for the GET /itineraries/{id}/ratings response.
 
-import 'package:social_flutter/features/itineraries/domain/dimension_key.dart';
-import 'package:social_flutter/l10n/app_localizations.dart';
-import 'package:social_flutter/shared/models/moderation_status.dart';
+import 'package:ntripi/features/itineraries/domain/dimension_key.dart';
+import 'package:ntripi/l10n/app_localizations.dart';
+import 'package:ntripi/shared/models/moderation_status.dart';
 
 /// Identity of someone who rated an itinerary.
 ///

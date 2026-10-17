@@ -11,11 +11,11 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:social_flutter/features/reports/data/report_repository.dart';
-import 'package:social_flutter/features/reports/domain/report_target.dart';
-import 'package:social_flutter/features/reports/presentation/ugc_actions.dart';
-import 'package:social_flutter/l10n/app_localizations.dart';
-import 'package:social_flutter/shared/models/user.dart';
+import 'package:ntripi/features/reports/data/report_repository.dart';
+import 'package:ntripi/features/reports/domain/report_target.dart';
+import 'package:ntripi/features/reports/presentation/ugc_actions.dart';
+import 'package:ntripi/l10n/app_localizations.dart';
+import 'package:ntripi/shared/models/user.dart';
 
 /// Repository whose block() completes only when the test says so, so the
 /// widget can be torn down mid-request.

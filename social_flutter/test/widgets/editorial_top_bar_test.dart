@@ -13,8 +13,8 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:social_flutter/core/ui/app_theme.dart';
-import 'package:social_flutter/shared/widgets/editorial_widgets.dart';
+import 'package:ntripi/core/ui/app_theme.dart';
+import 'package:ntripi/shared/widgets/editorial_widgets.dart';
 
 void main() {
   Future<void> pump(WidgetTester tester, Widget bar) => tester.pumpWidget(

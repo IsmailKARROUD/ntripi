@@ -19,10 +19,10 @@ import 'dart:async';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
-import 'package:social_flutter/core/api/api_client.dart';
-import 'package:social_flutter/core/api/api_endpoints.dart';
-import 'package:social_flutter/core/storage/secure_storage.dart';
-import 'package:social_flutter/features/notifications/domain/app_notification.dart';
+import 'package:ntripi/core/api/api_client.dart';
+import 'package:ntripi/core/api/api_endpoints.dart';
+import 'package:ntripi/core/storage/secure_storage.dart';
+import 'package:ntripi/features/notifications/domain/app_notification.dart';
 
 /// Set once Firebase.initializeApp has succeeded. Everything below refuses to
 /// run without it — a missing google-services.json must degrade to "no push",

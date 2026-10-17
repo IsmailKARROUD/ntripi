@@ -10,16 +10,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:social_flutter/core/api/api_endpoints.dart';
-import 'package:social_flutter/core/providers/locale_provider.dart';
-import 'package:social_flutter/core/ui/app_theme.dart';
-import 'package:social_flutter/core/utils/platform_utils.dart';
-import 'package:social_flutter/features/auth/presentation/widgets/legal_doc_sheet.dart';
-import 'package:social_flutter/features/auth/providers/legal_provider.dart';
-import 'package:social_flutter/features/help/domain/faq_entries.dart';
-import 'package:social_flutter/features/help/presentation/widgets/faq_row.dart';
-import 'package:social_flutter/l10n/app_localizations.dart';
-import 'package:social_flutter/shared/widgets/editorial_widgets.dart';
+import 'package:ntripi/core/api/api_endpoints.dart';
+import 'package:ntripi/core/providers/locale_provider.dart';
+import 'package:ntripi/core/ui/app_theme.dart';
+import 'package:ntripi/core/utils/platform_utils.dart';
+import 'package:ntripi/features/auth/presentation/widgets/legal_doc_sheet.dart';
+import 'package:ntripi/features/auth/providers/legal_provider.dart';
+import 'package:ntripi/features/help/domain/faq_entries.dart';
+import 'package:ntripi/features/help/presentation/widgets/faq_row.dart';
+import 'package:ntripi/l10n/app_localizations.dart';
+import 'package:ntripi/shared/widgets/editorial_widgets.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 // Reading order, stated explicitly rather than taken from LegalDoc.values —

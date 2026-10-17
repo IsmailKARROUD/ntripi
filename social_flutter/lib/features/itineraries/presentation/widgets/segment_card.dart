@@ -16,16 +16,16 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:social_flutter/core/services/currency.dart';
-import 'package:social_flutter/core/ui/app_theme.dart';
-import 'package:social_flutter/features/itineraries/domain/transit_segment.dart';
-import 'package:social_flutter/features/itineraries/presentation/widgets/leg_editor.dart';
-import 'package:social_flutter/features/itineraries/presentation/widgets/leg_thoughts.dart';
-import 'package:social_flutter/features/translation/providers/translation_providers.dart';
-import 'package:social_flutter/l10n/app_localizations.dart';
-import 'package:social_flutter/shared/utils/duration_format.dart';
-import 'package:social_flutter/shared/widgets/loaders.dart';
-import 'package:social_flutter/shared/widgets/offline_gate.dart';
+import 'package:ntripi/core/services/currency.dart';
+import 'package:ntripi/core/ui/app_theme.dart';
+import 'package:ntripi/features/itineraries/domain/transit_segment.dart';
+import 'package:ntripi/features/itineraries/presentation/widgets/leg_editor.dart';
+import 'package:ntripi/features/itineraries/presentation/widgets/leg_thoughts.dart';
+import 'package:ntripi/features/translation/providers/translation_providers.dart';
+import 'package:ntripi/l10n/app_localizations.dart';
+import 'package:ntripi/shared/utils/duration_format.dart';
+import 'package:ntripi/shared/widgets/loaders.dart';
+import 'package:ntripi/shared/widgets/offline_gate.dart';
 
 class SegmentCard extends ConsumerStatefulWidget {
   final TransitSegment segment;

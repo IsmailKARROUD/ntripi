@@ -9,7 +9,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:social_flutter/core/providers/haptics_enabled_provider.dart';
+import 'package:ntripi/core/providers/haptics_enabled_provider.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

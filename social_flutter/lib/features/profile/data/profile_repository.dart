@@ -3,11 +3,11 @@
 import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
-import 'package:social_flutter/core/api/api_endpoints.dart';
-import 'package:social_flutter/core/storage/secure_storage.dart';
-import 'package:social_flutter/features/profile/domain/violation.dart';
-import 'package:social_flutter/features/profile/domain/visited_location.dart';
-import 'package:social_flutter/shared/models/user.dart';
+import 'package:ntripi/core/api/api_endpoints.dart';
+import 'package:ntripi/core/storage/secure_storage.dart';
+import 'package:ntripi/features/profile/domain/violation.dart';
+import 'package:ntripi/features/profile/domain/visited_location.dart';
+import 'package:ntripi/shared/models/user.dart';
 
 /// Thrown when DELETE /users/me returns 401 (wrong password).
 class PasswordIncorrectException implements Exception {

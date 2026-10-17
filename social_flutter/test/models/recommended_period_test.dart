@@ -8,7 +8,7 @@
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
-import 'package:social_flutter/features/itineraries/domain/recommended_period.dart';
+import 'package:ntripi/features/itineraries/domain/recommended_period.dart';
 
 void main() {
   // DateFormat with an explicit locale needs symbols loaded. The running app

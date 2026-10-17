@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:social_flutter/core/ui/app_theme.dart';
-import 'package:social_flutter/l10n/app_localizations.dart';
-import 'package:social_flutter/shared/data/countries.dart';
-import 'package:social_flutter/shared/data/languages.dart';
-import 'package:social_flutter/shared/models/user.dart';
+import 'package:ntripi/core/ui/app_theme.dart';
+import 'package:ntripi/l10n/app_localizations.dart';
+import 'package:ntripi/shared/data/countries.dart';
+import 'package:ntripi/shared/data/languages.dart';
+import 'package:ntripi/shared/models/user.dart';
 
 /// Horizontal row of up to three identity fact chips:
 ///   Passport  |  Lives in  |  Speaks

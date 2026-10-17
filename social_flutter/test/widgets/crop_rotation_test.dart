@@ -6,7 +6,7 @@
 import 'dart:ui';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:social_flutter/features/itineraries/presentation/widgets/cover_image_field.dart';
+import 'package:ntripi/features/itineraries/presentation/widgets/cover_image_field.dart';
 
 /// Display-space size of a source image at [quarterTurns] — odd turns swap.
 Size _display(Size image, int quarterTurns) => quarterTurns.isOdd

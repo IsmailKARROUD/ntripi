@@ -5,8 +5,8 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:social_flutter/l10n/app_localizations.dart';
-import 'package:social_flutter/shared/widgets/date_of_birth_field.dart';
+import 'package:ntripi/l10n/app_localizations.dart';
+import 'package:ntripi/shared/widgets/date_of_birth_field.dart';
 
 /// A birth date making someone exactly [years] old today, shifted by
 /// [offsetDays] (positive = younger). Built relative to now for the same

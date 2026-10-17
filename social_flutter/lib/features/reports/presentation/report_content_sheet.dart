@@ -10,16 +10,16 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:social_flutter/core/api/api_client.dart';
-import 'package:social_flutter/core/ui/app_theme.dart';
-import 'package:social_flutter/features/reports/data/report_repository.dart';
-import 'package:social_flutter/features/reports/domain/report_target.dart';
-import 'package:social_flutter/l10n/app_localizations.dart';
-import 'package:social_flutter/shared/widgets/editorial_widgets.dart';
-import 'package:social_flutter/shared/widgets/keyboard_avoidance.dart';
-import 'package:social_flutter/shared/widgets/loaders.dart';
-import 'package:social_flutter/shared/widgets/offline_gate.dart';
-import 'package:social_flutter/shared/widgets/saving_overlay.dart';
+import 'package:ntripi/core/api/api_client.dart';
+import 'package:ntripi/core/ui/app_theme.dart';
+import 'package:ntripi/features/reports/data/report_repository.dart';
+import 'package:ntripi/features/reports/domain/report_target.dart';
+import 'package:ntripi/l10n/app_localizations.dart';
+import 'package:ntripi/shared/widgets/editorial_widgets.dart';
+import 'package:ntripi/shared/widgets/keyboard_avoidance.dart';
+import 'package:ntripi/shared/widgets/loaders.dart';
+import 'package:ntripi/shared/widgets/offline_gate.dart';
+import 'package:ntripi/shared/widgets/saving_overlay.dart';
 
 String _reasonLabel(String reason, AppLocalizations l10n) {
   return switch (reason) {

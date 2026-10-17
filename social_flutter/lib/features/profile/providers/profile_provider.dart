@@ -10,13 +10,13 @@ import 'dart:typed_data';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:social_flutter/core/api/api_client.dart';
-import 'package:social_flutter/core/api/api_endpoints.dart';
-import 'package:social_flutter/core/cache/image_cache.dart';
-import 'package:social_flutter/core/connectivity/connectivity_service.dart';
-import 'package:social_flutter/features/profile/data/profile_repository.dart';
-import 'package:social_flutter/features/profile/domain/violation.dart';
-import 'package:social_flutter/shared/models/user.dart';
+import 'package:ntripi/core/api/api_client.dart';
+import 'package:ntripi/core/api/api_endpoints.dart';
+import 'package:ntripi/core/cache/image_cache.dart';
+import 'package:ntripi/core/connectivity/connectivity_service.dart';
+import 'package:ntripi/features/profile/data/profile_repository.dart';
+import 'package:ntripi/features/profile/domain/violation.dart';
+import 'package:ntripi/shared/models/user.dart';
 
 /// CachedNetworkImage / putFile key the entry by the absolute URL. The server
 /// sometimes returns a relative path (filesystem backend) and sometimes an

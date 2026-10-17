@@ -14,10 +14,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:social_flutter/features/auth/data/auth_repository.dart';
-import 'package:social_flutter/features/auth/presentation/widgets/google_tos_consent_sheet.dart';
-import 'package:social_flutter/features/auth/providers/auth_provider.dart';
-import 'package:social_flutter/l10n/app_localizations.dart';
+import 'package:ntripi/features/auth/data/auth_repository.dart';
+import 'package:ntripi/features/auth/presentation/widgets/google_tos_consent_sheet.dart';
+import 'package:ntripi/features/auth/providers/auth_provider.dart';
+import 'package:ntripi/l10n/app_localizations.dart';
 
 const _tosBody = 'TERMS BODY';
 

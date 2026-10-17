@@ -10,10 +10,10 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:social_flutter/core/moderation/text_precheck.dart';
-import 'package:social_flutter/core/ui/app_theme.dart';
-import 'package:social_flutter/l10n/app_localizations.dart';
-import 'package:social_flutter/shared/widgets/keyboard_avoidance.dart';
+import 'package:ntripi/core/moderation/text_precheck.dart';
+import 'package:ntripi/core/ui/app_theme.dart';
+import 'package:ntripi/l10n/app_localizations.dart';
+import 'package:ntripi/shared/widgets/keyboard_avoidance.dart';
 
 class ModerationHint extends StatefulWidget {
   final TextEditingController controller;

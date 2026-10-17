@@ -22,14 +22,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show Clipboard, ClipboardData;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:webview_flutter/webview_flutter.dart';
-import 'package:social_flutter/core/api/api_endpoints.dart';
-import 'package:social_flutter/core/ui/app_theme.dart';
-import 'package:social_flutter/features/itineraries/data/link_preview_service.dart';
-import 'package:social_flutter/features/itineraries/presentation/widgets/map_embed_web_view.dart';
-import 'package:social_flutter/features/itineraries/presentation/widgets/open_in_maps_sheet.dart';
-import 'package:social_flutter/features/itineraries/providers/itinerary_providers.dart';
-import 'package:social_flutter/l10n/app_localizations.dart';
-import 'package:social_flutter/shared/widgets/loaders.dart';
+import 'package:ntripi/core/api/api_endpoints.dart';
+import 'package:ntripi/core/ui/app_theme.dart';
+import 'package:ntripi/features/itineraries/data/link_preview_service.dart';
+import 'package:ntripi/features/itineraries/presentation/widgets/map_embed_web_view.dart';
+import 'package:ntripi/features/itineraries/presentation/widgets/open_in_maps_sheet.dart';
+import 'package:ntripi/features/itineraries/providers/itinerary_providers.dart';
+import 'package:ntripi/l10n/app_localizations.dart';
+import 'package:ntripi/shared/widgets/loaders.dart';
 
 class LinkPreviewCard extends ConsumerWidget {
   // Link mode: unfurl this saved Google Maps URL. Null in coordinate mode.

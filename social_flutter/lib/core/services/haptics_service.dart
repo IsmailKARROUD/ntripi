@@ -21,7 +21,7 @@ import 'dart:async';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:vibration/vibration.dart';
-import 'package:social_flutter/core/providers/haptics_enabled_provider.dart';
+import 'package:ntripi/core/providers/haptics_enabled_provider.dart';
 
 /// How hard one tap in a cue lands.
 enum HapticWeight { selection, light, medium, heavy }

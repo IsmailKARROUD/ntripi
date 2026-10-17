@@ -14,9 +14,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:social_flutter/core/ui/app_theme.dart';
-import 'package:social_flutter/features/itineraries/presentation/widgets/markdown_notes_editor.dart';
-import 'package:social_flutter/l10n/app_localizations.dart';
+import 'package:ntripi/core/ui/app_theme.dart';
+import 'package:ntripi/features/itineraries/presentation/widgets/markdown_notes_editor.dart';
+import 'package:ntripi/l10n/app_localizations.dart';
 
 void main() {
   late TextEditingController controller;

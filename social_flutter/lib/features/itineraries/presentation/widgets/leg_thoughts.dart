@@ -11,11 +11,11 @@
 // to that group's members; neither page grows a toggle of its own.
 
 import 'package:flutter/material.dart';
-import 'package:social_flutter/core/ui/app_theme.dart';
-import 'package:social_flutter/features/itineraries/domain/transport_leg.dart';
-import 'package:social_flutter/features/translation/presentation/translatable_text.dart';
-import 'package:social_flutter/features/translation/providers/translation_providers.dart';
-import 'package:social_flutter/shared/widgets/expandable_text.dart';
+import 'package:ntripi/core/ui/app_theme.dart';
+import 'package:ntripi/features/itineraries/domain/transport_leg.dart';
+import 'package:ntripi/features/translation/presentation/translatable_text.dart';
+import 'package:ntripi/features/translation/providers/translation_providers.dart';
+import 'package:ntripi/shared/widgets/expandable_text.dart';
 
 /// One translation member per leg that has thoughts.
 List<TranslationMember> legThoughtsMembers(Iterable<TransportLeg> legs) => [

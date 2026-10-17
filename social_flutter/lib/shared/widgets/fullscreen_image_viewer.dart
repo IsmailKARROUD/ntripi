@@ -8,9 +8,9 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:photo_view/photo_view.dart';
-import 'package:social_flutter/core/api/api_endpoints.dart';
-import 'package:social_flutter/core/cache/image_cache.dart';
-import 'package:social_flutter/core/ui/app_theme.dart';
+import 'package:ntripi/core/api/api_endpoints.dart';
+import 'package:ntripi/core/cache/image_cache.dart';
+import 'package:ntripi/core/ui/app_theme.dart';
 
 /// Opens [imageUrl] full-screen on a black backdrop. [imageUrl] may be a
 /// relative `/uploads/...` path (backend media) or an absolute URL.

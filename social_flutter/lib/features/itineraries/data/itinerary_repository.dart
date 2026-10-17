@@ -29,21 +29,21 @@ import 'dart:typed_data';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:social_flutter/core/api/api_client.dart';
-import 'package:social_flutter/core/api/api_endpoints.dart';
+import 'package:ntripi/core/api/api_client.dart';
+import 'package:ntripi/core/api/api_endpoints.dart';
 // shared-with-me returns the same rows as the discovery feed (summary +
 // owner), so it reuses FeedItem instead of duplicating the owner model.
-import 'package:social_flutter/features/feed/domain/feed_item.dart';
-import 'package:social_flutter/features/itineraries/domain/allowed_user.dart';
-import 'package:social_flutter/features/itineraries/domain/annotation.dart';
-import 'package:social_flutter/features/itineraries/domain/edit_lock.dart';
-import 'package:social_flutter/features/itineraries/domain/itinerary.dart';
-import 'package:social_flutter/features/itineraries/domain/itinerary_annotation.dart';
-import 'package:social_flutter/features/itineraries/domain/itinerary_editor.dart';
-import 'package:social_flutter/features/itineraries/domain/my_rating.dart';
-import 'package:social_flutter/features/itineraries/domain/ratings_page.dart';
-import 'package:social_flutter/features/itineraries/domain/stop.dart';
-import 'package:social_flutter/features/itineraries/domain/transit_segment.dart';
+import 'package:ntripi/features/feed/domain/feed_item.dart';
+import 'package:ntripi/features/itineraries/domain/allowed_user.dart';
+import 'package:ntripi/features/itineraries/domain/annotation.dart';
+import 'package:ntripi/features/itineraries/domain/edit_lock.dart';
+import 'package:ntripi/features/itineraries/domain/itinerary.dart';
+import 'package:ntripi/features/itineraries/domain/itinerary_annotation.dart';
+import 'package:ntripi/features/itineraries/domain/itinerary_editor.dart';
+import 'package:ntripi/features/itineraries/domain/my_rating.dart';
+import 'package:ntripi/features/itineraries/domain/ratings_page.dart';
+import 'package:ntripi/features/itineraries/domain/stop.dart';
+import 'package:ntripi/features/itineraries/domain/transit_segment.dart';
 
 /// Thrown when the server returns 412 Precondition Failed.
 ///

@@ -17,9 +17,9 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:social_flutter/core/services/haptics_service.dart';
-import 'package:social_flutter/core/ui/app_theme.dart';
-import 'package:social_flutter/l10n/app_localizations.dart';
+import 'package:ntripi/core/services/haptics_service.dart';
+import 'package:ntripi/core/ui/app_theme.dart';
+import 'package:ntripi/l10n/app_localizations.dart';
 
 /// A duration as the forms store it. Kept as three fields rather than a
 /// [Duration] because the wheels are three fields — "2 d" and "48 h" are the

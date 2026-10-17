@@ -7,10 +7,10 @@
 
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:social_flutter/core/api/api_client.dart';
-import 'package:social_flutter/core/api/api_endpoints.dart';
-import 'package:social_flutter/features/reports/domain/report_target.dart';
-import 'package:social_flutter/shared/models/user.dart';
+import 'package:ntripi/core/api/api_client.dart';
+import 'package:ntripi/core/api/api_endpoints.dart';
+import 'package:ntripi/features/reports/domain/report_target.dart';
+import 'package:ntripi/shared/models/user.dart';
 
 class ReportRepository {
   final Dio _dio;

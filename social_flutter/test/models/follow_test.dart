@@ -2,7 +2,7 @@
 // and FollowerListItem models.
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:social_flutter/shared/models/follow.dart';
+import 'package:ntripi/shared/models/follow.dart';
 
 void main() {
   // ---------------------------------------------------------------------------

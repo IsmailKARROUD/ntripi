@@ -8,16 +8,16 @@
 //            chips (with add-note affordance) instead of dots
 
 import 'package:flutter/material.dart';
-import 'package:social_flutter/core/services/currency.dart';
-import 'package:social_flutter/core/ui/app_theme.dart';
-import 'package:social_flutter/features/itineraries/domain/annotation.dart';
-import 'package:social_flutter/features/itineraries/domain/stop.dart';
-import 'package:social_flutter/features/itineraries/presentation/widgets/annotation_chip.dart';
-import 'package:social_flutter/features/itineraries/presentation/widgets/edit_pencil_button.dart';
-import 'package:social_flutter/features/itineraries/presentation/widgets/long_press_to_edit.dart';
-import 'package:social_flutter/features/itineraries/presentation/widgets/markdown_notes_editor.dart';
-import 'package:social_flutter/l10n/app_localizations.dart';
-import 'package:social_flutter/shared/widgets/expandable_text.dart';
+import 'package:ntripi/core/services/currency.dart';
+import 'package:ntripi/core/ui/app_theme.dart';
+import 'package:ntripi/features/itineraries/domain/annotation.dart';
+import 'package:ntripi/features/itineraries/domain/stop.dart';
+import 'package:ntripi/features/itineraries/presentation/widgets/annotation_chip.dart';
+import 'package:ntripi/features/itineraries/presentation/widgets/edit_pencil_button.dart';
+import 'package:ntripi/features/itineraries/presentation/widgets/long_press_to_edit.dart';
+import 'package:ntripi/features/itineraries/presentation/widgets/markdown_notes_editor.dart';
+import 'package:ntripi/l10n/app_localizations.dart';
+import 'package:ntripi/shared/widgets/expandable_text.dart';
 
 class StopCard extends StatelessWidget {
   final Stop stop;

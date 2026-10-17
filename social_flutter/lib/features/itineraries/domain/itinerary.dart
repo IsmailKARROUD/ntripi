@@ -1,15 +1,15 @@
 // features/itineraries/domain/itinerary.dart — Itinerary Dart model.
 
-import 'package:social_flutter/shared/models/moderation_status.dart';
+import 'package:ntripi/shared/models/moderation_status.dart';
 import 'package:flutter/material.dart';
-import 'package:social_flutter/core/services/currency.dart';
-import 'package:social_flutter/features/itineraries/domain/itinerary_annotation.dart';
-import 'package:social_flutter/features/itineraries/domain/recommended_period.dart';
-import 'package:social_flutter/features/itineraries/domain/stop.dart';
-import 'package:social_flutter/features/itineraries/domain/track.dart';
-import 'package:social_flutter/features/itineraries/domain/transit_segment.dart';
-import 'package:social_flutter/l10n/app_localizations.dart';
-import 'package:social_flutter/shared/utils/duration_format.dart';
+import 'package:ntripi/core/services/currency.dart';
+import 'package:ntripi/features/itineraries/domain/itinerary_annotation.dart';
+import 'package:ntripi/features/itineraries/domain/recommended_period.dart';
+import 'package:ntripi/features/itineraries/domain/stop.dart';
+import 'package:ntripi/features/itineraries/domain/track.dart';
+import 'package:ntripi/features/itineraries/domain/transit_segment.dart';
+import 'package:ntripi/l10n/app_localizations.dart';
+import 'package:ntripi/shared/utils/duration_format.dart';
 
 /// Four-level visibility for an itinerary.
 enum ItineraryVisibility {

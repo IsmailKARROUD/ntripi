@@ -4,7 +4,7 @@
 // transit_segment and transport_leg so unit abbreviations stay localized
 // ("2d 3h" in English, "2j 3h" in French).
 
-import 'package:social_flutter/l10n/app_localizations.dart';
+import 'package:ntripi/l10n/app_localizations.dart';
 
 /// Formats [minutes] as a compact localized duration, e.g. "1y 2d 3h 15min".
 ///

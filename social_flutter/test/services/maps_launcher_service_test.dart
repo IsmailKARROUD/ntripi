@@ -5,7 +5,7 @@
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:latlong2/latlong.dart';
-import 'package:social_flutter/features/itineraries/data/maps_launcher_service.dart';
+import 'package:ntripi/features/itineraries/data/maps_launcher_service.dart';
 
 void main() {
   final service = MapsLauncherService();

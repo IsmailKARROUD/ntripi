@@ -9,8 +9,8 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http_mock_adapter/http_mock_adapter.dart';
-import 'package:social_flutter/core/api/api_endpoints.dart';
-import 'package:social_flutter/features/profile/data/profile_repository.dart';
+import 'package:ntripi/core/api/api_endpoints.dart';
+import 'package:ntripi/features/profile/data/profile_repository.dart';
 
 // ---------------------------------------------------------------------------
 // Fixtures

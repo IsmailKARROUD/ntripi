@@ -13,10 +13,10 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:social_flutter/features/profile/data/profile_repository.dart';
-import 'package:social_flutter/features/profile/providers/profile_provider.dart';
-import 'package:social_flutter/l10n/app_localizations.dart';
-import 'package:social_flutter/shared/widgets/appeal_sheet.dart';
+import 'package:ntripi/features/profile/data/profile_repository.dart';
+import 'package:ntripi/features/profile/providers/profile_provider.dart';
+import 'package:ntripi/l10n/app_localizations.dart';
+import 'package:ntripi/shared/widgets/appeal_sheet.dart';
 
 /// Records what the sheet posted so the test can assert the target survived.
 class _RecordingRepo extends ProfileRepository {

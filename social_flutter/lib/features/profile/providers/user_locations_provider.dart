@@ -6,9 +6,9 @@
 // Cross-session caching happens at the HTTP layer via ETag/304.
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:social_flutter/core/connectivity/connectivity_service.dart';
-import 'package:social_flutter/features/profile/domain/visited_location.dart';
-import 'package:social_flutter/features/profile/providers/profile_provider.dart';
+import 'package:ntripi/core/connectivity/connectivity_service.dart';
+import 'package:ntripi/features/profile/domain/visited_location.dart';
+import 'package:ntripi/features/profile/providers/profile_provider.dart';
 
 class UserLocationsNotifier extends AsyncNotifier<List<VisitedLocation>> {
   UserLocationsNotifier(this.arg); // family argument: user id

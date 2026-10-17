@@ -6,7 +6,7 @@
 // in the app so users learn the affordance once.
 
 import 'package:flutter/material.dart';
-import 'package:social_flutter/l10n/app_localizations.dart';
+import 'package:ntripi/l10n/app_localizations.dart';
 
 /// Small circular "?" icon button. Tapping it opens a popover positioned
 /// next to the icon with the given [helpTitle] and [helpMessage]. Wrapped

@@ -12,10 +12,10 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:social_flutter/core/connectivity/connectivity_service.dart';
-import 'package:social_flutter/features/notifications/data/notification_repository.dart';
-import 'package:social_flutter/features/notifications/domain/app_notification.dart';
-import 'package:social_flutter/features/notifications/providers/notification_provider.dart';
+import 'package:ntripi/core/connectivity/connectivity_service.dart';
+import 'package:ntripi/features/notifications/data/notification_repository.dart';
+import 'package:ntripi/features/notifications/domain/app_notification.dart';
+import 'package:ntripi/features/notifications/providers/notification_provider.dart';
 
 // ---------------------------------------------------------------------------
 // Fakes

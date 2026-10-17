@@ -13,9 +13,9 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:social_flutter/features/auth/presentation/accept_terms_screen.dart';
-import 'package:social_flutter/features/auth/providers/auth_provider.dart';
-import 'package:social_flutter/features/profile/providers/profile_provider.dart';
+import 'package:ntripi/features/auth/presentation/accept_terms_screen.dart';
+import 'package:ntripi/features/auth/providers/auth_provider.dart';
+import 'package:ntripi/features/profile/providers/profile_provider.dart';
 
 class TosGate extends ConsumerWidget {
   final Widget child;

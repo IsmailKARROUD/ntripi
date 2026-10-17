@@ -21,8 +21,8 @@
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:social_flutter/core/providers/haptics_enabled_provider.dart';
-import 'package:social_flutter/core/services/haptics_service.dart';
+import 'package:ntripi/core/providers/haptics_enabled_provider.dart';
+import 'package:ntripi/core/services/haptics_service.dart';
 import 'package:vibration_platform_interface/vibration_platform_interface.dart';
 
 // ── Fakes ─────────────────────────────────────────────────────────────────

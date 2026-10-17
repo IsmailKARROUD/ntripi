@@ -7,8 +7,8 @@
 // only handles the explicit user-initiated endpoints (login/register/logout).
 
 import 'package:dio/dio.dart';
-import 'package:social_flutter/core/api/api_endpoints.dart';
-import 'package:social_flutter/core/storage/secure_storage.dart';
+import 'package:ntripi/core/api/api_endpoints.dart';
+import 'package:ntripi/core/storage/secure_storage.dart';
 
 /// Payload returned by both register and login.
 class AuthResult {

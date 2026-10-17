@@ -3,7 +3,7 @@
 // back to the server-provided `detail` string, then a generic message.
 
 import 'package:dio/dio.dart';
-import 'package:social_flutter/l10n/app_localizations.dart';
+import 'package:ntripi/l10n/app_localizations.dart';
 
 String? localizedApiError(String code, AppLocalizations l10n) {
   return switch (code) {

@@ -5,9 +5,9 @@
 // anything mapped them.
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:social_flutter/core/api/api_error_codes.dart';
-import 'package:social_flutter/l10n/app_localizations_en.dart';
-import 'package:social_flutter/l10n/app_localizations_fr.dart';
+import 'package:ntripi/core/api/api_error_codes.dart';
+import 'package:ntripi/l10n/app_localizations_en.dart';
+import 'package:ntripi/l10n/app_localizations_fr.dart';
 
 void main() {
   final en = AppLocalizationsEn();

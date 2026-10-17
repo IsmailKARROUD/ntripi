@@ -14,12 +14,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:social_flutter/features/itineraries/domain/ratings_page.dart';
-import 'package:social_flutter/features/itineraries/presentation/ratings_page_screen.dart';
-import 'package:social_flutter/features/reports/presentation/ugc_actions.dart';
-import 'package:social_flutter/l10n/app_localizations.dart';
-import 'package:social_flutter/shared/models/moderation_status.dart';
-import 'package:social_flutter/shared/widgets/moderation_hidden_banner.dart';
+import 'package:ntripi/features/itineraries/domain/ratings_page.dart';
+import 'package:ntripi/features/itineraries/presentation/ratings_page_screen.dart';
+import 'package:ntripi/features/reports/presentation/ugc_actions.dart';
+import 'package:ntripi/l10n/app_localizations.dart';
+import 'package:ntripi/shared/models/moderation_status.dart';
+import 'package:ntripi/shared/widgets/moderation_hidden_banner.dart';
 
 const _viewerId = 'viewer-1';
 const _strangerId = 'stranger-9';

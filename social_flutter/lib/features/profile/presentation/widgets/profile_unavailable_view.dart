@@ -12,8 +12,8 @@
 // forever, so offering a retry only teaches people it does nothing.
 
 import 'package:flutter/material.dart';
-import 'package:social_flutter/core/ui/app_theme.dart';
-import 'package:social_flutter/l10n/app_localizations.dart';
+import 'package:ntripi/core/ui/app_theme.dart';
+import 'package:ntripi/l10n/app_localizations.dart';
 
 class ProfileUnavailableView extends StatelessWidget {
   const ProfileUnavailableView({super.key});

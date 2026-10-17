@@ -20,10 +20,10 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:social_flutter/core/storage/secure_storage.dart';
-import 'package:social_flutter/features/itineraries/data/edit_claim_store.dart';
-import 'package:social_flutter/features/itineraries/data/edit_claim_store_io.dart'
-    if (dart.library.js_interop) 'package:social_flutter/features/itineraries/data/edit_claim_store_web.dart';
+import 'package:ntripi/core/storage/secure_storage.dart';
+import 'package:ntripi/features/itineraries/data/edit_claim_store.dart';
+import 'package:ntripi/features/itineraries/data/edit_claim_store_io.dart'
+    if (dart.library.js_interop) 'package:ntripi/features/itineraries/data/edit_claim_store_web.dart';
 
 /// The account the session on this device belongs to — its JWT `sub`.
 Future<String?> _signedInAccount() async => jwtSubject(await readToken());
