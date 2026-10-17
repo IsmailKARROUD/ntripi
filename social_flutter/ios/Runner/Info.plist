@@ -39,6 +39,8 @@
 	<string>29126714665-8n68nlct0m8edp04b6obslteslqtitdq.apps.googleusercontent.com</string>
 	<key>GIDServerClientID</key>
 	<string>29126714665-9pgodn1nt1ikf6goo71a6b7634sknna4.apps.googleusercontent.com</string>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 	<key>LSApplicationQueriesSchemes</key>
 	<array>
 		<string>comgooglemaps</string>
@@ -50,8 +52,12 @@
 	</array>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>Ntripi uses the camera only if you choose to take a new photo for a trip cover or your profile picture.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>Ntripi uses your location to center the map when you add a stop.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Ntripi opens your photo library so you can choose a trip cover or a profile picture.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
