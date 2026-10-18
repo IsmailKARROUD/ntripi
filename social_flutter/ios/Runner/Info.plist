@@ -15,7 +15,7 @@
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
-	<string>social_flutter</string>
+	<string>NTripi</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
@@ -54,6 +54,8 @@
 	<true/>
 	<key>NSCameraUsageDescription</key>
 	<string>Ntripi uses the camera only if you choose to take a new photo for a trip cover or your profile picture.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>Ntripi uses your location only while you are using the app, to center the map when you add a stop. It never tracks your location in the background.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>Ntripi uses your location to center the map when you add a stop.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
