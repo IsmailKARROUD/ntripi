@@ -1,24 +1,28 @@
+{% from "_app_links.html" import app_links_head, store_badges, continue_on_web, app_links_script with context -%}
 <!DOCTYPE html>
 <html lang="{{ lang or 'en' }}">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{{ itinerary.title }} — Ntripi</title>
-  <meta name="description" content="A private itinerary on Ntripi.">
+  <title>{{ _('share_private_title') }}</title>
+  <meta name="description" content="{{ _('share_private_preview') }}">
 
-  <!-- Open Graph — still present so messaging app previews look nice -->
+  {# Generic on purpose, and the router passes nothing that could fill it in: a
+     preview card is seen by everyone in the chat, most of whom cannot open the
+     trip — so no title, no owner, and the default image, never the cover. #}
   <meta property="og:type"        content="website">
   <meta property="og:site_name"   content="Ntripi">
-  <meta property="og:title"       content="{{ itinerary.title }}">
-  <meta property="og:description" content="🔒 Private itinerary by @{{ owner.username }}. Open in Ntripi to view.">
+  <meta property="og:title"       content="{{ _('share_private_title') }}">
+  <meta property="og:description" content="🔒 {{ _('share_private_preview') }}">
   <meta name="robots" content="noindex,follow">
   <meta property="og:url"         content="{{ share_url }}">
   <meta property="og:image"       content="{{ preview_image_url }}">
 
   <meta name="twitter:card"        content="summary_large_image">
-  <meta name="twitter:title"       content="{{ itinerary.title }}">
-  <meta name="twitter:description" content="🔒 Private itinerary by @{{ owner.username }}. Open in Ntripi to view.">
+  <meta name="twitter:title"       content="{{ _('share_private_title') }}">
+  <meta name="twitter:description" content="🔒 {{ _('share_private_preview') }}">
   <meta name="twitter:image"       content="{{ preview_image_url }}">
+{{ app_links_head(app_cta) }}
 
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -87,12 +91,6 @@
       margin-bottom: 6px;
     }
 
-    .author {
-      color: var(--sub);
-      font-size: 14px;
-      margin-bottom: 20px;
-    }
-
     .message {
       color: var(--sub);
       font-size: 15px;
@@ -135,6 +133,13 @@
     }
     .store-badge:hover { opacity: .85; text-decoration: none; }
 
+    .web-link {
+      display: inline-block;
+      margin-top: 22px;
+      font-size: 14px;
+      font-weight: 600;
+    }
+
     footer {
       text-align: center;
       padding: 20px;
@@ -153,21 +158,22 @@
 <main>
   <div class="card">
     <div class="lock-icon">🔒</div>
-    <h1>{{ itinerary.title }}</h1>
-    <p class="author">{{ _('share_by') }} @{{ owner.username }}</p>
+    <h1>{{ _('share_private_heading') }}</h1>
     <p class="message">
       {{ _('share_private_message') }}
     </p>
 
-    <a href="ntripi://itinerary/{{ itinerary.id }}" class="open-app-btn">
-      {{ _('share_open_in_app') }}
-    </a>
-
-    <p class="install-prompt">{{ _('share_install_prompt') }}</p>
-    <div class="store-badges">
-      <a href="#" class="store-badge">App Store</a>
-      <a href="#" class="store-badge">Google Play</a>
+    {% if app_cta.android_intent_url %}
+    <div data-app-open hidden>
+      <a href="{{ app_cta.android_intent_url }}" class="open-app-btn">
+        {{ _('share_open_in_app') }}
+      </a>
     </div>
+    {% endif %}
+
+    {{ store_badges(app_cta) }}
+
+    {{ continue_on_web(app_cta) }}
   </div>
 </main>
 
@@ -175,5 +181,6 @@
   <p>{{ _('share_shared_via') }} · <a href="/">ntripi.app</a></p>
 </footer>
 
+{{ app_links_script(app_cta) }}
 </body>
 </html>

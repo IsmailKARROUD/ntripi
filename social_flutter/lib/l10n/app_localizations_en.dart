@@ -2842,6 +2842,20 @@ class AppLocalizationsEn extends AppLocalizations {
       'This account doesn\'t exist or is no longer available.';
 
   @override
+  String get itineraryNoAccessTitle => 'You can\'t open this itinerary';
+
+  @override
+  String get itineraryNoAccessMessage =>
+      'Only the people its owner shares it with can open it. If they meant you to see it, ask them to share it with you.';
+
+  @override
+  String get itineraryUnavailableTitle => 'This itinerary isn\'t available';
+
+  @override
+  String get itineraryUnavailableMessage =>
+      'It may have been deleted, or the link may be wrong.';
+
+  @override
   String blockedUserRemoved(String username) {
     return 'Unblocked @$username.';
   }

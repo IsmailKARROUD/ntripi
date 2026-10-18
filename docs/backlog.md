@@ -499,7 +499,42 @@ a screen reader hears "button" and not whose request it declines. Needs a
   channel; FCM exists but is scoped to notifications.
 - **Store distribution** — the app is pre-launch; every download button opens the
   waitlist, and the help CTA points at `/#get-the-app` precisely because a
-  hardcoded store URL would ship dead.
+  hardcoded store URL would ship dead. The share pages' buttons already follow
+  `APP_STORE_URL` / `PLAY_STORE_URL` (2026-10-18); the homepage's do not yet —
+  see below.
+
+### planned — the homepage's store buttons follow the store URLs at launch
+
+The share pages send their download buttons to `APP_STORE_URL` / `PLAY_STORE_URL`
+once set, but `home.html`'s three download buttons still open the waitlist, and
+its `#get-the-app` hash handler — what the help CTA and the share pages' nav
+button land on — opens the waitlist too. On launch day those should read the same
+settings, or the share pages and the homepage disagree about whether the app can
+be installed. → [features/app-links.md](features/app-links.md)
+
+### idea — open the shared trip after installing (deferred deep linking)
+
+Installing the app from a share page does not open the shared trip on first
+launch. Android can carry it through the Play Store URL's `referrer` and the Play
+Install Referrer API; iOS has no equivalent without a third-party attribution
+service or the clipboard, both of which bring privacy questions of their own. →
+[features/app-links.md](features/app-links.md)
+
+### idea — an "Open in app" button on iOS
+
+iOS never opens an app for a link to the current page's own domain, so the share
+pages show **Open in app** on Android only. Serving the association file on a
+second host (`open.ntripi.app`) and linking the button there would make it a
+cross-domain tap — at the cost of a DNS record, a Railway custom domain, a second
+`applinks:` entry, and a page on that host for visitors without the app. →
+[features/app-links.md](features/app-links.md)
+
+### idea — claim `www.ntripi.app` too
+
+Only the apex is claimed. Every link the app builds uses `SHARE_BASE_URL`
+(`https://ntripi.app`), so this matters only for links people type or rewrite;
+claiming it means serving both association files on `www` without a redirect. →
+[features/app-links.md](features/app-links.md)
 
 ### idea — web push
 

@@ -14,10 +14,12 @@ Coverage:
   TestSharePrivateItinerary:
     - followers-only itinerary shows minimal page (no stops)
     - restricted itinerary shows minimal page (no stops)
+    - neither page, nor its preview card, names the trip, the owner or the cover
     - only_me itinerary returns 404
 
   TestShareNotFound:
     - Non-existent UUID returns 404
+    - A malformed or cut-short id gets the same HTML page, not JSON
 """
 
 import uuid
@@ -25,7 +27,9 @@ import uuid
 import pytest
 from fastapi.testclient import TestClient
 
-from conftest import auth_headers, edit_now, register_user
+from app.models.itinerary import Itinerary
+
+from conftest import TestingSessionLocal, auth_headers, edit_now, register_user
 
 
 # ---------------------------------------------------------------------------
@@ -56,6 +60,17 @@ def add_stop(client, token, itinerary_id, *, place_name):
 
 def share_url(itinerary_id):
     return f"/share/i/{itinerary_id}"
+
+
+def set_cover(itinerary_id, url):
+    """Give a trip a cover without the upload pipeline — only the URL matters."""
+    db = TestingSessionLocal()
+    try:
+        row = db.get(Itinerary, uuid.UUID(itinerary_id))
+        row.cover_image_url = url
+        db.commit()
+    finally:
+        db.close()
 
 
 # ---------------------------------------------------------------------------
@@ -160,6 +175,27 @@ class TestSharePrivateItinerary:
         assert "private" in r.text.lower()
         assert "Hidden Gem" not in r.text
 
+    @pytest.mark.parametrize("visibility", ["followers", "restricted"])
+    def test_private_page_names_nothing(self, client, visibility):
+        """The page and its preview card reach everyone the link reaches — mostly
+        people who cannot open the trip — so they carry no title, owner or cover."""
+        owner = register_user(client, f"owner_{visibility}", f"o_{visibility}@test.com")
+        itinerary = create_itinerary(
+            client, owner["access_token"], visibility=visibility,
+            title="Anniversary in Kyoto",
+        )
+        set_cover(itinerary["id"], "/uploads/itineraries/secret-cover.jpg")
+
+        r = client.get(share_url(itinerary["id"]))
+
+        assert r.status_code == 200
+        assert "Anniversary in Kyoto" not in r.text
+        assert f"owner_{visibility}" not in r.text
+        assert "secret-cover.jpg" not in r.text
+        # The card still exists, so the chat shows *something* — the default.
+        assert 'property="og:image"' in r.text
+        assert "ntripi-og-default.png" in r.text
+
     def test_only_me_itinerary_returns_404(self, client):
         alice = register_user(client, "alice_onlyme", "alice_onlyme@test.com")
         token = alice["access_token"]
@@ -185,6 +221,19 @@ class TestShareNotFound:
 
         assert r.status_code == 404
         assert "text/html" in r.headers["content-type"]
+
+    @pytest.mark.parametrize("bad_id", [
+        "3fa85f64-5717-4562",  # cut short when it was copied
+        "new",
+        "not-a-uuid",
+    ])
+    def test_malformed_id_returns_the_html_404(self, client, bad_id):
+        r = client.get(share_url(bad_id))
+
+        # FastAPI would answer a typed route param with a raw JSON 422.
+        assert r.status_code == 404
+        assert "text/html" in r.headers["content-type"]
+        assert "Itinerary not found" in r.text
 
     def test_private_og_tags_present(self, client):
         alice = register_user(client, "alice_privog", "alice_privog@test.com")

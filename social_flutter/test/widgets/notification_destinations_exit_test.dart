@@ -98,6 +98,19 @@ DioException _status(int code) {
   );
 }
 
+/// The single 403 the server answers for every reason a trip may not be seen.
+DioException _accessDenied() {
+  final request = RequestOptions(path: '/');
+  return DioException(
+    requestOptions: request,
+    response: Response<dynamic>(
+      requestOptions: request,
+      statusCode: 403,
+      data: const {'detail': 'x', 'code': 'itinerary_access_denied'},
+    ),
+  );
+}
+
 // ── Fakes ─────────────────────────────────────────────────────────────────
 // They answer the screens' own reads. Anything else falls through to a Dio
 // with no server behind it and fails, as it would offline.
@@ -315,6 +328,27 @@ void main() {
         'Given the trip is gone, When Go back is tapped, '
         'Then it lands on the Itineraries tab', (tester) async {
       await pumpTrip(tester, answer: _status(404));
+      // An answer, not a failure: asking again cannot bring it back.
+      expect(find.text("This itinerary isn't available"), findsOneWidget);
+      expect(find.text('Retry'), findsNothing);
+      await _leaveThrough(tester, find.text('Go back'));
+    });
+
+    testWidgets(
+        'Given a trip you may not open, When Go back is tapped, '
+        'Then it lands on the Itineraries tab', (tester) async {
+      await pumpTrip(tester, answer: _accessDenied());
+      // The same words whatever the reason — a block included.
+      expect(find.text("You can't open this itinerary"), findsOneWidget);
+      expect(find.text('Retry'), findsNothing);
+      await _leaveThrough(tester, find.text('Go back'));
+    });
+
+    testWidgets(
+        'Given the trip failed to load, When Go back is tapped, '
+        'Then it lands on the Itineraries tab', (tester) async {
+      await pumpTrip(tester, answer: _status(500));
+      // Worth asking again, so this one keeps Retry.
       expect(find.text('Retry'), findsOneWidget);
       await _leaveThrough(tester, find.text('Go back'));
     });

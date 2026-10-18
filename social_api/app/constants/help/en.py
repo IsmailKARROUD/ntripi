@@ -123,6 +123,17 @@ RELEASES: tuple[Release, ...] = (
             "opens now always has somewhere to go back to — usually the screen "
             "you were on, otherwise your profile — and offers **Go back** even "
             "when the trip or person it was about is gone.",
+            "**Shared links open in the app.** A link to a trip or a profile now "
+            "opens it in Ntripi when the app is installed — after you sign in, if "
+            "you were signed out. Without the app, the page offers it, or you can "
+            "continue on the web.",
+            "**A clear answer when a trip can't be opened.** A link to a trip you "
+            "may not see, or one that was deleted, now says so — with a way back "
+            "— instead of an error with a Retry button.",
+            "**Links to private trips show nothing in a chat.** The preview of a "
+            "trip shared with followers or specific people no longer shows its "
+            "title, cover photo or owner — only that it is a private trip on "
+            "Ntripi.",
         ),
     ),
     Release(
@@ -1072,11 +1083,13 @@ ARTICLES: tuple[Article, ...] = (
         ),
         category="sharing",
         schema=SCHEMA_FAQ,
-        updated="2026-09-01",
+        updated="2026-10-18",
         keywords=(
             "private", "privately", "visibility", "who can see", "public",
             "followers", "restricted", "only me", "hide", "hidden", "secret",
             "share link", "permissions", "friends only", "invite",
+            "can't open",
+            "not available",
         ),
         related=("plan-a-trip-itinerary", "plan-alternative-options"),
         cta="Plan a trip and share it with exactly the people you mean to.",
@@ -1121,11 +1134,17 @@ ARTICLES: tuple[Article, ...] = (
                 heading="What does someone without access see?",
                 kind=KIND_FAQ,
                 body=(
-                    "A page that says the trip is not available. It does not say "
-                    "the trip exists, who owns it, or what it is called — a trip "
-                    "you cannot see is indistinguishable from one that was never "
-                    "created.\n\n"
-                    "The same holds for a profile you have been blocked by."
+                    "- **On the web** — a trip shared with **followers** or "
+                    "**specific people** shows a page that says it is private, "
+                    "without its title, cover photo or owner. A trip set to "
+                    "**only me**, a deleted trip, or a link that leads nowhere "
+                    "shows a page that says the trip is not available, so the "
+                    "link does not even reveal that the trip exists.\n"
+                    "- **In the app** — a trip they may not open says they can't "
+                    "open it; a deleted trip or a broken link says it is not "
+                    "available. Neither says why.\n\n"
+                    "In the app, a profile you have been blocked by looks like one "
+                    "that does not exist."
                 ),
             ),
             Block(
@@ -1147,9 +1166,10 @@ ARTICLES: tuple[Article, ...] = (
                 body=(
                     "A public trip generates a preview card with its cover image, "
                     "title, duration, cost and rating.\n\n"
-                    "A trip that is not public generates no such preview — the "
-                    "preview would leak the title to everyone in the chat, "
-                    "including people who cannot open it."
+                    "A trip that is not public generates only a plain card that "
+                    "says it is a private trip on Ntripi — no title, cover photo or "
+                    "owner. Anything more would show the trip to everyone in the "
+                    "chat, including people who cannot open it."
                 ),
             ),
         ),
@@ -1158,14 +1178,17 @@ ARTICLES: tuple[Article, ...] = (
         slug="share-a-trip-link",
         title="How to share your trip as a link",
         summary=(
-            "Send a trip to anyone with a link, and know what the preview card "
-            "will show before you paste it."
+            "Send a trip to anyone with a link — it opens in the app if they "
+            "have it, in their browser if not — and know what the preview shows."
         ),
         category="sharing",
-        updated="2026-09-01",
+        updated="2026-10-18",
         keywords=(
             "share", "link", "url", "send", "whatsapp", "preview", "copy",
             "publish", "public",
+            "open in app",
+            "app link",
+            "browser",
         ),
         related=("share-an-itinerary-privately", "trip-cover-photos"),
         cta="Build something worth sending.",
@@ -1184,8 +1207,10 @@ ARTICLES: tuple[Article, ...] = (
                     "Open the trip and use the share action. Your device's normal "
                     "share sheet appears, so the link can go to any app — messages, "
                     "email, notes.\n\n"
-                    "The page opens in a browser, so the person you send it to does "
-                    "not need the app to read it."
+                    "If the person you send it to has Ntripi, the link opens the "
+                    "trip in the app — after they sign in, if they are signed out. "
+                    "If they don't, it opens in their browser, where they can read "
+                    "it without an account, get the app, or continue on the web."
                 ),
             ),
             Block(
@@ -1195,8 +1220,9 @@ ARTICLES: tuple[Article, ...] = (
                     "A **public** trip generates a preview card in most chat apps: "
                     "the cover image, the title, the total duration and cost, the "
                     "number of stops, and the rating if it has one.\n\n"
-                    "A trip that is **not** public generates no preview. That is "
-                    "deliberate — a preview would show the title to everyone in the "
+                    "A trip that is **not** public generates only a plain card that "
+                    "says it is a private trip on Ntripi — no title, cover photo or "
+                    "owner. That is deliberate — the card is seen by everyone in the "
                     "group chat, including people who cannot open it."
                 ),
             ),
@@ -1209,6 +1235,24 @@ ARTICLES: tuple[Article, ...] = (
                     "and the ratings.\n\n"
                     "They can read all of it without an account. Saving it, rating "
                     "it or copying stops from it needs one."
+                ),
+            ),
+            Block(
+                anchor="opens-in-browser",
+                heading="If a link opens in the browser instead of the app",
+                body=(
+                    "A link opens the app only on a phone where Ntripi is "
+                    "installed. Anywhere else it opens the trip's page in the "
+                    "browser, which offers the app — and **Continue on web**, to "
+                    "use Ntripi in the browser instead.\n\n"
+                    "Even with the app installed, a link opens in the browser when "
+                    "it is typed or pasted into the address bar, or opened inside "
+                    "another app's built-in browser. On an iPhone, tapping "
+                    "**ntripi.app** at the top right of the app sends links to "
+                    "Safari from then on — press and hold a link and choose to "
+                    "open it in Ntripi to switch back.\n\n"
+                    "If you are signed out, the app asks you to sign in first, then "
+                    "opens the trip."
                 ),
             ),
             Block(

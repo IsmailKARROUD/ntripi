@@ -2694,6 +2694,18 @@ class AppLocalizationsZh extends AppLocalizations {
   String get profileUnavailableMessage => '该账号不存在或已不再可用。';
 
   @override
+  String get itineraryNoAccessTitle => '你无法打开此行程';
+
+  @override
+  String get itineraryNoAccessMessage => '只有所有者分享给的人才能打开。如果对方本意是让你看到，请让对方与你分享。';
+
+  @override
+  String get itineraryUnavailableTitle => '此行程不可用';
+
+  @override
+  String get itineraryUnavailableMessage => '它可能已被删除，或者链接有误。';
+
+  @override
   String blockedUserRemoved(String username) {
     return '已解除屏蔽 @$username。';
   }

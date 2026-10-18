@@ -10,6 +10,7 @@ from __future__ import annotations
 from decimal import Decimal
 from typing import TYPE_CHECKING
 
+from app.services.app_links import cta_context
 from app.storage.factory import storage
 
 if TYPE_CHECKING:
@@ -91,6 +92,7 @@ def prepare_share_context(
         "rating_count": itinerary.rating_count,
         "share_url": share_url,
         "preview_image_url": _resolve_preview_image_url(itinerary, settings),
+        "app_cta": cta_context(share_url, settings),
     }
 
 
@@ -130,6 +132,7 @@ def prepare_profile_share_context(
         ],
         "share_url": build_profile_share_url(user, settings),
         "preview_image_url": resolve_profile_image_url(user, settings),
+        "app_cta": cta_context(build_profile_share_url(user, settings), settings),
     }
 
 
@@ -176,6 +179,12 @@ def _resolve_preview_image_url(itinerary: "Itinerary", settings: "Settings") -> 
 
     # Phase 2 map-image fallback goes here.
 
+    return default_preview_image_url(settings)
+
+
+def default_preview_image_url(settings: "Settings") -> str:
+    """The Ntripi card every page falls back to — and the only image a private
+    trip's preview may carry, since its cover would show it to the whole chat."""
     return f"{settings.share_base_url}/static/ntripi-og-default.png"
 
 
@@ -183,7 +192,7 @@ def resolve_profile_image_url(user: "User", settings: "Settings") -> str:
     """Absolute OG preview image for a profile: avatar, else the default."""
     if user.avatar_url:
         return absolutize_stored_url(user.avatar_url, settings)
-    return f"{settings.share_base_url}/static/ntripi-og-default.png"
+    return default_preview_image_url(settings)
 
 
 def _mode_emoji(mode: str) -> str:

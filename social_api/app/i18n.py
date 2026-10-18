@@ -209,6 +209,32 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "es": "Este itinerario no está disponible o puede que se haya eliminado.",
         "zh": "此行程不可用，或可能已被移除。",
     },
+    # A dead profile link. Same words as the app's ProfileUnavailableView, so
+    # the page and the app never disagree about what happened.
+    "share_profile_not_found_title": {
+        "en": "Account unavailable — Ntripi",
+        "fr": "Compte indisponible — Ntripi",
+        "ar": "الحساب غير متاح — Ntripi",
+        "de": "Konto nicht verfügbar — Ntripi",
+        "es": "Cuenta no disponible — Ntripi",
+        "zh": "账号不可用 — Ntripi",
+    },
+    "share_profile_not_found_heading": {
+        "en": "Account unavailable",
+        "fr": "Compte indisponible",
+        "ar": "الحساب غير متاح",
+        "de": "Konto nicht verfügbar",
+        "es": "Cuenta no disponible",
+        "zh": "账号不可用",
+    },
+    "share_profile_not_found_body": {
+        "en": "This account doesn't exist or is no longer available.",
+        "fr": "Ce compte n'existe pas ou n'est plus disponible.",
+        "ar": "هذا الحساب غير موجود أو لم يعد متاحًا.",
+        "de": "Dieses Konto existiert nicht oder ist nicht mehr verfügbar.",
+        "es": "Esta cuenta no existe o ya no está disponible.",
+        "zh": "该账号不存在或已不再可用。",
+    },
     "share_go_to_ntripi": {
         "en": "Go to Ntripi",
         "fr": "Aller sur Ntripi",
@@ -258,13 +284,33 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "es": "Descargar la aplicación",
         "zh": "下载应用",
     },
+    # Not "open the app to view it": most people who reach this page cannot
+    # open the trip anywhere, and the page must not promise them otherwise.
     "share_private_message": {
-        "en": "This is a private itinerary. Open the Ntripi app to view the full trip.",
-        "fr": "Cet itinéraire est privé. Ouvrez l'application Ntripi pour voir le voyage complet.",
-        "ar": "المسار هذا خاص. افتح تطبيق Ntripi لعرض الرحلة كاملة.",
-        "de": "Dies ist eine private Reiseroute. Öffnen Sie die Ntripi-App, um die ganze Reise zu sehen.",
-        "es": "Este itinerario es privado. Abre la aplicación Ntripi para ver el viaje completo.",
-        "zh": "这是一条私密行程。请打开 Ntripi 应用查看完整旅程。",
+        "en": "Only the people its owner shares it with can open it, in the Ntripi app or on the web.",
+        "fr": "Seules les personnes avec qui son propriétaire le partage peuvent l'ouvrir, dans l'application Ntripi ou sur le web.",
+        "ar": "لا يستطيع فتحه إلا الأشخاص الذين يشاركه مالكه معهم، في تطبيق Ntripi أو على الويب.",
+        "de": "Nur die Personen, mit denen der Eigentümer sie teilt, können sie öffnen – in der Ntripi-App oder im Web.",
+        "es": "Solo las personas con las que su propietario lo comparte pueden abrirlo, en la aplicación Ntripi o en la web.",
+        "zh": "只有所有者分享给的人才能在 Ntripi 应用或网页版中打开。",
+    },
+    # The private page's <title> and preview card. Deliberately generic: the
+    # card is seen by everyone in the chat, so it names no trip and no owner.
+    "share_private_title": {
+        "en": "Private itinerary — Ntripi",
+        "fr": "Itinéraire privé — Ntripi",
+        "ar": "مسار خاص — Ntripi",
+        "de": "Private Reiseroute — Ntripi",
+        "es": "Itinerario privado — Ntripi",
+        "zh": "私密行程 — Ntripi",
+    },
+    "share_private_preview": {
+        "en": "Only the people its owner shares it with can open it.",
+        "fr": "Seules les personnes avec qui son propriétaire le partage peuvent l'ouvrir.",
+        "ar": "لا يستطيع فتحه إلا الأشخاص الذين يشاركه مالكه معهم.",
+        "de": "Nur die Personen, mit denen der Eigentümer sie teilt, können sie öffnen.",
+        "es": "Solo las personas con las que su propietario lo comparte pueden abrirlo.",
+        "zh": "只有所有者分享给的人才能打开。",
     },
     "share_install_prompt": {
         "en": "Don't have Ntripi?",
@@ -862,7 +908,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
     "home_cta_continue_web": {
         "en": "Continue on web",
         "fr": "Continuer sur le web",
-        "ar": "المتابعة على الويب",
+        "ar": "الاستمرار على الويب",
         "de": "Im Web fortfahren",
         "es": "Continuar en la web",
         "zh": "在网页版继续",

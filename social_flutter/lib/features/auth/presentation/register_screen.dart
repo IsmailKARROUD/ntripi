@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:ntripi/core/router/app_links.dart';
 import 'package:ntripi/core/api/api_client.dart';
 import 'package:ntripi/core/ui/app_theme.dart';
 import 'package:ntripi/core/ui/ntripi_logo.dart';
@@ -83,7 +84,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       ref.invalidate(myItinerariesProvider);
       ref.invalidate(sharedWithMeProvider);
       ref.invalidate(savedItinerariesProvider);
-      if (mounted) context.go('/profile/me');
+      if (mounted) landHome(GoRouter.of(context));
     } on DioException catch (e) {
       if (!mounted) return;
       setState(() => _errorMessage = extractErrorMessage(e, AppLocalizations.of(context)!));

@@ -94,6 +94,9 @@ RELEASES: tuple[Release, ...] = (
             "**Fermer l’application pendant une modification ne retient plus le voyage.** La prochaine fois que vous l’ouvrez, Ntripi le relâche d’abord, au lieu de vous dire que vous le modifiez sur un autre appareil.",
             "**Retirer un abonné, ou se désabonner depuis vos listes.** **Retirer** à côté d’une personne dans votre liste d’abonnés — ou **Retirer l’abonné** dans le menu ⋯ de son profil — met fin à son abonnement, sans qu’elle en soit informée. **Abonné** à côté d’une personne dans votre liste d’abonnements vous désabonne.",
             "**Le bouton Retour fonctionne après l’ouverture d’une notification.** Ce qu’ouvre une notification a désormais toujours un écran où revenir — en général celui où vous étiez, sinon votre profil — et propose **Retour** même si le voyage ou la personne en question n’existe plus.",
+            "**Les liens partagés s’ouvrent dans l’application.** Un lien vers un voyage ou un profil l’ouvre désormais dans Ntripi quand l’application est installée — après connexion, si vous étiez déconnecté. Sans l’application, la page la propose, ou vous pouvez continuer sur le web.",
+            "**Une réponse claire quand un voyage ne peut pas s’ouvrir.** Un lien vers un voyage que vous n’avez pas le droit de voir, ou qui a été supprimé, le dit désormais — avec un moyen de revenir en arrière — au lieu d’une erreur qui proposait de réessayer.",
+            "**Les liens vers des voyages privés ne montrent rien dans une conversation.** L’aperçu d’un voyage partagé avec les abonnés ou des personnes précises n’affiche plus son titre, sa photo de couverture ni son propriétaire — seulement qu’il s’agit d’un voyage privé sur Ntripi.",
         ),
     ),
     Release(
@@ -825,9 +828,10 @@ Le lien n’est pas un mot de passe secret — c’est l’adresse du voyage. L�
                 anchor="what-others-see",
                 heading="Que voit une personne sans accès ?",
                 kind=KIND_FAQ,
-                body="""Une page indiquant que le voyage n’est pas disponible. Elle ne dit pas que le voyage existe, ni à qui il appartient, ni comment il s’appelle — un voyage que vous ne pouvez pas voir est indiscernable d’un voyage qui n’a jamais été créé.
+                body="""- **Sur le web** — un voyage partagé avec les **abonnés** ou des **personnes précises** affiche une page indiquant qu’il est privé, sans son titre, sa photo de couverture ni son propriétaire. Un voyage réglé sur **moi uniquement**, un voyage supprimé ou un lien qui ne mène nulle part affiche une page indiquant que le voyage n’est pas disponible : le lien ne révèle même pas que le voyage existe.
+- **Dans l’application** — un voyage qu’elle n’a pas le droit d’ouvrir indique qu’elle ne peut pas l’ouvrir ; un voyage supprimé ou un lien cassé indique qu’il n’est pas disponible. Aucun des deux ne dit pourquoi.
 
-Il en va de même pour un profil qui vous a bloqué.""",
+Dans l’application, un profil qui vous a bloqué ressemble à un profil qui n’existe pas.""",
             ),
             Block(
                 anchor="change-later",
@@ -843,7 +847,7 @@ Seul le propriétaire du voyage peut changer la visibilité. Une personne que vo
                 kind=KIND_FAQ,
                 body="""Un voyage public génère une carte d’aperçu avec son image de couverture, son titre, sa durée, son coût et son évaluation.
 
-Un voyage qui n’est pas public ne génère aucun aperçu — l’aperçu divulguerait le titre à tout le monde dans la conversation, y compris à ceux qui ne peuvent pas l’ouvrir.""",
+Un voyage qui n’est pas public ne génère qu’une carte neutre indiquant qu’il s’agit d’un voyage privé sur Ntripi — sans titre, photo de couverture ni propriétaire. En montrer davantage exposerait le voyage à tout le monde dans la conversation, y compris à ceux qui ne peuvent pas l’ouvrir.""",
             ),
         ),
         keywords=(
@@ -862,15 +866,17 @@ Un voyage qui n’est pas public ne génère aucun aperçu — l’aperçu divul
             "autorisations",
             "amis seulement",
             "inviter",
+            "impossible d’ouvrir",
+            "pas disponible",
         ),
         related=("plan-a-trip-itinerary", "plan-alternative-options"),
-        updated="2026-09-01",
+        updated="2026-10-18",
         cta="Planifiez un voyage et partagez-le exactement avec les personnes visées.",
     ),
     Article(
         slug="share-a-trip-link",
         title="Comment partager votre voyage sous forme de lien",
-        summary="Envoyez un voyage à n’importe qui par un lien, en sachant ce que la carte d’aperçu montrera avant de le coller.",
+        summary="Envoyez un voyage par un lien — il s’ouvre dans l’application si la personne l’a, sinon dans son navigateur — et sachez ce que montrera l’aperçu.",
         category="sharing",
         intro="Chaque voyage a une adresse web. Partager, c’est simplement l’envoyer — le lien est l’emplacement du voyage, pas un mot de passe, et l’accès est revérifié par rapport à votre [réglage de visibilité](/help/share-an-itinerary-privately) chaque fois que quelqu’un l’ouvre.",
         blocks=(
@@ -879,14 +885,14 @@ Un voyage qui n’est pas public ne génère aucun aperçu — l’aperçu divul
                 heading="Obtenir le lien",
                 body="""Ouvrez le voyage et utilisez l’action de partage. La feuille de partage habituelle de votre appareil apparaît, le lien peut donc partir vers n’importe quelle application — messages, e-mail, notes.
 
-La page s’ouvre dans un navigateur : la personne à qui vous l’envoyez n’a pas besoin de l’application pour la lire.""",
+Si la personne à qui vous l’envoyez a Ntripi, le lien ouvre le voyage dans l’application — après connexion, si elle est déconnectée. Sinon, il s’ouvre dans son navigateur, où elle peut le lire sans compte, obtenir l’application ou continuer sur le web.""",
             ),
             Block(
                 anchor="what-the-preview-shows",
                 heading="Ce que montre la carte d’aperçu",
                 body="""Un voyage **public** génère une carte d’aperçu dans la plupart des messageries : l’image de couverture, le titre, la durée et le coût totaux, le nombre d’étapes, et l’évaluation s’il en a une.
 
-Un voyage qui n’est **pas** public ne génère aucun aperçu. C’est délibéré — un aperçu montrerait le titre à tout le monde dans la conversation de groupe, y compris à ceux qui ne peuvent pas l’ouvrir.""",
+Un voyage qui n’est **pas** public ne génère qu’une carte neutre indiquant qu’il s’agit d’un voyage privé sur Ntripi — sans titre, photo de couverture ni propriétaire. C’est délibéré — la carte est vue par tout le monde dans la conversation de groupe, y compris par ceux qui ne peuvent pas l’ouvrir.""",
             ),
             Block(
                 anchor="what-they-see",
@@ -894,6 +900,15 @@ Un voyage qui n’est **pas** public ne génère aucun aperçu. C’est délibé
                 body="""Le voyage entier : les étapes dans l’ordre, les options parallèles, les transits entre elles, les coûts, vos notes et avertissements, et les évaluations.
 
 Il peut tout lire sans compte. L’enregistrer, l’évaluer ou en copier des étapes en demande un.""",
+            ),
+            Block(
+                anchor="opens-in-browser",
+                heading="Si un lien s’ouvre dans le navigateur au lieu de l’application",
+                body="""Un lien n’ouvre l’application que sur un téléphone où Ntripi est installé. Ailleurs, il ouvre la page du voyage dans le navigateur, qui propose l’application — et **Continuer sur le web** pour utiliser Ntripi dans le navigateur.
+
+Même avec l’application installée, un lien s’ouvre dans le navigateur s’il est tapé ou collé dans la barre d’adresse, ou ouvert dans le navigateur intégré d’une autre application. Sur iPhone, toucher **ntripi.app** en haut à droite de l’application envoie ensuite les liens vers Safari : appuyez longuement sur un lien et choisissez de l’ouvrir dans Ntripi pour revenir en arrière.
+
+Si vous êtes déconnecté, l’application vous demande d’abord de vous connecter, puis ouvre le voyage.""",
             ),
             Block(
                 anchor="unsharing",
@@ -913,9 +928,11 @@ Ce que vous ne pouvez pas défaire, c’est une capture d’écran : traitez don
             "copier",
             "publier",
             "public",
+            "ouvrir dans l’application",
+            "navigateur",
         ),
         related=("share-an-itinerary-privately", "trip-cover-photos"),
-        updated="2026-09-01",
+        updated="2026-10-18",
         cta="Construisez quelque chose qui mérite d’être envoyé.",
     ),
     Article(

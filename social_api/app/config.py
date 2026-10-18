@@ -14,6 +14,7 @@ Why @lru_cache on get_settings()?
   - FastAPI's Depends() works perfectly with lru_cache'd callables.
 """
 
+import re
 from functools import lru_cache
 from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -28,6 +29,10 @@ TEXT_MODERATION_PROVIDERS = ("openai", "local", "disabled")
 # Accepted names in TRANSLATION_PROVIDERS, which a deployment lists in the
 # order they should be tried.
 TRANSLATION_PROVIDER_NAMES = ("openai", "azure")
+
+# A 10-character Team ID, then a reverse-DNS bundle id — Apple's appID form.
+_IOS_APP_ID = re.compile(r"^[A-Z0-9]{10}\.[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)+$")
+_ANDROID_PACKAGE = re.compile(r"^[A-Za-z][A-Za-z0-9_]*(\.[A-Za-z][A-Za-z0-9_]*)+$")
 
 
 class Settings(BaseSettings):
@@ -86,6 +91,25 @@ class Settings(BaseSettings):
     # Optional URL for Android APK download. None hides the button on the homepage.
     # Set to /downloads/ntripi-latest.apk once Ticket 9 ships the binary.
     ANDROID_DOWNLOAD_URL: str | None = None
+
+    # ── App links: shared /share/* links open the installed app ─────────────
+    # "Unset = invisible": with these empty the /.well-known association files
+    # 404, so no device ever hands a link to the app — exactly as before.
+    # iOS: `TEAMID.bundle.id`, comma-separated, written into
+    # apple-app-site-association. Apple matches it against the signed app.
+    IOS_APP_IDS: str = ""
+    # Android: the applicationId plus the SHA-256 of every certificate a
+    # shipped build is signed with — Play app signing (every Play install,
+    # internal testing included) and the upload key (locally built releases).
+    ANDROID_APP_PACKAGE: str = ""
+    ANDROID_CERT_SHA256: str = ""
+    # Numeric App Store id: turns on Safari's Smart App Banner. Safari only
+    # draws it once the app is live in the store.
+    IOS_APP_STORE_ID: str = ""
+    # Where the share pages' download buttons go. Empty = the homepage
+    # waitlist, so launch day is a variable change, not a deploy.
+    APP_STORE_URL: str = ""
+    PLAY_STORE_URL: str = ""
 
     # Minimum number of ratings an itinerary needs before it can surface in the
     # "Top" discovery feed — stops a single 5-star trip from dominating. Kept as
@@ -420,6 +444,59 @@ class Settings(BaseSettings):
         if self.TRANSLATION_TIMEOUT_SECONDS <= 0:
             raise ValueError("TRANSLATION_TIMEOUT_SECONDS must be positive")
         return self
+
+    @model_validator(mode="after")
+    def _validate_app_links(self) -> "Settings":
+        """Refuse an app-link setup that would quietly verify nothing: a
+        malformed id or fingerprint makes the OS reject the association with no
+        error anywhere, and links just keep opening in the browser."""
+        self.ios_app_ids  # noqa: B018 — parse now, fail at boot
+        fingerprints = self.android_cert_sha256
+        package = self.ANDROID_APP_PACKAGE.strip()
+        if package and not _ANDROID_PACKAGE.match(package):
+            raise ValueError(f"ANDROID_APP_PACKAGE {package!r} is not an application id")
+        # Android verifies the package AND the signing certificate; either one
+        # alone is an assetlinks.json that can never match an installed app.
+        if bool(package) != bool(fingerprints):
+            raise ValueError(
+                "ANDROID_APP_PACKAGE and ANDROID_CERT_SHA256 must be set together"
+            )
+        store_id = self.IOS_APP_STORE_ID.strip()
+        if store_id and not store_id.isdigit():
+            raise ValueError("IOS_APP_STORE_ID must be the numeric App Store id")
+        for name in ("APP_STORE_URL", "PLAY_STORE_URL"):
+            url = getattr(self, name).strip()
+            if url and not url.startswith("https://"):
+                raise ValueError(f"{name} must be an https:// URL")
+        return self
+
+    @property
+    def ios_app_ids(self) -> list[str]:
+        """IOS_APP_IDS as `TEAMID.bundle.id` strings; empty = no AASA file."""
+        ids = [i.strip() for i in self.IOS_APP_IDS.split(",") if i.strip()]
+        bad = [i for i in ids if not _IOS_APP_ID.match(i)]
+        if bad:
+            raise ValueError(
+                f"IOS_APP_IDS entries must be TEAMID.bundle.id, got {', '.join(bad)}"
+            )
+        return ids
+
+    @property
+    def android_cert_sha256(self) -> list[str]:
+        """ANDROID_CERT_SHA256 normalised to the form assetlinks.json needs:
+        uppercase hex pairs joined by colons. Accepts either case, with or
+        without the colons, as keytool and the Play Console print it."""
+        fingerprints = []
+        for raw in self.ANDROID_CERT_SHA256.split(","):
+            digits = raw.strip().replace(":", "").upper()
+            if not digits:
+                continue
+            if len(digits) != 64 or any(c not in "0123456789ABCDEF" for c in digits):
+                raise ValueError(
+                    f"ANDROID_CERT_SHA256 entry {raw.strip()!r} is not a SHA-256 fingerprint"
+                )
+            fingerprints.append(":".join(digits[i:i + 2] for i in range(0, 64, 2)))
+        return fingerprints
 
     @property
     def translation_providers(self) -> list[str]:

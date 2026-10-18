@@ -26,7 +26,7 @@ code, with links to the feature that exercises each rule.
 
 ### Startup validators that **raise**
 
-Seven misconfigurations refuse to boot rather than degrade silently:
+Eight misconfigurations refuse to boot rather than degrade silently:
 
 | Validator | Refuses | Why |
 |---|---|---|
@@ -37,6 +37,7 @@ Seven misconfigurations refuse to boot rather than degrade silently:
 | `_validate_edit_lock_windows` | `TTL <= IDLE`; `IDLE < 2 × HEARTBEAT`; `HEARTBEAT < 5` | a claim that became takeable before it read as inactive would be stolen from someone the UI still showed as editing |
 | `_validate_translation_detect_langs` | a `TRANSLATION_DETECT_LANGS` that is neither `all` nor a list of two-letter codes | a typo would otherwise surface on the first save that needs a language |
 | `_validate_translation` | an unknown or repeated name in `TRANSLATION_PROVIDERS`; `openai` with no `OPENAI_API_KEY`; `azure` with no `AZURE_TRANSLATOR_KEY`; a `TRANSLATION_SUPPORTED_LANGS` code missing from `constants/translation_languages.py`; a `TRANSLATION_PRETRANSLATE_LANGS` code that is not supported; a non-positive timeout; an hourly limit under 1 or a negative budget (`Field` bounds) | the same stance as text moderation: a setup that would quietly translate nothing must not boot |
+| `_validate_app_links` | an `IOS_APP_IDS` entry that is not `TEAMID.bundle.id`; an `ANDROID_CERT_SHA256` entry that is not 32 hex bytes; `ANDROID_APP_PACKAGE` without fingerprints or the reverse; a malformed package; a non-numeric `IOS_APP_STORE_ID`; a non-https store URL | a bad id or fingerprint makes the OS reject the association with no error anywhere — every shared link just keeps opening in the browser |
 
 Two more refuse at first use rather than at import: **`STORAGE_BACKEND=r2` with
 any `R2_*` var missing raises**, and an unknown `STORAGE_BACKEND` raises — and
@@ -44,7 +45,7 @@ any `R2_*` var missing raises**, and an unknown `STORAGE_BACKEND` raises — and
 
 ### The "unset = invisible" pattern
 
-Five subsystems return **404** or render nothing when unconfigured, rather than
+Six subsystems return **404** or render nothing when unconfigured, rather than
 returning 401/403 — the feature is invisible, not merely locked:
 
 | Unset | Effect |
@@ -54,6 +55,7 @@ returning 401/403 — the feature is invisible, not merely locked:
 | any of the four `JIRA_*` | the "Create Jira issue" button is not rendered |
 | `FCM_PROJECT_ID` / `FCM_SERVICE_ACCOUNT_JSON` | push is off; nothing sent, nothing raised |
 | `TRANSLATION_PROVIDERS` | `POST /translations` 404s; `GET /translations/config` answers `enabled: false`, so no client offers the button |
+| `IOS_APP_IDS` / `ANDROID_APP_PACKAGE` + `ANDROID_CERT_SHA256` | `/.well-known/apple-app-site-association` / `assetlinks.json` 404, so no phone hands a shared link to the app. Unset `APP_STORE_URL` / `PLAY_STORE_URL` point the share pages' download buttons at the waitlist |
 
 ### `OPERATOR_EMAIL` is the one to actually set
 
@@ -245,6 +247,11 @@ external scheduler) **or SLA auto-hide and post-outage re-checks never run.**
   below the itinerary purges them (`purge_orphans`), and deleting a trip or an
   account cascades through `content_translations.itinerary_id`. The table
   holds no user reference and never stores the source text — only its hash.
+- **A non-public trip's share page and preview card carry no title, cover photo
+  or owner.** The card reaches everyone in the chat the link is pasted into,
+  mostly people who cannot open the trip; the router passes `share_private.html`
+  nothing about the trip, so it cannot leak — see
+  [sharing.md](features/sharing.md#visibility-on-a-public-page).
 - **A rating survives its author anonymised** (`user_id` SET NULL) so the trip
   keeps its score.
 - **Bug-report screenshot retention is a privacy duty, not housekeeping** — a
@@ -399,7 +406,8 @@ block appears a second time anywhere, extract it instead of copying.**
 | `services/user_service.py` | `get_active_user_or_404` / `..._by_username_or_404` — **the only** fetch-or-404; `get_follow` / `is_accepted_follower` — **never write an inline Follow query**; `bump_follow_counters` — **the only** way to touch the counters; `delete_follow` — **the only** way to delete a follow row (decrements from the row's status as it was deleted, never as loaded); `public_profile_text` |
 | `services/token_util.py` | `hash_token` / `as_aware_utc` / `new_raw_token` — every opaque-token service |
 | `services/image_service.py` | `process_and_store` — all image uploads |
-| `services/share_service.py` | `build_share_url`, `build_profile_share_url`, `absolute_storage_url`, `absolutize_stored_url` |
+| `services/share_service.py` | `build_share_url`, `build_profile_share_url`, `absolute_storage_url`, `absolutize_stored_url`, `default_preview_image_url` |
+| `services/app_links.py` | `cta_context` / `store_links` — every share page's call to action; `apple_app_site_association`, `asset_links`; `APP_LINK_PATHS` |
 | `services/ordering.py` | `key_between`, `n_keys_between` |
 | `services/itinerary_access.py` | `can_view_itinerary`, `can_edit_itinerary`, `public_listing_criteria`, `visible_rating_criteria`, `recalculate_rating` |
 | `services/translation_service.py` | `REGISTRY` — the one list of translatable fields; `sync_translations` — **every write of translatable text calls it** before the commit; `purge_orphans` — **every delete below the itinerary calls it** after the flush; `source_hash` |
@@ -425,7 +433,7 @@ block appears a second time anywhere, extract it instead of copying.**
 | **Never use the `--web-renderer` flag** | removed in Flutter 3.29 |
 | **Never run `dart format`** | the repo predates Dart 3.7 tall style; it reflows whole files |
 | **Every "view more" is `ExpandableText`** (`shared/widgets/expandable_text.dart`) — never re-inline a `TextPainter` overflow check, and never place one under `IntrinsicHeight` | a check that measures with less than `Text` renders with — no inherited style, no text scaler — says "fits" while the text is ellipsised, and the rest is unreachable; the two private copies it replaced had done exactly that. Its `LayoutBuilder` throws on an intrinsic query |
-| **A screen opened from outside the app is never alone, and always has a way out.** A notification tap enters through `GoRouter.pushOverHome` / `openFromOutside` (`core/router/navigation_ext.dart`), never `go()`; every screen `notificationRoute` can open leaves through `popOr`, in every state | `go()` left the tapped screen alone on its navigator — a back arrow that did nothing, an Android back that closed the app — and destroyed the screen the user had left. `tap_routing_test.dart` and `notification_destinations_exit_test.dart` hold the two halves, and the second fails until a new destination has a case |
+| **A screen opened from outside the app is never alone, and always has a way out.** A notification tap enters through `GoRouter.pushOverHome` / `openFromOutside` (`core/router/navigation_ext.dart`), never `go()`; so does a shared link, through `appLinkOnEnter` and `landHome` (`core/router/app_links.dart`), parked rather than dropped while splash is up or nobody is signed in; every screen `notificationRoute` can open leaves through `popOr`, in every state | `go()` left the tapped screen alone on its navigator — a back arrow that did nothing, an Android back that closed the app — and destroyed the screen the user had left. `tap_routing_test.dart` and `notification_destinations_exit_test.dart` hold the two halves, and the second fails until a new destination has a case |
 
 ### Surfaces and chrome
 

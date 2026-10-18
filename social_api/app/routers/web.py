@@ -12,6 +12,8 @@ Routes:
   POST /web/reset-password
   GET  /verify-email         → Email-verification landing (link from email)
   GET  /robots.txt           → keeps /admin out of search indexes
+  GET  /.well-known/apple-app-site-association → iOS universal links
+  GET  /.well-known/assetlinks.json            → Android app links
   GET  /appeal/{token}       → Moderation appeal form (link from email)
   POST /web/appeal
   GET  /appeal               → Request an appeal link by email (suspended users)
@@ -28,8 +30,10 @@ from __future__ import annotations
 
 import uuid
 
-from fastapi import APIRouter, Depends, Form, Request
-from fastapi.responses import HTMLResponse, PlainTextResponse, RedirectResponse, Response
+from fastapi import APIRouter, Depends, Form, Request, status
+from fastapi.responses import (
+    HTMLResponse, JSONResponse, PlainTextResponse, RedirectResponse, Response,
+)
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -42,12 +46,14 @@ from app.constants.guidelines import (
 from app.constants.privacy import PRIVACY_DATE, PRIVACY_VERSION, get_privacy
 from app.constants.tos import TOS_DATE, TOS_VERSION, get_tos
 from app.database import get_db
+from app.errors import ApiError
 from app.i18n import resolve_lang
 from app.limiter import limiter
 from app.models.moderation_log import ModerationLog
 from app.models.user import User
 from app.services import (
-    appeal_service, appeal_token, auth_service, email_service, help_service, seo,
+    app_links, appeal_service, appeal_token, auth_service, email_service,
+    help_service, seo,
 )
 from app.templating import templates
 from app.validators.password import validate_password_strength
@@ -258,6 +264,38 @@ def robots_txt(settings: Settings = Depends(get_settings)) -> PlainTextResponse:
         "\n"
         f"Sitemap: {seo.absolute('/sitemap.xml', settings)}\n"
     )
+
+
+# ---------------------------------------------------------------------------
+# App-link association files
+#
+# Fetched by Apple's CDN and Google's verifier, never by people. Each must
+# answer 200 application/json at exactly this path: a redirect, an HTML error
+# page or a bot challenge fails the association silently and every shared link
+# keeps opening in the browser. Unconfigured, both 404 like any unknown path.
+# ---------------------------------------------------------------------------
+
+def _association_file(content) -> JSONResponse:
+    if content is None:
+        raise ApiError(
+            status_code=status.HTTP_404_NOT_FOUND,
+            code="not_found", detail="Not Found.",
+        )
+    # Identical for every visitor and keyed by nothing but the URL, so public
+    # caching is safe; ETagMiddleware keeps an endpoint-set Cache-Control.
+    return JSONResponse(content, headers={"Cache-Control": "public, max-age=3600"})
+
+
+@router.get("/.well-known/apple-app-site-association", include_in_schema=False)
+def apple_app_site_association(
+    settings: Settings = Depends(get_settings),
+) -> JSONResponse:
+    return _association_file(app_links.apple_app_site_association(settings))
+
+
+@router.get("/.well-known/assetlinks.json", include_in_schema=False)
+def assetlinks_json(settings: Settings = Depends(get_settings)) -> JSONResponse:
+    return _association_file(app_links.asset_links(settings))
 
 
 # ---------------------------------------------------------------------------

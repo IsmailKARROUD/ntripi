@@ -94,6 +94,9 @@ RELEASES: tuple[Release, ...] = (
             "**Die App beim Bearbeiten zu schließen, hält die Reise nicht mehr fest.** Wenn Sie sie das nächste Mal öffnen, gibt Ntripi sie zuerst frei, statt anzuzeigen, dass Sie sie auf einem anderen Gerät bearbeiten.",
             "**Follower entfernen oder aus Ihren Listen entfolgen.** **Entfernen** neben einer Person in Ihrer Follower-Liste — oder **Follower entfernen** im Menü ⋯ auf ihrem Profil — beendet ihr Folgen, ohne dass sie es erfährt. **Gefolgt** neben einer Person in Ihrer Gefolgt-Liste entfolgt ihr.",
             "**Zurück funktioniert nach dem Öffnen einer Benachrichtigung.** Was eine Benachrichtigung öffnet, führt jetzt immer irgendwohin zurück — meist zu dem Bildschirm, auf dem Sie waren, sonst zu Ihrem Profil — und zeigt **Zurück** auch dann, wenn die Reise oder die Person, um die es ging, nicht mehr existiert.",
+            "**Geteilte Links öffnen sich in der App.** Ein Link zu einer Reise oder einem Profil öffnet sie jetzt in Ntripi, wenn die App installiert ist — nach der Anmeldung, falls Sie abgemeldet waren. Ohne App bietet die Seite sie an, oder Sie fahren im Web fort.",
+            "**Eine klare Antwort, wenn sich eine Reise nicht öffnen lässt.** Ein Link zu einer Reise, die Sie nicht sehen dürfen oder die gelöscht wurde, sagt das jetzt — mit einem Weg zurück — statt eines Fehlers, der nur einen erneuten Versuch anbot.",
+            "**Links zu privaten Reisen zeigen im Chat nichts.** Die Vorschau einer Reise, die mit Followern oder bestimmten Personen geteilt ist, zeigt nicht mehr ihren Titel, ihr Titelbild oder ihren Eigentümer — nur, dass es eine private Reise auf Ntripi ist.",
         ),
     ),
     Release(
@@ -821,9 +824,10 @@ Der Link ist kein geheimes Passwort — er ist die Adresse der Reise. Der Zugrif
                 anchor="what-others-see",
                 heading="Was sieht jemand ohne Zugriff?",
                 kind=KIND_FAQ,
-                body="""Eine Seite mit dem Hinweis, dass die Reise nicht verfügbar ist. Sie verrät nicht, dass die Reise existiert, wem sie gehört oder wie sie heißt — eine Reise, die Sie nicht sehen können, ist von einer nie erstellten nicht zu unterscheiden.
+                body="""- **Im Web** — eine Reise, die mit **Followern** oder **bestimmten Personen** geteilt ist, zeigt eine Seite mit dem Hinweis, dass sie privat ist, ohne Titel, Titelbild oder Eigentümer. Eine Reise auf **Nur ich**, eine gelöschte Reise oder ein Link, der ins Leere führt, zeigt eine Seite mit dem Hinweis, dass die Reise nicht verfügbar ist — der Link verrät also nicht einmal, dass es die Reise gibt.
+- **In der App** — eine Reise, die jemand nicht öffnen darf, sagt, dass sie sich nicht öffnen lässt; eine gelöschte Reise oder ein kaputter Link sagt, dass sie nicht verfügbar ist. Keines von beiden sagt, warum.
 
-Dasselbe gilt für ein Profil, von dem Sie blockiert wurden.""",
+In der App sieht ein Profil, von dem Sie blockiert wurden, aus wie eines, das es nicht gibt.""",
             ),
             Block(
                 anchor="change-later",
@@ -839,7 +843,7 @@ Nur der Eigentümer der Reise kann die Sichtbarkeit ändern. Wen Sie zum Bearbei
                 kind=KIND_FAQ,
                 body="""Eine öffentliche Reise erzeugt eine Vorschaukarte mit Titelbild, Titel, Dauer, Kosten und Bewertung.
 
-Eine nicht öffentliche Reise erzeugt keine Vorschau — die Vorschau würde den Titel an alle im Chat verraten, auch an die, die sie nicht öffnen können.""",
+Eine nicht öffentliche Reise erzeugt nur eine schlichte Karte mit dem Hinweis, dass es eine private Reise auf Ntripi ist — ohne Titel, Titelbild oder Eigentümer. Mehr würde die Reise allen im Chat zeigen, auch denen, die sie nicht öffnen können.""",
             ),
         ),
         keywords=(
@@ -858,15 +862,17 @@ Eine nicht öffentliche Reise erzeugt keine Vorschau — die Vorschau würde den
             "berechtigungen",
             "nur freunde",
             "einladen",
+            "kann nicht öffnen",
+            "nicht verfügbar",
         ),
         related=("plan-a-trip-itinerary", "plan-alternative-options"),
-        updated="2026-09-01",
+        updated="2026-10-18",
         cta="Planen Sie eine Reise und teilen Sie sie genau mit den Richtigen.",
     ),
     Article(
         slug="share-a-trip-link",
         title="So teilen Sie Ihre Reise als Link",
-        summary="Eine Reise per Link an alle verschicken — und vorher wissen, was die Vorschaukarte zeigen wird.",
+        summary="Eine Reise per Link verschicken — sie öffnet sich in der App, wenn sie installiert ist, sonst im Browser — und wissen, was die Vorschau zeigt.",
         category="sharing",
         intro="Jede Reise hat eine Webadresse. Teilen heißt einfach, sie zu verschicken — der Link ist der Ort der Reise, kein Passwort, und der Zugriff wird bei jedem Öffnen erneut gegen Ihre [Sichtbarkeitseinstellung](/help/share-an-itinerary-privately) geprüft.",
         blocks=(
@@ -875,14 +881,14 @@ Eine nicht öffentliche Reise erzeugt keine Vorschau — die Vorschau würde den
                 heading="Den Link holen",
                 body="""Öffnen Sie die Reise und nutzen Sie die Teilen-Aktion. Das übliche Teilen-Menü Ihres Geräts erscheint, der Link kann also in jede App gehen — Nachrichten, E-Mail, Notizen.
 
-Die Seite öffnet sich im Browser, die Person, der Sie ihn schicken, braucht die App also nicht, um sie zu lesen.""",
+Hat die Person, der Sie ihn schicken, Ntripi, öffnet der Link die Reise in der App — nach der Anmeldung, falls sie abgemeldet ist. Sonst öffnet er sich in ihrem Browser, wo sie die Reise ohne Konto lesen, die App holen oder im Web fortfahren kann.""",
             ),
             Block(
                 anchor="what-the-preview-shows",
                 heading="Was die Vorschaukarte zeigt",
                 body="""Eine **öffentliche** Reise erzeugt in den meisten Messengern eine Vorschaukarte: Titelbild, Titel, Gesamtdauer und -kosten, die Zahl der Stopps und, falls vorhanden, die Bewertung.
 
-Eine **nicht** öffentliche Reise erzeugt keine Vorschau. Das ist Absicht — eine Vorschau würde den Titel allen im Gruppenchat zeigen, auch denen, die sie nicht öffnen können.""",
+Eine **nicht** öffentliche Reise erzeugt nur eine schlichte Karte mit dem Hinweis, dass es eine private Reise auf Ntripi ist — ohne Titel, Titelbild oder Eigentümer. Das ist Absicht — die Karte sehen alle im Gruppenchat, auch die, die die Reise nicht öffnen können.""",
             ),
             Block(
                 anchor="what-they-see",
@@ -890,6 +896,15 @@ Eine **nicht** öffentliche Reise erzeugt keine Vorschau. Das ist Absicht — ei
                 body="""Die ganze Reise: die Stopps der Reihe nach, die parallelen Optionen, den Transport dazwischen, die Kosten, Ihre Notizen und Warnungen und die Bewertungen.
 
 Alles davon ist ohne Konto lesbar. Speichern, bewerten oder Stopps daraus kopieren braucht eines.""",
+            ),
+            Block(
+                anchor="opens-in-browser",
+                heading="Wenn sich ein Link im Browser statt in der App öffnet",
+                body="""Ein Link öffnet die App nur auf einem Telefon, auf dem Ntripi installiert ist. Überall sonst öffnet er die Seite der Reise im Browser, die die App anbietet — und **Im Web fortfahren**, um Ntripi stattdessen im Browser zu nutzen.
+
+Auch mit installierter App öffnet sich ein Link im Browser, wenn er in die Adressleiste getippt oder eingefügt oder im eingebauten Browser einer anderen App geöffnet wird. Auf dem iPhone schickt ein Tippen auf **ntripi.app** oben rechts in der App Links fortan an Safari — halten Sie einen Link gedrückt und wählen Sie, ihn in Ntripi zu öffnen, um das rückgängig zu machen.
+
+Wenn Sie abgemeldet sind, bittet die App Sie zuerst, sich anzumelden, und öffnet dann die Reise.""",
             ),
             Block(
                 anchor="unsharing",
@@ -909,9 +924,11 @@ Was Sie nicht rückgängig machen können, ist ein Screenshot — behandeln Sie 
             "kopieren",
             "veröffentlichen",
             "öffentlich",
+            "in der App öffnen",
+            "Browser",
         ),
         related=("share-an-itinerary-privately", "trip-cover-photos"),
-        updated="2026-09-01",
+        updated="2026-10-18",
         cta="Bauen Sie etwas, das sich zu verschicken lohnt.",
     ),
     Article(

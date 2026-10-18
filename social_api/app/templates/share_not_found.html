@@ -1,10 +1,13 @@
+{% from "_app_links.html" import store_badges with context -%}
+{# One page for every dead link, whatever the reason — only the noun changes. -#}
+{% set copy = 'share_profile_not_found' if kind == 'profile' else 'share_not_found' -%}
 <!DOCTYPE html>
 <html lang="{{ lang or 'en' }}">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{{ _('share_not_found_title') }}</title>
-  <meta name="description" content="{{ _('share_not_found_body') }}">
+  <title>{{ _(copy ~ '_title') }}</title>
+  <meta name="description" content="{{ _(copy ~ '_body') }}">
 
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -88,6 +91,27 @@
     }
     .home-link:hover { opacity: .88; text-decoration: none; }
 
+    .install-prompt {
+      font-size: 14px;
+      margin: 26px 0 10px;
+    }
+
+    .store-badges {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+    }
+    .store-badge {
+      background: var(--text);
+      color: var(--white);
+      font-size: 13px;
+      font-weight: 600;
+      padding: 8px 18px;
+      border-radius: 8px;
+      text-decoration: none;
+    }
+    .store-badge:hover { opacity: .85; text-decoration: none; }
+
     footer {
       text-align: center;
       padding: 20px;
@@ -106,9 +130,11 @@
 <main>
   <div class="card">
     <div class="icon">🗺️</div>
-    <h1>{{ _('share_not_found_heading') }}</h1>
-    <p>{{ _('share_not_found_body') }}</p>
+    <h1>{{ _(copy ~ '_heading') }}</h1>
+    <p>{{ _(copy ~ '_body') }}</p>
     <a href="/" class="home-link">{{ _('share_go_to_ntripi') }}</a>
+
+    {{ store_badges(app_cta) }}
   </div>
 </main>
 

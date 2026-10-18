@@ -139,6 +139,13 @@ class TestShareProfileNotFound:
         assert r.status_code == 404
         assert "text/html" in r.headers["content-type"]
 
+    def test_dead_profile_link_says_account_not_itinerary(self, client):
+        """The same words the app's ProfileUnavailableView uses."""
+        r = client.get("/share/u/nobody-here")
+
+        assert "Account unavailable" in r.text
+        assert "itinerary" not in r.text.lower()
+
     def test_deactivated_account_returns_404(self, client):
         """A banned account must be indistinguishable from one that never existed."""
         user = register_user(client, "banned", "b@example.com")

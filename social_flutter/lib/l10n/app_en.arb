@@ -1288,6 +1288,10 @@
   "blockedUsersEmpty": "You haven't blocked anyone.",
   "profileUnavailableTitle": "Account unavailable",
   "profileUnavailableMessage": "This account doesn't exist or is no longer available.",
+  "itineraryNoAccessTitle": "You can't open this itinerary",
+  "itineraryNoAccessMessage": "Only the people its owner shares it with can open it. If they meant you to see it, ask them to share it with you.",
+  "itineraryUnavailableTitle": "This itinerary isn't available",
+  "itineraryUnavailableMessage": "It may have been deleted, or the link may be wrong.",
   "blockedUserRemoved": "Unblocked @{username}.",
   "@blockedUserRemoved": {
     "placeholders": {

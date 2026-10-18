@@ -94,6 +94,9 @@ RELEASES: tuple[Release, ...] = (
             "**Cerrar la aplicación mientras editas ya no deja el viaje retenido.** La próxima vez que lo abras, Ntripi lo suelta primero, en lugar de decirte que lo estás editando en otro dispositivo.",
             "**Quitar a un seguidor, o dejar de seguir desde tus listas.** **Quitar** junto a alguien en tu lista de seguidores —o **Quitar seguidor** en el menú ⋯ de su perfil— pone fin a su seguimiento, sin que se le comunique. **Siguiendo** junto a alguien en tu lista de seguidos deja de seguirlo.",
             "**El botón Atrás funciona después de abrir una notificación.** Lo que abre una notificación ahora siempre tiene adónde volver —normalmente a la pantalla en la que estabas; si no, a tu perfil— y ofrece **Volver** aunque el viaje o la persona en cuestión ya no exista.",
+            "**Los enlaces compartidos se abren en la aplicación.** Un enlace a un viaje o a un perfil ahora lo abre en Ntripi cuando la aplicación está instalada, tras iniciar sesión si no la tenías iniciada. Sin la aplicación, la página la ofrece, o puedes continuar en la web.",
+            "**Una respuesta clara cuando un viaje no se puede abrir.** Un enlace a un viaje que no puedes ver, o que se eliminó, ahora lo dice, con una forma de volver, en lugar de un error que solo ofrecía reintentar.",
+            "**Los enlaces a viajes privados no muestran nada en una conversación.** La vista previa de un viaje compartido con seguidores o con personas concretas ya no muestra su título, su foto de portada ni su propietario; solo que es un viaje privado en Ntripi.",
         ),
     ),
     Release(
@@ -822,9 +825,10 @@ El enlace no es una contraseña secreta: es la dirección del viaje. El acceso s
                 anchor="what-others-see",
                 heading="¿Qué ve alguien sin acceso?",
                 kind=KIND_FAQ,
-                body="""Una página que dice que el viaje no está disponible. No dice que el viaje exista, ni de quién es, ni cómo se llama: un viaje que no puedes ver es indistinguible de uno que nunca se creó.
+                body="""- **En la web**: un viaje compartido con **seguidores** o con **personas concretas** muestra una página que dice que es privado, sin su título, su foto de portada ni su propietario. Un viaje configurado como **solo yo**, un viaje eliminado o un enlace que no lleva a ninguna parte muestra una página que dice que el viaje no está disponible, así que el enlace ni siquiera revela que el viaje existe.
+- **En la aplicación**: un viaje que no puede abrir le dice que no puede abrirlo; un viaje eliminado o un enlace roto le dice que no está disponible. Ninguno de los dos dice por qué.
 
-Lo mismo ocurre con un perfil que te ha bloqueado.""",
+En la aplicación, un perfil que te ha bloqueado parece uno que no existe.""",
             ),
             Block(
                 anchor="change-later",
@@ -840,7 +844,7 @@ Solo el propietario del viaje puede cambiar la visibilidad. Alguien a quien haya
                 kind=KIND_FAQ,
                 body="""Un viaje público genera una tarjeta de vista previa con su imagen de portada, su título, su duración, su coste y su valoración.
 
-Un viaje que no es público no genera ninguna vista previa: la vista previa filtraría el título a todo el mundo en la conversación, incluidos quienes no pueden abrirlo.""",
+Un viaje que no es público solo genera una tarjeta neutra que dice que es un viaje privado en Ntripi, sin título, foto de portada ni propietario. Mostrar más enseñaría el viaje a todo el mundo en la conversación, incluidos quienes no pueden abrirlo.""",
             ),
         ),
         keywords=(
@@ -859,15 +863,17 @@ Un viaje que no es público no genera ninguna vista previa: la vista previa filt
             "permisos",
             "solo amigos",
             "invitar",
+            "no puedo abrir",
+            "no disponible",
         ),
         related=("plan-a-trip-itinerary", "plan-alternative-options"),
-        updated="2026-09-01",
+        updated="2026-10-18",
         cta="Planifica un viaje y compártelo exactamente con quien quieres.",
     ),
     Article(
         slug="share-a-trip-link",
         title="Cómo compartir tu viaje como un enlace",
-        summary="Envía un viaje a cualquiera con un enlace, sabiendo qué mostrará la tarjeta de vista previa antes de pegarlo.",
+        summary="Envía un viaje con un enlace: se abre en la aplicación si la tiene y, si no, en su navegador. Y sabe de antemano qué mostrará la vista previa.",
         category="sharing",
         intro="Cada viaje tiene una dirección web. Compartir es simplemente enviarla: el enlace es la ubicación del viaje, no una contraseña, y el acceso se vuelve a comprobar contra tu [ajuste de visibilidad](/help/share-an-itinerary-privately) cada vez que alguien lo abre.",
         blocks=(
@@ -876,14 +882,14 @@ Un viaje que no es público no genera ninguna vista previa: la vista previa filt
                 heading="Conseguir el enlace",
                 body="""Abre el viaje y usa la acción de compartir. Aparece el menú de compartir habitual de tu dispositivo, así que el enlace puede ir a cualquier aplicación: mensajes, correo, notas.
 
-La página se abre en un navegador, así que la persona a la que se lo envías no necesita la aplicación para leerlo.""",
+Si la persona a la que se lo envías tiene Ntripi, el enlace abre el viaje en la aplicación, tras iniciar sesión si no la tiene iniciada. Si no, se abre en su navegador, donde puede leerlo sin cuenta, conseguir la aplicación o continuar en la web.""",
             ),
             Block(
                 anchor="what-the-preview-shows",
                 heading="Qué muestra la tarjeta de vista previa",
                 body="""Un viaje **público** genera una tarjeta de vista previa en la mayoría de las aplicaciones de mensajería: la imagen de portada, el título, la duración y el coste totales, el número de paradas y la valoración si la tiene.
 
-Un viaje que **no** es público no genera ninguna vista previa. Es deliberado: una vista previa mostraría el título a todo el mundo en el grupo, incluidos quienes no pueden abrirlo.""",
+Un viaje que **no** es público solo genera una tarjeta neutra que dice que es un viaje privado en Ntripi, sin título, foto de portada ni propietario. Es deliberado: la tarjeta la ve todo el mundo en el grupo, incluidos quienes no pueden abrirlo.""",
             ),
             Block(
                 anchor="what-they-see",
@@ -891,6 +897,15 @@ Un viaje que **no** es público no genera ninguna vista previa. Es deliberado: u
                 body="""El viaje entero: las paradas en orden, las opciones paralelas, el transporte entre ellas, los costes, tus notas y avisos, y las valoraciones.
 
 Puede leerlo todo sin cuenta. Guardarlo, valorarlo o copiar paradas de él sí requiere una.""",
+            ),
+            Block(
+                anchor="opens-in-browser",
+                heading="Si un enlace se abre en el navegador en lugar de en la aplicación",
+                body="""Un enlace solo abre la aplicación en un teléfono donde Ntripi está instalado. En cualquier otro sitio abre la página del viaje en el navegador, que ofrece la aplicación y **Continuar en la web** para usar Ntripi en el navegador.
+
+Aunque tengas la aplicación, un enlace se abre en el navegador si se escribe o se pega en la barra de direcciones, o si se abre dentro del navegador integrado de otra aplicación. En un iPhone, tocar **ntripi.app** arriba a la derecha de la aplicación hace que, a partir de entonces, los enlaces se abran en Safari: mantén pulsado un enlace y elige abrirlo en Ntripi para volver.
+
+Si no has iniciado sesión, la aplicación te pide que la inicies primero y luego abre el viaje.""",
             ),
             Block(
                 anchor="unsharing",
@@ -910,9 +925,11 @@ Lo que no puedes deshacer es una captura de pantalla, así que trata publicar co
             "copiar",
             "publicar",
             "público",
+            "abrir en la aplicación",
+            "navegador",
         ),
         related=("share-an-itinerary-privately", "trip-cover-photos"),
-        updated="2026-09-01",
+        updated="2026-10-18",
         cta="Construye algo que merezca la pena enviar.",
     ),
     Article(

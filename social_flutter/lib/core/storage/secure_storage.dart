@@ -67,6 +67,19 @@ Future<DateTime?> readRefreshExpiresAt() async {
   return DateTime.tryParse(raw);
 }
 
+/// Whether somebody is signed in on this device: a refresh token is stored and
+/// has not expired.
+///
+/// The access token is deliberately not consulted — it lives 15 minutes and is
+/// routinely expired between requests; TokenManager rotates it on the next
+/// call. An unknown expiry counts as live, as the server is the authority.
+Future<bool> hasLiveRefreshToken() async {
+  final refresh = await readRefreshToken();
+  if (refresh == null || refresh.isEmpty) return false;
+  final expiresAt = await readRefreshExpiresAt();
+  return expiresAt == null || expiresAt.isAfter(DateTime.now());
+}
+
 /// Persist a freshly-issued token pair (login / register / refresh).
 /// Atomic from the caller's perspective — never half-saved state, because
 /// the only places that call this also call [clearAllTokens] on failure.

@@ -35,6 +35,8 @@
 	</array>
 	<key>CFBundleVersion</key>
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
+	<key>FlutterDeepLinkingEnabled</key>
+	<true/>
 	<key>GIDClientID</key>
 	<string>29126714665-8n68nlct0m8edp04b6obslteslqtitdq.apps.googleusercontent.com</string>
 	<key>GIDServerClientID</key>

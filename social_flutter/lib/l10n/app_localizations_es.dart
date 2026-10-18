@@ -2869,6 +2869,20 @@ class AppLocalizationsEs extends AppLocalizations {
       'Esta cuenta no existe o ya no está disponible.';
 
   @override
+  String get itineraryNoAccessTitle => 'No puedes abrir este itinerario';
+
+  @override
+  String get itineraryNoAccessMessage =>
+      'Solo las personas con las que su propietario lo comparte pueden abrirlo. Si quería que lo vieras, pídele que lo comparta contigo.';
+
+  @override
+  String get itineraryUnavailableTitle => 'Este itinerario no está disponible';
+
+  @override
+  String get itineraryUnavailableMessage =>
+      'Puede que se haya eliminado o que el enlace sea incorrecto.';
+
+  @override
   String blockedUserRemoved(String username) {
     return '@$username desbloqueado.';
   }

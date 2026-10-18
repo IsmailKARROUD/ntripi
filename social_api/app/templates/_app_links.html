@@ -1,0 +1,55 @@
+{#- _app_links.html — the app-first, web-second call to action the share pages
+    carry. `cta` is app_links.cta_context() (or store_links() on the not-found
+    page). Import WITH CONTEXT: `_` is a context-processor value, not a global.
+
+      {% from "_app_links.html" import app_links_head, store_badges,
+         continue_on_web, app_links_script with context %} -#}
+
+{#- In <head>. The [hidden] rule is load-bearing: every page styles its buttons
+    with `display`, which beats the attribute's UA style and would show the
+    Android-only button everywhere. Then Safari's own "Open" / "Get" banner —
+    it needs the app live in the App Store; app-argument is the URL the
+    installed app is handed. -#}
+{% macro app_links_head(cta) -%}
+  <style>[hidden] { display: none !important; }</style>
+{%- if cta.ios_app_store_id %}
+  <meta name="apple-itunes-app" content="app-id={{ cta.ios_app_store_id }}, app-argument={{ cta.app_argument }}">
+{%- endif %}
+{%- endmacro %}
+
+{#- The two download buttons of the minimal pages. Before launch both lead to
+    the homepage waitlist — see app_links.WAITLIST_PATH. -#}
+{% macro store_badges(cta) -%}
+<p class="install-prompt">{{ _('share_install_prompt') }}</p>
+<div class="store-badges">
+  <a href="{{ cta.app_store_url }}" class="store-badge">App Store</a>
+  <a href="{{ cta.play_store_url }}" class="store-badge">Google Play</a>
+</div>
+{%- endmacro %}
+
+{#- The way on for anyone who will not install: the web app, at this same trip
+    or profile. Secondary to the app on purpose — never the first button. -#}
+{% macro continue_on_web(cta, class="web-link") -%}
+<a href="{{ cta.web_app_url }}" class="{{ class }}">{{ _('home_cta_continue_web') }}</a>
+{%- endmacro %}
+
+{#- Reveals [data-app-open] on Android only — an intent:// link is meaningless
+    elsewhere, and on iOS a same-domain link never opens an app, so the button
+    could only reload this page. Also points [data-get-app] at the visitor's
+    own store. Without JS both stay at their safe defaults. -#}
+{% macro app_links_script(cta) -%}
+<script>
+  (function () {
+    var ua = navigator.userAgent;
+    var android = /Android/i.test(ua);
+    var ios = /iPhone|iPad|iPod/i.test(ua);
+    if (android) {
+      document.querySelectorAll('[data-app-open]').forEach(function (el) { el.hidden = false; });
+    }
+    var store = android ? {{ cta.play_store_url|tojson }} : ios ? {{ cta.app_store_url|tojson }} : null;
+    if (store) {
+      document.querySelectorAll('[data-get-app]').forEach(function (el) { el.href = store; });
+    }
+  })();
+</script>
+{%- endmacro %}

@@ -8,8 +8,12 @@ No authentication is required — this is a public web page.
 Visibility enforcement happens at the template level:
   public     → full rich page with stops, stats, map placeholder
   followers /
-  restricted → minimal page ("private itinerary, open in app")
+  restricted → "this trip is private" page: no title, owner or cover
   only_me    → 404 page (protects privacy, doesn't leak existence)
+
+On a phone with the app, these links open the app instead (see
+services/app_links.py); every page here offers the app first and the web app
+second to a visitor who landed in the browser.
 """
 
 from __future__ import annotations
@@ -29,14 +33,15 @@ from app.models.transit_segment import TransitSegment
 from app.models.user import User
 from app.errors import ApiError
 from app.services import user_service
+from app.services.app_links import cta_context, store_links
 from app.services.share_service import (
     absolutize_stored_url,
     build_profile_share_url,
     build_share_url,
+    default_preview_image_url,
     prepare_profile_share_context,
     prepare_share_context,
     resolve_profile_image_url,
-    _resolve_preview_image_url,
 )
 from app.templating import templates
 
@@ -46,9 +51,22 @@ router = APIRouter(prefix="/share", tags=["share"])
 _MAX_PROFILE_ITINERARIES = 12
 
 
+def _not_found(
+    request: Request, settings: Settings, *, kind: str = "itinerary"
+) -> HTMLResponse:
+    """The one page for every link that leads nowhere — identical whatever the
+    reason, so a link never reveals whether its target exists."""
+    return templates.TemplateResponse(
+        request,
+        "share_not_found.html",
+        {"kind": kind, "app_cta": store_links(settings)},
+        status_code=404,
+    )
+
+
 @router.get("/i/{itinerary_id}", response_class=HTMLResponse)
 def share_itinerary(
-    itinerary_id: uuid.UUID,
+    itinerary_id: str,
     request: Request,
     db: Session = Depends(get_db),
     settings: Settings = Depends(get_settings),
@@ -58,9 +76,16 @@ def share_itinerary(
 
     Visibility rules:
       public      → full rich page
-      followers / restricted → minimal "private" page
+      followers / restricted → "private" page carrying no title, owner or cover
       only_me     → 404 (same as not found — privacy protection)
     """
+    # Parsed here rather than typed as uuid.UUID: a link cut short in a chat
+    # would otherwise answer FastAPI's raw JSON 422 to a browser.
+    try:
+        parsed_id = uuid.UUID(itinerary_id)
+    except ValueError:
+        return _not_found(request, settings)
+
     itinerary = db.execute(
         select(Itinerary)
         .options(
@@ -69,7 +94,7 @@ def share_itinerary(
             .selectinload(Stop.outgoing_segment)
             .selectinload(TransitSegment.legs)
         )
-        .where(Itinerary.id == itinerary_id)
+        .where(Itinerary.id == parsed_id)
     ).scalar_one_or_none()
 
     if itinerary:
@@ -85,11 +110,7 @@ def share_itinerary(
         or itinerary.deleted_at is not None
         or itinerary.hidden_at is not None
     ):
-        return templates.TemplateResponse(
-            request,
-            "share_not_found.html",
-            status_code=404,
-        )
+        return _not_found(request, settings)
 
     owner = db.execute(
         select(User).where(User.id == itinerary.user_id)
@@ -97,24 +118,21 @@ def share_itinerary(
 
     # Owner deleted (edge case) or banned → treat as not found.
     if owner is None or not owner.is_active:
-        return templates.TemplateResponse(
-            request,
-            "share_not_found.html",
-            status_code=404,
-        )
+        return _not_found(request, settings)
 
     share_url = build_share_url(itinerary, settings)
-    preview_image_url = _resolve_preview_image_url(itinerary, settings)
 
     if itinerary.visibility in ("followers", "restricted"):
+        # Nothing about the trip is passed, so the template cannot leak it: this
+        # page and its preview card reach everyone the link reaches — mostly
+        # people who cannot open the trip. Those who can open it in the app.
         return templates.TemplateResponse(
             request,
             "share_private.html",
             {
-                "itinerary": itinerary,
-                "owner": owner,
                 "share_url": share_url,
-                "preview_image_url": preview_image_url,
+                "preview_image_url": default_preview_image_url(settings),
+                "app_cta": cta_context(share_url, settings),
             },
         )
 
@@ -161,11 +179,9 @@ def share_profile(
         user = user_service.get_active_user_by_username_or_404(db, username)
     except ApiError:
         # The helper raises a JSON 404; this is an HTML page, so re-render.
-        return templates.TemplateResponse(
-            request,
-            "share_not_found.html",
-            status_code=404,
-        )
+        return _not_found(request, settings, kind="profile")
+
+    share_url = build_profile_share_url(user, settings)
 
     if user.is_private:
         display_name, _bio = user_service.public_profile_text(user, viewer_id=None)
@@ -177,8 +193,9 @@ def share_profile(
                 "display_name": display_name or f"@{user.username}",
                 "avatar_url": user.avatar_url
                 and absolutize_stored_url(user.avatar_url, settings),
-                "share_url": build_profile_share_url(user, settings),
+                "share_url": share_url,
                 "preview_image_url": resolve_profile_image_url(user, settings),
+                "app_cta": cta_context(share_url, settings),
             },
         )
 

@@ -5,7 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ntripi/core/auth/token_manager.dart';
 import 'package:ntripi/core/push/push_service.dart';
-import 'package:ntripi/core/router/navigation_ext.dart';
+import 'package:ntripi/core/router/app_links.dart';
 import 'package:ntripi/core/services/sfx_service.dart';
 import 'package:ntripi/core/storage/secure_storage.dart';
 import 'package:ntripi/core/ui/app_theme.dart';
@@ -38,12 +38,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
     // so the first home-screen API call doesn't pay the refresh latency.
     final brandFlash = Future<void>.delayed(const Duration(milliseconds: 1800));
 
-    final refresh = await readRefreshToken();
-    final refreshExp = await readRefreshExpiresAt();
-
-    final hasLiveRefresh = refresh != null &&
-        refresh.isNotEmpty &&
-        (refreshExp == null || refreshExp.isAfter(DateTime.now()));
+    final hasLiveRefresh = await hasLiveRefreshToken();
 
     if (hasLiveRefresh) {
       try {
@@ -62,6 +57,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
     if (!mounted) return;
 
     if (!hasLiveRefresh) {
+      // A shared link that launched the app stays parked for the sign-in.
       context.go('/login');
       return;
     }
@@ -71,13 +67,8 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
     final pushRoute = await takeInitialPushRoute()
         .timeout(const Duration(seconds: 1), onTimeout: () => null);
     if (!mounted) return;
-    final router = GoRouter.of(context);
-    if (pushRoute == null) {
-      router.go('/profile/me');
-    } else {
-      // One navigation, never go() then push() — see pushOverHome.
-      router.pushOverHome(pushRoute);
-    }
+    // Or a shared link that launched it — landHome opens either over home.
+    landHome(GoRouter.of(context), pushRoute: pushRoute);
   }
 
   @override

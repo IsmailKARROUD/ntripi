@@ -12,8 +12,8 @@
 // forever, so offering a retry only teaches people it does nothing.
 
 import 'package:flutter/material.dart';
-import 'package:ntripi/core/ui/app_theme.dart';
 import 'package:ntripi/l10n/app_localizations.dart';
+import 'package:ntripi/shared/widgets/unavailable_view.dart';
 
 class ProfileUnavailableView extends StatelessWidget {
   /// The profile screen's way out, or null on your own profile, which is home
@@ -30,48 +30,12 @@ class ProfileUnavailableView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final nt = context.nt;
     final l10n = AppLocalizations.of(context)!;
-
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 64,
-              height: 64,
-              decoration: BoxDecoration(color: nt.mist, shape: BoxShape.circle),
-              child: Icon(Icons.person_off_outlined, size: 28, color: nt.text2),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              l10n.profileUnavailableTitle,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 17,
-                fontWeight: FontWeight.w700,
-                color: nt.bark,
-                letterSpacing: -0.2,
-              ),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              l10n.profileUnavailableMessage,
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 13, color: nt.text2, height: 1.5),
-            ),
-            if (onBack != null) ...[
-              const SizedBox(height: 20),
-              OutlinedButton(
-                onPressed: onBack,
-                child: Text(l10n.goBack),
-              ),
-            ],
-          ],
-        ),
-      ),
+    return UnavailableView(
+      icon: Icons.person_off_outlined,
+      title: l10n.profileUnavailableTitle,
+      message: l10n.profileUnavailableMessage,
+      onBack: onBack,
     );
   }
 }

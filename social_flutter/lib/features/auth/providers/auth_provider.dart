@@ -156,8 +156,5 @@ final hasSessionProvider = FutureProvider<bool>((ref) async {
   void onSessionEnded() => ref.invalidateSelf();
   sessionEnded.addListener(onSessionEnded);
   ref.onDispose(() => sessionEnded.removeListener(onSessionEnded));
-  final refresh = await readRefreshToken();
-  if (refresh == null || refresh.isEmpty) return false;
-  final expiry = await readRefreshExpiresAt();
-  return expiry == null || expiry.isAfter(DateTime.now());
+  return hasLiveRefreshToken();
 });

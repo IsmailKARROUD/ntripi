@@ -2,7 +2,7 @@
 
 **Status:** shipped
 **Tables:** `waitlist`
-**Config:** `ALLOWED_HOSTS`, `ALLOWED_ORIGINS`, `DEBUG`, `ANDROID_DOWNLOAD_URL`, `STORAGE_*`
+**Config:** `ALLOWED_HOSTS`, `ALLOWED_ORIGINS`, `DEBUG`, `ANDROID_DOWNLOAD_URL`, `STORAGE_*`; the app-link ids and store URLs (see [app-links.md](app-links.md#config))
 
 ## Purpose
 
@@ -182,6 +182,7 @@ Full columns: [reference/data-model.md](../reference/data-model.md#waitlist).
 | GET | `/reset-password`, `/verify-email` | none | see [passwords-and-email.md](passwords-and-email.md) |
 | GET | `/appeal`, `/appeal/{token}` · POST `/web/appeal`, `/web/appeal-request` | none | see [admin-and-appeals.md](admin-and-appeals.md) |
 | GET | `/robots.txt`, `/sitemap.xml`, `/llms.txt`, `/llms-full.txt` | none | see [help-centre.md](help-centre.md) |
+| GET | `/.well-known/apple-app-site-association`, `/.well-known/assetlinks.json` | none | the app-link association files; **404 until configured** — see [app-links.md](app-links.md) |
 | POST | `/waitlist/join` | none, **no rate limit** | `{ok: true}` 201 |
 
 The `web` router is registered **last** (`main.py:292`), after every literal
@@ -238,6 +239,17 @@ ProviderScope
   safe navigation: `popOr` to leave a screen that may be the only route, and
   `pushOverHome` / `openFromOutside` to enter one from outside the app — see
   [notifications.md](notifications.md#flutter-surface).
+- **Shared links are the router's other way in.** Its `onEnter`
+  (`appLinkOnEnter`) and the first step of its redirect (`appLinkLaunchRedirect`),
+  both in `core/router/app_links.dart`, intercept a `/share/i/…` or `/share/u/…`
+  link so it never lands as it arrives: a cold start goes through splash, a link
+  while running opens over the current screen, a link while signed out waits for
+  the sign-in. Its landings are the root-level `/u/:username` and
+  `/unavailable/:kind` — see [app-links.md](app-links.md).
+- **Android's `MainActivity` is `launchMode="singleTask"`**, so a link tapped in
+  another app reaches the running instance instead of starting a second copy in
+  the caller's task. Flutter's own deep linking is on, stated explicitly in the
+  manifest and `Info.plist`.
 - **The shell owns the keyboard for its tabs.** Its Scaffold lifts the tabs above
   the keyboard and the MediaQuery it hands them carries **no** keyboard inset
   (`.removeViewInsets`), so a tab's own Scaffold has nothing left to lift and
@@ -273,4 +285,5 @@ ProviderScope
 - [etag-concurrency.md](etag-concurrency.md) — `ETagMiddleware`'s place in the stack
 - [google-sign-in.md](google-sign-in.md) — the SPA meta-tag injection
 - [collaborative-editing.md](collaborative-editing.md) — why `X-Edit-Lock` is in CORS
+- [app-links.md](app-links.md) — the `/.well-known` files, the link routing, `singleTask`
 - [constraints.md](../constraints.md)

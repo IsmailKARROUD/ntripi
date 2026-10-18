@@ -9,7 +9,8 @@
 Server-rendered HTML pages at `/share/i/{id}` and `/share/u/{username}` that give
 an itinerary or a profile a link with a rich Open Graph preview on WhatsApp,
 iMessage, Twitter and Slack. **No authentication** — these are for people who do
-not have the app.
+not have the app. On a phone that has it, the same link opens the app instead —
+see [app-links.md](app-links.md).
 
 ## Rules
 
@@ -21,8 +22,23 @@ There is **no viewer**, so the ladder collapses to three outcomes
 | `visibility` | Page |
 |---|---|
 | `public` | the full rich page |
-| `followers` / `restricted` | a minimal "this trip is private" page |
+| `followers` / `restricted` | a "this trip is private" page carrying **no title, owner or cover** — on the page or in its preview card |
 | `only_me` | **404 — identical to not-found**, so the link reveals nothing |
+
+**A private trip's page names nothing about the trip.** Its preview card is seen
+by everyone in the chat the link was pasted into — mostly people who cannot open
+the trip — so the title, the `@owner` and the cover stay off the page and out of
+the OG/Twitter tags, which carry a generic "Private itinerary — Ntripi" and the
+default image. The router enforces it by passing `share_private.html` nothing but
+the share URL, the default preview image and the call to action: the template
+has no trip to leak. Until 2026-10-18 it showed all three, contradicting the help
+centre's promise; see [decisions.md](../decisions.md).
+
+**A malformed id gets the not-found page, not JSON.** `share_itinerary` takes its
+id as a string and parses it — typed as `uuid.UUID`, a link cut short in a chat
+answered FastAPI's raw 422. A dead profile link gets the not-found page with
+**profile** wording ("Account unavailable" — the app's own words); it used to say
+"This itinerary is not available".
 
 `admin_service.public_page_live` mirrors this gate exactly, which is how the
 dashboard can tell an operator whether a trip is currently reachable from a
@@ -62,6 +78,17 @@ Templates: `share_public.html`, `share_private.html`, `share_not_found.html`,
 An **anonymous report dialog** appears on the share page — see
 [content-reports.md](content-reports.md).
 
+### App first, web second
+
+Every page but not-found carries the same call to action, built by
+`app_links.cta_context()` and the `_app_links.html` macros: **Open in app**
+(Android only, an `intent://` link with a store-or-waitlist fallback), the store
+buttons (the waitlist until `APP_STORE_URL` / `PLAY_STORE_URL` are set), the iOS
+Smart App Banner once `IOS_APP_STORE_ID` is set, and **Continue on web** into the
+Flutter web app at the same trip or profile. The not-found page carries the store
+buttons only. The `ntripi://` links these pages used were dead — the app never
+registered the scheme. Details in [app-links.md](app-links.md#the-share-pages-app-first-web-second).
+
 ## API surface
 
 | Method | Path | Auth | Response |
@@ -69,7 +96,8 @@ An **anonymous report dialog** appears on the share page — see
 | GET | `/share/i/{itinerary_id}` | **none** | HTML + OG tags, or the private page, or 404 |
 | GET | `/share/u/{username}` | **none** | HTML + OG tags, or the private page |
 
-Both are HTML, so `ETagMiddleware` (JSON only) does not touch them.
+Both are HTML, so `ETagMiddleware` (JSON only) does not touch them. Both are also
+the paths the apps claim — see [app-links.md](app-links.md).
 
 `/share/*` paths are **deliberately absent from `sitemap.xml`** — see
 [help-centre.md](help-centre.md).
@@ -109,5 +137,6 @@ Both are HTML, so `ETagMiddleware` (JSON only) does not touch them.
 - [image-pipeline.md](image-pipeline.md) — `absolute_storage_url` and the cover
 - [accounts-and-profiles.md](accounts-and-profiles.md) — immutable handles
 - [content-reports.md](content-reports.md) — the anonymous report dialog
+- [app-links.md](app-links.md) — the same links opening the app, and the call to action on these pages
 - [help-centre.md](help-centre.md) — canonical / hreflang / sitemap policy
 - [web-and-platform.md](web-and-platform.md) — the surrounding web surfaces

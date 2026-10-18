@@ -5,6 +5,8 @@ import 'package:go_router/go_router.dart';
 import 'package:ntripi/core/api/api_client.dart';
 import 'package:ntripi/core/api/api_endpoints.dart';
 import 'package:ntripi/core/connectivity/connectivity_service.dart';
+import 'package:ntripi/core/router/app_links.dart';
+import 'package:ntripi/core/router/navigation_ext.dart';
 import 'package:ntripi/core/storage/secure_storage.dart';
 import 'package:ntripi/core/ui/app_theme.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -26,6 +28,7 @@ import 'package:ntripi/features/itineraries/presentation/stop_detail_screen.dart
 import 'package:ntripi/features/itineraries/presentation/editors_screen.dart';
 import 'package:ntripi/features/itineraries/presentation/itinerary_form_screen.dart';
 import 'package:ntripi/features/itineraries/presentation/itinerary_list_screen.dart';
+import 'package:ntripi/features/itineraries/presentation/widgets/itinerary_unavailable_view.dart';
 import 'package:ntripi/features/itineraries/presentation/map_picker_screen.dart';
 import 'package:ntripi/features/itineraries/presentation/saved_itineraries_screen.dart';
 import 'package:ntripi/features/itineraries/presentation/stop_form_screen.dart';
@@ -36,7 +39,9 @@ import 'package:ntripi/features/profile/presentation/account_status_screen.dart'
 import 'package:ntripi/features/reports/presentation/blocked_users_screen.dart';
 import 'package:ntripi/features/profile/presentation/change_password_screen.dart';
 import 'package:ntripi/features/profile/presentation/delete_account_screen.dart';
+import 'package:ntripi/features/profile/presentation/profile_by_username_screen.dart';
 import 'package:ntripi/features/profile/presentation/profile_screen.dart';
+import 'package:ntripi/features/profile/presentation/widgets/profile_unavailable_view.dart';
 import 'package:ntripi/features/search/presentation/search_screen.dart';
 import 'package:ntripi/l10n/app_localizations.dart';
 
@@ -57,19 +62,15 @@ const kPublicRoutes = [
 final appRouter = GoRouter(
   navigatorKey: navigatorKey,
   initialLocation: '/splash',
+  // A shared link that arrives while the app is running opens over the screen
+  // the user is on, or waits for splash or a sign-in — see app_links.dart.
+  onEnter: appLinkOnEnter(),
   redirect: (context, state) async {
-    // We check for a live refresh token, NOT an unexpired access token —
-    // the access token is short-lived (15 min) and may legitimately be
-    // expired between requests. As long as the refresh token is alive,
-    // the session is alive; TokenManager handles the rotation on the
-    // first API call.
-    final refresh = await readRefreshToken();
-    final refreshExp = await readRefreshExpiresAt();
-    final hasAuth =
-        refresh != null &&
-        refresh.isNotEmpty &&
-        (refreshExp == null || refreshExp.isAfter(DateTime.now()));
+    // A shared link that launched the app goes through splash first.
+    final launch = appLinkLaunchRedirect(state);
+    if (launch != null) return launch;
 
+    final hasAuth = await hasLiveRefreshToken();
     final isPublic = kPublicRoutes.contains(state.matchedLocation);
 
     if (!hasAuth && !isPublic) return '/login';
@@ -379,6 +380,36 @@ final appRouter = GoRouter(
           (_, s) => FollowListScreen(
             userId: s.pathParameters['userId']!,
             type: FollowListType.following,
+          ),
+    ),
+
+    // Where shared links land (see app_links.dart). A profile link names a
+    // handle, so it resolves to an id before it is the profile screen.
+    GoRoute(
+      path: '/u/:username',
+      parentNavigatorKey: navigatorKey,
+      builder:
+          (_, s) => ProfileByUsernameScreen(
+            username: s.pathParameters['username']!,
+          ),
+    ),
+    // A link to /share/i/ or /share/u/ that cannot name anything — cut short
+    // when it was copied. The same "not available" answer as a deleted target,
+    // and nothing is fetched.
+    GoRoute(
+      path: '/unavailable/:kind',
+      parentNavigatorKey: navigatorKey,
+      builder:
+          (context, s) => Scaffold(
+            backgroundColor: context.nt.surface,
+            body: s.pathParameters['kind'] == 'profile'
+                ? ProfileUnavailableView(
+                    onBack: () => context.popOr('/profile/me'),
+                  )
+                : ItineraryUnavailableView(
+                    reason: ItineraryUnavailable.notAvailable,
+                    onBack: () => context.popOr('/profile/me'),
+                  ),
           ),
     ),
   ],

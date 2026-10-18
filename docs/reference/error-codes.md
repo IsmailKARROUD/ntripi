@@ -56,7 +56,7 @@ shows English to every user regardless of app language. See
 | `incorrect_password` | 401 | `users.py:243` | localized |
 | `reauth_required` | 401 | `users.py:281` | — |
 | `unauthorized` | 401 | `internal.py:66` | — |
-| `not_found` | 404 | `internal.py:52` | — |
+| `not_found` | 404 | `internal.py:52`; `web.py` `_association_file` (the `/.well-known` app-link files, unconfigured) | — |
 
 `not_authenticated` is **403, not 401** — a missing `Authorization` header is
 distinguished from an invalid one, and the Flutter `AuthInterceptor` only

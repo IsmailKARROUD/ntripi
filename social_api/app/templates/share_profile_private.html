@@ -1,3 +1,4 @@
+{% from "_app_links.html" import app_links_head, store_badges, continue_on_web, app_links_script with context -%}
 <!DOCTYPE html>
 <html lang="{{ lang or 'en' }}" dir="{{ dir }}">
 <head>
@@ -19,6 +20,7 @@
   <meta name="twitter:title"       content="{{ display_name }}">
   <meta name="twitter:description" content="🔒 @{{ user.username }} on Ntripi. Open in the app to send a follow request.">
   <meta name="twitter:image"       content="{{ preview_image_url }}">
+{{ app_links_head(app_cta) }}
 
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -153,6 +155,13 @@
     }
     .store-badge:hover { opacity: .85; text-decoration: none; }
 
+    .web-link {
+      display: inline-block;
+      margin-top: 22px;
+      font-size: 14px;
+      font-weight: 600;
+    }
+
     footer {
       text-align: center;
       padding: 20px;
@@ -181,15 +190,17 @@
     <p class="handle">@{{ user.username }}</p>
     <p class="message">{{ _('share_profile_private_message') }}</p>
 
-    <a href="ntripi://user/{{ user.username }}" class="open-app-btn">
-      {{ _('share_open_in_app') }}
-    </a>
-
-    <p class="install-prompt">{{ _('share_install_prompt') }}</p>
-    <div class="store-badges">
-      <a href="#" class="store-badge">App Store</a>
-      <a href="#" class="store-badge">Google Play</a>
+    {% if app_cta.android_intent_url %}
+    <div data-app-open hidden>
+      <a href="{{ app_cta.android_intent_url }}" class="open-app-btn">
+        {{ _('share_open_in_app') }}
+      </a>
     </div>
+    {% endif %}
+
+    {{ store_badges(app_cta) }}
+
+    {{ continue_on_web(app_cta) }}
   </div>
 </main>
 
@@ -197,5 +208,6 @@
   <p>{{ _('share_shared_via') }} · <a href="/">ntripi.app</a></p>
 </footer>
 
+{{ app_links_script(app_cta) }}
 </body>
 </html>

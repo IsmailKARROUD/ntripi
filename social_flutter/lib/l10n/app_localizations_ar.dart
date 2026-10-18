@@ -2892,6 +2892,20 @@ class AppLocalizationsAr extends AppLocalizations {
       'هذا الحساب غير موجود أو لم يعد متاحًا.';
 
   @override
+  String get itineraryNoAccessTitle => 'لا يمكنك فتح المسار هذا';
+
+  @override
+  String get itineraryNoAccessMessage =>
+      'لا يستطيع فتحه إلا الأشخاص الذين يشاركه مالكه معهم. إن كان يقصد أن تراه، فاطلب منه أن يشاركه معك.';
+
+  @override
+  String get itineraryUnavailableTitle => 'المسار هذا غير متاح';
+
+  @override
+  String get itineraryUnavailableMessage =>
+      'ربما حُذف، أو ربما يكون الرابط خاطئًا.';
+
+  @override
   String blockedUserRemoved(String username) {
     return 'أُلغي حظر @$username.';
   }

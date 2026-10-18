@@ -5038,6 +5038,30 @@ abstract class AppLocalizations {
   /// **'This account doesn\'t exist or is no longer available.'**
   String get profileUnavailableMessage;
 
+  /// No description provided for @itineraryNoAccessTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'You can\'t open this itinerary'**
+  String get itineraryNoAccessTitle;
+
+  /// No description provided for @itineraryNoAccessMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Only the people its owner shares it with can open it. If they meant you to see it, ask them to share it with you.'**
+  String get itineraryNoAccessMessage;
+
+  /// No description provided for @itineraryUnavailableTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'This itinerary isn\'t available'**
+  String get itineraryUnavailableTitle;
+
+  /// No description provided for @itineraryUnavailableMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'It may have been deleted, or the link may be wrong.'**
+  String get itineraryUnavailableMessage;
+
   /// No description provided for @blockedUserRemoved.
   ///
   /// In en, this message translates to:

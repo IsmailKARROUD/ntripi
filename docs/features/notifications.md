@@ -387,7 +387,9 @@ project that holds the Sign-In OAuth clients. FCM carries no per-message charge.
   `push()` builds on the stack as it stands at the call, `go()` lands only after
   the redirect's async secure-storage reads, and splash's loader keeps frames
   coming, so the push could fire first and stack the tap on splash itself. This
-  is the most common real-world path and the easiest to lose.
+  is the most common real-world path and the easiest to lose. Splash lands
+  through `landHome` (`core/router/app_links.dart`), which opens a shared link
+  that launched the app the same way — see [app-links.md](app-links.md).
 - **A warm tap opens over the screen the user left** (`openTappedRoute`,
   `push_gateway.dart`). It used to `go()`, which replaces the whole stack: the
   tapped screen sat alone on its navigator — a back arrow that did nothing, an
@@ -452,5 +454,6 @@ project that holds the Sign-In OAuth clients. FCM carries no per-message charge.
 - [blocking.md](blocking.md) — one of the three suppression rules
 - [accounts-and-profiles.md](accounts-and-profiles.md) — the three `notify_*` columns
 - [authentication.md](authentication.md) — sign-out must delete the device token
+- [app-links.md](app-links.md) — the other way in from outside the app, sharing splash's landing and `openFromOutside`
 - [etag-concurrency.md](etag-concurrency.md) — why the unconditional refetch is cheap
 - [reference/data-model.md](../reference/data-model.md#notifications)

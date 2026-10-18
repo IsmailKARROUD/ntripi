@@ -62,6 +62,7 @@ import 'package:ntripi/features/itineraries/presentation/recommended_period_scre
 import 'package:ntripi/features/profile/providers/profile_provider.dart';
 import 'package:ntripi/shared/models/user.dart';
 import 'package:ntripi/features/itineraries/domain/stop.dart';
+import 'package:ntripi/features/itineraries/presentation/widgets/itinerary_unavailable_view.dart';
 import 'package:ntripi/features/itineraries/presentation/widgets/annotation_chip.dart';
 import 'package:ntripi/features/itineraries/presentation/widgets/edit_pencil_button.dart';
 import 'package:ntripi/features/itineraries/presentation/widgets/leg_thoughts.dart';
@@ -712,34 +713,44 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                       isDesktopWeb() ? kDesktopMaxWidth : double.infinity),
               child: itineraryAsync.when(
                 loading: () => const Center(child: NTripiRouteLoader()),
-                error: (error, _) => Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        extractErrorMessage(
-                            error as dynamic, AppLocalizations.of(context)!),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 16),
-                      FilledButton(
-                        onPressed: () => ref
-                            .read(itineraryDetailProvider(widget.itineraryId)
-                                .notifier)
-                            .refresh(),
-                        child: Text(l10n.retry),
-                      ),
+                // A trip you may not see, or one that is gone, is an answer —
+                // asking again cannot change it, so it gets no Retry. Mostly
+                // reached from a shared link.
+                error: (error, _) => switch (itineraryUnavailableFrom(error)) {
+                  final reason? => ItineraryUnavailableView(
+                      reason: reason,
                       // No hero here; edit mode's Back goes through the PopScope.
-                      if (!_editMode) ...[
-                        const SizedBox(height: 8),
-                        OutlinedButton(
-                          onPressed: _leave,
-                          child: Text(l10n.goBack),
+                      onBack: _editMode ? null : _leave,
+                    ),
+                  null => Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          extractErrorMessage(
+                              error as dynamic, AppLocalizations.of(context)!),
+                          textAlign: TextAlign.center,
                         ),
+                        const SizedBox(height: 16),
+                        FilledButton(
+                          onPressed: () => ref
+                              .read(itineraryDetailProvider(widget.itineraryId)
+                                  .notifier)
+                              .refresh(),
+                          child: Text(l10n.retry),
+                        ),
+                        // No hero here; edit mode's Back goes through the PopScope.
+                        if (!_editMode) ...[
+                          const SizedBox(height: 8),
+                          OutlinedButton(
+                            onPressed: _leave,
+                            child: Text(l10n.goBack),
+                          ),
+                        ],
                       ],
-                    ],
+                    ),
                   ),
-                ),
+                },
                 data: (itinerary) {
                   final allStops = itinerary.stops;
                   final tracks = itinerary.tracks;

@@ -1348,3 +1348,61 @@ land and then pushing (a delegate listener never fires when `go` targets the
 current configuration, so from home the push would never come). A home
 fallback inside `EditorialTopBar`'s default arrow (on a screen alone it would
 bypass a `PopScope`'s unsaved-changes guard).
+
+---
+
+### 2026-10-18 — Shared links open the app, and say plainly when they can't
+
+**Context.** With TestFlight and Play internal testing live, a shared link
+(`/share/i/{id}`, `/share/u/{username}`) still always opened the server-rendered
+page, even on a phone with the app: nothing native claimed the domain. The pages'
+**Open in app** pointed at `ntripi://…`, a scheme the app never registered, and
+their store buttons were `href="#"`. Three more gaps lay on the same path. The
+private page for a followers or specific-people trip put its title, `@owner` and
+cover photo on the page and into the chat preview, while the help centre
+promised such a link shows none of that. A malformed id answered a browser with
+FastAPI's raw JSON 422, and a dead profile link said "This itinerary is not
+available". In the app, a trip someone may not open, or one that was deleted,
+showed an error with a Retry that could never succeed.
+**Decision.** iOS Universal Links and Android App Links for **share links only**,
+through Flutter's own deep linking — no plugin. The server serves
+`/.well-known/apple-app-site-association` and `assetlinks.json` from settings
+(404 until set; `_validate_app_links` refuses malformed ids and fingerprints).
+The manifest claims `https://ntripi.app/share/i/` and `/share/u/` with
+`autoVerify`, the entitlements `applinks:ntripi.app`; a guard test holds them to
+the release `SHARE_BASE_URL` and to `appLinkLocation`. A link never lands as it
+arrives: a cold start is parked by the redirect and opened over home by splash;
+a link while running opens over the current screen (`openFromOutside`); one that
+arrives during splash or while signed out is parked, and the next landing opens
+it (`landHome`, called by splash and every sign-in path). Android moves to
+`launchMode="singleTask"`. A link that cannot be opened gets exactly two answers
+— **no access** (the API's single 403) and **not available** (404, or a link
+`appLinkLocation` cannot read) — neither saying why and neither with a Retry. On
+the web every share page offers the app first (Android's `intent://` **Open in
+app**, the store buttons with the waitlist as their fallback, the iOS Smart App
+Banner once the app is live) and **Continue on web** second. The private page
+keeps saying the trip is private but names nothing about it, enforced by the
+router passing the template no trip; the owner chose this over both
+alternatives below.
+**Consequences.** Links open the app on store-signed builds once the association
+files are live; the files must be deployed before a build is installed, since
+devices fetch them at install. Launch day is a variable change for every share
+page's download buttons, though not yet the homepage's. A link tapped while
+signed out survives the sign-in, where a tray tap is dropped. A cut-short link
+can never open the create-trip form (`/share/i/new`). Previews already cached in
+chats keep a private trip's old card. iOS has no in-page **Open in app**: a
+same-domain link never opens an app. `singleTask` means one instance: a system
+picker left open may close when the app is relaunched from its icon.
+**Alternatives rejected.** The `app_links` plugin (needs Flutter's deep linking
+off; the engine already handles both lifecycles, UIScene included). Repairing
+the `ntripi://` scheme (hijackable by any app, and an error dialog in Safari
+without the app). Claiming `/*` (would capture emailed reset, verification and
+appeal links, which are web forms). Letting go_router land the link as it
+arrives (skips splash on a cold start, destroys the stack on a warm one).
+Redirecting mobile visitors without the app to a store (the page must stay
+readable; the app is offered, never forced). For the private page, the owner
+weighed two other options: revealing nothing at all, identical to a missing trip
+(the link would look dead even to someone who can open it in the app), and
+keeping the details (the title and cover reached everyone in the chat, against
+the help centre's promise). Keeping `singleTop` (a link from Gmail started a second copy of the
+app in the caller's task).

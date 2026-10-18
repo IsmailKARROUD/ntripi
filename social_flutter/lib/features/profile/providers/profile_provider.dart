@@ -223,3 +223,15 @@ final userProfileProvider =
     AsyncNotifierProvider.family<UserProfileNotifier, User, String>(
   UserProfileNotifier.new,
 );
+
+/// The account id behind a handle, for a shared profile link — GET
+/// /users/{identifier} takes a handle as well as an id, 404ing alike for an
+/// unknown, deleted or suspended account and across a block. AutoDispose: it is
+/// needed once per link, and the answer depends on who asks, so it must not
+/// outlive the screen — or the session.
+final profileIdByUsernameProvider =
+    FutureProvider.autoDispose.family<String, String>((ref, username) async {
+  final user =
+      await ref.read(profileRepositoryProvider).getUserProfile(username);
+  return user.id;
+});

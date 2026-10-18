@@ -1,3 +1,4 @@
+{% from "_app_links.html" import app_links_head, store_badges, continue_on_web, app_links_script with context -%}
 <!DOCTYPE html>
 <html lang="{{ lang or 'en' }}" dir="{{ dir }}">
 <head>
@@ -23,6 +24,7 @@
   <meta name="twitter:title"       content="{{ display_name }}">
   <meta name="twitter:description" content="{{ bio or '@' ~ user.username ~ ' on Ntripi.' }}">
   <meta name="twitter:image"       content="{{ preview_image_url }}">
+{{ app_links_head(app_cta) }}
 
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -199,6 +201,30 @@
     }
     .btn-open-app:hover { opacity: .88; text-decoration: none; }
 
+    .install-prompt {
+      color: var(--sub);
+      font-size: 14px;
+      margin: 18px 0 10px;
+    }
+    .store-badges { display: flex; gap: 10px; justify-content: center; }
+    .store-badge {
+      background: var(--text);
+      color: var(--white);
+      font-size: 13px;
+      font-weight: 600;
+      padding: 8px 18px;
+      border-radius: 8px;
+      text-decoration: none;
+    }
+    .store-badge:hover { opacity: .85; text-decoration: none; }
+
+    .web-link {
+      display: inline-block;
+      margin-top: 20px;
+      font-size: 14px;
+      font-weight: 600;
+    }
+
     footer {
       text-align: center;
       padding: 20px;
@@ -212,7 +238,9 @@
 
 <header>
   <div class="logo">Ntripi</div>
-  <a href="/app/" class="nav-cta">{{ _('share_get_the_app') }}</a>
+  {# The waitlist / homepage download section; the script swaps in the
+     visitor's own store on a phone. The web app is "Continue on web" below. #}
+  <a href="/#get-the-app" class="nav-cta" data-get-app>{{ _('share_get_the_app') }}</a>
 </header>
 
 <main>
@@ -265,9 +293,17 @@
   <section class="cta">
     <h2 class="cta-title">{{ _('share_plan_own') }}</h2>
     <p class="cta-sub">{{ _('share_plan_own_sub') }}</p>
-    <a class="btn-open-app" href="ntripi://user/{{ user.username }}">
-      {{ _('share_open_in_app') }}
-    </a>
+    {% if app_cta.android_intent_url %}
+    <div data-app-open hidden>
+      <a class="btn-open-app" href="{{ app_cta.android_intent_url }}">
+        {{ _('share_open_in_app') }}
+      </a>
+    </div>
+    {% endif %}
+
+    {{ store_badges(app_cta) }}
+
+    {{ continue_on_web(app_cta) }}
   </section>
 </main>
 
@@ -275,5 +311,6 @@
   <p>{{ _('share_shared_via') }} · <a href="/">ntripi.app</a> · <a href="/help">{{ _('footer_help') }}</a></p>
 </footer>
 
+{{ app_links_script(app_cta) }}
 </body>
 </html>

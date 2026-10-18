@@ -2890,6 +2890,22 @@ class AppLocalizationsDe extends AppLocalizations {
       'Dieses Konto existiert nicht oder ist nicht mehr verfügbar.';
 
   @override
+  String get itineraryNoAccessTitle =>
+      'Du kannst diese Reiseroute nicht öffnen';
+
+  @override
+  String get itineraryNoAccessMessage =>
+      'Nur die Personen, mit denen der Eigentümer sie teilt, können sie öffnen. Wenn du sie sehen solltest, bitte ihn, sie mit dir zu teilen.';
+
+  @override
+  String get itineraryUnavailableTitle =>
+      'Diese Reiseroute ist nicht verfügbar';
+
+  @override
+  String get itineraryUnavailableMessage =>
+      'Sie wurde vielleicht gelöscht, oder der Link ist falsch.';
+
+  @override
   String blockedUserRemoved(String username) {
     return '@$username entblockt.';
   }
