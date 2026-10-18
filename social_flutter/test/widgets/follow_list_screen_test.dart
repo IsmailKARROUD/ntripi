@@ -10,12 +10,15 @@
 // All HTTP + secure-storage calls are prevented by faking the Riverpod
 // notifiers that the screen depends on.
 
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart'; // Riverpod 3 exports the Override type here
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:ntripi/core/ui/confirm_dialog.dart';
+import 'package:ntripi/features/follows/data/follow_repository.dart';
 import 'package:ntripi/features/follows/presentation/follow_list_screen.dart';
 import 'package:ntripi/features/follows/providers/follow_provider.dart';
 import 'package:ntripi/features/profile/providers/profile_provider.dart';
@@ -115,6 +118,42 @@ class _FakeFollowRequests extends FollowRequestsNotifier {
   }
 }
 
+/// Records the two row-action mutations; [failWith] makes both throw it.
+class _RecordingFollowRepo implements FollowRepository {
+  _RecordingFollowRepo({this.failWith});
+  final Object? failWith;
+  final List<String> removed = [];
+  final List<String> unfollowed = [];
+
+  @override
+  Future<void> removeFollower(String userId) async {
+    if (failWith != null) throw failWith!;
+    removed.add(userId);
+  }
+
+  @override
+  Future<void> unfollowUser(String userId) async {
+    if (failWith != null) throw failWith!;
+    unfollowed.add(userId);
+  }
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError();
+}
+
+/// The shape the repository throws for a coded API error.
+DioException _apiError(int status, String code) {
+  final request = RequestOptions(path: '/users');
+  return DioException(
+    requestOptions: request,
+    response: Response<dynamic>(
+      requestOptions: request,
+      statusCode: status,
+      data: {'code': code, 'detail': 'Server said no.'},
+    ),
+  );
+}
+
 // ── Widget builder ────────────────────────────────────────────────────────
 
 Widget _buildScreen({
@@ -125,6 +164,7 @@ Widget _buildScreen({
   List<FollowerListItem>? following,
   List<FollowRequestItem>? requests,
   bool followersError = false,
+  FollowRepository? repo,
 }) {
   FlutterSecureStorage.setMockInitialValues({});
   return ProviderScope(
@@ -132,6 +172,7 @@ Widget _buildScreen({
     // tests surface AsyncError immediately (matches app root ProviderScope).
     retry: (_, _) => null,
     overrides: [
+      if (repo != null) followRepositoryProvider.overrideWithValue(repo),
       myProfileProvider.overrideWith(
           () => _FakeMyProfile(myProfile ?? _ownUser)),
       followersProvider.overrideWith2(followersError
@@ -502,6 +543,283 @@ void main() {
 
         expect(
             find.text('Not following anyone yet.'), findsOneWidget);
+      });
+    });
+
+    // ── Removing a follower (own Followers list) ─────────────────────────
+
+    group('remove follower (own list)', () {
+      testWidgets(
+          'Given own followers list, When screen builds, '
+          'Then each follower row offers Remove', (tester) async {
+        tester.view.physicalSize = const Size(1080, 1920);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        await tester.pumpWidget(_buildScreen(
+          userId: _ownUserId,
+          followers: [_follower1, _follower2],
+        ));
+        await tester.pump();
+
+        expect(find.byKey(const Key('removeFollower_f-1')), findsOneWidget);
+        expect(find.byKey(const Key('removeFollower_f-2')), findsOneWidget);
+        expect(find.text('Remove'), findsNWidgets(2));
+      });
+
+      testWidgets(
+          "Given someone else's followers list, When screen builds, "
+          'Then no row offers Remove', (tester) async {
+        tester.view.physicalSize = const Size(1080, 1920);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        await tester.pumpWidget(_buildScreen(
+          userId: _otherUserId,
+          followers: [_follower1],
+        ));
+        await tester.pump();
+
+        expect(find.text('Remove'), findsNothing);
+        expect(find.byIcon(Icons.chevron_right), findsOneWidget);
+      });
+
+      testWidgets(
+          'Given the Remove pill, When a screen reader reads it, '
+          'Then it hears whom the button removes', (tester) async {
+        tester.view.physicalSize = const Size(1080, 1920);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+        final semantics = tester.ensureSemantics();
+
+        await tester.pumpWidget(_buildScreen(
+          userId: _ownUserId,
+          followers: [_follower1],
+        ));
+        await tester.pump();
+
+        // A bare "Remove" in a list says nothing about whom.
+        expect(
+          tester.getSemantics(find.byKey(const Key('removeFollower_f-1'))),
+          isSemantics(
+            label: 'Remove @yac from your followers',
+            isButton: true,
+            hasTapAction: true,
+          ),
+        );
+        semantics.dispose();
+      });
+
+      testWidgets(
+          'Given a follower, When Remove is confirmed, Then the server is '
+          'asked, the row goes and a snackbar says so', (tester) async {
+        tester.view.physicalSize = const Size(1080, 1920);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        final repo = _RecordingFollowRepo();
+        await tester.pumpWidget(_buildScreen(
+          userId: _ownUserId,
+          followers: [_follower1, _follower2],
+          repo: repo,
+        ));
+        await tester.pump();
+
+        await tester.tap(find.byKey(const Key('removeFollower_f-1')));
+        await tester.pumpAndSettle(); // ConfirmDialog entrance is 220ms
+        // The fixture account is private: getting back in takes a request.
+        expect(find.text('Remove @yac from your followers?'), findsOneWidget);
+        expect(find.textContaining('send a new request'), findsOneWidget);
+        await tester.tap(find.descendant(
+            of: find.byType(ConfirmDialog), matching: find.text('Remove')));
+        await tester.pumpAndSettle();
+
+        expect(repo.removed, ['f-1']);
+        expect(find.text('Yacine Coulibaly'), findsNothing);
+        expect(find.text('Lina Bensaïd'), findsOneWidget);
+        expect(find.text('Removed @yac from your followers.'), findsOneWidget);
+      });
+
+      testWidgets(
+          'Given a public account, When Remove is tapped, '
+          'Then the dialog warns they can follow straight back',
+          (tester) async {
+        tester.view.physicalSize = const Size(1080, 1920);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        await tester.pumpWidget(_buildScreen(
+          userId: _ownUserId,
+          myProfile: _ownUser.copyWith(isPrivate: false),
+          followers: [_follower1],
+          repo: _RecordingFollowRepo(),
+        ));
+        await tester.pump();
+
+        await tester.tap(find.byKey(const Key('removeFollower_f-1')));
+        await tester.pumpAndSettle();
+
+        expect(find.textContaining('can follow you again'), findsOneWidget);
+        expect(find.textContaining('send a new request'), findsNothing);
+      });
+
+      testWidgets(
+          'Given the Remove dialog, When cancelled, '
+          'Then nothing is sent and the row stays', (tester) async {
+        tester.view.physicalSize = const Size(1080, 1920);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        final repo = _RecordingFollowRepo();
+        await tester.pumpWidget(_buildScreen(
+          userId: _ownUserId,
+          followers: [_follower1],
+          repo: repo,
+        ));
+        await tester.pump();
+
+        await tester.tap(find.byKey(const Key('removeFollower_f-1')));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Cancel'));
+        await tester.pumpAndSettle();
+
+        expect(repo.removed, isEmpty);
+        expect(find.text('Yacine Coulibaly'), findsOneWidget);
+        expect(find.text('Remove'), findsOneWidget);
+      });
+
+      testWidgets(
+          'Given the server refuses, When Remove is confirmed, '
+          'Then the row stays and its pill comes back', (tester) async {
+        tester.view.physicalSize = const Size(1080, 1920);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        await tester.pumpWidget(_buildScreen(
+          userId: _ownUserId,
+          followers: [_follower1],
+          repo: _RecordingFollowRepo(
+              failWith: _apiError(500, 'internal_error')),
+        ));
+        await tester.pump();
+
+        await tester.tap(find.byKey(const Key('removeFollower_f-1')));
+        await tester.pumpAndSettle();
+        await tester.tap(find.descendant(
+            of: find.byType(ConfirmDialog), matching: find.text('Remove')));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Yacine Coulibaly'), findsOneWidget);
+        expect(find.text('Remove'), findsOneWidget);
+        expect(find.byType(SnackBar), findsOneWidget);
+      });
+    });
+
+    // ── Unfollowing from the own Following list ──────────────────────────
+
+    group('unfollow (own following list)', () {
+      testWidgets(
+          'Given own following list, When screen builds, '
+          'Then each row offers a Following pill', (tester) async {
+        tester.view.physicalSize = const Size(1080, 1920);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        await tester.pumpWidget(_buildScreen(
+          userId: _ownUserId,
+          type: FollowListType.following,
+          following: [_following1],
+        ));
+        await tester.pump();
+
+        expect(find.byKey(const Key('unfollow_other-1')), findsOneWidget);
+        // The tab label reads "1 Following"; only the pill is exactly this.
+        expect(find.text('Following'), findsOneWidget);
+      });
+
+      testWidgets(
+          "Given someone else's following list, When screen builds, "
+          'Then no row offers to unfollow', (tester) async {
+        tester.view.physicalSize = const Size(1080, 1920);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        await tester.pumpWidget(_buildScreen(
+          userId: _otherUserId,
+          type: FollowListType.following,
+          following: [_follower1],
+        ));
+        await tester.pump();
+
+        expect(find.byKey(const Key('unfollow_f-1')), findsNothing);
+        expect(find.byIcon(Icons.chevron_right), findsOneWidget);
+      });
+
+      testWidgets(
+          'Given a followed account, When Following is confirmed, '
+          'Then it unfollows, the row goes and a snackbar says so',
+          (tester) async {
+        tester.view.physicalSize = const Size(1080, 1920);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        final repo = _RecordingFollowRepo();
+        await tester.pumpWidget(_buildScreen(
+          userId: _ownUserId,
+          type: FollowListType.following,
+          following: [_following1],
+          repo: repo,
+        ));
+        await tester.pump();
+
+        await tester.tap(find.byKey(const Key('unfollow_other-1')));
+        await tester.pumpAndSettle();
+        // The same dialog the profile's Following button shows.
+        expect(find.text('Unfollow @aminad?'), findsOneWidget);
+        await tester.tap(find.text('Unfollow'));
+        await tester.pumpAndSettle();
+
+        expect(repo.unfollowed, ['other-1']);
+        expect(find.text('Amina Diallo'), findsNothing);
+        expect(find.text('Unfollowed @aminad'), findsOneWidget);
+      });
+
+      testWidgets(
+          'Given the follow already ended elsewhere, When Following is '
+          'confirmed, Then the stale row goes without an error',
+          (tester) async {
+        tester.view.physicalSize = const Size(1080, 1920);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        await tester.pumpWidget(_buildScreen(
+          userId: _ownUserId,
+          type: FollowListType.following,
+          following: [_following1],
+          repo: _RecordingFollowRepo(
+              failWith: _apiError(404, 'not_following')),
+        ));
+        await tester.pump();
+
+        await tester.tap(find.byKey(const Key('unfollow_other-1')));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Unfollow'));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Amina Diallo'), findsNothing);
+        expect(find.text('Unfollowed @aminad'), findsOneWidget);
+        expect(find.text('You are not following this user.'), findsNothing);
       });
     });
 

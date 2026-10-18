@@ -942,7 +942,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get unfollowMessage =>
-      'You\'ll stop seeing their itineraries in your feed.';
+      'You\'ll lose access to trips they share with followers.';
 
   @override
   String get unfollowConfirm => 'Unfollow';
@@ -979,6 +979,40 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get declineRequestConfirm => 'Decline';
+
+  @override
+  String get removeFollower => 'Remove follower';
+
+  @override
+  String get removeFollowerButton => 'Remove';
+
+  @override
+  String removeFollowerTitle(String username) {
+    return 'Remove @$username from your followers?';
+  }
+
+  @override
+  String get removeFollowerMessagePrivate =>
+      'They won\'t be told. They\'ll lose access to trips you share with followers, and would have to send a new request to follow you again.';
+
+  @override
+  String get removeFollowerMessagePublic =>
+      'They won\'t be told. They\'ll lose access to trips you share with followers, but can follow you again — block them to prevent that.';
+
+  @override
+  String removeFollowerSemantics(String username) {
+    return 'Remove @$username from your followers';
+  }
+
+  @override
+  String removedFollowerSnackbar(String username) {
+    return 'Removed @$username from your followers.';
+  }
+
+  @override
+  String unfollowSemantics(String username) {
+    return 'Unfollow @$username';
+  }
 
   @override
   String get undoButton => 'UNDO';

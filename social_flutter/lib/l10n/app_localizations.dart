@@ -1765,7 +1765,7 @@ abstract class AppLocalizations {
   /// No description provided for @unfollowMessage.
   ///
   /// In en, this message translates to:
-  /// **'You\'ll stop seeing their itineraries in your feed.'**
+  /// **'You\'ll lose access to trips they share with followers.'**
   String get unfollowMessage;
 
   /// No description provided for @unfollowConfirm.
@@ -1827,6 +1827,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Decline'**
   String get declineRequestConfirm;
+
+  /// No description provided for @removeFollower.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove follower'**
+  String get removeFollower;
+
+  /// No description provided for @removeFollowerButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove'**
+  String get removeFollowerButton;
+
+  /// No description provided for @removeFollowerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove @{username} from your followers?'**
+  String removeFollowerTitle(String username);
+
+  /// No description provided for @removeFollowerMessagePrivate.
+  ///
+  /// In en, this message translates to:
+  /// **'They won\'t be told. They\'ll lose access to trips you share with followers, and would have to send a new request to follow you again.'**
+  String get removeFollowerMessagePrivate;
+
+  /// No description provided for @removeFollowerMessagePublic.
+  ///
+  /// In en, this message translates to:
+  /// **'They won\'t be told. They\'ll lose access to trips you share with followers, but can follow you again — block them to prevent that.'**
+  String get removeFollowerMessagePublic;
+
+  /// No description provided for @removeFollowerSemantics.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove @{username} from your followers'**
+  String removeFollowerSemantics(String username);
+
+  /// No description provided for @removedFollowerSnackbar.
+  ///
+  /// In en, this message translates to:
+  /// **'Removed @{username} from your followers.'**
+  String removedFollowerSnackbar(String username);
+
+  /// No description provided for @unfollowSemantics.
+  ///
+  /// In en, this message translates to:
+  /// **'Unfollow @{username}'**
+  String unfollowSemantics(String username);
 
   /// No description provided for @undoButton.
   ///

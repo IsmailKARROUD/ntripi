@@ -12,6 +12,9 @@ import 'package:flutter_riverpod/misc.dart'; // Riverpod 3 exports the Override 
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:ntripi/core/ui/confirm_dialog.dart';
+import 'package:ntripi/features/follows/data/follow_repository.dart';
+import 'package:ntripi/features/follows/providers/follow_provider.dart';
 import 'package:ntripi/features/itineraries/domain/itinerary.dart';
 import 'package:ntripi/features/itineraries/presentation/widgets/itinerary_summary_card.dart';
 import 'package:ntripi/features/itineraries/providers/itinerary_providers.dart';
@@ -34,6 +37,7 @@ User _makeUser({
   bool isPrivate = false,
   bool isFollowing = false,
   bool followIsPending = false,
+  bool followsYou = false,
 }) =>
     User(
       id: _userId,
@@ -46,8 +50,19 @@ User _makeUser({
       followingCount: 38,
       isFollowing: isFollowing,
       followIsPending: followIsPending,
+      followsYou: followsYou,
       createdAt: DateTime(2024),
     );
+
+/// The signed-in viewer, for flows that read their own profile.
+final _me = User(
+  id: 'me-1',
+  username: 'ismauo',
+  isPrivate: false,
+  followersCount: 1,
+  followingCount: 0,
+  createdAt: DateTime(2024),
+);
 
 final _testItinerary = Itinerary(
   id: 'it-1',
@@ -109,6 +124,24 @@ class _FakeUserItineraries extends UserItinerariesNotifier {
   Future<List<Itinerary>> build() async => _items;
 }
 
+class _FakeMyProfile extends MyProfileNotifier {
+  _FakeMyProfile(this._user);
+  final User _user;
+  @override
+  Future<User> build() async => _user;
+}
+
+/// Records removeFollower calls; nothing else is expected to be called.
+class _RecordingFollowRepo implements FollowRepository {
+  final List<String> removed = [];
+
+  @override
+  Future<void> removeFollower(String userId) async => removed.add(userId);
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError();
+}
+
 // ── Widget builder ────────────────────────────────────────────────────────
 
 List<Override> _overrides({
@@ -129,14 +162,18 @@ Widget _buildScreen({
   User? user,
   List<Itinerary>? itineraries,
   UserProfileNotifier Function()? profileNotifier,
+  List<Override> extra = const [],
 }) {
   FlutterSecureStorage.setMockInitialValues({});
   return ProviderScope(
     // Riverpod 3 auto-retries thrown Exceptions; disable so error-state
     // tests surface AsyncError immediately (matches app root ProviderScope).
     retry: (_, _) => null,
-    overrides: _overrides(
-        user: user, itineraries: itineraries, profileNotifier: profileNotifier),
+    overrides: [
+      ..._overrides(
+          user: user, itineraries: itineraries, profileNotifier: profileNotifier),
+      ...extra,
+    ],
     child: MaterialApp(
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
@@ -654,6 +691,75 @@ void main() {
 
         expect(find.text('Block'), findsOneWidget);
         expect(find.text('Report'), findsOneWidget);
+      });
+
+      testWidgets(
+          'Given an account that follows you, When the overflow menu is '
+          'tapped, Then Remove follower is offered', (tester) async {
+        tester.view.physicalSize = const Size(1080, 1920);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        await tester.pumpWidget(
+            _buildScreen(user: _makeUser(followsYou: true)));
+        await tester.pump();
+
+        await tester.tap(find.byType(UgcActionsMenu));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Remove follower'), findsOneWidget);
+      });
+
+      testWidgets(
+          'Given an account that does not follow you, When the overflow '
+          'menu is tapped, Then Remove follower is not offered',
+          (tester) async {
+        tester.view.physicalSize = const Size(1080, 1920);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        // You following them is the other direction — it must not count.
+        await tester.pumpWidget(
+            _buildScreen(user: _makeUser(isFollowing: true)));
+        await tester.pump();
+
+        await tester.tap(find.byType(UgcActionsMenu));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Remove follower'), findsNothing);
+      });
+
+      testWidgets(
+          'Given Remove follower chosen, When confirmed, '
+          'Then the server is asked and a snackbar says so', (tester) async {
+        tester.view.physicalSize = const Size(1080, 1920);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        final repo = _RecordingFollowRepo();
+        await tester.pumpWidget(_buildScreen(
+          user: _makeUser(followsYou: true),
+          extra: [
+            myProfileProvider.overrideWith(() => _FakeMyProfile(_me)),
+            followRepositoryProvider.overrideWithValue(repo),
+          ],
+        ));
+        await tester.pump();
+
+        await tester.tap(find.byType(UgcActionsMenu));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Remove follower'));
+        await tester.pumpAndSettle();
+        expect(find.text('Remove @aminad from your followers?'), findsOneWidget);
+        await tester.tap(find.descendant(
+            of: find.byType(ConfirmDialog), matching: find.text('Remove')));
+        await tester.pumpAndSettle();
+
+        expect(repo.removed, [_userId]);
+        expect(find.text('Removed @aminad from your followers.'), findsOneWidget);
       });
     });
   });

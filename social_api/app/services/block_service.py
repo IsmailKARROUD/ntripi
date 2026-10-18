@@ -24,10 +24,11 @@ from sqlalchemy import delete, or_, select
 from sqlalchemy.orm import Session
 
 from app.errors import ApiError
-from app.models.follow import Follow, FollowStatus
+from app.models.follow import Follow
 from app.models.user import User
 from app.models.user_block import UserBlock
-from app.services.user_service import bump_follow_counters
+from app.services import edit_lock_service
+from app.services.user_service import delete_follow
 
 
 def is_blocked_either_way(
@@ -99,6 +100,11 @@ def create_block(db: Session, blocker: User, blocked: User) -> UserBlock:
 
     block = UserBlock(blocker_user_id=blocker.id, blocked_user_id=blocked.id)
     db.add(block)
+    db.flush()  # the release below sees the block through can_view_itinerary
+    # A block cuts viewing — and so editing — both ways; a claim either still
+    # holds on the other's trips would block every other editor until the TTL.
+    edit_lock_service.release_claims_lost_by(db, blocker.id, blocked.id)
+    edit_lock_service.release_claims_lost_by(db, blocked.id, blocker.id)
     db.commit()
     db.refresh(block)
     return block
@@ -140,8 +146,7 @@ def _sever_follows(db: Session, blocker: User, blocked: User) -> None:
     ).scalars().all()
 
     for follow in follows:
-        if follow.status == FollowStatus.accepted:
-            follower = blocker if follow.follower_id == blocker.id else blocked
-            followed = blocked if follow.following_id == blocked.id else blocker
-            bump_follow_counters(db, follower, followed, -1)
-        db.delete(follow)
+        follower = blocker if follow.follower_id == blocker.id else blocked
+        followed = blocked if follow.following_id == blocked.id else blocker
+        # Not db.delete(): an unfollow racing this block would decrement twice.
+        delete_follow(db, follow, follower, followed)

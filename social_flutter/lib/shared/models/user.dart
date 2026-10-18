@@ -47,6 +47,10 @@ class User {
   /// True if the currently authenticated user has a pending follow request.
   final bool followIsPending;
 
+  /// True if this user follows the currently authenticated user (accepted) —
+  /// the direction [isFollowing] does not cover. Offers "Remove follower".
+  final bool followsYou;
+
   final DateTime createdAt;
 
   /// ISO alpha-2 country codes for nationalities (multiple passports supported).
@@ -101,6 +105,7 @@ class User {
     required this.followingCount,
     this.isFollowing = false,
     this.followIsPending = false,
+    this.followsYou = false,
     required this.createdAt,
     this.passportCountries,
     this.residentCountry,
@@ -132,6 +137,8 @@ class User {
       followingCount: json['following_count'] as int? ?? 0,
       isFollowing: json['is_following'] as bool? ?? false,
       followIsPending: json['follow_is_pending'] as bool? ?? false,
+      // Absent from an older backend — false just hides "Remove follower".
+      followsYou: json['follows_you'] as bool? ?? false,
       createdAt: json['created_at'] != null
           ? DateTime.parse(json['created_at'] as String)
           : DateTime(2020),
@@ -173,6 +180,7 @@ class User {
       'following_count': followingCount,
       'is_following': isFollowing,
       'follow_is_pending': followIsPending,
+      'follows_you': followsYou,
       'created_at': createdAt.toIso8601String(),
       if (passportCountries != null) 'passport_countries': passportCountries,
       if (residentCountry != null) 'resident_country': residentCountry,
@@ -208,6 +216,7 @@ class User {
     int? followingCount,
     bool? isFollowing,
     bool? followIsPending,
+    bool? followsYou,
     DateTime? createdAt,
     List<String>? passportCountries,
     String? residentCountry,
@@ -236,6 +245,7 @@ class User {
       followingCount: followingCount ?? this.followingCount,
       isFollowing: isFollowing ?? this.isFollowing,
       followIsPending: followIsPending ?? this.followIsPending,
+      followsYou: followsYou ?? this.followsYou,
       createdAt: createdAt ?? this.createdAt,
       passportCountries: passportCountries ?? this.passportCountries,
       residentCountry: residentCountry ?? this.residentCountry,

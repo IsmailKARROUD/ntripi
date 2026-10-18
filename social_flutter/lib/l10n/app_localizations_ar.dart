@@ -961,7 +961,8 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
-  String get unfollowMessage => 'لن تظهر مسارات هذا الحساب لديك بعد الآن.';
+  String get unfollowMessage =>
+      'ستفقد الوصول إلى المسارات التي يشاركها هذا الحساب مع متابِعيه.';
 
   @override
   String get unfollowConfirm => 'إلغاء المتابعة';
@@ -998,6 +999,40 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get declineRequestConfirm => 'رفض';
+
+  @override
+  String get removeFollower => 'إزالة المتابِع';
+
+  @override
+  String get removeFollowerButton => 'إزالة';
+
+  @override
+  String removeFollowerTitle(String username) {
+    return 'إزالة @$username من متابِعيك؟';
+  }
+
+  @override
+  String get removeFollowerMessagePrivate =>
+      'لن يُبلَّغ بذلك. سيفقد الوصول إلى المسارات التي تشاركها مع متابِعيك، وسيحتاج إلى إرسال طلب جديد ليتابعك مجددًا.';
+
+  @override
+  String get removeFollowerMessagePublic =>
+      'لن يُبلَّغ بذلك. سيفقد الوصول إلى المسارات التي تشاركها مع متابِعيك، لكن يمكنه متابعتك مجددًا — احظره لمنع ذلك.';
+
+  @override
+  String removeFollowerSemantics(String username) {
+    return 'إزالة @$username من متابِعيك';
+  }
+
+  @override
+  String removedFollowerSnackbar(String username) {
+    return 'أُزيل @$username من متابِعيك.';
+  }
+
+  @override
+  String unfollowSemantics(String username) {
+    return 'إلغاء متابعة @$username';
+  }
 
   @override
   String get undoButton => 'تراجع';

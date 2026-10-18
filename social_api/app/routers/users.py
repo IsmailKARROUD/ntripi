@@ -45,6 +45,7 @@ from app.services.user_service import (
     get_active_user_by_username_or_404,
     get_active_user_or_404,
     get_follow,
+    is_accepted_follower,
     public_profile_text,
 )
 from app.services.image_service import (
@@ -75,8 +76,8 @@ def _require_not_blocked(db: Session, viewer: User, target: User) -> None:
 def _build_public_profile(target_user: User, current_user: User,
                           db: Session) -> UserPublicProfile:
     _require_not_blocked(db, current_user, target_user)
-    # is_following / follow_is_pending aren't columns — derived from the
-    # current_user → target_user follow row and built by hand.
+    # is_following / follow_is_pending / follows_you aren't columns — derived
+    # from the follow rows in each direction and built by hand.
     follow_record = get_follow(db, current_user.id, target_user.id)
     display_name, bio = public_profile_text(target_user, current_user.id)
     return UserPublicProfile(
@@ -101,6 +102,7 @@ def _build_public_profile(target_user: User, current_user: User,
             follow_record is not None
             and follow_record.status == FollowStatus.pending
         ),
+        follows_you=is_accepted_follower(db, target_user.id, current_user.id),
     )
 
 
@@ -748,9 +750,10 @@ def get_user_profile(
     Accepts either a UUID or a username (case-insensitive) as the path parameter,
     so existing UUID-based clients keep working while new code can use usernames.
 
-    The response includes two computed fields:
+    The response includes three computed fields:
       is_following: True if the current user has an ACCEPTED follow to this user.
       follow_is_pending: True if the current user has a PENDING follow request.
+      follows_you: True if this user has an ACCEPTED follow to the current user.
     """
     target_user = None
     try:

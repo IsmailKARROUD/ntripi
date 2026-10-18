@@ -956,7 +956,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get unfollowMessage =>
-      'Vous ne verrez plus ses itinéraires dans votre fil.';
+      'Vous perdrez l\'accès aux voyages que cette personne partage avec ses abonnés.';
 
   @override
   String get unfollowConfirm => 'Se désabonner';
@@ -993,6 +993,40 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get declineRequestConfirm => 'Refuser';
+
+  @override
+  String get removeFollower => 'Retirer l\'abonné';
+
+  @override
+  String get removeFollowerButton => 'Retirer';
+
+  @override
+  String removeFollowerTitle(String username) {
+    return 'Retirer @$username de vos abonnés ?';
+  }
+
+  @override
+  String get removeFollowerMessagePrivate =>
+      'Cette personne n\'en sera pas informée. Elle perdra l\'accès aux voyages que vous partagez avec vos abonnés, et devra envoyer une nouvelle demande pour vous suivre à nouveau.';
+
+  @override
+  String get removeFollowerMessagePublic =>
+      'Cette personne n\'en sera pas informée. Elle perdra l\'accès aux voyages que vous partagez avec vos abonnés, mais pourra vous suivre à nouveau — bloquez-la pour l\'en empêcher.';
+
+  @override
+  String removeFollowerSemantics(String username) {
+    return 'Retirer @$username de vos abonnés';
+  }
+
+  @override
+  String removedFollowerSnackbar(String username) {
+    return '@$username retiré de vos abonnés.';
+  }
+
+  @override
+  String unfollowSemantics(String username) {
+    return 'Se désabonner de @$username';
+  }
 
   @override
   String get undoButton => 'ANNULER';

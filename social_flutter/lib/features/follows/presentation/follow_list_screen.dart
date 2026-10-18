@@ -7,10 +7,11 @@
 // Followers tab:
 //   · "FOLLOW REQUESTS" section (only on own profile, when requests exist)
 //     with Confirm / Decline inline action buttons.
-//   · "ALL FOLLOWERS" section.
+//   · "ALL FOLLOWERS" section — on own profile, a Remove pill per row.
 //
 // Following tab:
-//   · "PEOPLE YOU FOLLOW" section.
+//   · "PEOPLE YOU FOLLOW" section — on own profile, a Following pill per row
+//     that unfollows.
 //
 // Both sections use card-grouped rows with avatar-initials fallback.
 
@@ -21,6 +22,7 @@ import 'package:go_router/go_router.dart';
 import 'package:ntripi/core/api/api_client.dart';
 import 'package:ntripi/core/ui/app_theme.dart';
 import 'package:ntripi/core/ui/destructive_actions.dart';
+import 'package:ntripi/features/follows/presentation/follow_actions.dart';
 import 'package:ntripi/features/follows/providers/follow_provider.dart';
 import 'package:ntripi/features/profile/providers/profile_provider.dart';
 import 'package:ntripi/shared/models/follow.dart';
@@ -192,6 +194,7 @@ class _FollowListScreenState extends ConsumerState<FollowListScreen>
                           hasMore: ref
                               .read(followingProvider(widget.userId).notifier)
                               .hasMore,
+                          isOwnProfile: isOwnProfile,
                           onUserTap: (id) =>
                               context.push('${widget.profileBaseRoute}/$id'),
                         ),
@@ -272,6 +275,7 @@ class _FollowersTab extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final nt = context.nt;
+    final l10n = AppLocalizations.of(context)!;
     return followersAsync.when(
       loading: () =>
           const Center(child: NTripiSkeleton()),
@@ -312,6 +316,22 @@ class _FollowersTab extends ConsumerWidget {
                     user: followers[i],
                     isLast: i == followers.length - 1,
                     onTap: () => onUserTap(followers[i].id),
+                    trailing: isOwnProfile
+                        ? _RowActionPill(
+                            key: Key('removeFollower_${followers[i].id}'),
+                            label: l10n.removeFollowerButton,
+                            semanticLabel: l10n
+                                .removeFollowerSemantics(followers[i].username),
+                            run: (context, ref, onConfirmed) =>
+                                confirmAndRemoveFollower(
+                              context,
+                              ref,
+                              userId: followers[i].id,
+                              username: followers[i].username,
+                              onConfirmed: onConfirmed,
+                            ),
+                          )
+                        : null,
                   ),
               ],
             ),
@@ -334,16 +354,19 @@ class _FollowersTab extends ConsumerWidget {
 class _FollowingTab extends StatelessWidget {
   final AsyncValue<List<FollowerListItem>> followingAsync;
   final bool hasMore;
+  final bool isOwnProfile;
   final ValueChanged<String> onUserTap;
 
   const _FollowingTab({
     required this.followingAsync,
     this.hasMore = false,
+    required this.isOwnProfile,
     required this.onUserTap,
   });
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return followingAsync.when(
       loading: () =>
           const Center(child: NTripiSkeleton()),
@@ -370,6 +393,22 @@ class _FollowingTab extends StatelessWidget {
                     user: following[i],
                     isLast: i == following.length - 1,
                     onTap: () => onUserTap(following[i].id),
+                    trailing: isOwnProfile
+                        ? _RowActionPill(
+                            key: Key('unfollow_${following[i].id}'),
+                            label: l10n.followingButton,
+                            semanticLabel:
+                                l10n.unfollowSemantics(following[i].username),
+                            run: (context, ref, onConfirmed) =>
+                                confirmAndUnfollow(
+                              context,
+                              ref,
+                              userId: following[i].id,
+                              username: following[i].username,
+                              onConfirmed: onConfirmed,
+                            ),
+                          )
+                        : null,
                   ),
               ],
             ),
@@ -431,10 +470,15 @@ class _UserRow extends StatelessWidget {
   final bool isLast;
   final VoidCallback onTap;
 
+  /// Takes the chevron's place — the own-list action pill. The rest of the
+  /// row still opens the profile.
+  final Widget? trailing;
+
   const _UserRow({
     required this.user,
     required this.isLast,
     required this.onTap,
+    this.trailing,
   });
 
   @override
@@ -489,8 +533,12 @@ class _UserRow extends StatelessWidget {
                     ],
                   ),
                 ),
-                Icon(Icons.chevron_right,
-                    size: 18, color: nt.text3),
+                if (trailing != null) ...[
+                  const SizedBox(width: 8),
+                  trailing!,
+                ] else
+                  Icon(Icons.chevron_right,
+                      size: 18, color: nt.text3),
               ],
             ),
           ),
@@ -501,6 +549,55 @@ class _UserRow extends StatelessWidget {
               margin: const EdgeInsetsDirectional.only(start: 70),
               color: nt.border),
       ],
+    );
+  }
+}
+
+/// Own-list row action — Remove on Followers, Following on Following. Runs a
+/// confirm-then-request flow and shows a spinner from confirmation until it
+/// settles. Success needs no state here: the list drops the row itself.
+class _RowActionPill extends ConsumerStatefulWidget {
+  final String label;
+  final String semanticLabel;
+
+  /// The confirm-then-request flow. Calls `onConfirmed` once the user agrees —
+  /// the moment the spinner starts.
+  final Future<bool> Function(
+      BuildContext context, WidgetRef ref, VoidCallback onConfirmed) run;
+
+  const _RowActionPill({
+    super.key,
+    required this.label,
+    required this.semanticLabel,
+    required this.run,
+  });
+
+  @override
+  ConsumerState<_RowActionPill> createState() => _RowActionPillState();
+}
+
+class _RowActionPillState extends ConsumerState<_RowActionPill> {
+  bool _busy = false;
+
+  Future<void> _tap() async {
+    await widget.run(context, ref, () {
+      if (mounted) setState(() => _busy = true);
+    });
+    // On success the row leaves the list in the same frame, so this reset is
+    // never seen; after a failure or a cancel it brings the pill back.
+    if (mounted) setState(() => _busy = false);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_busy) return const NTripiRingLoader(size: 20);
+    return OfflineGate(
+      builder: (_) => _ActionPill(
+        label: widget.label,
+        semanticLabel: widget.semanticLabel,
+        filled: false,
+        onTap: _tap,
+      ),
     );
   }
 }
@@ -655,12 +752,17 @@ class _ActionPill extends StatelessWidget {
   final bool filled;
   final VoidCallback onTap;
 
+  /// What a screen reader announces instead of [label], when the visible word
+  /// alone is ambiguous in a list ("Remove" — remove whom?).
+  final String? semanticLabel;
+
   const _ActionPill({
     super.key,
     this.label,
     this.icon,
     required this.filled,
     required this.onTap,
+    this.semanticLabel,
   });
 
   @override
@@ -668,35 +770,44 @@ class _ActionPill extends StatelessWidget {
     final nt = context.nt;
     // onPrimary, not white — the filled chip lightens in dark mode
     final onFill = Theme.of(context).colorScheme.onPrimary;
-    return GestureDetector(
+    // One button node with its own tap action: a bare GestureDetector reads
+    // as plain text, not as something that can be pressed.
+    return Semantics(
+      container: true,
+      button: true,
+      label: semanticLabel ?? label,
+      excludeSemantics: true,
       onTap: onTap,
-      child: Container(
-        height: 32,
-        padding: const EdgeInsets.symmetric(horizontal: 12),
-        decoration: BoxDecoration(
-          color: filled ? nt.forest : Colors.transparent,
-          borderRadius: BorderRadius.circular(10),
-          border: filled
-              ? null
-              : Border.all(color: nt.border, width: 1.5),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (icon != null)
-              Icon(icon,
-                  size: 16,
-                  color: filled ? onFill : nt.bark),
-            if (label != null)
-              Text(
-                label!,
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
-                  color: filled ? onFill : nt.bark,
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          height: 32,
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          decoration: BoxDecoration(
+            color: filled ? nt.forest : Colors.transparent,
+            borderRadius: BorderRadius.circular(10),
+            border: filled
+                ? null
+                : Border.all(color: nt.border, width: 1.5),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (icon != null)
+                Icon(icon,
+                    size: 16,
+                    color: filled ? onFill : nt.bark),
+              if (label != null)
+                Text(
+                  label!,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: filled ? onFill : nt.bark,
+                  ),
                 ),
-              ),
-          ],
+            ],
+          ),
         ),
       ),
     );

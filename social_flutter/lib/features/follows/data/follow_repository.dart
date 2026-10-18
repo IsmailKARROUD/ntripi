@@ -27,6 +27,13 @@ class FollowRepository {
     await _dio.delete(followEndpoint(userId));
   }
 
+  /// DELETE /users/me/followers/{userId}
+  /// Ends [userId]'s follow of the signed-in user. Idempotent server-side: a
+  /// follower who already left answers 204 too.
+  Future<void> removeFollower(String userId) async {
+    await _dio.delete(removeFollowerEndpoint(userId));
+  }
+
   /// GET /users/me/follow-requests
   /// Returns the list of pending incoming follow requests.
   Future<List<FollowRequestItem>> getFollowRequests({

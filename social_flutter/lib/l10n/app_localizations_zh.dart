@@ -900,7 +900,7 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String get unfollowMessage => '你将不再在动态中看到对方的行程。';
+  String get unfollowMessage => '你将无法再查看对方分享给粉丝的行程。';
 
   @override
   String get unfollowConfirm => '取消关注';
@@ -937,6 +937,40 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get declineRequestConfirm => '拒绝';
+
+  @override
+  String get removeFollower => '移除粉丝';
+
+  @override
+  String get removeFollowerButton => '移除';
+
+  @override
+  String removeFollowerTitle(String username) {
+    return '将 @$username 从你的粉丝中移除？';
+  }
+
+  @override
+  String get removeFollowerMessagePrivate =>
+      '对方不会收到通知。对方将无法再查看你分享给粉丝的行程，并需要重新发送请求才能再次关注你。';
+
+  @override
+  String get removeFollowerMessagePublic =>
+      '对方不会收到通知。对方将无法再查看你分享给粉丝的行程，但可以再次关注你——屏蔽对方即可阻止。';
+
+  @override
+  String removeFollowerSemantics(String username) {
+    return '将 @$username 从你的粉丝中移除';
+  }
+
+  @override
+  String removedFollowerSnackbar(String username) {
+    return '已将 @$username 从你的粉丝中移除。';
+  }
+
+  @override
+  String unfollowSemantics(String username) {
+    return '取消关注 @$username';
+  }
 
   @override
   String get undoButton => '撤销';

@@ -396,7 +396,7 @@ block appears a second time anywhere, extract it instead of copying.**
 
 | Helper | Owns |
 |---|---|
-| `services/user_service.py` | `get_active_user_or_404` / `..._by_username_or_404` — **the only** fetch-or-404; `get_follow` / `is_accepted_follower` — **never write an inline Follow query**; `bump_follow_counters` — **the only** way to touch the counters; `public_profile_text` |
+| `services/user_service.py` | `get_active_user_or_404` / `..._by_username_or_404` — **the only** fetch-or-404; `get_follow` / `is_accepted_follower` — **never write an inline Follow query**; `bump_follow_counters` — **the only** way to touch the counters; `delete_follow` — **the only** way to delete a follow row (decrements from the row's status as it was deleted, never as loaded); `public_profile_text` |
 | `services/token_util.py` | `hash_token` / `as_aware_utc` / `new_raw_token` — every opaque-token service |
 | `services/image_service.py` | `process_and_store` — all image uploads |
 | `services/share_service.py` | `build_share_url`, `build_profile_share_url`, `absolute_storage_url`, `absolutize_stored_url` |

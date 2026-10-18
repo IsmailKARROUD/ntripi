@@ -92,6 +92,7 @@ RELEASES: tuple[Release, ...] = (
             "**Les réflexions sur les transports.** Ce que l’auteur a écrit sur un trajet — dans quelle voiture monter, où acheter le billet — s’affiche désormais dessous, y compris pendant la modification, replié sur deux lignes avec **voir plus**, et se traduit avec le reste.",
             "**Votre modification est enregistrée avant la fin de l’édition.** Touchez ✓ pendant qu’une modification s’enregistre encore : Ntripi vous le dit, puis quitte le mode édition une fois l’enregistrement terminé. S’il échoue, vous restez en mode édition, avec la raison.",
             "**Fermer l’application pendant une modification ne retient plus le voyage.** La prochaine fois que vous l’ouvrez, Ntripi le relâche d’abord, au lieu de vous dire que vous le modifiez sur un autre appareil.",
+            "**Retirer un abonné, ou se désabonner depuis vos listes.** **Retirer** à côté d’une personne dans votre liste d’abonnés — ou **Retirer l’abonné** dans le menu ⋯ de son profil — met fin à son abonnement, sans qu’elle en soit informée. **Abonné** à côté d’une personne dans votre liste d’abonnements vous désabonne.",
         ),
     ),
     Release(
@@ -919,7 +920,7 @@ Ce que vous ne pouvez pas défaire, c’est une capture d’écran : traitez don
     Article(
         slug="follow-and-private-accounts",
         title="Abonnés, demandes d’abonnement et comptes privés",
-        summary="Comment fonctionne l’abonnement, ce qu’un compte privé masque, et comment approuver ou refuser une demande.",
+        summary="Comment fonctionne l’abonnement, ce qu’un compte privé masque, comment approuver ou refuser une demande, et comment retirer un abonné.",
         category="community",
         schema=SCHEMA_FAQ,
         intro="Suivre quelqu’un met ses voyages publics sous vos yeux et lui permet de partager des voyages avec ses abonnés. Si votre compte est **privé**, un abonnement devient une **demande** que vous approuvez ou refusez.",
@@ -949,6 +950,14 @@ Les voyages que vous réglez sur **public** restent publics — privé concerne 
 Le refus n’est pas annoncé. La demande cesse simplement d’être en attente et la personne peut redemander.""",
             ),
             Block(
+                anchor="remove-a-follower",
+                heading="Comment retirer un abonné ?",
+                kind=KIND_FAQ,
+                body="""Ouvrez **Abonnés** depuis votre profil et touchez **Retirer** à côté de la personne — ou ouvrez son profil et choisissez **Retirer l’abonné** dans le menu **⋯**.
+
+La personne n’en est pas informée. Elle perd l’accès aux voyages que vous partagez avec vos abonnés. Si votre compte est privé, elle devra envoyer une nouvelle demande pour vous suivre à nouveau ; s’il est public, elle peut vous suivre à nouveau tout de suite, alors [bloquez-la](/help/report-and-block) si vous voulez l’en empêcher.""",
+            ),
+            Block(
                 anchor="going-public",
                 heading="Que se passe-t-il si je passe de privé à public ?",
                 kind=KIND_FAQ,
@@ -960,7 +969,7 @@ Dans l’autre sens, de public à privé, vos abonnés existants ne sont pas ret
                 anchor="unfollow-vs-block",
                 heading="Quelle différence entre se désabonner et bloquer ?",
                 kind=KIND_FAQ,
-                body="""**Se désabonner** empêche simplement ses voyages d’atteindre votre fil. La personne voit toujours ce qu’elle voyait avant.
+                body="""**Se désabonner** vous retire ce que l’abonnement vous donnait : les voyages que la personne partage avec ses abonnés. Touchez **Abonné** sur son profil, ou à côté d’elle dans votre liste **Abonnements**. La personne voit toujours ce qu’elle voyait avant.
 
 **Bloquer** coupe la visibilité dans les deux sens, et la personne bloquée n’en est pas informée. Voir [signaler et bloquer](/help/report-and-block).""",
             ),
@@ -977,9 +986,12 @@ Dans l’autre sens, de public à privé, vos abonnés existants ne sont pas ret
             "accepter",
             "se désabonner",
             "bloquer",
+            "retirer un abonné",
+            "supprimer un abonné",
+            "retirer",
         ),
         related=("share-an-itinerary-privately", "report-and-block"),
-        updated="2026-09-01",
+        updated="2026-10-18",
         cta="Trouvez les gens dont vous voulez piquer les voyages.",
     ),
     Article(

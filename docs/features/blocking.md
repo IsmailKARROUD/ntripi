@@ -20,7 +20,14 @@ never told.
   returns. The client's `isGoneError()` keys off the HTTP status, so it can tell
   "gone" from "broken" but never *why*.
 - **Blocking severs follows in both directions and fixes both users' counters**
-  (`block_service.py:893`). Idempotent.
+  (`_sever_follows`, `block_service.py:136`), through `delete_follow` — a
+  statement delete, so a block racing an unfollow cannot decrement twice (it
+  used ORM `db.delete()` until 2026-10-18). Idempotent.
+- **Blocking releases edit claims both ways.** A block cuts viewing, so it cuts
+  editing; `edit_lock_service.release_claims_lost_by` drops any claim either
+  person holds on the other's trips in the block's transaction, or it would
+  block every other editor until the TTL (2026-10-18). See
+  [collaborative-editing.md](collaborative-editing.md).
 - **Unblocking does not restore the follows** (`block_service.py:914`). The
   relationship is gone, not suspended.
 - **You can block someone who has already blocked you.** `block_user` uses a bare

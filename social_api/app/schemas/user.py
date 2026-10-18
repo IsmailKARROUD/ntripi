@@ -44,13 +44,17 @@ class UserPublicProfile(UserBase):
     What any authenticated user sees when viewing someone else's profile.
     Email is intentionally excluded — it's private information.
 
-    Two computed fields are added by the router after a follows-table lookup:
+    Three computed fields are added by the router after follows-table lookups:
       is_following: bool — does the current user follow this person?
       follow_is_pending: bool — is there a pending request?
+      follows_you: bool — does this person follow the current user (accepted)?
     These are defaulted to False here; the router populates them.
     """
     is_following: bool = False
     follow_is_pending: bool = False
+    # Appended, never inserted: field order is JSON key order. Lets the client
+    # offer "Remove follower" only to someone who has a follower to remove.
+    follows_you: bool = False
 
 
 class UserPrivateProfile(UserBase):

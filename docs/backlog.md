@@ -458,6 +458,34 @@ Traditional text detected as `zh`.
 
 ---
 
+## Follows
+
+### idea — a "Follows you" label on profiles
+
+`UserPublicProfile.follows_you` (2026-10-18) exists so the ⋯ menu offers
+**Remove follower** only when it applies. The same flag could label a profile
+"Follows you", as most social apps do — nothing renders it yet. →
+[features/follows.md](features/follows.md)
+
+### idea — the follow lists refresh only when pulled
+
+Accepting a request takes it off the requests section but does not add the
+person to ALL FOLLOWERS until a pull-to-refresh, and following someone from
+their profile does not refresh their Followers list or the trips shown on their
+profile. The row actions sync every cache they touch (`follow_actions.dart`);
+these two older paths were left as they were. →
+[features/follows.md](features/follows.md)
+
+### idea — the Decline ✕ pill has no accessible label
+
+`_ActionPill` became a `Semantics` button on 2026-10-18 and the new row pills
+announce whom they act on, but the Decline pill on a request row is icon-only:
+a screen reader hears "button" and not whose request it declines. Needs a
+`declineRequestSemantics(username)` key in the six `.arb` files. →
+[features/follows.md](features/follows.md)
+
+---
+
 ## Roadmap
 
 ### idea — the three features named in the root README

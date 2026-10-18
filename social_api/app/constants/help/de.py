@@ -92,6 +92,7 @@ RELEASES: tuple[Release, ...] = (
             "**Gedanken zu Teilstrecken.** Was der Autor zu einer Teilstrecke geschrieben hat — in welchen Wagen man einsteigt, wo man das Ticket kauft — steht jetzt darunter, auch beim Bearbeiten, auf zwei Zeilen gekürzt mit **mehr anzeigen**, und wird mit dem Rest übersetzt.",
             "**Ihre Änderung wird gespeichert, bevor Sie die Bearbeitung beenden.** Tippen Sie auf ✓, während eine Änderung noch gespeichert wird, sagt Ntripi das und verlässt den Bearbeitungsmodus, sobald sie gespeichert ist. Schlägt das Speichern fehl, bleiben Sie im Bearbeitungsmodus, mit dem Grund.",
             "**Die App beim Bearbeiten zu schließen, hält die Reise nicht mehr fest.** Wenn Sie sie das nächste Mal öffnen, gibt Ntripi sie zuerst frei, statt anzuzeigen, dass Sie sie auf einem anderen Gerät bearbeiten.",
+            "**Follower entfernen oder aus Ihren Listen entfolgen.** **Entfernen** neben einer Person in Ihrer Follower-Liste — oder **Follower entfernen** im Menü ⋯ auf ihrem Profil — beendet ihr Folgen, ohne dass sie es erfährt. **Gefolgt** neben einer Person in Ihrer Gefolgt-Liste entfolgt ihr.",
         ),
     ),
     Release(
@@ -915,7 +916,7 @@ Was Sie nicht rückgängig machen können, ist ein Screenshot — behandeln Sie 
     Article(
         slug="follow-and-private-accounts",
         title="Follower, Follow-Anfragen und private Konten",
-        summary="Wie Folgen funktioniert, was ein privates Konto verbirgt und wie Sie eine Anfrage annehmen oder ablehnen.",
+        summary="Wie Folgen funktioniert, was ein privates Konto verbirgt, wie Sie Anfragen annehmen oder ablehnen und wie Sie Follower entfernen.",
         category="community",
         schema=SCHEMA_FAQ,
         intro="Jemandem zu folgen bringt dessen öffentliche Reisen vor Ihre Augen und erlaubt es der Person, Reisen mit ihren Followern zu teilen. Ist Ihr Konto **privat**, wird ein Follow zu einer **Anfrage**, die Sie annehmen oder ablehnen.",
@@ -945,6 +946,14 @@ Reisen, die Sie auf **öffentlich** stellen, bleiben öffentlich — privat rege
 Eine Ablehnung wird nicht mitgeteilt. Die Anfrage ist einfach nicht mehr offen, und die Person kann erneut fragen.""",
             ),
             Block(
+                anchor="remove-a-follower",
+                heading="Wie entferne ich einen Follower?",
+                kind=KIND_FAQ,
+                body="""Öffnen Sie in Ihrem Profil **Follower** und tippen Sie neben der Person auf **Entfernen** — oder öffnen Sie ihr Profil und wählen Sie im Menü **⋯** die Option **Follower entfernen**.
+
+Die Person erfährt es nicht. Sie verliert den Zugriff auf Reisen, die Sie mit Ihren Followern teilen. Ist Ihr Konto privat, müsste sie eine neue Anfrage senden, um Ihnen wieder zu folgen; ist es öffentlich, kann sie Ihnen sofort wieder folgen — [blockieren Sie sie](/help/report-and-block), wenn Sie das verhindern wollen.""",
+            ),
+            Block(
                 anchor="going-public",
                 heading="Was passiert, wenn ich von privat auf öffentlich wechsle?",
                 kind=KIND_FAQ,
@@ -956,7 +965,7 @@ In die andere Richtung, von öffentlich auf privat, werden Ihre bestehenden Foll
                 anchor="unfollow-vs-block",
                 heading="Was ist der Unterschied zwischen Entfolgen und Blockieren?",
                 kind=KIND_FAQ,
-                body="""**Entfolgen** sorgt nur dafür, dass die Reisen der Person nicht mehr in Ihrem Feed landen. Sie sieht weiterhin alles, was sie vorher sehen konnte.
+                body="""**Entfolgen** nimmt Ihnen, was das Folgen Ihnen gegeben hat: die Reisen, die die Person mit ihren Followern teilt. Tippen Sie in ihrem Profil auf **Gefolgt** oder in Ihrer Liste **Gefolgt** neben ihr. Sie sieht weiterhin alles, was sie vorher sehen konnte.
 
 **Blockieren** kappt die Sichtbarkeit in beide Richtungen, und die blockierte Person erfährt es nicht. Siehe [Melden und Blockieren](/help/report-and-block).""",
             ),
@@ -972,9 +981,12 @@ In die andere Richtung, von öffentlich auf privat, werden Ihre bestehenden Foll
             "bestätigen",
             "entfolgen",
             "blockieren",
+            "follower entfernen",
+            "follower löschen",
+            "entfernen",
         ),
         related=("share-an-itinerary-privately", "report-and-block"),
-        updated="2026-09-01",
+        updated="2026-10-18",
         cta="Finden Sie die Leute, deren Reisen Sie klauen wollen.",
     ),
     Article(

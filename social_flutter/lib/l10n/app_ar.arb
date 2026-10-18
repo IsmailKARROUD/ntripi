@@ -374,7 +374,7 @@
       }
     }
   },
-  "unfollowMessage": "لن تظهر مسارات هذا الحساب لديك بعد الآن.",
+  "unfollowMessage": "ستفقد الوصول إلى المسارات التي يشاركها هذا الحساب مع متابِعيه.",
   "unfollowConfirm": "إلغاء المتابعة",
   "unfollowKeep": "إبقاء المتابعة",
   "unfollowedSnackbar": "ألغيت متابعة @{username}",
@@ -406,6 +406,42 @@
     }
   },
   "declineRequestConfirm": "رفض",
+  "removeFollower": "إزالة المتابِع",
+  "removeFollowerButton": "إزالة",
+  "removeFollowerTitle": "إزالة @{username} من متابِعيك؟",
+  "@removeFollowerTitle": {
+    "placeholders": {
+      "username": {
+        "type": "String"
+      }
+    }
+  },
+  "removeFollowerMessagePrivate": "لن يُبلَّغ بذلك. سيفقد الوصول إلى المسارات التي تشاركها مع متابِعيك، وسيحتاج إلى إرسال طلب جديد ليتابعك مجددًا.",
+  "removeFollowerMessagePublic": "لن يُبلَّغ بذلك. سيفقد الوصول إلى المسارات التي تشاركها مع متابِعيك، لكن يمكنه متابعتك مجددًا — احظره لمنع ذلك.",
+  "removeFollowerSemantics": "إزالة @{username} من متابِعيك",
+  "@removeFollowerSemantics": {
+    "placeholders": {
+      "username": {
+        "type": "String"
+      }
+    }
+  },
+  "removedFollowerSnackbar": "أُزيل @{username} من متابِعيك.",
+  "@removedFollowerSnackbar": {
+    "placeholders": {
+      "username": {
+        "type": "String"
+      }
+    }
+  },
+  "unfollowSemantics": "إلغاء متابعة @{username}",
+  "@unfollowSemantics": {
+    "placeholders": {
+      "username": {
+        "type": "String"
+      }
+    }
+  },
   "undoButton": "تراجع",
   "couldNotUndo": "تعذّر التراجع: {error}",
   "@couldNotUndo": {

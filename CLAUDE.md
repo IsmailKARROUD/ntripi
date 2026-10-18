@@ -89,6 +89,7 @@ Extracted in the 2026-07 dedup refactor. Before writing a query/response block i
 - **`app/services/user_service.py`** — cross-router user/follow helpers:
   - `get_active_user_or_404(db, user_id)` / `get_active_user_by_username_or_404(db, username)` — the only way to fetch-or-404 a user (enforces `is_active` + `username_lower`).
   - `get_follow(db, follower_id, following_id)` · `is_accepted_follower(...)` — never write inline Follow queries.
+  - `delete_follow(db, follow, follower, followed, *, only_if=None)` — the only way to delete a follow row: unfollow, remove-follower, decline and the block sever all end here. A `DELETE … RETURNING status` statement that decrements only if *this* call removed the row **and the row was accepted when it went**; `only_if=` makes it conditional on a status (decline passes `pending`). Never `db.delete()` a Follow — the ORM only warns on a 0-row DELETE, so two racing deletes both decremented.
   - `bump_follow_counters(db, follower, followed, delta)` — the only way to touch `followers_count`/`following_count` (None-skip, clamped at 0). Exception: `delete_my_account`'s bulk UPDATEs. **The arithmetic is an atomic SQL `UPDATE`, never Python**: `count = count + delta` read into an int and written back is a lost update under READ COMMITTED, so two people following one account in the same moment both read N and both write N+1 and the count drifts low forever. The clamp is a `case()` expression, not `GREATEST()` — the suite runs on SQLite, which has no `GREATEST`. It sets `synchronize_session=False` — the default `'auto'` would reconcile the identity map only by re-SELECTing the row it just wrote — and then `db.expire()`s the attribute itself, which is why the loaded object still reads correctly afterwards.
 - **`app/services/token_util.py`** — `hash_token` / `as_aware_utc` / `new_raw_token` for every opaque-token service (refresh, email). New token types must use these.
 - **`app/services/image_service.py`** — `process_and_store(raw, key, processor, *, cache_bust)` for all image uploads. `cache_bust=True` for user avatar/cover (stable keys need `?v=`), `False` for itinerary covers (never carried `?v=`).
@@ -515,6 +516,10 @@ server-side; the client renders state and may be stale or hostile.
   make deliberately on the visibility screen.
 - Revoking **also deletes that user's lock row**, in the same transaction —
   otherwise a removed editor's claim blocks everyone until the TTL runs out.
+  Removing a follower and a block (both directions) can end edit rights on all
+  of an owner's trips at once, so they call
+  `edit_lock_service.release_claims_lost_by(db, owner_id, user_id)`, which
+  drops only the claims the person can no longer edit.
 - All three editor endpoints call `_touch_itinerary`. Unlike the allowlist, they
   must: `ItineraryDetail.can_edit` rides in a response whose ETag is
   `updated_at`, so without the bump a revoked editor's cached detail would keep
@@ -1123,6 +1128,9 @@ For each article the change touches:
 - Do NOT use `allow_methods=["*"]` or `allow_headers=["*"]` in CORS — explicit lists only
 - Do NOT query `User.username == something` — always `username_lower`
 - Do NOT write inline fetch-user-or-404, Follow queries, or follower-counter math — use `app/services/user_service.py` helpers
+- Do NOT delete a Follow row any way but `delete_follow` — it decides the decrement from the row as it was deleted, which is what keeps a cancel racing an accept, or an unfollow racing a block, from leaving the counters wrong for good
+- Do NOT notify a removed follower, or let Remove follower touch a pending request — removal is as silent as a decline or a block, and refusing a request is Decline's job (a stale Remove must never refuse one the owner has not seen)
+- Do NOT subtract one from a follower/following count on the client after a row action — refetch the profile; a stale row would count twice
 - Do NOT compute a denormalized counter in Python — read-then-write loses concurrent updates under READ COMMITTED; the increment belongs in the `UPDATE` statement, where Postgres re-evaluates it against the latest committed row
 - Do NOT duplicate a helper that already exists in the Shared Helpers section — extract on second occurrence instead of copying
 - Do NOT merge Pydantic Response classes into a shared base if it reorders JSON keys — field-definition order is part of the API contract

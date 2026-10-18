@@ -142,7 +142,7 @@ Migrations: `d4e5f6a7b8c9` (username_lower + display_name), `95a44d78f959`
 | GET | `/users/me` | Bearer | — | `UserPrivateProfile` | — |
 | PATCH | `/users/me` | Bearer | `UserUpdateRequest` | `UserPrivateProfile` | 422 `text_moderation_rejected`, 422 on an external image URL |
 | DELETE | `/users/me` | Bearer | `DeleteAccountRequest{password?, google_id_token?}` | 204 | 401 ×4 (see above) |
-| GET | `/users/{identifier}` | Bearer | UUID **or** username | `UserPublicProfile` + `is_following`, `follow_is_pending` | 404 `user_not_found` |
+| GET | `/users/{identifier}` | Bearer | UUID **or** username | `UserPublicProfile` + `is_following`, `follow_is_pending`, `follows_you` | 404 `user_not_found` |
 | GET | `/users/by-username/{username}` | Bearer | — | `UserPublicProfile` | 404 `user_not_found` |
 | GET | `/users/{user_id}/locations` | Bearer | — | `VisitedLocationsResponse` | 404 `user_not_found` |
 | POST | `/users/me/avatar` | Bearer, 10/min | multipart `file` | `UserImageResponse{avatar_url}` | 400 (uncoded), 422 `image_moderation_rejected` |

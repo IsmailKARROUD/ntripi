@@ -126,6 +126,8 @@ class _FakeFollowRepo implements FollowRepository {
   @override
   Future<void> unfollowUser(String userId) => throw UnimplementedError();
   @override
+  Future<void> removeFollower(String userId) => throw UnimplementedError();
+  @override
   Future<Follow> acceptFollowRequest(String followId) =>
       throw UnimplementedError();
   @override

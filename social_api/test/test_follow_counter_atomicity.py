@@ -25,10 +25,11 @@ passes either way and proves nothing.
 import uuid
 
 import pytest
-from sqlalchemy import event, select, update
+from sqlalchemy import delete, event, select, update
 
+from app.models.follow import Follow, FollowStatus
 from app.models.user import User
-from app.services.user_service import bump_follow_counters
+from app.services.user_service import bump_follow_counters, delete_follow
 from conftest import TestingSessionLocal, auth_headers, register_user
 
 
@@ -198,6 +199,89 @@ def test_the_increment_is_emitted_as_sql_not_a_bound_literal(db):
     assert "followers_count" in set_clause, (
         f"increment was computed in Python, not SQL: {statements[0]}"
     )
+
+
+# ---------------------------------------------------------------------------
+# delete_follow: the decrement follows the row as it was when it went
+# ---------------------------------------------------------------------------
+
+def _make_follow(db, follower, followed, status) -> Follow:
+    follow = Follow(follower_id=follower.id, following_id=followed.id,
+                    status=status)
+    db.add(follow)
+    db.commit()
+    return follow
+
+
+def _change_behind_the_session(statement) -> None:
+    """Run `statement` from another session, leaving `db`'s copy stale — the
+    shape of a second request landing between this one's read and its delete."""
+    other = TestingSessionLocal()
+    try:
+        other.execute(statement)
+        other.commit()
+    finally:
+        other.close()
+
+
+def test_delete_follow_of_a_row_already_gone_moves_no_counter(db):
+    """Two deletes both loaded the follow (an unfollow racing a block): only the
+    one that removed the row may decrement. db.delete() decremented in both."""
+    follower = _make_user(db, following=1)
+    followed = _make_user(db, followers=1)
+    follow = _make_follow(db, follower, followed, FollowStatus.accepted)
+    assert follow.status == FollowStatus.accepted  # what this session has loaded
+    _change_behind_the_session(delete(Follow).where(Follow.id == follow.id))
+
+    assert delete_follow(db, follow, follower, followed) is False
+    db.commit()
+
+    # Whoever removed the row owns its decrement; this call must add none.
+    assert _row_counts(db, follower.id) == (0, 1)
+    assert _row_counts(db, followed.id) == (1, 0)
+
+
+def test_delete_follow_decrements_by_the_status_the_row_had_when_it_went(db):
+    """Loaded as a pending request, accepted in between, then deleted (a
+    cancel racing an accept): the row that went had counted, so the counters
+    come back down. Deciding from the loaded status left them high for good."""
+    follower = _make_user(db)
+    followed = _make_user(db)
+    follow = _make_follow(db, follower, followed, FollowStatus.pending)
+    assert follow.status == FollowStatus.pending  # what this session has loaded
+    _change_behind_the_session(
+        update(Follow).where(Follow.id == follow.id)
+        .values(status=FollowStatus.accepted)
+    )
+    _write_behind_the_session(db, follower.id, User.following_count, 1)
+    _write_behind_the_session(db, followed.id, User.followers_count, 1)
+
+    assert delete_follow(db, follow, follower, followed) is True
+    db.commit()
+
+    assert _row_counts(db, follower.id) == (0, 0)
+    assert _row_counts(db, followed.id) == (0, 0)
+
+
+def test_a_conditional_delete_leaves_a_follow_accepted_in_between(db):
+    """A stale Decline: the request was accepted after the router's status
+    check, so `only_if=pending` must leave the live follow where it is."""
+    follower = _make_user(db)
+    followed = _make_user(db)
+    follow = _make_follow(db, follower, followed, FollowStatus.pending)
+    assert follow.status == FollowStatus.pending  # what this session has loaded
+    _change_behind_the_session(
+        update(Follow).where(Follow.id == follow.id)
+        .values(status=FollowStatus.accepted)
+    )
+
+    assert delete_follow(db, follow, None, None,
+                         only_if=FollowStatus.pending) is False
+    db.commit()
+
+    assert db.execute(
+        select(Follow.status).where(Follow.id == follow.id)
+    ).scalar_one() == FollowStatus.accepted
 
 
 # ---------------------------------------------------------------------------

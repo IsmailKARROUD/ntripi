@@ -1240,3 +1240,53 @@ swipe-kill, and releasing on every backgrounding would hand the trip away during
 a copy-paste). Journalling in `localStorage` on the web (a second tab would hand
 back the first tab's live claim). Rewording the banner alone (honest, but the
 stale claim, the 423 and the takeover dialog would all stay).
+
+---
+
+### 2026-10-18 — Removing a follower: silent, idempotent, accepted-only
+
+**Context.** A follow could end only from the follower's side (Unfollow) or with
+a block, which also cuts visibility both ways — a heavier tool than "this person
+should stop seeing what I share with followers". Nothing on the server let the
+followed account end someone's follow, and `UserPublicProfile` carried only the
+viewer→target direction, so a profile could not tell whether its owner follows
+*you*.
+**Decision.** `DELETE /users/me/followers/{user_id}` ends `user_id`'s **accepted**
+follow of the caller, keyed by user id because neither the list item nor the
+profile carries a follow id. It is **idempotent** — nothing to remove answers
+204 — and **silent**: no notification, no push. A pending request is left
+alone. `UserPublicProfile.follows_you` (appended last) lets the profile's ⋯ menu
+offer **Remove follower** only when it applies; the own Followers list gets a
+**Remove** pill per row and, asked for in the same change, the own Following
+list a **Following** pill that unfollows. `user_service.delete_follow` becomes
+the only way to delete a follow row — unfollow, remove, decline and the block
+sever — deleting with `RETURNING status` and decrementing only when *this* call
+removed a row that was accepted *when it went*; `only_if=` makes decline's
+delete conditional on `pending`. `edit_lock_service.release_claims_lost_by`
+drops the claims a person holds on an owner's trips once they can no longer
+edit them, after a follower removal and after a block (both directions). The
+client refetches the owner's profile for the counts rather than subtracting one,
+and `FollowListNotifier.removeLocally` steps the paging offset back by one.
+**Consequences.** Access to followers-only trips — and editing them — ends the
+moment the row goes, with nothing to clean up but a stranded claim, which is
+released in the same transaction. On a public account the removed follower can
+follow again at once; the confirm dialog says so and points at Block. Three
+latent races close: a block racing an unfollow decremented twice (the sever used
+ORM `db.delete()`); a request accepted between a cancel's read and its delete
+went without its decrement; and an accept landing between Decline's status
+check and its delete was deleted anyway. A blocked editor's claim no longer
+stands until the TTL. The unfollow dialog's message, which the Following pill
+now shows too, was corrected in all six languages: it promised the trips would
+leave "your feed", which is public-only and never depended on a follow.
+**Alternatives rejected.** A 404 `not_a_follower` (a stale list row would show
+an error for a state the user asked for, and a new code needs strings in six
+languages for nothing actionable). Keying by follow id (the client has none to
+send; adding one would change `FollowerListItem`'s contract). Letting Remove
+delete a pending request (a stale Remove would decline a request the owner has
+not seen — Decline exists for that). Telling the removed follower (a decline
+and a block are silent for the same reason). Labelling the menu item
+"Unfollow", as first asked — that word already means the other direction on
+the Following button. Swipe-to-remove (it fights the TabBarView's own
+horizontal swipe, and is undiscoverable). A local `followersCount - 1` (counts
+twice when the row was already stale). Leaving the stranded claim to the TTL
+(CLAUDE.md: never leave a revoked editor's claim standing).

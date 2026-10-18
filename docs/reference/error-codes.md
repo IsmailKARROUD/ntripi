@@ -92,13 +92,16 @@ from the router. `DateOfBirthField` refuses both before anything is sent, and a
 
 | Code | Status | Raised at | Client |
 |---|---|---|---|
-| `cannot_follow_self` | 400 | `follows.py:103` | localized |
-| `not_following` | 404 | `follows.py:192` | localized |
-| `follow_request_not_found` | 404 | `follows.py:272` (×4 — accept ×2, reject ×2: missing, or no longer pending) | localized |
-| `follow_request_already_accepted` | 400 | `follows.py:286` | localized |
-| `cannot_reject_request` | 403 | `follows.py:341` | localized |
-| `account_private` | 403 | `follows.py:55` | localized |
-| `user_not_found` | 404 | `follows.py:113` (×6) | localized |
+| `cannot_follow_self` | 400 | `follows.py:105` | localized |
+| `not_following` | 404 | `follows.py:194` | localized — except the Following list's row action, which treats it as done (the row was stale) |
+| `follow_request_not_found` | 404 | `follows.py:303` (×4 — accept ×2, reject ×2: missing, or no longer pending — re-checked inside the DELETE) | localized |
+| `follow_request_already_accepted` | 400 | `follows.py:317` | localized |
+| `cannot_reject_request` | 403 | `follows.py:384` | localized |
+| `account_private` | 403 | `follows.py:57` | localized |
+| `user_not_found` | 404 | `follows.py:115` (×6) | localized |
+
+`DELETE /users/me/followers/{user_id}` raises nothing of its own: removing
+someone who does not follow you is the state you asked for, so it answers 204.
 
 ### Blocking
 

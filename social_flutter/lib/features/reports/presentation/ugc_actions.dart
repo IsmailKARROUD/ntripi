@@ -18,7 +18,8 @@ import 'package:ntripi/features/reports/domain/report_target.dart';
 import 'package:ntripi/features/reports/presentation/report_content_sheet.dart';
 import 'package:ntripi/l10n/app_localizations.dart';
 
-/// Overflow menu offering Report and (when a user is identified) Block.
+/// Overflow menu offering Report, (when a user is identified) Block, and
+/// (when the caller says it applies) Remove follower.
 class UgcActionsMenu extends ConsumerWidget {
   final ReportTarget target;
 
@@ -35,6 +36,10 @@ class UgcActionsMenu extends ConsumerWidget {
   /// viewer could not see becomes visible again.
   final VoidCallback? onUnblocked;
 
+  /// Non-null adds "Remove follower". A profile passes it only while that
+  /// account follows the viewer — a menu must not offer what cannot apply.
+  final VoidCallback? onRemoveFollower;
+
   final Color? iconColor;
 
   /// Custom trigger, replacing the default icon. Lets a caller with its own
@@ -50,6 +55,7 @@ class UgcActionsMenu extends ConsumerWidget {
     this.authorUsername,
     this.onBlocked,
     this.onUnblocked,
+    this.onRemoveFollower,
     this.iconColor,
     this.child,
   });
@@ -96,24 +102,38 @@ class UgcActionsMenu extends ConsumerWidget {
               ],
             ),
           ),
+        if (onRemoveFollower != null)
+          PopupMenuItem(
+            value: 'removeFollower',
+            child: Row(
+              children: [
+                const Icon(Icons.person_remove_rounded, size: 20),
+                const SizedBox(width: 12),
+                Text(l10n.removeFollower),
+              ],
+            ),
+          ),
       ],
       onSelected: (value) {
-        if (value == 'report') {
-          showReportContentSheet(context, ref, target);
-        } else if (isBlocked) {
-          unblockUser(
-            context, ref,
-            userId: authorUserId!,
-            username: authorUsername ?? '',
-            onUnblocked: onUnblocked,
-          );
-        } else {
-          confirmAndBlock(
-            context, ref,
-            userId: authorUserId!,
-            username: authorUsername ?? '',
-            onBlocked: onBlocked,
-          );
+        switch (value) {
+          case 'report':
+            showReportContentSheet(context, ref, target);
+          case 'removeFollower':
+            onRemoveFollower?.call();
+          case 'block' when isBlocked:
+            unblockUser(
+              context, ref,
+              userId: authorUserId!,
+              username: authorUsername ?? '',
+              onUnblocked: onUnblocked,
+            );
+          case 'block':
+            confirmAndBlock(
+              context, ref,
+              userId: authorUserId!,
+              username: authorUsername ?? '',
+              onBlocked: onBlocked,
+            );
         }
       },
       child: child,

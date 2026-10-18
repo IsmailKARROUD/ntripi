@@ -51,6 +51,14 @@ server-side; the client renders state and may be stale or hostile.
   edit rights** (a restricted trip, where the allowlist row is what let them see
   it) — the same reason `remove_editor` releases; before 2026-09-28 their claim
   blocked every other editor until the TTL.
+- **So do the two changes that can end edit rights on all of an owner's trips
+  at once** — removing a follower (on a followers-only trip the follow is what
+  let them see it) and a block, in both directions.
+  `edit_lock_service.release_claims_lost_by(db, owner_id, user_id)` drops every
+  claim the person holds on the owner's trips that they can no longer edit, and
+  leaves the ones they still can. A visibility change needs none of this: only
+  the owner can make one, and making it requires holding the claim. Before
+  2026-10-18 a blocked editor's claim stood until the TTL.
 - **Revoking also deletes that user's lock row**, in the same transaction
   (`itineraries.py:1162`) — otherwise a removed editor's claim blocks everyone
   until the TTL runs out.

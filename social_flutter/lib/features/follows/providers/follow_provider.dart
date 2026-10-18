@@ -149,16 +149,33 @@ abstract class FollowListNotifier extends AsyncNotifier<List<FollowerListItem>> 
       if (!ref.mounted) return;
       _offset += next.length;
       _hasMore = next.length == kFollowListPageSize;
+      // Appended to the rows on screen now, not the pre-await snapshot: a row
+      // removed while the page loaded must stay removed.
+      final shown = state.value ?? current;
       // A follow arriving between pages shifts every row down one, so the
       // next page repeats the last one — skip ids already shown.
-      final seen = {for (final user in current) user.id};
-      state = AsyncData([...current, ...next.where((user) => !seen.contains(user.id))]);
+      final seen = {for (final user in shown) user.id};
+      state = AsyncData([...shown, ...next.where((user) => !seen.contains(user.id))]);
     } catch (_) {
       // Called unawaited from a scroll listener: keep the rows already shown,
       // and the next scroll to the bottom retries.
     } finally {
       _loadingMore = false;
     }
+  }
+
+  /// Drops [userId]'s row after the server removed it, keeping the pages
+  /// already loaded (a refetch would reset the list under the user's finger).
+  ///
+  /// The server's list shrank by one before the current offset too, so the
+  /// next page starts one row earlier — without the step back, [loadMore]
+  /// would skip the row that slid into the gap. A row not loaded yet sits past
+  /// the offset and moves nothing.
+  void removeLocally(String userId) {
+    final current = state.value;
+    if (current == null || !current.any((user) => user.id == userId)) return;
+    state = AsyncData(current.where((user) => user.id != userId).toList());
+    if (_offset > 0) _offset--;
   }
 
   /// Re-fetches page 0 and replaces the current state. Called by the

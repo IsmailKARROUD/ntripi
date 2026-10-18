@@ -75,6 +75,9 @@ String followersEndpoint(String userId) => '/users/$userId/followers';
 /// Returns the following list endpoint.
 String followingEndpoint(String userId) => '/users/$userId/following';
 
+/// Removes [userId] from the signed-in user's followers.
+String removeFollowerEndpoint(String userId) => '/users/me/followers/$userId';
+
 // ---------------------------------------------------------------------------
 // Follow request endpoints
 // ---------------------------------------------------------------------------

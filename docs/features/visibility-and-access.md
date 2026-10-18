@@ -32,6 +32,10 @@ nothing in the project answers "can this person see this" for itself.
   | `followers` | accepted followers of the owner (`is_accepted_follower`) |
   | `restricted` | users with an `itinerary_allowed_users` row |
   | `only_me` | nobody — the default |
+- **`followers` access lasts exactly as long as the follow.** It is re-read
+  from the follow row on every request, so an unfollow — or the owner
+  **removing the follower** (`DELETE /users/me/followers/{user_id}`) — ends it
+  at once, with nothing to clean up. See [follows.md](follows.md#removing-a-follower).
 - **`only_me` is the default** (`itineraries.visibility` server default), so a
   newly created trip is private until the owner says otherwise.
 - An **unrecognised `visibility` value falls through to deny** — the final

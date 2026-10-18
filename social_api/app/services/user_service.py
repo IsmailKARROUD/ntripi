@@ -11,7 +11,7 @@ from __future__ import annotations
 import uuid
 
 from starlette import status
-from sqlalchemy import case, select, update
+from sqlalchemy import case, delete, select, update
 from sqlalchemy.orm import Session
 
 from app.errors import ApiError
@@ -106,3 +106,35 @@ def bump_follow_counters(db: Session, follower: User | None,
         # Nothing has reconciled the loaded object, so its counter is now stale;
         # drop it rather than let a later read in this request serve the old value.
         db.expire(user, [column.key])
+
+
+def delete_follow(db: Session, follow: Follow, follower: User | None,
+                  followed: User | None, *,
+                  only_if: FollowStatus | None = None) -> bool:
+    """Delete one follow row and keep the counters honest. True if THIS call
+    removed it.
+
+    The only way to delete a Follow — unfollow, remove-follower, decline and a
+    block's sever all end here. A statement, not db.delete(): two concurrent
+    deletes (a double tap, an unfollow racing a block) both loaded the row, and
+    the ORM only warns when the second DELETE matches nothing, so both
+    decremented. RETURNING reports the status the row had when it went, which is
+    what decides the decrement — not the status loaded earlier, which an accept
+    landing in between makes stale. `only_if` makes the delete conditional on a
+    status (decline must never remove a follow accepted meanwhile). Does not
+    commit.
+    """
+    stmt = delete(Follow).where(Follow.id == follow.id)
+    if only_if is not None:
+        stmt = stmt.where(Follow.status == only_if)
+    deleted_status = db.execute(
+        stmt.returning(Follow.status)
+        .execution_options(synchronize_session=False)
+    ).scalar_one_or_none()
+    if deleted_status is None:
+        return False
+    # The object now describes a row that no longer exists.
+    db.expunge(follow)
+    if deleted_status == FollowStatus.accepted:
+        bump_follow_counters(db, follower, followed, -1)
+    return True

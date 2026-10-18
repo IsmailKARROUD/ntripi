@@ -37,6 +37,7 @@ from app.errors import ApiError
 from app.models.itinerary import Itinerary
 from app.models.itinerary_edit_lock import ItineraryEditLock
 from app.models.user import User
+from app.services.itinerary_access import can_edit_itinerary
 from app.services.token_util import as_aware_utc, hash_token, new_raw_token
 from app.services.user_service import public_profile_text
 
@@ -334,6 +335,26 @@ def release_for_user(db: Session, itinerary_id: uuid.UUID, user_id: uuid.UUID) -
             ItineraryEditLock.user_id == user_id,
         )
     )
+
+
+def release_claims_lost_by(db: Session, owner_id: uuid.UUID,
+                           user_id: uuid.UUID) -> None:
+    """Drop every claim `user_id` holds on `owner_id`'s itineraries that they
+    can no longer edit — after a change that can revoke edit rights on all of
+    an owner's trips at once: losing the follow that `followers` visibility
+    reads, or a block. Same reason as release_for_user. Call it after the change
+    is flushed; claims they can still edit stay. Does not commit."""
+    held = db.execute(
+        select(Itinerary)
+        .join(ItineraryEditLock, ItineraryEditLock.itinerary_id == Itinerary.id)
+        .where(
+            Itinerary.user_id == owner_id,
+            ItineraryEditLock.user_id == user_id,
+        )
+    ).scalars().all()
+    for itinerary in held:
+        if not can_edit_itinerary(itinerary, user_id, db):
+            release_for_user(db, itinerary.id, user_id)
 
 
 def purge_expired(db: Session, settings) -> int:

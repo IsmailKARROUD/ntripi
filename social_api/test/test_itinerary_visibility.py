@@ -226,6 +226,27 @@ class TestVisibilityFollowers:
 
         assert response.status_code == 403
 
+    def test_removed_follower_loses_access(self, client: TestClient):
+        """
+        Alice removes Bob from her followers. Access is re-derived from the
+        follow row on every read, so it goes the moment the row does.
+        """
+        alice = register_user(client, "alice", "alice@test.com")
+        bob = register_user(client, "bob1", "bob@test.com")
+        itinerary = create_itinerary(client, alice["access_token"], "followers")
+        setup_accepted_follow(client, bob["access_token"], alice["access_token"], alice["user_id"])
+        assert fetch_itinerary(client, bob["access_token"], itinerary["id"]).status_code == 200
+
+        removed = client.delete(
+            f"/users/me/followers/{bob['user_id']}",
+            headers=auth_headers(alice["access_token"]),
+        )
+        assert removed.status_code == 204
+
+        response = fetch_itinerary(client, bob["access_token"], itinerary["id"])
+
+        assert response.status_code == 403
+
 
 # ---------------------------------------------------------------------------
 # Class: TestVisibilityRestricted

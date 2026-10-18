@@ -389,7 +389,7 @@
       }
     }
   },
-  "unfollowMessage": "You'll stop seeing their itineraries in your feed.",
+  "unfollowMessage": "You'll lose access to trips they share with followers.",
   "unfollowConfirm": "Unfollow",
   "unfollowKeep": "Stay following",
   "unfollowedSnackbar": "Unfollowed @{username}",
@@ -421,6 +421,42 @@
     }
   },
   "declineRequestConfirm": "Decline",
+  "removeFollower": "Remove follower",
+  "removeFollowerButton": "Remove",
+  "removeFollowerTitle": "Remove @{username} from your followers?",
+  "@removeFollowerTitle": {
+    "placeholders": {
+      "username": {
+        "type": "String"
+      }
+    }
+  },
+  "removeFollowerMessagePrivate": "They won't be told. They'll lose access to trips you share with followers, and would have to send a new request to follow you again.",
+  "removeFollowerMessagePublic": "They won't be told. They'll lose access to trips you share with followers, but can follow you again — block them to prevent that.",
+  "removeFollowerSemantics": "Remove @{username} from your followers",
+  "@removeFollowerSemantics": {
+    "placeholders": {
+      "username": {
+        "type": "String"
+      }
+    }
+  },
+  "removedFollowerSnackbar": "Removed @{username} from your followers.",
+  "@removedFollowerSnackbar": {
+    "placeholders": {
+      "username": {
+        "type": "String"
+      }
+    }
+  },
+  "unfollowSemantics": "Unfollow @{username}",
+  "@unfollowSemantics": {
+    "placeholders": {
+      "username": {
+        "type": "String"
+      }
+    }
+  },
   "undoButton": "UNDO",
   "couldNotUndo": "Could not undo: {error}",
   "@couldNotUndo": {

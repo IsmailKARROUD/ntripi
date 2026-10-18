@@ -40,6 +40,12 @@ def make_private(client, token):
                  json={"is_private": True})
 
 
+def make_public(client, token):
+    """Helper to make an account public (accounts start private)."""
+    client.patch("/users/me", headers=auth_headers(token),
+                 json={"is_private": False})
+
+
 def follow(client, follower_token, target_id):
     """Helper to send a follow request and return the full response."""
     return client.post(
@@ -567,3 +573,153 @@ class TestFollowListPaging:
         assert len(names) == 25
         assert len(set(names)) == 25
         assert names[0] == "fan24"  # newest first
+
+
+# ---------------------------------------------------------------------------
+# Removing a follower (the followed side ends the follow)
+# ---------------------------------------------------------------------------
+
+def remove_follower(client, owner_token, follower_id):
+    """DELETE follower_id's follow of the owner, from the owner's side."""
+    return client.delete(
+        f"/users/me/followers/{follower_id}",
+        headers=auth_headers(owner_token),
+    )
+
+
+class TestRemoveFollower:
+
+    def test_removing_a_follower_deletes_the_follow_and_restores_counters(
+        self, client: TestClient
+    ):
+        alice = register_user(client, "alice1", "alice@test.com")
+        bob = register_user(client, "bob1", "bob@test.com")
+        make_public(client, bob["access_token"])
+        assert follow(client, alice["access_token"],
+                      bob["user_id"]).json()["status"] == "accepted"
+
+        response = remove_follower(client, bob["access_token"], alice["user_id"])
+
+        assert response.status_code == 204
+        followers = client.get(f"/users/{bob['user_id']}/followers",
+                               headers=auth_headers(bob["access_token"])).json()
+        assert followers == []
+        assert get_profile(client, bob["access_token"])["followers_count"] == 0
+        assert get_profile(client, alice["access_token"])["following_count"] == 0
+        assert get_profile(client, alice["access_token"],
+                           bob["user_id"])["is_following"] is False
+
+    def test_only_the_follow_toward_me_goes(self, client: TestClient):
+        """Mutual follows: removing Alice as a follower must not unfollow her."""
+        alice = register_user(client, "alice1", "alice@test.com")
+        bob = register_user(client, "bob1", "bob@test.com")
+        make_public(client, alice["access_token"])
+        make_public(client, bob["access_token"])
+        follow(client, alice["access_token"], bob["user_id"])
+        follow(client, bob["access_token"], alice["user_id"])
+
+        assert remove_follower(client, bob["access_token"],
+                               alice["user_id"]).status_code == 204
+
+        assert get_profile(client, alice["access_token"],
+                           bob["user_id"])["is_following"] is False
+        assert get_profile(client, bob["access_token"],
+                           alice["user_id"])["is_following"] is True
+        bob_profile = get_profile(client, bob["access_token"])
+        assert (bob_profile["followers_count"], bob_profile["following_count"]) == (0, 1)
+        alice_profile = get_profile(client, alice["access_token"])
+        assert (alice_profile["followers_count"], alice_profile["following_count"]) == (1, 0)
+
+    def test_a_removed_follower_of_a_private_account_must_request_again(
+        self, client: TestClient
+    ):
+        alice = register_user(client, "alice1", "alice@test.com")
+        bob = register_user(client, "bob1", "bob@test.com")
+        make_private(client, bob["access_token"])
+        follow(client, alice["access_token"], bob["user_id"])
+        follow_id = client.get(
+            "/users/me/follow-requests", headers=auth_headers(bob["access_token"]),
+        ).json()[0]["follow_id"]
+        assert client.post(f"/users/me/follow-requests/{follow_id}/accept",
+                           headers=auth_headers(bob["access_token"])).status_code == 200
+
+        assert remove_follower(client, bob["access_token"],
+                               alice["user_id"]).status_code == 204
+
+        again = follow(client, alice["access_token"], bob["user_id"])
+        assert again.status_code == 201
+        assert again.json()["status"] == "pending"
+
+    def test_removing_someone_who_does_not_follow_you_is_a_no_op(
+        self, client: TestClient
+    ):
+        """Idempotent: a stale list row, a repeat tap, yourself or an unknown id
+        all answer 204 and leave the counters alone."""
+        alice = register_user(client, "alice1", "alice@test.com")
+        bob = register_user(client, "bob1", "bob@test.com")
+        carol = register_user(client, "carol1", "carol@test.com")
+        make_public(client, bob["access_token"])
+        follow(client, carol["access_token"], bob["user_id"])
+
+        token = bob["access_token"]
+        assert remove_follower(client, token, alice["user_id"]).status_code == 204
+        assert remove_follower(client, token, bob["user_id"]).status_code == 204
+        assert remove_follower(
+            client, token, "00000000-0000-4000-8000-000000000000",
+        ).status_code == 204
+        assert get_profile(client, token)["followers_count"] == 1
+
+        assert remove_follower(client, token, carol["user_id"]).status_code == 204
+        assert remove_follower(client, token, carol["user_id"]).status_code == 204
+        assert get_profile(client, token)["followers_count"] == 0
+        assert get_profile(client, carol["access_token"])["following_count"] == 0
+
+    def test_a_pending_request_survives_a_remove(self, client: TestClient):
+        """Refusing a request is Decline's job — a stale Remove must not do it."""
+        alice = register_user(client, "alice1", "alice@test.com")
+        bob = register_user(client, "bob1", "bob@test.com")
+        make_private(client, bob["access_token"])
+        follow(client, alice["access_token"], bob["user_id"])
+
+        assert remove_follower(client, bob["access_token"],
+                               alice["user_id"]).status_code == 204
+
+        requests = client.get("/users/me/follow-requests",
+                              headers=auth_headers(bob["access_token"])).json()
+        assert [r["username"] for r in requests] == ["alice1"]
+        assert get_profile(client, alice["access_token"],
+                           bob["user_id"])["follow_is_pending"] is True
+
+    def test_the_removed_follower_is_not_notified(self, client: TestClient):
+        alice = register_user(client, "alice1", "alice@test.com")
+        bob = register_user(client, "bob1", "bob@test.com")
+        make_public(client, bob["access_token"])
+        follow(client, alice["access_token"], bob["user_id"])
+
+        remove_follower(client, bob["access_token"], alice["user_id"])
+
+        feed = client.get("/notifications",
+                          headers=auth_headers(alice["access_token"])).json()
+        assert feed["notifications"] == []
+
+    def test_the_public_profile_reports_whether_they_follow_you(
+        self, client: TestClient
+    ):
+        alice = register_user(client, "alice1", "alice@test.com")
+        bob = register_user(client, "bob1", "bob@test.com")
+        carol = register_user(client, "carol1", "carol@test.com")
+        make_public(client, bob["access_token"])
+        follow(client, alice["access_token"], bob["user_id"])
+        make_private(client, bob["access_token"])
+        follow(client, carol["access_token"], bob["user_id"])  # pending
+
+        bob_token = bob["access_token"]
+        assert get_profile(client, bob_token, alice["user_id"])["follows_you"] is True
+        assert get_profile(client, bob_token, carol["user_id"])["follows_you"] is False
+        # The other direction is is_following, not follows_you.
+        assert get_profile(client, alice["access_token"],
+                           bob["user_id"])["follows_you"] is False
+
+        remove_follower(client, bob_token, alice["user_id"])
+
+        assert get_profile(client, bob_token, alice["user_id"])["follows_you"] is False

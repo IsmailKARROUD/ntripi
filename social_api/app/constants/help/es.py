@@ -92,6 +92,7 @@ RELEASES: tuple[Release, ...] = (
             "**Impresiones sobre el transporte.** Lo que el autor escribió sobre un tramo — en qué vagón subir, dónde comprar el billete — ahora aparece debajo, también mientras editas, plegado en dos líneas con **ver más**, y se traduce con el resto.",
             "**Tu cambio se guarda antes de dejar de editar.** Si tocas ✓ mientras un cambio aún se está guardando, Ntripi te lo dice y sale del modo de edición en cuanto se guarda. Si falla, sigues en modo de edición, con el motivo.",
             "**Cerrar la aplicación mientras editas ya no deja el viaje retenido.** La próxima vez que lo abras, Ntripi lo suelta primero, en lugar de decirte que lo estás editando en otro dispositivo.",
+            "**Quitar a un seguidor, o dejar de seguir desde tus listas.** **Quitar** junto a alguien en tu lista de seguidores —o **Quitar seguidor** en el menú ⋯ de su perfil— pone fin a su seguimiento, sin que se le comunique. **Siguiendo** junto a alguien en tu lista de seguidos deja de seguirlo.",
         ),
     ),
     Release(
@@ -916,7 +917,7 @@ Lo que no puedes deshacer es una captura de pantalla, así que trata publicar co
     Article(
         slug="follow-and-private-accounts",
         title="Seguidores, solicitudes de seguimiento y cuentas privadas",
-        summary="Cómo funciona seguir a alguien, qué oculta una cuenta privada y cómo aprobar o rechazar una solicitud.",
+        summary="Cómo funciona seguir a alguien, qué oculta una cuenta privada, cómo aprobar o rechazar una solicitud y cómo quitar a un seguidor.",
         category="community",
         schema=SCHEMA_FAQ,
         intro="Seguir a alguien pone sus viajes públicos delante de ti y le permite compartir viajes con sus seguidores. Si tu cuenta es **privada**, un seguimiento se convierte en una **solicitud** que apruebas o rechazas.",
@@ -946,6 +947,14 @@ Los viajes que pongas en **público** siguen siendo públicos: privada se refier
 Rechazar no se le comunica a nadie. Simplemente dejan de estar pendientes y la persona puede volver a pedirlo.""",
             ),
             Block(
+                anchor="remove-a-follower",
+                heading="¿Cómo quito a un seguidor?",
+                kind=KIND_FAQ,
+                body="""Abre **Seguidores** desde tu perfil y toca **Quitar** junto a esa persona, o abre su perfil y elige **Quitar seguidor** en el menú **⋯**.
+
+No se le comunica. Pierde el acceso a los viajes que compartes con tus seguidores. Si tu cuenta es privada, tendría que enviar una nueva solicitud para volver a seguirte; si es pública, puede volver a seguirte enseguida, así que [bloquéala](/help/report-and-block) si quieres impedirlo.""",
+            ),
+            Block(
                 anchor="going-public",
                 heading="¿Qué pasa si paso de privada a pública?",
                 kind=KIND_FAQ,
@@ -957,7 +966,7 @@ En el otro sentido, de pública a privada, tus seguidores actuales no se elimina
                 anchor="unfollow-vs-block",
                 heading="¿Qué diferencia hay entre dejar de seguir y bloquear?",
                 kind=KIND_FAQ,
-                body="""**Dejar de seguir** solo impide que sus viajes lleguen a tu feed. Esa persona sigue viendo lo que veía antes.
+                body="""**Dejar de seguir** te quita lo que seguir te daba: los viajes que esa persona comparte con sus seguidores. Toca **Siguiendo** en su perfil o junto a ella en tu lista **Siguiendo**. Esa persona sigue viendo lo que veía antes.
 
 **Bloquear** corta la visibilidad en ambos sentidos, y a la persona bloqueada no se le dice. Consulta [denunciar y bloquear](/help/report-and-block).""",
             ),
@@ -974,9 +983,12 @@ En el otro sentido, de pública a privada, tus seguidores actuales no se elimina
             "aceptar",
             "dejar de seguir",
             "bloquear",
+            "quitar seguidor",
+            "eliminar seguidor",
+            "quitar",
         ),
         related=("share-an-itinerary-privately", "report-and-block"),
-        updated="2026-09-01",
+        updated="2026-10-18",
         cta="Encuentra a la gente cuyos viajes quieres copiar.",
     ),
     Article(

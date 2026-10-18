@@ -327,6 +327,78 @@ class TestViewIsAPrerequisite:
         )
         assert response.status_code in (403, 404)
 
+    def test_a_block_releases_the_editors_claim(self, client: TestClient):
+        """The claim of an editor the owner blocks would otherwise block every
+        other editor until the TTL, for someone who can no longer use it."""
+        owner_hdrs, _, bob_hdrs, bob_id = _cast(client)
+        itin_id = _itinerary(client, owner_hdrs)
+        _grant(client, itin_id, owner_hdrs, bob_id)
+        acquire_edit_lock(client, itin_id, bob_hdrs)
+
+        assert client.post(f"/users/{bob_id}/block",
+                           headers=owner_hdrs).status_code in (201, 204)
+
+        assert client.get(f"/itineraries/{itin_id}/lock",
+                          headers=owner_hdrs).json()["lock"] is None
+
+    def test_an_editor_blocking_the_owner_releases_their_own_claim(
+        self, client: TestClient
+    ):
+        """Blocks cut both ways: the editor who blocks the owner can no longer
+        see — or edit — the trip they were holding."""
+        owner_hdrs, owner_id, bob_hdrs, bob_id = _cast(client)
+        itin_id = _itinerary(client, owner_hdrs)
+        _grant(client, itin_id, owner_hdrs, bob_id)
+        acquire_edit_lock(client, itin_id, bob_hdrs)
+
+        assert client.post(f"/users/{owner_id}/block",
+                           headers=bob_hdrs).status_code in (201, 204)
+
+        assert client.get(f"/itineraries/{itin_id}/lock",
+                          headers=owner_hdrs).json()["lock"] is None
+
+    def test_losing_the_follow_revokes_editing_and_releases_the_claim(
+        self, client: TestClient
+    ):
+        """On a followers-only trip the follow is what let them see it, so
+        removing them as a follower revokes editing — and their claim with it."""
+        owner_hdrs, owner_id, bob_hdrs, bob_id = _cast(client)
+        client.patch("/users/me", json={"is_private": False}, headers=owner_hdrs)
+        assert client.post(f"/users/{owner_id}/follow",
+                           headers=bob_hdrs).status_code == 201
+        itin_id = _itinerary(client, owner_hdrs, visibility="followers")
+        assert _grant(client, itin_id, owner_hdrs, bob_id,
+                      grant_view=False).status_code == 201
+        token = acquire_edit_lock(client, itin_id, bob_hdrs)
+
+        assert client.delete(f"/users/me/followers/{bob_id}",
+                             headers=owner_hdrs).status_code == 204
+
+        assert client.get(f"/itineraries/{itin_id}/lock",
+                          headers=owner_hdrs).json()["lock"] is None
+        response = client.patch(
+            f"/itineraries/{itin_id}", json={"title": "No"},
+            headers={**bob_hdrs, "If-Match": '"whatever"', "X-Edit-Lock": token},
+        )
+        assert response.status_code == 403
+
+    def test_losing_the_follow_keeps_a_claim_it_did_not_grant(
+        self, client: TestClient
+    ):
+        """On a restricted trip the allowlist, not the follow, lets them edit —
+        removing them as a follower must leave that claim alone."""
+        owner_hdrs, owner_id, bob_hdrs, bob_id = _cast(client)
+        client.patch("/users/me", json={"is_private": False}, headers=owner_hdrs)
+        client.post(f"/users/{owner_id}/follow", headers=bob_hdrs)
+        itin_id = _itinerary(client, owner_hdrs)  # restricted
+        _grant(client, itin_id, owner_hdrs, bob_id)
+        acquire_edit_lock(client, itin_id, bob_hdrs)
+
+        client.delete(f"/users/me/followers/{bob_id}", headers=owner_hdrs)
+
+        assert client.get(f"/itineraries/{itin_id}/lock",
+                          headers=owner_hdrs).json()["lock"] is not None
+
     def test_a_moderator_hide_revokes_editing(self, client: TestClient):
         """Hidden content is owner-only, so an editor loses the pen as well as
         the view — without the moderation path knowing editors exist."""

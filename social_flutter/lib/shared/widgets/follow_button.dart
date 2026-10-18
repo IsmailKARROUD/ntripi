@@ -20,6 +20,26 @@ import 'package:ntripi/l10n/app_localizations.dart';
 import 'package:ntripi/shared/widgets/loaders.dart';
 import 'package:ntripi/shared/widgets/offline_gate.dart';
 
+/// The unfollow confirmation, shared by this button and the Following list's
+/// row action so both ask the same question in the same words.
+///
+/// Tier 2: the 5s undo window was the only way back, and for a private
+/// account re-following needs a fresh request + approval.
+Future<bool> confirmUnfollow(
+  BuildContext context, {
+  required String username,
+}) {
+  final l10n = AppLocalizations.of(context)!;
+  return confirmDestructiveAction(
+    context: context,
+    icon: Icons.person_remove_rounded,
+    title: l10n.unfollowTitle(username),
+    message: l10n.unfollowMessage,
+    confirmLabel: l10n.unfollowConfirm,
+    cancelLabel: l10n.unfollowKeep,
+  );
+}
+
 /// Callback invoked after a follow state change.
 /// The calling screen uses this to refresh its data.
 typedef OnFollowChanged = void Function({
@@ -72,17 +92,8 @@ class _FollowButtonState extends ConsumerState<FollowButton> {
   }
 
   Future<void> _handleUnfollow() async {
-    final l10n = AppLocalizations.of(context)!;
-    // Tier 2: the 5s undo window was the only way back, and for a private
-    // account re-following needs a fresh request + approval.
-    final confirmed = await confirmDestructiveAction(
-      context: context,
-      icon: Icons.person_remove_rounded,
-      title: l10n.unfollowTitle(widget.targetUsername),
-      message: l10n.unfollowMessage,
-      confirmLabel: l10n.unfollowConfirm,
-      cancelLabel: l10n.unfollowKeep,
-    );
+    final confirmed =
+        await confirmUnfollow(context, username: widget.targetUsername);
     if (!confirmed || !mounted) return;
 
     setState(() => _isLoading = true);

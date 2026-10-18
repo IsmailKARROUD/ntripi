@@ -8,6 +8,7 @@ This file implements the hybrid follow model:
   - Following a private account → pending until approved.
   - Rejecting a request → delete the record (allows retry).
   - Switching to public → auto-accept all pending requests.
+  - Removing a follower → the followed side deletes an accepted follow.
 
 Counter invariant:
   followers_count and following_count are ONLY incremented when a follow
@@ -23,7 +24,7 @@ Security note on follow request routes:
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy import delete, select, update
+from sqlalchemy import select, update
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -31,9 +32,10 @@ from app.dependencies import get_current_user, require_verified_email
 from app.models.follow import Follow, FollowStatus
 from app.models.user import User
 from app.schemas.follow import FollowRequestItem, FollowResponse, FollowerListItem
-from app.services import block_service, notification_service
+from app.services import block_service, edit_lock_service, notification_service
 from app.services.user_service import (
     bump_follow_counters,
+    delete_follow,
     get_active_user_or_404,
     get_follow,
     is_accepted_follower,
@@ -192,21 +194,42 @@ def unfollow_user(
             code="not_following", detail="You are not following this user.",
         )
 
-    was_accepted = follow.status == FollowStatus.accepted
-    # A statement, not db.delete(): two concurrent unfollows both loaded the row,
-    # and the ORM only warns when the second DELETE matches nothing — so both
-    # decremented. The rowcount says whether THIS request removed it.
-    removed = db.execute(
-        delete(Follow)
-        .where(Follow.id == follow.id)
-        .execution_options(synchronize_session=False)
-    ).rowcount
-    db.expunge(follow)
-
-    if removed and was_accepted:
-        bump_follow_counters(db, current_user, db.get(User, user_id), -1)
-
+    delete_follow(db, follow, current_user, db.get(User, user_id))
     db.commit()
+
+
+# ---------------------------------------------------------------------------
+# DELETE /users/me/followers/{user_id} — Remove a follower
+# ---------------------------------------------------------------------------
+
+@router.delete(
+    "/users/me/followers/{user_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Remove someone from your followers",
+)
+def remove_follower(
+    user_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> None:
+    """
+    Delete user_id's accepted follow of the current user — an unfollow, made
+    from the followed side. The removed follower is not notified.
+
+    Idempotent: when there is nothing to remove (they never followed, already
+    left, were blocked, or the id is unknown) the state asked for already holds,
+    so this answers 204 rather than turning a stale list row into an error.
+    """
+    follow = get_follow(db, user_id, current_user.id)
+    # A pending request is Decline's to refuse: a stale Remove must never refuse
+    # a request the owner has not seen yet.
+    if follow is not None and follow.status == FollowStatus.accepted:
+        delete_follow(db, follow, db.get(User, user_id), current_user)
+        # On a followers-only trip the follow is what let them see it, so losing
+        # it can revoke their editing — and a claim left standing would block
+        # every other editor until the TTL (remove_allowed_user does the same).
+        edit_lock_service.release_claims_lost_by(db, current_user.id, user_id)
+        db.commit()
 
 
 # ---------------------------------------------------------------------------
@@ -362,14 +385,17 @@ def reject_follow_request(
         )
 
     # A stale Decline (accepted meanwhile, on another device or by going public)
-    # must not delete a live follow: it would skip the counter decrement.
-    if follow.status != FollowStatus.pending:
+    # must not delete a live follow. Checked again inside the DELETE, so an
+    # accept landing between this check and the statement cannot slip through.
+    # A pending row never counted, so there is no one to bump.
+    if follow.status != FollowStatus.pending or not delete_follow(
+        db, follow, None, None, only_if=FollowStatus.pending,
+    ):
         raise ApiError(
             status_code=status.HTTP_404_NOT_FOUND,
             code="follow_request_not_found", detail="Follow request not found.",
         )
 
-    db.delete(follow)
     db.commit()
 
 

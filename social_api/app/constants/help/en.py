@@ -115,6 +115,10 @@ RELEASES: tuple[Release, ...] = (
             "**Closing the app while editing no longer leaves the trip held.** The "
             "next time you open it, Ntripi lets go of it first, instead of telling "
             "you that you are editing it on another device.",
+            "**Remove a follower, or unfollow from your lists.** **Remove** beside "
+            "someone in your Followers list — or **Remove follower** in the ⋯ menu "
+            "on their profile — ends their follow, and they are not told. "
+            "**Following** beside someone in your Following list unfollows them.",
         ),
     ),
     Release(
@@ -1221,15 +1225,16 @@ ARTICLES: tuple[Article, ...] = (
         slug="follow-and-private-accounts",
         title="Followers, follow requests and private accounts",
         summary=(
-            "How following works, what a private account hides, and how to approve "
-            "or refuse a request."
+            "How following works, what a private account hides, how to approve or "
+            "refuse a request, and how to remove a follower."
         ),
         category="community",
         schema=SCHEMA_FAQ,
-        updated="2026-09-01",
+        updated="2026-10-18",
         keywords=(
             "follow", "follower", "followers", "following", "request", "private",
             "public account", "approve", "accept", "unfollow", "block",
+            "remove follower", "remove followers", "remove",
         ),
         related=("share-an-itinerary-privately", "report-and-block"),
         cta="Find the people whose trips you want to steal.",
@@ -1277,6 +1282,21 @@ ARTICLES: tuple[Article, ...] = (
                 ),
             ),
             Block(
+                anchor="remove-a-follower",
+                heading="How do I remove a follower?",
+                kind=KIND_FAQ,
+                body=(
+                    "Open **Followers** from your profile and tap **Remove** beside "
+                    "them — or open their profile and choose **Remove follower** "
+                    "from the **⋯** menu.\n\n"
+                    "They are not told. They lose access to trips you share with "
+                    "followers. If your account is private they would need to send "
+                    "a new request to follow you again; if it is public they can "
+                    "follow you again straight away, so [block "
+                    "them](/help/report-and-block) if you want that to stop."
+                ),
+            ),
+            Block(
                 anchor="going-public",
                 heading="What happens if I switch from private to public?",
                 kind=KIND_FAQ,
@@ -1293,8 +1313,10 @@ ARTICLES: tuple[Article, ...] = (
                 heading="What's the difference between unfollowing and blocking?",
                 kind=KIND_FAQ,
                 body=(
-                    "**Unfollowing** just stops their trips reaching your feed. "
-                    "They can still see whatever they could see before.\n\n"
+                    "**Unfollowing** takes away what following gave you: the trips "
+                    "they share with followers. Tap **Following** on their profile, "
+                    "or beside them in your **Following** list. They can still see "
+                    "whatever they could see before.\n\n"
                     "**Blocking** cuts visibility in both directions, and the "
                     "blocked person is not told. See [reporting and "
                     "blocking](/help/report-and-block)."

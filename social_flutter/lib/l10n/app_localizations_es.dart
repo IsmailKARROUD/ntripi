@@ -949,7 +949,8 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
-  String get unfollowMessage => 'Dejarás de ver sus itinerarios en tu feed.';
+  String get unfollowMessage =>
+      'Perderás el acceso a los viajes que esa persona comparte con sus seguidores.';
 
   @override
   String get unfollowConfirm => 'Dejar de seguir';
@@ -986,6 +987,40 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get declineRequestConfirm => 'Rechazar';
+
+  @override
+  String get removeFollower => 'Quitar seguidor';
+
+  @override
+  String get removeFollowerButton => 'Quitar';
+
+  @override
+  String removeFollowerTitle(String username) {
+    return '¿Quitar a @$username de tus seguidores?';
+  }
+
+  @override
+  String get removeFollowerMessagePrivate =>
+      'No se le informará. Perderá el acceso a los viajes que compartes con tus seguidores y tendría que enviar una nueva solicitud para volver a seguirte.';
+
+  @override
+  String get removeFollowerMessagePublic =>
+      'No se le informará. Perderá el acceso a los viajes que compartes con tus seguidores, pero podrá volver a seguirte: bloquea a esa persona para impedirlo.';
+
+  @override
+  String removeFollowerSemantics(String username) {
+    return 'Quitar a @$username de tus seguidores';
+  }
+
+  @override
+  String removedFollowerSnackbar(String username) {
+    return 'Has quitado a @$username de tus seguidores.';
+  }
+
+  @override
+  String unfollowSemantics(String username) {
+    return 'Dejar de seguir a @$username';
+  }
 
   @override
   String get undoButton => 'DESHACER';

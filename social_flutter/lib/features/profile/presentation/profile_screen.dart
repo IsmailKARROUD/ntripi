@@ -15,6 +15,7 @@ import 'package:ntripi/core/ui/destructive_actions.dart';
 import 'package:ntripi/core/utils/platform_utils.dart';
 import 'package:ntripi/features/auth/providers/auth_provider.dart';
 import 'package:ntripi/features/feed/providers/feed_providers.dart';
+import 'package:ntripi/features/follows/presentation/follow_actions.dart';
 import 'package:ntripi/features/follows/providers/follow_provider.dart';
 import 'package:ntripi/features/notifications/presentation/widgets/notification_bell.dart';
 import 'package:ntripi/features/itineraries/data/share_service.dart';
@@ -244,6 +245,14 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                             ref.invalidate(
                                 userProfileProvider(widget.userId!));
                           },
+                          onRemoveFollower: user.followsYou
+                              ? () => confirmAndRemoveFollower(
+                                    context,
+                                    ref,
+                                    userId: user.id,
+                                    username: user.username,
+                                  )
+                              : null,
                           // Wear the hero's frosted glass like Back and Share.
                           child: const GlassIconChrome(icon: Icons.more_horiz),
                         ),
@@ -368,6 +377,15 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                               isFollowing: isFollowing,
                               followIsPending: followIsPending,
                             );
+                        // Your own counts and Following list are keep-alive
+                        // caches of this same follow. Left stale, the list's
+                        // Following pill would offer to unfollow someone
+                        // you just unfollowed here.
+                        final myId = ref.read(myProfileProvider).value?.id;
+                        ref.invalidate(myProfileProvider);
+                        if (myId != null) {
+                          ref.invalidate(followingProvider(myId));
+                        }
                       },
                     ),
                   ),
