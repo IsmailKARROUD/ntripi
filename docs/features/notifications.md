@@ -188,6 +188,14 @@ Unset, nothing is sent, nothing raises, and the poll is the only channel.
   prompting) and a session exists, and `unregisterForPush` falls back to
   `getToken()`. Re-sending on launch also keeps `last_seen_at` fresh for
   `DEVICE_TOKEN_RETENTION_DAYS`, and makes `onTokenRefresh` work after a restart.
+- **Every FCM token read goes through `_fetchToken`, which on iOS waits for the
+  APNs token first.** Apple delivers it asynchronously after launch, and
+  `getToken()` asked before it arrives throws `apns-token-not-set`. Every caller
+  used to catch that and quietly give up, so an iPhone that raced Apple never
+  registered. Registration (both paths unawaited) polls up to 10 s; sign-out,
+  which is awaited, up to 2 s. A timeout is "not registered", never an error.
+  `test/core/push/apns_token_wait_test.dart` fails the suite on a bare
+  `getToken()` anywhere in `lib/`.
 - **Dead tokens are pruned on `UNREGISTERED`, and on `INVALID_ARGUMENT` only when
   the error names the token** (a `message.token` field violation, or "registration
   token" in the message). FCM answers `INVALID_ARGUMENT` for a malformed

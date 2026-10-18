@@ -87,7 +87,7 @@ Future<bool> registerForPush({required String locale}) async {
       return false;
     }
 
-    final token = await messaging.getToken();
+    final token = await _fetchToken();
     if (token == null) return false;
     await _sendToken(token, locale: locale);
     return true;
@@ -161,7 +161,7 @@ Future<void> _readoptRegistration(String Function() currentLocale) async {
         settings.authorizationStatus != AuthorizationStatus.provisional) {
       return;
     }
-    final token = await messaging.getToken();
+    final token = await _fetchToken();
     if (token != null) await _sendToken(token, locale: currentLocale());
   } catch (e) {
     debugPrint('Push re-registration skipped: $e');
@@ -179,7 +179,7 @@ Future<void> unregisterForPush() async {
   // the device may still be registered from an earlier one, so ask FCM.
   if (token == null) {
     try {
-      token = await FirebaseMessaging.instance.getToken();
+      token = await _fetchToken(apnsWait: _apnsWaitOnSignOut);
     } catch (_) {
       token = null;
     }
@@ -208,6 +208,52 @@ Future<void> updatePushLocale(String locale) async {
   final token = _registeredToken;
   if (token == null) return;
   await _sendToken(token, locale: locale);
+}
+
+/// How long a registration waits for Apple's device token. Both registration
+/// paths run unawaited, so nobody watches this; it only has to outlast APNs.
+const _apnsWait = Duration(seconds: 10);
+
+/// Sign-out awaits unregisterForPush, so it may not stall on APNs for long.
+/// By then the token has almost always arrived; this covers the rare case
+/// where sign-out comes moments after a launch.
+const _apnsWaitOnSignOut = Duration(seconds: 2);
+
+const _apnsPollInterval = Duration(milliseconds: 250);
+
+/// This device's FCM token — the ONLY place that may call getToken().
+///
+/// On iOS the FCM token is minted from the APNs device token, which Apple
+/// delivers asynchronously after launch. Asked for first, getToken() throws
+/// `apns-token-not-set`; every caller caught that and quietly gave up, so an
+/// iPhone that raced Apple simply never registered. Returns null when APNs has
+/// not answered within [apnsWait] — the caller treats that as "not registered".
+Future<String?> _fetchToken({Duration apnsWait = _apnsWait}) async {
+  final messaging = FirebaseMessaging.instance;
+  if (defaultTargetPlatform == TargetPlatform.iOS &&
+      !await waitForApnsToken(messaging.getAPNSToken, timeout: apnsWait)) {
+    debugPrint('APNs token not delivered within $apnsWait — push skipped');
+    return null;
+  }
+  return messaging.getToken();
+}
+
+/// Polls [readApnsToken] until it answers a token or [timeout] has elapsed.
+///
+/// Polling, because firebase_messaging exposes no Dart event for the APNs
+/// token's arrival; onTokenRefresh fires for the FCM token only, and only to a
+/// listener that is already attached.
+@visibleForTesting
+Future<bool> waitForApnsToken(
+  Future<String?> Function() readApnsToken, {
+  Duration timeout = _apnsWait,
+  Duration interval = _apnsPollInterval,
+}) async {
+  for (var waited = Duration.zero;; waited += interval) {
+    if (await readApnsToken() != null) return true;
+    if (waited >= timeout) return false;
+    await Future<void>.delayed(interval);
+  }
 }
 
 Future<void> _sendToken(String token, {required String locale}) async {
