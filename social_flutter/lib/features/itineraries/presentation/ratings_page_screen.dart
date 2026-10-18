@@ -11,6 +11,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:ntripi/core/router/navigation_ext.dart';
 import 'package:ntripi/core/ui/app_theme.dart';
 import 'package:ntripi/features/itineraries/domain/dimension_key.dart';
 import 'package:ntripi/features/profile/providers/profile_provider.dart';
@@ -49,7 +50,14 @@ class RatingsHubScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: nt.surface,
-      appBar: AppBar(backgroundColor: nt.surface, title: Text(AppLocalizations.of(context)!.ratingsTitle)),
+      appBar: AppBar(
+        backgroundColor: nt.surface,
+        // Explicit: a notification can open this alone, where AppBar draws none.
+        leading: BackButton(
+          onPressed: () => context.popOr('/itineraries/$itineraryId'),
+        ),
+        title: Text(AppLocalizations.of(context)!.ratingsTitle),
+      ),
       body: Center(
         child: ConstrainedBox(
           constraints: BoxConstraints(

@@ -10,6 +10,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ntripi/core/api/api_client.dart';
 import 'package:ntripi/core/api/api_error_codes.dart';
+import 'package:ntripi/core/router/navigation_ext.dart';
 import 'package:ntripi/core/ui/app_theme.dart';
 import 'package:ntripi/core/ui/destructive_actions.dart';
 import 'package:ntripi/core/utils/platform_utils.dart';
@@ -97,6 +98,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     if (mounted) context.go('/login');
   }
 
+  /// The way out of someone else's profile, in every state. A notification can
+  /// open this screen as the only route, where a plain pop has nothing to pop.
+  void _leave() => context.popOr('/profile/me');
+
   @override
   Widget build(BuildContext context) {
     final nt = context.nt;
@@ -118,7 +123,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             // either direction. Retrying can never change that, so it gets its
             // own screen instead of the generic message + Retry.
             error: (error, _) => isGoneError(error)
-                ? const ProfileUnavailableView()
+                ? ProfileUnavailableView(
+                    onBack: widget.isSelf ? null : _leave,
+                  )
                 : Center(
                     child: Padding(
                       padding: const EdgeInsets.all(24),
@@ -138,6 +145,14 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                     userProfileProvider(widget.userId!)),
                             child: Text(AppLocalizations.of(context)!.retry),
                           ),
+                          // The hero's back arrow is never built on this branch.
+                          if (!widget.isSelf) ...[
+                            const SizedBox(height: 8),
+                            OutlinedButton(
+                              onPressed: _leave,
+                              child: Text(AppLocalizations.of(context)!.goBack),
+                            ),
+                          ],
                         ],
                       ),
                     ),
@@ -259,6 +274,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   onShare: widget.isSelf
                       ? null
                       : () => ShareService().shareProfile(user, l10n),
+                  onBack: widget.isSelf ? null : _leave,
                   locations: heroLocations,
                   editButtonKey: _editButtonKey,
                   onHeroTap: isContentHidden

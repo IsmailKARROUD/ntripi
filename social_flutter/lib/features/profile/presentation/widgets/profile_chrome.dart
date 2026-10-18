@@ -38,6 +38,10 @@ class ProfileHeroAndIdentity extends StatelessWidget {
   /// Widget so this file keeps no dependency on the share feature.
   final VoidCallback? onShare;
 
+  /// Leaves someone else's profile. Null falls back to a plain pop, which has
+  /// nothing to pop on a profile that is the only route (see popOr).
+  final VoidCallback? onBack;
+
   /// Notification bell, shown next to Settings on your own profile. Passed in
   /// rather than built here so this file stays free of feature dependencies —
   /// same reason moreActions is a Widget and not a callback.
@@ -61,6 +65,7 @@ class ProfileHeroAndIdentity extends StatelessWidget {
     this.coverImageUrl,
     this.moreActions,
     this.onShare,
+    this.onBack,
     this.notificationsAction,
     this.locations = const [],
     this.onHeroTap,
@@ -99,6 +104,7 @@ class ProfileHeroAndIdentity extends StatelessWidget {
               onSettings: onSettings,
               moreActions: moreActions,
               onShare: onShare,
+              onBack: onBack,
               notificationsAction: notificationsAction,
               coverImageUrl: coverImageUrl,
               locations: locations,
@@ -180,6 +186,9 @@ class ProfileMapHero extends StatelessWidget {
   /// Opens the OS share sheet for this profile. Null disables the button.
   final VoidCallback? onShare;
 
+  /// Leaves someone else's profile. Null falls back to a plain pop.
+  final VoidCallback? onBack;
+
   /// Notification bell, rendered beside Settings on your own profile.
   final Widget? notificationsAction;
   final List<VisitedLocation> locations;
@@ -198,6 +207,7 @@ class ProfileMapHero extends StatelessWidget {
     this.coverImageUrl,
     this.moreActions,
     this.onShare,
+    this.onBack,
     this.notificationsAction,
     this.locations = const [],
     this.onHeroTap,
@@ -415,7 +425,8 @@ class ProfileMapHero extends StatelessWidget {
                           GlassIconButton(
                             icon: Icons.arrow_back,
                             tooltip: l10n.back,
-                            onTap: () => Navigator.of(context).maybePop(),
+                            onTap: onBack ??
+                                () => Navigator.of(context).maybePop(),
                           ),
                           Row(
                             mainAxisSize: MainAxisSize.min,

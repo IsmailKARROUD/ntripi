@@ -34,7 +34,8 @@ bool _firebaseReady = false;
 String? _registeredToken;
 
 /// Where a cold-start tap should navigate, as the future getInitialMessage()
-/// answers with.
+/// answers with — or a warm tap that arrived while splash was still up (see
+/// deferTapToSplash).
 ///
 /// A cold start from a terminated app delivers the tap before go_router can
 /// act on it, and the splash screen then navigates on its own. Parking a plain
@@ -148,6 +149,16 @@ Future<String?> takeInitialPushRoute() async {
   _initialRoute = null;
   if (pending == null) return null;
   return pending;
+}
+
+/// Hands a warm tap's [route] to the splash screen, which opens it over home
+/// exactly as it opens a cold start's.
+///
+/// For a tap that lands while splash still owns the first navigation — the app
+/// was backgrounded mid-launch, or iOS reported a cold start's tap as a warm
+/// one too. Anything navigated now, splash's own navigation would replace.
+void deferTapToSplash(String route) {
+  _initialRoute = Future<String?>.value(route);
 }
 
 /// Re-send this device's token when the OS already granted push and somebody

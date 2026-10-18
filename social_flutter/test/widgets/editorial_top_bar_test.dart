@@ -10,6 +10,8 @@
 //  2. `leading` replaces that button outright — profile_edit_form is a modal
 //     edit with nothing to pop, so it offers Cancel instead and must NOT also
 //     render a back arrow.
+//  3. `onBack` replaces only what the arrow does — a screen a notification can
+//     open alone has nothing to pop, so it leaves through popOr instead.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -50,6 +52,21 @@ void main() {
     expect(find.text('Save'), findsOneWidget);
     expect(find.byIcon(Icons.arrow_back), findsNothing);
     expect(find.byTooltip('Back'), findsNothing);
+  });
+
+  testWidgets('Given onBack, When the back arrow is tapped, Then onBack runs '
+      'in place of the pop', (tester) async {
+    var backs = 0;
+    await pump(
+      tester,
+      EditorialTopBar(title: 'Follow requests', onBack: () => backs++),
+    );
+
+    await tester.tap(find.byTooltip('Back'));
+    await tester.pump();
+
+    expect(backs, 1);
+    expect(find.byIcon(Icons.arrow_back), findsOneWidget);
   });
 
   testWidgets('Given a long title, When rendered, Then it ellipsizes rather '

@@ -9,9 +9,11 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:ntripi/core/providers/locale_provider.dart';
 import 'package:ntripi/core/push/push_service.dart';
 import 'package:ntripi/core/router/app_router.dart';
+import 'package:ntripi/core/router/navigation_ext.dart';
 
 class PushGateway extends ConsumerStatefulWidget {
   final Widget child;
@@ -34,7 +36,7 @@ class _PushGatewayState extends ConsumerState<PushGateway> {
       // Read lazily: a token refresh can land long after this frame, by which
       // time the user may have changed language.
       currentLocale: () => ref.read(localeProvider).languageCode,
-      onRoute: appRouter.go,
+      onRoute: (route) => openTappedRoute(appRouter, route),
     );
     // A cold start's tap is not drained here: the splash screen owns the first
     // navigation, so it awaits takeInitialPushRoute() itself.
@@ -54,4 +56,22 @@ class _PushGatewayState extends ConsumerState<PushGateway> {
     }
     return widget.child;
   }
+}
+
+/// Opens a tray tap's [route] while the app is running.
+///
+/// Never `go()`: it replaced the whole stack, leaving the tapped screen alone
+/// on its navigator — a back arrow that did nothing, an Android back that
+/// closed the app, and the screen the user left destroyed, unsaved text and
+/// all. A tap that reaches a signed-out screen is dropped: its tray entry
+/// belongs to a session that has ended.
+@visibleForTesting
+void openTappedRoute(GoRouter router, String route) {
+  final here = router.routerDelegate.currentConfiguration;
+  if (here.isEmpty || here.uri.path == '/splash') {
+    deferTapToSplash(route);
+    return;
+  }
+  if (kPublicRoutes.contains(here.uri.path)) return;
+  router.openFromOutside(route);
 }

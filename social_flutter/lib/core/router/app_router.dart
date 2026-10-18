@@ -40,6 +40,20 @@ import 'package:ntripi/features/profile/presentation/profile_screen.dart';
 import 'package:ntripi/features/search/presentation/search_screen.dart';
 import 'package:ntripi/l10n/app_localizations.dart';
 
+/// Routes that require no authentication check — the only screens a signed-out
+/// user can be on, which is also how a notification tap knows to stand down.
+///
+/// /suspended is public because the interceptor clears the tokens before
+/// landing there — without it the guard would immediately bounce a banned user
+/// to /login.
+const kPublicRoutes = [
+  '/login',
+  '/register',
+  '/splash',
+  '/forgot-password',
+  '/suspended',
+];
+
 final appRouter = GoRouter(
   navigatorKey: navigatorKey,
   initialLocation: '/splash',
@@ -56,17 +70,7 @@ final appRouter = GoRouter(
         refresh.isNotEmpty &&
         (refreshExp == null || refreshExp.isAfter(DateTime.now()));
 
-    // Routes that require no authentication check. /suspended is public because
-    // the interceptor clears the tokens before landing there — without it the
-    // guard would immediately bounce a banned user to /login.
-    const publicRoutes = [
-      '/login',
-      '/register',
-      '/splash',
-      '/forgot-password',
-      '/suspended',
-    ];
-    final isPublic = publicRoutes.contains(state.matchedLocation);
+    final isPublic = kPublicRoutes.contains(state.matchedLocation);
 
     if (!hasAuth && !isPublic) return '/login';
     if (hasAuth &&

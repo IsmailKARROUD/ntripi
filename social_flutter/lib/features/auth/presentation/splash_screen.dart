@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ntripi/core/auth/token_manager.dart';
 import 'package:ntripi/core/push/push_service.dart';
+import 'package:ntripi/core/router/navigation_ext.dart';
 import 'package:ntripi/core/services/sfx_service.dart';
 import 'package:ntripi/core/storage/secure_storage.dart';
 import 'package:ntripi/core/ui/app_theme.dart';
@@ -71,9 +72,11 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
         .timeout(const Duration(seconds: 1), onTimeout: () => null);
     if (!mounted) return;
     final router = GoRouter.of(context);
-    router.go('/profile/me');
-    if (pushRoute != null) {
-      WidgetsBinding.instance.addPostFrameCallback((_) => router.push(pushRoute));
+    if (pushRoute == null) {
+      router.go('/profile/me');
+    } else {
+      // One navigation, never go() then push() — see pushOverHome.
+      router.pushOverHome(pushRoute);
     }
   }
 

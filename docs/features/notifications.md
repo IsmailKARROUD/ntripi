@@ -378,11 +378,38 @@ project that holds the Sign-In OAuth clients. FCM carries no per-message charge.
   in front of an app they have not seen.
 - **A cold start's tap is routed by the splash screen.** `attachPushListeners`
   keeps `getInitialMessage()`'s answer as a future; splash awaits
-  `takeInitialPushRoute()` after its brand flash, then goes home and pushes the
-  route over it, so Back still lands somewhere. The old post-frame drain lost
-  every such tap: the platform reply arrives after the first frame, and splash's
-  own `go('/profile/me')` overrode it anyway. This is the most common real-world
-  path and the easiest to lose.
+  `takeInitialPushRoute()` after its brand flash, then opens the route with home
+  beneath it in **one** navigation (`GoRouter.pushOverHome`,
+  `core/router/navigation_ext.dart`), so Back lands on home. The old post-frame
+  drain lost every such tap: the platform reply arrives after the first frame,
+  and splash's own `go('/profile/me')` overrode it anyway. The two-step that
+  replaced it — `go(home)`, then a post-frame `push` — raced the redirect:
+  `push()` builds on the stack as it stands at the call, `go()` lands only after
+  the redirect's async secure-storage reads, and splash's loader keeps frames
+  coming, so the push could fire first and stack the tap on splash itself. This
+  is the most common real-world path and the easiest to lose.
+- **A warm tap opens over the screen the user left** (`openTappedRoute`,
+  `push_gateway.dart`). It used to `go()`, which replaces the whole stack: the
+  tapped screen sat alone on its navigator — a back arrow that did nothing, an
+  Android back that closed the app — and whatever the user had open was
+  destroyed, unsaved text included. `GoRouter.openFromOutside` pushes a
+  root-level destination over the current screen, so Back returns there; a
+  destination inside the tab shell (`/follow-requests`,
+  `/settings/account-status`) opens over home instead, because pushed over a
+  root-level page go_router appends a second shell whose navigator keys
+  collide. A tap that lands while splash still owns the first navigation is
+  handed to splash (`deferTapToSplash`); a tap on a signed-out screen
+  (`kPublicRoutes`) is dropped. `test/core/push/tap_routing_test.dart` runs
+  every notification type through both paths — the cold one on the real
+  `SplashScreen`, pumped at 60 Hz — and pins every destination to the root or
+  to the Profile tab.
+- **Every screen a notification can open leaves through `popOr`, in every
+  state**: the other-user profile (hero, error, account unavailable), the trip
+  (hero, error — outside edit mode, like its hero), its ratings, Follow
+  requests and Account status. Each falls back to the page that would have been
+  underneath, so even alone on its navigator — a web refresh, a future way in —
+  it has a way out. `test/widgets/notification_destinations_exit_test.dart`
+  pumps each one alone, and fails until a new destination has a case.
 - **Tap routing reuses `notificationRoute()`** (`app_notification.dart`), a free
   function precisely because a push arrives as a bare `data` map with no
   `AppNotification`. A tray tap and a feed tap must never disagree.
@@ -407,6 +434,15 @@ project that holds the Sign-In OAuth clients. FCM carries no per-message charge.
   `.p8` is outstanding. The backend is safe unconfigured. See
   [backlog.md](../backlog.md).
 - **Web push is unbuilt** — needs a service worker and a VAPID key.
+- **A follow-request or moderation tap still closes what sat above the tabs.**
+  Those two destinations open over home, so a root-level screen the user had
+  open (a trip, a stop form) goes, as it did under `go()`. Every other type
+  keeps it.
+- **A warm tap in the instant after splash took its parked route is lost** —
+  the user lands on home, and the row is still in the feed.
+- **A tap after the session died in the background** pushes the redirect's
+  `/login` over the screen rather than replacing the stack; signing in there
+  resets it.
 - `test_notifications.py` and `test_push.py` both run.
 
 ## Related

@@ -7,6 +7,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:ntripi/core/router/navigation_ext.dart';
 import 'package:ntripi/core/ui/app_theme.dart';
 import 'package:ntripi/features/profile/domain/violation.dart';
 import 'package:ntripi/features/profile/providers/profile_provider.dart';
@@ -25,7 +26,11 @@ class AccountStatusScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: nt.surface,
-      appBar: AppBar(title: Text(l10n.accountStatusTitle)),
+      appBar: AppBar(
+        // Explicit: a notification can open this alone, where AppBar draws none.
+        leading: BackButton(onPressed: () => context.popOr('/profile/me')),
+        title: Text(l10n.accountStatusTitle),
+      ),
       body: violationsAsync.when(
         loading: () => const Center(child: NTripiRingLoader()),
         error: (_, __) => Center(

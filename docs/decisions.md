@@ -1290,3 +1290,61 @@ the Following button. Swipe-to-remove (it fights the TabBarView's own
 horizontal swipe, and is undiscoverable). A local `followersCount - 1` (counts
 twice when the row was already stale). Leaving the stranded claim to the TTL
 (CLAUDE.md: never leave a revoked editor's claim standing).
+
+---
+
+### 2026-10-18 — A notification tap never opens a screen with nothing beneath it
+
+**Context.** A tray tap while the app was in the background navigated with
+`go()`, which replaces the whole stack. Six of the eight types open a
+root-level route, so the tapped screen became the only page on the root
+navigator: the profile's back arrow (`maybePop`) did nothing, the AppBar
+screens drew no back button, Android's back closed the app, and the screen the
+user had left was destroyed, unsaved text included. The cold start meant to
+avoid this — splash's `go('/profile/me')`, then a `push` one frame later —
+raced the redirect: `push()` builds on the stack as it stands at the call,
+`go()` lands only after the redirect's async secure-storage reads, and
+splash's loader keeps frames coming, so the push could fire first and stack
+the tap on the splash page. The destinations' own exits had gaps too: the
+profile's and the trip's error states had no way back, and the profile's
+"account unavailable" page hid Go back exactly when there was nothing to pop —
+the state a notification about a since-deleted account produces.
+**Decision.** Two primitives in `core/router/navigation_ext.dart`, beside
+`popOr`. `GoRouter.pushOverHome` opens a route with `/profile/me` beneath it as
+**one** navigation — `routeInformationProvider.push` with an explicit base from
+`configuration.findMatch` — and the cold start uses it. `GoRouter.openFromOutside`
+is the warm tap: a root-level destination is pushed over the screen the user
+left, so Back returns there and their input survives; a destination inside the
+tab shell opens over home. `openTappedRoute` (`push_gateway.dart`) gates it: a
+tap while splash still owns the first navigation is handed to splash
+(`deferTapToSplash`), and one on a signed-out screen (`kPublicRoutes`, hoisted
+out of the redirect so the two cannot disagree) is dropped. On the way out,
+every screen `notificationRoute` can open leaves through `popOr` in every
+state, to the page that would have been underneath: the profile hero gains
+`onBack`, its error state and the unavailable page a Go back, the trip's error
+state a Go back outside edit mode, the ratings and Account status AppBars an
+explicit `BackButton`, and `EditorialTopBar` an `onBack`.
+`tap_routing_test.dart` runs every notification type through both paths — the
+cold one on the real `SplashScreen`, pumped at 60 Hz — and pins each
+destination to the root or the Profile tab;
+`notification_destinations_exit_test.dart` pumps each destination alone and
+fails until a new one has a case.
+**Consequences.** Back from a tapped screen returns to where the user was, or
+to home after a cold start, on both platforms, and an unsaved stop note
+survives a tap of every type but two: Follow requests and Account status still
+close whatever sat above the tabs, as `go()` did. A warm tap in the instant
+after splash took its parked route is lost to home. A tap after the session
+died in the background pushes the redirect's `/login` over the screen rather
+than replacing it; signing in resets the stack. The cold-start race shows only
+when frames outrun the redirect, which `pumpAndSettle`'s 100 ms steps never
+do — hence the 60 Hz pump.
+**Alternatives rejected.** Swapping `go` for `push` alone (pushing
+`/follow-requests` over a root-level page appends a second shell — the
+duplicate-key assertion `app_router.dart` already records). Always opening over
+home, Android's synthetic back stack (one rule, but it keeps destroying the
+screen the user left). Moving the two shell routes to the root (takes the
+bottom bar off both screens, a change nobody asked for). Waiting for `go()` to
+land and then pushing (a delegate listener never fires when `go` targets the
+current configuration, so from home the push would never come). A home
+fallback inside `EditorialTopBar`'s default arrow (on a screen alone it would
+bypass a `PopScope`'s unsaved-changes guard).

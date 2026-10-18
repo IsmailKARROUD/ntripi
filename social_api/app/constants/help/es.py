@@ -93,6 +93,7 @@ RELEASES: tuple[Release, ...] = (
             "**Tu cambio se guarda antes de dejar de editar.** Si tocas ✓ mientras un cambio aún se está guardando, Ntripi te lo dice y sale del modo de edición en cuanto se guarda. Si falla, sigues en modo de edición, con el motivo.",
             "**Cerrar la aplicación mientras editas ya no deja el viaje retenido.** La próxima vez que lo abras, Ntripi lo suelta primero, en lugar de decirte que lo estás editando en otro dispositivo.",
             "**Quitar a un seguidor, o dejar de seguir desde tus listas.** **Quitar** junto a alguien en tu lista de seguidores —o **Quitar seguidor** en el menú ⋯ de su perfil— pone fin a su seguimiento, sin que se le comunique. **Siguiendo** junto a alguien en tu lista de seguidos deja de seguirlo.",
+            "**El botón Atrás funciona después de abrir una notificación.** Lo que abre una notificación ahora siempre tiene adónde volver —normalmente a la pantalla en la que estabas; si no, a tu perfil— y ofrece **Volver** aunque el viaje o la persona en cuestión ya no exista.",
         ),
     ),
     Release(

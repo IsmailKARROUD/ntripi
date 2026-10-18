@@ -9,6 +9,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ntripi/core/api/api_client.dart';
+import 'package:ntripi/core/router/navigation_ext.dart';
 import 'package:ntripi/core/ui/app_theme.dart';
 import 'package:ntripi/core/ui/destructive_actions.dart';
 import 'package:ntripi/features/follows/providers/follow_provider.dart';
@@ -77,7 +78,11 @@ class _FollowRequestsScreenState extends ConsumerState<FollowRequestsScreen> {
             children: [
               SafeArea(
                 bottom: false,
-                child: EditorialTopBar(title: AppLocalizations.of(context)!.followRequestsTitle),
+                child: EditorialTopBar(
+                  title: AppLocalizations.of(context)!.followRequestsTitle,
+                  // A follow-request notification can open this screen.
+                  onBack: () => context.popOr('/profile/me'),
+                ),
               ),
               EditorialDivider(loading: _refreshing),
               Expanded(

@@ -93,6 +93,7 @@ RELEASES: tuple[Release, ...] = (
             "**Votre modification est enregistrée avant la fin de l’édition.** Touchez ✓ pendant qu’une modification s’enregistre encore : Ntripi vous le dit, puis quitte le mode édition une fois l’enregistrement terminé. S’il échoue, vous restez en mode édition, avec la raison.",
             "**Fermer l’application pendant une modification ne retient plus le voyage.** La prochaine fois que vous l’ouvrez, Ntripi le relâche d’abord, au lieu de vous dire que vous le modifiez sur un autre appareil.",
             "**Retirer un abonné, ou se désabonner depuis vos listes.** **Retirer** à côté d’une personne dans votre liste d’abonnés — ou **Retirer l’abonné** dans le menu ⋯ de son profil — met fin à son abonnement, sans qu’elle en soit informée. **Abonné** à côté d’une personne dans votre liste d’abonnements vous désabonne.",
+            "**Le bouton Retour fonctionne après l’ouverture d’une notification.** Ce qu’ouvre une notification a désormais toujours un écran où revenir — en général celui où vous étiez, sinon votre profil — et propose **Retour** même si le voyage ou la personne en question n’existe plus.",
         ),
     ),
     Release(

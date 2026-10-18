@@ -119,6 +119,10 @@ RELEASES: tuple[Release, ...] = (
             "someone in your Followers list — or **Remove follower** in the ⋯ menu "
             "on their profile — ends their follow, and they are not told. "
             "**Following** beside someone in your Following list unfollows them.",
+            "**Back works after you open a notification.** What a notification "
+            "opens now always has somewhere to go back to — usually the screen "
+            "you were on, otherwise your profile — and offers **Go back** even "
+            "when the trip or person it was about is gone.",
         ),
     ),
     Release(

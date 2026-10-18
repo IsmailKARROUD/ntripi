@@ -93,6 +93,7 @@ RELEASES: tuple[Release, ...] = (
             "**Ihre Änderung wird gespeichert, bevor Sie die Bearbeitung beenden.** Tippen Sie auf ✓, während eine Änderung noch gespeichert wird, sagt Ntripi das und verlässt den Bearbeitungsmodus, sobald sie gespeichert ist. Schlägt das Speichern fehl, bleiben Sie im Bearbeitungsmodus, mit dem Grund.",
             "**Die App beim Bearbeiten zu schließen, hält die Reise nicht mehr fest.** Wenn Sie sie das nächste Mal öffnen, gibt Ntripi sie zuerst frei, statt anzuzeigen, dass Sie sie auf einem anderen Gerät bearbeiten.",
             "**Follower entfernen oder aus Ihren Listen entfolgen.** **Entfernen** neben einer Person in Ihrer Follower-Liste — oder **Follower entfernen** im Menü ⋯ auf ihrem Profil — beendet ihr Folgen, ohne dass sie es erfährt. **Gefolgt** neben einer Person in Ihrer Gefolgt-Liste entfolgt ihr.",
+            "**Zurück funktioniert nach dem Öffnen einer Benachrichtigung.** Was eine Benachrichtigung öffnet, führt jetzt immer irgendwohin zurück — meist zu dem Bildschirm, auf dem Sie waren, sonst zu Ihrem Profil — und zeigt **Zurück** auch dann, wenn die Reise oder die Person, um die es ging, nicht mehr existiert.",
         ),
     ),
     Release(

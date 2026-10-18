@@ -234,7 +234,10 @@ ProviderScope
   tree alive. Root-level routes (`/splash`, `/login`, `/register`,
   `/forgot-password`, `/suspended`, and every `/itineraries/:id/...` detail route)
   sit outside it. `/profile/:userId` is declared **after** the shell so
-  `/profile/me` wins.
+  `/profile/me` wins. `core/router/navigation_ext.dart` holds the two halves of
+  safe navigation: `popOr` to leave a screen that may be the only route, and
+  `pushOverHome` / `openFromOutside` to enter one from outside the app — see
+  [notifications.md](notifications.md#flutter-surface).
 - **The shell owns the keyboard for its tabs.** Its Scaffold lifts the tabs above
   the keyboard and the MediaQuery it hands them carries **no** keyboard inset
   (`.removeViewInsets`), so a tab's own Scaffold has nothing left to lift and

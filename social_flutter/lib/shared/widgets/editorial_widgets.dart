@@ -139,6 +139,9 @@ class EditorialTopBar extends StatelessWidget {
   final List<Widget> actions;
   // Replaces the back arrow — a modal edit form cancels rather than navigates.
   final Widget? leading;
+  // Replaces the arrow's maybePop() — for a screen that can be the only route
+  // on its navigator, where there is nothing to pop (see popOr).
+  final VoidCallback? onBack;
   // Only for a leading/trailing pair (Cancel … Save), where a left-aligned
   // title would sit off-centre between two controls of unequal width.
   final bool centerTitle;
@@ -148,6 +151,7 @@ class EditorialTopBar extends StatelessWidget {
     required this.title,
     this.actions = const [],
     this.leading,
+    this.onBack,
     this.centerTitle = false,
   });
 
@@ -165,7 +169,7 @@ class EditorialTopBar extends StatelessWidget {
                 // Material's own AppBar back button carries this; an icon with
                 // no label is unreadable to a screen reader without it.
                 tooltip: MaterialLocalizations.of(context).backButtonTooltip,
-                onPressed: () => Navigator.of(context).maybePop(),
+                onPressed: onBack ?? () => Navigator.of(context).maybePop(),
               ),
           Expanded(
             child: Text(

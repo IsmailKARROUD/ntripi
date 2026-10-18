@@ -413,6 +413,16 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
     ref.read(sfxServiceProvider).play(Sfx.closeItinerary);
   }
 
+  /// The way out from the header back button and from the error state.
+  ///
+  /// Reached via go() after create / stop-delete, or opened by a notification,
+  /// so there may be nothing on the stack to pop — and popOr's go() branch never
+  /// reaches the PopScope, which is why the cue is fired here too.
+  void _leave() {
+    _playCloseCue();
+    context.popOr('/itineraries');
+  }
+
   /// Scrolls the outer CustomScrollView so that the track with the given ID
   /// becomes visible near the top. The post-frame callback waits for the
   /// detail-provider refresh to rebuild the list before resolving the key's
@@ -719,6 +729,14 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                             .refresh(),
                         child: Text(l10n.retry),
                       ),
+                      // No hero here; edit mode's Back goes through the PopScope.
+                      if (!_editMode) ...[
+                        const SizedBox(height: 8),
+                        OutlinedButton(
+                          onPressed: _leave,
+                          child: Text(l10n.goBack),
+                        ),
+                      ],
                     ],
                   ),
                 ),
@@ -1065,14 +1083,7 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                             editDetailsButtonKey: _editDetailsButtonKey,
                             enterEditButtonKey: _enterEditButtonKey,
                             onCoverTap: isOwner ? _showAddCoverHint : null,
-                            // Reached via go() after create / stop-delete, so
-                            // there may be nothing on the stack to pop — and
-                            // popOr's go() branch never reaches the PopScope,
-                            // which is why the cue is fired here too.
-                            onBack: () {
-                              _playCloseCue();
-                              context.popOr('/itineraries');
-                            },
+                            onBack: _leave,
                             onShare: itinerary.visibility !=
                                     ItineraryVisibility.onlyMe
                                 ? () => ref
