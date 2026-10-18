@@ -9,9 +9,12 @@
 // authRepositoryProvider: supplies a singleton AuthRepository.
 // authStateProvider: tracks whether the user is authenticated.
 
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show ProviderOrFamily;
 import 'package:ntripi/core/api/api_client.dart';
+import 'package:ntripi/core/providers/locale_provider.dart';
 import 'package:ntripi/core/push/push_service.dart';
 import 'package:ntripi/core/storage/secure_storage.dart';
 import 'package:ntripi/features/auth/data/auth_repository.dart';
@@ -98,6 +101,13 @@ class AuthNotifier extends Notifier<String?> {
     // a baseline and never correct upward.
     _resetUserScopedState(ref);
     state = userId;
+    // Sign-out deleted this device's push registration and only a cold start
+    // re-adopts it, so this account would get no push until a relaunch. Never
+    // prompts; a no-op unless the OS already granted permission.
+    if (pushAvailable) {
+      final locale = ref.read(localeProvider).languageCode;
+      unawaited(readoptPushRegistration(() => locale));
+    }
   }
 
   /// Called on logout or when a 401 is received.

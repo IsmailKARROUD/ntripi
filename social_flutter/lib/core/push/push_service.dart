@@ -76,6 +76,7 @@ Future<void> initFirebase() async {
 /// Returns true when the device ended up registered.
 Future<bool> registerForPush({required String locale}) async {
   if (kIsWeb || !_firebaseReady) return false;
+  final session = _gate.session;
 
   try {
     final messaging = FirebaseMessaging.instance;
@@ -89,7 +90,7 @@ Future<bool> registerForPush({required String locale}) async {
 
     final token = await _fetchToken();
     if (token == null) return false;
-    await _sendToken(token, locale: locale);
+    await _sendToken(token, locale: locale, session: session);
     return true;
   } catch (e) {
     debugPrint('Push registration failed: $e');
@@ -113,7 +114,7 @@ void attachPushListeners({
     // Only if this device was already registered: a refresh must not register a
     // device whose owner declined, or never reached the permission prompt.
     if (_registeredToken == null) return;
-    _sendToken(token, locale: currentLocale());
+    _sendToken(token, locale: currentLocale(), session: _gate.session);
   });
 
   // Warm start: the app was backgrounded and the user tapped the tray entry.
@@ -133,7 +134,7 @@ void attachPushListeners({
   // device to unregister (the previous user's pushes kept arriving for the
   // next one) and a token rotation was never re-sent. Re-adopt the
   // registration when the OS already said yes; this never prompts.
-  unawaited(_readoptRegistration(currentLocale));
+  unawaited(readoptPushRegistration(currentLocale));
 
   // Foreground messages are deliberately unhandled. Android suppresses the tray
   // entry while the app is open, and NotificationPoller's badge and SFX cue
@@ -149,10 +150,17 @@ Future<String?> takeInitialPushRoute() async {
   return pending;
 }
 
-/// Re-send this device's token when push was granted on an earlier run and
-/// somebody is signed in. Doing so also keeps the server's last_seen_at fresh,
-/// which is what DEVICE_TOKEN_RETENTION_DAYS purges on.
-Future<void> _readoptRegistration(String Function() currentLocale) async {
+/// Re-send this device's token when the OS already granted push and somebody
+/// is signed in: at launch, and from AuthNotifier.setAuthenticated when a
+/// session starts. Never prompts. Doing so also keeps the server's
+/// last_seen_at fresh, which is what DEVICE_TOKEN_RETENTION_DAYS purges on.
+///
+/// Sign-in needs it as much as launch does: sign-out deletes this device's
+/// row, so the next account on the phone got no push until a cold start or a
+/// visit to the notification screen.
+Future<void> readoptPushRegistration(String Function() currentLocale) async {
+  if (kIsWeb || !_firebaseReady) return;
+  final session = _gate.session;
   try {
     if (await readRefreshToken() == null) return;
     final messaging = FirebaseMessaging.instance;
@@ -162,7 +170,9 @@ Future<void> _readoptRegistration(String Function() currentLocale) async {
       return;
     }
     final token = await _fetchToken();
-    if (token != null) await _sendToken(token, locale: currentLocale());
+    if (token != null) {
+      await _sendToken(token, locale: currentLocale(), session: session);
+    }
   } catch (e) {
     debugPrint('Push re-registration skipped: $e');
   }
@@ -174,6 +184,9 @@ Future<void> _readoptRegistration(String Function() currentLocale) async {
 Future<void> unregisterForPush() async {
   var token = _registeredToken;
   _registeredToken = null;
+  // Before the DELETE: a registration still waiting on APNs must not post
+  // after it, and one already on the wire must land before it.
+  await _gate.endSession();
   if (kIsWeb || !_firebaseReady) return;
   // Not registered in THIS run (a restart, or re-adoption still in flight):
   // the device may still be registered from an earlier one, so ask FCM.
@@ -207,7 +220,7 @@ Future<void> unregisterForPush() async {
 Future<void> updatePushLocale(String locale) async {
   final token = _registeredToken;
   if (token == null) return;
-  await _sendToken(token, locale: locale);
+  await _sendToken(token, locale: locale, session: _gate.session);
 }
 
 /// How long a registration waits for Apple's device token. Both registration
@@ -256,16 +269,65 @@ Future<bool> waitForApnsToken(
   }
 }
 
-Future<void> _sendToken(String token, {required String locale}) async {
+/// Keeps a registration from outliving the session it was made for.
+///
+/// A registration can wait seconds on APNs, and sign-out does not wait for
+/// that, so two orders must be impossible: a POST that starts after sign-out,
+/// and one still on the wire when sign-out's DELETE goes out — it lands second
+/// and re-creates the row. Either way the next person on the phone would
+/// receive this user's notifications, moderation notices included.
+@visibleForTesting
+class RegistrationGate {
+  int _session = 0;
+  final _inFlight = <Future<void>>{};
+
+  /// The session a registration belongs to. Read it before the first await.
+  int get session => _session;
+
+  /// Sends [request] unless [session] has ended. True when it was sent and the
+  /// session is still current once it lands; a failed request rethrows.
+  Future<bool> post(int session, Future<void> Function() request) async {
+    // Nothing awaits between this check and recording the request, so
+    // endSession either sees it in flight or this sees endSession's bump.
+    if (session != _session) return false;
+    final sent = request();
+    final settled = sent.then<void>((_) {}, onError: (Object _) {});
+    _inFlight.add(settled);
+    unawaited(settled.whenComplete(() => _inFlight.remove(settled)));
+    await sent;
+    return session == _session;
+  }
+
+  /// Refuses every later [post] for the current session, then waits out the
+  /// ones already in flight, so whatever the caller sends next lands after.
+  Future<void> endSession() async {
+    _session++;
+    await Future.wait(_inFlight.toList());
+  }
+}
+
+final _gate = RegistrationGate();
+
+/// The only sender of POST /devices — every registration goes through [_gate].
+Future<void> _sendToken(
+  String token, {
+  required String locale,
+  required int session,
+}) async {
   try {
-    await dio.post(kDevicesEndpoint, data: {
-      'token': token,
-      'platform': defaultTargetPlatform == TargetPlatform.iOS
-          ? 'ios'
-          : 'android',
-      'locale': locale,
-    });
-    _registeredToken = token;
+    final current = await _gate.post(
+      session,
+      () => dio.post(kDevicesEndpoint, data: {
+        'token': token,
+        'platform': defaultTargetPlatform == TargetPlatform.iOS
+            ? 'ios'
+            : 'android',
+        'locale': locale,
+      }),
+    );
+    // Not after a sign-out that came in mid-request: it has already forgotten
+    // this token, and keeping it would read as registered for the next account.
+    if (current) _registeredToken = token;
   } catch (e) {
     // Leave _registeredToken alone: on a failed refresh the previously
     // registered token is still what the server knows about.

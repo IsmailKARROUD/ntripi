@@ -188,6 +188,16 @@ Unset, nothing is sent, nothing raises, and the poll is the only channel.
   prompting) and a session exists, and `unregisterForPush` falls back to
   `getToken()`. Re-sending on launch also keeps `last_seen_at` fresh for
   `DEVICE_TOKEN_RETENTION_DAYS`, and makes `onTokenRefresh` work after a restart.
+- **Sign-in re-adopts the registration too** (`readoptPushRegistration` from
+  `AuthNotifier.setAuthenticated`). Sign-out deletes the row, so before this the
+  next account on the phone got no push until a cold start or a visit to
+  `/notifications`. Still never prompts.
+- **A registration cannot outlive its session.** It can wait seconds on APNs,
+  and sign-out does not wait for that, so `RegistrationGate` refuses a POST whose
+  session has ended and makes sign-out wait for any POST already on the wire. A
+  POST landing after the DELETE would re-create the row for the account that
+  left. `test/core/push/registration_gate_test.dart` pins both, and fails if
+  anything but `_sendToken` posts to `/devices`.
 - **Every FCM token read goes through `_fetchToken`, which on iOS waits for the
   APNs token first.** Apple delivers it asynchronously after launch, and
   `getToken()` asked before it arrives throws `apns-token-not-set`. Every caller
