@@ -298,6 +298,18 @@ abstract class AppLocalizations {
   /// **'Sign in to continue your journey'**
   String get loginSubtitle;
 
+  /// Above the sign-in and sign-up forms while a shared trip link waits for the sign-in (ParkedLinkNotice).
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in or create a free account to open the trip you were sent.'**
+  String get signInToOpenTrip;
+
+  /// Above the sign-in and sign-up forms while a shared profile link waits for the sign-in (ParkedLinkNotice).
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in or create a free account to open the profile you were sent.'**
+  String get signInToOpenProfile;
+
   /// No description provided for @loginEmailLabel.
   ///
   /// In en, this message translates to:

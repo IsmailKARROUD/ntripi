@@ -1,7 +1,8 @@
 """templating.py — Single Jinja2Templates instance shared by web.py and share.py.
 
-A context processor injects `_` (the translator) and `lang` into every template
-render based on the request's resolved language, plus the `current_year` global.
+A context processor injects `_` (the translator), `_n` (its plural twin) and
+`lang` into every template render based on the request's resolved language,
+plus the `current_year` global.
 
 It also injects the SEO values every page needs — `canonical_url`,
 `alternates` and `switch_lang` — so no route has to remember to pass them and no
@@ -21,7 +22,9 @@ from fastapi.templating import Jinja2Templates
 from starlette.requests import Request
 
 from app.config import get_settings
-from app.i18n import LANG_NAMES, RTL_LANGS, SUPPORTED, resolve_lang, translator
+from app.i18n import (
+    LANG_NAMES, RTL_LANGS, SUPPORTED, plural_translator, resolve_lang, translator,
+)
 from app.services.seo import alternates_for, canonical_url, switch_language_path
 
 _TEMPLATES_DIR = Path(__file__).parent / "templates"
@@ -36,6 +39,7 @@ def _i18n_context(request: Request) -> dict:
     path = request.url.path
     return {
         "_": translator(lang),
+        "_n": plural_translator(lang),
         "lang": lang,
         "dir": "rtl" if lang in RTL_LANGS else "ltr",
         "supported": SUPPORTED,

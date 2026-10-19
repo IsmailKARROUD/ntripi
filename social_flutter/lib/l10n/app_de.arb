@@ -32,6 +32,8 @@
   "downloadBannerButton": "Herunterladen",
   "loginTitle": "Willkommen zurück",
   "loginSubtitle": "Melde dich an, um deine Reise fortzusetzen",
+  "signInToOpenTrip": "Melde dich an oder erstelle ein kostenloses Konto, um die Reiseroute zu öffnen, die du bekommen hast.",
+  "signInToOpenProfile": "Melde dich an oder erstelle ein kostenloses Konto, um das Profil zu öffnen, das du bekommen hast.",
   "loginEmailLabel": "E-Mail oder Benutzername",
   "loginEmailHelp": "Melde dich mit der E-Mail, mit der du dich registriert hast, oder mit deinem @Benutzernamen an.",
   "loginEmailHint": "du@beispiel.com oder @Benutzername",

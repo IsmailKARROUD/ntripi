@@ -90,9 +90,38 @@ ordering.
 | 3/hour | `/auth/forgot-password`, `/auth/resend-verification` |
 | 10/hour | `/auth/accept-tos`, `/appeals`, `/web/appeal`, `POST /reports` |
 | 30/minute | `GET /users/search`, `GET /itineraries/feed` |
+| 120/minute (`SHARE_RATE_LIMIT`) | `GET /share/i/{id}`, `GET /share/u/{username}` |
+
+The `/share` limit answers with an **HTML** page (`share_rate_limited.html`,
+`Retry-After` set) rather than slowapi's JSON, because those pages are read in
+browsers — `main.py`'s `_rate_limit_response` picks by path; every other limited
+route keeps the JSON body.
 
 **`POST /waitlist/join` and `GET /help/search` are the two unlimited public
 POST/GET surfaces** — the latter deliberately, the former apparently not.
+
+### The public surface
+
+**A reader without an account — a person, a chat crawler, a search engine —
+reaches the share-page teaser and nothing else**, and
+`test_public_surface.py` proves it two ways:
+
+- **Structurally**: it introspects `app.main.app.routes`, and every route whose
+  dependency tree holds no `get_current_user` / `require_verified_email` must
+  sit in `PUBLIC_ROUTES` with a category (teaser · help · legal · site ·
+  auth-flow · token-form · machine-file · health · anonymous-write · internal).
+  A new open route fails the suite until classified; a classified one that
+  disappears fails it too. Every `/admin` route must carry the admin guard,
+  mounts must be `/static`, `/uploads` or `/app`, and FastAPI's own pages exist
+  only with `DEBUG`.
+- **By sentinel**: a public trip, a private trip, a hidden trip and two profiles
+  are seeded with a marker in every non-teaser field; every open GET (and every
+  `/admin` page) is fetched signed out, plus the anonymous report POST, and a
+  marker in any body or header fails it.
+
+The Flutter half is `kPublicRoutes`, pinned by
+`test/core/router/public_routes_test.dart`. See
+[sharing.md](sharing.md#what-a-reader-without-an-account-sees).
 
 ### Exception handling
 
@@ -108,9 +137,11 @@ POST/GET surfaces** — the latter deliberately, the former apparently not.
 - **`SECRET_KEY` is validated at startup with `Field(min_length=32)`** — anything
   shorter raises a `ValidationError` before the server accepts traffic. Generate
   with `openssl rand -hex 32`.
-- **`DEBUG=False` disables `/docs` and `/redoc`** via `docs_url=None`. Never set
-  `True` on Railway. (`/docs`, `/redoc` and `/openapi.json` appear in a local
-  route dump only because the dev `.env` sets `DEBUG=True`.)
+- **`DEBUG=False` disables `/docs`, `/redoc` and `/openapi.json`** via
+  `docs_url` / `redoc_url` / `openapi_url=None`. Never set `True` on Railway.
+  Until 2026-10-19 the raw schema stayed public in production — a map of every
+  endpoint for a scraper. (All three appear in a local route dump only because
+  the dev `.env` sets `DEBUG=True`.)
 - **Four startup validators raise** — see [constraints.md](../constraints.md#config-via-env).
 
 ### Database engine

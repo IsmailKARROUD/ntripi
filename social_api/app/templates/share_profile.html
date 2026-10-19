@@ -1,0 +1,42 @@
+{#- A profile's share page, public or private account alike: display name,
+    @username and avatar — the same for a person, a chat crawler and a search
+    engine; the route passes nothing else (prepare_profile_share_context). A
+    private account's page is also noindex. Kept free of gendered pronouns: the
+    page renders for any account and the owner's gender is never known. -#}
+{% extends "_share_layout.html" %}
+{% from "_app_links.html" import teaser_gate with context %}
+{%- set card_description = '🔒 @' ~ username ~ ' · Ntripi' if is_private else '@' ~ username ~ ' · Ntripi' %}
+
+{% block title %}{{ display_name }} — Ntripi{% endblock %}
+
+{% block meta %}
+  <meta name="description" content="{{ card_description }}">
+  <meta property="og:type"        content="profile">
+  <meta property="og:site_name"   content="Ntripi">
+  <meta property="og:title"       content="{{ display_name }}">
+  <meta property="og:description" content="{{ card_description }}">
+  <meta property="og:url"         content="{{ share_url }}">
+  <meta property="og:image"       content="{{ preview_image_url }}">
+  <meta name="twitter:card"        content="summary">
+  <meta name="twitter:title"       content="{{ display_name }}">
+  <meta name="twitter:description" content="{{ card_description }}">
+  <meta name="twitter:image"       content="{{ preview_image_url }}">
+{% endblock %}
+
+{% block content %}
+<section class="identity">
+  {%- if avatar_url %}
+  <img class="avatar" src="{{ avatar_url }}" alt="">
+  {%- else %}
+  <div class="avatar-initial" aria-hidden="true">{{ initial }}</div>
+  {%- endif %}
+  <h1 class="identity-name" dir="auto">{{ display_name }}</h1>
+  <p class="identity-handle">@{{ username }}</p>
+</section>
+
+{%- if is_private %}
+{{ teaser_gate(app_cta, 'profile', lead=_('share_profile_private_message')) }}
+{%- else %}
+{{ teaser_gate(app_cta, 'profile', lead=_('share_gate_lead_profile')) }}
+{%- endif %}
+{% endblock %}

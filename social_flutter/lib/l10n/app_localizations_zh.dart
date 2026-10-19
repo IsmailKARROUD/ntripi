@@ -105,6 +105,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get loginSubtitle => '登录以继续你的旅程';
 
   @override
+  String get signInToOpenTrip => '登录或创建免费账号，即可打开别人发给你的行程。';
+
+  @override
+  String get signInToOpenProfile => '登录或创建免费账号，即可打开别人发给你的个人资料。';
+
+  @override
   String get loginEmailLabel => '邮箱或用户名';
 
   @override

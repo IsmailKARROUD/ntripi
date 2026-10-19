@@ -251,15 +251,6 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "es": "Este itinerario es privado",
         "zh": "此行程为私密",
     },
-    "share_private_body": {
-        "en": "The owner has restricted who can view this itinerary.",
-        "fr": "Le propriétaire a restreint l'accès à cet itinéraire.",
-        "ar": "قيّد المالك من يمكنه عرض المسار هذا.",
-        "de": "Der Eigentümer hat eingeschränkt, wer diese Reiseroute sehen kann.",
-        "es": "El propietario ha restringido quién puede ver este itinerario.",
-        "zh": "所有者已限制可查看此行程的人。",
-    },
-    "share_by": {"en": "by", "fr": "par", "ar": "بواسطة", "de": "von", "es": "por", "zh": "作者"},
     "share_stops": {
         "en": "stops",
         "fr": "étapes",
@@ -312,30 +303,6 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "es": "Solo las personas con las que su propietario lo comparte pueden abrirlo.",
         "zh": "只有所有者分享给的人才能打开。",
     },
-    "share_install_prompt": {
-        "en": "Don't have Ntripi?",
-        "fr": "Vous n'avez pas Ntripi ?",
-        "ar": "ليس لديك Ntripi؟",
-        "de": "Sie haben Ntripi noch nicht?",
-        "es": "¿No tienes Ntripi?",
-        "zh": "还没有 Ntripi？",
-    },
-    "share_shared_via": {
-        "en": "Shared via Ntripi",
-        "fr": "Partagé via Ntripi",
-        "ar": "تمت المشاركة عبر Ntripi",
-        "de": "Geteilt über Ntripi",
-        "es": "Compartido con Ntripi",
-        "zh": "通过 Ntripi 分享",
-    },
-    "share_note_from_author": {
-        "en": "Note from author",
-        "fr": "Note de l'auteur",
-        "ar": "ملاحظة من الكاتب",
-        "de": "Hinweis des Autors",
-        "es": "Nota del autor",
-        "zh": "作者留言",
-    },
     "share_get_the_app": {
         "en": "Get the app",
         "fr": "Obtenir l'application",
@@ -352,14 +319,6 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "es": "Itinerario público",
         "zh": "公开行程",
     },
-    "share_the_route": {
-        "en": "The Route",
-        "fr": "L'itinéraire",
-        "ar": "الطريق",
-        "de": "Die Route",
-        "es": "La ruta",
-        "zh": "路线",
-    },
     "share_free": {"en": "Free", "fr": "Gratuit", "ar": "مجاني", "de": "Kostenlos", "es": "Gratis", "zh": "免费"},
     # ── Profile landing page (/share/u/{username}) ────────────────────────
     # Kept free of gendered pronouns: the page renders for any account and the
@@ -372,57 +331,102 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "es": "Esta cuenta es privada. Abre la aplicación Ntripi para enviar una solicitud de seguimiento.",
         "zh": "此账户为私密账户。请打开 Ntripi 应用发送关注请求。",
     },
-    "share_profile_followers": {
-        "en": "Followers", "fr": "Abonnés", "ar": "المتابعون",
-        "de": "Follower", "es": "Seguidores", "zh": "粉丝",
+    # ── The teaser gate (every share page) ─────────────────────────────────
+    # The one way into a teaser's full content: the web app, which signs the
+    # visitor in and opens the same trip or profile.
+    "share_see_full_trip": {
+        "en": "See the full trip",
+        "fr": "Voir l'itinéraire complet",
+        "ar": "اعرض المسار كاملًا",
+        "de": "Ganze Reiseroute ansehen",
+        "es": "Ver el itinerario completo",
+        "zh": "查看完整行程",
     },
-    "share_profile_following": {
-        "en": "Following", "fr": "Abonnements", "ar": "المتابَعون",
-        "de": "Folgt", "es": "Siguiendo", "zh": "关注",
+    "share_see_full_profile": {
+        "en": "See the full profile",
+        "fr": "Voir le profil complet",
+        "ar": "اعرض الملف الشخصي كاملًا",
+        "de": "Ganzes Profil ansehen",
+        "es": "Ver el perfil completo",
+        "zh": "查看完整个人资料",
     },
-    "share_profile_trips": {
-        "en": "Public itineraries", "fr": "Itinéraires publics", "ar": "المسارات العامة",
-        "de": "Öffentliche Reiserouten", "es": "Itinerarios públicos", "zh": "公开行程",
+    "share_free_account_needed": {
+        "en": "Free account needed",
+        "fr": "Compte gratuit requis",
+        "ar": "يلزم حساب مجاني",
+        "de": "Kostenloses Konto erforderlich",
+        "es": "Se necesita una cuenta gratuita",
+        "zh": "需要免费账号",
     },
-    "share_profile_no_trips": {
-        "en": "No public itineraries yet.",
-        "fr": "Aucun itinéraire public pour l'instant.",
-        "ar": "لا توجد مسارات عامة بعد.",
-        "de": "Noch keine öffentlichen Reiserouten.",
-        "es": "Todavía no hay itinerarios públicos.",
-        "zh": "暂无公开行程。",
+    # Shown under the store buttons only once a store is live: installing from
+    # the page does not carry the link into the app (no deferred deep linking).
+    "share_tap_link_again": {
+        "en": "Once it's installed, tap the link again to open it in the app.",
+        "fr": "Une fois l'application installée, touchez à nouveau le lien pour l'ouvrir dans l'application.",
+        "ar": "بعد تثبيت التطبيق، اضغط على الرابط مجددًا لفتحه فيه.",
+        "de": "Tippen Sie nach der Installation erneut auf den Link, um ihn in der App zu öffnen.",
+        "es": "Cuando esté instalada, vuelve a tocar el enlace para abrirlo en la aplicación.",
+        "zh": "安装完成后，再次点击链接即可在应用中打开。",
     },
-    "share_plan_own": {
-        "en": "Plan your own journey",
-        "fr": "Planifiez votre propre voyage",
-        "ar": "خطط لرحلتك الخاصة",
-        "de": "Planen Sie Ihre eigene Reise",
-        "es": "Planifica tu propio viaje",
-        "zh": "规划属于你的旅程",
+    "share_gate_lead_trip": {
+        "en": "The stops, routes, costs and tips are in Ntripi.",
+        "fr": "Les étapes, les trajets, les coûts et les conseils sont dans Ntripi.",
+        "ar": "المحطات والطرق والتكاليف والنصائح موجودة في Ntripi.",
+        "de": "Stationen, Wege, Kosten und Tipps finden Sie in Ntripi.",
+        "es": "Las paradas, los trayectos, los costes y los consejos están en Ntripi.",
+        "zh": "站点、路线、费用和建议都在 Ntripi 里。",
     },
-    "share_plan_own_sub": {
-        "en": "Open this itinerary in the Ntripi app, or download to start creating your own.",
-        "fr": "Ouvrez cet itinéraire dans l'application Ntripi, ou téléchargez-la pour créer le vôtre.",
-        "ar": "افتح المسار هذا في تطبيق Ntripi، أو نزّله لتبدأ في إنشاء المسار الخاص بك.",
-        "de": "Öffnen Sie diese Reiseroute in der Ntripi-App oder laden Sie sie herunter, um Ihre eigene zu erstellen.",
-        "es": "Abre este itinerario en la aplicación Ntripi, o descárgala para empezar a crear el tuyo.",
-        "zh": "在 Ntripi 应用中打开此行程，或下载应用开始创建自己的行程。",
+    "share_gate_lead_profile": {
+        "en": "The trips, followers and the rest of this profile are in Ntripi.",
+        "fr": "Les itinéraires, les abonnés et le reste de ce profil sont dans Ntripi.",
+        "ar": "المسارات والمتابِعون وبقية هذا الملف الشخصي موجودة في Ntripi.",
+        "de": "Reiserouten, Follower und der Rest dieses Profils sind in Ntripi.",
+        "es": "Los itinerarios, los seguidores y el resto de este perfil están en Ntripi.",
+        "zh": "这个个人资料的行程、粉丝和其他内容都在 Ntripi 里。",
     },
-    "share_open_in_app_short": {
-        "en": "Open in app",
-        "fr": "Ouvrir dans l'app",
-        "ar": "افتح في التطبيق",
-        "de": "In der App öffnen",
-        "es": "Abrir en la app",
-        "zh": "在应用中打开",
+    # The private page cannot know whether the visitor is among the people it
+    # was shared with — signing in is how they find out.
+    "share_gate_lead_private": {
+        "en": "If it was shared with you, sign in to open it.",
+        "fr": "S'il a été partagé avec vous, connectez-vous pour l'ouvrir.",
+        "ar": "إذا شاركه مالكه معك، فسجّل الدخول لفتحه.",
+        "de": "Wenn sie mit Ihnen geteilt wurde, melden Sie sich an, um sie zu öffnen.",
+        "es": "Si se ha compartido contigo, inicia sesión para abrirlo.",
+        "zh": "如果它已分享给你，请登录后打开。",
     },
-    "share_or_download": {
-        "en": "or download",
-        "fr": "ou télécharger",
-        "ar": "أو نزّله",
-        "de": "oder herunterladen",
-        "es": "o descargar",
-        "zh": "或下载",
+    # The app's own label (descriptionLabel in the .arb files).
+    "share_description": {
+        "en": "Description",
+        "fr": "Description",
+        "ar": "الوصف",
+        "de": "Beschreibung",
+        "es": "Descripción",
+        "zh": "描述",
+    },
+    # A public trip's preview card when it has neither a rating nor a description.
+    "share_card_fallback": {
+        "en": "A trip on Ntripi",
+        "fr": "Un itinéraire sur Ntripi",
+        "ar": "مسار على Ntripi",
+        "de": "Eine Reiseroute auf Ntripi",
+        "es": "Un itinerario en Ntripi",
+        "zh": "Ntripi 上的行程",
+    },
+    "share_rate_limited_heading": {
+        "en": "Too many requests",
+        "fr": "Trop de requêtes",
+        "ar": "طلبات كثيرة جدًا",
+        "de": "Zu viele Anfragen",
+        "es": "Demasiadas solicitudes",
+        "zh": "请求过多",
+    },
+    "share_rate_limited_body": {
+        "en": "This page was opened too many times in a short while. Wait a minute, then try again.",
+        "fr": "Cette page a été ouverte trop de fois en peu de temps. Patientez une minute, puis réessayez.",
+        "ar": "فُتحت هذه الصفحة مرات كثيرة خلال وقت قصير. انتظر دقيقة ثم حاول مجددًا.",
+        "de": "Diese Seite wurde in kurzer Zeit zu oft geöffnet. Warten Sie eine Minute und versuchen Sie es dann erneut.",
+        "es": "Esta página se ha abierto demasiadas veces en poco tiempo. Espera un minuto y vuelve a intentarlo.",
+        "zh": "此页面在短时间内被打开次数过多。请稍等一分钟后再试。",
     },
     "share_download_on": {
         "en": "Download on the",
@@ -1458,3 +1462,47 @@ def translator(lang: str):
         return text.format(**kwargs) if kwargs else text
 
     return _
+
+
+# Count-bearing strings, by CLDR plural category: key → lang → category → text.
+# Copied from the app's .arb ICU plurals, so a page and the app say one thing.
+PLURALS: dict[str, dict[str, dict[str, str]]] = {
+    "share_rating_count": {
+        "en": {"one": "{count} rating", "other": "{count} ratings"},
+        "fr": {"one": "{count} évaluation", "other": "{count} évaluations"},
+        "ar": {
+            "zero": "لا تقييمات", "one": "تقييم واحد", "two": "تقييمان",
+            "few": "{count} تقييمات", "many": "{count} تقييمًا", "other": "{count} تقييم",
+        },
+        "de": {"one": "{count} Bewertung", "other": "{count} Bewertungen"},
+        "es": {"one": "{count} valoración", "other": "{count} valoraciones"},
+        "zh": {"other": "{count} 条评分"},
+    },
+}
+
+
+def plural_category(lang: str, count: int) -> str:
+    """The CLDR plural category of `count` — for the six languages served only."""
+    if lang == "ar":
+        if count in (0, 1, 2):
+            return ("zero", "one", "two")[count]
+        rest = count % 100
+        if 3 <= rest <= 10:
+            return "few"
+        return "many" if 11 <= rest <= 99 else "other"
+    if lang == "zh":
+        return "other"
+    if lang == "fr":
+        return "one" if count in (0, 1) else "other"
+    return "one" if count == 1 else "other"
+
+
+def plural_translator(lang: str):
+    """Return a `_n(key, count)` function: the PLURALS form for `count`, falling
+    back to the language's `other`, then to English."""
+    def _n(key: str, count: int) -> str:
+        forms = PLURALS[key].get(lang) or PLURALS[key]["en"]
+        text = forms.get(plural_category(lang, count)) or forms["other"]
+        return text.format(count=count)
+
+    return _n

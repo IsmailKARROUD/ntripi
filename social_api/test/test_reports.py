@@ -282,8 +282,11 @@ class TestShareReportUI:
         assert r.status_code == 200
         assert "report-dialog" in r.text
         assert "report-link" in r.text
-        # Report button sits in the top-right cluster next to the "Public itinerary" badge.
-        assert "hero-top-actions" in r.text
+        # The report button sits in the cover hero's top corner — where the app
+        # puts its flag — as a glass button.
+        hero_top = r.text.split('class="hero-top"', 1)[1].split("</div>", 1)[0]
+        assert 'id="report-link"' in hero_top
+        assert 'class="glass"' in hero_top
         # The thank-you confirmation must offer an explicit close control.
         assert "report-close" in r.text
 

@@ -125,8 +125,8 @@ RELEASES: tuple[Release, ...] = (
             "when the trip or person it was about is gone.",
             "**Shared links open in the app.** A link to a trip or a profile now "
             "opens it in Ntripi when the app is installed — after you sign in, if "
-            "you were signed out. Without the app, the page offers it, or you can "
-            "continue on the web.",
+            "you were signed out. Without the app, the page offers it, or **See the "
+            "full trip** to sign in and open it on the web.",
             "**A clear answer when a trip can't be opened.** A link to a trip you "
             "may not see, or one that was deleted, now says so — with a way back "
             "— instead of an error with a Retry button.",
@@ -134,6 +134,10 @@ RELEASES: tuple[Release, ...] = (
             "trip shared with followers or specific people no longer shows its "
             "title, cover photo or owner — only that it is a private trip on "
             "Ntripi.",
+            "**Shared pages show a preview.** Without an account, a link shows a "
+            "trip's title, cover photo, rating and description — or a profile's "
+            "name and photo — in the same look as the app. The rest is one free "
+            "sign-in away, and the sign-in screen says what is waiting.",
         ),
     ),
     Release(
@@ -1178,17 +1182,18 @@ ARTICLES: tuple[Article, ...] = (
         slug="share-a-trip-link",
         title="How to share your trip as a link",
         summary=(
-            "Send a trip to anyone with a link — it opens in the app if they "
-            "have it, in their browser if not — and know what the preview shows."
+            "Send a trip with a link — it opens in the app if they have it, and "
+            "as a preview with a way in if they don't."
         ),
         category="sharing",
-        updated="2026-10-18",
+        updated="2026-10-19",
         keywords=(
             "share", "link", "url", "send", "whatsapp", "preview", "copy",
             "publish", "public",
             "open in app",
             "app link",
             "browser",
+            "sign in", "account", "see the full trip",
         ),
         related=("share-an-itinerary-privately", "trip-cover-photos"),
         cta="Build something worth sending.",
@@ -1209,8 +1214,9 @@ ARTICLES: tuple[Article, ...] = (
                     "email, notes.\n\n"
                     "If the person you send it to has Ntripi, the link opens the "
                     "trip in the app — after they sign in, if they are signed out. "
-                    "If they don't, it opens in their browser, where they can read "
-                    "it without an account, get the app, or continue on the web."
+                    "If they don't, it opens a preview of the trip in their "
+                    "browser, with one way in: **See the full trip**, which signs "
+                    "them in — or creates a free account — and opens it."
                 ),
             ),
             Block(
@@ -1218,8 +1224,8 @@ ARTICLES: tuple[Article, ...] = (
                 heading="What the preview card shows",
                 body=(
                     "A **public** trip generates a preview card in most chat apps: "
-                    "the cover image, the title, the total duration and cost, the "
-                    "number of stops, and the rating if it has one.\n\n"
+                    "the cover image, the title, and — when the trip has them — its "
+                    "rating and the start of its description.\n\n"
                     "A trip that is **not** public generates only a plain card that "
                     "says it is a private trip on Ntripi — no title, cover photo or "
                     "owner. That is deliberate — the card is seen by everyone in the "
@@ -1230,11 +1236,17 @@ ARTICLES: tuple[Article, ...] = (
                 anchor="what-they-see",
                 heading="What the reader gets",
                 body=(
-                    "The whole trip: the stops in order, the parallel options, the "
-                    "transport between them, the costs, your notes and warnings, "
-                    "and the ratings.\n\n"
-                    "They can read all of it without an account. Saving it, rating "
-                    "it or copying stops from it needs one."
+                    "Without an account, the preview: the trip's title, cover "
+                    "photo, rating and description. That is all anyone gets "
+                    "without signing in — a person, a search engine or a chat app "
+                    "alike — so your name, the stops, the transport, the costs, "
+                    "your notes and the reviews stay inside Ntripi.\n\n"
+                    "Everything else is one free sign-in away: **See the full "
+                    "trip** opens it on the web, or in the app where it is "
+                    "installed. Saving it, rating it or copying stops from it "
+                    "needs the account too.\n\n"
+                    "A link to a profile works the same way: without an account "
+                    "it shows the name, the @username and the profile photo."
                 ),
             ),
             Block(
@@ -1242,9 +1254,9 @@ ARTICLES: tuple[Article, ...] = (
                 heading="If a link opens in the browser instead of the app",
                 body=(
                     "A link opens the app only on a phone where Ntripi is "
-                    "installed. Anywhere else it opens the trip's page in the "
-                    "browser, which offers the app — and **Continue on web**, to "
-                    "use Ntripi in the browser instead.\n\n"
+                    "installed. Anywhere else it opens the trip's preview in the "
+                    "browser, which offers the app — and **See the full trip**, to "
+                    "sign in and use Ntripi in the browser instead.\n\n"
                     "Even with the app installed, a link opens in the browser when "
                     "it is typed or pasted into the address bar, or opened inside "
                     "another app's built-in browser. On an iPhone, tapping "

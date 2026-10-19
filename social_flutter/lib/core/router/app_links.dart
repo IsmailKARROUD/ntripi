@@ -23,6 +23,7 @@
 // entitlements (host only), the server's apple-app-site-association, and
 // [appLinkLocation] — held together by test/app_links_native_config_test.dart.
 
+import 'package:flutter/foundation.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ntripi/core/router/navigation_ext.dart';
 import 'package:ntripi/core/storage/secure_storage.dart';
@@ -55,17 +56,38 @@ String? appLinkLocation(Uri uri) {
   };
 }
 
-String? _parked;
+/// What a parked link opens.
+enum ParkedLinkKind { trip, profile }
+
+/// The kind of [location] — one of [appLinkLocation]'s answers — or null.
+ParkedLinkKind? parkedLinkKind(String? location) {
+  if (location == null) return null;
+  if (location.startsWith('/itineraries/') || location == '/unavailable/trip') {
+    return ParkedLinkKind.trip;
+  }
+  if (location.startsWith('/u/') || location == '/unavailable/profile') {
+    return ParkedLinkKind.profile;
+  }
+  return null;
+}
+
+// A notifier rather than a bare field so the sign-in screens can say what is
+// waiting behind them, including for a link that arrives while they are open.
+final _parked = ValueNotifier<String?>(null);
 
 /// Keeps [location] for the next landing — splash's, or the next sign-in's.
-void parkAppLink(String location) => _parked = location;
+void parkAppLink(String location) => _parked.value = location;
 
 /// The parked link, if any. Consumes it, so it opens once.
 String? takeParkedAppLink() {
-  final parked = _parked;
-  _parked = null;
+  final parked = _parked.value;
+  _parked.value = null;
   return parked;
 }
+
+/// The parked link without consuming it, for the sign-in screens' notice
+/// (ParkedLinkNotice). Notifies when a link is parked or taken.
+ValueListenable<String?> get parkedAppLink => _parked;
 
 /// The redirect's first step. A shared link reaching it launched the app — the
 /// only kind [appLinkOnEnter] lets through — so it is parked, and the app goes

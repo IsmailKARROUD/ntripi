@@ -1406,3 +1406,48 @@ weighed two other options: revealing nothing at all, identical to a missing trip
 keeping the details (the title and cover reached everyone in the chat, against
 the help centre's promise). Keeping `singleTop` (a link from Gmail started a second copy of the
 app in the caller's task).
+
+### 2026-10-19 — Share pages become a teaser; the full trip needs an account
+
+**Context.** A signed-out visitor who opened a shared link got a server-rendered
+page with the whole trip on it — stops, transport, costs, notes, reviews, the
+owner — in a design of its own (forest green on the trip page, indigo on the
+other four), so their first sight of Ntripi did not look like Ntripi. Search
+engines and AI bots read the same page. The owner wanted visitors to sign up or
+install first, and asked that a reader without an account reach the teaser and
+nothing else, demonstrably. Before launch every store button leads to the
+waitlist, so "install first" could not be the way in yet.
+**Decision.** Every share page shows a teaser, the same to a person, a chat-card
+crawler and a search engine: a public trip's title, cover, rating and
+description; a profile's display name, @username and avatar (private accounts
+the same, `noindex`). The chat card says what the page says. The routes pass the
+templates those fields and never the row. The way in is **See the full trip** /
+**See the full profile** into the web app, which parks the link through sign-in
+or sign-up — a line above the sign-in forms says what is waiting — and, once a
+phone's store is live, that store comes first with "tap the link again once
+installed"; a desktop keeps the web first. All five pages share one layout in the
+app's own tokens, light only. `/share/*` is rate-limited per IP (120/minute,
+HTML 429), `/openapi.json` is off in production, and `test_public_surface.py`
+classifies every route reachable without sign-in and fails on any non-teaser
+field seeded into a response. This supersedes the 2026-10-18 entry's rejected
+alternative "the page must stay readable; the app is offered, never forced".
+**Consequences.** The help article `share-a-trip-link` and What's New were
+rewritten in all six languages; the Terms are untouched (their sentence — a
+public trip's link works without an account and may be crawled — stays true,
+and a change would bump `TOS_VERSION` and gate every user). A trip without a
+description is thin for a search engine. The anonymous report dialog stays on
+the teaser — the title, cover and description can still be what someone needs
+to report, and the EU DSA expects a notice mechanism open to non-users. The
+audit found image keys derived from published ids (a private trip's cover sits
+at `itineraries/<id>.jpg`), approved as step 2; the sitemap and the crawler
+policy follow as step 3. Nothing reads `Stop.outgoing_segment` now.
+**Alternatives rejected.** A hard wall naming nothing about the trip (the link
+would look dead, and before launch the only way in is a sign-up form), skipping
+the page straight to the web app's sign-in (the visitor sees nothing of what
+they were sent), and keeping the full page restyled (the owner wanted the
+content behind an account). For search: the full trip in the HTML hidden by CSS
+under paywall markup (a cosmetic gate, readable in view-source), and the full
+trip to a verified Googlebot only (on the cloaking line, and answer bots would
+retell it without the click). The trip's stop names as an outline on the
+teaser, and the owner, duration, cost and stop count on it — the owner chose
+the four fields. Bio, counts and a trip list on the profile teaser.

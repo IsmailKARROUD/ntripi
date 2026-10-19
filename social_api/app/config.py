@@ -263,6 +263,11 @@ class Settings(BaseSettings):
     # slowapi limit string for POST /reports — blunts report griefing.
     REPORT_RATE_LIMIT: str = "10/hour"
 
+    # slowapi limit string for the /share/* pages, per client IP. Generous: a
+    # person never reaches it and a search engine spreads its crawl across many
+    # IPs — it exists to stop one scraper hammering the origin.
+    SHARE_RATE_LIMIT: str = "120/minute"
+
     # Published abuse contact. Must match the app-store listing; use the domain
     # address, never a personal one.
     ABUSE_CONTACT_EMAIL: str = "abuse@ntripi.app"

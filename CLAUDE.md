@@ -94,7 +94,7 @@ Extracted in the 2026-07 dedup refactor. Before writing a query/response block i
 - **`app/services/token_util.py`** — `hash_token` / `as_aware_utc` / `new_raw_token` for every opaque-token service (refresh, email). New token types must use these.
 - **`app/services/image_service.py`** — `process_and_store(raw, key, processor, *, cache_bust)` for all image uploads. `cache_bust=True` for user avatar/cover (stable keys need `?v=`), `False` for itinerary covers (never carried `?v=`).
 - **`app/services/share_service.py`** — `build_share_url(itinerary, settings)` for the public share URL; never rebuild the f-string. Also `absolute_storage_url(key, settings)` — the only way to turn a storage key into a URL fit to leave the site (emails, Jira tickets, OG crawlers). Filesystem storage returns a relative `/uploads/…`; R2 is already absolute and passes through. And `default_preview_image_url(settings)` — the default OG card, and the only image a private trip's share page may carry.
-- **`app/services/app_links.py`** — `cta_context(share_url, settings)` is the only source of a share page's app-or-web call to action (store URLs with the waitlist fallback, the Android intent URL, the Smart App Banner, Continue on web); `store_links(settings)` its download half. Render it through the `templates/_app_links.html` macros, imported `with context`.
+- **`app/services/app_links.py`** — `cta_context(share_url, settings)` is the only source of a share page's way in (the **See the full trip** web-app link, store URLs with the waitlist fallback and their `*_live` flags, the Android intent URL, the Smart App Banner); `store_links(settings)` its download half. Render it through the `templates/_app_links.html` macros (`teaser_gate`, `store_badges`), imported `with context`, inside `templates/_share_layout.html`.
 - **`lib/core/storage/secure_storage.dart` `hasLiveRefreshToken()`** — the one "is somebody signed in" check (router redirect, splash, `hasSessionProvider`, the link guard); never re-inline the refresh-token-and-expiry read.
 - **`app/middleware/__init__.py`** — `STATIC_PREFIXES` shared by ETag + security-headers middleware; add new static mounts there, not in each middleware, and test a path with `is_static_path()` (segment boundary) — a bare `startswith("/app")` also matched `/appeal` and `/appeals` and stripped their security headers.
 - **`app/database.py`** — `upsert_insert(db, model)` for any check-then-insert that can race (a dialect `INSERT` with `on_conflict_do_nothing` / `_do_update`, same API on Postgres and the SQLite suite). Used by device registration, the text-moderation cache and the first edit-lock claim — each was a 500 when two requests both saw "no row".
@@ -137,7 +137,7 @@ Key rules:
 ### Config Invariants
 - `SECRET_KEY` is validated at startup with `Field(min_length=32)` — anything shorter raises a `ValidationError` before the server accepts traffic. Generate with `openssl rand -hex 32`.
 - `ALLOWED_HOSTS` (comma-separated) drives `TrustedHostMiddleware`. Default: `ntripi.app,*.ntripi.app`.
-- `DEBUG=False` disables `/docs` and `/redoc` via `docs_url=None`. Never set `True` on Railway.
+- `DEBUG=False` disables `/docs`, `/redoc` and `/openapi.json` (`docs_url` / `redoc_url` / `openapi_url=None`). Never set `True` on Railway.
 
 ### Database Invariants
 - Pool: `pool_size=10`, `max_overflow=20`, `pool_pre_ping=True`.
@@ -288,6 +288,8 @@ Optional (collaborative editing): `EDIT_LOCK_HEARTBEAT_SECONDS=30` / `EDIT_LOCK_
 Optional (reports/safety): `REPORT_HIDE_THRESHOLDS` (comma `category:count`) · `REPORT_RATE_LIMIT=10/hour` · `ABUSE_CONTACT_EMAIL=abuse@ntripi.app` (must match the in-app address AND the store listing).
 
 **Mailboxes** (Google Workspace on the root MX; Resend sends from the `send.ntripi.app` subdomain, so sending and receiving never collide): `OPERATOR_EMAIL=ops@ntripi.app` is the one to actually set — unset, four alert paths (`report_service`, `moderation_service`, `bug_report_service`, `text_moderation_service`) guard on it and silently skip, so the queues fill with nobody told. `abuse@` is published in-app and on the store listing, `privacy@` is hardcoded in all six `app/constants/legal/*.py` bodies as the GDPR controller contact, `support@` and `contact@` are the Flutter `kSupportContactEmail` / `kGeneralContactEmail` defaults, and `noreply@` (the `EMAIL_FROM` sender) must stay a real routed address — users reply to password resets.
+
+Optional (share pages): `SHARE_RATE_LIMIT=120/minute` — per-IP limit on `/share/*`, answered with an HTML 429; the default needs no deploy change.
 
 Optional (bug reports): `BUG_REPORT_RATE_LIMIT=5/hour` · `BUG_REPORT_RETENTION_DAYS=180`. Both have working defaults — shipping the feature needs no deploy change. `OPERATOR_EMAIL` is what turns the notification email on.
 
@@ -453,7 +455,7 @@ Delivery for the notification feed above, on iOS and Android. **OFF unless `FCM_
 
 ## App Links (shared links open the app)
 
-A tap on `https://ntripi.app/share/i/{id}` or `/share/u/{username}` opens the app when it is installed (iOS Universal Links, Android App Links); without it, the share page offers the app first and **Continue on web** second. Reference: `docs/features/app-links.md`.
+A tap on `https://ntripi.app/share/i/{id}` or `/share/u/{username}` opens the app when it is installed (iOS Universal Links, Android App Links); without it, the share page shows a teaser and one way in, **See the full trip**, into the web app. Reference: `docs/features/app-links.md`, `docs/features/sharing.md`.
 
 - **Share links only.** The claim is `/share/i/*` and `/share/u/*` — never `/*`: emailed reset, verification and appeal links are web forms. It is one contract across four places, changed together: `services/app_links.py` `APP_LINK_PATHS` (the AASA), the manifest's `autoVerify` intent filter, `Runner.entitlements` (`applinks:` host only), and `appLinkLocation` in `lib/core/router/app_links.dart`. `test/app_links_native_config_test.dart` holds the client's three to the release `SHARE_BASE_URL`; `test_app_links.py` holds the server's to the real `/share` routes.
 - **Flutter's own deep linking, no plugin** (`FlutterDeepLinkingEnabled` / `flutter_deeplinking_enabled`, stated explicitly). A plugin such as `app_links` would need it turned off.
@@ -461,6 +463,8 @@ A tap on `https://ntripi.app/share/i/{id}` or `/share/u/{username}` opens the ap
 - **Two answers when a link can't be opened, neither saying why and neither with a Retry**: no access (the API's one 403 `itinerary_access_denied`, which a block shares) and not available (404, or a link `appLinkLocation` cannot read — checked before anything is fetched, so `/share/i/new` never opens the create-trip form). Offline and server errors keep Retry.
 - **`MainActivity` is `launchMode="singleTask"`.** `singleTop` + `taskAffinity=""` started a second copy of the app in the caller's task for a link tapped in Gmail.
 - **A private trip's share page names nothing about it** — no title, owner or cover, on the page or in its preview card, and the router passes `share_private.html` no trip to leak. On iOS a same-domain link never opens an app, so **Open in app** (an `intent://` link) is revealed on Android only — the `[hidden]` rule in `app_links_head` is load-bearing.
+- **A reader without an account gets the teaser and nothing else** — a public trip's title, cover, rating and description; a profile's display name, @username and avatar — the same for a person, a chat crawler and a search engine, and the chat card says what the page says. `prepare_share_context` / `prepare_profile_share_context` pass the templates those fields, never the row. `test_public_surface.py` classifies every route reachable without sign-in and seeds a marker into every non-teaser field; a new open route fails the suite until classified.
+- **The way in is the web app first** (`/app/#/share/…`, which parks the link through sign-in — `ParkedLinkNotice` says so above the form); a phone whose store is live gets that store first, with "tap the link again once installed". `/share/*` is rate-limited per IP (`SHARE_RATE_LIMIT`, HTML 429).
 
 ## Legal Documents and ToS Acceptance
 
@@ -1050,6 +1054,8 @@ For each article the change touches:
 - Do NOT let a shared link land as it arrives — a cold start must go through splash (`appLinkLaunchRedirect`), a warm one opens over the current screen (`appLinkOnEnter` → `openFromOutside`), and every landing after splash or a sign-in goes through `landHome`
 - Do NOT drop a link tapped while signed out — park it for the sign-in; only a tray tap, which belongs to an ended session, is dropped
 - Do NOT pass `itinerary`, `owner` or a cover to `share_private.html` — its preview card reaches everyone in the chat, mostly people who cannot open the trip
+- Do NOT hand a share template the ORM row, or render anything on a share page beyond the teaser fields — a person, a chat crawler and a search engine read the same page, and nothing below the teaser is theirs without an account
+- Do NOT add a route reachable without sign-in without classifying it in `test_public_surface.py` — the test fails until you do, deliberately, and its sentinel half checks the new route leaks nothing
 - Do NOT give the "can't open" screens a reason or a Retry — the API's one 403 covers a block too, and an answer does not change by asking again
 - Do NOT put `singleTop` back on `MainActivity` — a link from another app started a second copy of the app in the caller's task
 - Do NOT let push failures surface to the user or block a write — it fails open like `email_service`, and the poll still corrects the badge within a minute
@@ -1187,7 +1193,7 @@ For each article the change touches:
 - Do NOT omit `ProxyHeadersMiddleware` when deploying behind Railway/Cloudflare — rate limiting will throttle all users from the same proxy IP without it
 - Do NOT remove `ALLOWED_HOSTS` or set it to `*` in production — always whitelist `ntripi.app,*.ntripi.app`
 - Do NOT set `SECRET_KEY` shorter than 32 characters — startup will refuse to start
-- Do NOT expose `/docs` or `/redoc` in production — `DEBUG=False` disables them; do not override `docs_url`/`redoc_url` unconditionally
+- Do NOT expose `/docs`, `/redoc` or `/openapi.json` in production — `DEBUG=False` disables all three; do not override `docs_url`/`redoc_url`/`openapi_url` unconditionally
 - Do NOT catch `asyncio.CancelledError` in exception handlers — re-raise it; intercepting it breaks Starlette's lifespan
 - Do NOT add new rate-limited endpoints without importing `limiter` from `app/limiter.py` (not from `app/main.py` — circular import)
 - Do NOT run the container as root — the Dockerfile creates `appuser` and must keep `USER appuser`

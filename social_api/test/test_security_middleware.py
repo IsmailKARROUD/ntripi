@@ -202,7 +202,8 @@ class TestCORSConfig:
 # ---------------------------------------------------------------------------
 
 class TestDocsGating:
-    """/docs and /redoc are disabled in production (DEBUG=False is the default).
+    """/docs, /redoc and /openapi.json are disabled in production (DEBUG=False
+    is the default).
 
     These tests are skipped when DEBUG=True (local dev) because in that mode
     FastAPI intentionally exposes the docs — the gate only applies in production.
@@ -223,12 +224,11 @@ class TestDocsGating:
         r = client.get("/redoc")
         assert r.status_code == 404
 
-    def test_openapi_json_is_still_accessible(self, client: TestClient):
-        """The raw openapi.json schema endpoint is separate from the UI pages.
-        FastAPI only disables the interactive UIs, not the spec itself."""
+    def test_openapi_json_returns_404(self, client: TestClient):
+        """The raw schema is gated with the UIs: FastAPI serves it unless
+        openapi_url is None, and it is a map of every endpoint for a scraper."""
         r = client.get("/openapi.json")
-        assert r.status_code == 200
-        assert "openapi" in r.json()
+        assert r.status_code == 404
 
 
 # ---------------------------------------------------------------------------

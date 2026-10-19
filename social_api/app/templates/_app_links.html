@@ -1,11 +1,12 @@
-{#- _app_links.html — the app-first, web-second call to action the share pages
-    carry. `cta` is app_links.cta_context() (or store_links() on the not-found
-    page). Import WITH CONTEXT: `_` is a context-processor value, not a global.
+{#- _app_links.html — the way in that every share page carries. `cta` is
+    app_links.cta_context() (or store_links() on the not-found page). Import
+    WITH CONTEXT: `_` is a context-processor value, not a global.
 
-      {% from "_app_links.html" import app_links_head, store_badges,
-         continue_on_web, app_links_script with context %} -#}
+      {% from "_app_links.html" import teaser_gate, store_badges with context %}
 
-{#- In <head>. The [hidden] rule is load-bearing: every page styles its buttons
+    _share_layout.html already calls app_links_head and app_links_script. -#}
+
+{#- In <head>. The [hidden] rule is load-bearing: the pages style their buttons
     with `display`, which beats the attribute's UA style and would show the
     Android-only button everywhere. Then Safari's own "Open" / "Get" banner —
     it needs the app live in the App Store; app-argument is the URL the
@@ -17,26 +18,55 @@
 {%- endif %}
 {%- endmacro %}
 
-{#- The two download buttons of the minimal pages. Before launch both lead to
-    the homepage waitlist — see app_links.WAITLIST_PATH. -#}
+{#- The two download buttons. Before launch both lead to the homepage
+    waitlist — see app_links.WAITLIST_PATH. -#}
 {% macro store_badges(cta) -%}
-<p class="install-prompt">{{ _('share_install_prompt') }}</p>
-<div class="store-badges">
-  <a href="{{ cta.app_store_url }}" class="store-badge">App Store</a>
-  <a href="{{ cta.play_store_url }}" class="store-badge">Google Play</a>
+<div class="store-row">
+  <a href="{{ cta.app_store_url }}" class="store-badge" data-store="ios">
+    <svg width="18" height="18" viewBox="0 0 22 22" fill="currentColor" aria-hidden="true"><path d="M16.2 11.7c0-2.7 2.2-4 2.3-4.1C17 5.8 15 5.5 14.3 5.5c-1.7-.2-3.4 1-4.3 1s-2.3-1-3.7-1c-1.9 0-3.7 1.1-4.7 2.8C-.5 11.5.8 17 3 20.1c1 1.5 2.3 3.1 3.9 3.1 1.5-.1 2.1-1 3.9-1s2.4 1 3.9 1c1.7 0 2.8-1.5 3.8-3 1.2-1.7 1.7-3.4 1.8-3.5-.1-.1-3.1-1.3-3.1-5zm-2.9-9.5c.9-1 1.5-2.5 1.3-3.9-1.3 0-2.8.8-3.7 1.8-.8.9-1.5 2.4-1.3 3.8 1.4.1 2.8-.7 3.7-1.7z"/></svg>
+    {#- Two lines, not one string: "Télécharger sur l'" cannot be joined to a
+        name by a space. #}
+    <span class="store-badge-text"><span class="store-badge-sub">{{ _('share_download_on') }}</span><span class="store-badge-title">App Store</span></span>
+  </a>
+  <a href="{{ cta.play_store_url }}" class="store-badge" data-store="android">
+    <svg width="16" height="16" viewBox="0 0 22 22" fill="currentColor" aria-hidden="true"><path d="M3 1.5l15 9.5-15 9.5V1.5z"/></svg>
+    <span class="store-badge-text"><span class="store-badge-sub">{{ _('share_get_it_on') }}</span><span class="store-badge-title">Google Play</span></span>
+  </a>
 </div>
 {%- endmacro %}
 
-{#- The way on for anyone who will not install: the web app, at this same trip
-    or profile. Secondary to the app on purpose — never the first button. -#}
-{% macro continue_on_web(cta, class="web-link") -%}
-<a href="{{ cta.web_app_url }}" class="{{ class }}">{{ _('home_cta_continue_web') }}</a>
+{#- The gate under a teaser: one button into the web app, which signs the
+    visitor in (or up) and lands on this same trip or profile — so a visitor
+    already signed in on the web goes straight there, and nobody is asked to
+    install first while the stores still lead to a waitlist. `lead` is the line
+    that says what is behind it. On a phone whose own store is live,
+    app_links_script puts the store first and reveals the reinstall hint. -#}
+{% macro teaser_gate(cta, kind, lead=None) -%}
+{%- set noun = 'profile' if kind == 'profile' else 'trip' %}
+<section class="card gate" data-gate>
+  {%- if lead %}
+  <p class="gate-lead">{{ lead }}</p>
+  {%- endif %}
+  <div class="gate-web">
+    <a class="btn btn-primary" href="{{ cta.web_app_url }}">{{ _('share_see_full_' ~ noun) }}</a>
+    <p class="gate-note">{{ _('share_free_account_needed') }}</p>
+  </div>
+  <div class="gate-stores">
+    {%- if cta.android_intent_url %}
+    <a class="btn btn-tonal" href="{{ cta.android_intent_url }}" data-app-open hidden>{{ _('share_open_in_app') }}</a>
+    {%- endif %}
+    {{ store_badges(cta) }}
+    <p class="gate-note" data-store-hint hidden>{{ _('share_tap_link_again') }}</p>
+  </div>
+</section>
 {%- endmacro %}
 
 {#- Reveals [data-app-open] on Android only — an intent:// link is meaningless
     elsewhere, and on iOS a same-domain link never opens an app, so the button
-    could only reload this page. Also points [data-get-app] at the visitor's
-    own store. Without JS both stay at their safe defaults. -#}
+    could only reload this page. Points [data-get-app] at the visitor's own
+    store. And once that store is live (its URL set, not the waitlist), a phone
+    gets the store first; a laptop never does — it cannot install from a store
+    page. Without JS everything stays at its safe default: web first. -#}
 {% macro app_links_script(cta) -%}
 <script>
   (function () {
@@ -49,6 +79,11 @@
     var store = android ? {{ cta.play_store_url|tojson }} : ios ? {{ cta.app_store_url|tojson }} : null;
     if (store) {
       document.querySelectorAll('[data-get-app]').forEach(function (el) { el.href = store; });
+    }
+    var live = android ? {{ cta.play_store_live|tojson }} : ios ? {{ cta.app_store_live|tojson }} : false;
+    if (live) {
+      document.querySelectorAll('[data-gate]').forEach(function (el) { el.classList.add('store-first'); });
+      document.querySelectorAll('[data-store-hint]').forEach(function (el) { el.hidden = false; });
     }
   })();
 </script>

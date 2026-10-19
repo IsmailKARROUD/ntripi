@@ -115,7 +115,7 @@ last month's behaviour is worse than none, because the reader follows it.**
 | Document | What it covers |
 |---|---|
 | [feed-and-search.md](features/feed-and-search.md) | The Discover feed (Top/Recent), user search, place search |
-| [sharing.md](features/sharing.md) | Public HTML landing pages for itineraries and profiles, Open Graph previews |
+| [sharing.md](features/sharing.md) | Public share pages: the teaser a reader without an account gets, its Open Graph card, and the way in |
 | [app-links.md](features/app-links.md) | Shared links that open the app — Universal Links and App Links, the association files, launch routing, and the two answers when a link can't be opened |
 
 #### Media and moderation

@@ -94,9 +94,10 @@ RELEASES: tuple[Release, ...] = (
             "**Die App beim Bearbeiten zu schließen, hält die Reise nicht mehr fest.** Wenn Sie sie das nächste Mal öffnen, gibt Ntripi sie zuerst frei, statt anzuzeigen, dass Sie sie auf einem anderen Gerät bearbeiten.",
             "**Follower entfernen oder aus Ihren Listen entfolgen.** **Entfernen** neben einer Person in Ihrer Follower-Liste — oder **Follower entfernen** im Menü ⋯ auf ihrem Profil — beendet ihr Folgen, ohne dass sie es erfährt. **Gefolgt** neben einer Person in Ihrer Gefolgt-Liste entfolgt ihr.",
             "**Zurück funktioniert nach dem Öffnen einer Benachrichtigung.** Was eine Benachrichtigung öffnet, führt jetzt immer irgendwohin zurück — meist zu dem Bildschirm, auf dem Sie waren, sonst zu Ihrem Profil — und zeigt **Zurück** auch dann, wenn die Reise oder die Person, um die es ging, nicht mehr existiert.",
-            "**Geteilte Links öffnen sich in der App.** Ein Link zu einer Reise oder einem Profil öffnet sie jetzt in Ntripi, wenn die App installiert ist — nach der Anmeldung, falls Sie abgemeldet waren. Ohne App bietet die Seite sie an, oder Sie fahren im Web fort.",
+            "**Geteilte Links öffnen sich in der App.** Ein Link zu einer Reise oder einem Profil öffnet sie jetzt in Ntripi, wenn die App installiert ist — nach der Anmeldung, falls Sie abgemeldet waren. Ohne App bietet die Seite sie an, oder **Ganze Reiseroute ansehen**, um sich anzumelden und sie im Web zu öffnen.",
             "**Eine klare Antwort, wenn sich eine Reise nicht öffnen lässt.** Ein Link zu einer Reise, die Sie nicht sehen dürfen oder die gelöscht wurde, sagt das jetzt — mit einem Weg zurück — statt eines Fehlers, der nur einen erneuten Versuch anbot.",
             "**Links zu privaten Reisen zeigen im Chat nichts.** Die Vorschau einer Reise, die mit Followern oder bestimmten Personen geteilt ist, zeigt nicht mehr ihren Titel, ihr Titelbild oder ihren Eigentümer — nur, dass es eine private Reise auf Ntripi ist.",
+            "**Geteilte Seiten zeigen eine Vorschau.** Ohne Konto zeigt ein Link Titel, Titelbild, Bewertung und Beschreibung einer Reise — oder Namen und Foto eines Profils — im Look der App. Der Rest ist eine kostenlose Anmeldung entfernt, und der Anmeldebildschirm sagt, was wartet.",
         ),
     ),
     Release(
@@ -872,7 +873,7 @@ Eine nicht öffentliche Reise erzeugt nur eine schlichte Karte mit dem Hinweis, 
     Article(
         slug="share-a-trip-link",
         title="So teilen Sie Ihre Reise als Link",
-        summary="Eine Reise per Link verschicken — sie öffnet sich in der App, wenn sie installiert ist, sonst im Browser — und wissen, was die Vorschau zeigt.",
+        summary="Eine Reise per Link verschicken — sie öffnet sich in der App, wenn sie installiert ist, sonst als Vorschau mit einem Weg hinein.",
         category="sharing",
         intro="Jede Reise hat eine Webadresse. Teilen heißt einfach, sie zu verschicken — der Link ist der Ort der Reise, kein Passwort, und der Zugriff wird bei jedem Öffnen erneut gegen Ihre [Sichtbarkeitseinstellung](/help/share-an-itinerary-privately) geprüft.",
         blocks=(
@@ -881,26 +882,28 @@ Eine nicht öffentliche Reise erzeugt nur eine schlichte Karte mit dem Hinweis, 
                 heading="Den Link holen",
                 body="""Öffnen Sie die Reise und nutzen Sie die Teilen-Aktion. Das übliche Teilen-Menü Ihres Geräts erscheint, der Link kann also in jede App gehen — Nachrichten, E-Mail, Notizen.
 
-Hat die Person, der Sie ihn schicken, Ntripi, öffnet der Link die Reise in der App — nach der Anmeldung, falls sie abgemeldet ist. Sonst öffnet er sich in ihrem Browser, wo sie die Reise ohne Konto lesen, die App holen oder im Web fortfahren kann.""",
+Hat die Person, der Sie ihn schicken, Ntripi, öffnet der Link die Reise in der App — nach der Anmeldung, falls sie abgemeldet ist. Sonst öffnet er eine Vorschau der Reise in ihrem Browser, mit einem einzigen Weg hinein: **Ganze Reiseroute ansehen**, das sie anmeldet — oder ein kostenloses Konto anlegt — und die Reise öffnet.""",
             ),
             Block(
                 anchor="what-the-preview-shows",
                 heading="Was die Vorschaukarte zeigt",
-                body="""Eine **öffentliche** Reise erzeugt in den meisten Messengern eine Vorschaukarte: Titelbild, Titel, Gesamtdauer und -kosten, die Zahl der Stopps und, falls vorhanden, die Bewertung.
+                body="""Eine **öffentliche** Reise erzeugt in den meisten Messengern eine Vorschaukarte: Titelbild, Titel und — falls vorhanden — ihre Bewertung und den Anfang ihrer Beschreibung.
 
 Eine **nicht** öffentliche Reise erzeugt nur eine schlichte Karte mit dem Hinweis, dass es eine private Reise auf Ntripi ist — ohne Titel, Titelbild oder Eigentümer. Das ist Absicht — die Karte sehen alle im Gruppenchat, auch die, die die Reise nicht öffnen können.""",
             ),
             Block(
                 anchor="what-they-see",
                 heading="Was die lesende Person bekommt",
-                body="""Die ganze Reise: die Stopps der Reihe nach, die parallelen Optionen, den Transport dazwischen, die Kosten, Ihre Notizen und Warnungen und die Bewertungen.
+                body="""Ohne Konto die Vorschau: Titel, Titelbild, Bewertung und Beschreibung der Reise. Mehr bekommt ohne Anmeldung niemand — weder ein Mensch noch eine Suchmaschine noch ein Messenger —, sodass Ihr Name, die Stopps, der Transport, die Kosten, Ihre Notizen und die Bewertungen in Ntripi bleiben.
 
-Alles davon ist ohne Konto lesbar. Speichern, bewerten oder Stopps daraus kopieren braucht eines.""",
+Alles andere ist eine kostenlose Anmeldung entfernt: **Ganze Reiseroute ansehen** öffnet sie im Web oder, wo sie installiert ist, in der App. Speichern, Bewerten oder Stopps kopieren braucht ebenfalls das Konto.
+
+Ein Link zu einem Profil funktioniert genauso: Ohne Konto zeigt er den Namen, den @Benutzernamen und das Profilfoto.""",
             ),
             Block(
                 anchor="opens-in-browser",
                 heading="Wenn sich ein Link im Browser statt in der App öffnet",
-                body="""Ein Link öffnet die App nur auf einem Telefon, auf dem Ntripi installiert ist. Überall sonst öffnet er die Seite der Reise im Browser, die die App anbietet — und **Im Web fortfahren**, um Ntripi stattdessen im Browser zu nutzen.
+                body="""Ein Link öffnet die App nur auf einem Telefon, auf dem Ntripi installiert ist. Überall sonst öffnet er die Vorschau der Reise im Browser, die die App anbietet — und **Ganze Reiseroute ansehen**, um sich anzumelden und Ntripi stattdessen im Browser zu nutzen.
 
 Auch mit installierter App öffnet sich ein Link im Browser, wenn er in die Adressleiste getippt oder eingefügt oder im eingebauten Browser einer anderen App geöffnet wird. Auf dem iPhone schickt ein Tippen auf **ntripi.app** oben rechts in der App Links fortan an Safari — halten Sie einen Link gedrückt und wählen Sie, ihn in Ntripi zu öffnen, um das rückgängig zu machen.
 
@@ -926,9 +929,12 @@ Was Sie nicht rückgängig machen können, ist ein Screenshot — behandeln Sie 
             "öffentlich",
             "in der App öffnen",
             "Browser",
+            "anmelden",
+            "konto",
+            "ganze reiseroute ansehen",
         ),
         related=("share-an-itinerary-privately", "trip-cover-photos"),
-        updated="2026-10-18",
+        updated="2026-10-19",
         cta="Bauen Sie etwas, das sich zu verschicken lohnt.",
     ),
     Article(

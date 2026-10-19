@@ -1,146 +1,27 @@
-{% from "_app_links.html" import store_badges with context -%}
-{# One page for every dead link, whatever the reason — only the noun changes. -#}
-{% set copy = 'share_profile_not_found' if kind == 'profile' else 'share_not_found' -%}
-<!DOCTYPE html>
-<html lang="{{ lang or 'en' }}">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{{ _(copy ~ '_title') }}</title>
+{#- One page for every dead link, whatever the reason — only the noun changes.
+    There is nothing to open, so it offers the stores and the homepage and no
+    way into the web app. -#}
+{% extends "_share_layout.html" %}
+{% from "_app_links.html" import store_badges with context %}
+{%- set copy = 'share_profile_not_found' if kind == 'profile' else 'share_not_found' %}
+
+{% block title %}{{ _(copy ~ '_title') }}{% endblock %}
+
+{% block meta %}
   <meta name="description" content="{{ _(copy ~ '_body') }}">
+{% endblock %}
 
-  <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-    :root {
-      --brand:  #4F46E5;
-      --text:   #111827;
-      --sub:    #6B7280;
-      --border: #E5E7EB;
-      --bg:     #F9FAFB;
-      --white:  #FFFFFF;
-      --radius: 12px;
-    }
-
-    body {
-      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      line-height: 1.5;
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-    }
-
-    a { color: var(--brand); text-decoration: none; }
-    a:hover { text-decoration: underline; }
-
-    header {
-      background: var(--white);
-      border-bottom: 1px solid var(--border);
-      padding: 14px 20px;
-    }
-    .logo {
-      font-size: 20px;
-      font-weight: 800;
-      color: var(--brand);
-      letter-spacing: -0.5px;
-    }
-
-    main {
-      flex: 1;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 32px 16px;
-    }
-
-    .card {
-      background: var(--white);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 36px 32px;
-      max-width: 420px;
-      width: 100%;
-      text-align: center;
-    }
-
-    .icon { font-size: 48px; margin-bottom: 16px; }
-
-    h1 {
-      font-size: 22px;
-      font-weight: 800;
-      margin-bottom: 10px;
-    }
-
-    p {
-      color: var(--sub);
-      font-size: 15px;
-      margin-bottom: 24px;
-    }
-
-    .home-link {
-      display: inline-block;
-      background: var(--brand);
-      color: var(--white);
-      font-weight: 700;
-      font-size: 15px;
-      padding: 11px 24px;
-      border-radius: var(--radius);
-      text-decoration: none;
-    }
-    .home-link:hover { opacity: .88; text-decoration: none; }
-
-    .install-prompt {
-      font-size: 14px;
-      margin: 26px 0 10px;
-    }
-
-    .store-badges {
-      display: flex;
-      gap: 10px;
-      justify-content: center;
-    }
-    .store-badge {
-      background: var(--text);
-      color: var(--white);
-      font-size: 13px;
-      font-weight: 600;
-      padding: 8px 18px;
-      border-radius: 8px;
-      text-decoration: none;
-    }
-    .store-badge:hover { opacity: .85; text-decoration: none; }
-
-    footer {
-      text-align: center;
-      padding: 20px;
-      font-size: 13px;
-      color: var(--sub);
-      border-top: 1px solid var(--border);
-    }
-  </style>
-</head>
-<body>
-
-<header>
-  <div class="logo">Ntripi</div>
-</header>
-
-<main>
-  <div class="card">
-    <div class="icon">🗺️</div>
-    <h1>{{ _(copy ~ '_heading') }}</h1>
-    <p>{{ _(copy ~ '_body') }}</p>
-    <a href="/" class="home-link">{{ _('share_go_to_ntripi') }}</a>
-
-    {{ store_badges(app_cta) }}
+{% block content %}
+<section class="message">
+  <div class="message-icon">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2z"/><path d="M9 4v14M15 6v14"/></svg>
   </div>
-</main>
+  <h1>{{ _(copy ~ '_heading') }}</h1>
+  <p>{{ _(copy ~ '_body') }}</p>
+</section>
 
-<footer>
-  <p>Ntripi · <a href="/">ntripi.app</a></p>
-</footer>
-
-</body>
-</html>
+<section class="card gate">
+  <a class="btn btn-primary" href="/">{{ _('share_go_to_ntripi') }}</a>
+  {{ store_badges(app_cta) }}
+</section>
+{% endblock %}

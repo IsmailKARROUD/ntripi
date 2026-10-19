@@ -208,10 +208,11 @@ app = FastAPI(
         "community ratings, restricted-access allowlists, and GDPR account deletion."
     ),
     version="0.2.0",
-    # Hide Swagger UI and ReDoc in production — API schema should not be
-    # publicly browsable. Set DEBUG=True in .env to re-enable during development.
+    # Hide Swagger UI, ReDoc and the raw schema in production — the schema is a
+    # map of every endpoint for a scraper. DEBUG=True re-enables all three.
     docs_url="/docs" if settings.DEBUG else None,
     redoc_url="/redoc" if settings.DEBUG else None,
+    openapi_url="/openapi.json" if settings.DEBUG else None,
 )
 
 # ---------------------------------------------------------------------------
@@ -220,7 +221,17 @@ app = FastAPI(
 # slowapi uses an in-memory store — sufficient for the current single-instance
 # Railway deployment. If horizontally scaled, swap for a Redis-backed store.
 app.state.limiter = limiter
-app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+
+def _rate_limit_response(request: Request, exc: RateLimitExceeded) -> Response:
+    # The share pages are read in browsers, where a JSON 429 is a screen of raw
+    # text; every other limited route keeps slowapi's JSON.
+    if request.url.path.startswith("/share/"):
+        return share.rate_limited_page(request, exc)
+    return _rate_limit_exceeded_handler(request, exc)
+
+
+app.add_exception_handler(RateLimitExceeded, _rate_limit_response)
 
 # ---------------------------------------------------------------------------
 # Middleware stack (add_middleware is LIFO — last added = outermost)

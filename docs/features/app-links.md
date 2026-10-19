@@ -9,8 +9,9 @@
 A shared link — `https://ntripi.app/share/i/{id}` for a trip, `/share/u/{username}`
 for a profile — opens the trip or profile **in the app** on a phone that has it
 (iOS Universal Links, Android App Links). Without the app it opens the share
-page, which encourages the app first and always lets the visitor **continue on
-the web**. A link that cannot be opened gets one of exactly two answers: **no
+page — a teaser (see [sharing.md](sharing.md#what-a-reader-without-an-account-sees))
+with one way in, **See the full trip**, which signs the visitor in on the web and
+opens it. A link that cannot be opened gets one of exactly two answers: **no
 access** or **not available**.
 
 ## Rules
@@ -124,31 +125,41 @@ failures. The client branches on status and code only, so it reveals nothing the
 API does not already say — and a block reads exactly like any other "not shared
 with you". Offline and server errors keep message + **Retry** + **Go back**.
 
-### The share pages: app first, web second
+### The share pages: a teaser and one way in
 
 Built by `app_links.cta_context(share_url, settings)` and the macros in
 `templates/_app_links.html` (imported `with context`: `_` is a context-processor
-value):
+value); `_share_layout.html` calls `app_links_head` and `app_links_script`, and
+each page calls `teaser_gate`:
 
+- **See the full trip** / **See the full profile** — `/app/#/share/i/<id>` or
+  `/app/#/share/u/<name>`: the Flutter web build runs the same router hooks, so
+  a visitor signed in on the web lands on the trip at once, and one who is not is
+  sent to sign in (the link parked, `ParkedLinkNotice` saying so) and lands on it
+  after. **First by default**: before launch the stores lead to a waitlist, and a
+  desktop cannot install from a store page at all. Until 2026-10-19 this was the
+  secondary **Continue on web** under a full, readable trip.
+- **Store buttons** — `APP_STORE_URL` / `PLAY_STORE_URL`, else the homepage
+  waitlist (`/#get-the-app`), the same honest pre-launch destination the help CTA
+  uses. The nav's **Get the app** points there too, swapped for the visitor's own
+  store on a phone. **Once a store is live** (`app_store_live` /
+  `play_store_live`: its URL is set), `app_links_script` moves the store row
+  above the web button on a phone of that platform and reveals "Once it's
+  installed, tap the link again to open it in the app" — installing does not
+  carry the link into the app. A desktop keeps the web button first. Launch day
+  is still a variable change.
 - **Open in app** — Android only: a Chrome `intent://` URL for the same link with
   `package=` and an absolute `S.browser_fallback_url` (the Play URL, else the
   waitlist). It is rendered `hidden` and revealed by script on Android, because
   iOS never opens an app for a link to the page's own domain — there the button
   could only reload the page. The `[hidden]` CSS rule in `app_links_head` is
-  load-bearing: every page styles its buttons with `display`, which beats the
+  load-bearing: the pages style their buttons with `display`, which beats the
   attribute.
-- **Store buttons** — `APP_STORE_URL` / `PLAY_STORE_URL`, else the homepage
-  waitlist (`/#get-the-app`), the same honest pre-launch destination the help CTA
-  uses. The nav's **Get the app** points there too, swapped for the visitor's own
-  store on a phone. Launch day is a variable change.
 - **Smart App Banner** — `<meta name="apple-itunes-app">` with
   `app-argument=<share URL>`, only when `IOS_APP_STORE_ID` is set. Safari draws it
   only once the app is live in the store, never for a TestFlight-only build.
-- **Continue on web** — `/app/#/share/i/<id>` or `/app/#/share/u/<name>`: the
-  Flutter web build runs the same router hooks, so the web app signs the visitor
-  in if needed and lands on the same trip or profile. Secondary to the app on
-  purpose, never the first button; nothing redirects to a store or blocks a
-  public trip from being read.
+- Without JavaScript every page stays at its safe default: web first, no
+  Android button, no hint.
 - The dead `ntripi://` scheme the pages used to link is gone — the app never
   registered it, and any app can register a custom scheme.
 
@@ -181,8 +192,12 @@ JSON 422.
 ## Flutter surface
 
 - `lib/core/router/app_links.dart` — `appLinkLocation`, `parkAppLink` /
-  `takeParkedAppLink`, `appLinkLaunchRedirect` (the redirect's first step),
+  `takeParkedAppLink` / `parkedAppLink` (a listenable, never consumed) and
+  `parkedLinkKind`, `appLinkLaunchRedirect` (the redirect's first step),
   `appLinkOnEnter` (the router's `onEnter`), `landHome`.
+- `features/auth/presentation/widgets/parked_link_notice.dart` —
+  `ParkedLinkNotice`, the line above the sign-in and sign-up forms while a link
+  waits ("Sign in or create a free account to open the trip you were sent").
 - `lib/core/storage/secure_storage.dart` — `hasLiveRefreshToken()`, the one
   "somebody is signed in" check the router, splash, `hasSessionProvider` and the
   link guard share.
@@ -201,7 +216,8 @@ JSON 422.
 ## Known gaps / TODOs
 
 - **No deferred deep linking.** Installing the app from the share page does not
-  open the shared trip on first launch. See [backlog.md](../backlog.md).
+  open the shared trip on first launch; once a store is live the page tells a
+  phone visitor to tap the link again. See [backlog.md](../backlog.md).
 - **No in-page "Open in app" on iOS** — Universal Links never fire for a link to
   the current page's own domain. A second subdomain would fix it; see the backlog.
 - **Previews already in a chat stay.** Chat apps cache link previews per URL, so a

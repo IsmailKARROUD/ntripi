@@ -65,10 +65,18 @@ def asset_links(settings: "Settings") -> list | None:
 
 
 def store_links(settings: "Settings") -> dict:
-    """The two download buttons — the store listing once set, else the waitlist."""
+    """The two download buttons — the store listing once set, else the waitlist.
+
+    `*_live` says the listing is real: only then may a share page put that
+    store first on a phone, since before launch it is a waitlist.
+    """
+    app_store = settings.APP_STORE_URL.strip()
+    play_store = settings.PLAY_STORE_URL.strip()
     return {
-        "app_store_url": settings.APP_STORE_URL.strip() or WAITLIST_PATH,
-        "play_store_url": settings.PLAY_STORE_URL.strip() or WAITLIST_PATH,
+        "app_store_url": app_store or WAITLIST_PATH,
+        "play_store_url": play_store or WAITLIST_PATH,
+        "app_store_live": bool(app_store),
+        "play_store_live": bool(play_store),
     }
 
 
@@ -76,8 +84,9 @@ def cta_context(share_url: str, settings: "Settings") -> dict:
     """Everything a share page needs to send a visitor to the app or the web.
 
     `share_url` is the page's own absolute URL (build_share_url /
-    build_profile_share_url). The app comes first on every page; the web app
-    is the way on for anyone who does not want to install it.
+    build_profile_share_url). The web app comes first — it signs the visitor
+    in and lands on the same trip or profile — until a phone's own store is
+    live, when the page puts that store first (_app_links.html).
     """
     stores = store_links(settings)
     return {

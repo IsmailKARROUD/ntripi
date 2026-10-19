@@ -4,8 +4,9 @@ test_share_profile.py — Tests for GET /share/u/{username}.
 Returns HTML, not JSON, and requires no authentication.
 
 Coverage:
-  TestSharePublicProfile   — rich page, OG tags, public itineraries listed
-  TestSharePrivateProfile  — minimal page, no bio / counts / itineraries
+  TestSharePublicProfile   — the teaser: display name, @username, avatar; OG tags;
+                             no bio, counts or itineraries (behind sign-in)
+  TestSharePrivateProfile  — the same three fields, noindex
   TestShareProfileNotFound — unknown handle and deactivated account both 404
   TestShareProfileModeration — hidden profile text degrades to the handle
 """
@@ -36,12 +37,11 @@ def set_user_field(username: str, **fields) -> None:
 
 
 class TestSharePublicProfile:
-    def test_renders_name_handle_and_bio(self, client):
+    def test_renders_name_handle_and_avatar(self, client):
         user = register_user(client, "wanderer", "w@example.com",
                              display_name="Wanderer W")
         make_public(client, user["access_token"])
-        client.patch("/users/me", json={"bio": "Chasing trains since 2019."},
-                     headers=auth_headers(user["access_token"]))
+        set_user_field("wanderer", avatar_url="https://images.example/w.jpg")
 
         r = client.get("/share/u/wanderer")
 
@@ -49,7 +49,20 @@ class TestSharePublicProfile:
         assert "text/html" in r.headers["content-type"]
         assert "Wanderer W" in r.text
         assert "@wanderer" in r.text
-        assert "Chasing trains since 2019." in r.text
+        assert "https://images.example/w.jpg" in r.text
+
+    def test_bio_and_counts_stay_behind_sign_in(self, client):
+        user = register_user(client, "chatty", "chatty@example.com")
+        make_public(client, user["access_token"])
+        client.patch("/users/me", json={"bio": "Chasing trains since 2019."},
+                     headers=auth_headers(user["access_token"]))
+
+        r = client.get("/share/u/chatty")
+
+        assert "Chasing trains since 2019." not in r.text
+        assert "Followers" not in r.text
+        assert 'href="/app/#/share/u/chatty"' in r.text
+        assert "See the full profile" in r.text
 
     def test_has_open_graph_tags(self, client):
         user = register_user(client, "oguser", "og@example.com",
@@ -78,7 +91,9 @@ class TestSharePublicProfile:
 
         assert r.status_code == 200
 
-    def test_lists_public_itineraries_only(self, client):
+    def test_lists_no_itineraries(self, client):
+        """Even a public trip is not named here — bots find trips through their
+        own share pages, people through the app."""
         user = register_user(client, "lister", "l@example.com")
         token = user["access_token"]
         make_public(client, token)
@@ -95,23 +110,19 @@ class TestSharePublicProfile:
 
         r = client.get("/share/u/lister")
 
-        assert "Public Trip" in r.text
-        # A non-public itinerary must not be named on a page anyone can load.
+        assert "Public Trip" not in r.text
         assert "Secret Trip" not in r.text
         assert "Followers Trip" not in r.text
 
-    def test_empty_state_when_no_public_itineraries(self, client):
-        user = register_user(client, "newbie", "n@example.com")
+    def test_public_profile_is_indexable(self, client):
+        user = register_user(client, "findme", "findme@example.com")
         make_public(client, user["access_token"])
 
-        r = client.get("/share/u/newbie")
-
-        assert r.status_code == 200
-        assert "No public itineraries yet." in r.text
+        assert "noindex" not in client.get("/share/u/findme").text
 
 
 class TestSharePrivateProfile:
-    def test_private_profile_shows_minimal_page(self, client):
+    def test_private_profile_shows_the_same_three_fields(self, client):
         user = register_user(client, "shyperson", "shy@example.com",
                              display_name="Shy Person")
         token = user["access_token"]
@@ -121,15 +132,24 @@ class TestSharePrivateProfile:
         client.post("/itineraries/",
                     json={"title": "Hidden Journey", "visibility": "public"},
                     headers=auth_headers(token))
+        set_user_field("shyperson", avatar_url="https://images.example/shy.jpg")
 
         r = client.get("/share/u/shyperson")
 
         assert r.status_code == 200
         assert "Shy Person" in r.text
         assert "@shyperson" in r.text
+        assert "https://images.example/shy.jpg" in r.text
         # Neither the bio nor any itinerary leaks from a private account.
         assert "My private notes." not in r.text
         assert "Hidden Journey" not in r.text
+
+    def test_private_profile_is_noindex(self, client):
+        register_user(client, "hideme", "hideme@example.com")
+
+        assert '<meta name="robots" content="noindex,follow">' in client.get(
+            "/share/u/hideme"
+        ).text
 
 
 class TestShareProfileNotFound:

@@ -175,13 +175,13 @@ is stale or a check is missing. (Its sibling — `models/transport_leg.py:20`,
 `uselist=False` and the comment "at most one per stop", but the only constraint is
 `UNIQUE(from_stop_id, to_stop_id)`. A stop before a track of parallel
 alternatives legitimately has one segment into **each** of them, and the client
-already treats it that way (`stop_detail_screen.dart` filters a list). The one
-reader is the public share page (`share.py:124`), which therefore renders one
-arbitrary segment per stop, and SQLAlchemy warns about the extra rows. Deletion is
-unaffected — the DB `ON DELETE CASCADE` removes the rest. The share page flattens
-tracks into a single numbered list anyway, so the fix needs a decision on how it
-should show a branch, not just `uselist=True`. →
-[features/sharing.md](features/sharing.md)
+already treats it that way (`stop_detail_screen.dart` filters a list). Its one
+reader was the public share page, which rendered one arbitrary segment per stop;
+since 2026-10-19 that page shows a teaser and loads no stops, so **nothing reads
+the relationship now** — the mismatch is latent and bites the next reader, who
+should take `uselist=True` (and a decision on how a branch reads) rather than the
+first row. Deletion is unaffected — the DB `ON DELETE CASCADE` removes the rest.
+→ [features/transit-segments.md](features/transit-segments.md)
 
 ### idea — `moderate_or_422`'s documented precondition is not held
 
@@ -517,8 +517,50 @@ be installed. → [features/app-links.md](features/app-links.md)
 Installing the app from a share page does not open the shared trip on first
 launch. Android can carry it through the Play Store URL's `referrer` and the Play
 Install Referrer API; iOS has no equivalent without a third-party attribution
-service or the clipboard, both of which bring privacy questions of their own. →
+service or the clipboard, both of which bring privacy questions of their own.
+Until then the share page, once a store is live, tells a phone visitor to tap
+the link again after installing — the same link then opens the app. →
 [features/app-links.md](features/app-links.md)
+
+### planned — image keys nobody can guess (share teaser, step 2)
+
+Covers and avatars are stored at keys derived from published ids
+(`itineraries/<trip id>.jpg`, `avatars/<user id>.jpg`, `covers/<user id>.jpg`) on
+the public image domain, so a private trip's share link leads straight to its
+cover and an avatar URL gives away the profile cover. Approved 2026-10-19: a
+random part in every key, a re-key script for the existing objects, and
+`parse_storage_key` accepting both forms. → [features/sharing.md](features/sharing.md)
+
+### planned — public trips and profiles findable by search and answer engines (share teaser, step 3)
+
+Approved 2026-10-19: `sitemap.xml` lists every live public trip and public
+profile; `robots.txt` refuses the six AI training crawlers (GPTBot, ClaudeBot,
+CCBot, Bytespider, Google-Extended, Applebot-Extended) while search engines and
+answer bots stay welcome, enforced by Cloudflare's AI Crawl Control; and the
+app, the help centre and the Privacy Policy say that "public" means findable.
+→ [features/sharing.md](features/sharing.md)
+
+### idea — open more of the teaser if search engines will not index it
+
+A trip with no description is a title, a photo and a rating. Once the sitemap
+ships, Search Console shows whether such pages are "crawled — not indexed"; if
+so, the next layer to open is a template change. Opening is reversible; what a
+crawler has read is not. → [features/sharing.md](features/sharing.md)
+
+### idea — language in the share URL, so Cloudflare can cache share pages
+
+The share pages' chrome language comes from a cookie or `Accept-Language`, and
+Cloudflare varies its cache on `Accept-Encoding` only, so caching them at the
+edge would serve one visitor's language to everyone. Reading the language from
+`?lang=` alone — as the help centre's machine surfaces do — would make the URL
+the whole cache key. → [features/sharing.md](features/sharing.md)
+
+### idea — site-wide dark mode
+
+No page on ntripi.app honours `prefers-color-scheme`. The share pages copy the
+app's light tokens only, so a visitor in dark mode goes from a white page to a
+dark app on sign-in. A dark set belongs in every template at once, not the share
+pages alone. → [features/web-and-platform.md](features/web-and-platform.md)
 
 ### idea — an "Open in app" button on iOS
 

@@ -11,6 +11,7 @@ import 'package:ntripi/core/api/api_client.dart';
 import 'package:ntripi/core/ui/app_theme.dart';
 import 'package:ntripi/core/ui/ntripi_logo.dart';
 import 'package:ntripi/features/auth/domain/username_validator.dart';
+import 'package:ntripi/features/auth/presentation/widgets/parked_link_notice.dart';
 import 'package:ntripi/features/auth/presentation/widgets/tos_agreement_row.dart';
 import 'package:ntripi/features/auth/providers/auth_provider.dart';
 import 'package:ntripi/features/itineraries/providers/itinerary_providers.dart';
@@ -158,6 +159,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   style: TextStyle(fontSize: 14, color: nt.text2),
                 ),
                 const SizedBox(height: 24),
+                // A shared link is waiting for this sign-in — say so.
+                const ParkedLinkNotice(),
 
                 // Display name
                 _FieldLabel(

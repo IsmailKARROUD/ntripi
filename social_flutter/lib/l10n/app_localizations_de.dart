@@ -112,6 +112,14 @@ class AppLocalizationsDe extends AppLocalizations {
   String get loginSubtitle => 'Melde dich an, um deine Reise fortzusetzen';
 
   @override
+  String get signInToOpenTrip =>
+      'Melde dich an oder erstelle ein kostenloses Konto, um die Reiseroute zu öffnen, die du bekommen hast.';
+
+  @override
+  String get signInToOpenProfile =>
+      'Melde dich an oder erstelle ein kostenloses Konto, um das Profil zu öffnen, das du bekommen hast.';
+
+  @override
   String get loginEmailLabel => 'E-Mail oder Benutzername';
 
   @override

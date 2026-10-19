@@ -108,6 +108,14 @@ class AppLocalizationsAr extends AppLocalizations {
   String get loginSubtitle => 'سجّل الدخول لمواصلة رحلتك';
 
   @override
+  String get signInToOpenTrip =>
+      'سجّل الدخول أو أنشئ حسابًا مجانيًا لفتح المسار الذي أُرسل إليك.';
+
+  @override
+  String get signInToOpenProfile =>
+      'سجّل الدخول أو أنشئ حسابًا مجانيًا لفتح الملف الشخصي الذي أُرسل إليك.';
+
+  @override
   String get loginEmailLabel => 'البريد الإلكتروني أو اسم المستخدم';
 
   @override

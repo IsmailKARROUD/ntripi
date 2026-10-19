@@ -558,11 +558,11 @@ def test_endpoint_runs_the_sweep_and_returns_counters(client, sweep_enabled):
 
 
 def test_endpoint_is_absent_from_the_openapi_schema(client, sweep_enabled):
-    """A maintenance endpoint has no business being advertised."""
-    schema = client.get("/openapi.json")
-    if schema.status_code != 200:
-        pytest.skip("docs disabled in this configuration")
-    assert "/internal/moderation-sweep" not in schema.json()["paths"]
+    """A maintenance endpoint has no business being advertised. Read in-process:
+    production does not serve the schema at all."""
+    from app.main import app
+
+    assert "/internal/moderation-sweep" not in app.openapi()["paths"]
 
 
 def test_endpoint_is_rate_limited(client, sweep_enabled):

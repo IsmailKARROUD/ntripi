@@ -111,6 +111,14 @@ class AppLocalizationsEs extends AppLocalizations {
   String get loginSubtitle => 'Inicia sesión para continuar tu viaje';
 
   @override
+  String get signInToOpenTrip =>
+      'Inicia sesión o crea una cuenta gratuita para abrir el itinerario que te enviaron.';
+
+  @override
+  String get signInToOpenProfile =>
+      'Inicia sesión o crea una cuenta gratuita para abrir el perfil que te enviaron.';
+
+  @override
   String get loginEmailLabel => 'Correo o nombre de usuario';
 
   @override

@@ -1,186 +1,36 @@
-{% from "_app_links.html" import app_links_head, store_badges, continue_on_web, app_links_script with context -%}
-<!DOCTYPE html>
-<html lang="{{ lang or 'en' }}">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{{ _('share_private_title') }}</title>
-  <meta name="description" content="{{ _('share_private_preview') }}">
+{#- A followers-only or restricted trip's share page. Generic on purpose, and
+    the router passes nothing that could fill it in: the page and its preview
+    card reach everyone in the chat, most of whom cannot open the trip — so no
+    title, no owner, and the default image, never the cover. -#}
+{% extends "_share_layout.html" %}
+{% from "_app_links.html" import teaser_gate with context %}
 
-  {# Generic on purpose, and the router passes nothing that could fill it in: a
-     preview card is seen by everyone in the chat, most of whom cannot open the
-     trip — so no title, no owner, and the default image, never the cover. #}
+{% block title %}{{ _('share_private_title') }}{% endblock %}
+
+{% block meta %}
+  <meta name="description" content="{{ _('share_private_preview') }}">
   <meta property="og:type"        content="website">
   <meta property="og:site_name"   content="Ntripi">
   <meta property="og:title"       content="{{ _('share_private_title') }}">
   <meta property="og:description" content="🔒 {{ _('share_private_preview') }}">
-  <meta name="robots" content="noindex,follow">
   <meta property="og:url"         content="{{ share_url }}">
   <meta property="og:image"       content="{{ preview_image_url }}">
-
   <meta name="twitter:card"        content="summary_large_image">
   <meta name="twitter:title"       content="{{ _('share_private_title') }}">
   <meta name="twitter:description" content="🔒 {{ _('share_private_preview') }}">
   <meta name="twitter:image"       content="{{ preview_image_url }}">
-{{ app_links_head(app_cta) }}
+{% endblock %}
 
-  <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-    :root {
-      --brand:  #4F46E5;
-      --text:   #111827;
-      --sub:    #6B7280;
-      --border: #E5E7EB;
-      --bg:     #F9FAFB;
-      --white:  #FFFFFF;
-      --radius: 12px;
-    }
-
-    body {
-      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      line-height: 1.5;
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-    }
-
-    a { color: var(--brand); text-decoration: none; }
-    a:hover { text-decoration: underline; }
-
-    header {
-      background: var(--white);
-      border-bottom: 1px solid var(--border);
-      padding: 14px 20px;
-    }
-    .logo {
-      font-size: 20px;
-      font-weight: 800;
-      color: var(--brand);
-      letter-spacing: -0.5px;
-    }
-
-    main {
-      flex: 1;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 32px 16px;
-    }
-
-    .card {
-      background: var(--white);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 36px 32px;
-      max-width: 420px;
-      width: 100%;
-      text-align: center;
-    }
-
-    .lock-icon {
-      font-size: 48px;
-      margin-bottom: 16px;
-    }
-
-    h1 {
-      font-size: 22px;
-      font-weight: 800;
-      margin-bottom: 6px;
-    }
-
-    .message {
-      color: var(--sub);
-      font-size: 15px;
-      margin-bottom: 28px;
-    }
-
-    .open-app-btn {
-      display: inline-block;
-      background: var(--brand);
-      color: var(--white);
-      font-weight: 700;
-      font-size: 16px;
-      padding: 13px 28px;
-      border-radius: var(--radius);
-      text-decoration: none;
-      transition: opacity .15s;
-      margin-bottom: 20px;
-    }
-    .open-app-btn:hover { opacity: .88; text-decoration: none; }
-
-    .install-prompt {
-      color: var(--sub);
-      font-size: 14px;
-      margin-bottom: 10px;
-    }
-
-    .store-badges {
-      display: flex;
-      gap: 10px;
-      justify-content: center;
-    }
-    .store-badge {
-      background: var(--text);
-      color: var(--white);
-      font-size: 13px;
-      font-weight: 600;
-      padding: 8px 18px;
-      border-radius: 8px;
-      text-decoration: none;
-    }
-    .store-badge:hover { opacity: .85; text-decoration: none; }
-
-    .web-link {
-      display: inline-block;
-      margin-top: 22px;
-      font-size: 14px;
-      font-weight: 600;
-    }
-
-    footer {
-      text-align: center;
-      padding: 20px;
-      font-size: 13px;
-      color: var(--sub);
-      border-top: 1px solid var(--border);
-    }
-  </style>
-</head>
-<body>
-
-<header>
-  <div class="logo">Ntripi</div>
-</header>
-
-<main>
-  <div class="card">
-    <div class="lock-icon">🔒</div>
-    <h1>{{ _('share_private_heading') }}</h1>
-    <p class="message">
-      {{ _('share_private_message') }}
-    </p>
-
-    {% if app_cta.android_intent_url %}
-    <div data-app-open hidden>
-      <a href="{{ app_cta.android_intent_url }}" class="open-app-btn">
-        {{ _('share_open_in_app') }}
-      </a>
-    </div>
-    {% endif %}
-
-    {{ store_badges(app_cta) }}
-
-    {{ continue_on_web(app_cta) }}
+{% block content %}
+<section class="message">
+  <div class="message-icon">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>
   </div>
-</main>
+  <h1>{{ _('share_private_heading') }}</h1>
+  <p>{{ _('share_private_message') }}</p>
+</section>
 
-<footer>
-  <p>{{ _('share_shared_via') }} · <a href="/">ntripi.app</a></p>
-</footer>
-
-{{ app_links_script(app_cta) }}
-</body>
-</html>
+{#- They may be among the people it was shared with — signing in is how
+    they find out. -#}
+{{ teaser_gate(app_cta, 'trip', lead=_('share_gate_lead_private')) }}
+{% endblock %}

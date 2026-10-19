@@ -1,54 +1,50 @@
 """
-routers/share.py — Public share landing page for itineraries.
+routers/share.py — Public share landing pages for itineraries and profiles.
 
-GET /share/i/{itinerary_id} returns an HTML page with rich Open Graph
-meta tags so links look good when pasted into WhatsApp, Twitter, iMessage.
+GET /share/i/{itinerary_id} and GET /share/u/{username} return HTML with Open
+Graph tags, so a link pasted into WhatsApp, iMessage, Twitter or Slack previews.
 
-No authentication is required — this is a public web page.
-Visibility enforcement happens at the template level:
-  public     → full rich page with stops, stats, map placeholder
+No authentication — and nobody reading without an account gets more than a
+teaser, a person, a chat crawler and a search engine alike:
+  public trip     → title, cover, rating, description; the rest after sign-in
   followers /
-  restricted → "this trip is private" page: no title, owner or cover
-  only_me    → 404 page (protects privacy, doesn't leak existence)
+  restricted      → "this trip is private" page: no title, owner or cover
+  only_me         → 404 page (protects privacy, doesn't leak existence)
+  profile         → display name, @username, avatar (private: also noindex)
+The routes pass the templates those fields and nothing else, and
+test_public_surface.py holds every page here to it.
 
 On a phone with the app, these links open the app instead (see
-services/app_links.py); every page here offers the app first and the web app
-second to a visitor who landed in the browser.
+services/app_links.py); a visitor who landed in the browser is offered the web
+app, which signs them in and opens the same trip or profile.
 """
 
 from __future__ import annotations
 
 import uuid
+
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import HTMLResponse
-from sqlalchemy.orm import Session, selectinload
-from sqlalchemy import select
+from slowapi.errors import RateLimitExceeded
+from sqlalchemy.orm import Session
 
 from app.config import Settings, get_settings
 from app.database import get_db
-from app.models.itinerary import Itinerary
-from app.models.stop import Stop
-from app.models.track import Track
-from app.models.transit_segment import TransitSegment
-from app.models.user import User
 from app.errors import ApiError
+from app.limiter import limiter
+from app.models.itinerary import Itinerary
+from app.models.user import User
 from app.services import user_service
 from app.services.app_links import cta_context, store_links
 from app.services.share_service import (
-    absolutize_stored_url,
-    build_profile_share_url,
     build_share_url,
     default_preview_image_url,
     prepare_profile_share_context,
     prepare_share_context,
-    resolve_profile_image_url,
 )
 from app.templating import templates
 
 router = APIRouter(prefix="/share", tags=["share"])
-
-# A prolific account must not render a thousand rows into one page.
-_MAX_PROFILE_ITINERARIES = 12
 
 
 def _not_found(
@@ -64,7 +60,26 @@ def _not_found(
     )
 
 
+def rate_limited_page(request: Request, exc: RateLimitExceeded) -> HTMLResponse:
+    """The /share 429 as a page: these are read in browsers, where slowapi's
+    JSON body would be a screen of raw text. Registered in main.py."""
+    try:
+        retry_after = str(exc.limit.limit.get_expiry())
+    except AttributeError:  # a slowapi without the window on the exception
+        retry_after = "60"
+    return templates.TemplateResponse(
+        request,
+        "share_rate_limited.html",
+        {"app_cta": store_links(get_settings())},
+        status_code=429,
+        headers={"Retry-After": retry_after},
+    )
+
+
 @router.get("/i/{itinerary_id}", response_class=HTMLResponse)
+# Per-IP, generous: stops one scraper hammering the origin; a person never
+# reaches it (SHARE_RATE_LIMIT, tunable without a redeploy).
+@limiter.limit(lambda: get_settings().SHARE_RATE_LIMIT)
 def share_itinerary(
     itinerary_id: str,
     request: Request,
@@ -75,7 +90,7 @@ def share_itinerary(
     Render a share landing page for an itinerary.
 
     Visibility rules:
-      public      → full rich page
+      public      → the teaser: title, cover, rating, description
       followers / restricted → "private" page carrying no title, owner or cover
       only_me     → 404 (same as not found — privacy protection)
     """
@@ -86,21 +101,9 @@ def share_itinerary(
     except ValueError:
         return _not_found(request, settings)
 
-    itinerary = db.execute(
-        select(Itinerary)
-        .options(
-            selectinload(Itinerary.tracks)
-            .selectinload(Track.stops)
-            .selectinload(Stop.outgoing_segment)
-            .selectinload(TransitSegment.legs)
-        )
-        .where(Itinerary.id == parsed_id)
-    ).scalar_one_or_none()
-
-    if itinerary:
-        itinerary.tracks.sort(key=lambda t: t.rank)
-        for track in itinerary.tracks:
-            track.stops.sort(key=lambda s: s.rank)
+    # The row alone: the teaser shows nothing below the itinerary, so its
+    # stops, segments and legs are never loaded for an anonymous reader.
+    itinerary = db.get(Itinerary, parsed_id)
 
     # Not found, only_me, or moderator soft-deleted/hidden → identical 404 to
     # avoid leaking existence (a hidden/deleted itinerary must never render here).
@@ -112,9 +115,7 @@ def share_itinerary(
     ):
         return _not_found(request, settings)
 
-    owner = db.execute(
-        select(User).where(User.id == itinerary.user_id)
-    ).scalar_one_or_none()
+    owner = db.get(User, itinerary.user_id)
 
     # Owner deleted (edge case) or banned → treat as not found.
     if owner is None or not owner.is_active:
@@ -125,38 +126,25 @@ def share_itinerary(
     if itinerary.visibility in ("followers", "restricted"):
         # Nothing about the trip is passed, so the template cannot leak it: this
         # page and its preview card reach everyone the link reaches — mostly
-        # people who cannot open the trip. Those who can open it in the app.
+        # people who cannot open the trip. Those who can open it once signed in.
         return templates.TemplateResponse(
             request,
             "share_private.html",
             {
                 "share_url": share_url,
+                "noindex": True,
                 "preview_image_url": default_preview_image_url(settings),
                 "app_cta": cta_context(share_url, settings),
             },
         )
 
-    # Public — build the full rich context.
-    # Stops are ordered by track rank then stop rank (tracks already sorted by loader).
-    stops = [s for track in itinerary.tracks for s in sorted(track.stops, key=lambda s: s.rank)]
-    segments = [
-        stop.outgoing_segment
-        for stop in stops
-        if stop.outgoing_segment is not None
-    ]
-
-    context = prepare_share_context(
-        itinerary=itinerary,
-        owner=owner,
-        stops=stops,
-        segments=segments,
-        settings=settings,
+    return templates.TemplateResponse(
+        request, "share_public.html", prepare_share_context(itinerary, settings)
     )
-
-    return templates.TemplateResponse(request, "share_public.html", context)
 
 
 @router.get("/u/{username}", response_class=HTMLResponse)
+@limiter.limit(lambda: get_settings().SHARE_RATE_LIMIT)
 def share_profile(
     username: str,
     request: Request,
@@ -167,8 +155,7 @@ def share_profile(
     Render a share landing page for a profile.
 
     Visibility rules:
-      public   → full page with bio, counts and public itineraries
-      private  → minimal page (name, handle, "open in app")
+      public / private → display name, @username, avatar — private also noindex
       unknown / banned / deleted → 404 (identical, so existence never leaks)
 
     A moderation-hidden profile still renders: users.moderation_status covers
@@ -181,40 +168,6 @@ def share_profile(
         # The helper raises a JSON 404; this is an HTML page, so re-render.
         return _not_found(request, settings, kind="profile")
 
-    share_url = build_profile_share_url(user, settings)
-
-    if user.is_private:
-        display_name, _bio = user_service.public_profile_text(user, viewer_id=None)
-        return templates.TemplateResponse(
-            request,
-            "share_profile_private.html",
-            {
-                "user": user,
-                "display_name": display_name or f"@{user.username}",
-                "avatar_url": user.avatar_url
-                and absolutize_stored_url(user.avatar_url, settings),
-                "share_url": share_url,
-                "preview_image_url": resolve_profile_image_url(user, settings),
-                "app_cta": cta_context(share_url, settings),
-            },
-        )
-
-    # Public — same exclusions as share_itinerary, so nothing reachable here is
-    # unreachable through its own share link.
-    itineraries = list(
-        db.execute(
-            select(Itinerary)
-            .options(selectinload(Itinerary.tracks).selectinload(Track.stops))
-            .where(
-                Itinerary.user_id == user.id,
-                Itinerary.visibility == "public",
-                Itinerary.deleted_at.is_(None),
-                Itinerary.hidden_at.is_(None),
-            )
-            .order_by(Itinerary.created_at.desc())
-            .limit(_MAX_PROFILE_ITINERARIES)
-        ).scalars()
-    )
-
-    context = prepare_profile_share_context(user, itineraries, settings)
-    return templates.TemplateResponse(request, "share_profile_public.html", context)
+    context = prepare_profile_share_context(user, settings)
+    context["noindex"] = user.is_private
+    return templates.TemplateResponse(request, "share_profile.html", context)

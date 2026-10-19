@@ -1,0 +1,221 @@
+{#- _share_layout.html — the one layout every /share page extends.
+
+    The app's own look — NtripiColors.light from social_flutter's app_theme.dart,
+    DM Sans, white ground, 18 px hairline cards, the trip screen's cover hero —
+    so a visitor's first sight of Ntripi looks like Ntripi. Light only: no page
+    on the site has a dark theme yet (see docs/backlog.md).
+
+    Every page here is read by people, chat-card crawlers and search engines
+    alike, and none of them gets more than the teaser: the routes pass the
+    templates nothing else (test_public_surface.py holds them to it).
+
+    Blocks: title, meta (description + Open Graph), content, body_end.
+    Context: share_url (canonical), noindex, app_cta (cta_context or
+    store_links). -#}
+{% from "_app_links.html" import app_links_head, app_links_script with context -%}
+<!DOCTYPE html>
+<html lang="{{ lang or 'en' }}" dir="{{ dir }}">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Ntripi{% endblock %}</title>
+{% block meta %}{% endblock %}
+{%- if share_url %}
+  {# The bare share URL, whatever ?lang= says: the content is the user's own,
+     in one language however the chrome is translated — so no hreflang set. #}
+  <link rel="canonical" href="{{ share_url }}">
+{%- endif %}
+{%- if noindex %}
+  <meta name="robots" content="noindex,follow">
+{%- endif %}
+{%- if app_cta %}
+{{ app_links_head(app_cta) }}
+{%- endif %}
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%231F6E3A'/><polyline points='8,24 8,10 16,20 24,10' stroke='white' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round' fill='none'/><circle cx='24' cy='10' r='3' fill='%23C89030'/><circle cx='24' cy='10' r='1.5' fill='white'/></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700;9..40,800&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    {#- NtripiColors.light — app_theme.dart is the source; keep these in step. #}
+    :root {
+      --forest:  #1F6E3A;
+      --canopy:  #2D7D52;
+      --mist:    #D0EBDA;
+      --amber:   #C89030;
+      --sand:    #F5F2EC;
+      --bark:    #1A2A1E;
+      --surface: #FFFFFF;
+      --border:  #E4EDE6;
+      --text2:   #5A7562;
+      --text3:   #93A898;
+      --scrim:   26, 42, 30;   {#- NtripiBrand.scrimInk (= bark) as RGB #}
+      --glass:   rgba(0, 0, 0, .33);   {#- nt.buttonTransparent #}
+    }
+
+    html { -webkit-text-size-adjust: 100%; }
+    body {
+      font-family: 'DM Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+      background: var(--surface); color: var(--bark); line-height: 1.5;
+      min-height: 100vh; display: flex; flex-direction: column;
+    }
+    a { color: var(--forest); }
+
+    {#- Top bar: EditorialTopBar #}
+    .topbar {
+      position: sticky; top: 0; z-index: 10;
+      height: 56px; padding: 0 16px;
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+      background: rgba(255, 255, 255, .92);
+      -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+    }
+    .brand { display: flex; align-items: center; gap: 8px; text-decoration: none; }
+    .brand-text { font-size: 17px; font-weight: 800; color: var(--forest); letter-spacing: -.2px; }
+    .topbar-cta {
+      padding: 8px 16px; border-radius: 999px; background: var(--forest);
+      color: var(--surface); font-size: 13px; font-weight: 700;
+      text-decoration: none; white-space: nowrap;
+    }
+
+    {#- A phone-width column, as the app is #}
+    .page { flex: 1; width: 100%; max-width: 560px; margin: 0 auto; padding-bottom: 32px; }
+
+    {#- SectionCard / SectionLabel #}
+    .card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 18px; margin: 16px 16px 0; padding: 18px;
+    }
+    .label {
+      margin: 22px 22px 8px; font-size: 12px; font-weight: 700;
+      letter-spacing: .06em; text-transform: uppercase; color: var(--text3);
+    }
+    .muted { font-size: 13px; color: var(--text2); }
+
+    {#- Cover hero: itinerary_detail_screen.dart _CoverHero #}
+    .hero { position: relative; height: 240px; overflow: hidden; background: var(--forest); }
+    @media (min-width: 600px) { .hero { margin: 16px 16px 0; border-radius: 18px; } }
+    .hero-img, .hero-map { position: absolute; inset: 0; width: 100%; height: 100%; }
+    .hero-img { object-fit: cover; }
+    .hero-map { opacity: .22; }
+    .hero::after {
+      content: ''; position: absolute; inset: 0; pointer-events: none;
+      background: linear-gradient(180deg,
+        rgba(var(--scrim), .4) 0%, rgba(var(--scrim), 0) 30%,
+        rgba(var(--scrim), 0) 60%, rgba(var(--scrim), .7) 100%);
+    }
+    .hero-top {
+      position: absolute; top: 8px; inset-inline: 12px; z-index: 2;
+      display: flex; justify-content: flex-end; gap: 6px;
+    }
+    .glass {
+      width: 40px; height: 40px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      background: var(--glass); border: 1px solid rgba(255, 255, 255, .2);
+      color: var(--surface); cursor: pointer; font: inherit;
+    }
+    .hero-bottom { position: absolute; bottom: 16px; inset-inline: 16px; z-index: 2; }
+    .badge {
+      display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px;
+      border-radius: 999px; background: var(--glass);
+      color: var(--surface); font-size: 11px; font-weight: 600;
+    }
+    .hero-title {
+      margin-top: 8px; font-size: 22px; font-weight: 700; line-height: 1.1;
+      letter-spacing: -.3px; color: var(--surface); overflow-wrap: anywhere;
+    }
+
+    .rating { display: flex; align-items: center; gap: 14px; }
+    .rating-big { font-size: 32px; font-weight: 800; line-height: 1; }
+    .stars { display: flex; gap: 2px; margin-bottom: 3px; }
+    .note { display: flex; gap: 10px; align-items: flex-start; }
+    .note-label { font-size: 11px; font-weight: 700; letter-spacing: .4px; color: var(--text2); }
+    .note-text { margin-top: 2px; font-size: 15px; white-space: pre-wrap; overflow-wrap: anywhere; }
+
+    .identity { padding: 28px 16px 4px; text-align: center; }
+    .avatar, .avatar-initial {
+      width: 88px; height: 88px; border-radius: 50%; margin: 0 auto 12px;
+      display: block; object-fit: cover; background: var(--sand);
+    }
+    .avatar-initial {
+      display: flex; align-items: center; justify-content: center;
+      font-size: 34px; font-weight: 800; color: var(--forest);
+    }
+    .identity-name { font-size: 22px; font-weight: 800; letter-spacing: -.3px; overflow-wrap: anywhere; }
+    .identity-handle { font-size: 15px; color: var(--text2); }
+
+    .message { text-align: center; padding: 28px 22px; }
+    .message-icon {
+      width: 56px; height: 56px; border-radius: 50%; margin: 0 auto 14px;
+      display: flex; align-items: center; justify-content: center;
+      background: var(--mist); color: var(--forest);
+    }
+    .message h1 { font-size: 20px; font-weight: 800; letter-spacing: -.3px; margin-bottom: 6px; }
+    .message p { color: var(--text2); font-size: 15px; }
+
+    {#- The gate: _app_links.html teaser_gate #}
+    .gate { display: flex; flex-direction: column; gap: 14px; }
+    .gate-lead { font-size: 15px; color: var(--text2); }
+    .gate-web { order: 1; display: flex; flex-direction: column; gap: 6px; }
+    .gate-stores { order: 2; display: flex; flex-direction: column; gap: 10px; }
+    {#- A phone whose store is live: the store comes first (app_links_script). #}
+    .gate.store-first .gate-stores { order: 0; }
+    .btn {
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      min-height: 52px; padding: 12px 20px; border-radius: 14px;
+      font: inherit; font-size: 16px; font-weight: 700; text-decoration: none;
+      text-align: center; cursor: pointer; border: none;
+    }
+    .btn-primary { background: var(--forest); color: var(--surface); }
+    .btn-tonal { background: var(--mist); color: var(--forest); }
+    .gate-note { font-size: 13px; color: var(--text2); text-align: center; }
+    .store-row { display: flex; gap: 10px; flex-wrap: wrap; }
+    .store-badge {
+      flex: 1 1 140px; display: flex; align-items: center; justify-content: center; gap: 8px;
+      min-height: 48px; padding: 10px 14px; border-radius: 14px;
+      background: var(--bark); color: var(--surface); text-decoration: none;
+    }
+    .store-badge-text { display: flex; flex-direction: column; align-items: flex-start; line-height: 1.15; }
+    .store-badge-sub { font-size: 10px; font-weight: 500; opacity: .75; }
+    .store-badge-title { font-size: 15px; font-weight: 700; }
+
+    .foot {
+      border-top: 1px solid var(--border); padding: 20px 16px;
+      text-align: center; font-size: 13px; color: var(--text3);
+    }
+    .foot a { color: var(--text2); font-weight: 600; text-decoration: none; }
+{% block style %}{% endblock %}
+  </style>
+</head>
+<body>
+
+<header class="topbar">
+  <a class="brand" href="/">
+    <svg width="30" height="30" viewBox="0 0 32 32" fill="none" aria-hidden="true">
+      <rect width="32" height="32" rx="8" fill="#1F6E3A"/>
+      <polyline points="8,24 8,10 16,20 24,10" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+      <circle cx="24" cy="10" r="3" fill="#C89030"/>
+      <circle cx="24" cy="10" r="1.5" fill="white"/>
+    </svg>
+    <span class="brand-text">NTripi</span>
+  </a>
+  {# The homepage download section; the script swaps in the visitor's own
+     store on a phone. #}
+  <a href="/#get-the-app" class="topbar-cta" data-get-app>{{ _('share_get_the_app') }}</a>
+</header>
+
+<main class="page">
+{% block content %}{% endblock %}
+</main>
+
+<footer class="foot">
+  <a href="/">ntripi.app</a> · <a href="/help">{{ _('footer_help') }}</a>
+</footer>
+
+{% block body_end %}{% endblock %}
+{%- if app_cta %}
+{{ app_links_script(app_cta) }}
+{%- endif %}
+</body>
+</html>

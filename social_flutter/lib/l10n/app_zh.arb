@@ -32,6 +32,8 @@
   "downloadBannerButton": "下载",
   "loginTitle": "欢迎回来",
   "loginSubtitle": "登录以继续你的旅程",
+  "signInToOpenTrip": "登录或创建免费账号，即可打开别人发给你的行程。",
+  "signInToOpenProfile": "登录或创建免费账号，即可打开别人发给你的个人资料。",
   "loginEmailLabel": "邮箱或用户名",
   "loginEmailHelp": "使用你注册时的邮箱或 @用户名登录。",
   "loginEmailHint": "you@example.com 或 @用户名",

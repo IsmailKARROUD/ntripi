@@ -1,0 +1,19 @@
+{#- The /share 429 (share.rate_limited_page): one client asked for more pages
+    than SHARE_RATE_LIMIT allows. Says so plainly; Retry-After carries when. -#}
+{% extends "_share_layout.html" %}
+
+{% block title %}{{ _('share_rate_limited_heading') }} — Ntripi{% endblock %}
+
+{% block meta %}
+  <meta name="robots" content="noindex">
+{% endblock %}
+
+{% block content %}
+<section class="message">
+  <div class="message-icon">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+  </div>
+  <h1>{{ _('share_rate_limited_heading') }}</h1>
+  <p>{{ _('share_rate_limited_body') }}</p>
+</section>
+{% endblock %}

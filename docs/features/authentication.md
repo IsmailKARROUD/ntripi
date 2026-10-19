@@ -126,6 +126,12 @@ username, refresh_expires_at}`.
 - **Screens** — `LoginScreen` (`/login`), `RegisterScreen` (`/register`),
   `SplashScreen` (`/splash`), `SuspendedScreen` (`/suspended`),
   `AcceptTermsScreen` (no route — mounted by `TosGate`).
+- **`ParkedLinkNotice`** sits under the heading of both `LoginScreen` and
+  `RegisterScreen` while a shared link waits for the sign-in — the share pages'
+  **See the full trip** lands a signed-out visitor here — and says so: "Sign in
+  or create a free account to open the trip you were sent" (or profile). It
+  listens to `parkedAppLink`, so it appears for a link tapped while the screen is
+  open and goes when the sign-in takes it. See [app-links.md](app-links.md).
 - **Providers** (`features/auth/providers/auth_provider.dart`):
   | Provider | Type | Holds |
   |---|---|---|
@@ -188,6 +194,7 @@ username, refresh_expires_at}`.
 - [legal-and-age-gate.md](legal-and-age-gate.md) — the two gates before moderation
 - [text-moderation.md](text-moderation.md) — why the scan precedes `create_user`
 - [admin-and-appeals.md](admin-and-appeals.md) — `is_active` and suspension
+- [sharing.md](sharing.md) — the share pages whose way in is this sign-in
 - [reference/error-codes.md](../reference/error-codes.md#authentication-and-session)
 - [reference/data-model.md](../reference/data-model.md)
 

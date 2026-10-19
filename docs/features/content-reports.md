@@ -162,7 +162,9 @@ Admin-side lanes are documented in
 - **`reportRepositoryProvider`** → `ReportRepository`
   (`features/reports/data/report_repository.dart`).
 - The flag button sits on the itinerary detail screen, and an anonymous variant
-  appears on the public share page.
+  appears on the public share page — a glass flag button on its cover hero, the
+  same place the app puts it. It stays on the teaser because what the teaser
+  shows (title, cover, description) can be what someone needs to report.
 - **The gesture is role-disjoint**: `long_press_to_edit.dart`'s invariant is
   **can-edit vs report** — an editor gets the pencil and never the flag.
 - A reader can report an individual review, which is why `RatingWithUser.id` is

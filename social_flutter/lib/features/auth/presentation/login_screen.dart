@@ -13,6 +13,7 @@ import 'package:ntripi/core/ui/app_theme.dart';
 import 'package:ntripi/core/ui/google_g_logo.dart';
 import 'package:ntripi/core/ui/ntripi_logo.dart';
 import 'package:ntripi/features/auth/data/auth_repository.dart';
+import 'package:ntripi/features/auth/presentation/widgets/parked_link_notice.dart';
 import 'package:ntripi/features/auth/presentation/widgets/google_tos_consent_sheet.dart';
 import 'package:ntripi/features/auth/providers/auth_provider.dart';
 import 'package:ntripi/features/itineraries/providers/itinerary_providers.dart';
@@ -268,6 +269,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   style: TextStyle(fontSize: 14, color: nt.text2),
                 ),
                 const SizedBox(height: 28),
+                // A shared link is waiting for this sign-in — say so.
+                const ParkedLinkNotice(),
 
                 // A social failure reports itself here, next to the buttons
                 if (_errorMessage != null && _errorFromSocial) ...[

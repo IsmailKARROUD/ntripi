@@ -94,9 +94,10 @@ RELEASES: tuple[Release, ...] = (
             "**Fermer l’application pendant une modification ne retient plus le voyage.** La prochaine fois que vous l’ouvrez, Ntripi le relâche d’abord, au lieu de vous dire que vous le modifiez sur un autre appareil.",
             "**Retirer un abonné, ou se désabonner depuis vos listes.** **Retirer** à côté d’une personne dans votre liste d’abonnés — ou **Retirer l’abonné** dans le menu ⋯ de son profil — met fin à son abonnement, sans qu’elle en soit informée. **Abonné** à côté d’une personne dans votre liste d’abonnements vous désabonne.",
             "**Le bouton Retour fonctionne après l’ouverture d’une notification.** Ce qu’ouvre une notification a désormais toujours un écran où revenir — en général celui où vous étiez, sinon votre profil — et propose **Retour** même si le voyage ou la personne en question n’existe plus.",
-            "**Les liens partagés s’ouvrent dans l’application.** Un lien vers un voyage ou un profil l’ouvre désormais dans Ntripi quand l’application est installée — après connexion, si vous étiez déconnecté. Sans l’application, la page la propose, ou vous pouvez continuer sur le web.",
+            "**Les liens partagés s’ouvrent dans l’application.** Un lien vers un voyage ou un profil l’ouvre désormais dans Ntripi quand l’application est installée — après connexion, si vous étiez déconnecté. Sans l’application, la page la propose, ou **Voir l’itinéraire complet** pour vous connecter et l’ouvrir sur le web.",
             "**Une réponse claire quand un voyage ne peut pas s’ouvrir.** Un lien vers un voyage que vous n’avez pas le droit de voir, ou qui a été supprimé, le dit désormais — avec un moyen de revenir en arrière — au lieu d’une erreur qui proposait de réessayer.",
             "**Les liens vers des voyages privés ne montrent rien dans une conversation.** L’aperçu d’un voyage partagé avec les abonnés ou des personnes précises n’affiche plus son titre, sa photo de couverture ni son propriétaire — seulement qu’il s’agit d’un voyage privé sur Ntripi.",
+            "**Les pages partagées montrent un aperçu.** Sans compte, un lien montre le titre, la photo de couverture, l’évaluation et la description d’un voyage — ou le nom et la photo d’un profil — avec l’allure de l’application. Le reste est à une connexion gratuite, et l’écran de connexion dit ce qui attend.",
         ),
     ),
     Release(
@@ -876,7 +877,7 @@ Un voyage qui n’est pas public ne génère qu’une carte neutre indiquant qu�
     Article(
         slug="share-a-trip-link",
         title="Comment partager votre voyage sous forme de lien",
-        summary="Envoyez un voyage par un lien — il s’ouvre dans l’application si la personne l’a, sinon dans son navigateur — et sachez ce que montrera l’aperçu.",
+        summary="Envoyez un voyage par un lien — il s’ouvre dans l’application si la personne l’a, sinon en aperçu, avec un moyen d’entrer.",
         category="sharing",
         intro="Chaque voyage a une adresse web. Partager, c’est simplement l’envoyer — le lien est l’emplacement du voyage, pas un mot de passe, et l’accès est revérifié par rapport à votre [réglage de visibilité](/help/share-an-itinerary-privately) chaque fois que quelqu’un l’ouvre.",
         blocks=(
@@ -885,26 +886,28 @@ Un voyage qui n’est pas public ne génère qu’une carte neutre indiquant qu�
                 heading="Obtenir le lien",
                 body="""Ouvrez le voyage et utilisez l’action de partage. La feuille de partage habituelle de votre appareil apparaît, le lien peut donc partir vers n’importe quelle application — messages, e-mail, notes.
 
-Si la personne à qui vous l’envoyez a Ntripi, le lien ouvre le voyage dans l’application — après connexion, si elle est déconnectée. Sinon, il s’ouvre dans son navigateur, où elle peut le lire sans compte, obtenir l’application ou continuer sur le web.""",
+Si la personne à qui vous l’envoyez a Ntripi, le lien ouvre le voyage dans l’application — après connexion, si elle est déconnectée. Sinon, il ouvre un aperçu du voyage dans son navigateur, avec une seule porte d’entrée : **Voir l’itinéraire complet**, qui la connecte — ou lui crée un compte gratuit — et l’ouvre.""",
             ),
             Block(
                 anchor="what-the-preview-shows",
                 heading="Ce que montre la carte d’aperçu",
-                body="""Un voyage **public** génère une carte d’aperçu dans la plupart des messageries : l’image de couverture, le titre, la durée et le coût totaux, le nombre d’étapes, et l’évaluation s’il en a une.
+                body="""Un voyage **public** génère une carte d’aperçu dans la plupart des messageries : l’image de couverture, le titre et — s’il en a — son évaluation et le début de sa description.
 
 Un voyage qui n’est **pas** public ne génère qu’une carte neutre indiquant qu’il s’agit d’un voyage privé sur Ntripi — sans titre, photo de couverture ni propriétaire. C’est délibéré — la carte est vue par tout le monde dans la conversation de groupe, y compris par ceux qui ne peuvent pas l’ouvrir.""",
             ),
             Block(
                 anchor="what-they-see",
                 heading="Ce que reçoit le lecteur",
-                body="""Le voyage entier : les étapes dans l’ordre, les options parallèles, les transits entre elles, les coûts, vos notes et avertissements, et les évaluations.
+                body="""Sans compte, l’aperçu : le titre du voyage, sa photo de couverture, son évaluation et sa description. C’est tout ce que l’on obtient sans se connecter — une personne, un moteur de recherche ou une messagerie, sans distinction — si bien que votre nom, les étapes, les transits, les coûts, vos notes et les avis restent dans Ntripi.
 
-Il peut tout lire sans compte. L’enregistrer, l’évaluer ou en copier des étapes en demande un.""",
+Tout le reste est à une connexion gratuite : **Voir l’itinéraire complet** l’ouvre sur le web, ou dans l’application là où elle est installée. L’enregistrer, l’évaluer ou en copier des étapes demande aussi le compte.
+
+Un lien vers un profil fonctionne de la même façon : sans compte, il montre le nom, le @nom d’utilisateur et la photo de profil.""",
             ),
             Block(
                 anchor="opens-in-browser",
                 heading="Si un lien s’ouvre dans le navigateur au lieu de l’application",
-                body="""Un lien n’ouvre l’application que sur un téléphone où Ntripi est installé. Ailleurs, il ouvre la page du voyage dans le navigateur, qui propose l’application — et **Continuer sur le web** pour utiliser Ntripi dans le navigateur.
+                body="""Un lien n’ouvre l’application que sur un téléphone où Ntripi est installé. Ailleurs, il ouvre l’aperçu du voyage dans le navigateur, qui propose l’application — et **Voir l’itinéraire complet**, pour se connecter et utiliser Ntripi dans le navigateur.
 
 Même avec l’application installée, un lien s’ouvre dans le navigateur s’il est tapé ou collé dans la barre d’adresse, ou ouvert dans le navigateur intégré d’une autre application. Sur iPhone, toucher **ntripi.app** en haut à droite de l’application envoie ensuite les liens vers Safari : appuyez longuement sur un lien et choisissez de l’ouvrir dans Ntripi pour revenir en arrière.
 
@@ -930,9 +933,12 @@ Ce que vous ne pouvez pas défaire, c’est une capture d’écran : traitez don
             "public",
             "ouvrir dans l’application",
             "navigateur",
+            "se connecter",
+            "compte",
+            "voir l’itinéraire complet",
         ),
         related=("share-an-itinerary-privately", "trip-cover-photos"),
-        updated="2026-10-18",
+        updated="2026-10-19",
         cta="Construisez quelque chose qui mérite d’être envoyé.",
     ),
     Article(

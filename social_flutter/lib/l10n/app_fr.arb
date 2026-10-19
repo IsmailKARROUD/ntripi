@@ -32,6 +32,8 @@
   "downloadBannerButton": "Télécharger",
   "loginTitle": "Bon retour",
   "loginSubtitle": "Connectez-vous pour continuer votre voyage",
+  "signInToOpenTrip": "Connectez-vous ou créez un compte gratuit pour ouvrir l'itinéraire qu'on vous a envoyé.",
+  "signInToOpenProfile": "Connectez-vous ou créez un compte gratuit pour ouvrir le profil qu'on vous a envoyé.",
   "loginEmailLabel": "E-mail ou nom d'utilisateur",
   "loginEmailHelp": "Connectez-vous avec l'e-mail avec lequel vous vous êtes inscrit, ou votre @identifiant.",
   "loginEmailHint": "vous@exemple.com ou @identifiant",

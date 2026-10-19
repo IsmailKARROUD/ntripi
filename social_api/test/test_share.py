@@ -6,10 +6,11 @@ No authentication required for any of these tests.
 
 Coverage:
   TestSharePublicItinerary:
-    - Rich landing page returned for public itinerary
-    - Open Graph meta tags present
-    - Stop names appear in HTML
-    - No auth header required
+    - The teaser and nothing else: title, cover, rating, description
+    - No owner, no stops, no stats — the rest is behind sign-in
+    - The preview card says what the page says
+    - The one way in: the web app, at the same trip; stores live only once set
+    - Rate limited per IP, with an HTML 429
 
   TestSharePrivateItinerary:
     - followers-only itinerary shows minimal page (no stops)
@@ -62,15 +63,26 @@ def share_url(itinerary_id):
     return f"/share/i/{itinerary_id}"
 
 
-def set_cover(itinerary_id, url):
-    """Give a trip a cover without the upload pipeline — only the URL matters."""
+def set_fields(itinerary_id, **fields):
+    """Write columns the API sets only through other flows (cover upload, the
+    rating aggregate) — only the stored values matter here."""
     db = TestingSessionLocal()
     try:
         row = db.get(Itinerary, uuid.UUID(itinerary_id))
-        row.cover_image_url = url
+        for name, value in fields.items():
+            setattr(row, name, value)
         db.commit()
     finally:
         db.close()
+
+
+def set_cover(itinerary_id, url):
+    """Give a trip a cover without the upload pipeline — only the URL matters."""
+    set_fields(itinerary_id, cover_image_url=url)
+
+
+def og_description(html):
+    return html.split('property="og:description" content="', 1)[1].split('"', 1)[0]
 
 
 # ---------------------------------------------------------------------------
@@ -79,19 +91,37 @@ def set_cover(itinerary_id, url):
 
 class TestSharePublicItinerary:
 
-    def test_public_itinerary_returns_rich_landing_page(self, client):
+    def test_public_itinerary_returns_the_teaser(self, client):
         alice = register_user(client, "alice_share", "alice_share@test.com")
         token = alice["access_token"]
         itinerary = create_itinerary(
             client, token, visibility="public", title="Weekend in Paris"
         )
+        client.patch(
+            f"/itineraries/{itinerary['id']}",
+            json={"description": "Two slow days on foot."},
+            headers=edit_now(client, itinerary["id"], auth_headers(token)),
+        )
+        set_cover(itinerary["id"], "https://images.example/paris.jpg")
 
         r = client.get(share_url(itinerary["id"]))
 
         assert r.status_code == 200
         assert "text/html" in r.headers["content-type"]
         assert "Weekend in Paris" in r.text
-        assert "alice_share" in r.text
+        assert "Two slow days on foot." in r.text
+        assert "https://images.example/paris.jpg" in r.text
+
+    def test_public_teaser_names_no_owner(self, client):
+        """The owner is not teaser content — the trip page names nobody."""
+        alice = register_user(client, "alice_owner", "alice_owner@test.com",
+                              display_name="Alice Owner")
+        itinerary = create_itinerary(client, alice["access_token"], visibility="public")
+
+        r = client.get(share_url(itinerary["id"]))
+
+        assert "alice_owner" not in r.text
+        assert "Alice Owner" not in r.text
 
     def test_open_graph_tags_present(self, client):
         alice = register_user(client, "alice_og", "alice_og@test.com")
@@ -108,7 +138,7 @@ class TestSharePublicItinerary:
         assert 'property="og:url"' in r.text
         assert 'property="og:image"' in r.text
 
-    def test_public_itinerary_shows_stops(self, client):
+    def test_public_itinerary_keeps_its_stops_behind_sign_in(self, client):
         alice = register_user(client, "alice_stops", "alice_stops@test.com")
         token = alice["access_token"]
         itinerary = create_itinerary(
@@ -116,14 +146,76 @@ class TestSharePublicItinerary:
         )
         add_stop(client, token, itinerary["id"], place_name="Eiffel Tower")
         add_stop(client, token, itinerary["id"], place_name="Louvre Museum")
-        add_stop(client, token, itinerary["id"], place_name="Arc de Triomphe")
 
         r = client.get(share_url(itinerary["id"]))
 
         assert r.status_code == 200
-        assert "Eiffel Tower" in r.text
-        assert "Louvre Museum" in r.text
-        assert "Arc de Triomphe" in r.text
+        assert "3-Stop Adventure" in r.text
+        assert "Eiffel Tower" not in r.text
+        assert "Louvre Museum" not in r.text
+        # Nor the stats the old page carried.
+        assert "2 stops" not in r.text
+
+    def test_rating_shows_average_and_count(self, client):
+        alice = register_user(client, "alice_rated", "alice_rated@test.com")
+        itinerary = create_itinerary(client, alice["access_token"], visibility="public")
+        set_fields(itinerary["id"], rating_avg=4.5, rating_count=12)
+
+        html = client.get(share_url(itinerary["id"])).text
+
+        assert "4.5" in html
+        assert "12 ratings" in html
+
+    def test_card_says_what_the_page_says(self, client):
+        alice = register_user(client, "alice_card", "alice_card@test.com")
+        token = alice["access_token"]
+        itinerary = create_itinerary(client, token, visibility="public")
+        client.patch(
+            f"/itineraries/{itinerary['id']}",
+            json={"description": "Markets at dawn, the old port by night."},
+            headers=edit_now(client, itinerary["id"], auth_headers(token)),
+        )
+        set_fields(itinerary["id"], rating_avg=4.6, rating_count=3)
+
+        card = og_description(client.get(share_url(itinerary["id"])).text)
+
+        assert card == "★ 4.6 (3) · Markets at dawn, the old port by night."
+
+    def test_card_falls_back_when_there_is_nothing_to_say(self, client):
+        alice = register_user(client, "alice_bare", "alice_bare@test.com")
+        itinerary = create_itinerary(client, alice["access_token"], visibility="public")
+
+        card = og_description(client.get(share_url(itinerary["id"])).text)
+
+        assert card == "A trip on Ntripi"
+
+    def test_long_description_is_cut_on_a_word_in_the_card(self, client):
+        alice = register_user(client, "alice_long", "alice_long@test.com")
+        token = alice["access_token"]
+        itinerary = create_itinerary(client, token, visibility="public")
+        long_text = "word " * 80
+        client.patch(
+            f"/itineraries/{itinerary['id']}",
+            json={"description": long_text},
+            headers=edit_now(client, itinerary["id"], auth_headers(token)),
+        )
+
+        card = og_description(client.get(share_url(itinerary["id"])).text)
+
+        assert card.endswith("word…")
+        assert len(card) <= 151
+
+    def test_the_way_in_is_the_web_app_at_the_same_trip(self, client):
+        alice = register_user(client, "alice_gate", "alice_gate@test.com")
+        itinerary = create_itinerary(client, alice["access_token"], visibility="public")
+
+        html = client.get(share_url(itinerary["id"])).text
+
+        assert f'href="/app/#/share/i/{itinerary["id"]}"' in html
+        assert "See the full trip" in html
+        assert "Free account needed" in html
+        # The reinstall hint waits for a live store.
+        assert "data-store-hint hidden" in html
 
     def test_public_itinerary_requires_no_auth(self, client):
         alice = register_user(client, "alice_noauth", "alice_noauth@test.com")
@@ -134,6 +226,34 @@ class TestSharePublicItinerary:
         r = client.get(share_url(itinerary["id"]))
 
         assert r.status_code == 200
+
+    def test_rate_limited_with_an_html_page(self, client, monkeypatch):
+        from app.config import get_settings
+
+        alice = register_user(client, "alice_limit", "alice_limit@test.com")
+        itinerary = create_itinerary(client, alice["access_token"], visibility="public")
+        monkeypatch.setattr(get_settings(), "SHARE_RATE_LIMIT", "2/minute")
+
+        codes = [client.get(share_url(itinerary["id"])).status_code for _ in range(2)]
+        r = client.get(share_url(itinerary["id"]))
+
+        assert codes == [200, 200]
+        assert r.status_code == 429
+        # A browser gets a page, not slowapi's JSON.
+        assert "text/html" in r.headers["content-type"]
+        assert r.headers["retry-after"] == "60"
+        assert "Too many requests" in r.text
+
+    def test_other_limited_routes_keep_the_json_429(self, client, monkeypatch):
+        from app.config import get_settings
+
+        monkeypatch.setattr(get_settings(), "REPORT_RATE_LIMIT", "1/minute")
+        body = {"itinerary_id": str(uuid.uuid4()), "reason": "spam"}
+        client.post("/reports", json=body)
+        r = client.post("/reports", json=body)
+
+        assert r.status_code == 429
+        assert r.headers["content-type"].startswith("application/json")
 
 
 # ---------------------------------------------------------------------------

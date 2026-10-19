@@ -252,6 +252,14 @@ external scheduler) **or SLA auto-hide and post-outage re-checks never run.**
   mostly people who cannot open the trip; the router passes `share_private.html`
   nothing about the trip, so it cannot leak — see
   [sharing.md](features/sharing.md#visibility-on-a-public-page).
+- **A reader without an account reaches the teaser and nothing else.** A public
+  trip's share page shows its title, cover, rating and description; a profile's,
+  its display name, @username and avatar — the same to a person, a chat crawler
+  and a search engine, card included. Everything else needs an account, on the
+  web as in the app (`kPublicRoutes` is the sign-in screens alone).
+  `test_public_surface.py` classifies every route reachable without sign-in and
+  seeds a marker into every non-teaser field — see
+  [web-and-platform.md](features/web-and-platform.md#the-public-surface).
 - **A rating survives its author anonymised** (`user_id` SET NULL) so the trip
   keeps its score.
 - **Bug-report screenshot retention is a privacy duty, not housekeeping** — a
