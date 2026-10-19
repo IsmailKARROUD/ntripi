@@ -169,7 +169,13 @@ and the value cannot be baked in at build time.
 - **`SUPPORTED = ("en", "fr", "ar", "de", "es", "zh")`**; `RTL_LANGS = ("ar",)`;
   `LANG_NAMES` are deliberately untranslated.
 - `resolve_lang`: **`?lang=` → `ntripi_lang` cookie → first supported
-  `Accept-Language` primary subtag → `"en"`**.
+  `Accept-Language` primary subtag → `"en"`**. Share links carry no `?lang=`, so
+  each reader gets their own device's language, not the sender's.
+- **The app's first-launch language follows the same rule**:
+  `firstSupportedLocale` (`lib/shared/data/app_locales.dart`) walks the device's
+  whole language list for the first one the app ships, so a shared link's page
+  and the web app's sign-in screen behind it agree. A language picked in the app
+  wins, as the cookie does here.
 - `translator(lang)` falls back **per key**; a missing key returns the key itself,
   surfacing loudly in dev.
 - **`LanguageCookieMiddleware`** touches HTML responses only, adds
@@ -191,6 +197,10 @@ and the value cannot be baked in at build time.
 - `WaitlistJoinBody` is defined **inline in the router** — the only schema in the
   project not in `schemas/`.
 - The app is **pre-launch**, so the homepage's download buttons open the waitlist.
+  A phone sees only its own store's button — `platform_head`, the share pages'
+  rule ([app-links.md](app-links.md#the-share-pages-a-teaser-and-one-way-in)) —
+  and the button's `data-store` is the `platform` the waitlist records; the
+  generic buttons send `both`.
   `ANDROID_DOWNLOAD_URL` unset hides the APK button. `home.html` has a
   `location.hash` handler so a cross-page link to `/#get-the-app` works.
 

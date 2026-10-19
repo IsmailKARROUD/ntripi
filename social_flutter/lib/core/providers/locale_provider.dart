@@ -26,12 +26,9 @@ class LocaleNotifier extends Notifier<Locale> {
       // User has previously chosen a language — always honour it.
       state = Locale(saved);
     } else {
-      // First launch: mirror the device system language, fall back to English
-      // if the system language isn't one of the app's supported locales.
-      final systemCode = PlatformDispatcher.instance.locale.languageCode;
-      state = kAppLocaleCodes.contains(systemCode)
-          ? Locale(systemCode)
-          : const Locale('en');
+      // First launch: the first of the device's languages the app ships — the
+      // whole list, not only its head, as the website reads Accept-Language.
+      state = firstSupportedLocale(PlatformDispatcher.instance.locales);
     }
   }
 

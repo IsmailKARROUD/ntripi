@@ -1451,3 +1451,32 @@ trip to a verified Googlebot only (on the cloaking line, and answer bots would
 retell it without the click). The trip's stop names as an outline on the
 teaser, and the owner, duration, cost and stop count on it — the owner chose
 the four fields. Bio, counts and a trip list on the profile teaser.
+
+### 2026-10-19 — A phone is offered only its own store; the app's first language walks the device's list
+
+**Context.** Every share page offered both store badges on every device, and the
+homepage hero did the same; the page script only moved a live store first. It
+also missed iPads: since iPadOS 13 their Safari reports a Mac, and the app ships
+for iPad. The owner asked that an Android phone see only Google Play and an
+iPhone only the App Store, in the device's language. The page already followed
+the device's language list (`resolve_lang`), but the web app behind **See the
+full trip** read only the list's first entry, so a phone set to Portuguese then
+French got a French page and then an English sign-in screen.
+**Decision.** `platform_head` (`_app_links.html`) decides the platform once, in
+`<head>` before the body is parsed, onto `<html data-platform>` — `android`,
+`ios` (an iPad: `Macintosh` plus touch points), or nothing — and one CSS rule
+hides the other store's `[data-store]` button. Every share page gets it through
+`app_links_head`, the homepage calls it itself, and `app_links_script` reads its
+answer instead of the User-Agent. A laptop, an unknown device and a browser
+without JavaScript get both, and both stay in the HTML. `test_app_links.py` pins
+the templates that render store buttons and checks each page's `<head>`. In the
+app, `firstSupportedLocale` walks the device's whole list, as `resolve_lang`
+walks `Accept-Language`.
+**Consequences.** Googlebot renders as an Android phone, so its rendered page
+shows Google Play only; the HTML keeps both. An Android tablet in desktop mode
+reports a Linux desktop and gets both, the safe default. The waitlist still
+records the platform of the button pressed.
+**Alternatives rejected.** Choosing on the server from the User-Agent: the HTML
+would vary by User-Agent, an iPad cannot be told apart there, and the page's
+other platform choices already live in its script. Hiding the other badge from
+the end-of-body script: a phone would see both badges flash first.

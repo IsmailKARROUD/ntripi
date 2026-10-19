@@ -142,7 +142,14 @@ each page calls `teaser_gate`:
 - **Store buttons** — `APP_STORE_URL` / `PLAY_STORE_URL`, else the homepage
   waitlist (`/#get-the-app`), the same honest pre-launch destination the help CTA
   uses. The nav's **Get the app** points there too, swapped for the visitor's own
-  store on a phone. **Once a store is live** (`app_store_live` /
+  store on a phone. **A phone sees only its own store**: Google Play on Android,
+  the App Store on an iPhone — and on an iPad, whose Safari has reported a Mac
+  since iPadOS 13 and is told apart by its touch points. `platform_head`
+  (`_app_links.html`) decides once, in `<head>` before a badge is parsed, onto
+  `<html data-platform>`, and one CSS rule hides the other store;
+  `app_links_script` reads that answer rather than the User-Agent again. A
+  laptop, an unknown device and a browser without JavaScript get both, and both
+  are always in the HTML. **Once a store is live** (`app_store_live` /
   `play_store_live`: its URL is set), `app_links_script` moves the store row
   above the web button on a phone of that platform and reveals "Once it's
   installed, tap the link again to open it in the app" — installing does not
@@ -187,7 +194,7 @@ JSON 422.
 | `ANDROID_APP_PACKAGE` | empty | applicationId. Set together with the next, or startup refuses |
 | `ANDROID_CERT_SHA256` | empty | SHA-256 of every signing certificate, comma-separated |
 | `IOS_APP_STORE_ID` | empty | numeric App Store id; turns the Smart App Banner on |
-| `APP_STORE_URL` / `PLAY_STORE_URL` | empty | download buttons; empty = the waitlist |
+| `APP_STORE_URL` / `PLAY_STORE_URL` | empty | download buttons; empty = the waitlist. Paste them without a country or language (no `/us/`, no `&hl=`), or the store opens in that one for everyone |
 
 ## Flutter surface
 

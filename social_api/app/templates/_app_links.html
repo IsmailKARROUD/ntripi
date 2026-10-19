@@ -4,22 +4,47 @@
 
       {% from "_app_links.html" import teaser_gate, store_badges with context %}
 
-    _share_layout.html already calls app_links_head and app_links_script. -#}
+    _share_layout.html already calls app_links_head and app_links_script;
+    home.html calls platform_head itself. -#}
 
-{#- In <head>. The [hidden] rule is load-bearing: the pages style their buttons
-    with `display`, which beats the attribute's UA style and would show the
-    Android-only button everywhere. Then Safari's own "Open" / "Get" banner —
-    it needs the app live in the App Store; app-argument is the URL the
-    installed app is handed. -#}
+{#- In <head>, before the body is parsed: the visitor's platform, decided once
+    onto <html data-platform> — android, ios (an iPad too: since iPadOS 13 its
+    Safari reports a Mac, and only its touch points give it away), or nothing.
+    The rule under it shows a phone its own store only, with no flash of the
+    other; a laptop, an unknown device and a browser without JS keep both.
+    Every page with [data-store] buttons calls it (test_app_links.py). -#}
+{% macro platform_head() -%}
+  <script>
+    (function () {
+      var ua = navigator.userAgent;
+      var platform = /Android/i.test(ua) ? 'android'
+        : /iPhone|iPad|iPod/i.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1) ? 'ios'
+        : '';
+      if (platform) document.documentElement.setAttribute('data-platform', platform);
+    })();
+  </script>
+  <style>
+    html[data-platform="android"] [data-store="ios"],
+    html[data-platform="ios"] [data-store="android"] { display: none !important; }
+  </style>
+{%- endmacro %}
+
+{#- In <head>. The platform first. The [hidden] rule is load-bearing: the pages
+    style their buttons with `display`, which beats the attribute's UA style and
+    would show the Android-only button everywhere. Then Safari's own "Open" /
+    "Get" banner — it needs the app live in the App Store; app-argument is the
+    URL the installed app is handed. -#}
 {% macro app_links_head(cta) -%}
+{{ platform_head() }}
   <style>[hidden] { display: none !important; }</style>
 {%- if cta.ios_app_store_id %}
   <meta name="apple-itunes-app" content="app-id={{ cta.ios_app_store_id }}, app-argument={{ cta.app_argument }}">
 {%- endif %}
 {%- endmacro %}
 
-{#- The two download buttons. Before launch both lead to the homepage
-    waitlist — see app_links.WAITLIST_PATH. -#}
+{#- The two download buttons, of which a phone is shown its own only
+    (platform_head). Before launch both lead to the homepage waitlist — see
+    app_links.WAITLIST_PATH. -#}
 {% macro store_badges(cta) -%}
 <div class="store-row">
   <a href="{{ cta.app_store_url }}" class="store-badge" data-store="ios">
@@ -66,13 +91,14 @@
     could only reload this page. Points [data-get-app] at the visitor's own
     store. And once that store is live (its URL set, not the waitlist), a phone
     gets the store first; a laptop never does — it cannot install from a store
-    page. Without JS everything stays at its safe default: web first. -#}
+    page. The platform is platform_head's, never re-read from the UA. Without JS
+    everything stays at its safe default: web first, both stores. -#}
 {% macro app_links_script(cta) -%}
 <script>
   (function () {
-    var ua = navigator.userAgent;
-    var android = /Android/i.test(ua);
-    var ios = /iPhone|iPad|iPod/i.test(ua);
+    var platform = document.documentElement.getAttribute('data-platform');
+    var android = platform === 'android';
+    var ios = platform === 'ios';
     if (android) {
       document.querySelectorAll('[data-app-open]').forEach(function (el) { el.hidden = false; });
     }

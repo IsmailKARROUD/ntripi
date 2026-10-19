@@ -89,13 +89,17 @@ Every page but not-found carries the same gate (`_app_links.html`
   line above the form saying what is waiting (`ParkedLinkNotice`) — and lands on
   it after. One neutral label because the page cannot know whether the visitor
   already has an account.
-- **The store buttons**, then **Open in app** on Android. Before launch the
-  stores are the homepage waitlist, so the web button leads. **Once a store URL
-  is set, a phone of that platform gets its store first** (`store-first`, set by
-  `app_links_script` from `app_store_live` / `play_store_live`), with the hint
-  "Once it's installed, tap the link again to open it in the app" — installing
-  does not carry the link into the app (no deferred deep linking). A desktop
-  always keeps the web button first: it cannot install from a store page.
+- **The store buttons**, then **Open in app** on Android. **A phone is shown its
+  own store only** — Google Play on Android, the App Store on an iPhone or an
+  iPad — decided once in `<head>` by `platform_head`; a laptop, an unknown device
+  and a browser without JavaScript get both, and both are always in the HTML.
+  Before launch the stores are the homepage waitlist, so the web button leads.
+  **Once a store URL is set, a phone of that platform gets its store first**
+  (`store-first`, set by `app_links_script` from `app_store_live` /
+  `play_store_live`), with the hint "Once it's installed, tap the link again to
+  open it in the app" — installing does not carry the link into the app (no
+  deferred deep linking). A desktop always keeps the web button first: it cannot
+  install from a store page.
 - The not-found page carries the store buttons and **Go to Ntripi** only.
 
 Details of the store and intent links in [app-links.md](app-links.md#the-share-pages-a-teaser-and-one-way-in).

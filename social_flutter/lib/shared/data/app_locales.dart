@@ -1,3 +1,5 @@
+import 'dart:ui' show Locale;
+
 import 'package:ntripi/l10n/app_localizations.dart';
 
 /// A UI language the app ships translations for.
@@ -30,6 +32,19 @@ const List<AppLocale> kAppLocales = [
 
 /// Codes only — for membership checks (e.g. system-locale fallback).
 final Set<String> kAppLocaleCodes = {for (final l in kAppLocales) l.code};
+
+/// The first of the device's languages ([preferred], most wanted first) that
+/// the app ships, else English — the order the website's `resolve_lang` walks
+/// Accept-Language in, so a shared link's page and the sign-in screen after it
+/// speak the same language.
+Locale firstSupportedLocale(Iterable<Locale> preferred) {
+  for (final locale in preferred) {
+    if (kAppLocaleCodes.contains(locale.languageCode)) {
+      return Locale(locale.languageCode);
+    }
+  }
+  return const Locale('en');
+}
 
 /// Localized display name for a UI-language [code], falling back to English.
 String localeLabel(AppLocalizations l10n, String code) => switch (code) {

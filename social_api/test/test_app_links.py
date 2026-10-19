@@ -7,11 +7,15 @@ Coverage:
                          and every claimed path is a real share route
   TestAppLinkSettings  — each refusal of _validate_app_links, and fingerprint
                          normalisation
-  TestShareCta         — app first, web second on every share page: store
+  TestShareCta         — every share page's way in: the web app link, store
                          buttons (waitlist until set), the Android intent link,
-                         the Smart App Banner, Continue on web; no ntripi://
+                         the Smart App Banner; no ntripi://
+  TestOneStorePerPhone — every page with store buttons decides the platform
+                         once, in <head>, so a phone is shown its own store
+                         only; both stay in the HTML for laptops and no-JS
 """
 
+from pathlib import Path
 from urllib.parse import unquote
 
 import pytest
@@ -256,3 +260,74 @@ class TestShareCta:
     def test_no_page_links_the_unregistered_scheme(self, client, configured):
         for name, (url, _path) in _all_share_pages(client).items():
             assert "ntripi://" not in client.get(url).text, name
+
+
+# ---------------------------------------------------------------------------
+# TestOneStorePerPhone
+# ---------------------------------------------------------------------------
+
+TEMPLATES = Path(__file__).resolve().parents[1] / "app" / "templates"
+
+# Every template that puts a store button on a page — written out, or through
+# _app_links.html's store_badges / teaser_gate. A new one fails the first test
+# until it is listed here, and so rendered and checked by the others.
+STORE_BUTTON_TEMPLATES = {
+    "home.html",
+    "share_public.html",
+    "share_private.html",
+    "share_profile.html",
+    "share_not_found.html",
+}
+
+
+def _store_button_pages(client) -> dict[str, str]:
+    """A URL that renders each of STORE_BUTTON_TEMPLATES."""
+    pages = _all_share_pages(client)
+    return {
+        "home.html": "/",
+        "share_public.html": pages["public trip"][0],
+        "share_private.html": pages["private trip"][0],
+        "share_profile.html": pages["public profile"][0],
+        "share_not_found.html": "/share/i/00000000-0000-0000-0000-000000000000",
+    }
+
+
+def _head(html: str) -> str:
+    return html.split("</head>", 1)[0]
+
+
+class TestOneStorePerPhone:
+
+    def test_every_template_with_store_buttons_is_listed(self):
+        found = {
+            path.name for path in TEMPLATES.rglob("*.html")
+            if path.name != "_app_links.html"
+            and any(hook in path.read_text(encoding="utf-8")
+                    for hook in ('data-store="', "store_badges(", "teaser_gate("))
+        }
+        assert found == STORE_BUTTON_TEMPLATES
+
+    def test_the_platform_is_decided_in_the_head(self, client):
+        # Before a badge is parsed, so a phone never sees the other one flash.
+        for name, url in _store_button_pages(client).items():
+            head = _head(client.get(url).text)
+            assert "setAttribute('data-platform'" in head, name
+            assert 'html[data-platform="android"] [data-store="ios"]' in head, name
+            assert 'html[data-platform="ios"] [data-store="android"]' in head, name
+
+    def test_the_platform_is_read_from_the_browser_once(self, client):
+        # app_links_script takes platform_head's answer; a second test would drift.
+        for name, url in _store_button_pages(client).items():
+            assert client.get(url).text.count("navigator.userAgent") == 1, name
+
+    def test_an_ipad_counts_as_ios(self, client):
+        # Since iPadOS 13 its Safari reports a Mac; only the touch points differ.
+        head = _head(client.get("/").text)
+        assert "/Macintosh/.test(ua) && navigator.maxTouchPoints > 1" in head
+
+    def test_both_stores_stay_in_the_html(self, client):
+        # What a laptop, a browser without JS and a crawler get.
+        for name, url in _store_button_pages(client).items():
+            html = client.get(url).text
+            assert 'data-store="ios"' in html, name
+            assert 'data-store="android"' in html, name
