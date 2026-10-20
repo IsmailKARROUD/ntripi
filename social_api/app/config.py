@@ -84,6 +84,9 @@ class Settings(BaseSettings):
     # alone (only safe where nothing sits in front of the proxy tier).
     CLIENT_IP_HEADER: str = "cf-connecting-ip"
 
+    # Requests slower than this (ms) log a WARNING timing line; 0 logs all, for investigations.
+    SLOW_REQUEST_LOG_MS: int = Field(default=1000, ge=0)
+
     # Base URL used to construct share links sent via the share sheet.
     # In production: SHARE_BASE_URL=https://ntripi.app
     share_base_url: str = "http://localhost:8000"

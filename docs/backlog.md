@@ -627,3 +627,39 @@ Recorded because a reader who trusts these will be wrong. None is a code change.
 
 `docs/` supersedes the schema and endpoint sections of both backend READMEs. →
 [README.md](README.md)
+
+---
+
+## Performance
+
+### planned — saves still take 1–1.5 s; the bar is under one second
+
+After Postgres moved to the API's region (2026-10-20,
+[decisions.md](decisions.md)), the owner timed five actions on the phone, from
+tapping Save to seeing the result: create a trip 1.3 s, add a stop 1.0 s, edit
+the description 1.1 s, add a trip note 1.5 s, rate a trip 1.51 s. A local replay
+at a 2 ms database delay puts server time at 0.07–0.17 s per action, plus about
+0.1 s of network per request, so 0.6–1.1 s per action is unaccounted for. The
+owner set the bar at under one second per action, timed the same way.
+
+Next step: set `SLOW_REQUEST_LOG_MS=0` on Railway, do each action twice, read
+the `slow request:` lines, then put the threshold back. The candidates those
+lines will rank:
+
+- **The OpenAI moderation call on every text save** —
+  `TEXT_MODERATION_PROVIDER=openai` in production. Even a refused request to
+  `api.openai.com` takes about 0.2 s from Belgium, and a real check adds the
+  model's time. Moderation runs before the write by design (a reject is a 422 and
+  nothing is stored), so taking it off the request would be a policy reversal,
+  not tuning.
+- **The reload after every save** — `ItineraryDetailNotifier` follows each write
+  with a forced `GET /itineraries/{id}` before the form closes: a second request
+  in sequence.
+- **First requests after a restart** — the language detector loads a model the
+  first time it meets a language, and imports and pool connections warm up.
+- **Rating only** — the push to the trip's owner is sent inline, before the
+  response (decisions.md, 2026-08-13).
+- **The phone** — the closing animation of the form or dialog, and the trip
+  screen redrawing after its reload.
+
+→ [features/web-and-platform.md](features/web-and-platform.md)

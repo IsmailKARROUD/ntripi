@@ -96,7 +96,7 @@ Extracted in the 2026-07 dedup refactor. Before writing a query/response block i
 - **`app/services/share_service.py`** — `build_share_url(itinerary, settings)` for the public share URL; never rebuild the f-string. Also `absolute_storage_url(key, settings)` — the only way to turn a storage key into a URL fit to leave the site (emails, Jira tickets, OG crawlers). Filesystem storage returns a relative `/uploads/…`; R2 is already absolute and passes through. And `default_preview_image_url(settings)` — the default OG card, and the only image a private trip's share page may carry.
 - **`app/services/app_links.py`** — `cta_context(share_url, settings)` is the only source of a share page's way in (the **See the full trip** web-app link, store URLs with the waitlist fallback and their `*_live` flags, the Android intent URL, the Smart App Banner); `store_links(settings)` its download half. Render it through the `templates/_app_links.html` macros (`teaser_gate`, `store_badges`), imported `with context`, inside `templates/_share_layout.html`. `platform_head()` in the same file is the one place the visitor's platform is decided — in `<head>`, onto `<html data-platform>` — so a phone is shown its own store only; `app_links_head` calls it, and so must any other page with `data-store` buttons (`home.html` does).
 - **`lib/core/storage/secure_storage.dart` `hasLiveRefreshToken()`** — the one "is somebody signed in" check (router redirect, splash, `hasSessionProvider`, the link guard); never re-inline the refresh-token-and-expiry read.
-- **`app/middleware/__init__.py`** — `STATIC_PREFIXES` shared by ETag + security-headers middleware; add new static mounts there, not in each middleware, and test a path with `is_static_path()` (segment boundary) — a bare `startswith("/app")` also matched `/appeal` and `/appeals` and stripped their security headers.
+- **`app/middleware/__init__.py`** — `STATIC_PREFIXES` shared by the ETag, security-headers and request-timing middleware; add new static mounts there, not in each middleware, and test a path with `is_static_path()` (segment boundary) — a bare `startswith("/app")` also matched `/appeal` and `/appeals` and stripped their security headers.
 - **`app/database.py`** — `upsert_insert(db, model)` for any check-then-insert that can race (a dialect `INSERT` with `on_conflict_do_nothing` / `_do_update`, same API on Postgres and the SQLite suite). Used by device registration, the text-moderation cache and the first edit-lock claim — each was a 500 when two requests both saw "no row".
 - **`app/services/translation_service.py`** — `REGISTRY` is the one list of translatable fields (itinerary title/description/period note, both annotation tables, stop notes, review notes, leg notes — never place names). **Every write of translatable text calls `sync_translations(db, row, changed=...)` before the commit** (re-detects `source_lang`, drops translations whose source hash moved); **every delete below the itinerary calls `purge_orphans(db, itinerary.id)` after the flush** — a stop delete cascades annotations and legs out of the app's sight. Trip and account deletes need neither: `content_translations.itinerary_id` cascades. A new write or delete path that skips these leaves a copy of rewritten or deleted text behind.
 - **`app/routers/itineraries.py` router-private helpers** (keep router-private; don't re-inline):
@@ -114,20 +114,22 @@ Extracted in the 2026-07 dedup refactor. Before writing a query/response block i
 
 ```
 Code order (first added → innermost):     Runtime request order (outermost first):
-  LanguageCookieMiddleware          →        ProxyHeadersMiddleware
-  ETagMiddleware                    →        ClientIPHeaderMiddleware
-  CORSMiddleware                    →        TrustedHostMiddleware
-  SecurityHeadersMiddleware         →        ContentSizeLimitMiddleware
-  ContentSizeLimitMiddleware        →        SecurityHeadersMiddleware
-  TrustedHostMiddleware             →        CORSMiddleware
-  ClientIPHeaderMiddleware          →        ETagMiddleware
-  ProxyHeadersMiddleware            →        LanguageCookieMiddleware
+  RequestTimingMiddleware           →        ProxyHeadersMiddleware
+  LanguageCookieMiddleware          →        ClientIPHeaderMiddleware
+  ETagMiddleware                    →        TrustedHostMiddleware
+  CORSMiddleware                    →        ContentSizeLimitMiddleware
+  SecurityHeadersMiddleware         →        SecurityHeadersMiddleware
+  ContentSizeLimitMiddleware        →        CORSMiddleware
+  TrustedHostMiddleware             →        ETagMiddleware
+  ClientIPHeaderMiddleware          →        LanguageCookieMiddleware
+  ProxyHeadersMiddleware            →        RequestTimingMiddleware
 ```
 
 Key rules:
 - **`ProxyHeadersMiddleware`** (`uvicorn.middleware.proxy_headers`) is outermost — it rewrites `X-Forwarded-Proto` into the scheme (HSTS needs it) and `X-Forwarded-For` into `request.client.host`. With `trusted_hosts="*"` uvicorn 0.41 takes the **leftmost** X-Forwarded-For entry, and Cloudflare *appends* to a client-supplied header, so on its own that IP is caller-chosen.
 - **`ClientIPHeaderMiddleware`** (`app/middleware/client_ip.py`), just inside ProxyHeaders, has the last word on `request.client`: it takes `CLIENT_IP_HEADER` (default `cf-connecting-ip`, which Cloudflare overwrites) and falls back to the X-Forwarded-For answer when the header is absent (local dev). Every `slowapi` limit keys on this — before 2026-09-28 any caller could forge its IP past login/register/report/appeal limits. A request that reaches Railway directly can still forge either header; closing that is edge config.
-- **`LanguageCookieMiddleware`** is added first, so it is innermost; it touches only `text/html` responses and does not affect the security ordering.
+- **`RequestTimingMiddleware`** is added first, so it is innermost; it rewrites nothing. **`LanguageCookieMiddleware`** comes next and touches only `text/html` responses. Neither affects the security ordering.
+- **Request timing is a log line, never a response header** (`app/middleware/request_timing.py`). A request slower than `SLOW_REQUEST_LOG_MS` (default 1000, `0` = every request) logs one WARNING line — the only level Railway shows: `slow request: POST /itineraries/{itinerary_id}/stops status=201 total=812ms db=45ms/14q ext=api.openai.com:610ms/1 other=157ms`. It logs the **route template, never the path** (no id or username), and a `Server-Timing` header is forbidden: a query count or a duration tells any caller whether an account or a trip exists, undoing the timing-safe login and the identical 404s. Database time comes from class-level `Engine` cursor listeners; outbound time from wrapping the two seams every integration passes through, `requests.Session.send` and botocore's `URLLib3Session.send` (`install_outbound_hooks`) — a new HTTP client library needs a hook there. The record rides a `ContextVar` that anyio copies into the endpoint's worker thread; the clock stops at the last body chunk, so background tasks are not counted.
 - **`TrustedHostMiddleware`** reads `ALLOWED_HOSTS` from settings (comma-separated). The apex domain and wildcard must both be listed separately (`ntripi.app,*.ntripi.app`) — Starlette's wildcard does not match the bare apex.
 - **`SecurityHeadersMiddleware`** (`app/middleware/security_headers.py`) applies `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, `Content-Security-Policy: frame-ancestors 'none'`, and (HTTPS only) `Strict-Transport-Security: max-age=31536000`. CSP uses only `frame-ancestors` — `default-src 'self'` is meaningless for a JSON API.
 - **`CORSMiddleware`** must use explicit method and header lists — never `["*"]`. Current whitelist: methods `GET POST PATCH DELETE OPTIONS`; headers `Content-Type Authorization If-Match If-None-Match`.
@@ -269,6 +271,8 @@ When inserting a new track between two adjacent tracks that have a segment conne
 
 Railway (single Dockerfile) + Cloudflare DNS + Let's Encrypt SSL.
 
+**Postgres must run in the same Railway region as the API (EU West, Amsterdam).** A region is set per service, so moving the API never moves the database. Until 2026-10-20 Postgres sat in a US region: a save makes 8–20 database round trips one after another, each crossed the Atlantic (~120 ms), and saves took 4–6 s. Check without signing in: `https://ntripi.app/share/i/not-a-uuid` (refused before any query) and `https://ntripi.app/share/i/<random uuid>` (one query) must answer in the same time.
+
 Railway env vars: `DATABASE_URL=${{Postgres.DATABASE_URL}}` · `SECRET_KEY` · `ALGORITHM=HS256` · `ACCESS_TOKEN_EXPIRE_MINUTES=1440` · `DEBUG=False` · `SHARE_BASE_URL=https://ntripi.app` · `ALLOWED_ORIGINS=https://ntripi.app` · `STORAGE_BACKEND=r2` · `R2_ACCESS_KEY_ID` · `R2_SECRET_ACCESS_KEY` · `R2_BUCKET` · `R2_ENDPOINT` · `R2_PUBLIC_URL=https://images.ntripi.app` (proxied custom domain — never `pub-*.r2.dev`) · `STORAGE_PUBLIC_URL_PREFIX=/uploads` (keep set: legacy relative URLs still validate against it) · `CLIENT_IP_HEADER=cf-connecting-ip` (the default; the header every rate limit keys on — keep it while the app sits behind Cloudflare). Filesystem fallback for local dev only: `STORAGE_BACKEND=filesystem` + `STORAGE_FILESYSTEM_PATH=/app/uploads`.
 
 Optional: `FEED_TOP_MIN_RATINGS=3` — minimum rating count for an itinerary to appear in the "Top" discovery feed (defaults to 3; lower it while the catalogue is young).
@@ -290,6 +294,8 @@ Optional (reports/safety): `REPORT_HIDE_THRESHOLDS` (comma `category:count`) · 
 **Mailboxes** (Google Workspace on the root MX; Resend sends from the `send.ntripi.app` subdomain, so sending and receiving never collide): `OPERATOR_EMAIL=ops@ntripi.app` is the one to actually set — unset, four alert paths (`report_service`, `moderation_service`, `bug_report_service`, `text_moderation_service`) guard on it and silently skip, so the queues fill with nobody told. `abuse@` is published in-app and on the store listing, `privacy@` is hardcoded in all six `app/constants/legal/*.py` bodies as the GDPR controller contact, `support@` and `contact@` are the Flutter `kSupportContactEmail` / `kGeneralContactEmail` defaults, and `noreply@` (the `EMAIL_FROM` sender) must stay a real routed address — users reply to password resets.
 
 Optional (share pages): `SHARE_RATE_LIMIT=120/minute` — per-IP limit on `/share/*`, answered with an HTML 429; the default needs no deploy change.
+
+Optional (request timing): `SLOW_REQUEST_LOG_MS=1000` — a request slower than this is logged at WARNING with its database, outbound-HTTP and remaining time. `0` logs every request: set it for an investigation, then put it back, because Railway keeps every WARNING line. The default needs no deploy change.
 
 Optional (bug reports): `BUG_REPORT_RATE_LIMIT=5/hour` · `BUG_REPORT_RETENTION_DAYS=180`. Both have working defaults — shipping the feature needs no deploy change. `OPERATOR_EMAIL` is what turns the notification email on.
 
@@ -1200,6 +1206,8 @@ For each article the change touches:
 - Do NOT catch `asyncio.CancelledError` in exception handlers — re-raise it; intercepting it breaks Starlette's lifespan
 - Do NOT add new rate-limited endpoints without importing `limiter` from `app/limiter.py` (not from `app/main.py` — circular import)
 - Do NOT run the container as root — the Dockerfile creates `appuser` and must keep `USER appuser`
+- Do NOT put request timing in a response header (`Server-Timing` or any other) — a query count or a duration tells any caller whether an account or a trip exists; `RequestTimingMiddleware` logs the route template instead
+- Do NOT run Postgres in a different Railway region from the API — a save makes 8–20 database round trips one after another, and across the Atlantic that turned 0.2 s saves into 4–6 s
 - Do NOT store tokens or sensitive user data in Riverpod provider state — use `flutter_secure_storage` only
 - Do NOT add a keep-alive user-scoped provider without adding it to `_userScopedProviders` in `auth_provider.dart` — that list is reset on sign-in and sign-out, and a provider missing from it shows one account's data to the next person on the device
 - Do NOT key the HTTP cache on the URL alone — `ntripiCacheKey` (`core/api/cache_key.dart`) prefixes the JWT `sub`, and every `CacheOptions` (including `forceRefreshOptions()`, whose options replace the interceptor's) and `CacheEvictInterceptor` must use it

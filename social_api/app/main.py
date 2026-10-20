@@ -39,6 +39,7 @@ from app.limiter import limiter
 from app.middleware.client_ip import ClientIPHeaderMiddleware
 from app.middleware.etag import ETagMiddleware
 from app.middleware.language import LanguageCookieMiddleware
+from app.middleware.request_timing import RequestTimingMiddleware, install_outbound_hooks
 from app.middleware.security_headers import SecurityHeadersMiddleware
 from app.routers import (
     admin, appeals, auth, bug_reports, devices, users, follows, internal,
@@ -237,11 +238,16 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_response)
 # Middleware stack (add_middleware is LIFO — last added = outermost)
 # ---------------------------------------------------------------------------
 # Desired request order: ProxyHeaders → ClientIPHeader → TrustedHost →
-#   ContentSizeLimit → SecurityHeaders → CORS → ETag → LanguageCookie → handlers
+#   ContentSizeLimit → SecurityHeaders → CORS → ETag → LanguageCookie →
+#   RequestTiming → handlers
 
-# Language cookie + Vary: Accept-Language on HTML (innermost — touches only
-# text/html responses, never the JSON API, so it does not affect the security
-# stack ordering below).
+# Request timing (innermost; rewrites nothing). Outbound HTTP is timed per host.
+install_outbound_hooks()
+app.add_middleware(RequestTimingMiddleware)
+
+# Language cookie + Vary: Accept-Language on HTML (touches only text/html
+# responses, never the JSON API, so it does not affect the security stack
+# ordering below).
 app.add_middleware(LanguageCookieMiddleware)
 
 # ETag / 304 Not Modified — closest to handlers among the JSON-API layers.

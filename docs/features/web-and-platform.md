@@ -20,18 +20,19 @@ the whole application sits inside.
 
 | Code order (first added = innermost) | Runtime request order (outermost first) |
 |---|---|
-| `LanguageCookieMiddleware` | `ProxyHeadersMiddleware` |
-| `ETagMiddleware` | `ClientIPHeaderMiddleware` |
-| `CORSMiddleware` | `TrustedHostMiddleware` |
-| `SecurityHeadersMiddleware` | `ContentSizeLimitMiddleware` |
-| `ContentSizeLimitMiddleware` | `SecurityHeadersMiddleware` |
-| `TrustedHostMiddleware` | `CORSMiddleware` |
-| `ClientIPHeaderMiddleware` | `ETagMiddleware` |
-| `ProxyHeadersMiddleware` | `LanguageCookieMiddleware` → handlers |
+| `RequestTimingMiddleware` | `ProxyHeadersMiddleware` |
+| `LanguageCookieMiddleware` | `ClientIPHeaderMiddleware` |
+| `ETagMiddleware` | `TrustedHostMiddleware` |
+| `CORSMiddleware` | `ContentSizeLimitMiddleware` |
+| `SecurityHeadersMiddleware` | `SecurityHeadersMiddleware` |
+| `ContentSizeLimitMiddleware` | `CORSMiddleware` |
+| `TrustedHostMiddleware` | `ETagMiddleware` |
+| `ClientIPHeaderMiddleware` | `LanguageCookieMiddleware` |
+| `ProxyHeadersMiddleware` | `RequestTimingMiddleware` → handlers |
 
-`LanguageCookieMiddleware` is added **first** and is therefore the innermost
-layer. It touches only `text/html` responses, so it does not affect the security
-ordering.
+`RequestTimingMiddleware` is added **first** and is therefore the innermost
+layer; it rewrites nothing. `LanguageCookieMiddleware` comes next and touches
+only `text/html` responses. Neither affects the security ordering.
 
 - **`ProxyHeadersMiddleware` is outermost** — it rewrites `X-Forwarded-Proto`
   into the scheme (HSTS needs it) and `X-Forwarded-For` into
@@ -68,9 +69,28 @@ ordering.
   Methods `GET POST PATCH DELETE OPTIONS`; headers `Content-Type`,
   `Authorization`, `If-Match`, `If-None-Match`, **`X-Edit-Lock`** — dropping the
   last would fail the browser preflight before an itinerary mutation is even sent.
-- **`STATIC_PREFIXES` lives in `app/middleware/__init__.py`**, shared by the ETag
-  and security-headers middleware. **Add a new static mount there, not in each
-  middleware.**
+- **`RequestTimingMiddleware` (`app/middleware/request_timing.py`) logs a slow
+  request at WARNING** — the only level Railway shows. A request slower than
+  `SLOW_REQUEST_LOG_MS` (default 1000; `0` logs every request) gets one line:
+  method, **route template** (never the path, so no id or username is logged),
+  status, total time, database time and query count, outbound HTTP time per host,
+  and the remainder:
+  `slow request: POST /itineraries/{itinerary_id}/stops status=201 total=812ms db=45ms/14q ext=api.openai.com:610ms/1 other=157ms`.
+  - **Log only, never a `Server-Timing` header** — a query count or a duration
+    would tell any caller whether an account or a trip exists.
+  - **Database time** comes from class-level `Engine` cursor-execute listeners;
+    **outbound time** from wrapping the two seams every integration passes
+    through, `requests.Session.send` and botocore's `URLLib3Session.send`
+    (`install_outbound_hooks`, called in `main.py`). A new HTTP client library
+    outside those two needs a hook there. A redirect is timed once.
+  - The record rides a `ContextVar`, which anyio copies into the worker thread
+    running a sync endpoint. The clock stops at the last body chunk, so a
+    background task is not counted. It skips `/health` and `STATIC_PREFIXES`.
+  - Added 2026-10-20, after a Postgres service in another region slowed every
+    save for weeks with nothing in the logs. See [decisions.md](../decisions.md).
+- **`STATIC_PREFIXES` lives in `app/middleware/__init__.py`**, shared by the
+  ETag, security-headers and request-timing middleware. **Add a new static mount
+  there, not in each middleware.**
 
 ### Rate limiting
 
@@ -248,6 +268,14 @@ HTTPS is enforced at the TLD level — `.app` is on the HSTS preload list.
 - **The filesystem backend needs a persistent volume at `/app/uploads`** or
   images vanish on redeploy.
 - **`docs/` is in `.dockerignore`**, so this folder never enters the image.
+- **Postgres runs in the same Railway region as the API (EU West, Amsterdam).**
+  A region is set per service, so moving the API never moves the database. Until
+  2026-10-20 Postgres sat in a US region: every database round trip crossed the
+  Atlantic (~120 ms), each save makes 8–20 of them one after another, and saves
+  took 4–6 s. To check without signing in, time
+  `https://ntripi.app/share/i/not-a-uuid` (refused before any query) against
+  `https://ntripi.app/share/i/<a random UUID>` (one query); in the same region
+  they answer in the same time. See [decisions.md](../decisions.md).
 
 Railway env vars, and the full optional-integration matrix, are listed in
 [constraints.md](../constraints.md#config-via-env).
@@ -315,7 +343,8 @@ ProviderScope
 - **`ALLOWED_HOSTS` is absent from `.env.example`** along with 13 other settings.
 - An abandoned `.CLAUDE.md.swp` (16 KB, untracked) sits in the repo root.
 - Tests: `test_web.py`, `test_web_i18n.py`, `test_security_middleware.py`,
-  `test_storage_factory.py`, `test_error_codes.py` all run.
+  `test_storage_factory.py`, `test_error_codes.py`, `test_request_timing.py` all
+  run.
 
 ## Related
 

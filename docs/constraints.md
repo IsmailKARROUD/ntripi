@@ -19,6 +19,7 @@ code, with links to the feature that exercises each rule.
 | **All storage goes through the abstraction.** Calling code uses `storage().save()` / `.delete()` only | swapping filesystem ↔ R2 is a config change | `app/storage/base.py` → [image-pipeline.md](features/image-pipeline.md) |
 | **Backend and frontend share no code** — HTTP/JSON only | they deploy and version independently | — |
 | Never reference `DATABASE_PUBLIC_URL` from the backend | use `${{Postgres.DATABASE_URL}}` — the public URL bills egress | Railway config |
+| **Postgres runs in the same Railway region as the API service** (EU West) | a region is set per service, so moving the API never moves the database. A request waits on its database round trips one at a time, 8–20 per save; with Postgres in a US region each cost ~120 ms, and saves took 4–6 s until 2026-10-20 | Railway service settings → [decisions.md](decisions.md) |
 
 ---
 
@@ -320,6 +321,11 @@ non-negotiables:
 - **Import `limiter` from `app/limiter.py`, never from `app/main.py`** — circular
   import.
 - **Never run the container as root** — keep `USER appuser`.
+- **Never put request timing in a response header** (`Server-Timing` or any
+  other) — a query count or a duration tells any caller whether an account or a
+  trip exists, undoing the timing-safe login and the identical 404 pages.
+  `RequestTimingMiddleware` logs instead, with the route template, never the
+  path.
 - **Register a new static mount in `app/middleware/__init__.py`'s
   `STATIC_PREFIXES`**, not in each middleware, and test paths with
   `is_static_path` — a bare `startswith` matched `/appeal` as `/app`.

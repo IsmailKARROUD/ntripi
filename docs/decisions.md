@@ -1480,3 +1480,71 @@ records the platform of the button pressed.
 would vary by User-Agent, an iPad cannot be told apart there, and the page's
 other platform choices already live in its script. Hiding the other badge from
 the end-of-body script: a phone would see both badges flash first.
+
+### 2026-10-20 — Postgres moved to the API's region
+
+**Context.** Saves took 3.6–5.7 s for the owner in Belgium: create a trip 3.63 s,
+add a stop 5.65 s, edit the description 4 s, add a trip note 5 s, rate 4.41 s.
+The network was not the cause: a page that runs no query answered in ~0.11 s
+through Cloudflare's Brussels edge, while the same share page with one
+primary-key lookup answered in ~0.59 s, so one query cost ~0.48 s. A local
+replay — the real backend against Postgres behind a proxy that adds a fixed
+round-trip delay — reproduced that single-query cost at 120 ms per round trip,
+and at that delay reproduced the owner's save timings; at 2 ms the same flows
+took 0.07–0.17 s of server time. Each request makes 8–20 database round trips
+one after another (its statements plus the pool's ping, BEGIN and COMMIT), and
+the app sends a save and then a full reload in sequence. The owner found the
+Postgres service had been created in a US region while the API ran in EU West;
+a region is set per service, so moving the API had never moved the database.
+**Decision.** Postgres runs in the API's region, EU West (Amsterdam), moved on
+2026-10-20. The rule is in constraints.md (Portability) and CLAUDE.md (Hosting),
+with a check that needs no sign-in: `/share/i/not-a-uuid` (refused before any
+query) and `/share/i/<random uuid>` (one query) answer in the same time when the
+two services share a region.
+**Consequences.** Timed the same way, saves dropped to 1.0–1.5 s, and the
+share-page check shows no gap. What remains is not database distance: the
+OpenAI moderation call on every text save, whose replies come from across the
+Atlantic; first requests after a restart; the client's reload after each save
+and its animations; and, on a rating, the inline push. The owner set the bar at
+under one second per action — tracked in backlog.md and measured with the
+request-timing log in the next entry. The privacy policy already disclosed US
+processing (section 13), so the old location was a speed problem, not a
+compliance one.
+**Alternatives rejected.** Moving the API to the database's region instead:
+a save would cross the Atlantic once rather than 8–20 times, but every request
+from a user in Europe would pay that crossing, and the database would stay in
+the US. Cutting round trips in code first: no code change could have closed a
+gap that size, and it is now optional work measured against the one-second bar.
+
+### 2026-10-20 — Request timing is a log line, never a response header
+
+**Context.** Postgres sat in another region for weeks and nothing said so:
+Railway shows WARNING lines only and the app never configures logging, so no
+request duration was ever recorded. With saves at 1.0–1.5 s against a
+one-second bar, the next fixes need to know where each request's time goes —
+the database, OpenAI, Firebase, or the app itself.
+**Decision.** `RequestTimingMiddleware` (`app/middleware/request_timing.py`),
+innermost in the stack, times every request except `/health` and the static
+mounts. One slower than `SLOW_REQUEST_LOG_MS` (default 1000; `0` logs every
+request) logs one WARNING line: method, route template, status, total, database
+time and query count, outbound HTTP time per host, and the remainder. Database
+time comes from class-level `Engine` cursor-execute listeners; outbound time
+from wrapping `requests.Session.send` and botocore's `URLLib3Session.send`, the
+two seams every integration already passes through, with a redirect timed once.
+The record rides a `ContextVar`, which anyio copies into the worker thread of a
+sync endpoint, and the clock stops at the last body chunk, so a background task
+is not counted.
+**Consequences.** A slow request now leaves a trace in Railway's logs, split
+between Postgres, each outside service, and the app. Logging the route template,
+never the path, keeps ids and usernames out of the log. An HTTP client library
+outside `requests` and botocore stays invisible until it gets a hook. COMMIT,
+ROLLBACK and the pool's ping are not cursor executes, so `db` slightly
+undercounts round trips. `test_request_timing.py` pins the line, the template
+rule, the exclusions, the redirect counted once and the config bound.
+**Alternatives rejected.** A `Server-Timing` response header, which browsers
+show in DevTools: a query count or a duration in the response tells any caller
+whether an account or a trip exists, undoing the timing-safe login and the
+identical 404 pages. Tagging each outbound call site by hand (OpenAI, Azure,
+FCM, Google, Resend, HIBP, Jira, R2, Rekognition): ten places to remember, and a
+new integration would stay invisible until someone did. OpenTelemetry: a
+collector and new dependencies for one log line.
