@@ -182,7 +182,8 @@ discoverable way to learn the constraints. Logged in
   device.
 - **One user action is one guarded write.** A write that moves `updated_at`
   leaves every `If-Match` read before it stale, so the client must learn the new
-  stamp — from the answer, or a reload — before its next write. The itinerary
+  stamp before its next write — from the answer, which since 2026-10-21 is the
+  whole trip for every trip edit, never from a reload after it. The itinerary
   form's save sent its cover through `POST`/`DELETE /image`, which sit outside
   the guard and answer with no stamp, then the fields with the old `If-Match`,
   and the PATCH was refused until 2026-10-21; it is now one request
@@ -404,6 +405,14 @@ it. A test about the ETag moving backdates the row first (`_backdate` in
   classes stay separate, why `ItineraryDetail` declares `hidden`, the
   recommended-period fields and `can_edit` inline and last, and why
   `ItinerarySummary` gains no `can_edit`.
+- **A new answer shape is opt-in per request.** Asked nothing, every trip edit
+  answers byte for byte as it always has — status, schema, key order, ETag
+  header — so builds already installed keep working; the whole-trip answer
+  comes only with `?return=itinerary`
+  ([itineraries.md](features/itineraries.md)). `test_trip_edit_answers.py` pins
+  both halves on every `EDIT_GUARDED` route. Keys added to an existing answer
+  are appended after it, never inserted — the rating POST's aggregate rides on
+  a subclass of `RatingResponse`, so `GET /ratings/me` is untouched.
 - **Constrained string fields stay `pattern=` regexes, not `Literal`** —
   switching changes the 422 body. (`_VISIBILITY` is the one existing exception.)
 - **Keep `detail` strings stable** — web templates and tests read them.
@@ -441,7 +450,7 @@ block appears a second time anywhere, extract it instead of copying.**
 | `services/itinerary_access.py` | `can_view_itinerary`, `can_edit_itinerary`, `public_listing_criteria`, `visible_rating_criteria`, `recalculate_rating` |
 | `services/translation_service.py` | `REGISTRY` — the one list of translatable fields; `sync_translations` — **every write of translatable text calls it** before the commit; `purge_orphans` — **every delete below the itinerary calls it** after the flush; `source_hash` |
 | `app/middleware/__init__.py` | `STATIC_PREFIXES` |
-| `routers/itineraries.py` (router-private, keep them so) | `_etag_json_response`, `_require_viewable`, `_two_phase_renumber`, `_require_stops_in_itinerary`, the annotation CRUD helpers |
+| `routers/itineraries.py` (router-private, keep them so) | `_etag_json_response`, `_require_viewable`, `_viewer_detail` — **the one builder of the trip a GET shows**, which every trip edit's answer reuses — `_trip_edit_answer`, `wants_itinerary`, `_two_phase_renumber`, `_require_stops_in_itinerary`, the annotation CRUD helpers |
 | `schemas/itinerary.py` | `_NOTE_TYPE_PATTERN`, `_PLACE_TYPE_PATTERN`, `_VISIBILITY`, `_AnnotationCreateBase` / `_AnnotationUpdateBase` |
 
 ---
@@ -458,6 +467,7 @@ block appears a second time anywhere, extract it instead of copying.**
 | **Never touch `ref` in `State.dispose()`** | `ref` resolves through `BuildContext`, already deactivated by then. Capture the notifier in a field, seeded in `didChangeDependencies` and refreshed by a `ref.watch(…notifier)` in `build` |
 | **Guard `state =` / `ref.invalidate` after an `await` with `if (!ref.mounted) return`** | logout disposes the provider mid-flight and a disposed `Ref` throws |
 | **Never let a background read write `AsyncLoading` or `AsyncError`** | nobody asked for it; blanking a correct badge over one dead request is worse than a stale value |
+| **A trip save adopts the trip from its own answer; nothing downloads the trip after a save** — every save sends `?return=itinerary` and `ItineraryDetailNotifier._adopt` sets the answered trip as the state; a rating adopts the aggregate its answer carries | the reload after every save was a second request the form waited on, and its loading state rebuilt the whole trip view behind the full-screen loader (production, 2026-10-20) |
 | **`*.fromString` degrades unknown values** — `ModerationStatus` → `approved`, `NotificationType` → a generic row, `EditLockState` → `active` | a newer backend must never crash a deployed client |
 | **Never use the `--web-renderer` flag** | removed in Flutter 3.29 |
 | **Never run `dart format`** | the repo predates Dart 3.7 tall style; it reflows whole files |

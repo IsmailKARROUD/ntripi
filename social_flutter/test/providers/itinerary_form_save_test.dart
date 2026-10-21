@@ -1,9 +1,10 @@
 // test/providers/itinerary_form_save_test.dart — ItineraryDetailNotifier.saveForm
 // against the real repository on a mocked Dio.
 //
-// The form's save is one request, and its answer is adopted in place: the next
-// write must carry the new ETag without a reload. The old two-request save read
-// the ETag once, before the cover write moved it, and its PATCH was refused.
+// The form's save is one request, and the trip it answers with is adopted in
+// place: the next write must carry the new ETag without a reload. The old
+// two-request save read the ETag once, before the cover write moved it, and its
+// PATCH was refused.
 
 import 'dart:typed_data';
 
@@ -43,13 +44,23 @@ Map<String, dynamic> _summaryJson({
       'stops_count': 0,
     };
 
-Map<String, dynamic> _detailJson({String? coverUrl}) => {
-      ..._summaryJson(coverUrl: coverUrl, updatedAt: _loadedAt),
-      'description': 'A walk along the coast.',
+Map<String, dynamic> _detailJson({
+  String title = 'Coast walk',
+  String? coverUrl,
+  String updatedAt = _loadedAt,
+  String description = 'A walk along the coast.',
+}) =>
+    {
+      ..._summaryJson(title: title, coverUrl: coverUrl, updatedAt: updatedAt),
+      'description': description,
       'tracks': <Map<String, dynamic>>[],
       'segments': <Map<String, dynamic>>[],
       'annotations': <Map<String, dynamic>>[],
     };
+
+/// What a trip edit answers when the app asks for the trip back.
+Map<String, dynamic> _answer(Map<String, dynamic> trip) =>
+    {'itinerary': trip, 'created_id': null};
 
 /// A claim held by this device, without the network or the heartbeat.
 class _HeldClaim extends EditLockNotifier {
@@ -95,8 +106,14 @@ void main() {
     adapter.onPatch(
       itineraryFormEndpoint(_itinId),
       (server) => server.reply(
-          200, _summaryJson(title: 'Coast walk, revised', coverUrl: _coverUrl)),
+          200,
+          _answer(_detailJson(
+            title: 'Coast walk, revised',
+            coverUrl: _coverUrl,
+            updatedAt: _savedAt,
+          ))),
       data: Matchers.any,
+      queryParameters: {'return': 'itinerary'},
       headers: {'If-Match': loaded.eTag, kEditLockHeader: 'lock-token'},
     );
 
@@ -114,12 +131,16 @@ void main() {
     expect(saved.eTag, '"${DateTime.parse(_savedAt).toIso8601String()}"');
     expect(saved.coverImageUrl, _coverUrl);
     expect(saved.title, 'Coast walk, revised');
-    // Not in the summary, so kept from the loaded detail rather than wiped.
     expect(saved.description, 'A walk along the coast.');
 
     adapter.onPatch(
       itineraryEndpoint(_itinId),
-      (server) => server.reply(200, _summaryJson(updatedAt: '2026-10-21T10:01:00.000000Z')),
+      (server) => server.reply(
+          200,
+          _answer(_detailJson(
+            description: 'Shorter.',
+            updatedAt: '2026-10-21T10:01:00.000000Z',
+          ))),
       data: Matchers.any,
       headers: {'If-Match': saved.eTag},
     );
@@ -131,7 +152,7 @@ void main() {
     final notifier = await load(coverUrl: _coverUrl);
     adapter.onPatch(
       itineraryFormEndpoint(_itinId),
-      (server) => server.reply(200, _summaryJson()),
+      (server) => server.reply(200, _answer(_detailJson(updatedAt: _savedAt))),
       data: Matchers.any,
     );
 

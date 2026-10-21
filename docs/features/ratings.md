@@ -40,10 +40,23 @@ not information anyone could use.
   without the lock an owner's save in between was rolled back when
   `set_preserving_etag` wrote the stale `updated_at` (a spurious 412 on their next
   save), and two concurrent first ratings both counted N+1.
+- **A rating's answer carries the trip's aggregate** (since 2026-10-21).
+  `POST /ratings` always appends `rating_avg` and `rating_count` after the
+  rating's own keys (`RatingSubmitResponse`, a subclass of `RatingResponse`, so
+  `GET /ratings/me`, which shares that class, is unchanged). `DELETE /ratings/me`
+  answers 204, or — asked with `?return=aggregate` — 200 with
+  `RatingAggregate {rating_avg, rating_count}`. Both values are read back after
+  the commit from what `recalculate_rating` wrote, never computed in Python.
+- **A rating updates the trip page without reloading it.**
+  `MyRatingNotifier.submitRating` / `deleteRating` hand the answered aggregate
+  to the loaded detail (`adoptRatingAggregate`; `updatedAt`, and so the ETag,
+  stay put) — and to nothing when no trip is loaded, since building one would
+  be a GET. Until 2026-10-21 each rating was followed by a forced reload of the
+  whole trip.
 - **Rating from the Ratings page refreshes it.** `MyRatingNotifier.submitRating` /
-  `deleteRating` invalidate `ratingsPageProvider` (keep-alive) as well as the
-  detail; before 2026-09-28 the list, averages and histogram the rater was
-  looking at stayed without their review.
+  `deleteRating` invalidate `ratingsPageProvider` (keep-alive) too; before
+  2026-09-28 the list, averages and histogram the rater was looking at stayed
+  without their review.
 - **Hidden ratings are excluded from the public aggregate, including the
   author's own.** `recalculate_rating` passes `visible_rating_criteria(None)` —
   no viewer — because an aggregate is public and even its author's hidden rating
@@ -110,13 +123,18 @@ viewer and aggregate screens.
 
 | Method | Path | Auth | Request | Response | Errors |
 |---|---|---|---|---|---|
-| POST | `/itineraries/{id}/ratings` | verified email | `RatingSubmit` | `RatingResponse` 201 | 404, 403 `itinerary_access_denied`, 422 `text_moderation_rejected` |
+| POST | `/itineraries/{id}/ratings` | verified email | `RatingSubmit` | `RatingSubmitResponse` 201 | 404, 403 `itinerary_access_denied`, 422 `text_moderation_rejected` |
 | GET | `/itineraries/{id}/ratings/me` | user | — | `RatingResponse` | 404 `rating_not_found` |
-| DELETE | `/itineraries/{id}/ratings/me` | user | — | 204 | 404 `rating_not_found` |
+| DELETE | `/itineraries/{id}/ratings/me` | user | — | 204; with `?return=aggregate`, `RatingAggregate` 200 | 404 `rating_not_found` |
 | GET | `/itineraries/{id}/ratings` | user | — | `RatingsPageResponse` | 403 `itinerary_access_denied` |
 
 `RatingSubmit` = `{stars (1–5, required), safety_stars?, experience_stars?,
 accessibility_stars?, family_friendly_stars?, crowdedness_stars?, note? (≤2000)}`.
+
+`RatingSubmitResponse` = `RatingResponse` (`{stars, safety_stars,
+experience_stars, accessibility_stars, family_friendly_stars,
+crowdedness_stars, note, updated_at, moderation_status}`) **followed by**
+`rating_avg`, `rating_count`. `RatingAggregate` = `{rating_avg, rating_count}`.
 
 `RatingsPageResponse` = `{rating_avg, rating_count,
 distribution: RatingDistribution{five, four, three, two, one},
@@ -146,6 +164,11 @@ ratings: [RatingWithUser]}`.
   column.
 - The dimension-average "≥ 3 ratings" threshold is a client-side rendering rule,
   not a server-enforced one — the aggregate endpoint returns whatever it has.
+- **After a rating, the trip's offline copy keeps the old average** until the
+  trip is next downloaded. A trip save writes the answered trip into the HTTP
+  cache ([itineraries.md](itineraries.md)), but a rating's answer carries two
+  numbers, not the trip, so there is no body to write; online, the next open
+  fetches the new one.
 
 ## Related
 

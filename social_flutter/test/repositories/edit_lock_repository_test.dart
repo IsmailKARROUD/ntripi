@@ -48,6 +48,27 @@ void main() {
         'takeover_available_at': '2026-08-12T10:09:00Z',
       };
 
+  /// A trip, as every trip edit answers with it when asked for the trip back.
+  Map<String, dynamic> tripJson({String title = 'Trip', List<dynamic>? tracks}) => {
+        'id': itinId,
+        'user_id': 'user-1',
+        'title': title,
+        'cover_image_url': null,
+        'total_duration_min': 0,
+        'total_cost': 0,
+        'currency': 'EUR',
+        'visibility': 'only_me',
+        'created_at': '2026-08-12T10:00:00Z',
+        'updated_at': '2026-08-12T10:05:00Z',
+        'rating_avg': null,
+        'rating_count': 0,
+        'stops_count': 0,
+        'description': null,
+        'tracks': tracks ?? <dynamic>[],
+        'segments': <dynamic>[],
+        'annotations': <dynamic>[],
+      };
+
   Map<String, dynamic> stopJson() => {
         'id': 'stop-1',
         'itinerary_id': itinId,
@@ -72,19 +93,25 @@ void main() {
       final (dio, adapter) = makeDio();
       adapter.onPost(
         itineraryStopsEndpoint(itinId),
-        (server) => server.reply(201, stopJson()),
+        (server) => server.reply(201, {
+          'itinerary': tripJson(tracks: [
+            {'id': 't1', 'itinerary_id': itinId, 'rank': 'a0', 'stops': [stopJson()]},
+          ]),
+          'created_id': 'stop-1',
+        }),
         data: {'place_name': 'Paris'},
         headers: {'If-Match': etag, kEditLockHeader: token},
       );
 
-      final stop = await ItineraryRepository(dio).addStop(
+      final answer = await ItineraryRepository(dio).addStop(
         itinId, {'place_name': 'Paris'},
         etag: etag, lockToken: token,
       );
 
       // The matcher above is the assertion: a missing or wrong header fails to
       // match the stub and the call throws instead of returning.
-      expect(stop.id, 'stop-1');
+      expect(answer.createdId, 'stop-1');
+      expect(answer.itinerary!.stops.single.id, 'stop-1');
     });
 
     test('updateItinerary carries both preconditions', () async {
@@ -94,30 +121,19 @@ void main() {
       adapter.onPatch(
         itineraryEndpoint(itinId),
         (server) => server.reply(200, {
-          'id': itinId,
-          'user_id': 'user-1',
-          'title': 'Renamed',
-          'cover_image_url': null,
-          'total_duration_min': 0,
-          'total_cost': 0,
-          'currency': 'EUR',
-          'visibility': 'only_me',
-          'created_at': '2026-08-12T10:00:00Z',
-          'updated_at': '2026-08-12T10:05:00Z',
-          'rating_avg': null,
-          'rating_count': 0,
-          'stops_count': 0,
+          'itinerary': tripJson(title: 'Renamed'),
+          'created_id': null,
         }),
         data: {'title': 'Renamed'},
         headers: {'If-Match': etag, kEditLockHeader: token},
       );
 
-      final updated = await ItineraryRepository(dio).updateItinerary(
+      final answer = await ItineraryRepository(dio).updateItinerary(
         itinId, {'title': 'Renamed'},
         etag: etag, lockToken: token,
       );
 
-      expect(updated.title, 'Renamed');
+      expect(answer.itinerary!.title, 'Renamed');
     });
   });
 

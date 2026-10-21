@@ -21,6 +21,7 @@ import 'package:ntripi/core/connectivity/connectivity_service.dart';
 import 'package:ntripi/features/itineraries/data/itinerary_repository.dart';
 import 'package:ntripi/features/itineraries/domain/edit_lock.dart';
 import 'package:ntripi/features/itineraries/domain/itinerary.dart';
+import 'package:ntripi/features/itineraries/domain/trip_edit_answer.dart';
 import 'package:ntripi/features/itineraries/presentation/itinerary_form_screen.dart';
 import 'package:ntripi/features/itineraries/presentation/widgets/cover_image_field.dart';
 import 'package:ntripi/features/itineraries/providers/edit_lock_provider.dart';
@@ -60,7 +61,7 @@ class _RefusingRepo extends ItineraryRepository {
       const [];
 
   @override
-  Future<Itinerary> saveItineraryForm(
+  Future<TripEditAnswer> saveItineraryForm(
     String id,
     Map<String, dynamic> data, {
     Uint8List? coverBytes,

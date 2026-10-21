@@ -665,16 +665,32 @@ lines will rank:
   model's time. Moderation runs before the write by design (a reject is a 422 and
   nothing is stored), so taking it off the request would be a policy reversal,
   not tuning.
-- **The reload after every save** — `ItineraryDetailNotifier` follows each write
-  with a forced `GET /itineraries/{id}` before the form closes: a second request
-  in sequence. The trip header's saves (`updateHeader`, and the Edit itinerary
-  form's `saveForm`) adopt their answer instead and send nothing after it; since
-  2026-10-21 a form save with a cover change is one request where it was two.
+- ~~**The reload after every save**~~ — **done 2026-10-21.** The log showed it
+  after every stop, note and rating save: 43–68 ms of server time plus a round
+  trip, and a full-screen rebuild of the trip view. Every trip edit now answers
+  with the whole trip (`?return=itinerary`) and a rating with the trip's
+  aggregate, which the app adopts; nothing follows a save
+  ([decisions.md](decisions.md)). To check after a deploy: with
+  `SLOW_REQUEST_LOG_MS=0`, no `GET /itineraries/{itinerary_id}` line follows a
+  save's line.
 - **First requests after a restart** — the language detector loads a model the
   first time it meets a language, and imports and pool connections warm up.
 - **Rating only** — the push to the trip's owner is sent inline, before the
   response (decisions.md, 2026-08-13).
-- **The phone** — the closing animation of the form or dialog, and the trip
-  screen redrawing after its reload.
+- **The phone** — the closing animation of the form or dialog. (The trip
+  screen no longer redraws behind a reload.)
 
 → [features/web-and-platform.md](features/web-and-platform.md)
+
+### idea — delta answers merged in the app
+
+**Tracked in Jira.** A save could answer with only what it changed — the stop,
+the note, the totals — for the app to merge into its copy of the trip, instead
+of the whole trip it answers with since 2026-10-21. It was rejected for now: it
+needs about a dozen merge paths in the app, each free to drift from what the
+server holds, where adopting the whole trip has one. Worth revisiting only if a
+trip's full answer grows large enough to cost noticeable time on a phone
+connection. The opt-in leaves room for it: a `?return=` value of its own, which
+servers without it refuse with a 422 rather than answering a shape the client
+cannot read. → [features/itineraries.md](features/itineraries.md),
+[decisions.md](decisions.md)

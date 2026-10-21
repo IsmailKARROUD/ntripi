@@ -8,6 +8,7 @@ Hierarchy:
   TransportLegCreate / TransportLegUpdate / TransportLegResponse
   TransitSegmentCreate / TransitSegmentResponse
   ItineraryCreate / ItineraryUpdate / ItinerarySummary / ItineraryDetail
+  ItineraryEditResponse
   AllowedUserAdd / AllowedUserResponse
   EditorAdd / EditorResponse
   LockHolder / LockStateResponse / LockClaimResponse / LockClaimRequest
@@ -557,6 +558,26 @@ class RatingResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class RatingSubmitResponse(RatingResponse):
+    """POST /ratings: the review as saved, then the trip's aggregate after it.
+
+    A subclass so the two keys land after RatingResponse's own — base-class
+    fields serialize first — and GET /ratings/me, which shares RatingResponse,
+    stays as it was.
+    """
+    # What recalculate_rating wrote, so the app adopts it instead of reloading
+    # the whole trip to learn two numbers.
+    rating_avg: Optional[float]
+    rating_count: int
+
+
+class RatingAggregate(BaseModel):
+    """DELETE /ratings/me?return=aggregate: the trip's aggregate once the review
+    is gone, as recalculate_rating wrote it."""
+    rating_avg: Optional[float]
+    rating_count: int
+
+
 class RaterInfo(BaseModel):
     # All fields are Optional because the rater may have deleted their account.
     user_id: Optional[uuid.UUID]
@@ -665,6 +686,20 @@ class ItineraryDetail(ItinerarySummary):
     # + period note, or null. Detail only: ItinerarySummary stays unchanged,
     # since a new key there would reorder /me, /saved and /feed.
     source_lang: Optional[str] = None
+
+
+class ItineraryEditResponse(BaseModel):
+    """What a trip edit answers when asked to (`?return=itinerary`): the body
+    GET /itineraries/{id} would give this caller right after the save, so the
+    app adopts it instead of downloading the trip again.
+
+    `itinerary` is null only when the save itself took the caller's view away —
+    an editor's text hidden on the spot by moderation, which the GET would
+    answer with 403. `created_id` is what a create made, so the stop form can
+    attach its queued notes to the new stop; null for updates and deletes.
+    """
+    itinerary: Optional[ItineraryDetail]
+    created_id: Optional[uuid.UUID] = None
 
 
 # ---------------------------------------------------------------------------

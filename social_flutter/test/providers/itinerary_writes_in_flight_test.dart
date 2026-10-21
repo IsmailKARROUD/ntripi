@@ -2,7 +2,7 @@
 // waits on.
 //
 // Every write that carries this device's edit claim runs through one wrapper in
-// ItineraryDetailNotifier, which counts it until it and its refresh are done.
+// ItineraryDetailNotifier, which counts it until its answer is adopted.
 // ✓ and Back wait on writesSettled(): handing the claim back under a running
 // write made the server refuse it, after the card showing its spinner had gone.
 
@@ -13,30 +13,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ntripi/features/itineraries/data/itinerary_repository.dart';
 import 'package:ntripi/features/itineraries/domain/itinerary.dart';
-import 'package:ntripi/features/itineraries/domain/transit_segment.dart';
+import 'package:ntripi/features/itineraries/domain/trip_edit_answer.dart';
 import 'package:ntripi/features/itineraries/providers/edit_lock_provider.dart';
 import 'package:ntripi/features/itineraries/providers/itinerary_providers.dart';
 
 const _itinId = 'itin-1';
 
-/// Holds every segment write — and, when asked, the refresh after it — open
-/// until the test answers it.
-class _GatedRepo extends ItineraryRepository {
-  _GatedRepo() : super(Dio());
-
-  final writes = <Completer<void>>[];
-  final lockTokens = <String?>[];
-
-  /// Set to hold the next refresh open; the first load is never held.
-  Completer<void>? refreshGate;
-  int loads = 0;
-
-  @override
-  Future<Itinerary> getItinerary(String id, {bool forceRefresh = false}) async {
-    loads++;
-    if (loads > 1) await refreshGate?.future;
-    final ts = DateTime.utc(2026, 10, 10);
-    return Itinerary(
+Itinerary _trip(DateTime ts) => Itinerary(
       id: _itinId,
       userId: 'user-1',
       title: 'Trip',
@@ -47,37 +30,44 @@ class _GatedRepo extends ItineraryRepository {
       createdAt: ts,
       updatedAt: ts,
     );
+
+/// Holds every segment write open until the test answers it.
+class _GatedRepo extends ItineraryRepository {
+  _GatedRepo() : super(Dio());
+
+  final writes = <Completer<void>>[];
+  final lockTokens = <String?>[];
+  int loads = 0;
+
+  /// What every save answers with: the trip, a later stamp.
+  final answered = _trip(DateTime.utc(2026, 10, 10, 0, 0, 5));
+
+  @override
+  Future<Itinerary> getItinerary(String id, {bool forceRefresh = false}) async {
+    loads++;
+    return _trip(DateTime.utc(2026, 10, 10));
   }
 
-  Future<void> _held(String? lockToken) {
+  Future<TripEditAnswer> _held(String? lockToken) async {
     lockTokens.add(lockToken);
     final gate = Completer<void>();
     writes.add(gate);
-    return gate.future;
+    await gate.future;
+    return TripEditAnswer(answered);
   }
 
   @override
-  Future<TransitSegment> updateSegment(
+  Future<TripEditAnswer> updateSegment(
     String itineraryId,
     String segmentId,
     Map<String, dynamic> data, {
     required String etag,
     required String? lockToken,
-  }) async {
-    await _held(lockToken);
-    return TransitSegment(
-      id: segmentId,
-      itineraryId: itineraryId,
-      fromStopId: 'stop-1',
-      toStopId: 'stop-2',
-      totalDurationMin: 0,
-      totalCost: 0.0,
-      createdAt: DateTime.utc(2026, 10, 10),
-    );
-  }
+  }) =>
+      _held(lockToken);
 
   @override
-  Future<void> deleteSegment(
+  Future<TripEditAnswer> deleteSegment(
     String itineraryId,
     String segmentId, {
     required String etag,
@@ -123,28 +113,26 @@ void main() {
   });
 
   test(
-      'Given a write, Then it is in flight until it and its refresh are done, '
-      'and the claim reached the repository through the wrapper', () async {
-    repo.refreshGate = Completer<void>();
+      'Given a write, Then it is in flight until its answer is adopted — no '
+      'reload behind it — and the claim reached the repository through the '
+      'wrapper', () async {
     bool? settled;
     final write = notifier.updateSegment('seg-1', const {});
     await _settle();
     unawaited(notifier.writesSettled().then((ok) => settled = ok));
 
     expect(notifier.hasWritesInFlight, isTrue);
+    expect(settled, isNull);
     expect(repo.lockTokens, ['lock-token']);
 
     repo.writes.single.complete();
-    await _settle();
-    // The write landed but the refresh has not: still in flight.
-    expect(notifier.hasWritesInFlight, isTrue);
-    expect(settled, isNull);
-
-    repo.refreshGate!.complete();
     await write;
     await _settle();
     expect(notifier.hasWritesInFlight, isFalse);
     expect(settled, isTrue);
+    expect(container.read(itineraryDetailProvider(_itinId)).value,
+        same(repo.answered));
+    expect(repo.loads, 1);
   });
 
   test(

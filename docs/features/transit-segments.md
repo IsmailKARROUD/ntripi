@@ -72,6 +72,13 @@ Full columns: [reference/data-model.md](../reference/data-model.md#transit_segme
 | PATCH | `…/segments/{seg}/legs/{leg}` | `require_edit_access` | `TransportLegUpdate` | `TransportLegResponse` | 404 `leg_not_found` |
 | DELETE | `…/segments/{seg}/legs/{leg}` | `require_edit_access` | — | 204 | 404 `leg_not_found` |
 
+**The six writes take `?return=itinerary`** and then answer
+`ItineraryEditResponse` — the whole trip as a GET right after would show it,
+plus `created_id`, the new segment's or leg's id on a create — with the
+concurrency ETag; a delete answers 200 instead of 204. See
+[itineraries.md](itineraries.md). The app always asks for it; the three `/legs`
+routes take it too, though nothing calls them.
+
 `TransitSegmentCreate` = `{from_stop_id, to_stop_id, legs: [TransportLegCreate]}`
 with `legs` `min_length=1`.
 Leg fields: `position`, `mode`, `line` (≤30), `direction` (≤200), `duration_min`,
@@ -116,7 +123,8 @@ endpoints are defined in the backend for future API consumers."*
   them opens that leg's form.
 - A leg save runs under the edit claim like every other write: ✓ or Back while
   it runs waits for it before leaving edit mode — see
-  [collaborative-editing.md](collaborative-editing.md).
+  [collaborative-editing.md](collaborative-editing.md). Its answer is the whole
+  trip, adopted as the state; no reload follows it.
 - **Translation adds no toggle of its own.** On the trip page the trip's "See
   translation" covers every leg's thoughts; on a stop page the stop's covers its
   inbound and outbound legs — see [translations.md](translations.md).

@@ -1601,3 +1601,60 @@ and a save would still take two requests. Keeping two requests and re-reading
 the ETag between them: a second round trip on every save, with the cover still
 changed outside the lock. One route taking JSON or multipart by content type:
 the JSON PATCH had to stay exactly as installed builds call it.
+
+### 2026-10-21 — A trip save answers with the whole trip, and the app never reloads after it
+
+**Context.** With Postgres in the API's region, the owner still timed 1.0–1.5 s
+per action on a Play internal-testing (release) build, against a bar of one
+second. The request-timing log (`SLOW_REQUEST_LOG_MS=0`, 2026-10-20) showed
+every stop, note and rating save followed by a forced
+`GET /itineraries/{itinerary_id}` that the form waited on before closing: a stop
+save took 129–487 ms of server time plus a 55–57 ms reload, a note save
+391–885 ms plus 43–68 ms, a rating 71–83 ms plus 55–58 ms — each reload a second
+round trip in sequence. During it `ItineraryDetailNotifier.refresh()` set
+`AsyncLoading`, which Riverpod 3.4.2 turns into a reloading state, and the trip
+screen's `itineraryAsync.when(...)` rendered that as the full-screen
+`NTripiRouteLoader` (`skipLoadingOnReload` defaults to false): the whole trip
+view was rebuilt from scratch after every save. `applyReorder` already received
+the full trip from `POST /reorder`, ignored it, and downloaded the trip again.
+**Decision.** The owner's: a save's answer carries the whole updated trip —
+exactly the body `GET /itineraries/{id}` would give that caller at that moment —
+and the app replaces its copy with it, merging nothing. It is opt-in per
+request, as the query parameter `?return=itinerary`: every `EDIT_GUARDED` route
+(18 since the form route of the same day) then answers
+`ItineraryEditResponse {itinerary, created_id}` with the concurrency ETag;
+asked nothing, each answers exactly as before. The trip is read back after the
+route's last commit and built by `_viewer_detail` — the helper the GET now uses
+too, which sets the caller's `can_edit` — and wrapped by `_trip_edit_answer`;
+the reorder's inline copy of the GET went the same way. `created_id` names what
+a create made, and deletes answer 200. A rating's answer carries the trip's
+aggregate: `POST /ratings` appends `rating_avg` and `rating_count` (a subclass
+of `RatingResponse`, so `GET /ratings/me` is unchanged) and
+`DELETE /ratings/me?return=aggregate` answers them. In the app every trip edit
+sends the parameter and `_adopt` sets the answered trip as the state; a rating
+adopts the aggregate into a trip already loaded. `refresh()` stays for
+pull-to-refresh, Retry and an editor who removed themselves; its blanking is a
+separate fix.
+**Consequences.** A save is one request: a stop with two queued notes is three
+requests and no GET, and no save puts the trip view behind the loader. A write
+counted by `_write` ends when its answer is adopted, so ✓ waits for the save
+alone. The reload had also refreshed the HTTP cache's copy of the trip — what
+the app shows when it starts offline — so the answered trip is written there
+instead (`cacheAsGet`), under the account's key and with no validator; the next
+online open downloads it once rather than answering 304. After a rating the
+offline copy keeps the old average until the next download. The answer's
+`itinerary` is null only when the save itself took the caller's view away
+(moderation hiding an editor's text on the spot); the app then makes the one GET
+whose 403 says so. **Deploy the backend first**: the app asks for the trip and
+does not fall back to the old answers. `test_trip_edit_answers.py` compares
+every route's answer, for the owner and an editor, with a GET made right after,
+and fails on a new trip edit until it has a case. The help centre is unchanged:
+nothing a reader sees changes but the speed.
+**Alternatives rejected.** Answering with only what changed and merging it in
+the app: about a dozen merge paths, each free to drift from the server — kept as
+an idea, tracked in Jira ([backlog.md](backlog.md#idea--delta-answers-merged-in-the-app)).
+Closing the form first and reloading afterwards: still a full download after
+every save. A request header for the opt-in: it would need an entry in CORS's
+explicit `allow_headers` list, where a query parameter needs nothing. Leaving
+the offline copy as of the last download (the owner chose to keep it current):
+a trip edited at home and opened offline later would show without the edits.

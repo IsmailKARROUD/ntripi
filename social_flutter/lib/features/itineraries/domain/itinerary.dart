@@ -267,6 +267,8 @@ class Itinerary {
     DateTime? createdAt,
     DateTime? updatedAt,
     double? ratingAvg,
+    // Explicit clear — the `??` fallback below can't null a field, only replace it.
+    bool clearRatingAvg = false,
     int? ratingCount,
     List<Track>? tracks,
     List<TransitSegment>? segments,
@@ -293,7 +295,7 @@ class Itinerary {
       visibility: visibility ?? this.visibility,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
-      ratingAvg: ratingAvg ?? this.ratingAvg,
+      ratingAvg: clearRatingAvg ? null : (ratingAvg ?? this.ratingAvg),
       ratingCount: ratingCount ?? this.ratingCount,
       tracks: tracks ?? this.tracks,
       segments: segments ?? this.segments,

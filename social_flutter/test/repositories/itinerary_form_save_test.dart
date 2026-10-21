@@ -5,8 +5,9 @@
 // the fields after it (PATCH /itineraries/{id}) with an If-Match read before
 // the cover write moved it — a 412 on every save that changed the cover's row.
 // These pin the replacement: one request carrying the fields as JSON, the cover
-// change, If-Match and the edit claim. The adapter matches the FormData by its
-// fields and by each file's name, type and length, and the headers partially.
+// change, If-Match and the edit claim, asking for the whole trip back. The
+// adapter matches the FormData by its fields and by each file's name, type and
+// length, and the headers partially.
 
 import 'dart:convert';
 import 'dart:typed_data';
@@ -23,7 +24,7 @@ const _token = 'lock-token';
 const _coverUrl = '/uploads/itineraries/itin-1.jpg';
 final _cover = Uint8List.fromList(List<int>.generate(64, (i) => i));
 
-/// An ItinerarySummary, as both form routes answer.
+/// An ItinerarySummary, as the create route answers.
 Map<String, dynamic> _summaryJson({String? coverUrl}) => {
       'id': _itinId,
       'user_id': 'user-1',
@@ -38,6 +39,18 @@ Map<String, dynamic> _summaryJson({String? coverUrl}) => {
       'rating_avg': null,
       'rating_count': 0,
       'stops_count': 0,
+    };
+
+/// What the edit route answers when asked for the trip back.
+Map<String, dynamic> _tripAnswer({String? coverUrl}) => {
+      'itinerary': {
+        ..._summaryJson(coverUrl: coverUrl),
+        'description': null,
+        'tracks': <Map<String, dynamic>>[],
+        'segments': <Map<String, dynamic>>[],
+        'annotations': <Map<String, dynamic>>[],
+      },
+      'created_id': null,
     };
 
 /// A Dio on the mock adapter, plus every request it sent — so "one request" is
@@ -69,11 +82,12 @@ void main() {
       final (dio, adapter, sent) = _makeDio();
       adapter.onPatch(
         itineraryFormEndpoint(_itinId),
-        (server) => server.reply(200, _summaryJson(coverUrl: _coverUrl)),
+        (server) => server.reply(200, _tripAnswer(coverUrl: _coverUrl)),
         data: FormData.fromMap({
           'fields': jsonEncode(fields),
           'image': MultipartFile.fromBytes(_cover, filename: 'mine.jpg'),
         }),
+        queryParameters: {'return': 'itinerary'},
         headers: {'If-Match': _etag, kEditLockHeader: _token},
       );
 
@@ -87,8 +101,10 @@ void main() {
       );
 
       expect(_lines(sent), ['PATCH ${itineraryFormEndpoint(_itinId)}']);
-      expect(saved.coverImageUrl, _coverUrl);
-      expect(saved.updatedAt, DateTime.parse('2026-10-21T10:00:05.000000Z'));
+      expect(sent.single.queryParameters, {'return': 'itinerary'});
+      expect(saved.itinerary!.coverImageUrl, _coverUrl);
+      expect(saved.itinerary!.updatedAt,
+          DateTime.parse('2026-10-21T10:00:05.000000Z'));
     });
 
     test('Given a picked cover with no name, Then it is sent as cover.jpg',
@@ -96,7 +112,7 @@ void main() {
       final (dio, adapter, sent) = _makeDio();
       adapter.onPatch(
         itineraryFormEndpoint(_itinId),
-        (server) => server.reply(200, _summaryJson(coverUrl: _coverUrl)),
+        (server) => server.reply(200, _tripAnswer(coverUrl: _coverUrl)),
         data: FormData.fromMap({
           'fields': jsonEncode(fields),
           'image': MultipartFile.fromBytes(_cover, filename: 'cover.jpg'),
@@ -116,7 +132,7 @@ void main() {
       final (dio, adapter, sent) = _makeDio();
       adapter.onPatch(
         itineraryFormEndpoint(_itinId),
-        (server) => server.reply(200, _summaryJson()),
+        (server) => server.reply(200, _tripAnswer()),
         data: FormData.fromMap({
           'fields': jsonEncode(fields),
           'remove_cover': 'true',
@@ -129,7 +145,7 @@ void main() {
       );
 
       expect(_lines(sent), ['PATCH ${itineraryFormEndpoint(_itinId)}']);
-      expect(saved.coverImageUrl, isNull);
+      expect(saved.itinerary!.coverImageUrl, isNull);
     });
 
     test('Given no cover change, Then only the fields part is sent — an '
@@ -138,7 +154,7 @@ void main() {
       final editorFields = {'title': 'Edited by a friend', 'currency': 'JPY'};
       adapter.onPatch(
         itineraryFormEndpoint(_itinId),
-        (server) => server.reply(200, _summaryJson()),
+        (server) => server.reply(200, _tripAnswer()),
         data: FormData.fromMap({'fields': jsonEncode(editorFields)}),
         headers: {'If-Match': _etag, kEditLockHeader: _token},
       );

@@ -124,6 +124,12 @@ Migration `d5e6f7a8b9c0` is a **clean-slate** migration: it wipes `annotations`,
 | DELETE | `/itineraries/{id}/stops/{stop_id}` | `require_edit_access` | — | 204 + ETag | 404 `stop_not_found` |
 | POST | `/itineraries/{id}/reorder` | `require_edit_access` | `ReorderRequest` | `ItineraryDetail` + ETag | 422 (six uncoded messages) |
 
+**All four take `?return=itinerary`** and then answer `ItineraryEditResponse` —
+the whole trip as a GET right after would show it, plus `created_id`, the new
+stop's id on a create — with the ETag; a delete answers 200 instead of 204.
+See [itineraries.md](itineraries.md) for the envelope and the rules; the app
+always asks for it.
+
 **There are no track endpoints.** Tracks are created and destroyed as a
 side-effect of stop writes, and reordered through `reorder`.
 
@@ -138,8 +144,10 @@ segments_to_delete: [...]}`.
 `TrackResponse` = `{id, itinerary_id, rank, stops: [StopResponse]}`.
 `StopResponse` carries `rank` and a nested `annotations` list.
 
-`reorder` returns the freshly reloaded detail — `_etag_json_response` must be
-passed that, not the stale itinerary.
+Asked nothing, `reorder` still answers with the bare detail, built after the
+commit by the GET's own helper (`_viewer_detail`) rather than from the stale
+itinerary; asked for the trip, it answers the same envelope as every other
+trip edit.
 
 ## Flutter surface
 
@@ -174,6 +182,12 @@ passed that, not the stale itinerary.
   editors too, and editing from it enters the trip's edit mode — the claim is
   kept, and a trip someone else holds answers with a pop-up that offers the
   takeover when allowed. See [collaborative-editing.md](collaborative-editing.md).
+- **A stop save is one request, and its queued notes one each.** The stop's
+  answer is the whole trip, adopted as it is; `addStop` returns the stop the
+  answer's `created_id` names, and each queued note attaches to it and is
+  adopted the same way — a stop with two notes is three requests and no GET
+  (`test/widgets/stop_form_queued_notes_test.dart`). Until 2026-10-21 each of
+  those writes was followed by a full reload of the trip.
 - **A create that half-failed is finished, not repeated.** `StopFormScreen`
   remembers the stop its Save created (`_createdStop`) and drops each queued note
   as it lands. If a note then fails (a moderation 422, say), Save again updates

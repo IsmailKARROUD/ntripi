@@ -67,6 +67,34 @@ annotations, ratings, saves, editors — hangs off it.
   image's audit row is linked to the new trip after the flush
   (`moderation_service.attach_itinerary`) — see
   [image-moderation.md](image-moderation.md).
+- **A trip edit answers with the whole trip when asked** (since 2026-10-21).
+  With `?return=itinerary`, every `EDIT_GUARDED` route — all 18 writes to the
+  trip and what hangs off it (the header PATCH, the form PATCH, stops, reorder,
+  both annotation systems, segments, legs) — answers with
+  `ItineraryEditResponse = {itinerary, created_id}`. `itinerary` is exactly the
+  body `GET /itineraries/{id}` would give the same caller right after the save:
+  read back after the route's last commit and built by the GET's own helper
+  (`_viewer_detail`, which also sets the caller's `can_edit`), with the new
+  concurrency `ETag` in the header. `created_id` is what a create made — the
+  stop form attaches its queued notes to it — and null for updates and deletes.
+  Creates keep 201, updates answer 200, deletes answer 200 instead of 204.
+  Without the parameter every route answers exactly as before — status, schema,
+  key order, ETag header — so builds already installed keep working; any other
+  value is FastAPI's 422. `test_trip_edit_answers.py` checks every route, as the
+  owner and as an editor, against a GET made right after it, and fails on a new
+  trip edit until it has a case.
+- **`itinerary` is null only when the save took the caller's view away** — an
+  editor's text hidden on the spot by moderation (a minors verdict), which a GET
+  answers with 403 too. The owner's view of their hidden trip is an answer like
+  any other, `hidden: true` included.
+- **The app never downloads the trip again after a save.** Every save sends
+  `?return=itinerary` and `ItineraryDetailNotifier` adopts the trip it answers
+  with. Until 2026-10-21 each stop, note and rating save was followed by a
+  forced `GET /itineraries/{id}` that the form waited on, and its reload state
+  put the whole trip view behind the full-screen loader; the production log of
+  2026-10-20 showed it after every save. **Deploy the backend first**: the app
+  asks for the trip and does not fall back to the old answers. See
+  [decisions.md](../decisions.md).
 - **JSON key order is the API contract.** `ItineraryDetail` declares `hidden`,
   the recommended-period fields and `can_edit` *inline and last* rather than by
   inheriting a mixin, because base-class fields serialize first and a mixin would
@@ -97,8 +125,8 @@ column list. Field limits enforced in `schemas/itinerary.py`:
 | POST | `/itineraries/form` | verified email | multipart: `fields` (`ItineraryCreate` as JSON) + `image` (required) | `ItinerarySummary` 201 | 422 (shape), 400 (unprocessable image), 422 `text_moderation_rejected` / `image_moderation_rejected` |
 | GET | `/itineraries/me` | user | — | `list[ItinerarySummary]` | — |
 | GET | `/itineraries/{id}` | user | — | `ItineraryDetail` + `ETag` | 404, 403 `itinerary_access_denied` |
-| PATCH | `/itineraries/{id}` | `require_edit_access` | `ItineraryUpdate` | `ItinerarySummary` | 403 `itinerary_not_owner` (incl. `visibility` from an editor), 428/412, 409 |
-| PATCH | `/itineraries/{id}/form` | `require_edit_access` | multipart: `fields` (`ItineraryUpdate` as JSON), `image?`, `remove_cover?` | `ItinerarySummary` + `ETag` | as PATCH, plus 403 `itinerary_not_owner` for a cover part from an editor, 403 `email_unverified` for an image, 422 (shape; both cover parts together), 400, 422 `image_moderation_rejected` |
+| PATCH | `/itineraries/{id}` | `require_edit_access` | `ItineraryUpdate` | `ItinerarySummary`; with `?return=itinerary`, `ItineraryEditResponse` + `ETag` | 403 `itinerary_not_owner` (incl. `visibility` from an editor), 428/412, 409 |
+| PATCH | `/itineraries/{id}/form` | `require_edit_access` | multipart: `fields` (`ItineraryUpdate` as JSON), `image?`, `remove_cover?` | `ItinerarySummary` + `ETag`; with `?return=itinerary`, `ItineraryEditResponse` + `ETag` | as PATCH, plus 403 `itinerary_not_owner` for a cover part from an editor, 403 `email_unverified` for an image, 422 (shape; both cover parts together), 400, 422 `image_moderation_rejected` |
 | DELETE | `/itineraries/{id}` | **owner only** | — | 204 | 403, 428/412 |
 
 `ItineraryCreate` = `{title, description?, currency='EUR', visibility='only_me'}`
@@ -114,10 +142,17 @@ an `image` is a 422 at `["body", "remove_cover"]`. Both routes are sync `def` �
 FastAPI parses the multipart body before calling them — and reach the async
 image pipeline through `anyio.from_thread.run`; see
 [image-pipeline.md](image-pipeline.md#sync-and-async-upload-endpoints). The
-edit route's answer carries the new concurrency `ETag`, and the client adopts
-the summary in place instead of reloading. The JSON PATCH is unchanged: the
-description editor, the recommended-period picker and the visibility screen use
-it and never send an image.
+edit route's answer carries the new concurrency `ETag`. The JSON PATCH serves
+the description editor, the recommended-period picker and the visibility
+screen, which never send an image.
+
+**The full-trip answer.** Any trip edit — the 18 `EDIT_GUARDED` routes listed in
+[collaborative-editing.md](collaborative-editing.md#test_edit_guard_coveragepy--the-structural-proof),
+these two among them — takes `?return=itinerary` and then answers
+`ItineraryEditResponse` = `{itinerary: ItineraryDetail | null, created_id:
+UUID | null}`, in that order. A query parameter rather than a header, so CORS
+needs nothing new; it is one dependency, `wants_itinerary`, which
+`test_trip_edit_answers.py` requires on every `EDIT_GUARDED` route.
 
 `ItinerarySummary` = `{id, user_id, title, cover_image_url,
 total_duration_min, total_cost, currency, visibility, created_at, updated_at,
@@ -125,7 +160,7 @@ rating_avg, rating_count, stops_count}`.
 
 `ItineraryDetail` = that **plus, in this order** `description`, `tracks`,
 `segments`, `annotations`, `hidden`, `recommended_periods`,
-`recommended_weekdays`, `recommended_period_note`, `can_edit`.
+`recommended_weekdays`, `recommended_period_note`, `can_edit`, `source_lang`.
 
 `ItineraryFeedItem` = `ItinerarySummary` + `owner: RaterInfo`.
 
@@ -150,13 +185,34 @@ registered from the same router under the `/users` prefix.
   guard's rejections into the typed exceptions `ItineraryStaleException`,
   `EditLockLostException`, `ItineraryLockedException`,
   `EditLockRequiredException`. `saveItineraryForm` and `createItineraryWithCover`
-  send the form routes; the client no longer calls the `/image` pair.
+  send the form routes; the client no longer calls the `/image` pair. Its 15
+  trip edits go through one helper, `_tripEdit`, which sends
+  `?return=itinerary` and returns a `TripEditAnswer`
+  (`domain/trip_edit_answer.dart`: the parsed trip, `createdId`). The leg
+  routes have no client.
+- **Saves adopt the answer, never reload** — every write method of
+  `ItineraryDetailNotifier` hands its answer to `_adopt`, which sets the
+  answered trip as the state: no `GET` follows a save, the trip view is not
+  rebuilt, and the next save's `If-Match` comes from the answered `updated_at`.
+  `addStop` returns the stop the answer's `createdId` names and `moveStop` the
+  moved stop, both found in the answered trip. With no trip in the answer (the
+  caller lost view access), `_adopt` makes the one GET whose 403 puts the screen
+  in its no-access state, and the methods that return a value rethrow that
+  refusal. `refresh()` is left to pull-to-refresh, Retry, and an editor who
+  removed themselves.
+- **The offline copy stays current** — the reload after a save also refreshed
+  the HTTP cache's entry for `GET /itineraries/{id}`, which is what a trip shows
+  when the app starts offline. `_tripEdit` writes the answered trip there
+  instead (`cacheAsGet`, `core/api/api_client.dart`), under the signed-in
+  account's key and with no validator, so the next online open downloads it
+  once. Web keeps no disk cache. Regression test:
+  `test/repositories/trip_edit_offline_copy_test.dart`.
 - **The form's save** — the edit branch calls
   `ItineraryDetailNotifier.saveForm(data, coverBytes:, removeCover:)`, which runs
-  through `_write` (the only reader of the claim token) and adopts the answer
-  the way `updateHeader` does (`_adoptHeader`: cover URL, `updatedAt`, so the
-  ETag). After a cover change the form evicts the cached image under both the
-  URL from before the save and the one after. The create branch calls
+  through `_write` (the only reader of the claim token) and adopts the answered
+  trip, cover URL and `updatedAt` (so the ETag) included. After a cover change
+  the form evicts the cached image under both the URL from before the save and
+  the one after. The create branch calls
   `MyItinerariesNotifier.addItinerary(data, coverBytes:)`, which picks the
   multipart route when a cover was picked. A refusal of any kind — 412, a lost
   claim, a 422 on the text or the image — leaves the form open with every field

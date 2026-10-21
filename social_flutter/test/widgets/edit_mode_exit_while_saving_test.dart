@@ -22,6 +22,7 @@ import 'package:ntripi/features/itineraries/domain/stop.dart';
 import 'package:ntripi/features/itineraries/domain/track.dart';
 import 'package:ntripi/features/itineraries/domain/transit_segment.dart';
 import 'package:ntripi/features/itineraries/domain/transport_leg.dart';
+import 'package:ntripi/features/itineraries/domain/trip_edit_answer.dart';
 import 'package:ntripi/features/itineraries/presentation/itinerary_detail_screen.dart';
 import 'package:ntripi/features/itineraries/presentation/widgets/edit_pencil_button.dart';
 import 'package:ntripi/features/itineraries/providers/edit_lock_provider.dart';
@@ -107,7 +108,7 @@ class _GatedRepo extends ItineraryRepository {
   }
 
   @override
-  Future<TransitSegment> updateSegment(
+  Future<TripEditAnswer> updateSegment(
     String itineraryId,
     String segmentId,
     Map<String, dynamic> data, {
@@ -116,15 +117,8 @@ class _GatedRepo extends ItineraryRepository {
   }) async {
     final gate = save = Completer<void>();
     await gate.future;
-    return TransitSegment(
-      id: segmentId,
-      itineraryId: itineraryId,
-      fromStopId: 'stop-1',
-      toStopId: 'stop-2',
-      totalDurationMin: 12,
-      totalCost: 0.0,
-      createdAt: DateTime.utc(2026, 10, 10),
-    );
+    // The trip as the save left it — here, as it was.
+    return TripEditAnswer(await getItinerary(itineraryId));
   }
 }
 

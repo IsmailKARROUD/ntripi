@@ -175,6 +175,12 @@ keeps "no exceptions" true for code nobody has written yet.
 `classified - live` is asserted empty, so **adding a READ route to any set fails
 the suite**.
 
+`test_trip_edit_answers.py` imports `EDIT_GUARDED` from here: every route in it
+must also answer with the whole trip when asked (`?return=itinerary`, see
+[itineraries.md](itineraries.md)), equal to a GET made right after by the same
+caller, owner and editor alike. A route added to `EDIT_GUARDED` fails that file
+until it has a case there.
+
 ## Data model
 
 `itinerary_editors` — composite PK `(itinerary_id, user_id)`, both CASCADE, plus
@@ -302,8 +308,11 @@ showed as editing.
 - **Leaving edit mode never hands the claim back under a running save**
   (2026-10-10). Every write that carries the claim goes through
   `ItineraryDetailNotifier._write`, which hands it the token — readable nowhere
-  else, so no write can skip it — and counts the write until it and its refresh
-  are done (`hasWritesInFlight`, `writesSettled()`). ✓ and Back call
+  else, so no write can skip it — and counts the write until its answer has been
+  adopted (`hasWritesInFlight`, `writesSettled()`). A counted write no longer
+  includes a refresh: since 2026-10-21 a save answers with the whole trip and
+  nothing downloads the trip after it, so the wait behind ✓ is the save alone.
+  ✓ and Back call
   `_requestExitEditMode`: with nothing running it leaves at once; otherwise the
   page goes under `SavingOverlay` with "Saving your changes… You'll leave edit
   mode as soon as they're saved." (`editModeLeaveAfterSave`), takes no new edit,

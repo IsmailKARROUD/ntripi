@@ -67,23 +67,71 @@ const kAuthSkippedExtra = 'ntripi_auth_skipped';
 const List<int> kNeverServeStaleFor = [401, 403, 404, 410];
 
 
+/// The cache settings every request shares. Per-request options REPLACE the
+/// interceptor's globals rather than merging with them, so each copy had to
+/// restate all of it: without the stale-on-error list an offline or
+/// captive-portal refresh errored out instead of re-serving the cached
+/// response, and without the key builder a refreshed body landed under the
+/// account-less key and never reached the account's own entry.
+CacheOptions _cacheOptions(CachePolicy policy, {CacheStore? store}) =>
+    CacheOptions(
+      store: store,
+      policy: policy,
+      hitCacheOnErrorExcept: kNeverServeStaleFor,
+      maxStale: const Duration(days: 7),
+      priority: CachePriority.normal,
+      keyBuilder: ntripiCacheKey,
+    );
+
 /// Per-request override that bypasses the dio_cache_interceptor's conditional
 /// GET validator — used for pull-to-refresh / Retry. See original comments.
-Options forceRefreshOptions() => Options(
-      extra: const CacheOptions(
-        store: null,
-        policy: CachePolicy.refresh,
-        // Per-request options REPLACE the interceptor's globals — restate the
-        // stale-on-error fallback or offline/captive-portal refreshes error
-        // out instead of re-serving the cached response. Keep this list in
-        // step with createDioClient's.
-        hitCacheOnErrorExcept: kNeverServeStaleFor,
-        maxStale: Duration(days: 7),
-        // Also replaced wholesale — without it a refreshed body landed under
-        // the account-less key and never reached the account's own entry.
-        keyBuilder: ntripiCacheKey,
-      ).toExtra(),
+Options forceRefreshOptions() =>
+    Options(extra: _cacheOptions(CachePolicy.refresh).toExtra());
+
+/// Stores [body] as the cached answer to GET [path] for the account [sent] was
+/// made as — the entry that GET would have left, without making it.
+///
+/// A trip edit answers with the whole trip and nothing reloads it afterwards,
+/// yet the reload is what kept this entry current, and the entry is what a trip
+/// shows when the app starts offline. Web keeps no disk cache: a no-op there.
+Future<void> cacheAsGet(
+  RequestOptions sent,
+  String path,
+  Map<String, dynamic> body,
+) async {
+  final store = httpCacheStore;
+  if (store == null) return;
+  try {
+    final get = RequestOptions(
+      baseUrl: sent.baseUrl,
+      path: path,
+      extra: {
+        kCacheSubjectExtra: sent.extra[kCacheSubjectExtra],
+        CacheResponse.requestSentDate: DateTime.now(),
+      },
     );
+    final options = _cacheOptions(CachePolicy.request, store: store);
+    final response = Response<Map<String, dynamic>>(
+      requestOptions: get,
+      data: body,
+      statusCode: 200,
+      // No validator: this body never came from a GET, so the next GET must not
+      // be answered "not modified" against it.
+      headers: Headers.fromMap({
+        Headers.contentTypeHeader: [Headers.jsonContentType],
+        'cache-control': ['private, no-cache'],
+      }),
+    );
+    final entry = await CacheResponse.fromResponse(
+      key: ntripiCacheKey(get),
+      options: options,
+      response: response,
+    );
+    await store.set(await entry.writeContent(options, response: response));
+  } catch (_) {
+    // The save has landed; an offline copy one save behind is the lesser failure.
+  }
+}
 
 /// Build a bare Dio (no AuthInterceptor, no cache) — used internally for
 /// refresh and logout.
@@ -125,14 +173,7 @@ Dio createDioClient({
   if (cacheStore != null) {
     instance.interceptors.add(
       DioCacheInterceptor(
-        options: CacheOptions(
-          store: cacheStore,
-          policy: CachePolicy.request,
-          hitCacheOnErrorExcept: kNeverServeStaleFor,
-          maxStale: const Duration(days: 7),
-          priority: CachePriority.normal,
-          keyBuilder: ntripiCacheKey,
-        ),
+        options: _cacheOptions(CachePolicy.request, store: cacheStore),
       ),
     );
     // After the cache interceptor, so it only ever sees errors the cache layer

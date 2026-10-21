@@ -12,6 +12,7 @@
 //   - Wait for build() to complete via `container.read(provider.future)` before
 //     invoking mutating methods.
 //   - Capture call args on the fake to assert body shape + ETag threading.
+//   - Every save answers with the whole trip, which is adopted: no reload.
 
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -19,6 +20,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:ntripi/features/itineraries/data/itinerary_repository.dart';
 import 'package:ntripi/features/itineraries/domain/itinerary.dart';
 import 'package:ntripi/features/itineraries/domain/stop.dart';
+import 'package:ntripi/features/itineraries/domain/track.dart';
+import 'package:ntripi/features/itineraries/domain/trip_edit_answer.dart';
 import 'package:ntripi/features/itineraries/providers/itinerary_providers.dart';
 
 // ---------------------------------------------------------------------------
@@ -32,7 +35,9 @@ class _FakeRepo extends ItineraryRepository {
   _FakeRepo() : super(Dio());
 
   Itinerary itineraryToReturn = _makeItinerary();
-  Stop stopToReturn = _makeStop();
+
+  /// The trip every save answers with; the moved stop rides in it.
+  Itinerary answeredTrip = _tripWith(_makeStop());
 
   // Call recorders.
   final List<String> getItineraryCalls = [];
@@ -46,7 +51,7 @@ class _FakeRepo extends ItineraryRepository {
   }
 
   @override
-  Future<Stop> updateStop(
+  Future<TripEditAnswer> updateStop(
     String itineraryId,
     String stopId,
     Map<String, dynamic> data, {
@@ -59,11 +64,11 @@ class _FakeRepo extends ItineraryRepository {
       body: data,
       etag: etag,
     ));
-    return stopToReturn;
+    return TripEditAnswer(answeredTrip);
   }
 
   @override
-  Future<Itinerary> reorderItinerary(
+  Future<TripEditAnswer> reorderItinerary(
     String itineraryId, {
     Map<String, List<String>>? stopOrders,
     List<String>? trackOrder,
@@ -78,7 +83,7 @@ class _FakeRepo extends ItineraryRepository {
       segmentIdsToDelete: segmentIdsToDelete,
       etag: etag,
     ));
-    return itineraryToReturn;
+    return TripEditAnswer(answeredTrip);
   }
 }
 
@@ -131,6 +136,13 @@ Itinerary _makeItinerary({DateTime? updatedAt}) {
     updatedAt: ts,
   );
 }
+
+/// A trip answered after a save: a later stamp, [stop] on its own track.
+Itinerary _tripWith(Stop stop) => _makeItinerary(
+      updatedAt: DateTime.utc(2026, 5, 11, 10, 23, 30),
+    ).copyWith(tracks: [
+      Track(id: stop.trackId, itineraryId: _itinId, rank: 'a0', stops: [stop]),
+    ]);
 
 Stop _makeStop({String trackId = 't2'}) => Stop(
       id: _stopId,
@@ -205,8 +217,8 @@ void main() {
       expect(body.containsKey('track_id'), isFalse);
     });
 
-    test('returns the moved Stop from the repository', () async {
-      fakeRepo.stopToReturn = _makeStop(trackId: 'destination-track');
+    test('returns the moved Stop from the answered trip', () async {
+      fakeRepo.answeredTrip = _tripWith(_makeStop(trackId: 'destination-track'));
       final notifier = await _readyNotifier();
 
       final result = await notifier.moveStop(_stopId, targetTrackId: 't2');
@@ -230,14 +242,16 @@ void main() {
       expect(fakeRepo.updateStopCalls.single.etag, expectedEtag);
     });
 
-    test('refresh fires after a successful mutation', () async {
+    test('adopts the answered trip, without a reload', () async {
       final notifier = await _readyNotifier();
-      // Initial build → 1 getItinerary call. After mutation → 2.
+      // Initial build → 1 getItinerary call, and no other after the move.
       expect(fakeRepo.getItineraryCalls, hasLength(1));
 
       await notifier.moveStop(_stopId, targetTrackId: 't2');
 
-      expect(fakeRepo.getItineraryCalls, hasLength(2));
+      expect(fakeRepo.getItineraryCalls, hasLength(1));
+      expect(container.read(itineraryDetailProvider(_itinId)).value,
+          same(fakeRepo.answeredTrip));
     });
   });
 
@@ -286,7 +300,7 @@ void main() {
       expect(call.segmentIdsToDelete, isNull);
     });
 
-    test('refresh fires after a successful applyReorder', () async {
+    test('applyReorder adopts the answered trip, without a reload', () async {
       final notifier = await _readyNotifier();
       expect(fakeRepo.getItineraryCalls, hasLength(1));
 
@@ -294,7 +308,9 @@ void main() {
         't1': ['s1'],
       });
 
-      expect(fakeRepo.getItineraryCalls, hasLength(2));
+      expect(fakeRepo.getItineraryCalls, hasLength(1));
+      expect(container.read(itineraryDetailProvider(_itinId)).value,
+          same(fakeRepo.answeredTrip));
     });
   });
 }

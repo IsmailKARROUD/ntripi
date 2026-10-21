@@ -23,6 +23,12 @@
 //   The header is attached explicitly, per call — never by a Dio interceptor.
 //   A blanket interceptor would keep sending a token the client no longer
 //   holds, onto requests that must not carry one.
+//
+// EVERY CONTENT MUTATION ASKS FOR THE TRIP BACK (`?return=itinerary`):
+//   the answer is the whole trip as a GET would show it, so the save is the
+//   only request — nothing downloads the trip again after it. The server needs
+//   that parameter to answer this way; a backend without it answers the old
+//   shapes, so it deploys first.
 
 import 'dart:convert';
 import 'dart:typed_data';
@@ -39,12 +45,10 @@ import 'package:ntripi/features/itineraries/domain/allowed_user.dart';
 import 'package:ntripi/features/itineraries/domain/annotation.dart';
 import 'package:ntripi/features/itineraries/domain/edit_lock.dart';
 import 'package:ntripi/features/itineraries/domain/itinerary.dart';
-import 'package:ntripi/features/itineraries/domain/itinerary_annotation.dart';
 import 'package:ntripi/features/itineraries/domain/itinerary_editor.dart';
 import 'package:ntripi/features/itineraries/domain/my_rating.dart';
 import 'package:ntripi/features/itineraries/domain/ratings_page.dart';
-import 'package:ntripi/features/itineraries/domain/stop.dart';
-import 'package:ntripi/features/itineraries/domain/transit_segment.dart';
+import 'package:ntripi/features/itineraries/domain/trip_edit_answer.dart';
 
 /// Thrown when the server returns 412 Precondition Failed.
 ///
@@ -103,6 +107,9 @@ Options _editOptions(String etag, String? lockToken) => Options(
       },
     );
 
+/// What every trip edit asks to be answered with: the whole trip.
+const _returnTrip = {'return': 'itinerary'};
+
 /// Map the guard's rejections onto typed exceptions. Anything else rethrows and
 /// is decoded downstream by extractErrorMessage.
 Never _mapGuardError(DioException e) {
@@ -127,6 +134,29 @@ class ItineraryRepository {
   final Dio _dio;
 
   const ItineraryRepository(this._dio);
+
+  /// A trip edit sent with [send], which asks for the trip back: its guard
+  /// rejections are mapped as everywhere else, and the trip it answers with
+  /// also becomes the cached answer to the trip's GET — the copy a trip shows
+  /// offline, which the reload that used to follow every save kept current.
+  Future<TripEditAnswer> _tripEdit(
+    String itineraryId,
+    Future<Response<Map<String, dynamic>>> Function() send,
+  ) async {
+    final Response<Map<String, dynamic>> response;
+    try {
+      response = await send();
+    } on DioException catch (e) {
+      _mapGuardError(e);
+    }
+    final data = response.data!;
+    final trip = data['itinerary'];
+    if (trip is Map<String, dynamic>) {
+      await cacheAsGet(
+          response.requestOptions, itineraryEndpoint(itineraryId), trip);
+    }
+    return TripEditAnswer.fromJson(data);
+  }
 
   // ---------------------------------------------------------------------------
   // Itinerary CRUD
@@ -249,29 +279,27 @@ class ItineraryRepository {
 
   /// Header fields: title, description, currency, recommended period — and
   /// `visibility`, which the server accepts only from the owner.
-  Future<Itinerary> updateItinerary(
+  Future<TripEditAnswer> updateItinerary(
     String id,
     Map<String, dynamic> data, {
     required String etag,
     required String? lockToken,
-  }) async {
-    try {
-      final response = await _dio.patch<Map<String, dynamic>>(
-        itineraryEndpoint(id),
-        data: data,
-        options: _editOptions(etag, lockToken),
+  }) =>
+      _tripEdit(
+        id,
+        () => _dio.patch<Map<String, dynamic>>(
+          itineraryEndpoint(id),
+          data: data,
+          queryParameters: _returnTrip,
+          options: _editOptions(etag, lockToken),
+        ),
       );
-      return Itinerary.fromJson(response.data!);
-    } on DioException catch (e) {
-      _mapGuardError(e);
-    }
-  }
 
   /// The Edit itinerary form's save: [data] as for [updateItinerary], plus a
   /// cover change from the owner — [coverBytes] replaces it, [removeCover]
   /// takes it off — in one multipart request under one If-Match and one claim.
   /// Sent as two, the cover write moved updated_at and the PATCH behind it 412'd.
-  Future<Itinerary> saveItineraryForm(
+  Future<TripEditAnswer> saveItineraryForm(
     String id,
     Map<String, dynamic> data, {
     Uint8List? coverBytes,
@@ -279,22 +307,21 @@ class ItineraryRepository {
     bool removeCover = false,
     required String etag,
     required String? lockToken,
-  }) async {
-    try {
-      final response = await _dio.patch<Map<String, dynamic>>(
-        itineraryFormEndpoint(id),
-        data: FormData.fromMap({
-          'fields': jsonEncode(data),
-          if (coverBytes != null) 'image': _coverPart(coverBytes, coverFilename),
-          if (removeCover) 'remove_cover': 'true',
-        }),
-        options: _editOptions(etag, lockToken),
+  }) =>
+      _tripEdit(
+        id,
+        () => _dio.patch<Map<String, dynamic>>(
+          itineraryFormEndpoint(id),
+          data: FormData.fromMap({
+            'fields': jsonEncode(data),
+            if (coverBytes != null)
+              'image': _coverPart(coverBytes, coverFilename),
+            if (removeCover) 'remove_cover': 'true',
+          }),
+          queryParameters: _returnTrip,
+          options: _editOptions(etag, lockToken),
+        ),
       );
-      return Itinerary.fromJson(response.data!);
-    } on DioException catch (e) {
-      _mapGuardError(e);
-    }
-  }
 
   static MultipartFile _coverPart(Uint8List bytes, String? filename) =>
       MultipartFile.fromBytes(bytes, filename: filename ?? 'cover.jpg');
@@ -307,58 +334,54 @@ class ItineraryRepository {
   // Stop CRUD — all require ETag
   // ---------------------------------------------------------------------------
 
-  Future<Stop> addStop(
+  /// The answer's [TripEditAnswer.createdId] is the new stop.
+  Future<TripEditAnswer> addStop(
     String itineraryId,
     Map<String, dynamic> data, {
     required String etag,
     required String? lockToken,
-  }) async {
-    try {
-      final response = await _dio.post<Map<String, dynamic>>(
-        itineraryStopsEndpoint(itineraryId),
-        data: data,
-        options: _editOptions(etag, lockToken),
+  }) =>
+      _tripEdit(
+        itineraryId,
+        () => _dio.post<Map<String, dynamic>>(
+          itineraryStopsEndpoint(itineraryId),
+          data: data,
+          queryParameters: _returnTrip,
+          options: _editOptions(etag, lockToken),
+        ),
       );
-      return Stop.fromJson(response.data!);
-    } on DioException catch (e) {
-      _mapGuardError(e);
-    }
-  }
 
-  Future<Stop> updateStop(
+  Future<TripEditAnswer> updateStop(
     String itineraryId,
     String stopId,
     Map<String, dynamic> data, {
     required String etag,
     required String? lockToken,
-  }) async {
-    try {
-      final response = await _dio.patch<Map<String, dynamic>>(
-        itineraryStopEndpoint(itineraryId, stopId),
-        data: data,
-        options: _editOptions(etag, lockToken),
+  }) =>
+      _tripEdit(
+        itineraryId,
+        () => _dio.patch<Map<String, dynamic>>(
+          itineraryStopEndpoint(itineraryId, stopId),
+          data: data,
+          queryParameters: _returnTrip,
+          options: _editOptions(etag, lockToken),
+        ),
       );
-      return Stop.fromJson(response.data!);
-    } on DioException catch (e) {
-      _mapGuardError(e);
-    }
-  }
 
-  Future<void> deleteStop(
+  Future<TripEditAnswer> deleteStop(
     String itineraryId,
     String stopId, {
     required String etag,
     required String? lockToken,
-  }) async {
-    try {
-      await _dio.delete(
-        itineraryStopEndpoint(itineraryId, stopId),
-        options: _editOptions(etag, lockToken),
+  }) =>
+      _tripEdit(
+        itineraryId,
+        () => _dio.delete<Map<String, dynamic>>(
+          itineraryStopEndpoint(itineraryId, stopId),
+          queryParameters: _returnTrip,
+          options: _editOptions(etag, lockToken),
+        ),
       );
-    } on DioException catch (e) {
-      _mapGuardError(e);
-    }
-  }
 
   /// Apply a batch reorder in one atomic transaction.
   ///
@@ -372,73 +395,69 @@ class ItineraryRepository {
   ///   exactly the current track set.
   /// - [segmentIdsToDelete] is the list of segment IDs to remove in the
   ///   same transaction (typically those orphaned by a track reorder).
-  Future<Itinerary> reorderItinerary(
+  Future<TripEditAnswer> reorderItinerary(
     String itineraryId, {
     Map<String, List<String>>? stopOrders,
     List<String>? trackOrder,
     List<String>? segmentIdsToDelete,
     required String etag,
     required String? lockToken,
-  }) async {
+  }) {
     final body = <String, dynamic>{
       if (stopOrders != null && stopOrders.isNotEmpty) 'stop_orders': stopOrders,
       if (trackOrder != null) 'track_order': trackOrder,
       if (segmentIdsToDelete != null && segmentIdsToDelete.isNotEmpty)
         'segments_to_delete': segmentIdsToDelete,
     };
-    try {
-      final response = await _dio.post<Map<String, dynamic>>(
+    return _tripEdit(
+      itineraryId,
+      () => _dio.post<Map<String, dynamic>>(
         itineraryReorderEndpoint(itineraryId),
         data: body,
+        queryParameters: _returnTrip,
         options: _editOptions(etag, lockToken),
-      );
-      return Itinerary.fromJson(response.data!);
-    } on DioException catch (e) {
-      _mapGuardError(e);
-    }
+      ),
+    );
   }
 
   // ---------------------------------------------------------------------------
   // Annotation CRUD — all require ETag
   // ---------------------------------------------------------------------------
 
-  Future<Annotation> addAnnotation(
+  Future<TripEditAnswer> addAnnotation(
     String itineraryId,
     String stopId,
     Map<String, dynamic> data, {
     required String etag,
     required String? lockToken,
-  }) async {
-    try {
-      final response = await _dio.post<Map<String, dynamic>>(
-        stopAnnotationsEndpoint(itineraryId, stopId),
-        data: data,
-        options: _editOptions(etag, lockToken),
+  }) =>
+      _tripEdit(
+        itineraryId,
+        () => _dio.post<Map<String, dynamic>>(
+          stopAnnotationsEndpoint(itineraryId, stopId),
+          data: data,
+          queryParameters: _returnTrip,
+          options: _editOptions(etag, lockToken),
+        ),
       );
-      return Annotation.fromJson(response.data!);
-    } on DioException catch (e) {
-      _mapGuardError(e);
-    }
-  }
 
-  Future<void> deleteAnnotation(
+  Future<TripEditAnswer> deleteAnnotation(
     String itineraryId,
     String stopId,
     String annotationId, {
     required String etag,
     required String? lockToken,
-  }) async {
-    try {
-      await _dio.delete(
-        stopAnnotationEndpoint(itineraryId, stopId, annotationId),
-        options: _editOptions(etag, lockToken),
+  }) =>
+      _tripEdit(
+        itineraryId,
+        () => _dio.delete<Map<String, dynamic>>(
+          stopAnnotationEndpoint(itineraryId, stopId, annotationId),
+          queryParameters: _returnTrip,
+          options: _editOptions(etag, lockToken),
+        ),
       );
-    } on DioException catch (e) {
-      _mapGuardError(e);
-    }
-  }
 
-  Future<Annotation> updateAnnotation(
+  Future<TripEditAnswer> updateAnnotation(
     String itineraryId,
     String stopId,
     String annotationId, {
@@ -446,84 +465,79 @@ class ItineraryRepository {
     AnnotationType? type,
     required String etag,
     required String? lockToken,
-  }) async {
+  }) {
     final body = <String, dynamic>{
       if (content != null) 'content': content,
       if (type != null) 'type': type.name,
     };
-    try {
-      final response = await _dio.patch<Map<String, dynamic>>(
+    return _tripEdit(
+      itineraryId,
+      () => _dio.patch<Map<String, dynamic>>(
         stopAnnotationEndpoint(itineraryId, stopId, annotationId),
         data: body,
+        queryParameters: _returnTrip,
         options: _editOptions(etag, lockToken),
-      );
-      return Annotation.fromJson(response.data!);
-    } on DioException catch (e) {
-      _mapGuardError(e);
-    }
+      ),
+    );
   }
 
   // ---------------------------------------------------------------------------
   // Itinerary-level annotation CRUD — all require ETag
   // ---------------------------------------------------------------------------
 
-  Future<ItineraryAnnotation> addItineraryAnnotation(
+  Future<TripEditAnswer> addItineraryAnnotation(
     String itineraryId,
     Map<String, dynamic> data, {
     required String etag,
     required String? lockToken,
-  }) async {
-    try {
-      final response = await _dio.post<Map<String, dynamic>>(
-        itineraryAnnotationsEndpoint(itineraryId),
-        data: data,
-        options: _editOptions(etag, lockToken),
+  }) =>
+      _tripEdit(
+        itineraryId,
+        () => _dio.post<Map<String, dynamic>>(
+          itineraryAnnotationsEndpoint(itineraryId),
+          data: data,
+          queryParameters: _returnTrip,
+          options: _editOptions(etag, lockToken),
+        ),
       );
-      return ItineraryAnnotation.fromJson(response.data!);
-    } on DioException catch (e) {
-      _mapGuardError(e);
-    }
-  }
 
-  Future<ItineraryAnnotation> updateItineraryAnnotation(
+  Future<TripEditAnswer> updateItineraryAnnotation(
     String itineraryId,
     String annotationId, {
     String? content,
     AnnotationType? type,
     required String etag,
     required String? lockToken,
-  }) async {
+  }) {
     final body = <String, dynamic>{
       if (content != null) 'content': content,
       if (type != null) 'type': type.name,
     };
-    try {
-      final response = await _dio.patch<Map<String, dynamic>>(
+    return _tripEdit(
+      itineraryId,
+      () => _dio.patch<Map<String, dynamic>>(
         itineraryAnnotationEndpoint(itineraryId, annotationId),
         data: body,
+        queryParameters: _returnTrip,
         options: _editOptions(etag, lockToken),
-      );
-      return ItineraryAnnotation.fromJson(response.data!);
-    } on DioException catch (e) {
-      _mapGuardError(e);
-    }
+      ),
+    );
   }
 
-  Future<void> deleteItineraryAnnotation(
+  Future<TripEditAnswer> deleteItineraryAnnotation(
     String itineraryId,
     String annotationId, {
     required String etag,
     required String? lockToken,
-  }) async {
-    try {
-      await _dio.delete(
-        itineraryAnnotationEndpoint(itineraryId, annotationId),
-        options: _editOptions(etag, lockToken),
+  }) =>
+      _tripEdit(
+        itineraryId,
+        () => _dio.delete<Map<String, dynamic>>(
+          itineraryAnnotationEndpoint(itineraryId, annotationId),
+          queryParameters: _returnTrip,
+          options: _editOptions(etag, lockToken),
+        ),
       );
-    } on DioException catch (e) {
-      _mapGuardError(e);
-    }
-  }
 
   // ---------------------------------------------------------------------------
   // Allowlist CRUD
@@ -664,73 +678,80 @@ class ItineraryRepository {
   // Transit segments
   // ---------------------------------------------------------------------------
 
-  Future<TransitSegment> createSegment(
+  Future<TripEditAnswer> createSegment(
     String itineraryId,
     Map<String, dynamic> data, {
     required String etag,
     required String? lockToken,
-  }) async {
-    try {
-      final response = await _dio.post<Map<String, dynamic>>(
-        itinerarySegmentsEndpoint(itineraryId),
-        data: data,
-        options: _editOptions(etag, lockToken),
+  }) =>
+      _tripEdit(
+        itineraryId,
+        () => _dio.post<Map<String, dynamic>>(
+          itinerarySegmentsEndpoint(itineraryId),
+          data: data,
+          queryParameters: _returnTrip,
+          options: _editOptions(etag, lockToken),
+        ),
       );
-      return TransitSegment.fromJson(response.data!);
-    } on DioException catch (e) {
-      _mapGuardError(e);
-    }
-  }
 
-  Future<TransitSegment> updateSegment(
+  Future<TripEditAnswer> updateSegment(
     String itineraryId,
     String segmentId,
     Map<String, dynamic> data, {
     required String etag,
     required String? lockToken,
-  }) async {
-    try {
-      final response = await _dio.patch<Map<String, dynamic>>(
-        itinerarySegmentEndpoint(itineraryId, segmentId),
-        data: data,
-        options: _editOptions(etag, lockToken),
+  }) =>
+      _tripEdit(
+        itineraryId,
+        () => _dio.patch<Map<String, dynamic>>(
+          itinerarySegmentEndpoint(itineraryId, segmentId),
+          data: data,
+          queryParameters: _returnTrip,
+          options: _editOptions(etag, lockToken),
+        ),
       );
-      return TransitSegment.fromJson(response.data!);
-    } on DioException catch (e) {
-      _mapGuardError(e);
-    }
-  }
 
-  Future<void> deleteSegment(
+  Future<TripEditAnswer> deleteSegment(
     String itineraryId,
     String segmentId, {
     required String etag,
     required String? lockToken,
-  }) async {
-    try {
-      await _dio.delete(
-        itinerarySegmentEndpoint(itineraryId, segmentId),
-        options: _editOptions(etag, lockToken),
+  }) =>
+      _tripEdit(
+        itineraryId,
+        () => _dio.delete<Map<String, dynamic>>(
+          itinerarySegmentEndpoint(itineraryId, segmentId),
+          queryParameters: _returnTrip,
+          options: _editOptions(etag, lockToken),
+        ),
       );
-    } on DioException catch (e) {
-      _mapGuardError(e);
-    }
-  }
 
   // ---------------------------------------------------------------------------
   // Ratings
   // ---------------------------------------------------------------------------
 
-  Future<MyRating> submitRating(String itineraryId, MyRating rating) async {
+  /// The answer carries the trip's new aggregate beside the rating, so the trip
+  /// page takes it from there instead of reloading the trip.
+  Future<({MyRating rating, RatingAggregate aggregate})> submitRating(
+    String itineraryId,
+    MyRating rating,
+  ) async {
     final response = await _dio.post<Map<String, dynamic>>(
       itineraryRatingsEndpoint(itineraryId),
       data: rating.toJson(),
     );
-    return MyRating.fromJson(response.data!);
+    final data = response.data!;
+    return (rating: MyRating.fromJson(data), aggregate: RatingAggregate.fromJson(data));
   }
 
-  Future<void> deleteMyRating(String itineraryId) async {
-    await _dio.delete(itineraryMyRatingEndpoint(itineraryId));
+  /// Asked for it, the delete answers with the trip's aggregate once the rating
+  /// is gone.
+  Future<RatingAggregate> deleteMyRating(String itineraryId) async {
+    final response = await _dio.delete<Map<String, dynamic>>(
+      itineraryMyRatingEndpoint(itineraryId),
+      queryParameters: const {'return': 'aggregate'},
+    );
+    return RatingAggregate.fromJson(response.data!);
   }
 
   Future<RatingsPage> getRatingsPage(

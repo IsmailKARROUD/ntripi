@@ -7,7 +7,8 @@
 //
 // No real network — Dio is intercepted via http_mock_adapter. The tests pin
 // the URL, body shape (including conditional inclusion of optional fields),
-// and the mapping of 412 responses to ItineraryStaleException.
+// that each asks for the whole trip back, and the mapping of 412 responses to
+// ItineraryStaleException.
 
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -73,6 +74,23 @@ void main() {
         'annotations': <Map<String, dynamic>>[],
         'stops_count': 0,
       };
+
+  /// The trip with the stop alone on [trackId], as a stop edit answers with it.
+  Map<String, dynamic> tripWithStop({String trackId = 't1'}) => {
+        ..._itineraryJson(),
+        'tracks': [
+          {
+            'id': trackId,
+            'itinerary_id': _itinId,
+            'rank': 'a0',
+            'stops': [_stopJson(trackId: trackId)],
+          },
+        ],
+      };
+
+  /// What a trip edit answers when asked for the trip back.
+  Map<String, dynamic> tripAnswer(Map<String, dynamic> trip) =>
+      {'itinerary': trip, 'created_id': null};
 
   // -------------------------------------------------------------------------
   // updateStop — Phase 1 (existing-track move) + Phase 2c (new-track move)
@@ -174,46 +192,50 @@ void main() {
   });
 
   group('ItineraryRepository.updateStop', () {
-    test('move-to-existing-track sends track_id and returns parsed Stop',
-        () async {
+    test('move-to-existing-track sends track_id and answers with the trip, '
+        'the stop moved', () async {
       final (dio, adapter) = _makeDio();
       adapter.onPatch(
         itineraryStopEndpoint(_itinId, _stopId),
-        (server) => server.reply(200, _stopJson(trackId: 't2')),
+        (server) => server.reply(200, tripAnswer(tripWithStop(trackId: 't2'))),
         data: {'track_id': 't2'},
+        queryParameters: {'return': 'itinerary'},
       );
 
       final repo = ItineraryRepository(dio);
-      final stop = await repo.updateStop(
+      final answer = await repo.updateStop(
         _itinId,
         _stopId,
         {'track_id': 't2'},
         etag: _etag, lockToken: 'lock-token',
       );
 
+      final stop = answer.itinerary!.stops.single;
       expect(stop.trackId, 't2');
       expect(stop.id, _stopId);
+      expect(answer.createdId, isNull);
     });
 
     test('new-track-move body shape (Phase 2c) is forwarded as-is', () async {
       final (dio, adapter) = _makeDio();
       adapter.onPatch(
         itineraryStopEndpoint(_itinId, _stopId),
-        (server) => server.reply(200, _stopJson(trackId: 'new-track-id')),
+        (server) =>
+            server.reply(200, tripAnswer(tripWithStop(trackId: 'new-track-id'))),
         // Adapter matches the request body exactly — these keys must
         // appear verbatim in the request.
         data: {'after_track_id': 't1', 'before_track_id': 't2'},
       );
 
       final repo = ItineraryRepository(dio);
-      final stop = await repo.updateStop(
+      final answer = await repo.updateStop(
         _itinId,
         _stopId,
         {'after_track_id': 't1', 'before_track_id': 't2'},
         etag: _etag, lockToken: 'lock-token',
       );
 
-      expect(stop.trackId, 'new-track-id');
+      expect(answer.itinerary!.stops.single.trackId, 'new-track-id');
     });
 
     test('412 response throws ItineraryStaleException, not DioException',
@@ -239,7 +261,7 @@ void main() {
       // history to verify the header was set.
       adapter.onPatch(
         itineraryStopEndpoint(_itinId, _stopId),
-        (server) => server.reply(200, _stopJson()),
+        (server) => server.reply(200, tripAnswer(tripWithStop())),
         data: {'track_id': 't2'},
         headers: {'If-Match': _etag, 'content-type': 'application/json'},
       );
@@ -259,20 +281,21 @@ void main() {
   // -------------------------------------------------------------------------
 
   group('ItineraryRepository.reorderItinerary', () {
-    test('stop_orders-only body returns parsed Itinerary', () async {
+    test('stop_orders-only body answers with the parsed trip', () async {
       final (dio, adapter) = _makeDio();
       adapter.onPost(
         itineraryReorderEndpoint(_itinId),
-        (server) => server.reply(200, _itineraryJson()),
+        (server) => server.reply(200, tripAnswer(_itineraryJson())),
         data: {
           'stop_orders': {
             't1': ['s2', 's1'],
           },
         },
+        queryParameters: {'return': 'itinerary'},
       );
 
       final repo = ItineraryRepository(dio);
-      final itin = await repo.reorderItinerary(
+      final answer = await repo.reorderItinerary(
         _itinId,
         stopOrders: {
           't1': ['s2', 's1'],
@@ -280,8 +303,8 @@ void main() {
         etag: _etag, lockToken: 'lock-token',
       );
 
-      expect(itin.id, _itinId);
-      expect(itin.title, 'Trip');
+      expect(answer.itinerary!.id, _itinId);
+      expect(answer.itinerary!.title, 'Trip');
     });
 
     test('track_order + segments_to_delete body forwarded correctly',
@@ -289,7 +312,7 @@ void main() {
       final (dio, adapter) = _makeDio();
       adapter.onPost(
         itineraryReorderEndpoint(_itinId),
-        (server) => server.reply(200, _itineraryJson()),
+        (server) => server.reply(200, tripAnswer(_itineraryJson())),
         data: {
           'track_order': ['t3', 't1', 't2'],
           'segments_to_delete': ['seg-1'],
@@ -297,14 +320,14 @@ void main() {
       );
 
       final repo = ItineraryRepository(dio);
-      final itin = await repo.reorderItinerary(
+      final answer = await repo.reorderItinerary(
         _itinId,
         trackOrder: ['t3', 't1', 't2'],
         segmentIdsToDelete: ['seg-1'],
         etag: _etag, lockToken: 'lock-token',
       );
 
-      expect(itin.id, _itinId);
+      expect(answer.itinerary!.id, _itinId);
     });
 
     test('empty optional fields are omitted from the body', () async {
@@ -314,7 +337,7 @@ void main() {
       final (dio, adapter) = _makeDio();
       adapter.onPost(
         itineraryReorderEndpoint(_itinId),
-        (server) => server.reply(200, _itineraryJson()),
+        (server) => server.reply(200, tripAnswer(_itineraryJson())),
         data: <String, dynamic>{}, // exactly empty body expected
       );
 
@@ -357,7 +380,7 @@ void main() {
       final (dio, adapter) = _makeDio();
       adapter.onPost(
         itineraryReorderEndpoint(_itinId),
-        (server) => server.reply(200, _itineraryJson()),
+        (server) => server.reply(200, tripAnswer(_itineraryJson())),
         data: {
           'stop_orders': {
             't1': ['s1'],

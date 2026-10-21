@@ -22,6 +22,7 @@ import 'package:ntripi/features/itineraries/data/itinerary_repository.dart';
 import 'package:ntripi/features/itineraries/domain/itinerary.dart';
 import 'package:ntripi/features/itineraries/domain/edit_lock.dart';
 import 'package:ntripi/features/itineraries/domain/recommended_period.dart';
+import 'package:ntripi/features/itineraries/domain/trip_edit_answer.dart';
 import 'package:ntripi/features/itineraries/presentation/itinerary_detail_screen.dart';
 import 'package:ntripi/features/itineraries/presentation/itinerary_form_screen.dart';
 import 'package:ntripi/features/itineraries/presentation/recommended_period_screen.dart';
@@ -81,7 +82,7 @@ class _FakeRepo extends ItineraryRepository {
   }
 
   @override
-  Future<Itinerary> updateItinerary(
+  Future<TripEditAnswer> updateItinerary(
     String id,
     Map<String, dynamic> data, {
     required String etag,
@@ -89,12 +90,12 @@ class _FakeRepo extends ItineraryRepository {
   }) async {
     lastUpdate = data;
     if (updateGate != null) await updateGate!.future;
-    return _itinerary();
+    return TripEditAnswer(_itinerary());
   }
 
   // The form's own Save; updateItinerary is what the detail screen's pickers use.
   @override
-  Future<Itinerary> saveItineraryForm(
+  Future<TripEditAnswer> saveItineraryForm(
     String id,
     Map<String, dynamic> data, {
     Uint8List? coverBytes,

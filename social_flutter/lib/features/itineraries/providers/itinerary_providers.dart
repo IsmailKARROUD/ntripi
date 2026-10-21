@@ -23,10 +23,10 @@ import 'package:ntripi/features/itineraries/domain/allowed_user.dart';
 import 'package:ntripi/features/itineraries/domain/annotation.dart';
 import 'package:ntripi/features/itineraries/domain/itinerary.dart';
 import 'package:ntripi/features/itineraries/domain/my_rating.dart';
-import 'package:ntripi/features/itineraries/domain/recommended_period.dart';
 import 'package:ntripi/features/itineraries/domain/ratings_page.dart';
 import 'package:ntripi/features/itineraries/domain/itinerary_editor.dart';
 import 'package:ntripi/features/itineraries/domain/stop.dart';
+import 'package:ntripi/features/itineraries/domain/trip_edit_answer.dart';
 import 'package:ntripi/features/itineraries/providers/edit_lock_provider.dart';
 
 // ---------------------------------------------------------------------------
@@ -168,8 +168,8 @@ class ItineraryDetailNotifier extends AsyncNotifier<Itinerary> {
   /// a reload — a safe fallback.
   String get _etag => state.value?.eTag ?? '';
 
-  // Writes carrying this device's claim that are still running, refresh
-  // included, and whether one of them failed since the count was last zero.
+  // Writes carrying this device's claim that are still running, and whether
+  // one of them failed since the count was last zero.
   int _writesInFlight = 0;
   bool _writeFailed = false;
   Completer<bool>? _writesSettled;
@@ -187,8 +187,8 @@ class ItineraryDetailNotifier extends AsyncNotifier<Itinerary> {
       ? Future.value(true)
       : (_writesSettled ??= Completer<bool>()).future;
 
-  /// Runs a write that carries this device's edit claim, counted until it and
-  /// its refresh are done.
+  /// Runs a write that carries this device's edit claim, counted until its
+  /// answer has been adopted.
   ///
   /// The claim reaches [body] as `lockToken` and is readable nowhere else, so
   /// no write can skip the count. Null when no session was started — the server
@@ -211,11 +211,12 @@ class ItineraryDetailNotifier extends AsyncNotifier<Itinerary> {
     }
   }
 
-  /// Full re-fetch from the server.
-  /// Called after every mutation so totals and track structure are up-to-date,
-  /// and by RefreshIndicator on the detail screen. Forces a fresh server fetch
-  /// (bypasses the cache validator) so a 304 with a stale local body can't
-  /// silently no-op a pull-to-refresh.
+  /// Full re-fetch from the server: pull-to-refresh and Retry on the detail
+  /// screen, and after something other than a save changed what this viewer
+  /// may do. Never after a save — every save adopts the trip from its own
+  /// answer ([_adopt]). Forces a fresh server fetch (bypasses the cache
+  /// validator) so a 304 with a stale local body can't silently no-op a
+  /// pull-to-refresh.
   Future<void> refresh() async {
     // Offline: keep cached AsyncData — a forced refresh could only degrade it.
     if (!isOnlineNowRef(ref)) return;
@@ -229,29 +230,57 @@ class ItineraryDetailNotifier extends AsyncNotifier<Itinerary> {
     state = next;
   }
 
-  /// Add a stop, then refresh so totals and track structure are accurate.
-  /// The ETag is attached automatically via _etag — the presentation layer
-  /// does not need to know about concurrency control. Returns the created
-  /// [Stop] so callers can act on its real server-assigned id (e.g. attach
-  /// annotations) — the new stop is not necessarily last in rank order.
+  /// Adopt a trip edit's answer — the whole trip as the server now has it,
+  /// totals and track structure included — so a save is its one request and
+  /// the screen is never rebuilt behind a reload. Ends on what was adopted.
+  Future<AsyncValue<Itinerary>> _adopt(TripEditAnswer answer) async {
+    final trip = answer.itinerary;
+    // No trip: this very save took the viewer's access away (moderation hid an
+    // editor's text on the spot), and the GET's refusal is what the screen
+    // shows for that — the one request a save can be followed by.
+    final next = trip != null
+        ? AsyncData(trip)
+        : await AsyncValue.guard(
+            () => ref
+                .read(itineraryRepositoryProvider)
+                .getItinerary(arg, forceRefresh: true),
+          );
+    if (!ref.mounted) return next; // disposed mid-request (logout)
+    state = next;
+    return next;
+  }
+
+  /// [_adopt] for a write whose caller needs the trip back. With none, the
+  /// GET's own refusal is the answer — not requireValue, which wraps it.
+  Future<Itinerary> _adoptTrip(TripEditAnswer answer) async {
+    final adopted = await _adopt(answer);
+    if (adopted case AsyncData(:final value)) return value;
+    Error.throwWithStackTrace(adopted.error!, adopted.stackTrace!);
+  }
+
+  /// Add a stop. The ETag is attached automatically via _etag — the
+  /// presentation layer does not need to know about concurrency control.
+  /// Returns the created [Stop] so callers can act on its real server-assigned
+  /// id (e.g. attach annotations) — the new stop is not necessarily last in
+  /// rank order.
   Future<Stop> addStop(Map<String, dynamic> data) =>
       _write((lockToken) async {
-        final created = await ref
+        final answer = await ref
             .read(itineraryRepositoryProvider)
             .addStop(arg, data, etag: _etag, lockToken: lockToken);
         _listsChanged();
-        await refresh();
-        return created;
+        final trip = await _adoptTrip(answer);
+        return trip.stops.firstWhere((s) => s.id == answer.createdId);
       });
 
-  /// Update a stop, then refresh.
+  /// Update a stop.
   Future<void> updateStop(String stopId, Map<String, dynamic> data) =>
       _write((lockToken) async {
-        await ref
+        final answer = await ref
             .read(itineraryRepositoryProvider)
             .updateStop(arg, stopId, data, etag: _etag, lockToken: lockToken);
         _listsChanged();
-        await refresh();
+        await _adopt(answer);
       });
 
   /// The list rows show this trip's title, cover, stop count and totals, and
@@ -268,15 +297,15 @@ class ItineraryDetailNotifier extends AsyncNotifier<Itinerary> {
   /// At least one of [stopOrders], [trackOrder], or [segmentIdsToDelete] must
   /// be provided. The server validates set-equality (for stop_orders and
   /// track_order), recomputes fractional-index ranks, deletes any requested
-  /// segments, and returns the full updated itinerary. A `refresh()` after
-  /// the call adopts the server-confirmed state locally.
+  /// segments, and answers with the full updated itinerary, which is adopted
+  /// as the server-confirmed state.
   Future<void> applyReorder({
     Map<String, List<String>>? stopOrders,
     List<String>? trackOrder,
     List<String>? segmentIdsToDelete,
   }) =>
       _write((lockToken) async {
-        await ref
+        final answer = await ref
             .read(itineraryRepositoryProvider)
             .reorderItinerary(
               arg,
@@ -285,7 +314,7 @@ class ItineraryDetailNotifier extends AsyncNotifier<Itinerary> {
               segmentIdsToDelete: segmentIdsToDelete,
               etag: _etag, lockToken: lockToken,
             );
-        await refresh();
+        await _adopt(answer);
       });
 
   /// Move a stop to a new position.
@@ -297,8 +326,8 @@ class ItineraryDetailNotifier extends AsyncNotifier<Itinerary> {
   ///      (with [targetTrackId] null). Server creates a brand-new track at
   ///      that position and moves this stop into it as the sole member.
   ///
-  /// Bumps the ETag and refreshes the local state. Returns the moved [Stop]
-  /// so callers can read its (possibly newly created) `trackId`.
+  /// Adopts the answered trip, ETag included. Returns the moved [Stop] so
+  /// callers can read its (possibly newly created) `trackId`.
   Future<Stop> moveStop(
     String stopId, {
     String? afterStopId,
@@ -315,37 +344,32 @@ class ItineraryDetailNotifier extends AsyncNotifier<Itinerary> {
       if (beforeTrackId != null) 'before_track_id': beforeTrackId,
     };
     return _write((lockToken) async {
-      final updated = await ref
+      final answer = await ref
           .read(itineraryRepositoryProvider)
           .updateStop(arg, stopId, body, etag: _etag, lockToken: lockToken);
-      await refresh();
-      return updated;
+      final trip = await _adoptTrip(answer);
+      return trip.stops.firstWhere((s) => s.id == stopId);
     });
   }
 
-  /// Delete a stop, then refresh.
+  /// Delete a stop.
   Future<void> deleteStop(String stopId) => _write((lockToken) async {
-        await ref
+        final answer = await ref
             .read(itineraryRepositoryProvider)
             .deleteStop(arg, stopId, etag: _etag, lockToken: lockToken);
         _listsChanged();
-        await refresh();
+        await _adopt(answer);
       });
 
   /// Update itinerary header fields.
   Future<Itinerary> updateHeader(Map<String, dynamic> data) =>
-      _write((lockToken) => _updateHeader(data, lockToken));
-
-  Future<Itinerary> _updateHeader(
-      Map<String, dynamic> data, String? lockToken) async {
-    final updated = await ref
-        .read(itineraryRepositoryProvider)
-        .updateItinerary(arg, data, etag: _etag, lockToken: lockToken);
-    if (!ref.mounted) return updated; // disposed mid-request (logout)
-    _listsChanged();
-    _adoptHeader(data, updated);
-    return updated;
-  }
+      _write((lockToken) async {
+        final answer = await ref
+            .read(itineraryRepositoryProvider)
+            .updateItinerary(arg, data, etag: _etag, lockToken: lockToken);
+        _listsChanged();
+        return _adoptTrip(answer);
+      });
 
   /// The Edit itinerary form's save: its fields and, from the owner, a cover
   /// change, in one request. A cover sent ahead on its own moved updated_at, so
@@ -357,7 +381,7 @@ class ItineraryDetailNotifier extends AsyncNotifier<Itinerary> {
     bool removeCover = false,
   }) =>
       _write((lockToken) async {
-        final updated = await ref
+        final answer = await ref
             .read(itineraryRepositoryProvider)
             .saveItineraryForm(
               arg,
@@ -368,91 +392,51 @@ class ItineraryDetailNotifier extends AsyncNotifier<Itinerary> {
               etag: _etag,
               lockToken: lockToken,
             );
-        if (!ref.mounted) return updated; // disposed mid-request (logout)
         _listsChanged();
-        _adoptHeader(data, updated);
-        return updated;
+        return _adoptTrip(answer);
       });
 
-  /// Adopt a header save's answer — an ItinerarySummary — into the loaded
-  /// detail, so the next write carries the new ETag without a reload.
-  void _adoptHeader(Map<String, dynamic> data, Itinerary updated) {
-    state.whenData((current) {
-      // A header save answers with an ItinerarySummary, which omits
-      // `description` and the recommended-period fields alike, so `updated` is
-      // always null for them — adopt the just-saved values from the request
-      // payload instead (the server stored them verbatim). An absent key means
-      // the caller didn't touch that field, so the current value is kept.
-      final descProvided = data.containsKey('description');
-      final newDescription =
-          descProvided ? data['description'] as String? : current.description;
-      // toPayload() always emits all three period keys together, so one is
-      // enough to tell "the caller edited the period" from "it left it alone".
-      final periodProvided = data.containsKey('recommended_period_note');
-      final newPeriod = periodProvided
-          ? RecommendedPeriod.fromItineraryJson(data)
-          : current.recommendedPeriod;
-      state = AsyncData(
-        current.copyWith(
-          title: updated.title,
-          description: newDescription,
-          clearDescription: descProvided && newDescription == null,
-          recommendedPeriod: newPeriod,
-          clearRecommendedPeriod: periodProvided && newPeriod == null,
-          visibility: updated.visibility,
-          currency: updated.currency,
-          updatedAt: updated.updatedAt,
-          // The response carries the authoritative cover URL — the form's save
-          // changes it in the same request — so adopt it, clearing when removed,
-          // so stale covers don't linger after a remove.
-          coverImageUrl: updated.coverImageUrl,
-          clearCoverImageUrl: updated.coverImageUrl == null,
-        ),
-      );
-    });
-  }
-
-  /// Create a transit segment and refresh.
+  /// Create a transit segment.
   Future<void> createSegment(Map<String, dynamic> data) =>
       _write((lockToken) async {
-        await ref
+        final answer = await ref
             .read(itineraryRepositoryProvider)
             .createSegment(arg, data, etag: _etag, lockToken: lockToken);
-        await refresh();
+        await _adopt(answer);
       });
 
-  /// Update (replace) a transit segment and refresh.
+  /// Update (replace) a transit segment.
   Future<void> updateSegment(
     String segmentId,
     Map<String, dynamic> data,
   ) =>
       _write((lockToken) async {
-        await ref
+        final answer = await ref
             .read(itineraryRepositoryProvider)
             .updateSegment(arg, segmentId, data,
                 etag: _etag, lockToken: lockToken);
-        await refresh();
+        await _adopt(answer);
       });
 
-  /// Delete a transit segment and refresh.
+  /// Delete a transit segment.
   Future<void> deleteSegment(String segmentId) => _write((lockToken) async {
-        await ref
+        final answer = await ref
             .read(itineraryRepositoryProvider)
             .deleteSegment(arg, segmentId, etag: _etag, lockToken: lockToken);
-        await refresh();
+        await _adopt(answer);
       });
 
-  /// Add a stop-level annotation, then refresh.
+  /// Add a stop-level annotation.
   Future<void> addAnnotation(String stopId, Map<String, dynamic> data) =>
       _write((lockToken) async {
-        await ref
+        final answer = await ref
             .read(itineraryRepositoryProvider)
             .addAnnotation(arg, stopId, data,
                 etag: _etag, lockToken: lockToken);
-        await refresh();
+        await _adopt(answer);
       });
 
-  /// Update a stop-level annotation, then refresh.
+  /// Update a stop-level annotation.
   Future<void> updateAnnotation(
     String stopId,
     String annotationId, {
@@ -460,7 +444,7 @@ class ItineraryDetailNotifier extends AsyncNotifier<Itinerary> {
     AnnotationType? type,
   }) =>
       _write((lockToken) async {
-        await ref
+        final answer = await ref
             .read(itineraryRepositoryProvider)
             .updateAnnotation(
               arg,
@@ -470,37 +454,37 @@ class ItineraryDetailNotifier extends AsyncNotifier<Itinerary> {
               type: type,
               etag: _etag, lockToken: lockToken,
             );
-        await refresh();
+        await _adopt(answer);
       });
 
-  /// Delete a stop-level annotation, then refresh.
+  /// Delete a stop-level annotation.
   Future<void> deleteAnnotation(String stopId, String annotationId) =>
       _write((lockToken) async {
-        await ref
+        final answer = await ref
             .read(itineraryRepositoryProvider)
             .deleteAnnotation(arg, stopId, annotationId,
                 etag: _etag, lockToken: lockToken);
-        await refresh();
+        await _adopt(answer);
       });
 
-  /// Add an itinerary-level annotation, then refresh.
+  /// Add an itinerary-level annotation.
   Future<void> addItineraryAnnotation(Map<String, dynamic> data) =>
       _write((lockToken) async {
-        await ref
+        final answer = await ref
             .read(itineraryRepositoryProvider)
             .addItineraryAnnotation(arg, data,
                 etag: _etag, lockToken: lockToken);
-        await refresh();
+        await _adopt(answer);
       });
 
-  /// Update an itinerary-level annotation, then refresh.
+  /// Update an itinerary-level annotation.
   Future<void> updateItineraryAnnotation(
     String annotationId, {
     String? content,
     AnnotationType? type,
   }) =>
       _write((lockToken) async {
-        await ref
+        final answer = await ref
             .read(itineraryRepositoryProvider)
             .updateItineraryAnnotation(
               arg,
@@ -509,18 +493,33 @@ class ItineraryDetailNotifier extends AsyncNotifier<Itinerary> {
               type: type,
               etag: _etag, lockToken: lockToken,
             );
-        await refresh();
+        await _adopt(answer);
       });
 
-  /// Delete an itinerary-level annotation, then refresh.
+  /// Delete an itinerary-level annotation.
   Future<void> deleteItineraryAnnotation(String annotationId) =>
       _write((lockToken) async {
-        await ref
+        final answer = await ref
             .read(itineraryRepositoryProvider)
             .deleteItineraryAnnotation(arg, annotationId,
                 etag: _etag, lockToken: lockToken);
-        await refresh();
+        await _adopt(answer);
       });
+
+  /// A rating moved the trip's aggregate, and its answer carries the new one.
+  /// updatedAt stays where it was — the server's aggregate write preserves it
+  /// — so the ETag the next save sends does too.
+  void adoptRatingAggregate(RatingAggregate aggregate) {
+    if (!ref.mounted) return;
+    // Only onto a loaded trip: a failed load is not a trip to put numbers on.
+    if (state case AsyncData(:final value)) {
+      state = AsyncData(value.copyWith(
+        ratingAvg: aggregate.avg,
+        clearRatingAvg: aggregate.avg == null,
+        ratingCount: aggregate.count,
+      ));
+    }
+  }
 }
 
 final itineraryDetailProvider =
@@ -668,19 +667,28 @@ class MyRatingNotifier extends AsyncNotifier<MyRating?> {
         .read(itineraryRepositoryProvider)
         .submitRating(arg, rating);
     if (!ref.mounted) return; // disposed mid-request (logout)
-    state = AsyncData(saved);
+    state = AsyncData(saved.rating);
     // The ratings page is keep-alive too: rating from it left its list,
     // averages and histogram without the review just written.
     ref.invalidate(ratingsPageProvider(arg));
-    await ref.read(itineraryDetailProvider(arg).notifier).refresh();
+    _adoptAggregate(saved.aggregate);
   }
 
   Future<void> deleteRating() async {
-    await ref.read(itineraryRepositoryProvider).deleteMyRating(arg);
+    final aggregate =
+        await ref.read(itineraryRepositoryProvider).deleteMyRating(arg);
     if (!ref.mounted) return; // disposed mid-request (logout)
     state = const AsyncData(null);
     ref.invalidate(ratingsPageProvider(arg));
-    await ref.read(itineraryDetailProvider(arg).notifier).refresh();
+    _adoptAggregate(aggregate);
+  }
+
+  /// The answer carries the trip's new aggregate, so the trip page takes it
+  /// from there instead of downloading the trip again. Only a trip already
+  /// loaded: reading the provider would otherwise build it, which is a GET.
+  void _adoptAggregate(RatingAggregate aggregate) {
+    final trip = itineraryDetailProvider(arg);
+    if (ref.exists(trip)) ref.read(trip.notifier).adoptRatingAggregate(aggregate);
   }
 }
 

@@ -59,9 +59,17 @@ because one endpoint emits both.
   so `recalculate_rating` writes them through `set_preserving_etag` — otherwise
   the column's `onupdate=now()` fires and every stranger's rating 412s the
   owner's open editor ([ratings.md](ratings.md)).
-- `_etag_json_response` (`itineraries.py:137`) is the only way to build a
-  response carrying the concurrency ETag. In `reorder_itinerary` it must be
-  passed the **freshly reloaded** detail, not the stale itinerary.
+- `_etag_json_response` (`itineraries.py`) is the only way to build a response
+  carrying the concurrency ETag. A response that carries the trip must build it
+  from the **freshly reloaded** detail, not the stale itinerary — which is what
+  `_trip_edit_answer` does after the route's last commit, and the bare reorder
+  answer too.
+- **A save answers with the next stamp.** Asked with `?return=itinerary`, every
+  trip edit answers with the whole trip ([itineraries.md](itineraries.md)): its
+  `updated_at` is the next `If-Match`, and the header carries the same token.
+  The client builds `If-Match` from the adopted trip's `updated_at`, exactly as
+  from a GET, so it never needs a reload to learn the stamp — until 2026-10-21
+  every save was followed by a forced GET of the whole trip.
 - **The seven `OWNER_ONLY` endpoints take no `If-Match`** — DELETE itinerary,
   the allowlist pair, the editors pair, the image pair. See
   [collaborative-editing.md](collaborative-editing.md#test_edit_guard_coveragepy--the-structural-proof).
@@ -127,8 +135,11 @@ and **no remaining-seconds field**, so it is byte-identical between polls and th
 
 `CachePolicy.request` in `lib/core/api/api_client.dart` honours `Cache-Control`
 and `ETag` automatically — no per-call changes. `cache_evict_interceptor.dart`
-drops cached entries on mutation. Pull-to-refresh deliberately bypasses the
-validator so a manual refresh is never answered from cache.
+drops a cached GET the server answers 403, 404 or 410. Pull-to-refresh
+deliberately bypasses the validator so a manual refresh is never answered from
+cache. A trip save writes the trip it answered with into the cache as the
+detail GET's entry (`cacheAsGet`), with no validator — nothing reloads the trip
+after a save any more, and that entry is what the trip shows offline.
 
 ---
 

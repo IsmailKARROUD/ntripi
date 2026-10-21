@@ -67,6 +67,11 @@ a verified email.
 Errors: 404 `annotation_not_found` (both), 404 `stop_not_found` on the stop POST,
 plus the guard's 403 / 428 / 409 / 412.
 
+**All six take `?return=itinerary`** and then answer `ItineraryEditResponse` —
+the whole trip as a GET right after would show it, plus `created_id`, the new
+note's id on a create — with the concurrency ETag; a delete answers 200 instead
+of 204. See [itineraries.md](itineraries.md). The app always asks for it.
+
 `{type, content}` on create; both optional on update.
 Responses carry `{id, <parent>_id, type, content, created_at, updated_at}`.
 
@@ -85,7 +90,9 @@ normally reads them.
 - **Models** — `Annotation`, `AnnotationType`
   (`features/itineraries/domain/`), manual `fromJson`/`toJson`.
 - Annotations are rendered from the detail payload, so no dedicated provider
-  exists; mutations invalidate `itineraryDetailProvider`.
+  exists. A note's save answers with the whole trip, which
+  `ItineraryDetailNotifier` adopts as its state — no reload follows it (until
+  2026-10-21 every note save was followed by a full `GET` of the trip).
 
 ## Known gaps / TODOs
 

@@ -100,7 +100,9 @@ Extracted in the 2026-07 dedup refactor. Before writing a query/response block i
 - **`app/database.py`** — `upsert_insert(db, model)` for any check-then-insert that can race (a dialect `INSERT` with `on_conflict_do_nothing` / `_do_update`, same API on Postgres and the SQLite suite). Used by device registration, the text-moderation cache and the first edit-lock claim — each was a 500 when two requests both saw "no row".
 - **`app/services/translation_service.py`** — `REGISTRY` is the one list of translatable fields (itinerary title/description/period note, both annotation tables, stop notes, review notes, leg notes — never place names). **Every write of translatable text calls `sync_translations(db, row, changed=...)` before the commit** (re-detects `source_lang`, drops translations whose source hash moved); **every delete below the itinerary calls `purge_orphans(db, itinerary.id)` after the flush** — a stop delete cascades annotations and legs out of the app's sight. Trip and account deletes need neither: `content_translations.itinerary_id` cascades. A new write or delete path that skips these leaves a copy of rewritten or deleted text behind.
 - **`app/routers/itineraries.py` router-private helpers** (keep router-private; don't re-inline):
-  - `_etag_json_response(schema_cls, obj, itinerary, status_code)` — every response that carries the concurrency ETag. In `reorder_itinerary`, pass the freshly reloaded detail, not the stale itinerary.
+  - `_etag_json_response(schema_cls, obj, itinerary, status_code)` — every response that carries the concurrency ETag. A response carrying the trip is built from the freshly reloaded detail, never the stale itinerary.
+  - `_viewer_detail(itinerary, viewer_id, db)` — **the one builder of the trip as a GET shows it to a viewer** (sets their `can_edit`). `get_itinerary`, the bare reorder answer and every trip edit's answer use it, so a save's answer and a GET can never describe the trip differently.
+  - `_trip_edit_answer(itinerary_id, viewer, db, created_id=, status_code=)` + the `wants_itinerary` dependency (`?return=itinerary`) — the full-trip answer every `EDIT_GUARDED` route gives when asked: `ItineraryEditResponse {itinerary, created_id}`, read back after the route's **last** commit. A new trip edit depends on `wants_itinerary` and ends with it, or `test_trip_edit_answers.py` fails.
   - `_require_viewable(itinerary, viewer_id, db, detail=…)` — the only 403 access gate (wraps `can_view_itinerary`). `get_itinerary` passes its historical divergent wording explicitly — do not "fix" it.
   - `_two_phase_renumber(rows, db)` — the only way to rewrite a full rank set (`!`-prefixed temp ranks dodge the UNIQUE constraint). Callers validate ownership first.
   - `_require_stops_in_itinerary(...)` — segment stop-membership check.
@@ -164,6 +166,7 @@ Key rules:
 - Missing `If-Match` → 428. Mismatch → 412 `{"detail":"itinerary modified, please reload"}`.
 - `_normalize_etag()` strips three intermediary mutations: whitespace, `W/` weak prefix (added by Cloudflare when it recompresses), and `Z` ↔ `+00:00` timezone serialization. **`require_etag` then compares instants, not strings** (`_concurrency_token`, `datetime.fromisoformat` on both sides): Dart drops the sub-millisecond digits when they are zero (`.123Z` vs Python's `.123000+00:00`), and a byte compare left ~1 in 1000 itineraries permanently unsaveable. Anything after `;` (the GET's body-hash suffix, below) is ignored.
 - Dependency: `require_etag` in `app/dependencies.py` (SELECT FOR UPDATE + ownership + ETag compare).
+- **A trip edit answers with the whole trip when asked** (`?return=itinerary`, every `EDIT_GUARDED` route): `ItineraryEditResponse {itinerary, created_id}` — exactly the body `GET /itineraries/{id}` would give that caller right after the save, plus the new concurrency ETag. `itinerary` is null only when the save took the caller's view away (moderation hiding an editor's text on the spot). Asked nothing, every route answers byte for byte as before — installed builds depend on it. Ratings: `POST /ratings` appends `rating_avg`/`rating_count`; `DELETE /ratings/me?return=aggregate` answers them.
 
 ### ETag / If-None-Match (cache validation, bandwidth-saving)
 - `ETagMiddleware` in `app/middleware/etag.py` hashes every GET JSON response body to a 16-char opaque ETag and sets `Cache-Control: private, no-cache`. When the client returns the value via `If-None-Match`, the middleware replies `304 Not Modified` with an empty body.
@@ -187,6 +190,7 @@ Key rules:
 - Owner UI elements via explicit `currentUser?.id == itinerary.ownerId`
 - **A screen opened from outside the app always has a way back** — enter through `GoRouter.pushOverHome` / `openFromOutside`, leave through `popOr`, all in `core/router/navigation_ext.dart` (details under Push Notifications)
 - `ItineraryStaleException` thrown by repository on 412 — presentation catches and shows reload dialog
+- **A trip save adopts the trip from its answer; never re-download after a save.** Every trip edit in `ItineraryRepository` goes through `_tripEdit`, which sends `?return=itinerary`, and `ItineraryDetailNotifier._adopt` sets the answered trip as the state — the next `If-Match` comes from its `updated_at`, and `addStop` returns the stop the answer's `createdId` names. A rating adopts the aggregate its answer carries (`adoptRatingAggregate`, only onto a trip already loaded). `refresh()` is for pull-to-refresh, Retry and an editor who removed themselves; the first load is `build()`. `_tripEdit` also writes the answered trip into the HTTP cache as the GET's entry (`cacheAsGet`) — the copy a trip shows offline, which the old reload kept current.
 - **Never touch `ref` in `State.dispose()`** — `ref` resolves through `BuildContext`, which is already deactivated by then, so `ref.read(...)` throws `StateError: Using "ref" when a widget is about to or has been unmounted is unsafe`. To call a notifier on the way out, hold it in a field: `NotifierType? _notifier;` assigned in `build` via `ref.watch(someProvider.notifier)` (watched, not read once in `initState` — an invalidation swaps the instance and `dispose` must reach the live one), then call `_notifier?.method()` in `dispose`. Safe only because the provider is not `autoDispose`, so the notifier's own `ref` outlives the screen; an `autoDispose` provider needs `ref.keepAlive()` or the work moved into the notifier's `ref.onDispose`. Live example: `notifications_screen.dart` flushing the deferred-delete queue.
 
 ---
@@ -711,7 +715,8 @@ because those write sibling tables, never itinerary content.
   backgrounded. Sign-out calls `releaseAllEditClaims` before the tokens go.
 - **The claim is never handed back under a running save.** Every write that
   carries it goes through `ItineraryDetailNotifier._write`, which hands it the
-  token (readable nowhere else) and counts it until it and its refresh are done.
+  token (readable nowhere else) and counts it until its answer is adopted — a
+  save answers with the whole trip, so no refresh follows it.
   ✓ and Back call `_requestExitEditMode`: nothing running → leave at once;
   otherwise `SavingOverlay` with `editModeLeaveAfterSave`, no new edit, and leave
   once `writesSettled()` answers — a failed write keeps edit mode and the claim,
@@ -1177,6 +1182,9 @@ For each article the change touches:
 - Do NOT pop a route or clear a field when a save returns `edit_lock_lost` — the user's unsaved text is the only copy of it at that moment
 - Do NOT leave edit mode with `_exitEditMode()` from a user action — ✓ and Back go through `_requestExitEditMode`, which waits for `writesSettled()`; releasing the claim under a running write loses that write without a word
 - Do NOT read the edit-lock token outside `ItineraryDetailNotifier._write` — the wrapper is what counts a write as running, and leaving edit mode waits on that count
+- Do NOT call `refresh()`, invalidate the detail, or otherwise GET the trip after a trip save — the save's answer is the whole trip; adopt it with `_adopt`. The reload was a second request every form waited on, and its loading state rebuilt the whole trip view behind the full-screen loader
+- Do NOT add a trip edit route without the full-trip answer — depend on `wants_itinerary` and return `_trip_edit_answer` after the last commit; `test_trip_edit_answers.py` fails until the route has a case
+- Do NOT change a trip edit's answer when `?return=itinerary` is absent — that answer is what installed builds parse, byte for byte
 - Do NOT attach `X-Edit-Lock` from a Dio interceptor — a blanket one would send a dead token onto requests that must not carry one
 - Do NOT adopt a journalled claim token for a save or a heartbeat — `EditClaimJournal` keeps it only so `DELETE /lock` can hand back a claim the app was closed holding; and do NOT journal it in web `localStorage`, which every tab shares, so a second tab would hand back the first one's live claim
 - Do NOT drop `X-Edit-Lock` from CORS `allow_headers` — the browser preflight fails before the request is sent

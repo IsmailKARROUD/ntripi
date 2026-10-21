@@ -65,3 +65,18 @@ class MyRating {
 }
 
 const _absent = Object();
+
+/// A trip's rating aggregate as a rating write left it: POST /ratings always
+/// carries it, DELETE /ratings/me when asked (`?return=aggregate`).
+class RatingAggregate {
+  /// Null once no rating is left.
+  final double? avg;
+  final int count;
+
+  const RatingAggregate({required this.avg, required this.count});
+
+  factory RatingAggregate.fromJson(Map<String, dynamic> json) => RatingAggregate(
+        avg: (json['rating_avg'] as num?)?.toDouble(),
+        count: json['rating_count'] as int,
+      );
+}
