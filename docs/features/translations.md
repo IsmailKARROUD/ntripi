@@ -63,9 +63,10 @@ outlive, or drift from, the text they were made from.
   source text itself is never stored.
 - **Every write of translatable text calls `sync_translations`** before the
   commit: it re-detects `source_lang` and deletes the row's translations whose
-  hash no longer matches its current text — in the edit's own transaction. Ten
+  hash no longer matches its current text — in the edit's own transaction. Twelve
   write paths in `routers/itineraries.py`: `create_itinerary`,
-  `update_itinerary`, `add_stop`, `update_stop`, `_save_annotation` (both
+  `create_itinerary_form`, `update_itinerary`, `update_itinerary_form`,
+  `add_stop`, `update_stop`, `_save_annotation` (both
   annotation tables, create and update), `upsert_rating`, `create_segment`,
   `update_segment`, `add_leg`, `update_leg`. A body that names no translatable
   field skips it.

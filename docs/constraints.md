@@ -180,6 +180,13 @@ discoverable way to learn the constraints. Logged in
   included. The client hands journalled claims back late, after a relaunch; an
   ownership match alone would end the claim the owner has since taken on another
   device.
+- **One user action is one guarded write.** A write that moves `updated_at`
+  leaves every `If-Match` read before it stale, so the client must learn the new
+  stamp — from the answer, or a reload — before its next write. The itinerary
+  form's save sent its cover through `POST`/`DELETE /image`, which sit outside
+  the guard and answer with no stamp, then the fields with the old `If-Match`,
+  and the PATCH was refused until 2026-10-21; it is now one request
+  ([itineraries.md](features/itineraries.md)).
 
 → [etag-concurrency.md](features/etag-concurrency.md)
 
@@ -379,6 +386,14 @@ constraint that lived only in a migration let every auto-hide of an itinerary
 raise `CheckViolation` → 500 in production for months while the suite stayed
 green. **Declare constraints in `__table_args__`, not only in the migration.**
 
+**SQLite also keeps time in whole seconds.** `func.now()` renders there as
+`CURRENT_TIMESTAMP`, so `itineraries.updated_at` — `server_default` and
+`onupdate` both — does not move between two writes in the same second, and a
+stale `If-Match` that production answers with 412 passes in the suite. That is
+how the 412 the itinerary form hit on every cover change stayed invisible to
+it. A test about the ETag moving backdates the row first (`_backdate` in
+`test_itinerary_form.py`).
+
 ---
 
 ## API contract stability
@@ -527,6 +542,7 @@ excused.
 | **`CLAUDE.md`'s middleware table omits `LanguageCookieMiddleware`** | the real runtime stack has seven layers, not six |
 | **`.env.example` is 14 settings behind**, three of them validator-backed | see above |
 | **A model docstring asserts an invariant nothing enforces** | segment stop-adjacency — see [transit-segments.md](features/transit-segments.md). ("Deleting the last leg deletes the segment" is enforced since 2026-09-26) |
+| **`POST`/`DELETE /itineraries/{id}/image` write the itinerary outside the guard** | no edit lock, no `If-Match`, and they move `updated_at` when the cover changes the row — against "every itinerary-content mutation requires `If-Match`". Kept unchanged for installed builds; the app uses the form routes instead, and the pair is to be retired ([backlog.md](backlog.md)) |
 
 ---
 

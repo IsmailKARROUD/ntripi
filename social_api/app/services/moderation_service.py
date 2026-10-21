@@ -92,7 +92,11 @@ class ModerationContext:
     uploader: "User"
     storage_key: str
     itinerary_id: "uuid.UUID | None" = None
+    # The itinerary is being created in this request and has no row yet — the
+    # audit row is linked to it by attach_itinerary after the caller's flush.
+    itinerary_pending: bool = False
     action: str = field(default="approved")  # OUT param
+    log: "ImageModerationLog | None" = field(default=None)  # OUT param
 
 
 def is_enabled(settings: "Settings") -> bool:
@@ -202,6 +206,19 @@ async def moderate_or_raise(processed: bytes, ctx: ModerationContext) -> None:
     _log_decision(ctx.db, image_hash=image_hash, ctx=ctx, action="approved", labels=[])
 
 
+def attach_itinerary(ctx: ModerationContext) -> None:
+    """Point a create-time scan's audit row at its itinerary, once the caller
+    has flushed the itinerary — the image twin of text_moderation_service's
+    attach_target.
+
+    /admin/flagged finds a cover's trip only through target_itinerary_id, so a
+    flagged or unscanned cover left unlinked could be neither approved nor
+    removed from the dashboard.
+    """
+    if ctx.log is not None and ctx.log.target_itinerary_id is None:
+        ctx.log.target_itinerary_id = ctx.itinerary_id
+
+
 def _should_reject(raw_labels: list[dict[str, Any]], threshold: float) -> bool:
     """True if any label whose own name or parent name is a reject category
     meets the reject-confidence threshold. Checking ParentName catches child
@@ -220,14 +237,17 @@ def _log_decision(
 ) -> None:
     """Insert the audit row and opportunistically purge expired rows. The caller
     owns the commit (except the reject path, which commits explicitly)."""
-    db.add(ImageModerationLog(
+    ctx.log = ImageModerationLog(
         image_hash=image_hash,
         target_kind=ctx.target_kind,
-        target_itinerary_id=ctx.itinerary_id,
+        # A reject commits this row on the spot: naming an itinerary that is not
+        # inserted yet would fail that commit on the foreign key.
+        target_itinerary_id=None if ctx.itinerary_pending else ctx.itinerary_id,
         uploader_user_id=ctx.uploader.id,
         action=action,
         labels=labels,
-    ))
+    )
+    db.add(ctx.log)
     cutoff = datetime.now(timezone.utc) - LOG_RETENTION
     db.execute(delete(ImageModerationLog).where(
         ImageModerationLog.created_at < cutoff,

@@ -489,7 +489,7 @@ class TestFlaggedQueue:
             db.get(ImageModerationLog, _uuid.UUID(reviewed)).reviewed_at = old
             db.commit()
             ctx = SimpleNamespace(
-                target_kind="avatar", itinerary_id=None,
+                target_kind="avatar", itinerary_id=None, itinerary_pending=False,
                 uploader=SimpleNamespace(id=_uuid.UUID(scenario["author"]["user_id"])),
             )
             # Any new scan runs the opportunistic purge.

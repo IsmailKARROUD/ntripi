@@ -250,6 +250,19 @@ enumeration-safe body (`/web/appeal-request` has the same shape). →
 
 ## Dead and unread code
 
+### planned — retire `POST`/`DELETE /itineraries/{id}/image`
+
+Since 2026-10-21 the app changes an itinerary's cover only through the form
+routes (`POST /itineraries/form`, `PATCH /itineraries/{id}/form`), which check it
+with the fields under the edit lock and `If-Match`. The pair stays, unchanged,
+because builds already installed upload through it — and a build that still does
+keeps the 412 described in [decisions.md](decisions.md). Remove both routes,
+their `OWNER_ONLY` rows in `test_edit_guard_coverage.py` and their tests once no
+build in testing calls them; the request-timing log at `SLOW_REQUEST_LOG_MS=0`
+shows whether anything still does. Do not "fix" their 412 with
+`set_preserving_etag` in the meantime — that was the rejected alternative.
+→ [features/image-pipeline.md](features/image-pipeline.md)
+
 ### idea — delete `segment_form_screen.dart`
 
 The entire file body (line 12 onward) is wrapped in a `/* */` block, with
@@ -654,7 +667,9 @@ lines will rank:
   not tuning.
 - **The reload after every save** — `ItineraryDetailNotifier` follows each write
   with a forced `GET /itineraries/{id}` before the form closes: a second request
-  in sequence.
+  in sequence. The trip header's saves (`updateHeader`, and the Edit itinerary
+  form's `saveForm`) adopt their answer instead and send nothing after it; since
+  2026-10-21 a form save with a cover change is one request where it was two.
 - **First requests after a restart** — the language detector loads a model the
   first time it meets a language, and imports and pool connections warm up.
 - **Rating only** — the push to the trip's owner is sent inline, before the

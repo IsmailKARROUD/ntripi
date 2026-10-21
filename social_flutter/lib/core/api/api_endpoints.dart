@@ -93,6 +93,10 @@ const kMyItinerariesEndpoint = '/itineraries/me';
 /// Create a new itinerary.
 const kItinerariesEndpoint = '/itineraries/';
 
+/// Create an itinerary and its cover in one multipart request — the New
+/// itinerary form's save when a cover was picked.
+const kItineraryFormEndpoint = '/itineraries/form';
+
 /// Public discovery feed. [sort] is 'recent' or 'top'.
 ///
 /// [lang] asks for each card's cached title translation into that language. It
@@ -125,6 +129,10 @@ String itinerarySaveEndpoint(String id) => '/itineraries/$id/save';
 
 /// CRUD for a single itinerary.
 String itineraryEndpoint(String id) => '/itineraries/$id';
+
+/// The Edit itinerary form's save (multipart PATCH): its fields and, from the
+/// owner, a cover change, checked under one If-Match and one edit claim.
+String itineraryFormEndpoint(String id) => '/itineraries/$id/form';
 
 /// Add a stop to an itinerary / list stops.
 String itineraryStopsEndpoint(String id) => '/itineraries/$id/stops';
@@ -253,13 +261,6 @@ String shareUrlFor(String itineraryId) => '$kShareBaseUrl/share/i/$itineraryId';
 /// cannot rot, and a handle survives being pasted into a chat readably.
 String profileShareUrlFor(String username) =>
     '$kShareBaseUrl/share/u/$username';
-
-// ---------------------------------------------------------------------------
-// Cover image endpoints
-// ---------------------------------------------------------------------------
-
-/// Upload or replace the cover image for an itinerary.
-String itineraryImageEndpoint(String id) => '/itineraries/$id/image';
 
 // ---------------------------------------------------------------------------
 // Rating endpoints

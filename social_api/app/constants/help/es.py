@@ -98,6 +98,7 @@ RELEASES: tuple[Release, ...] = (
             "**Una respuesta clara cuando un viaje no se puede abrir.** Un enlace a un viaje que no puedes ver, o que se eliminó, ahora lo dice, con una forma de volver, en lugar de un error que solo ofrecía reintentar.",
             "**Los enlaces a viajes privados no muestran nada en una conversación.** La vista previa de un viaje compartido con seguidores o con personas concretas ya no muestra su título, su foto de portada ni su propietario; solo que es un viaje privado en Ntripi.",
             "**Las páginas compartidas muestran una vista previa.** Sin cuenta, un enlace muestra el título, la foto de portada, la valoración y la descripción de un viaje —o el nombre y la foto de un perfil— con el aspecto de la aplicación. El resto está a un inicio de sesión gratuito, y la pantalla de inicio de sesión dice qué te espera.",
+            "**Una nueva foto de portada se guarda con lo demás.** Cambiar la portada de un viaje a la vez que su título, su moneda o su mejor época para viajar ya no te pide recargar: todo se guarda de una vez.",
         ),
     ),
     Release(
@@ -686,6 +687,8 @@ El recorte es apaisado, porque esa es la forma que usa una vista previa de enlac
 - **Un formato no admitido.** JPEG, PNG y los formatos de foto habituales van bien.
 - **El contenido.** Las subidas se comprueban automáticamente frente a las [normas de la comunidad](/guidelines) antes de guardarse.
 
+Una foto rechazada detiene todo el guardado: no se conserva nada de él, ni tus otros cambios ni un viaje que estuvieras creando. La pantalla se queda como la dejaste: elige otra foto, o quítala, y vuelve a guardar.
+
 Si crees que un rechazo fue un error, [cuéntanoslo](/help/contact).""",
             ),
             Block(
@@ -715,7 +718,7 @@ Aun así conviene poner una de verdad antes de compartirlo públicamente: en un 
             "demasiado pequeña",
         ),
         related=("plan-a-trip-itinerary", "share-a-trip-link"),
-        updated="2026-09-01",
+        updated="2026-10-21",
         cta="Dale una cara a tu viaje.",
     ),
     Article(

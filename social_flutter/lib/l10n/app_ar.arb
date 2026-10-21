@@ -320,7 +320,6 @@
   "visibilityFollowers": "المتابِعون",
   "visibilityRestricted": "مقيّد",
   "visibilityOnlyMe": "أنا فقط",
-  "imageSaveButUploadFailed": "تم حفظ المسار، لكن رفع الصورة فشل. حاول مجددًا من شاشة التعديل.",
   "formSectionBasics": "الأساسيات",
   "formLabelCurrency": "العملة",
   "formLabelWhoCanSee": "من يمكنه رؤية هذا؟",

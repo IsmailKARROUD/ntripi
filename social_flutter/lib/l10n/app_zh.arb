@@ -250,7 +250,6 @@
   "visibilityFollowers": "粉丝",
   "visibilityRestricted": "受限",
   "visibilityOnlyMe": "仅自己",
-  "imageSaveButUploadFailed": "行程已保存，但图片上传失败。请从编辑界面重试。",
   "formSectionBasics": "基本信息",
   "formLabelCurrency": "货币",
   "formLabelWhoCanSee": "谁可以查看？",

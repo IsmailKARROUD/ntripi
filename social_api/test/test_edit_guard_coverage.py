@@ -36,6 +36,8 @@ ITINERARY_PREFIX = "/itineraries/{itinerary_id}"
 
 EDIT_GUARDED = {
     ("PATCH", "/itineraries/{itinerary_id}"),
+    # The Edit itinerary form: its fields and the owner's cover change, together.
+    ("PATCH", "/itineraries/{itinerary_id}/form"),
     ("POST", "/itineraries/{itinerary_id}/stops"),
     ("PATCH", "/itineraries/{itinerary_id}/stops/{stop_id}"),
     ("DELETE", "/itineraries/{itinerary_id}/stops/{stop_id}"),

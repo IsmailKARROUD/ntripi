@@ -2,15 +2,16 @@
 //
 // Shared by two flows controlled by ItineraryFormMode:
 //
-//   CREATE  — user fills the form and taps Save.
-//             Step 1: POST /itineraries  → gets the new ID.
-//             Step 2: POST /itineraries/{id}/image  (only if image was picked).
-//             Image upload is intentionally non-fatal: if it fails the itinerary
-//             still exists and the user can add the image later from the edit flow.
+//   CREATE  — user fills the form and taps Save. One request: POST /itineraries
+//             (JSON) without a cover, POST /itineraries/form (multipart) with
+//             one — so a refused cover creates nothing, and the form stays open
+//             with its fields and the picked image for another try.
 //
 //   EDIT    — form is pre-filled from itineraryDetailProvider (already cached).
-//             Image upload/delete runs BEFORE the header PATCH so the provider
-//             refresh triggered by updateHeader reflects the final image state.
+//             One request: PATCH /itineraries/{id}/form carries the fields and
+//             the owner's cover change under one If-Match and one edit claim.
+//             The cover used to go first, on its own; it moved updated_at, and
+//             the field save behind it was refused as stale.
 //             Open to the owner AND to a granted editor, but they see different
 //             screens. The server accepts title, currency and the recommended
 //             period from an editor; cover, visibility, the editor list and
@@ -22,9 +23,6 @@
 //             The route is directly addressable (web URL, deep link), which is
 //             why the refusal lives on the screen and not only on the button
 //             that opens it.
-//
-// Cover image upload is deferred in CREATE mode because the upload endpoint
-// requires an itinerary ID that doesn't exist yet when the form opens.
 
 import 'dart:async';
 import 'dart:typed_data';
@@ -40,7 +38,6 @@ import 'package:ntripi/core/services/sfx_service.dart';
 import 'package:ntripi/core/ui/app_theme.dart';
 import 'package:ntripi/core/ui/destructive_actions.dart';
 import 'package:ntripi/core/api/api_endpoints.dart';
-import 'package:ntripi/features/itineraries/data/itinerary_repository.dart';
 import 'package:ntripi/features/itineraries/domain/itinerary.dart';
 import 'package:ntripi/features/itineraries/domain/recommended_period.dart';
 import 'package:ntripi/features/itineraries/presentation/widgets/cover_image_field.dart';
@@ -108,7 +105,7 @@ class _ItineraryFormScreenState extends ConsumerState<ItineraryFormScreen> {
   // the mandatory title until they expand. Defaults handle a no-touch save.
   bool _showOptional = false;
 
-  // Cover image state — deferred upload on create, immediate on edit.
+  // Cover image state — sent with the fields when the form is saved.
   Uint8List? _pendingImageBytes;
   String? _pendingImageFilename;
   bool _removeExistingImage = false;
@@ -232,18 +229,16 @@ class _ItineraryFormScreenState extends ConsumerState<ItineraryFormScreen> {
   // The R2 storage key never changes between uploads (always itineraries/{id}.jpg),
   // so CachedNetworkImage's disk cache would keep serving the old bytes.
   // evictFromCache clears both the on-disk file (DefaultCacheManager) and the
-  // in-memory ImageCache entry, forcing the next render to refetch.
-  Future<void> _evictCoverImageCache() async {
-    final url = ref
-        .read(itineraryDetailProvider(widget.itineraryId!))
-        .value
-        ?.coverImageUrl;
-    if (url == null) return;
-    final absUrl = url.startsWith('/') ? '$kApiBaseUrl$url' : url;
-    await CachedNetworkImage.evictFromCache(
-      absUrl,
-      cacheManager: NtripiImageCacheManager(),
-    );
+  // in-memory ImageCache entry, forcing the next render to refetch. Given the
+  // URL from before the save and the one after: a removal has no URL after.
+  Future<void> _evictCoverImageCache(Iterable<String?> urls) async {
+    for (final url in {...urls.whereType<String>()}) {
+      final absUrl = url.startsWith('/') ? '$kApiBaseUrl$url' : url;
+      await CachedNetworkImage.evictFromCache(
+        absUrl,
+        cacheManager: NtripiImageCacheManager(),
+      );
+    }
   }
 
   // Every way out of the form. A cold entry straight to its URL (a web reload)
@@ -263,7 +258,7 @@ class _ItineraryFormScreenState extends ConsumerState<ItineraryFormScreen> {
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
 
-    // Edit mode with an untouched form: the PATCH would write nothing, so
+    // Edit mode with an untouched form: the save would write nothing, so
     // sending it can only fail (lost edit lock, stale ETag) and strand the user
     // on a screen with no changes to save — and it would bump updated_at, 412ing
     // every other open client over a no-op. Requires a captured baseline: with
@@ -295,71 +290,34 @@ class _ItineraryFormScreenState extends ConsumerState<ItineraryFormScreen> {
         ...(_recommendedPeriod ?? const RecommendedPeriod()).toPayload(),
       };
 
-      final repo = ref.read(itineraryRepositoryProvider);
-
       if (widget.mode == ItineraryFormMode.create) {
-        // Step 1: create itinerary to obtain the ID.
+        // One request with or without a cover. A refused cover fails the whole
+        // create, so the catch below keeps the form open with all of it intact.
         final itinerary =
-            await ref.read(myItinerariesProvider.notifier).addItinerary(data);
-
-        // Step 2: upload cover image if one was selected.
-        // If this fails we show a warning but still navigate — the itinerary
-        // was created successfully and the image can be added later from the
-        // edit screen.
-        if (_pendingImageBytes != null && mounted) {
-          try {
-            await repo.uploadCoverImage(
-              itineraryId: itinerary.id,
-              bytes: _pendingImageBytes!,
-              filename: _pendingImageFilename ?? 'cover.jpg',
-            );
-          } on Exception catch (e) {
-            if (mounted) {
-              final l10n = AppLocalizations.of(context)!;
-              // A moderation rejection is actionable — surface the real backend
-              // (AWS) reason via the same extractErrorMessage path used
-              // elsewhere, not the generic "saved but upload failed", so the
-              // user knows *why* the cover was refused.
-              final message = apiErrorCode(e) == 'image_moderation_rejected'
-                  ? extractErrorMessage(e, l10n)
-                  : l10n.imageSaveButUploadFailed;
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text(message)),
-              );
-            }
-          }
-        }
-
+            await ref.read(myItinerariesProvider.notifier).addItinerary(
+                  data,
+                  coverBytes: _pendingImageBytes,
+                  coverFilename: _pendingImageFilename,
+                );
         if (!mounted) return;
         // justCreated → detail screen opens the first-stop form on top of itself once.
         context.go('/itineraries/${itinerary.id}', extra: {'justCreated': true});
       } else {
-        // Edit flow: image changes are applied BEFORE the header PATCH.
-        // Order matters: updateHeader (below) does a partial copyWith on the
-        // cached provider state. Mutating the image first means the provider
-        // already holds the correct cover_image_url when the PATCH response
-        // arrives, so no extra refresh is needed.
-        if (_removeExistingImage) {
-          // User tapped "Remove" — delete the file from R2.
-          await repo.deleteCoverImage(widget.itineraryId!);
-          await _evictCoverImageCache();
-        } else if (_pendingImageBytes != null) {
-          // User picked a new image — replace the file in R2.
-          // _evictCoverImageCache() clears CachedNetworkImage's disk + memory
-          // cache so the next render fetches the fresh file instead of the
-          // stale cached bytes (the R2 key is always itineraries/{id}.jpg and
-          // never changes).
-          await repo.uploadCoverImage(
-            itineraryId: widget.itineraryId!,
-            bytes: _pendingImageBytes!,
-            filename: _pendingImageFilename ?? 'cover.jpg',
-          );
-          await _evictCoverImageCache();
+        // One request: the fields and the owner's cover change, checked under
+        // one If-Match. Read before the await — the screen may be gone after.
+        final id = widget.itineraryId!;
+        final notifier = ref.read(itineraryDetailProvider(id).notifier);
+        final coverBefore = ref.read(itineraryDetailProvider(id)).value?.coverImageUrl;
+        final coverChanged = _removeExistingImage || _pendingImageBytes != null;
+        final updated = await notifier.saveForm(
+          data,
+          coverBytes: _pendingImageBytes,
+          coverFilename: _pendingImageFilename,
+          removeCover: _removeExistingImage,
+        );
+        if (coverChanged) {
+          await _evictCoverImageCache([coverBefore, updated.coverImageUrl]);
         }
-
-        await ref
-            .read(itineraryDetailProvider(widget.itineraryId!).notifier)
-            .updateHeader(data);
         if (!mounted) return;
         _close();
       }
@@ -738,8 +696,8 @@ class _ItineraryFormScreenState extends ConsumerState<ItineraryFormScreen> {
                 ),
               if (!collapseOptional) ...[
                 // ── Cover image slot ────────────────────────────────────────
-                // Owner-only: POST/DELETE /image is owner-gated server-side,
-                // and every upload spends a paid moderation scan.
+                // Owner-only: the form route refuses a cover change from anyone
+                // else, and every upload spends a paid moderation scan.
                 if (isOwner)
                   Padding(
                     padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),

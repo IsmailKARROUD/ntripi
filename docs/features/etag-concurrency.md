@@ -65,6 +65,16 @@ because one endpoint emits both.
 - **The seven `OWNER_ONLY` endpoints take no `If-Match`** — DELETE itinerary,
   the allowlist pair, the editors pair, the image pair. See
   [collaborative-editing.md](collaborative-editing.md#test_edit_guard_coveragepy--the-structural-proof).
+- **The image pair is why the itinerary form saves in one request.** A cover
+  write through `POST`/`DELETE /image` that changes the row moves `updated_at`
+  outside the guard, so the form's PATCH sent right after it carried the
+  `If-Match` read before it and was refused — a 412 on every first cover,
+  removal, or flagging or failed scan (production, 2026-10-20). Since
+  2026-10-21 the form sends `PATCH /itineraries/{id}/form`: the fields and the
+  cover change checked once, under one `If-Match`, with the new stamp in the
+  answer's `ETag` header and its `updated_at`. The pair stays, unchanged, for
+  builds already installed; `set_preserving_etag` on it was rejected
+  ([decisions.md](../decisions.md)).
 
 ### Where it lives
 
@@ -126,7 +136,7 @@ validator so a manual refresh is never answered from cache.
 
 No endpoints of its own. It applies to:
 
-- **Concurrency** — the 17 `EDIT_GUARDED` mutations, all under
+- **Concurrency** — the 18 `EDIT_GUARDED` mutations, all under
   `/itineraries/{itinerary_id}`.
 - **Caching** — every JSON GET in the application except the static mounts.
 
@@ -138,6 +148,13 @@ No endpoints of its own. It applies to:
   `test_edit_guard_coverage.py`.
 - `SELECT … FOR UPDATE` — the actual race protection — **cannot be tested**,
   because the suite runs on SQLite where it is a no-op.
+- **On SQLite the ETag moves in whole seconds.** `updated_at`'s
+  `server_default` / `onupdate=func.now()` render there as `CURRENT_TIMESTAMP`,
+  which has no fraction, so a write in the same second as the last one
+  re-stamps the same value: a stale `If-Match` that Postgres's `now()` would
+  412 is a 200 in the suite. (`_touch_itinerary` writes a Python timestamp and
+  is unaffected.) A test about the ETag moving backdates the row first —
+  `_backdate` in `test_itinerary_form.py`.
 - **The detail GET's cache validator is the concurrency token.** Every write
   that deliberately preserves `updated_at` — moderation, and since 2026-09-26
   the rating aggregate — therefore leaves a *cached* detail able to 304 with a

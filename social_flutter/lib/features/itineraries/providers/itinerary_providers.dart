@@ -8,6 +8,7 @@
 //   mapPlaceSearchProvider     — Nominatim suggestions for the map picker
 
 import 'dart:async';
+import 'dart:typed_data';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
@@ -51,10 +52,21 @@ class MyItinerariesNotifier extends AsyncNotifier<List<Itinerary>> {
     state = next;
   }
 
-  Future<Itinerary> addItinerary(Map<String, dynamic> data) async {
-    final itinerary = await ref
-        .read(itineraryRepositoryProvider)
-        .createItinerary(data);
+  /// Create an itinerary — with its cover in the same request when
+  /// [coverBytes] is given, so a refused cover creates nothing.
+  Future<Itinerary> addItinerary(
+    Map<String, dynamic> data, {
+    Uint8List? coverBytes,
+    String? coverFilename,
+  }) async {
+    final repo = ref.read(itineraryRepositoryProvider);
+    final itinerary = coverBytes == null
+        ? await repo.createItinerary(data)
+        : await repo.createItineraryWithCover(
+            data,
+            coverBytes: coverBytes,
+            coverFilename: coverFilename,
+          );
     if (!ref.mounted) return itinerary; // disposed mid-request (logout)
     state.whenData((list) {
       state = AsyncData([itinerary, ...list]);
@@ -331,12 +343,46 @@ class ItineraryDetailNotifier extends AsyncNotifier<Itinerary> {
         .updateItinerary(arg, data, etag: _etag, lockToken: lockToken);
     if (!ref.mounted) return updated; // disposed mid-request (logout)
     _listsChanged();
+    _adoptHeader(data, updated);
+    return updated;
+  }
+
+  /// The Edit itinerary form's save: its fields and, from the owner, a cover
+  /// change, in one request. A cover sent ahead on its own moved updated_at, so
+  /// the field save behind it carried a stale If-Match and was refused.
+  Future<Itinerary> saveForm(
+    Map<String, dynamic> data, {
+    Uint8List? coverBytes,
+    String? coverFilename,
+    bool removeCover = false,
+  }) =>
+      _write((lockToken) async {
+        final updated = await ref
+            .read(itineraryRepositoryProvider)
+            .saveItineraryForm(
+              arg,
+              data,
+              coverBytes: coverBytes,
+              coverFilename: coverFilename,
+              removeCover: removeCover,
+              etag: _etag,
+              lockToken: lockToken,
+            );
+        if (!ref.mounted) return updated; // disposed mid-request (logout)
+        _listsChanged();
+        _adoptHeader(data, updated);
+        return updated;
+      });
+
+  /// Adopt a header save's answer — an ItinerarySummary — into the loaded
+  /// detail, so the next write carries the new ETag without a reload.
+  void _adoptHeader(Map<String, dynamic> data, Itinerary updated) {
     state.whenData((current) {
-      // The PATCH response is an ItinerarySummary, which omits `description` and
-      // the recommended-period fields alike, so `updated` is always null for
-      // them — adopt the just-saved values from the request payload instead (the
-      // server stored them verbatim). An absent key means the caller didn't
-      // touch that field, so the current value is kept.
+      // A header save answers with an ItinerarySummary, which omits
+      // `description` and the recommended-period fields alike, so `updated` is
+      // always null for them — adopt the just-saved values from the request
+      // payload instead (the server stored them verbatim). An absent key means
+      // the caller didn't touch that field, so the current value is kept.
       final descProvided = data.containsKey('description');
       final newDescription =
           descProvided ? data['description'] as String? : current.description;
@@ -356,15 +402,14 @@ class ItineraryDetailNotifier extends AsyncNotifier<Itinerary> {
           visibility: updated.visibility,
           currency: updated.currency,
           updatedAt: updated.updatedAt,
-          // Cover image is deleted/uploaded BEFORE this PATCH, so the response
-          // carries the authoritative URL — adopt it (clearing when removed) so
-          // stale covers don't linger after a remove.
+          // The response carries the authoritative cover URL — the form's save
+          // changes it in the same request — so adopt it, clearing when removed,
+          // so stale covers don't linger after a remove.
           coverImageUrl: updated.coverImageUrl,
           clearCoverImageUrl: updated.coverImageUrl == null,
         ),
       );
     });
-    return updated;
   }
 
   /// Create a transit segment and refresh.

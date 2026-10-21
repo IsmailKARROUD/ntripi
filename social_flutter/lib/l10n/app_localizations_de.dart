@@ -845,10 +845,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get visibilityOnlyMe => 'Nur ich';
 
   @override
-  String get imageSaveButUploadFailed =>
-      'Reiseroute gespeichert, aber der Bild-Upload ist fehlgeschlagen. Versuche es erneut über den Bearbeitungsbildschirm.';
-
-  @override
   String get formSectionBasics => 'GRUNDLAGEN';
 
   @override

@@ -25,17 +25,23 @@ Track lifecycle:
   in a track also deletes the track (explicit app-level cascade).
 """
 
+import functools
+import logging
 import uuid
 from dataclasses import asdict
 from decimal import Decimal
 from datetime import datetime, timezone
 from typing import Literal
 
+import anyio.from_thread
 from fastapi import (
-    APIRouter, BackgroundTasks, Depends, File, HTTPException, Query, Request, UploadFile, status,
+    APIRouter, BackgroundTasks, Depends, File, Form, HTTPException, Query, Request, UploadFile,
+    status,
 )
 from fastapi.encoders import jsonable_encoder
+from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse, Response
+from pydantic import BaseModel, ValidationError
 from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, selectinload
@@ -99,7 +105,9 @@ from app.schemas.itinerary import (
 from app.services import edit_lock_service, notification_service, translation_service
 from app.services.block_service import blocked_user_ids, require_not_blocked_or_404
 from app.services.image_service import ImageProcessingError, process_and_store, process_cover_image
-from app.services.moderation_service import ModerationContext, ModerationRejectedError
+from app.services.moderation_service import (
+    ModerationContext, ModerationRejectedError, attach_itinerary,
+)
 from app.services.moderation_actions import escalate_if_flagged
 from app.services.itinerary_access import (
     HIDDEN_STATUSES, can_edit_itinerary, can_view_itinerary,
@@ -114,6 +122,8 @@ from app.services.translation_service import purge_orphans, sync_translations
 from app.services.user_service import get_active_user_or_404, public_profile_text
 from app.storage.factory import storage
 from app.errors import ApiError
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["Itineraries"])
 user_itineraries_router = APIRouter(tags=["Itineraries"])
@@ -198,27 +208,211 @@ def _moderate_itinerary_text(
     must never spend a moderation call. `itinerary` is None on create (the row
     does not exist yet); the caller stamps the returned status itself.
     """
-    ctx = moderate_or_422(
+    ctx = _scan_itinerary_text(
+        fields, itinerary.id if itinerary is not None else None, db, current_user,
+    )
+    if itinerary is not None:
+        _stamp_itinerary_text(ctx, itinerary, db)
+    return ctx
+
+
+def _scan_itinerary_text(
+    fields: dict[str, str | None],
+    itinerary_id: uuid.UUID | None,
+    db: Session,
+    current_user: User,
+):
+    """The scan half of _moderate_itinerary_text, touching no itinerary.
+
+    On its own for the form routes, which check a cover between the scan and
+    the stamp: a refused image commits the session for its audit row, so the
+    itinerary must not be dirty by then.
+    """
+    return moderate_or_422(
         db, get_settings(),
         target_type="itinerary",
         author=current_user,
         fields=fields,
-        target_id=itinerary.id if itinerary is not None else None,
+        target_id=itinerary_id,
     )
-    if itinerary is not None:
-        apply_moderation_status(itinerary, ctx.status)
-        # A minors hit is taken down on the spot rather than queued. This is the
-        # owner's own request, so a plain assignment is right — set_preserving_etag
-        # exists for moderation writes that happen outside the owner's request.
-        if ctx.escalate and itinerary.hidden_at is None:
-            itinerary.hidden_at = datetime.now(timezone.utc)
-        # Hiding alone would leave the signal out of /admin/legal — the sweep's
-        # re-check path has always escalated, and a write must agree with it.
-        escalate_if_flagged(
-            db, "itinerary", itinerary,
-            escalate_flag=ctx.escalate, decision_id=ctx.decision_id,
+
+
+def _stamp_itinerary_text(ctx, itinerary: Itinerary, db: Session) -> None:
+    """The stamp half of _moderate_itinerary_text: the verdict onto the row."""
+    apply_moderation_status(itinerary, ctx.status)
+    # A minors hit is taken down on the spot rather than queued. This is the
+    # owner's own request, so a plain assignment is right — set_preserving_etag
+    # exists for moderation writes that happen outside the owner's request.
+    if ctx.escalate and itinerary.hidden_at is None:
+        itinerary.hidden_at = datetime.now(timezone.utc)
+    # Hiding alone would leave the signal out of /admin/legal — the sweep's
+    # re-check path has always escalated, and a write must agree with it.
+    escalate_if_flagged(
+        db, "itinerary", itinerary,
+        escalate_flag=ctx.escalate, decision_id=ctx.decision_id,
+    )
+
+
+# The itinerary's own prose — what a header write hands to the text scan.
+_ITINERARY_TEXT_FIELDS = ("title", "description", "recommended_period_note")
+
+
+def _itinerary_text_fields(data: dict) -> dict[str, str | None]:
+    # Only the text actually being submitted is scanned — re-scanning untouched
+    # fields would bill for text already cleared on a previous write.
+    return {key: data[key] for key in _ITINERARY_TEXT_FIELDS if key in data}
+
+
+def _require_visibility_owner(update_data: dict, itinerary: Itinerary,
+                              current_user: User) -> None:
+    # Mixed authority: the guard admits editors, but who may SEE the itinerary
+    # is the owner's decision alone and is not part of editing its content.
+    if "visibility" in update_data and itinerary.user_id != current_user.id:
+        raise ApiError(status_code=status.HTTP_403_FORBIDDEN,
+                       code="itinerary_not_owner",
+                       detail="Only the owner can change who can see this itinerary.")
+
+
+def _apply_itinerary_update(itinerary: Itinerary, update_data: dict, db: Session) -> None:
+    # model_dump already flattened the nested period windows to plain dicts, so
+    # every ItineraryUpdate field whose name matches a column lands as-is here.
+    for field, value in update_data.items():
+        setattr(itinerary, field, value)
+    sync_translations(db, itinerary, changed=update_data)
+
+
+def _new_itinerary(body: ItineraryCreate, current_user: User, ctx, **columns) -> Itinerary:
+    """The row a create inserts, from a body whose text was already scanned.
+    `columns` carries what the form's create adds: the id and the cover."""
+    return Itinerary(
+        user_id=current_user.id,
+        title=body.title,
+        description=body.description,
+        currency=body.currency,
+        visibility=body.visibility,
+        # Dumped to plain dicts — a JSON column cannot store Pydantic instances.
+        recommended_periods=(
+            [w.model_dump() for w in body.recommended_periods]
+            if body.recommended_periods else None
+        ),
+        recommended_weekdays=body.recommended_weekdays,
+        recommended_period_note=body.recommended_period_note,
+        total_duration_min=0,
+        total_cost=Decimal("0.00"),
+        moderation_status=ctx.status,
+        # A minors hit publishes hidden rather than queued — see moderation_policy.
+        hidden_at=datetime.now(timezone.utc) if ctx.escalate else None,
+        **columns,
+    )
+
+
+def _insert_new_itinerary(itinerary: Itinerary, ctx, db: Session) -> None:
+    sync_translations(db, itinerary)
+    db.add(itinerary)
+    db.flush()
+    # The scan ran before this row existed, so its decision has no target yet.
+    attach_target(ctx, itinerary.id)
+    # Same reason attach_target waits for the flush: escalate needs a real id.
+    escalate_if_flagged(
+        db, "itinerary", itinerary,
+        escalate_flag=ctx.escalate, decision_id=ctx.decision_id,
+    )
+
+
+# ---------------------------------------------------------------------------
+# Cover image helpers — shared by the /image pair and the form routes
+# ---------------------------------------------------------------------------
+
+def _cover_key(itinerary_id: uuid.UUID) -> str:
+    return f"itineraries/{itinerary_id}.jpg"
+
+
+def _cover_refusal(exc: Exception) -> Exception:
+    """The HTTP answer for a cover the image pipeline refused."""
+    if isinstance(exc, ModerationRejectedError):
+        # Rejected content was never stored; the audit row was already committed.
+        return ApiError(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            code="image_moderation_rejected",
+            detail="This image appears to contain prohibited content and was not uploaded.",
         )
-    return ctx
+    return HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
+
+
+def _apply_cover_status(itinerary: Itinerary, moderation: ModerationContext) -> None:
+    # 'error_allowed' (AWS was down) → needs later review. Escalate-only: a clean
+    # cover must not clear a text flag, nor a moderator's earlier verdict.
+    apply_moderation_status(
+        itinerary,
+        "pending" if moderation.action == "error_allowed" else moderation.action,
+    )
+
+
+def _escalate_text_left_unsaved(text_ctx, db: Session, author: User) -> None:
+    """A minors verdict on text this request will not store after all, because
+    the cover sent with it was refused. Escalated against the author, as
+    _finalize does for a rejected minors verdict — no content row holds the
+    text — and committed now, since the error that follows rolls back."""
+    if not text_ctx.escalate:
+        return
+    escalate_if_flagged(
+        db, "user", author, escalate_flag=True, decision_id=text_ctx.decision_id,
+    )
+    db.commit()
+
+
+def _store_cover(raw: bytes, itinerary_id: uuid.UUID, db: Session, current_user: User,
+                 text_ctx, *, itinerary_pending: bool) -> tuple[str, ModerationContext]:
+    """Process, scan and store a cover sent with the form's fields.
+
+    Runs between the text scan and the first write to the itinerary: a refused
+    image commits the session for its audit row, so the itinerary must not be
+    dirty yet. The object is written under its stable key before the request's
+    commit, exactly as POST /image writes it.
+    """
+    key = _cover_key(itinerary_id)
+    moderation = ModerationContext(
+        db=db, settings=get_settings(), target_kind="itinerary_cover",
+        uploader=current_user, storage_key=key, itinerary_id=itinerary_id,
+        itinerary_pending=itinerary_pending,
+    )
+    try:
+        # The pipeline is async and runs on the event loop while this worker
+        # thread waits; from_thread.run passes no keyword arguments, hence partial.
+        url = anyio.from_thread.run(functools.partial(
+            process_and_store, raw, key, process_cover_image,
+            cache_bust=False, moderation=moderation,
+        ))
+    except (ImageProcessingError, ModerationRejectedError) as exc:
+        _escalate_text_left_unsaved(text_ctx, db, current_user)
+        raise _cover_refusal(exc)
+    return url, moderation
+
+
+def _delete_cover_object(itinerary_id: uuid.UUID) -> None:
+    """Best-effort removal of a cover's object, from a sync endpoint, after the
+    row that pointed at it is committed without it."""
+    key = _cover_key(itinerary_id)
+    try:
+        anyio.from_thread.run(storage().delete, key)
+    except Exception:
+        # The save stands; an object left behind is the lesser failure.
+        logger.exception("failed deleting itinerary cover %s", key)
+
+
+def _parse_form_fields(raw: str, schema: type[BaseModel]):
+    """Validate a form route's `fields` part — the same schema as the JSON route.
+
+    Validated here rather than by FastAPI, so its errors are re-raised in the
+    shape FastAPI gives a JSON body, located under the part they came from.
+    """
+    try:
+        return schema.model_validate_json(raw)
+    except ValidationError as exc:
+        raise RequestValidationError([
+            {**error, "loc": ("body", "fields", *error["loc"])}
+            for error in exc.errors(include_url=False)
+        ]) from exc
 
 
 def _leg_text_fields(legs) -> dict[str, str | None]:
@@ -622,44 +816,54 @@ def create_itinerary(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_verified_email),  # high-value: verified email required
 ) -> ItinerarySummary:
-    ctx = _moderate_itinerary_text(
-        {
-            "title": body.title,
-            "description": body.description,
-            "recommended_period_note": body.recommended_period_note,
-        },
-        None, db, current_user,
+    ctx = _scan_itinerary_text(
+        _itinerary_text_fields(body.model_dump()), None, db, current_user,
     )
-    itinerary = Itinerary(
-        user_id=current_user.id,
-        title=body.title,
-        description=body.description,
-        currency=body.currency,
-        visibility=body.visibility,
-        # Dumped to plain dicts — a JSON column cannot store Pydantic instances.
-        recommended_periods=(
-            [w.model_dump() for w in body.recommended_periods]
-            if body.recommended_periods else None
-        ),
-        recommended_weekdays=body.recommended_weekdays,
-        recommended_period_note=body.recommended_period_note,
-        total_duration_min=0,
-        total_cost=Decimal("0.00"),
-        moderation_status=ctx.status,
-        # A minors hit publishes hidden rather than queued — see moderation_policy.
-        hidden_at=datetime.now(timezone.utc) if ctx.escalate else None,
-    )
-    sync_translations(db, itinerary)
-    db.add(itinerary)
-    db.flush()
-    # The scan ran before this row existed, so its decision has no target yet.
-    attach_target(ctx, itinerary.id)
-    # Same reason attach_target waits for the flush: escalate needs a real id.
-    escalate_if_flagged(
-        db, "itinerary", itinerary,
-        escalate_flag=ctx.escalate, decision_id=ctx.decision_id,
-    )
+    itinerary = _new_itinerary(body, current_user, ctx)
+    _insert_new_itinerary(itinerary, ctx, db)
     db.commit()
+    db.refresh(itinerary)
+    _schedule_title_pretranslation(background_tasks, itinerary, was_public=False, old_title=None)
+    return itinerary  # type: ignore[return-value]
+
+
+# ---------------------------------------------------------------------------
+# POST /itineraries/form — the New itinerary form's save, with a cover
+# ---------------------------------------------------------------------------
+
+@router.post("/form", response_model=ItinerarySummary, status_code=status.HTTP_201_CREATED,
+             summary="Create an itinerary and its cover image in one request")
+def create_itinerary_form(
+    background_tasks: BackgroundTasks,
+    fields: str = Form(..., description="ItineraryCreate as JSON"),
+    image: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_verified_email),  # high-value: verified email required
+) -> ItinerarySummary:
+    # A sync def like every text write: FastAPI has already parsed the multipart
+    # body, so the image is a plain file here and the pipeline runs via anyio.
+    body = _parse_form_fields(fields, ItineraryCreate)
+    ctx = _scan_itinerary_text(
+        _itinerary_text_fields(body.model_dump()), None, db, current_user,
+    )
+    # Assigned up front: the cover is stored under the trip's key before its row exists.
+    itinerary_id = uuid.uuid4()
+    cover_url, moderation = _store_cover(
+        image.file.read(), itinerary_id, db, current_user, ctx, itinerary_pending=True,
+    )
+    itinerary = _new_itinerary(
+        body, current_user, ctx, id=itinerary_id, cover_image_url=cover_url,
+    )
+    _apply_cover_status(itinerary, moderation)
+    try:
+        _insert_new_itinerary(itinerary, ctx, db)
+        attach_itinerary(moderation)
+        db.commit()
+    except Exception:
+        db.rollback()
+        # The object is stored, and no row will ever point at it.
+        _delete_cover_object(itinerary_id)
+        raise
     db.refresh(itinerary)
     _schedule_title_pretranslation(background_tasks, itinerary, was_public=False, old_title=None)
     return itinerary  # type: ignore[return-value]
@@ -900,31 +1104,14 @@ def update_itinerary(
     itinerary: Itinerary = Depends(require_edit_access),
 ) -> ItinerarySummary:
     update_data = body.model_dump(exclude_unset=True)
+    _require_visibility_owner(update_data, itinerary, current_user)
 
-    # Mixed authority: the guard admits editors, but who may SEE the itinerary
-    # is the owner's decision alone and is not part of editing its content.
-    if "visibility" in update_data and itinerary.user_id != current_user.id:
-        raise ApiError(status_code=status.HTTP_403_FORBIDDEN,
-                       code="itinerary_not_owner",
-                       detail="Only the owner can change who can see this itinerary.")
-
-    # Only the text actually being submitted is scanned — re-scanning untouched
-    # fields would bill for text already cleared on a previous write.
     _moderate_itinerary_text(
-        {
-            key: update_data[key]
-            for key in ("title", "description", "recommended_period_note")
-            if key in update_data
-        },
-        itinerary, db, current_user,
+        _itinerary_text_fields(update_data), itinerary, db, current_user,
     )
     was_public = itinerary.visibility == "public"
     old_title = itinerary.title
-    # model_dump already flattened the nested period windows to plain dicts, so
-    # every ItineraryUpdate field whose name matches a column lands as-is here.
-    for field, value in update_data.items():
-        setattr(itinerary, field, value)
-    sync_translations(db, itinerary, changed=update_data)
+    _apply_itinerary_update(itinerary, update_data, db)
 
     db.commit()
     db.refresh(itinerary)
@@ -932,6 +1119,74 @@ def update_itinerary(
         background_tasks, itinerary, was_public=was_public, old_title=old_title,
     )
     return itinerary  # type: ignore[return-value]
+
+
+# ---------------------------------------------------------------------------
+# PATCH /itineraries/{itinerary_id}/form — the Edit itinerary form's save
+# ---------------------------------------------------------------------------
+
+@router.patch("/{itinerary_id}/form", response_model=ItinerarySummary,
+              summary="Save the itinerary form: its fields and a cover change in one request")
+def update_itinerary_form(
+    itinerary_id: uuid.UUID,
+    background_tasks: BackgroundTasks,
+    fields: str = Form(..., description="ItineraryUpdate as JSON"),
+    image: UploadFile | None = File(None),
+    remove_cover: bool = Form(False),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+    itinerary: Itinerary = Depends(require_edit_access),
+) -> Response:
+    # One request under one If-Match and one claim. Sent as two, the cover
+    # write moved updated_at and the PATCH behind it answered 412.
+    update_data = _parse_form_fields(fields, ItineraryUpdate).model_dump(exclude_unset=True)
+    if image is not None and remove_cover:
+        raise RequestValidationError([{
+            "type": "value_error",
+            "loc": ("body", "remove_cover"),
+            "msg": "Value error, send a new image or remove_cover, not both",
+            "input": True,
+        }])
+
+    # The cover is the trip's public face, and every upload spends a paid scan.
+    if image is not None or remove_cover:
+        _require_owner(itinerary, current_user)
+    _require_visibility_owner(update_data, itinerary, current_user)
+    if image is not None:
+        require_verified_email(current_user)  # what POST /image demands of an upload
+
+    # Both checks before the first write: either refusal commits the session.
+    text_ctx = _scan_itinerary_text(
+        _itinerary_text_fields(update_data), itinerary.id, db, current_user,
+    )
+    moderation = None
+    if image is not None:
+        cover_url, moderation = _store_cover(
+            image.file.read(), itinerary.id, db, current_user, text_ctx,
+            itinerary_pending=False,
+        )
+
+    _stamp_itinerary_text(text_ctx, itinerary, db)
+    if moderation is not None:
+        itinerary.cover_image_url = cover_url
+        _apply_cover_status(itinerary, moderation)
+    elif remove_cover:
+        # moderation_status is left alone: it also carries text flags and a
+        # moderator's 'rejected', which removing the cover must not clear.
+        itinerary.cover_image_url = None
+    was_public = itinerary.visibility == "public"
+    old_title = itinerary.title
+    _apply_itinerary_update(itinerary, update_data, db)
+
+    db.commit()
+    db.refresh(itinerary)
+    if remove_cover:
+        # After the commit, so a save that fails never takes the visible cover down.
+        _delete_cover_object(itinerary.id)
+    _schedule_title_pretranslation(
+        background_tasks, itinerary, was_public=was_public, old_title=old_title,
+    )
+    return _etag_json_response(ItinerarySummary, itinerary, itinerary)
 
 
 # ---------------------------------------------------------------------------
@@ -955,7 +1210,7 @@ async def delete_itinerary(
     # Purge the cover from storage after the row is gone — orphans a file at
     # worst if storage fails, rather than leaving a live itinerary imageless.
     if had_cover:
-        await storage().delete(f"itineraries/{itinerary_id}.jpg")
+        await storage().delete(_cover_key(itinerary_id))
 
 
 # ---------------------------------------------------------------------------
@@ -2356,7 +2611,7 @@ async def upload_itinerary_image(
 
     raw_bytes = await file.read()
 
-    key = f"itineraries/{itinerary_id}.jpg"
+    key = _cover_key(itinerary_id)
     moderation = ModerationContext(
         db=db, settings=get_settings(), target_kind="itinerary_cover",
         uploader=current_user, storage_key=key, itinerary_id=itinerary.id,
@@ -2366,23 +2621,11 @@ async def upload_itinerary_image(
         public_url = await process_and_store(
             raw_bytes, key, process_cover_image, cache_bust=False,
             moderation=moderation)
-    except ImageProcessingError as exc:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
-    except ModerationRejectedError:
-        # Rejected content was never stored; the audit row was already committed.
-        raise ApiError(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            code="image_moderation_rejected",
-            detail="This image appears to contain prohibited content and was not uploaded.",
-        )
+    except (ImageProcessingError, ModerationRejectedError) as exc:
+        raise _cover_refusal(exc)
 
     itinerary.cover_image_url = public_url
-    # 'error_allowed' (AWS was down) → needs later review. Escalate-only: a clean
-    # cover must not clear a text flag, nor a moderator's earlier verdict.
-    apply_moderation_status(
-        itinerary,
-        "pending" if moderation.action == "error_allowed" else moderation.action,
-    )
+    _apply_cover_status(itinerary, moderation)
     db.commit()
 
     return ItineraryImageResponse(cover_image_url=public_url)
@@ -2398,8 +2641,7 @@ async def delete_itinerary_image(
     itinerary = _get_itinerary_or_404(itinerary_id, db)
     _require_owner(itinerary, current_user)
 
-    key = f"itineraries/{itinerary_id}.jpg"
-    await storage().delete(key)
+    await storage().delete(_cover_key(itinerary_id))
 
     # moderation_status is left alone: it also carries text flags and a
     # moderator's 'rejected', which removing the cover must not clear.

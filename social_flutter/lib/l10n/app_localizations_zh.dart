@@ -795,9 +795,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get visibilityOnlyMe => '仅自己';
 
   @override
-  String get imageSaveButUploadFailed => '行程已保存，但图片上传失败。请从编辑界面重试。';
-
-  @override
   String get formSectionBasics => '基本信息';
 
   @override

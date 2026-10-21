@@ -250,7 +250,6 @@
   "visibilityFollowers": "Follower",
   "visibilityRestricted": "Eingeschränkt",
   "visibilityOnlyMe": "Nur ich",
-  "imageSaveButUploadFailed": "Reiseroute gespeichert, aber der Bild-Upload ist fehlgeschlagen. Versuche es erneut über den Bearbeitungsbildschirm.",
   "formSectionBasics": "GRUNDLAGEN",
   "formLabelCurrency": "WÄHRUNG",
   "formLabelWhoCanSee": "WER KANN DAS SEHEN?",

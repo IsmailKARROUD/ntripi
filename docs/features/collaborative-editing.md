@@ -69,6 +69,16 @@ server-side; the client renders state and may be stale or hostile.
 - **Editor rights are content only.** Owner-only: delete the itinerary,
   `visibility`, the allowlist, the editor list, and the **cover image** (the
   trip's public face, and every upload spends a paid Rekognition scan).
+- **The Edit itinerary form's save goes through the guard, cover included.**
+  `PATCH /itineraries/{id}/form` depends on `require_edit_access`, so its 404,
+  403, 428, 409 and 412 are answered before anything is scanned or stored, and
+  the owner's cover change is made under the edit lock and `If-Match` like the
+  fields beside it — two of the owner's devices cannot overwrite each other's
+  cover any more than each other's title. The route admits editors for the
+  fields; an `image` or `remove_cover` part from an editor is a 403
+  `itinerary_not_owner` for the whole request, nothing saved. The old
+  `POST`/`DELETE /itineraries/{id}/image` stay `OWNER_ONLY` and lock-free, for
+  builds already installed ([itineraries.md](itineraries.md)).
 
 ### The edit lock
 
@@ -157,7 +167,7 @@ keeps "no exceptions" true for code nobody has written yet.
 
 | Set | Count | Contents |
 |---|---|---|
-| `EDIT_GUARDED` | 17 | PATCH itinerary, all stop writes, reorder, both annotation systems, all segment and leg writes |
+| `EDIT_GUARDED` | 18 | PATCH itinerary, PATCH itinerary form, all stop writes, reorder, both annotation systems, all segment and leg writes |
 | `OWNER_ONLY` | 7 | DELETE itinerary, allowlist ×2, editors ×2, image ×2 — **no lock, no If-Match** |
 | `VIEWER_WRITE` | 3–4 | ratings POST/DELETE, save POST/DELETE — they write sibling tables, never itinerary content |
 | `LOCK_ENDPOINTS` | 3 | you would need a claim to get a claim |
@@ -332,7 +342,10 @@ showed as editing.
   and fires **only on evidence** — a still-loading profile falls through to the
   form, or a cold deep link would lock the owner out of their own trip.
   **`visibility` must be absent from the PATCH body for a non-owner**: the server
-  refuses the key, not the value.
+  refuses the key, not the value. The form's Save is one
+  `PATCH /itineraries/{id}/form` (`ItineraryDetailNotifier.saveForm`, through
+  `_write`), and a refused save — 412, a lost claim, a 422 — keeps every field
+  and the picked cover on screen.
 - **Any surface that pushes an editing route claims the lock first.**
   `_openStopForm` and `_openDetailsForm` do the round trip before pushing and
   abandon the push if the claim is refused — the "someone else is editing" banner

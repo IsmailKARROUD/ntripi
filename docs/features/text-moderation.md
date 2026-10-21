@@ -129,9 +129,17 @@ their flush — the caller is the only party holding the row to point at. The on
 exception is a *rejected* minors verdict, escalated from `_finalize` against the
 **author**: nothing was stored, so there is no content row.
 
-Six call sites: register, `PATCH /users/me`, `_moderate_itinerary_text`, rating
-submit, the Google signup path, and the reject path in
-`text_moderation_service.py:266`.
+The itinerary form routes add a second case of the same kind. They scan the text
+first and the cover second, so a `hide_escalate` verdict can belong to a request
+whose cover is then refused (400 or 422) — and nothing is stored after all.
+`_escalate_text_left_unsaved` escalates that verdict against the author too, and
+commits before the error rolls the request back.
+
+Eight call sites: register, `PATCH /users/me`, `_stamp_itinerary_text` (behind
+`_moderate_itinerary_text` and the edit form route), `_insert_new_itinerary`
+(both creates), the form routes' refused cover (`_escalate_text_left_unsaved`),
+rating submit, the Google signup path, and the reject path in
+`text_moderation_service.py:288`.
 
 ### The two tables
 

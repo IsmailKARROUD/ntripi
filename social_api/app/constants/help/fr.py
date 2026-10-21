@@ -98,6 +98,7 @@ RELEASES: tuple[Release, ...] = (
             "**Une réponse claire quand un voyage ne peut pas s’ouvrir.** Un lien vers un voyage que vous n’avez pas le droit de voir, ou qui a été supprimé, le dit désormais — avec un moyen de revenir en arrière — au lieu d’une erreur qui proposait de réessayer.",
             "**Les liens vers des voyages privés ne montrent rien dans une conversation.** L’aperçu d’un voyage partagé avec les abonnés ou des personnes précises n’affiche plus son titre, sa photo de couverture ni son propriétaire — seulement qu’il s’agit d’un voyage privé sur Ntripi.",
             "**Les pages partagées montrent un aperçu.** Sans compte, un lien montre le titre, la photo de couverture, l’évaluation et la description d’un voyage — ou le nom et la photo d’un profil — avec l’allure de l’application. Le reste est à une connexion gratuite, et l’écran de connexion dit ce qui attend.",
+            "**Une nouvelle photo de couverture s’enregistre avec le reste.** Changer la couverture d’un voyage en même temps que son titre, sa devise ou sa meilleure période ne vous demande plus de recharger — tout est enregistré d’un coup.",
         ),
     ),
     Release(
@@ -688,6 +689,8 @@ Le recadrage est large, parce que c’est la forme qu’utilise un aperçu de li
 - **Un format non pris en charge.** JPEG, PNG et les formats photo habituels conviennent.
 - **Le contenu.** Les envois sont vérifiés automatiquement au regard des [règles de la communauté](/guidelines) avant d’être stockés.
 
+Une photo refusée arrête tout l’enregistrement : rien n’en est conservé — ni vos autres modifications, ni un voyage que vous étiez en train de créer. L’écran reste tel que vous l’avez laissé : choisissez une autre photo, ou retirez-la, puis enregistrez de nouveau.
+
 Si vous pensez qu’un refus était injustifié, [dites-le-nous](/help/contact).""",
             ),
             Block(
@@ -718,7 +721,7 @@ Mieux vaut tout de même en ajouter une vraie avant de partager publiquement : d
             "trop petite",
         ),
         related=("plan-a-trip-itinerary", "share-a-trip-link"),
-        updated="2026-09-01",
+        updated="2026-10-21",
         cta="Donnez un visage à votre voyage.",
     ),
     Article(

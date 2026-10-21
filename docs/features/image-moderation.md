@@ -44,6 +44,19 @@ happens at the Cloudflare edge and has **no app config** — see
   2026-09-26 an upload assigned the verdict and a delete reset it to `approved`,
   which cleared text flags and let an owner undo `remove_flagged_image`'s
   `rejected`.
+- **The form routes write the scan result the same way** (`_apply_cover_status`,
+  escalate-only), and scan only once the text check has passed and before the
+  itinerary is touched: the reject path commits the session to keep its audit
+  row, so nothing of the itinerary may be pending in it by then.
+- **A create's scan is linked to its trip afterwards.** `POST /itineraries/form`
+  scans the cover before the trip's row exists, and `target_itinerary_id` is a
+  real foreign key — an audit row naming the new id would fail the reject's own
+  commit. So that scan's context carries `itinerary_pending=True`, the row is
+  written unlinked, and `moderation_service.attach_itinerary(ctx)` — the image
+  twin of text's `attach_target` — links it after the caller's flush.
+  `/admin/flagged` finds a cover's trip only through that column. A rejected
+  create keeps its row unlinked: there is no trip. The flag email names the id
+  either way.
 - The Rekognition call is offloaded with `asyncio.to_thread`, like the Pillow
   work and the boto3 I/O.
 - **IAM needs only `rekognition:DetectModerationLabels`.** Set an AWS Budgets
@@ -96,7 +109,7 @@ tier.
 
 ## API surface
 
-No endpoints of its own. It is a step inside the five upload paths listed in
+No endpoints of its own. It is a step inside the upload paths listed in
 [image-pipeline.md](image-pipeline.md#api-surface), and it surfaces on two admin
 lanes: `GET /admin/flagged` and `POST /admin/flagged/{log_id}/action`.
 

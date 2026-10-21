@@ -1564,12 +1564,6 @@ abstract class AppLocalizations {
   /// **'Only me'**
   String get visibilityOnlyMe;
 
-  /// No description provided for @imageSaveButUploadFailed.
-  ///
-  /// In en, this message translates to:
-  /// **'Itinerary saved, but image upload failed. Try again from the edit screen.'**
-  String get imageSaveButUploadFailed;
-
   /// No description provided for @formSectionBasics.
   ///
   /// In en, this message translates to:

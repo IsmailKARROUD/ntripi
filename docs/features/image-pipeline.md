@@ -19,9 +19,11 @@ never touches a filesystem path or an S3 client.
 (`image_service.py:126`). Order inside it is load-bearing:
 
 1. **`await asyncio.to_thread(processor, raw_bytes)`** — Pillow decode + resize +
-   encode is pure CPU, and this runs inside an `async` endpoint, so a large phone
-   photo would block the event loop for every other in-flight request. **Never
-   call a `process_*_image` function directly from an `async def`.**
+   encode is pure CPU, and `process_and_store` always runs on the event loop —
+   awaited by an `async` endpoint, or handed there by a sync one through
+   `anyio.from_thread.run` — so a large phone photo would block the loop for
+   every other in-flight request. **Never call a `process_*_image` function
+   directly from an `async def`.**
 2. **Scan, if a `ModerationContext` was passed** — *after* processing, *before*
    storage, so rejected bytes are never persisted.
 3. `await storage().save(key, processed, "image/jpeg")`.
@@ -97,31 +99,56 @@ guessing could suspend an unrelated account. Bug-report screenshots are
 deliberately outside that set, which is one reason `screenshot_key` stores a key
 rather than a URL.
 
-### The `async def` exception
+### Sync and async upload endpoints
 
-The four upload paths are `async def` because they need `await file.read()`, and
-a sync `def` cannot read a multipart body. They are the known exception to
-"itinerary/text write endpoints stay sync" — and they do run sync SQLAlchemy on
-the loop for a local round trip. **What must stay off the loop is the CPU work**,
-which `process_and_store` hands to `asyncio.to_thread`.
+**A sync `def` can take an upload.** FastAPI reads and parses the multipart body
+before it calls the endpoint, so an `UploadFile` parameter arrives with its
+bytes already in a spooled temporary file, and `file.file.read()` is a plain
+blocking read on the endpoint's worker thread. Only a handler that parses the
+body itself, with `await request.form()`, needs to be `async`. The two form
+routes (`POST /itineraries/form`, `PATCH /itineraries/{id}/form`) are therefore
+sync, like every other text write, and reach `process_and_store` with
+`anyio.from_thread.run(functools.partial(...))` — `from_thread.run` passes no
+keyword arguments. The coroutine runs on the event loop while the worker
+thread waits; anyio copies the worker's context into it, so the request-timing
+record still collects its database and outbound time.
+
+The older upload endpoints — `POST /itineraries/{id}/image`, the avatar, the
+profile cover and the bug-report intake — are `async def` because they await the
+pipeline directly, not because a sync `def` could not read their body; they are
+left as they are. They run sync SQLAlchemy on the loop for a local round trip.
+So does the scan inside `process_and_store` on every path, sync routes included:
+`moderate_or_raise` writes its audit row, and on a reject commits, from the
+loop. **What must stay off the loop is the CPU work**, which `process_and_store`
+hands to `asyncio.to_thread`.
 
 ## API surface
 
-Five upload endpoints, all multipart with a `file` field:
+Seven image endpoints; every one that takes a file takes it as multipart:
 
-| Method | Path | Auth | Processor | `cache_bust` | Scanned |
-|---|---|---|---|---|---|
-| POST | `/itineraries/{id}/image` | **owner only** | cover | false | yes |
-| DELETE | `/itineraries/{id}/image` | owner only | — | — | — |
-| POST | `/users/me/avatar` | Bearer, 10/min | avatar | true | yes |
-| POST | `/users/me/cover-image` | Bearer, 10/min | cover | true | yes |
-| POST | `/bug-reports` | **optional** | screenshot | false | **no** |
+| Method | Path | Auth | File part | Processor | `cache_bust` | Scanned |
+|---|---|---|---|---|---|---|
+| POST | `/itineraries/form` | verified email | `image` (required) | cover | false | yes |
+| PATCH | `/itineraries/{id}/form` | `require_edit_access`; the cover parts owner only | `image` (optional) | cover | false | yes |
+| POST | `/itineraries/{id}/image` | **owner only** | `file` | cover | false | yes |
+| DELETE | `/itineraries/{id}/image` | owner only | — | — | — | — |
+| POST | `/users/me/avatar` | Bearer, 10/min | `file` | avatar | true | yes |
+| POST | `/users/me/cover-image` | Bearer, 10/min | `file` | cover | true | yes |
+| POST | `/bug-reports` | **optional** | screenshot | screenshot | false | **no** |
 
 Errors: **400** (uncoded) `ImageProcessingError`, **422
 `image_moderation_rejected`**.
 
 The cover image is **owner-only, not editor-writable** — it is the trip's public
 face, and every upload spends a paid Rekognition scan.
+
+**The app changes an itinerary cover only through the form routes**, which carry
+it with the form's fields under the edit lock and `If-Match`
+([itineraries.md](itineraries.md)). `POST` and `DELETE /itineraries/{id}/image`
+take neither and move `updated_at` when they change the row, so the PATCH the
+form used to send after them was refused as stale. They stay, unchanged, for
+builds already installed, and go once no build in testing calls them
+([backlog.md](../backlog.md)).
 
 ## Flutter surface
 
@@ -145,7 +172,17 @@ face, and every upload spends a paid Rekognition scan.
   has no caller anywhere in `app/`.**
 - **`ImageProcessingError` messages are user-facing and untranslated** — the
   router's 400 carries no error code
-  (`users.py:446,499`, `itineraries.py:2261`).
+  (`users.py:446,499`, `itineraries.py` `_cover_refusal`).
+- **An itinerary cover is written to its stable key before the request
+  commits** — on the form routes exactly as on `POST /image`. A commit that
+  fails afterwards leaves the new image at `itineraries/{id}.jpg`; the create
+  route deletes it again best-effort, the edit route cannot (the old image is
+  already overwritten). Unguessable per-upload keys, approved as step 2 of the
+  share-teaser work ([backlog.md](../backlog.md)), would remove the overwrite.
+- **A cover removed through the form is deleted after the commit, best-effort,
+  and never retried.** A failed delete leaves the object reachable at its key,
+  with no row pointing at it — and `delete_itinerary` deletes the object only
+  while a cover URL is set.
 - `storage/filesystem.py:7` still calls itself "Phase 1 implementation" although
   R2 superseded it on 2026-05-02; `media_pipeline_spec.md:149` keeps filesystem
   only as the rollback path.

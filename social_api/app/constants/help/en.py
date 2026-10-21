@@ -138,6 +138,9 @@ RELEASES: tuple[Release, ...] = (
             "trip's title, cover photo, rating and description — or a profile's "
             "name and photo — in the same look as the app. The rest is one free "
             "sign-in away, and the sign-in screen says what is waiting.",
+            "**A new cover photo saves with the rest.** Changing a trip's cover "
+            "along with its title, currency or best time to visit no longer asks "
+            "you to reload — it is all saved at once.",
         ),
     ),
     Release(
@@ -893,7 +896,7 @@ ARTICLES: tuple[Article, ...] = (
             "upload."
         ),
         category="building",
-        updated="2026-09-01",
+        updated="2026-10-21",
         keywords=(
             "cover", "photo", "image", "picture", "upload", "crop", "banner",
             "thumbnail", "rejected", "too small",
@@ -929,6 +932,10 @@ ARTICLES: tuple[Article, ...] = (
                     "formats are fine.\n"
                     "- **Content.** Uploads are checked automatically against the "
                     "[community guidelines](/guidelines) before they are stored.\n\n"
+                    "A refused photo stops the whole save: nothing from it is "
+                    "kept — not your other changes, and not a trip you were "
+                    "creating. The screen stays as you left it, so choose another "
+                    "photo, or remove it, and save again.\n\n"
                     "If you believe a refusal was wrong, [tell us](/help/contact)."
                 ),
             ),

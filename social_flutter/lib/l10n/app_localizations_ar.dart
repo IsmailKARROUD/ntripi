@@ -855,10 +855,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get visibilityOnlyMe => 'أنا فقط';
 
   @override
-  String get imageSaveButUploadFailed =>
-      'تم حفظ المسار، لكن رفع الصورة فشل. حاول مجددًا من شاشة التعديل.';
-
-  @override
   String get formSectionBasics => 'الأساسيات';
 
   @override

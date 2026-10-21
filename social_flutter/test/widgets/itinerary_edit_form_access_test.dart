@@ -9,6 +9,7 @@
 // editor (the server rejects the key, not the value), and `currency` must carry
 // the trip's real currency rather than the EUR fallback.
 import 'dart:async';
+import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
@@ -90,6 +91,19 @@ class _FakeRepo extends ItineraryRepository {
     if (updateGate != null) await updateGate!.future;
     return _itinerary();
   }
+
+  // The form's own Save; updateItinerary is what the detail screen's pickers use.
+  @override
+  Future<Itinerary> saveItineraryForm(
+    String id,
+    Map<String, dynamic> data, {
+    Uint8List? coverBytes,
+    String? coverFilename,
+    bool removeCover = false,
+    required String etag,
+    required String? lockToken,
+  }) =>
+      updateItinerary(id, data, etag: etag, lockToken: lockToken);
 }
 
 /// Grants the claim without a round trip and, more importantly, without the

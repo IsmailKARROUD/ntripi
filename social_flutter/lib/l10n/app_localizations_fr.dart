@@ -848,10 +848,6 @@ class AppLocalizationsFr extends AppLocalizations {
   String get visibilityOnlyMe => 'Moi uniquement';
 
   @override
-  String get imageSaveButUploadFailed =>
-      'Itinéraire enregistré, mais l\'envoi de l\'image a échoué. Réessayez depuis l\'écran de modification.';
-
-  @override
   String get formSectionBasics => 'GÉNÉRAL';
 
   @override

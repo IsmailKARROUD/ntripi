@@ -24,6 +24,7 @@
 //   A blanket interceptor would keep sending a token the client no longer
 //   holds, onto requests that must not carry one.
 
+import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
@@ -229,6 +230,23 @@ class ItineraryRepository {
     return Itinerary.fromJson(response.data!);
   }
 
+  /// The New itinerary form's save when a cover was picked: the fields and the
+  /// cover in one multipart request, so a refused cover creates nothing.
+  Future<Itinerary> createItineraryWithCover(
+    Map<String, dynamic> data, {
+    required Uint8List coverBytes,
+    String? coverFilename,
+  }) async {
+    final response = await _dio.post<Map<String, dynamic>>(
+      kItineraryFormEndpoint,
+      data: FormData.fromMap({
+        'fields': jsonEncode(data),
+        'image': _coverPart(coverBytes, coverFilename),
+      }),
+    );
+    return Itinerary.fromJson(response.data!);
+  }
+
   /// Header fields: title, description, currency, recommended period — and
   /// `visibility`, which the server accepts only from the owner.
   Future<Itinerary> updateItinerary(
@@ -248,6 +266,38 @@ class ItineraryRepository {
       _mapGuardError(e);
     }
   }
+
+  /// The Edit itinerary form's save: [data] as for [updateItinerary], plus a
+  /// cover change from the owner — [coverBytes] replaces it, [removeCover]
+  /// takes it off — in one multipart request under one If-Match and one claim.
+  /// Sent as two, the cover write moved updated_at and the PATCH behind it 412'd.
+  Future<Itinerary> saveItineraryForm(
+    String id,
+    Map<String, dynamic> data, {
+    Uint8List? coverBytes,
+    String? coverFilename,
+    bool removeCover = false,
+    required String etag,
+    required String? lockToken,
+  }) async {
+    try {
+      final response = await _dio.patch<Map<String, dynamic>>(
+        itineraryFormEndpoint(id),
+        data: FormData.fromMap({
+          'fields': jsonEncode(data),
+          if (coverBytes != null) 'image': _coverPart(coverBytes, coverFilename),
+          if (removeCover) 'remove_cover': 'true',
+        }),
+        options: _editOptions(etag, lockToken),
+      );
+      return Itinerary.fromJson(response.data!);
+    } on DioException catch (e) {
+      _mapGuardError(e);
+    }
+  }
+
+  static MultipartFile _coverPart(Uint8List bytes, String? filename) =>
+      MultipartFile.fromBytes(bytes, filename: filename ?? 'cover.jpg');
 
   Future<void> deleteItinerary(String id) async {
     await _dio.delete(itineraryEndpoint(id));
@@ -665,29 +715,6 @@ class ItineraryRepository {
     } on DioException catch (e) {
       _mapGuardError(e);
     }
-  }
-
-  // ---------------------------------------------------------------------------
-  // Cover image
-  // ---------------------------------------------------------------------------
-
-  Future<String> uploadCoverImage({
-    required String itineraryId,
-    required Uint8List bytes,
-    required String filename,
-  }) async {
-    final formData = FormData.fromMap({
-      'file': MultipartFile.fromBytes(bytes, filename: filename),
-    });
-    final response = await _dio.post<Map<String, dynamic>>(
-      itineraryImageEndpoint(itineraryId),
-      data: formData,
-    );
-    return response.data!['cover_image_url'] as String;
-  }
-
-  Future<void> deleteCoverImage(String itineraryId) async {
-    await _dio.delete(itineraryImageEndpoint(itineraryId));
   }
 
   // ---------------------------------------------------------------------------

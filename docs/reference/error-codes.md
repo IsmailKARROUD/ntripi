@@ -191,7 +191,7 @@ in `extra`: it is a question, not an error. Across a block in either direction
 
 | Code | Status | Raised at | Client |
 |---|---|---|---|
-| `image_moderation_rejected` | **422** | `itineraries.py:2266` (×3) | localized |
+| `image_moderation_rejected` | **422** | `itineraries.py:336` `_cover_refusal`, shared by `POST /image` and both form routes; `users.py` ×2 | localized |
 | `text_moderation_rejected` | **422** | `text_moderation_service.py:237` | special: `moderationRejectionMessage()` |
 
 `text_moderation_rejected` ships a `categories` list in `extra`. The client maps

@@ -835,10 +835,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get visibilityOnlyMe => 'Only me';
 
   @override
-  String get imageSaveButUploadFailed =>
-      'Itinerary saved, but image upload failed. Try again from the edit screen.';
-
-  @override
   String get formSectionBasics => 'BASICS';
 
   @override

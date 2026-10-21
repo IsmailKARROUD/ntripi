@@ -1548,3 +1548,56 @@ identical 404 pages. Tagging each outbound call site by hand (OpenAI, Azure,
 FCM, Google, Resend, HIBP, Jira, R2, Rekognition): ten places to remember, and a
 new integration would stay invisible until someone did. OpenTelemetry: a
 collector and new dependencies for one log line.
+
+### 2026-10-21 — The itinerary form saves its fields and its cover in one request
+
+**Context.** The Edit itinerary form saved in two requests: the cover first
+(`POST` or `DELETE /itineraries/{id}/image`), then `PATCH /itineraries/{id}`
+with the `If-Match` the form had read before either. The cover endpoints are
+`OWNER_ONLY` — no lock, no `If-Match` — and a cover write that changed the row
+(a first cover, a removal, a scan that flagged or errored) moved `updated_at`,
+so the PATCH behind it answered 412. The production log of 2026-10-20 showed
+`POST /itineraries/{itinerary_id}/image 200` followed by
+`PATCH /itineraries/{itinerary_id} status=412`, twice: the cover saved, the
+other fields did not, and every retry failed the same way until the trip was
+reloaded. Replacing a cover after a clean scan rewrites the same URL, changes
+nothing and never failed, which is why it went unseen. Creating a trip with a
+cover took two requests as well.
+**Decision.** One request carries the form's fields and its cover change,
+checked once by `require_edit_access`. `PATCH /itineraries/{id}/form` —
+multipart: `fields` as JSON validated with `ItineraryUpdate`, an optional
+`image`, an optional `remove_cover` — serves every save of the Edit itinerary
+form, editors included; `POST /itineraries/form` (`ItineraryCreate` and a
+required `image`) creates a trip with its cover. The paths name what they
+serve, the form's save, beside the JSON pair, which stays as it was for the
+description editor, the period picker, the visibility screen and creates
+without a cover. On the edit route: guard → field validation → the owner-only
+parts and a verified email → text scan → the cover processed, scanned and
+stored → verdicts, cover and fields applied → `sync_translations` → one commit,
+with a removed cover's object deleted after it. Both routes are sync `def`:
+FastAPI parses the multipart body before calling them, and they reach the async
+image pipeline through `anyio.from_thread.run`. The app's save is one notifier
+call through `_write`, and the answer's stamp is adopted in place.
+**Consequences.** On this path the cover changes under the edit lock and
+`If-Match`, like the fields beside it, and a save is one request in the timing
+log. Each moderation reject commits the session for its audit row, so the
+itinerary is not touched until both checks pass — and a text verdict commits
+with a refused cover: harmless for `approve`, a moderator-queue entry for text
+never saved on `review`, and on `hide_escalate` an escalation against the
+author, as for a rejected minors verdict. On create, the cover's audit row
+cannot name the trip before its row exists (a real foreign key, and a reject
+commits it), so `moderation_service.attach_itinerary` links it after the flush.
+A refused cover at create now creates nothing and keeps the form open; the
+trip used to be created without it. The cover object is still written to its
+stable key before the commit — per-upload keys (share teaser, step 2) would end
+that. `POST`/`DELETE /image` stay unchanged until no build in testing calls
+them, and the app no longer has code for them. The suite's SQLite stamps
+`updated_at` in whole seconds, which hid this kind of 412 from it; the tests
+about the ETag moving now backdate the row.
+**Alternatives rejected.** Writing the cover endpoints through
+`admin_service.set_preserving_etag`: the cover would leave the version check and
+the edit lock, so the owner's two devices could overwrite each other's cover,
+and a save would still take two requests. Keeping two requests and re-reading
+the ETag between them: a second round trip on every save, with the cover still
+changed outside the lock. One route taking JSON or multipart by content type:
+the JSON PATCH had to stay exactly as installed builds call it.

@@ -105,6 +105,9 @@ Extracted in the 2026-07 dedup refactor. Before writing a query/response block i
   - `_two_phase_renumber(rows, db)` — the only way to rewrite a full rank set (`!`-prefixed temp ranks dodge the UNIQUE constraint). Callers validate ownership first.
   - `_require_stops_in_itinerary(...)` — segment stop-membership check.
   - Annotation CRUD: `_get_itinerary_annotation_or_404` / `_get_stop_annotation_or_404` (joins Stop — the IDOR guard) / `_apply_annotation_fields` / `_save_annotation` / `_delete_annotation`.
+  - `_moderate_itinerary_text` = `_scan_itinerary_text` + `_stamp_itinerary_text`. Call the halves apart only when something else is checked between them — the form routes scan the cover there, and a refused image commits the session, so the itinerary must still be clean. A `hide_escalate` verdict whose cover is then refused goes through `_escalate_text_left_unsaved` (against the author).
+  - The itinerary header's shared steps: `_require_visibility_owner`, `_itinerary_text_fields`, `_apply_itinerary_update`, `_new_itinerary` + `_insert_new_itinerary` (both creates). Covers: `_cover_key`, `_cover_refusal` (the 400/422 mapping), `_apply_cover_status`, `_store_cover` (the form routes' sync call into `process_and_store`), `_delete_cover_object` (best-effort, from a sync route).
+- **`app/services/moderation_service.py` `attach_itinerary(ctx)`** — links a create-time cover scan's audit row to its trip after the flush (the image twin of text's `attach_target`). A create scans before its row exists, `target_itinerary_id` is a real FK and a reject commits the row, so the context says `itinerary_pending=True` and the row is linked afterwards — `/admin/flagged` finds a cover's trip only through that column.
 - **`app/schemas/itinerary.py`** — reuse `_NOTE_TYPE_PATTERN`, `_PLACE_TYPE_PATTERN`, `_VISIBILITY`; annotation request schemas subclass `_AnnotationCreateBase`/`_AnnotationUpdateBase`. The two annotation **Response** classes stay separate on purpose — a shared base would reorder JSON keys (base-class fields serialize first). Same rule for any future Response dedup: JSON key order = Pydantic field-definition order = part of the API contract.
 - Keep validation-error shapes stable: constrained string fields stay `pattern=` regex, not `Literal` — switching changes the 422 body.
 
@@ -261,7 +264,7 @@ When inserting a new track between two adjacent tracks that have a segment conne
 
 ## Testing
 
-**Backend:** `client` fixture in `test/conftest.py` (fresh SQLite per test). conftest forces `EMAIL_BACKEND=console` before the app loads — a developer `.env` with `resend` otherwise mails every test address (some are real `@gmail.com` domains, and `OPERATOR_EMAIL` is the live ops inbox). Every itinerary write needs `If-Match` + `X-Edit-Lock` — use conftest's `edit_now` / `locked_headers`, never bare `auth_headers`. The six files once parked under `pytest.mark.skip("rewriting after fractional-indexing refactor")` run again (2026-09-26); new itinerary/ordering tests go in `test/test_fractional_indexing_smoke.py`.
+**Backend:** `client` fixture in `test/conftest.py` (fresh SQLite per test). conftest forces `EMAIL_BACKEND=console` before the app loads — a developer `.env` with `resend` otherwise mails every test address (some are real `@gmail.com` domains, and `OPERATOR_EMAIL` is the live ops inbox). Every itinerary write needs `If-Match` + `X-Edit-Lock` — use conftest's `edit_now` / `locked_headers`, never bare `auth_headers`. **SQLite stamps `updated_at` in whole seconds** (`func.now()` → `CURRENT_TIMESTAMP`), so two writes in one second leave the ETag where it was and a stale `If-Match` passes; a test about the ETag moving backdates the row first (`_backdate` in `test_itinerary_form.py`). The six files once parked under `pytest.mark.skip("rewriting after fractional-indexing refactor")` run again (2026-09-26); new itinerary/ordering tests go in `test/test_fractional_indexing_smoke.py`.
 
 **Flutter:** `http_mock_adapter` for Dio mocking. `FlutterSecureStorage.setMockInitialValues({})` for auth state.
 
@@ -661,6 +664,14 @@ already use it. Order is load-bearing:
   `visibility` (rejected in `update_itinerary`'s body — the guard admits editors,
   the body does not), the allowlist, the editor list, and the **cover image**
   (the trip's public face, and every upload spends a paid Rekognition scan).
+  The Edit itinerary form saves through `PATCH /itineraries/{id}/form`, which
+  the guard admits editors to for the fields; an `image` or `remove_cover` part
+  from an editor is a 403 for the whole request, nothing saved.
+- **One user action is one guarded write.** The form used to send its cover
+  through `POST`/`DELETE /image` (`OWNER_ONLY`, outside the guard) and then
+  PATCH the fields with the `If-Match` read before — every cover write that
+  changed the row 412'd the PATCH. Never split a save into a lock-free write
+  and a guarded one again; the `/image` pair stays only for installed builds.
 - `X-Edit-Lock` must stay in `main.py`'s CORS `allow_headers` or the browser
   preflight fails before the request is sent.
 
@@ -975,6 +986,8 @@ For each article the change touches:
 - Do NOT add `type`, `position`, or `parallel_position` columns to `stops`
 - Do NOT send or return `position` / `parallel_position` in any API payload
 - Do NOT skip `If-Match` on any mutation endpoint
+- Do NOT split one save into a lock-free write and a guarded one — the first moves `updated_at` and the second's `If-Match` is stale; the itinerary form's cover went through `POST`/`DELETE /image` first and 412'd every PATCH behind it. Carry both in one request, as `PATCH /itineraries/{id}/form` does
+- Do NOT scan a cover for an itinerary whose row is not inserted yet without `itinerary_pending=True` and an `attach_itinerary` after the flush — the audit row's `target_itinerary_id` is a real FK, and a reject commits it on the spot
 - Do NOT use locale-aware collation on `rank` columns — must be `COLLATE "C"`
 - Do NOT introduce build_runner / json_serializable / freezed
 - Do NOT add a state management library — Riverpod only
@@ -983,7 +996,7 @@ For each article the change touches:
 - Do NOT create new access control logic — reuse `can_view_itinerary()`
 - Do NOT call `moderate_or_422` as a `Depends` — endpoint body only, or a 412 spends a paid moderation call
 - Do NOT convert text write endpoints to `async def` — sync SQLAlchemy on the event loop is the real hazard; the threadpool already keeps blocking provider calls off it
-- Do NOT "fix" the ten `async def` endpoints by making them sync — the four upload paths, both admin form posts and the bug-report intake are `async` because they need `await file.read()` / `await request.form()`, and a sync `def` cannot read a multipart body. They are the known exception to the rule above: they do run sync SQLAlchemy on the loop, for a local round trip. What must stay off the loop there is the **CPU** work — `process_and_store` hands Pillow to `asyncio.to_thread`, exactly as `r2_storage` and the Rekognition call already do; never call a `process_*_image` function directly from an `async def`
+- Do NOT convert the ten `async def` endpoints to sync as a drive-by — the image uploads, the deletes that remove a stored image (an itinerary's included), both admin form posts and the bug-report intake await the async image pipeline and storage directly, and they work. The old reason given here was wrong: a sync `def` CAN take a multipart upload. FastAPI parses the body before calling the endpoint, so a sync `def` reads `UploadFile.file` on its worker thread and reaches `process_and_store` through `anyio.from_thread.run(functools.partial(...))` — the two itinerary form routes do exactly that; only a handler that calls `await request.form()` itself needs `async`. The ten are the known exception to the rule above: they do run sync SQLAlchemy on the loop, for a local round trip — and so does the image scan's audit row on every path, sync routes included. What must stay off the loop there is the **CPU** work — `process_and_store` hands Pillow to `asyncio.to_thread`, exactly as `r2_storage` and the Rekognition call already do; never call a `process_*_image` function directly from an `async def`
 - Do NOT send anything but the text to a moderation provider — no user id, email, or content id
 - Do NOT send a content id, a field name or a user reference to a translation engine — OpenAI gets the texts under opaque keys (`t0`…) with `store: false`, Azure a bare array; and never log a text, in or out
 - Do NOT cache a translation that skipped `translation_validation` or, with moderation on, output moderation — it is machine output served to every later reader; a failed check falls to the next engine, never into the cache

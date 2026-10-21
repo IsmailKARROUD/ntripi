@@ -98,6 +98,7 @@ RELEASES: tuple[Release, ...] = (
             "**Eine klare Antwort, wenn sich eine Reise nicht öffnen lässt.** Ein Link zu einer Reise, die Sie nicht sehen dürfen oder die gelöscht wurde, sagt das jetzt — mit einem Weg zurück — statt eines Fehlers, der nur einen erneuten Versuch anbot.",
             "**Links zu privaten Reisen zeigen im Chat nichts.** Die Vorschau einer Reise, die mit Followern oder bestimmten Personen geteilt ist, zeigt nicht mehr ihren Titel, ihr Titelbild oder ihren Eigentümer — nur, dass es eine private Reise auf Ntripi ist.",
             "**Geteilte Seiten zeigen eine Vorschau.** Ohne Konto zeigt ein Link Titel, Titelbild, Bewertung und Beschreibung einer Reise — oder Namen und Foto eines Profils — im Look der App. Der Rest ist eine kostenlose Anmeldung entfernt, und der Anmeldebildschirm sagt, was wartet.",
+            "**Ein neues Titelbild wird mit dem Rest gespeichert.** Wer das Titelbild einer Reise zusammen mit Titel, Währung oder bester Reisezeit ändert, muss nicht mehr neu laden — alles wird auf einmal gespeichert.",
         ),
     ),
     Release(
@@ -686,6 +687,8 @@ Der Zuschnitt ist breit, denn das ist das Format einer Linkvorschau. Ein hochfor
 - **Ein nicht unterstütztes Format.** JPEG, PNG und die üblichen Fotoformate sind in Ordnung.
 - **Der Inhalt.** Uploads werden vor dem Speichern automatisch gegen die [Community-Richtlinien](/guidelines) geprüft.
 
+Ein abgelehntes Foto hält das ganze Speichern auf: Nichts davon wird übernommen — weder Ihre anderen Änderungen noch eine Reise, die Sie gerade anlegen. Der Bildschirm bleibt, wie Sie ihn verlassen haben: Wählen Sie ein anderes Foto oder entfernen Sie es, und speichern Sie erneut.
+
 Wenn Sie eine Ablehnung für falsch halten, [sagen Sie es uns](/help/contact).""",
             ),
             Block(
@@ -715,7 +718,7 @@ Vor dem öffentlichen Teilen lohnt sich trotzdem ein echtes: In einem Feed volle
             "zu klein",
         ),
         related=("plan-a-trip-itinerary", "share-a-trip-link"),
-        updated="2026-09-01",
+        updated="2026-10-21",
         cta="Geben Sie Ihrer Reise ein Gesicht.",
     ),
     Article(
