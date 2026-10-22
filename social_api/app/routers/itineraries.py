@@ -49,7 +49,7 @@ from sqlalchemy.orm import Session, selectinload
 from app.config import Settings, get_settings
 from app.database import get_db
 from app.dependencies import (
-    get_current_user, require_edit_access, require_verified_email,
+    get_current_user, require_edit_access, require_verified_email, return_requested,
 )
 from app.limiter import limiter
 from app.models.annotation import Annotation
@@ -92,6 +92,7 @@ from app.schemas.itinerary import (
     RatingResponse,
     RatingSubmit,
     RatingSubmitResponse,
+    RatingSubmitWithPageResponse,
     RatingWithUser,
     RatingsPageResponse,
     ReorderRequest,
@@ -583,22 +584,14 @@ def _load_itinerary_detail(itinerary_id: uuid.UUID, db: Session) -> Itinerary:
 # The trip as the GET shows it — the detail read and every trip edit's answer
 # ---------------------------------------------------------------------------
 
-def _return_requested(representation: str):
-    """A dependency for `?return=<representation>`: whether a write was asked to
-    answer with that instead of its usual body. Opt-in per request, so a build
-    that never asks gets exactly the answer it always got; any other value is a
-    422."""
-    def _requested(
-        answer: str | None = Query(None, alias="return", pattern=f"^{representation}$"),
-    ) -> bool:
-        return answer is not None
-    return _requested
-
-
-# Every EDIT_GUARDED route depends on this one; test_trip_edit_answers.py checks.
-wants_itinerary = _return_requested("itinerary")
-# DELETE /ratings/me: the trip's rating aggregate once the review is gone.
-wants_aggregate = _return_requested("aggregate")
+# Every EDIT_GUARDED route depends on this one, and so do the two creates;
+# test_trip_edit_answers.py checks.
+wants_itinerary = return_requested("itinerary")
+# POST /ratings: the ratings page as GET /ratings now shows it, beside the review.
+wants_ratings_page = return_requested("ratings_page")
+# DELETE /ratings/me: the trip's aggregate once the review is gone, or the whole
+# ratings page when the app has it open.
+wants_rating_answer = return_requested("aggregate", "ratings_page")
 
 
 def _viewer_detail(itinerary: Itinerary, viewer_id: uuid.UUID, db: Session) -> ItineraryDetail:
@@ -865,7 +858,8 @@ def create_itinerary(
     background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
     current_user: User = Depends(require_verified_email),  # high-value: verified email required
-) -> ItinerarySummary:
+    wants_trip: str | None = Depends(wants_itinerary),
+) -> Response:
     ctx = _scan_itinerary_text(
         _itinerary_text_fields(body.model_dump()), None, db, current_user,
     )
@@ -874,6 +868,10 @@ def create_itinerary(
     db.commit()
     db.refresh(itinerary)
     _schedule_title_pretranslation(background_tasks, itinerary, was_public=False, old_title=None)
+    if wants_trip:
+        # The trip's screen opens on this answer, so a create is its one request.
+        return _trip_edit_answer(itinerary.id, current_user, db, created_id=itinerary.id,
+                                 status_code=status.HTTP_201_CREATED)
     return itinerary  # type: ignore[return-value]
 
 
@@ -889,7 +887,8 @@ def create_itinerary_form(
     image: UploadFile = File(...),
     db: Session = Depends(get_db),
     current_user: User = Depends(require_verified_email),  # high-value: verified email required
-) -> ItinerarySummary:
+    wants_trip: str | None = Depends(wants_itinerary),
+) -> Response:
     # A sync def like every text write: FastAPI has already parsed the multipart
     # body, so the image is a plain file here and the pipeline runs via anyio.
     body = _parse_form_fields(fields, ItineraryCreate)
@@ -916,6 +915,9 @@ def create_itinerary_form(
         raise
     db.refresh(itinerary)
     _schedule_title_pretranslation(background_tasks, itinerary, was_public=False, old_title=None)
+    if wants_trip:
+        return _trip_edit_answer(itinerary.id, current_user, db, created_id=itinerary.id,
+                                 status_code=status.HTTP_201_CREATED)
     return itinerary  # type: ignore[return-value]
 
 
@@ -1151,7 +1153,7 @@ def update_itinerary(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
     itinerary: Itinerary = Depends(require_edit_access),
-    wants_trip: bool = Depends(wants_itinerary),
+    wants_trip: str | None = Depends(wants_itinerary),
 ) -> Response:
     update_data = body.model_dump(exclude_unset=True)
     _require_visibility_owner(update_data, itinerary, current_user)
@@ -1188,7 +1190,7 @@ def update_itinerary_form(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
     itinerary: Itinerary = Depends(require_edit_access),
-    wants_trip: bool = Depends(wants_itinerary),
+    wants_trip: str | None = Depends(wants_itinerary),
 ) -> Response:
     # One request under one If-Match and one claim. Sent as two, the cover
     # write moved updated_at and the PATCH behind it answered 412.
@@ -1480,9 +1482,10 @@ def add_editor(
         itinerary_id=itinerary_id, user_id=target.id, granted_by=current_user.id,
     )
     db.add(entry)
-    # can_edit rides in ItineraryDetail, whose ETag is updated_at — without this
-    # a revoked editor's cached detail would keep offering them a pencil.
-    _touch_itinerary(itinerary)
+    # No _touch_itinerary: can_edit rides in the detail, whose cache validator is
+    # "<updated_at>;<body hash>", so the changed body already fails a cached copy.
+    # Moving the stamp only made the owner reload to learn it; every save
+    # re-checks the right itself.
     notification_service.notify(
         db, user_id=target.id, type="itinerary_editor_added", actor=current_user,
         entity_type="itinerary", entity_id=itinerary.id,
@@ -1547,7 +1550,8 @@ def remove_editor(
     # Leaving a revoked editor's claim standing would block everyone else until
     # the TTL ran out, for a person who can no longer use it.
     edit_lock_service.release_for_user(db, itinerary_id, user_id)
-    _touch_itinerary(itinerary)
+    # updated_at stays where it is, as on a grant: their next GET's body hash
+    # differs (can_edit false), and the guard refuses their next save.
     db.commit()
 
 
@@ -1683,7 +1687,7 @@ def add_stop(
     db: Session = Depends(get_db),
     _verified: User = Depends(require_verified_email),  # high-value: verified email required
     itinerary: Itinerary = Depends(require_edit_access),
-    wants_trip: bool = Depends(wants_itinerary),
+    wants_trip: str | None = Depends(wants_itinerary),
 ) -> Response:
     """
     Add a new stop. Requires an edit claim + If-Match (both validated by
@@ -1783,7 +1787,7 @@ def update_stop(
     # Same cached instance require_edit_access already resolved — no extra query.
     current_user: User = Depends(get_current_user),
     itinerary: Itinerary = Depends(require_edit_access),
-    wants_trip: bool = Depends(wants_itinerary),
+    wants_trip: str | None = Depends(wants_itinerary),
 ) -> Response:
     stop = _get_stop_or_404(stop_id, itinerary_id, db)
     old_track_id = stop.track_id
@@ -1860,7 +1864,7 @@ def delete_stop(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
     itinerary: Itinerary = Depends(require_edit_access),
-    wants_trip: bool = Depends(wants_itinerary),
+    wants_trip: str | None = Depends(wants_itinerary),
 ) -> Response:
     stop = db.execute(
         select(Stop).where(Stop.id == stop_id, Stop.itinerary_id == itinerary_id)
@@ -1901,7 +1905,7 @@ def reorder_itinerary(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
     itinerary: Itinerary = Depends(require_edit_access),
-    wants_trip: bool = Depends(wants_itinerary),
+    wants_trip: str | None = Depends(wants_itinerary),
 ) -> Response:
     """
     Apply a batch reorder of stops within tracks, a new track order, and/or
@@ -2030,7 +2034,7 @@ def add_itinerary_annotation(
     current_user: User = Depends(require_verified_email),  # high-value: verified email required
     db: Session = Depends(get_db),
     itinerary: Itinerary = Depends(require_edit_access),
-    wants_trip: bool = Depends(wants_itinerary),
+    wants_trip: str | None = Depends(wants_itinerary),
 ) -> Response:
     _moderate_itinerary_text({"content": body.content}, itinerary, db, current_user)
     annotation = ItineraryAnnotation(
@@ -2056,7 +2060,7 @@ def update_itinerary_annotation(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
     itinerary: Itinerary = Depends(require_edit_access),
-    wants_trip: bool = Depends(wants_itinerary),
+    wants_trip: str | None = Depends(wants_itinerary),
 ) -> Response:
     annotation = _get_itinerary_annotation_or_404(annotation_id, itinerary_id, db)
     _moderate_itinerary_text({"content": body.content}, itinerary, db, current_user)
@@ -2077,7 +2081,7 @@ def delete_itinerary_annotation(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
     itinerary: Itinerary = Depends(require_edit_access),
-    wants_trip: bool = Depends(wants_itinerary),
+    wants_trip: str | None = Depends(wants_itinerary),
 ) -> Response:
     annotation = _get_itinerary_annotation_or_404(annotation_id, itinerary_id, db)
     _delete_annotation(annotation, itinerary, db)
@@ -2101,7 +2105,7 @@ def add_annotation(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_verified_email),  # high-value: verified email required
     itinerary: Itinerary = Depends(require_edit_access),
-    wants_trip: bool = Depends(wants_itinerary),
+    wants_trip: str | None = Depends(wants_itinerary),
 ) -> Response:
     stop = db.execute(
         select(Stop).where(Stop.id == stop_id, Stop.itinerary_id == itinerary_id)
@@ -2131,7 +2135,7 @@ def delete_annotation(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
     itinerary: Itinerary = Depends(require_edit_access),
-    wants_trip: bool = Depends(wants_itinerary),
+    wants_trip: str | None = Depends(wants_itinerary),
 ) -> Response:
     annotation = _get_stop_annotation_or_404(annotation_id, stop_id, itinerary_id, db)
     _delete_annotation(annotation, itinerary, db)
@@ -2151,7 +2155,7 @@ def update_annotation(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
     itinerary: Itinerary = Depends(require_edit_access),
-    wants_trip: bool = Depends(wants_itinerary),
+    wants_trip: str | None = Depends(wants_itinerary),
 ) -> Response:
     annotation = _get_stop_annotation_or_404(annotation_id, stop_id, itinerary_id, db)
     _moderate_itinerary_text({"content": body.content}, itinerary, db, current_user)
@@ -2174,7 +2178,8 @@ def upsert_rating(
     body: RatingSubmit,
     db: Session = Depends(get_db),
     current_user: User = Depends(require_verified_email),  # high-value: verified email required
-) -> RatingSubmitResponse:
+    wants_page: str | None = Depends(wants_ratings_page),
+) -> Response:
     itinerary = _get_itinerary_or_404(itinerary_id, db)
     _require_viewable(itinerary, current_user.id, db)
 
@@ -2255,12 +2260,23 @@ def upsert_rating(
 
     db.commit()
     db.refresh(rating)
-    return RatingSubmitResponse(
+    answer = RatingSubmitResponse(
         **RatingResponse.model_validate(rating).model_dump(),
         # Read back after the commit: the aggregate recalculate_rating wrote.
         rating_avg=itinerary.rating_avg,
         rating_count=itinerary.rating_count,
     )
+    if wants_page:
+        # Rated from the ratings page: the page it now shows, so the app
+        # adopts it instead of downloading it again.
+        return JSONResponse(
+            status_code=status.HTTP_201_CREATED,
+            content=jsonable_encoder(RatingSubmitWithPageResponse(
+                **answer.model_dump(),
+                ratings_page=_ratings_page(itinerary, current_user.id, db),
+            )),
+        )
+    return answer  # type: ignore[return-value]
 
 
 @router.delete("/{itinerary_id}/ratings/me", status_code=status.HTTP_204_NO_CONTENT,
@@ -2269,9 +2285,13 @@ def delete_my_rating(
     itinerary_id: uuid.UUID,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
-    wants_rating_aggregate: bool = Depends(wants_aggregate),
+    answer: str | None = Depends(wants_rating_answer),
 ) -> Response:
     itinerary = _get_itinerary_or_404(itinerary_id, db)
+    if answer == "ratings_page":
+        # The page is the GET's, which refuses a viewer who lost the trip —
+        # asked before the delete, so the refusal writes nothing.
+        _require_viewable(itinerary, current_user.id, db)
 
     rating = db.execute(
         select(ItineraryRating).where(
@@ -2289,7 +2309,11 @@ def delete_my_rating(
     purge_orphans(db, itinerary.id)
     recalculate_rating(itinerary, db)
     db.commit()
-    if wants_rating_aggregate:
+    if answer == "ratings_page":
+        return JSONResponse(content=jsonable_encoder(
+            _ratings_page(itinerary, current_user.id, db),
+        ))
+    if answer == "aggregate":
         # Read back after the commit: the aggregate recalculate_rating wrote.
         return JSONResponse(content=jsonable_encoder(RatingAggregate(
             rating_avg=itinerary.rating_avg, rating_count=itinerary.rating_count,
@@ -2381,7 +2405,14 @@ def get_ratings_page(
 ) -> RatingsPageResponse:
     itinerary = _get_itinerary_or_404(itinerary_id, db)
     _require_viewable(itinerary, current_user.id, db)
+    return _ratings_page(itinerary, current_user.id, db)
 
+
+def _ratings_page(itinerary: Itinerary, viewer_id: uuid.UUID,
+                  db: Session) -> RatingsPageResponse:
+    """The ratings page as GET /ratings shows it to a viewer the caller has
+    already let see the trip. The GET and a rating write's answer are both built
+    here, so the two can never describe the page differently."""
     rows = db.execute(
         select(
             ItineraryRating.id,
@@ -2403,9 +2434,9 @@ def get_ratings_page(
         )
         .outerjoin(User, ItineraryRating.user_id == User.id)
         .where(
-            ItineraryRating.itinerary_id == itinerary_id,
+            ItineraryRating.itinerary_id == itinerary.id,
             # Moderated notes are visible to their own author only.
-            *visible_rating_criteria(current_user.id),
+            *visible_rating_criteria(viewer_id),
         )
         .order_by(ItineraryRating.updated_at.desc())
     ).all()
@@ -2428,7 +2459,7 @@ def get_ratings_page(
     # where a blocked account was still fully visible on a third party's page.
     # itinerary_access.can_view_rating is this page's row-level twin: keep the
     # two in lock-step.
-    hidden_raters = set(blocked_user_ids(db, current_user.id))
+    hidden_raters = set(blocked_user_ids(db, viewer_id))
 
     ratings = [
         RatingWithUser(
@@ -2445,7 +2476,7 @@ def get_ratings_page(
             # row reads 'approved' so no internal status leaks sideways.
             moderation_status=(
                 row.rating_moderation_status
-                if row.user_id == current_user.id else "approved"
+                if row.user_id == viewer_id else "approved"
             ),
             user=RaterInfo(
                 user_id=row.user_id,
@@ -2453,7 +2484,7 @@ def get_ratings_page(
                 display_name=(
                     row.display_name
                     if row.rater_moderation_status not in HIDDEN_STATUSES
-                    or row.user_id == current_user.id
+                    or row.user_id == viewer_id
                     else None
                 ),
                 avatar_url=row.avatar_url,
@@ -2485,7 +2516,7 @@ def create_segment(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_verified_email),  # high-value: verified email required
     itinerary: Itinerary = Depends(require_edit_access),
-    wants_trip: bool = Depends(wants_itinerary),
+    wants_trip: str | None = Depends(wants_itinerary),
 ) -> Response:
     _require_stops_in_itinerary(itinerary_id, body.from_stop_id, body.to_stop_id, db)
 
@@ -2558,7 +2589,7 @@ def update_segment(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
     itinerary: Itinerary = Depends(require_edit_access),
-    wants_trip: bool = Depends(wants_itinerary),
+    wants_trip: str | None = Depends(wants_itinerary),
 ) -> Response:
     segment = _get_segment_or_404(segment_id, itinerary_id, db)
 
@@ -2605,7 +2636,7 @@ def delete_segment(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
     itinerary: Itinerary = Depends(require_edit_access),
-    wants_trip: bool = Depends(wants_itinerary),
+    wants_trip: str | None = Depends(wants_itinerary),
 ) -> Response:
     segment = _get_segment_or_404(segment_id, itinerary_id, db)
 
@@ -2633,7 +2664,7 @@ def add_leg(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_verified_email),  # high-value: verified email required
     itinerary: Itinerary = Depends(require_edit_access),
-    wants_trip: bool = Depends(wants_itinerary),
+    wants_trip: str | None = Depends(wants_itinerary),
 ) -> Response:
     segment = _get_segment_or_404(segment_id, itinerary_id, db)
 
@@ -2671,7 +2702,7 @@ def update_leg(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
     itinerary: Itinerary = Depends(require_edit_access),
-    wants_trip: bool = Depends(wants_itinerary),
+    wants_trip: str | None = Depends(wants_itinerary),
 ) -> Response:
     segment = _get_segment_or_404(segment_id, itinerary_id, db)
     leg = _get_leg_or_404(leg_id, segment_id, db)
@@ -2705,7 +2736,7 @@ def delete_leg(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
     itinerary: Itinerary = Depends(require_edit_access),
-    wants_trip: bool = Depends(wants_itinerary),
+    wants_trip: str | None = Depends(wants_itinerary),
 ) -> Response:
     segment = _get_segment_or_404(segment_id, itinerary_id, db)
     leg = _get_leg_or_404(leg_id, segment_id, db)

@@ -26,6 +26,8 @@ import 'package:ntripi/l10n/app_localizations.dart';
 import 'package:ntripi/shared/models/follow.dart';
 import 'package:ntripi/shared/models/user.dart';
 
+import '../support/follow_counts.dart';
+
 // ── Fixtures ──────────────────────────────────────────────────────────────
 
 const _ownUserId = 'me-1';
@@ -126,15 +128,17 @@ class _RecordingFollowRepo implements FollowRepository {
   final List<String> unfollowed = [];
 
   @override
-  Future<void> removeFollower(String userId) async {
+  Future<FollowCounts> removeFollower(String userId) async {
     if (failWith != null) throw failWith!;
     removed.add(userId);
+    return kZeroCounts;
   }
 
   @override
-  Future<void> unfollowUser(String userId) async {
+  Future<FollowCounts> unfollowUser(String userId) async {
     if (failWith != null) throw failWith!;
     unfollowed.add(userId);
+    return kZeroCounts;
   }
 
   @override

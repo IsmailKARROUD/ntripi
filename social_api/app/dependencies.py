@@ -6,6 +6,8 @@ Provides:
   require_etag         — the single guard every itinerary-content mutation goes
   require_edit_access    through: edit permission + edit lock + If-Match. The two
                          names are the same object; see make_etag_checker.
+  return_requested     — a write's opt-in to answer with what the screen shows
+                         next (`?return=…`); wants_counts is the follow routes'.
 
 WHY ETAG / IF-MATCH?
   Without concurrency control, two users (or two browser tabs) can silently
@@ -30,7 +32,7 @@ WHY ETAG / IF-MATCH?
 import uuid
 from datetime import datetime, timezone
 
-from fastapi import Depends, HTTPException, Request, status
+from fastapi import Depends, HTTPException, Query, Request, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -125,6 +127,32 @@ def require_verified_email(
             code="email_unverified", detail="Please verify your email by signing in with Google to do this.",
         )
     return current_user
+
+
+# ---------------------------------------------------------------------------
+# Answer opt-ins
+# ---------------------------------------------------------------------------
+
+def return_requested(*representations: str):
+    """A dependency for `?return=<representation>`: which of `representations`
+    a write was asked to answer with instead of its usual body, or None.
+
+    Opt-in per request, so a build that never asks gets exactly the answer it
+    always got; any other value is a 422 — never a shape the caller cannot read.
+    """
+    pattern = "^(" + "|".join(representations) + ")$"
+
+    def _requested(
+        answer: str | None = Query(None, alias="return", pattern=pattern),
+    ) -> str | None:
+        return answer
+
+    return _requested
+
+
+# Unfollow, remove follower and block: both accounts' counts as their profiles
+# now show them, so the app adopts them instead of downloading a profile.
+wants_counts = return_requested("counts")
 
 
 # ---------------------------------------------------------------------------

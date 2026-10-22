@@ -3,8 +3,9 @@
 //
 // Nothing downloads the trip after a save any more, and that download is what
 // used to refresh the HTTP cache's entry for GET /itineraries/{id} — the copy a
-// trip shows when the app starts with no connection. The trip a save answers
-// with is written there instead, under the signed-in account's own key.
+// trip shows when the app starts with no connection. The trip a save (or a
+// create) answers with is written there instead, under the signed-in account's
+// own key.
 
 import 'dart:typed_data';
 
@@ -17,28 +18,8 @@ import 'package:ntripi/core/api/api_endpoints.dart';
 import 'package:ntripi/core/api/cache_key.dart';
 import 'package:ntripi/features/itineraries/data/itinerary_repository.dart';
 
-const _itinId = 'itin-1';
-
-Map<String, dynamic> _trip(String title) => {
-      'id': _itinId,
-      'user_id': 'user-1',
-      'title': title,
-      'cover_image_url': null,
-      'total_duration_min': 0,
-      'total_cost': 0.0,
-      'currency': 'EUR',
-      'visibility': 'public',
-      'created_at': '2026-10-21T09:00:00.000000Z',
-      'updated_at': '2026-10-21T10:00:05.000000Z',
-      'rating_avg': null,
-      'rating_count': 0,
-      'stops_count': 0,
-      'description': null,
-      'tracks': <Map<String, dynamic>>[],
-      'segments': <Map<String, dynamic>>[],
-      'annotations': <Map<String, dynamic>>[],
-      'can_edit': true,
-    };
+import '../support/held_claim.dart';
+import '../support/trip_json.dart';
 
 /// A phone with no connection: every request fails before any response exists,
 /// which is what sends the cache layer to its stored copy.
@@ -86,15 +67,15 @@ void main() {
 
   Future<void> saveAnswering(String title) async {
     adapter.onPatch(
-      itineraryStopEndpoint(_itinId, 'stop-1'),
+      itineraryStopEndpoint(kTripId, 'stop-1'),
       (server) =>
-          server.reply(200, {'itinerary': _trip(title), 'created_id': null}),
+          server.reply(200, tripAnswer(tripJson(title: title, updatedAt: kSavedAt))),
       data: Matchers.any,
       queryParameters: {'return': 'itinerary'},
     );
     await ItineraryRepository(dio).updateStop(
-      _itinId, 'stop-1', {'place_name': 'Old harbour'},
-      etag: '"2026-10-21T10:00:00.000Z"', lockToken: 'lock-token',
+      kTripId, 'stop-1', {'place_name': 'Old harbour'},
+      etag: '"2026-10-21T10:00:00.000Z"', lockToken: kHeldClaimToken,
     );
   }
 
@@ -102,20 +83,38 @@ void main() {
       () async {
     // The copy the last download left, validators and all, as the server sends.
     adapter.onGet(
-      itineraryEndpoint(_itinId),
-      (server) => server.reply(200, _trip('Before the save'), headers: {
+      itineraryEndpoint(kTripId),
+      (server) => server.reply(200, tripJson(title: 'Before the save'), headers: {
         Headers.contentTypeHeader: [Headers.jsonContentType],
         'etag': ['"2026-10-21T10:00:00+00:00;0123456789abcdef"'],
         'cache-control': ['private, no-cache'],
       }),
     );
-    await ItineraryRepository(dio).getItinerary(_itinId);
+    await ItineraryRepository(dio).getItinerary(kTripId);
     await saveAnswering('After the save');
 
     dio.httpClientAdapter = _Offline();
-    final shown = await ItineraryRepository(dio).getItinerary(_itinId);
+    final shown = await ItineraryRepository(dio).getItinerary(kTripId);
 
     expect(shown.title, 'After the save');
+  });
+
+  test('Given a create, Then the new trip opens offline as it answered',
+      () async {
+    adapter.onPost(
+      kItinerariesEndpoint,
+      (server) => server.reply(201,
+          tripAnswer(tripJson(title: 'Islands', updatedAt: kSavedAt),
+              createdId: kTripId)),
+      data: Matchers.any,
+      queryParameters: {'return': 'itinerary'},
+    );
+    await ItineraryRepository(dio).createItinerary({'title': 'Islands'});
+
+    dio.httpClientAdapter = _Offline();
+    final shown = await ItineraryRepository(dio).getItinerary(kTripId);
+
+    expect(shown.title, 'Islands');
   });
 
   test('Given a save, Then another account on the device finds no copy of it',
@@ -125,7 +124,7 @@ void main() {
     account = 'user-2';
     dio.httpClientAdapter = _Offline();
 
-    await expectLater(ItineraryRepository(dio).getItinerary(_itinId),
+    await expectLater(ItineraryRepository(dio).getItinerary(kTripId),
         throwsA(isA<DioException>()));
   });
 }

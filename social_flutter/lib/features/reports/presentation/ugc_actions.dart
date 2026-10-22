@@ -13,10 +13,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ntripi/core/api/api_client.dart';
 import 'package:ntripi/core/ui/app_theme.dart';
 import 'package:ntripi/core/ui/destructive_actions.dart';
+import 'package:ntripi/features/profile/providers/profile_provider.dart';
 import 'package:ntripi/features/reports/data/report_repository.dart';
 import 'package:ntripi/features/reports/domain/report_target.dart';
 import 'package:ntripi/features/reports/presentation/report_content_sheet.dart';
 import 'package:ntripi/l10n/app_localizations.dart';
+import 'package:ntripi/shared/models/follow.dart';
 
 /// Overflow menu offering Report, (when a user is identified) Block, and
 /// (when the caller says it applies) Remove follower.
@@ -168,8 +170,9 @@ Future<void> confirmAndBlock(
   );
   if (!confirmed || !context.mounted) return;
 
+  final FollowCounts counts;
   try {
-    await ref.read(reportRepositoryProvider).block(userId);
+    counts = await ref.read(reportRepositoryProvider).block(userId);
   } on Exception catch (e) {
     if (!context.mounted) return;
     messenger.showSnackBar(
@@ -179,6 +182,10 @@ Future<void> confirmAndBlock(
   }
 
   // Server-side state changed regardless of whether we are still on screen.
+  // The block severed any follow both ways, and its answer carries my counts
+  // as that left them — from every surface that blocks, not only a profile.
+  adoptMyCounts(container, counts.me);
+  // A new row in the blocked list, which no answer carries.
   container.invalidate(blockedUsersProvider);
 
   // The POST is a network round trip and the profile is a pushed route, so the

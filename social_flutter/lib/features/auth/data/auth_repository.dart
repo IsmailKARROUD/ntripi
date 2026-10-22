@@ -7,8 +7,10 @@
 // only handles the explicit user-initiated endpoints (login/register/logout).
 
 import 'package:dio/dio.dart';
+import 'package:ntripi/core/api/api_client.dart';
 import 'package:ntripi/core/api/api_endpoints.dart';
 import 'package:ntripi/core/storage/secure_storage.dart';
+import 'package:ntripi/shared/models/user.dart';
 
 /// Payload returned by both register and login.
 class AuthResult {
@@ -147,10 +149,18 @@ class AuthRepository {
   /// `dateOfBirth` is the one thing the client does supply, and only accounts
   /// created before the age gate need it — the server answers 400 `dob_required`
   /// when it has none on file.
-  Future<void> acceptTos({DateTime? dateOfBirth}) async {
-    await _dio.post(kAcceptTosEndpoint, data: {
+  ///
+  /// Answers with the profile as GET /users/me now gives it, `tos_current`
+  /// included, which also becomes that GET's cached answer: an offline start
+  /// would otherwise read the old copy and raise the terms gate again.
+  Future<User> acceptTos({DateTime? dateOfBirth}) async {
+    final response =
+        await _dio.post<Map<String, dynamic>>(kAcceptTosEndpoint, data: {
       if (dateOfBirth != null) 'date_of_birth': _dateOnly(dateOfBirth),
     });
+    final profile = response.data!;
+    await cacheAsGet(response.requestOptions, kMyProfileEndpoint, profile);
+    return User.fromJson(profile);
   }
 
   /// A bare `YYYY-MM-DD`. toIso8601String() would carry a time and the local

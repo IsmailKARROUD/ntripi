@@ -29,6 +29,8 @@ import 'package:ntripi/features/profile/providers/profile_provider.dart';
 import 'package:ntripi/l10n/app_localizations.dart';
 import 'package:ntripi/shared/models/user.dart';
 
+import '../support/held_claim.dart';
+
 typedef _Sent = ({Map<String, dynamic> data, Uint8List? coverBytes});
 
 /// Answers every save with [failure], recording what each one carried.
@@ -75,7 +77,7 @@ class _RefusingRepo extends ItineraryRepository {
   }
 
   @override
-  Future<Itinerary> createItineraryWithCover(
+  Future<TripEditAnswer> createItineraryWithCover(
     Map<String, dynamic> data, {
     required Uint8List coverBytes,
     String? coverFilename,
@@ -86,14 +88,8 @@ class _RefusingRepo extends ItineraryRepository {
 }
 
 /// The claim, without the network or the heartbeat Timer the real one starts.
-class _FakeEditLock extends EditLockNotifier {
+class _FakeEditLock extends HeldClaim {
   _FakeEditLock(super.arg);
-
-  @override
-  EditSession build() {
-    super.build();
-    return const EditSession(token: 'lock-token');
-  }
 
   @override
   Future<EditLockStatus?> peek() async => null;

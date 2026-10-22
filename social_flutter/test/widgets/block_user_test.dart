@@ -15,12 +15,15 @@ import 'package:ntripi/features/reports/data/report_repository.dart';
 import 'package:ntripi/features/reports/domain/report_target.dart';
 import 'package:ntripi/features/reports/presentation/ugc_actions.dart';
 import 'package:ntripi/l10n/app_localizations.dart';
+import 'package:ntripi/shared/models/follow.dart';
 import 'package:ntripi/shared/models/user.dart';
+
+import '../support/follow_counts.dart';
 
 /// Repository whose block() completes only when the test says so, so the
 /// widget can be torn down mid-request.
 class _SlowBlockRepository implements ReportRepository {
-  final Completer<void> gate = Completer<void>();
+  final Completer<FollowCounts> gate = Completer<FollowCounts>();
   bool called = false;
   bool unblockCalled = false;
 
@@ -30,7 +33,7 @@ class _SlowBlockRepository implements ReportRepository {
   _SlowBlockRepository({this.blocked = const []});
 
   @override
-  Future<void> block(String userId) {
+  Future<FollowCounts> block(String userId) {
     called = true;
     return gate.future;
   }
@@ -214,7 +217,7 @@ void main() {
       await tester.pump();
 
       // Now the request lands against a disposed ref / unmounted context.
-      repo.gate.complete();
+      repo.gate.complete(kZeroCounts);
       await tester.pumpAndSettle();
 
       expect(tester.takeException(), isNull);
@@ -240,7 +243,7 @@ void main() {
       await tester.tap(find.text('Block'));
       await tester.pump();
 
-      repo.gate.complete();
+      repo.gate.complete(kZeroCounts);
       await tester.pumpAndSettle();
 
       expect(tester.takeException(), isNull);

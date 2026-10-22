@@ -675,8 +675,23 @@ lines will rank:
   save's line.
 - **First requests after a restart** — the language detector loads a model the
   first time it meets a language, and imports and pool connections warm up.
-- **Rating only** — the push to the trip's owner is sent inline, before the
-  response (decisions.md, 2026-08-13).
+- ~~**Rating only** — the push to the trip's owner is sent inline, before the
+  response~~ — **done 2026-10-22**, for every push, not only the rating's: the
+  request queues it after commit and one background worker sends it, so no
+  write waits on FCM ([decisions.md](decisions.md)). To check after a deploy:
+  with `SLOW_REQUEST_LOG_MS=0`, a rating of someone else's trip shows no
+  `ext=fcm.googleapis.com`, and the owner's phone still gets the push.
+- ~~**The waits after other writes**~~ — **done 2026-10-22.** Creating a trip
+  downloaded it, a grant or revoke reloaded the owner's trip, a follow or block
+  re-read `/users/me`, accepting the terms re-read it too, an appeal re-read the
+  Account status list, a rating on the Ratings page re-read the page, and stop
+  and header saves re-downloaded the Itineraries tab's lists. Each now answers
+  with what the screen shows next and the app adopts it
+  ([decisions.md](decisions.md)). To check after a deploy, with
+  `SLOW_REQUEST_LOG_MS=0`: no GET of a trip after its create, of
+  `/itineraries/me` or `/shared-with-me` after a save, of `/users/me` after a
+  follow write or accepting the terms, of `/appeals/violations` after an
+  appeal, or of `…/ratings` after a rating from that page.
 - **The phone** — the closing animation of the form or dialog. (The trip
   screen no longer redraws behind a reload.)
 

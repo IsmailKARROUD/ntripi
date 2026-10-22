@@ -53,10 +53,22 @@ not information anyone could use.
   stay put) — and to nothing when no trip is loaded, since building one would
   be a GET. Until 2026-10-21 each rating was followed by a forced reload of the
   whole trip.
-- **Rating from the Ratings page refreshes it.** `MyRatingNotifier.submitRating` /
-  `deleteRating` invalidate `ratingsPageProvider` (keep-alive) too; before
-  2026-09-28 the list, averages and histogram the rater was looking at stayed
-  without their review.
+- **Rating with the Ratings page loaded adopts the page from the answer**
+  (since 2026-10-22). `ratingsPageProvider` is keep-alive, so once opened it
+  holds the list, averages and histogram; `MyRatingNotifier.submitRating` /
+  `deleteRating` then ask for the page (`?return=ratings_page`) and adopt it
+  (`RatingsPageNotifier.adopt`), aggregate onto the trip included, with no
+  `GET /ratings` after the write. A page never opened is not asked for —
+  reading the provider would build it, which is a GET — and the aggregate path
+  above is used. From 2026-09-28 the page was invalidated and re-downloaded;
+  before that the list the rater was looking at stayed without their review.
+  The answered page also becomes the cached `GET /ratings` (`cacheAsGet`), the
+  copy it shows offline.
+- **The page is built once, `_ratings_page`**, for the GET and both writes, so
+  an answer and a GET can never describe the page differently. Asked for the
+  page, `DELETE /ratings/me` first checks the caller may still see the trip
+  (403 `itinerary_access_denied`, nothing deleted) — the page is the GET's,
+  which refuses; asked nothing or for the aggregate, it deletes as before.
 - **Hidden ratings are excluded from the public aggregate, including the
   author's own.** `recalculate_rating` passes `visible_rating_criteria(None)` —
   no viewer — because an aggregate is public and even its author's hidden rating
@@ -123,9 +135,9 @@ viewer and aggregate screens.
 
 | Method | Path | Auth | Request | Response | Errors |
 |---|---|---|---|---|---|
-| POST | `/itineraries/{id}/ratings` | verified email | `RatingSubmit` | `RatingSubmitResponse` 201 | 404, 403 `itinerary_access_denied`, 422 `text_moderation_rejected` |
+| POST | `/itineraries/{id}/ratings` | verified email | `RatingSubmit` | `RatingSubmitResponse` 201; with `?return=ratings_page`, `RatingSubmitWithPageResponse` 201 | 404, 403 `itinerary_access_denied`, 422 `text_moderation_rejected` |
 | GET | `/itineraries/{id}/ratings/me` | user | — | `RatingResponse` | 404 `rating_not_found` |
-| DELETE | `/itineraries/{id}/ratings/me` | user | — | 204; with `?return=aggregate`, `RatingAggregate` 200 | 404 `rating_not_found` |
+| DELETE | `/itineraries/{id}/ratings/me` | user | — | 204; with `?return=aggregate`, `RatingAggregate` 200; with `?return=ratings_page`, `RatingsPageResponse` 200 | 404 `rating_not_found`, 403 `itinerary_access_denied` (page asked for, trip no longer visible) |
 | GET | `/itineraries/{id}/ratings` | user | — | `RatingsPageResponse` | 403 `itinerary_access_denied` |
 
 `RatingSubmit` = `{stars (1–5, required), safety_stars?, experience_stars?,
@@ -134,7 +146,10 @@ accessibility_stars?, family_friendly_stars?, crowdedness_stars?, note? (≤2000
 `RatingSubmitResponse` = `RatingResponse` (`{stars, safety_stars,
 experience_stars, accessibility_stars, family_friendly_stars,
 crowdedness_stars, note, updated_at, moderation_status}`) **followed by**
-`rating_avg`, `rating_count`. `RatingAggregate` = `{rating_avg, rating_count}`.
+`rating_avg`, `rating_count`. `RatingSubmitWithPageResponse` = that **followed
+by** `ratings_page: RatingsPageResponse`. `RatingAggregate` = `{rating_avg,
+rating_count}`. Both opt-ins come from the shared `return_requested`
+(`app/dependencies.py`).
 
 `RatingsPageResponse` = `{rating_avg, rating_count,
 distribution: RatingDistribution{five, four, three, two, one},

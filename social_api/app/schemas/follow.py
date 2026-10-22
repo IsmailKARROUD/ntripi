@@ -18,6 +18,31 @@ class FollowResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class UserCounts(BaseModel):
+    """One account's follow counters, as its profile shows them."""
+    followers_count: int
+    following_count: int
+
+
+class FollowCounts(BaseModel):
+    """Both accounts' counts after a follow write, read back after its commit —
+    so the app adopts them instead of downloading a profile, and never adds one
+    itself.
+
+    `them` is null wherever GET /users/{id} would 404 for the caller (an unknown
+    or suspended account, or a block either way): a blocked user must not learn
+    from a count that the account behind the block still exists.
+    """
+    me: UserCounts
+    them: UserCounts | None
+
+
+class FollowWriteResponse(FollowResponse):
+    """Follow and accept: the follow as saved, then both accounts' counts. A
+    subclass, so `counts` lands after every key installed builds read."""
+    counts: FollowCounts
+
+
 class FollowRequestItem(BaseModel):
     """
     A single pending follow request as seen in GET /users/me/follow-requests.

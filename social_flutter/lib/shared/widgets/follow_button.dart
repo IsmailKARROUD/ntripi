@@ -16,7 +16,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ntripi/core/api/api_client.dart';
 import 'package:ntripi/core/ui/destructive_actions.dart';
 import 'package:ntripi/features/follows/data/follow_repository.dart';
+import 'package:ntripi/features/follows/providers/follow_provider.dart';
 import 'package:ntripi/l10n/app_localizations.dart';
+import 'package:ntripi/shared/models/follow.dart';
 import 'package:ntripi/shared/widgets/loaders.dart';
 import 'package:ntripi/shared/widgets/offline_gate.dart';
 
@@ -40,11 +42,13 @@ Future<bool> confirmUnfollow(
   );
 }
 
-/// Callback invoked after a follow state change.
-/// The calling screen uses this to refresh its data.
+/// Callback invoked after a follow state change, with both accounts' counts
+/// as the write's answer carried them — the caller adopts those rather than
+/// downloading either profile again.
 typedef OnFollowChanged = void Function({
   required bool isFollowing,
   required bool followIsPending,
+  required FollowCounts counts,
 });
 
 class FollowButton extends ConsumerStatefulWidget {
@@ -70,15 +74,16 @@ class FollowButton extends ConsumerStatefulWidget {
 class _FollowButtonState extends ConsumerState<FollowButton> {
   bool _isLoading = false;
 
-  FollowRepository get _repo => FollowRepository(dio);
+  FollowRepository get _repo => ref.read(followRepositoryProvider);
 
   Future<void> _handleFollow() async {
     setState(() => _isLoading = true);
     try {
       final result = await _repo.followUser(widget.targetUserId);
       widget.onChanged(
-        isFollowing: result.status == 'accepted',
-        followIsPending: result.status == 'pending',
+        isFollowing: result.follow.isAccepted,
+        followIsPending: result.follow.isPending,
+        counts: result.counts,
       );
     } on DioException catch (e) {
       if (mounted) {
@@ -98,8 +103,8 @@ class _FollowButtonState extends ConsumerState<FollowButton> {
 
     setState(() => _isLoading = true);
     try {
-      await _repo.unfollowUser(widget.targetUserId);
-      widget.onChanged(isFollowing: false, followIsPending: false);
+      final counts = await _repo.unfollowUser(widget.targetUserId);
+      widget.onChanged(isFollowing: false, followIsPending: false, counts: counts);
     } on DioException catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -128,8 +133,8 @@ class _FollowButtonState extends ConsumerState<FollowButton> {
     setState(() => _isLoading = true);
     try {
       // Unfollow endpoint also cancels pending requests.
-      await _repo.unfollowUser(widget.targetUserId);
-      widget.onChanged(isFollowing: false, followIsPending: false);
+      final counts = await _repo.unfollowUser(widget.targetUserId);
+      widget.onChanged(isFollowing: false, followIsPending: false, counts: counts);
     } on DioException catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

@@ -8,10 +8,12 @@ answers exactly as it always has, so installed builds keep working.
 
 CASES must hold exactly the routes test_edit_guard_coverage.py calls
 EDIT_GUARDED: a new trip edit fails this file until it has a case, and a case
-only passes by answering with the trip a GET would show.
+only passes by answering with the trip a GET would show. The two creates answer
+the same way, with the trip they made, so its screen opens with no GET.
 
 Ratings are VIEWER_WRITE and answer with the trip's aggregate instead: the POST
-always, the DELETE when asked with `?return=aggregate`.
+always, the DELETE when asked with `?return=aggregate`. Asked with
+`?return=ratings_page`, both answer with the ratings page GET /ratings shows.
 """
 
 from __future__ import annotations
@@ -28,14 +30,15 @@ from conftest import (
     auth_headers, concurrency_part, edit_now, etag_from_updated_at, register_user,
 )
 from test_edit_guard_coverage import EDIT_GUARDED, _dependency_callables, _route_for
-from test_itinerary_form import _backdate, _parts
+from test_image_moderation import _make_jpeg
+from test_itinerary_form import _backdate, _parts, store  # noqa: F401 — a fixture
 from test_text_moderation_endpoints import MINORS, CountingProvider
 from app.config import get_settings
 from app.routers.itineraries import wants_itinerary
 from app.schemas.itinerary import (
     AnnotationResponse, ItineraryAnnotationResponse, ItineraryDetail,
-    ItinerarySummary, RatingResponse, StopResponse, TransitSegmentResponse,
-    TransportLegResponse,
+    ItinerarySummary, RatingResponse, RatingSubmitResponse, StopResponse,
+    TransitSegmentResponse, TransportLegResponse,
 )
 from app.services import text_moderation_service as tms
 
@@ -384,6 +387,63 @@ def test_a_reorder_asked_nothing_still_answers_the_bare_trip(client: TestClient)
 
 
 # ---------------------------------------------------------------------------
+# A create answers with the trip it made, so its screen opens with no GET
+# ---------------------------------------------------------------------------
+
+Create = Callable[[TestClient, dict, dict], Response]
+
+
+def _create_json(client: TestClient, headers: dict, params: dict) -> Response:
+    return client.post("/itineraries/", params=params, headers=headers,
+                       json={"title": "Islands", "visibility": "public"})
+
+
+def _create_with_cover(client: TestClient, headers: dict, params: dict) -> Response:
+    return client.post("/itineraries/form", params=params, headers=headers,
+                       files=_parts({"title": "Islands", "visibility": "public"},
+                                    image=_make_jpeg()))
+
+
+CREATES: dict[tuple[str, str], Create] = {
+    ("POST", "/itineraries/"): _create_json,
+    ("POST", "/itineraries/form"): _create_with_cover,
+}
+
+
+def _maker(client: TestClient) -> dict:
+    return auth_headers(
+        register_user(client, "tripmaker", "tripmaker@example.com")["access_token"])
+
+
+@pytest.mark.parametrize("route", sorted(CREATES), ids=lambda r: r[1])
+def test_every_create_takes_the_opt_in(route):
+    assert wants_itinerary in _dependency_callables(_route_for(*route))
+
+
+@pytest.mark.parametrize("route", sorted(CREATES), ids=lambda r: r[1])
+def test_a_create_answers_with_the_trip_it_made(client: TestClient, route):
+    maker = _maker(client)
+
+    r = CREATES[route](client, maker, ANSWER)
+
+    assert r.status_code == 201, r.text
+    body = r.json()
+    assert list(body) == ["itinerary", "created_id"]
+    assert body["created_id"] == body["itinerary"]["id"]
+    after = client.get(f"/itineraries/{body['created_id']}", headers=maker)
+    assert body["itinerary"] == after.json()
+    assert concurrency_part(r.headers["etag"]) == concurrency_part(after.headers["etag"])
+
+
+@pytest.mark.parametrize("route", sorted(CREATES), ids=lambda r: r[1])
+def test_a_create_asked_nothing_answers_what_it_always_did(client: TestClient, route):
+    r = CREATES[route](client, _maker(client), {})
+
+    assert r.status_code == 201, r.text
+    assert list(r.json()) == list(ItinerarySummary.model_fields)
+
+
+# ---------------------------------------------------------------------------
 # Ratings answer with the aggregate
 # ---------------------------------------------------------------------------
 
@@ -451,3 +511,66 @@ def test_deleting_a_rating_when_asked_answers_the_aggregate_left(client: TestCli
                       headers=t.editor)
     assert r.json() == {"rating_avg": None, "rating_count": 0}
     assert _aggregate(client, t, t.editor) == (None, 0)
+
+
+# ---------------------------------------------------------------------------
+# Rated from the ratings page: the page it now shows
+# ---------------------------------------------------------------------------
+
+PAGE = {"return": "ratings_page"}
+
+
+def _page(client: TestClient, t: Trip, headers: dict) -> dict:
+    r = client.get(f"/itineraries/{t.id}/ratings", headers=headers)
+    assert r.status_code == 200, r.text
+    return r.json()
+
+
+def test_a_rating_asked_for_the_page_answers_with_it(client: TestClient):
+    t = _seed(client)
+    rater = auth_headers(register_user(client, "triprater", "triprater@example.com")
+                         ["access_token"])
+    _rate(client, t, t.editor, 2)
+
+    r = client.post(f"/itineraries/{t.id}/ratings", params=PAGE,
+                    json={"stars": 5, "note": "Worth the climb"}, headers=rater)
+
+    assert r.status_code == 201, r.text
+    body = r.json()
+    # Appended after every key the plain answer has, never inserted among them.
+    assert list(body) == [*RatingSubmitResponse.model_fields, "ratings_page"]
+    assert body["ratings_page"] == _page(client, t, rater)
+    assert (body["rating_avg"], body["rating_count"]) == (3.5, 2)
+
+
+def test_deleting_a_rating_asked_for_the_page_answers_with_the_page_left(
+    client: TestClient,
+):
+    t = _seed(client)
+    rater = auth_headers(register_user(client, "triprater", "triprater@example.com")
+                         ["access_token"])
+    _rate(client, t, t.editor, 4)
+    _rate(client, t, rater, 2)
+
+    r = client.delete(f"/itineraries/{t.id}/ratings/me", params=PAGE, headers=rater)
+
+    assert r.status_code == 200, r.text
+    assert r.json() == _page(client, t, rater)
+    assert (r.json()["rating_avg"], r.json()["rating_count"]) == (4.0, 1)
+
+
+def test_asking_for_the_page_without_the_trip_deletes_nothing(client: TestClient):
+    """The page is GET /ratings', which refuses a viewer who lost the trip — and
+    the refusal comes before the delete, so it writes nothing."""
+    t = _seed(client)
+    rater_user = register_user(client, "triprater", "triprater@example.com")
+    rater = auth_headers(rater_user["access_token"])
+    _rate(client, t, rater, 3)
+    assert client.post(f"/users/{rater_user['user_id']}/block",
+                       headers=t.owner).status_code == 204
+
+    r = client.delete(f"/itineraries/{t.id}/ratings/me", params=PAGE, headers=rater)
+
+    assert r.status_code == 403, r.text
+    assert r.json()["code"] == "itinerary_access_denied"
+    assert client.get(f"/itineraries/{t.id}/ratings/me", headers=rater).status_code == 200

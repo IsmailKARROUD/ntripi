@@ -15,8 +15,10 @@ turn it on explicitly — which is also the "disabled changes nothing" test.
 
 from __future__ import annotations
 
+import threading
 import uuid
 from datetime import datetime, timedelta, timezone
+from types import SimpleNamespace
 
 import pytest
 from fastapi.testclient import TestClient
@@ -25,6 +27,7 @@ from conftest import TestingSessionLocal, auth_headers, register_user
 from app.config import Settings
 from app.constants import push_i18n
 from app.models.device_token import DeviceToken
+from app.middleware import request_timing
 from app.models.notification import Notification
 from app.services import notification_service, push_service
 
@@ -56,13 +59,19 @@ class _Resp:
         return self._payload
 
 
-def _enable(monkeypatch) -> None:
+def _enable(monkeypatch, *, inline: bool = True) -> None:
     """Turn push on for the code paths that read settings for themselves, and
     point the dispatcher at the test session factory so its own session sees
-    the SQLite fixture rather than the real engine."""
+    the SQLite fixture rather than the real engine.
+
+    `inline` runs the push worker's batch on the committing thread, so a test
+    reads what was sent the moment the commit returns. The one test about the
+    worker itself passes False."""
     monkeypatch.setattr("app.services.notification_service.get_settings", _settings)
     monkeypatch.setattr("app.services.push_service.get_settings", _settings)
     monkeypatch.setattr(push_service, "_session_factory", TestingSessionLocal)
+    if inline:
+        monkeypatch.setattr(push_service, "_submit", lambda fn, *args: fn(*args))
 
 
 def _capture(monkeypatch) -> list[dict]:
@@ -310,6 +319,53 @@ def test_rollback_sends_nothing(monkeypatch, client: TestClient):
         db.close()
 
     assert sent == []
+
+
+def test_a_write_answers_without_waiting_for_its_push(monkeypatch, client: TestClient):
+    """FCM is the push worker's wait, never the request's: the follow answers
+    while its push is still being sent, and the push goes out all the same."""
+    alice = register_user(client, "wone", "w1@x.com")
+    bobb = register_user(client, "wtwo", "w2@x.com")
+    _register(client, bobb["access_token"], device="bob-dev")
+    _enable(monkeypatch, inline=False)
+
+    sending, release = threading.Event(), threading.Event()
+    delivered: list[push_service.PendingPush] = []
+
+    def slow_send(db, push, settings):
+        sending.set()
+        assert release.wait(timeout=10), "the request waited on the send"
+        delivered.append(push)
+
+    monkeypatch.setattr(push_service, "send", slow_send)
+    # No database on the worker: the suite's one SQLite connection stays the
+    # request's while the two run side by side.
+    monkeypatch.setattr(push_service, "_session_factory",
+                        lambda: SimpleNamespace(close=lambda: None))
+
+    r = client.post(f"/users/{bobb['user_id']}/follow",
+                    headers=auth_headers(alice["access_token"]))
+
+    assert r.status_code == 201, r.text
+    assert sending.wait(timeout=10), "the push never reached the worker"
+    assert delivered == [], "answered while the send was still waiting on FCM"
+
+    release.set()
+    # One worker runs its tasks in order: once a later one has run, so has the send.
+    push_service._submit(lambda: None).result(timeout=10)
+    assert [push.user_id for push in delivered] == [uuid.UUID(bobb["user_id"])]
+
+
+def test_the_push_worker_runs_outside_the_request_that_queued_it():
+    """The request has answered by the time its push is sent, so its timing
+    record must not count a send it never waited for."""
+    token = request_timing._current.set(request_timing.RequestTimings())
+    try:
+        seen = push_service._submit(request_timing._current.get).result(timeout=10)
+    finally:
+        request_timing._current.reset(token)
+
+    assert seen is None
 
 
 def test_a_muted_type_pushes_nothing(monkeypatch, client: TestClient):

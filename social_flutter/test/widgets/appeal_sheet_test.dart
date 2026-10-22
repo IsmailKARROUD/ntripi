@@ -8,27 +8,53 @@
 // They also cover the failure path, which matters because the sheet stays open
 // on error — a snackbar would render behind the modal barrier, so the message
 // has to appear inline (same defect already fixed in report_content_sheet).
+//
+// An appeal answers with the Account status list as it now stands; filed from
+// that screen, the list on it is the answer, never a second download.
 
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ntripi/features/profile/data/profile_repository.dart';
+import 'package:ntripi/features/profile/domain/violation.dart';
+import 'package:ntripi/features/profile/presentation/account_status_screen.dart';
 import 'package:ntripi/features/profile/providers/profile_provider.dart';
 import 'package:ntripi/l10n/app_localizations.dart';
 import 'package:ntripi/shared/widgets/appeal_sheet.dart';
 
-/// Records what the sheet posted so the test can assert the target survived.
+/// One hidden itinerary, before and after its appeal.
+Violation _hidden({bool appealed = false}) => Violation(
+      id: 'log-1',
+      action: ModerationAction.hide,
+      targetType: 'itinerary',
+      targetId: 'itin-1',
+      itemTitle: 'Coast walk',
+      createdAt: DateTime.utc(2026, 10, 1),
+      active: true,
+      appealable: !appealed,
+      appealStatus: appealed ? AppealStatus.pending : null,
+    );
+
+/// Records what the sheet posted so the test can assert the target survived,
+/// and answers like the server: the list with the appeal on it.
 class _RecordingRepo extends ProfileRepository {
   _RecordingRepo() : super(Dio());
 
   int calls = 0;
+  int listReads = 0;
   String? targetType;
   String? targetId;
   String? reason;
 
   @override
-  Future<void> submitAppeal({
+  Future<List<Violation>> getViolations() async {
+    listReads++;
+    return [_hidden()];
+  }
+
+  @override
+  Future<List<Violation>> submitAppeal({
     required String targetType,
     required String targetId,
     required String reason,
@@ -37,6 +63,7 @@ class _RecordingRepo extends ProfileRepository {
     this.targetType = targetType;
     this.targetId = targetId;
     this.reason = reason;
+    return [_hidden(appealed: true)];
   }
 }
 
@@ -45,7 +72,7 @@ class _AlreadyPendingRepo extends ProfileRepository {
   _AlreadyPendingRepo() : super(Dio());
 
   @override
-  Future<void> submitAppeal({
+  Future<List<Violation>> submitAppeal({
     required String targetType,
     required String targetId,
     required String reason,
@@ -89,7 +116,6 @@ void main() {
               builder: (context, ref, _) => TextButton(
                 onPressed: () => showAppealSheet(
                   context,
-                  ref,
                   targetType: targetType,
                   targetId: targetId,
                 ),
@@ -196,5 +222,37 @@ void main() {
     expect(field.decoration?.errorText, isNotNull);
     // The typed reason survives so Submit can retry.
     expect(field.controller?.text, 'a reason');
+  });
+
+  testWidgets(
+      'Given Account status is open, When an appeal is filed from it, '
+      'Then the list shows the answer and is not downloaded again',
+      (tester) async {
+    final repo = _RecordingRepo();
+    tester.view.physicalSize = const Size(1000, 1400);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [profileRepositoryProvider.overrideWithValue(repo)],
+        child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const AccountStatusScreen(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Appeal available'), findsOneWidget);
+
+    await tester.tap(find.widgetWithText(FilledButton, 'Appeal'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byKey(reasonField), 'It was a real place.');
+    await submit(tester);
+
+    expect(repo.calls, 1);
+    expect(find.text('Appeal under review'), findsOneWidget);
+    expect(repo.listReads, 1, reason: 'the answer was the list');
   });
 }

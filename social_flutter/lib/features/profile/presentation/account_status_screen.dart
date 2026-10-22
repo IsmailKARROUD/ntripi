@@ -88,7 +88,7 @@ class AccountStatusScreen extends ConsumerWidget {
   }
 }
 
-class _ViolationCard extends ConsumerWidget {
+class _ViolationCard extends StatelessWidget {
   final Violation violation;
 
   const _ViolationCard({required this.violation});
@@ -113,17 +113,16 @@ class _ViolationCard extends ConsumerWidget {
     return _actionLabel(l10n);
   }
 
-  Future<void> _openAppealSheet(BuildContext context, WidgetRef ref) async {
+  Future<void> _openAppealSheet(BuildContext context) async {
     await showAppealSheet(
       context,
-      ref,
       targetType: violation.targetType,
       targetId: violation.targetId ?? '',
     );
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final nt = context.nt;
     final isLifted = !violation.active ||
@@ -184,7 +183,7 @@ class _ViolationCard extends ConsumerWidget {
             Align(
               alignment: AlignmentDirectional.centerStart,
               child: FilledButton.tonal(
-                onPressed: () => _openAppealSheet(context, ref),
+                onPressed: () => _openAppealSheet(context),
                 child: Text(l10n.appealSubmit),
               ),
             ),

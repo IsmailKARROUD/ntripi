@@ -59,10 +59,10 @@ nothing in the project answers "can this person see this" for itself.
 - **Allowlist names go through `public_profile_text`**, like the editor list: a
   display name that moderation hid comes back `null` (the client shows
   `@username`). Both allowlist endpoints read it raw until 2026-09-26.
-- **Allowlist mutations are owner-only** (`_require_owner`) and are the one
-  itinerary sub-resource that does **not** bump `updated_at`: the allowlist
-  changes nothing in `ItineraryDetail`, and bumping it would 412 the owner's open
-  editor (`itineraries.py:935` comment).
+- **Allowlist mutations are owner-only** (`_require_owner`) and, like the editor
+  list since 2026-10-22, do **not** bump `updated_at`: neither changes the trip,
+  and bumping it would 412 the owner's open editor (`itineraries.py`
+  `add_allowed_user` comment; [collaborative-editing.md](collaborative-editing.md)).
 - Adding a viewer sends an `itinerary_viewer_added` notification that **names the
   itinerary in the sentence** — a restricted trip is in no feed and no search, so
   a notice that does not name it cannot be acted on.

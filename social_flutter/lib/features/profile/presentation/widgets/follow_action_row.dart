@@ -3,14 +3,9 @@ import 'package:ntripi/core/ui/app_theme.dart';
 import 'package:ntripi/shared/models/user.dart';
 import 'package:ntripi/shared/widgets/follow_button.dart';
 
-typedef FollowStateChanged = void Function({
-  required bool isFollowing,
-  required bool followIsPending,
-});
-
 class FollowActionRow extends StatelessWidget {
   final User user;
-  final FollowStateChanged onChanged;
+  final OnFollowChanged onChanged;
 
   const FollowActionRow({
     super.key,

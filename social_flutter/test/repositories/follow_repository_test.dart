@@ -1,9 +1,13 @@
 // test/repositories/follow_repository_test.dart — Unit tests for FollowRepository.
 //
 // Covers every public method:
-//   followUser, unfollowUser, getFollowRequests,
+//   followUser, unfollowUser, removeFollower, getFollowRequests,
 //   acceptFollowRequest, rejectFollowRequest,
 //   getFollowers, getFollowing.
+//
+// A write that moves a count answers with both accounts' counts — follow and
+// accept always, unfollow and remove follower when asked — and the repository
+// hands them on for the app to adopt.
 //
 // All Dio HTTP calls are intercepted by DioAdapter — no real network needed.
 
@@ -18,14 +22,21 @@ void main() {
   // Shared fixtures
   // ---------------------------------------------------------------------------
 
+  /// Both accounts' counts, as a follow write answers them.
+  const countsJson = {
+    'me': {'followers_count': 3, 'following_count': 8},
+    'them': {'followers_count': 12, 'following_count': 1},
+  };
+
   /// A Follow JSON object as returned by POST /users/{id}/follow
-  /// or POST /users/me/follow-requests/{id}/accept.
+  /// or POST /users/me/follow-requests/{id}/accept: the follow, then `counts`.
   Map<String, dynamic> _followJson({String status = 'accepted'}) => {
         'id': 'follow-uuid-1',
         'follower_id': 'user-uuid-a',
         'following_id': 'user-uuid-b',
         'status': status,
         'created_at': '2024-04-01T10:00:00.000Z',
+        'counts': countsJson,
       };
 
   /// A single FollowRequestItem as returned inside the follow-requests list.
@@ -70,12 +81,14 @@ void main() {
       );
 
       final repo = FollowRepository(dio);
-      final follow = await repo.followUser(targetUserId);
+      final (:follow, :counts) = await repo.followUser(targetUserId);
 
       expect(follow.id, 'follow-uuid-1');
       expect(follow.followingId, targetUserId);
       expect(follow.isAccepted, true);
       expect(follow.isPending, false);
+      expect(counts.me.followingCount, 8);
+      expect(counts.them!.followersCount, 12);
     });
 
     test('returns Follow with pending status for private accounts', () async {
@@ -93,12 +106,13 @@ void main() {
             'following_id': targetUserId,
             'status': 'pending',
             'created_at': '2024-04-01T10:00:00.000Z',
+            'counts': countsJson,
           },
         ),
       );
 
       final repo = FollowRepository(dio);
-      final follow = await repo.followUser(targetUserId);
+      final (:follow, counts: _) = await repo.followUser(targetUserId);
 
       expect(follow.isPending, true);
       expect(follow.isAccepted, false);
@@ -126,19 +140,22 @@ void main() {
   // ---------------------------------------------------------------------------
 
   group('FollowRepository.unfollowUser', () {
-    test('sends DELETE to correct endpoint and completes without error',
-        () async {
+    test('sends DELETE asking for the counts, and returns them', () async {
       final (dio, adapter) = _makeDio();
       const targetUserId = 'user-uuid-b';
 
-      // 204 No Content — standard response for a successful DELETE.
+      // Asked nothing it would answer an empty 204; asked, both counts.
       adapter.onDelete(
         followEndpoint(targetUserId),
-        (server) => server.reply(204, null),
+        (server) => server.reply(200, countsJson),
+        queryParameters: {'return': 'counts'},
       );
 
       final repo = FollowRepository(dio);
-      await expectLater(repo.unfollowUser(targetUserId), completes);
+      final counts = await repo.unfollowUser(targetUserId);
+
+      expect(counts.me.followingCount, 8);
+      expect(counts.them!.followersCount, 12);
     });
 
     test('throws DioException on 404 when follow relationship does not exist',
@@ -162,6 +179,28 @@ void main() {
   // ---------------------------------------------------------------------------
   // getFollowRequests()
   // ---------------------------------------------------------------------------
+
+  group('FollowRepository.removeFollower', () {
+    test('sends DELETE asking for the counts; them is null past a block',
+        () async {
+      final (dio, adapter) = _makeDio();
+      const followerId = 'user-uuid-c';
+
+      adapter.onDelete(
+        removeFollowerEndpoint(followerId),
+        (server) => server.reply(200, {
+          'me': {'followers_count': 2, 'following_count': 8},
+          'them': null,
+        }),
+        queryParameters: {'return': 'counts'},
+      );
+
+      final counts = await FollowRepository(dio).removeFollower(followerId);
+
+      expect(counts.me.followersCount, 2);
+      expect(counts.them, isNull);
+    });
+  });
 
   group('FollowRepository.getFollowRequests', () {
     test('returns a list of FollowRequestItems on 200', () async {
@@ -212,9 +251,11 @@ void main() {
       );
 
       final repo = FollowRepository(dio);
-      final follow = await repo.acceptFollowRequest(followId);
+      final (:follow, :counts) = await repo.acceptFollowRequest(followId);
 
       expect(follow.isAccepted, true);
+      // Accepting is what moves my followers count.
+      expect(counts.me.followersCount, 3);
     });
   });
 

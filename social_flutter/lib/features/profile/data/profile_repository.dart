@@ -3,6 +3,7 @@
 import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
+import 'package:ntripi/core/api/api_client.dart';
 import 'package:ntripi/core/api/api_endpoints.dart';
 import 'package:ntripi/core/storage/secure_storage.dart';
 import 'package:ntripi/features/profile/domain/violation.dart';
@@ -148,8 +149,7 @@ class ProfileRepository {
   /// GET /appeals/violations — moderation actions against the current user.
   Future<List<Violation>> getViolations() async {
     final response = await _dio.get<Map<String, dynamic>>(kViolationsEndpoint);
-    final list = (response.data!['violations'] as List).cast<Map<String, dynamic>>();
-    return list.map(Violation.fromJson).toList();
+    return _violations(response.data!);
   }
 
   /// POST /appeals — contest a moderation action.
@@ -157,17 +157,34 @@ class ProfileRepository {
   /// The server enforces one open appeal per item (409 `appeal_already_pending`)
   /// and a 30-day lock after a rejection (429 `appeal_cooldown`); callers surface
   /// those codes via [apiErrorCode].
-  Future<void> submitAppeal({
+  ///
+  /// Answers with the Account status list as it now stands, the appeal's row
+  /// marked pending (`?return=violations`), which also becomes the list GET's
+  /// cached answer — the copy it shows offline.
+  Future<List<Violation>> submitAppeal({
     required String targetType,
     required String targetId,
     required String reason,
   }) async {
-    await _dio.post(kAppealsEndpoint, data: {
-      'target_type': targetType,
-      'target_id': targetId,
-      'reason': reason,
-    });
+    final response = await _dio.post<Map<String, dynamic>>(
+      kAppealsEndpoint,
+      data: {
+        'target_type': targetType,
+        'target_id': targetId,
+        'reason': reason,
+      },
+      queryParameters: const {'return': 'violations'},
+    );
+    final data = response.data!;
+    await cacheAsGet(response.requestOptions, kViolationsEndpoint, data);
+    return _violations(data);
   }
+
+  static List<Violation> _violations(Map<String, dynamic> json) =>
+      (json['violations'] as List)
+          .cast<Map<String, dynamic>>()
+          .map(Violation.fromJson)
+          .toList();
 
   /// GET /users/{userId}/locations — aggregate stop coords visible to viewer.
   Future<List<VisitedLocation>> getUserLocations(String userId) async {

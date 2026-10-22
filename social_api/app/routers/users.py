@@ -16,19 +16,21 @@ import uuid
 
 import anyio
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
+from fastapi.responses import Response
 from sqlalchemy import case, select, or_, update
 from sqlalchemy.orm import Session, selectinload
 from starlette.requests import Request
 
 from app.config import get_settings
 from app.database import get_db
-from app.dependencies import get_current_user
+from app.dependencies import get_current_user, wants_counts
 from app.limiter import limiter
 from app.models.follow import Follow, FollowStatus
 from app.models.itinerary import Itinerary
 from app.models.itinerary_rating import ItineraryRating
 from app.models.track import Track
 from app.models.user import User
+from app.routers.follows import counts_answer
 from app.schemas.user import (
     DeleteAccountRequest,
     UserImageResponse,
@@ -702,7 +704,8 @@ def block_user(
     user_id: uuid.UUID,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
-) -> None:
+    wants: str | None = Depends(wants_counts),
+) -> Response:
     if user_id == current_user.id:
         raise ApiError(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -717,6 +720,10 @@ def block_user(
             code="user_not_found", detail="User not found.",
         )
     block_service.create_block(db, current_user, target)
+    # The block severed any follow both ways; `them` is null now, by design.
+    if wants:
+        return counts_answer(db, current_user, user_id)
+    return None  # type: ignore[return-value]
 
 
 @router.delete(

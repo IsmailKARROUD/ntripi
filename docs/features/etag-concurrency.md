@@ -59,6 +59,11 @@ because one endpoint emits both.
   so `recalculate_rating` writes them through `set_preserving_etag` — otherwise
   the column's `onupdate=now()` fires and every stranger's rating 412s the
   owner's open editor ([ratings.md](ratings.md)).
+- **Nor a grant or revoke of edit rights**, since 2026-10-22, nor the
+  allowlist. Both change what the detail GET shows some viewer (`can_edit`,
+  access) without changing the trip, and the GET's body-hash validator (below)
+  already refreshes a cached copy; moving the stamp only made the owner reload
+  to learn their next `If-Match` ([collaborative-editing.md](collaborative-editing.md)).
 - `_etag_json_response` (`itineraries.py`) is the only way to build a response
   carrying the concurrency ETag. A response that carries the trip must build it
   from the **freshly reloaded** detail, not the stale itinerary — which is what
@@ -69,7 +74,9 @@ because one endpoint emits both.
   `updated_at` is the next `If-Match`, and the header carries the same token.
   The client builds `If-Match` from the adopted trip's `updated_at`, exactly as
   from a GET, so it never needs a reload to learn the stamp — until 2026-10-21
-  every save was followed by a forced GET of the whole trip.
+  every save was followed by a forced GET of the whole trip. A create answers
+  the same way when asked, so a new trip's first save carries the stamp its
+  create answered with.
 - **The seven `OWNER_ONLY` endpoints take no `If-Match`** — DELETE itinerary,
   the allowlist pair, the editors pair, the image pair. See
   [collaborative-editing.md](collaborative-editing.md#test_edit_guard_coveragepy--the-structural-proof).

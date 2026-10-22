@@ -782,7 +782,6 @@ class RatingListTile extends ConsumerWidget {
                       ? null
                       : () => showAppealSheet(
                             context,
-                            ref,
                             targetType: 'rating',
                             targetId: rating.id!,
                           ),

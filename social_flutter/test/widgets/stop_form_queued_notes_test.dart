@@ -5,7 +5,6 @@
 // to the stop its Save created — the id the answer names. Every one of those
 // writes answers with the whole trip, which is adopted, so nothing downloads
 // the trip again: the stop and two notes are three requests and no GET.
-import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -26,69 +25,23 @@ import 'package:ntripi/features/profile/providers/profile_provider.dart';
 import 'package:ntripi/l10n/app_localizations.dart';
 import 'package:ntripi/shared/models/user.dart';
 
-const _itinId = 'itin-1';
+import '../support/held_claim.dart';
+import '../support/recording_dio.dart';
+import '../support/trip_json.dart';
 
-Map<String, dynamic> _stop(String id) => {
-      'id': id,
-      'itinerary_id': _itinId,
-      'track_id': 't1',
-      'rank': 'a0',
-      'place_name': 'Cove',
-      'place_address': null,
-      'lat': null,
-      'lng': null,
-      'map_url': null,
-      'place_type': null,
-      'duration_min': null,
-      'cost': 0.0,
-      'is_free': false,
-      'notes': null,
-      'created_at': '2026-10-21T10:00:05.000000Z',
-      'annotations': <Map<String, dynamic>>[],
-    };
-
-/// The trip as the GET shows it, before the save (no stop) or after it.
-Map<String, dynamic> _trip({bool withStop = false}) => {
-      'id': _itinId,
-      'user_id': 'user-1',
-      'title': 'Coast walk',
-      'cover_image_url': null,
-      'total_duration_min': 0,
-      'total_cost': 0.0,
-      'currency': 'EUR',
-      'visibility': 'public',
-      'created_at': '2026-10-21T09:00:00.000000Z',
-      'updated_at': withStop
-          ? '2026-10-21T10:00:05.000000Z'
-          : '2026-10-21T10:00:00.000000Z',
-      'rating_avg': null,
-      'rating_count': 0,
-      'stops_count': withStop ? 1 : 0,
-      'description': null,
-      'tracks': [
+/// The trip before the save (no stop) or after it, as the GET shows it.
+Map<String, dynamic> _trip({bool withStop = false}) => tripJson(
+      updatedAt: withStop ? '2026-10-21T10:00:05.000000Z' : kLoadedAt,
+      tracks: [
         if (withStop)
-          {
-            'id': 't1',
-            'itinerary_id': _itinId,
-            'rank': 'a0',
-            'stops': [_stop('stop-new')],
-          },
+          trackJson('t1', [
+            stopJson('stop-new',
+                placeName: 'Cove',
+                isFree: false,
+                createdAt: '2026-10-21T10:00:05.000000Z'),
+          ]),
       ],
-      'segments': <Map<String, dynamic>>[],
-      'annotations': <Map<String, dynamic>>[],
-      'can_edit': true,
-    };
-
-/// A claim held by this device, without the network or the heartbeat.
-class _HeldClaim extends EditLockNotifier {
-  _HeldClaim(super.arg);
-
-  @override
-  EditSession build() {
-    super.build();
-    return const EditSession(token: 'lock-token');
-  }
-}
+    );
 
 class _FakeMyProfile extends MyProfileNotifier {
   @override
@@ -131,26 +84,21 @@ void main() {
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.reset);
 
-    final dio = Dio(BaseOptions(baseUrl: kApiBaseUrl));
-    final adapter = DioAdapter(dio: dio);
-    final sent = <RequestOptions>[];
-    dio.interceptors.add(InterceptorsWrapper(onRequest: (options, handler) {
-      sent.add(options);
-      handler.next(options);
-    }));
-    adapter
-      ..onGet(itineraryEndpoint(_itinId), (server) => server.reply(200, _trip()))
+    final api = RecordingDio();
+    final (dio, sent) = (api.dio, api.sent);
+    api.adapter
+      ..onGet(itineraryEndpoint(kTripId), (server) => server.reply(200, _trip()))
       ..onPost(
-        itineraryStopsEndpoint(_itinId),
+        itineraryStopsEndpoint(kTripId),
         (server) => server.reply(
-            201, {'itinerary': _trip(withStop: true), 'created_id': 'stop-new'}),
+            201, tripAnswer(_trip(withStop: true), createdId: 'stop-new')),
         data: Matchers.any,
         queryParameters: {'return': 'itinerary'},
       )
       ..onPost(
-        stopAnnotationsEndpoint(_itinId, 'stop-new'),
+        stopAnnotationsEndpoint(kTripId, 'stop-new'),
         (server) => server.reply(
-            201, {'itinerary': _trip(withStop: true), 'created_id': 'note-new'}),
+            201, tripAnswer(_trip(withStop: true), createdId: 'note-new')),
         data: Matchers.any,
         queryParameters: {'return': 'itinerary'},
       );
@@ -169,7 +117,7 @@ void main() {
       ProviderScope(
         overrides: [
           itineraryRepositoryProvider.overrideWithValue(ItineraryRepository(dio)),
-          editLockProvider.overrideWith2(_HeldClaim.new),
+          editLockProvider.overrideWith2(HeldClaim.new),
           myProfileProvider.overrideWith(_FakeMyProfile.new),
           isOnlineProvider.overrideWith((ref) => Stream.value(true)),
           locationServiceProvider.overrideWithValue(_NoLocation()),
@@ -183,7 +131,7 @@ void main() {
         ),
       ),
     );
-    router.push('/itineraries/$_itinId/stops/new');
+    router.push('/itineraries/$kTripId/stops/new');
     await tester.pumpAndSettle();
 
     final l10n =
@@ -224,9 +172,9 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(sent.map((o) => '${o.method} ${o.path}'), [
-      'POST ${itineraryStopsEndpoint(_itinId)}',
-      'POST ${stopAnnotationsEndpoint(_itinId, 'stop-new')}',
-      'POST ${stopAnnotationsEndpoint(_itinId, 'stop-new')}',
+      'POST ${itineraryStopsEndpoint(kTripId)}',
+      'POST ${stopAnnotationsEndpoint(kTripId, 'stop-new')}',
+      'POST ${stopAnnotationsEndpoint(kTripId, 'stop-new')}',
     ]);
     // The form closed onto the page beneath it.
     expect(find.byType(StopFormScreen), findsNothing);

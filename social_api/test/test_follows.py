@@ -24,10 +24,13 @@ The key behaviors under test:
     - Privacy walls protect followers/following lists on private accounts
 """
 
+import uuid
+
 import pytest
 from fastapi.testclient import TestClient
 
 from conftest import auth_headers, register_user
+from app.schemas.follow import FollowResponse
 
 
 # ---------------------------------------------------------------------------
@@ -579,10 +582,11 @@ class TestFollowListPaging:
 # Removing a follower (the followed side ends the follow)
 # ---------------------------------------------------------------------------
 
-def remove_follower(client, owner_token, follower_id):
+def remove_follower(client, owner_token, follower_id, params=None):
     """DELETE follower_id's follow of the owner, from the owner's side."""
     return client.delete(
         f"/users/me/followers/{follower_id}",
+        params=params,
         headers=auth_headers(owner_token),
     )
 
@@ -723,3 +727,124 @@ class TestRemoveFollower:
         remove_follower(client, bob_token, alice["user_id"])
 
         assert get_profile(client, bob_token, alice["user_id"])["follows_you"] is False
+
+
+# ---------------------------------------------------------------------------
+# A write that moves a count answers with both accounts' counts
+# ---------------------------------------------------------------------------
+
+COUNTS = {"return": "counts"}
+
+
+def _counts(profile: dict) -> dict:
+    return {key: profile[key] for key in ("followers_count", "following_count")}
+
+
+class TestCountsAnswer:
+    """The app adopts these instead of downloading a profile, so each must be
+    what the two profiles' GETs say right after the write."""
+
+    def _pair(self, client):
+        """Alice, and Bob, public so a follow is accepted at once."""
+        alice = register_user(client, "alicecount", "alicecount@test.com")
+        bob = register_user(client, "bobcount", "bobcount@test.com")
+        make_public(client, bob["access_token"])
+        return alice, bob
+
+    def _assert_profiles_agree(self, client, counts: dict, me: dict, them_id: str):
+        assert counts["me"] == _counts(get_profile(client, me["access_token"]))
+        assert counts["them"] == _counts(
+            get_profile(client, me["access_token"], them_id))
+
+    def test_a_follow_answers_both_accounts_counts(self, client: TestClient):
+        alice, bob = self._pair(client)
+
+        r = follow(client, alice["access_token"], bob["user_id"])
+
+        assert r.status_code == 201, r.text
+        # Appended after the keys installed builds read, never among them.
+        assert list(r.json()) == [*FollowResponse.model_fields, "counts"]
+        self._assert_profiles_agree(client, r.json()["counts"], alice, bob["user_id"])
+        assert r.json()["counts"]["them"]["followers_count"] == 1
+
+    def test_an_accept_answers_both_accounts_counts(self, client: TestClient):
+        alice = register_user(client, "alicecount", "alicecount@test.com")
+        bob = register_user(client, "bobcount", "bobcount@test.com")  # private
+        follow(client, alice["access_token"], bob["user_id"])
+        bob_h = auth_headers(bob["access_token"])
+        follow_id = client.get("/users/me/follow-requests", headers=bob_h).json()[0]["follow_id"]
+
+        r = client.post(f"/users/me/follow-requests/{follow_id}/accept", headers=bob_h)
+
+        assert r.status_code == 200, r.text
+        assert list(r.json()) == [*FollowResponse.model_fields, "counts"]
+        self._assert_profiles_agree(client, r.json()["counts"], bob, alice["user_id"])
+        assert r.json()["counts"]["me"]["followers_count"] == 1
+
+    def test_an_unfollow_asked_for_counts_answers_them(self, client: TestClient):
+        alice, bob = self._pair(client)
+        follow(client, alice["access_token"], bob["user_id"])
+
+        r = client.delete(f"/users/{bob['user_id']}/follow", params=COUNTS,
+                          headers=auth_headers(alice["access_token"]))
+
+        assert r.status_code == 200, r.text
+        self._assert_profiles_agree(client, r.json(), alice, bob["user_id"])
+        assert r.json()["them"]["followers_count"] == 0
+
+    def test_a_removal_asked_for_counts_answers_them(self, client: TestClient):
+        alice, bob = self._pair(client)
+        follow(client, alice["access_token"], bob["user_id"])
+
+        r = remove_follower(client, bob["access_token"], alice["user_id"], params=COUNTS)
+
+        assert r.status_code == 200, r.text
+        self._assert_profiles_agree(client, r.json(), bob, alice["user_id"])
+        assert r.json()["me"]["followers_count"] == 0
+
+    def test_asked_nothing_both_still_answer_an_empty_204(self, client: TestClient):
+        alice, bob = self._pair(client)
+        follow(client, alice["access_token"], bob["user_id"])
+        r = client.delete(f"/users/{bob['user_id']}/follow",
+                          headers=auth_headers(alice["access_token"]))
+        assert (r.status_code, r.content) == (204, b"")
+
+        follow(client, alice["access_token"], bob["user_id"])
+        r = remove_follower(client, bob["access_token"], alice["user_id"])
+        assert (r.status_code, r.content) == (204, b"")
+
+    def test_an_unknown_return_value_is_refused_before_anything_changes(
+        self, client: TestClient,
+    ):
+        alice, bob = self._pair(client)
+        follow(client, alice["access_token"], bob["user_id"])
+
+        r = client.delete(f"/users/{bob['user_id']}/follow", params={"return": "all"},
+                          headers=auth_headers(alice["access_token"]))
+
+        assert r.status_code == 422, r.text
+        assert get_profile(client, alice["access_token"], bob["user_id"])["is_following"]
+
+    def test_them_is_null_for_an_unknown_account(self, client: TestClient):
+        alice = register_user(client, "alicecount", "alicecount@test.com")
+
+        r = remove_follower(client, alice["access_token"], str(uuid.uuid4()), params=COUNTS)
+
+        assert r.status_code == 200, r.text
+        assert r.json()["them"] is None
+
+    def test_them_is_null_across_a_block_exactly_as_for_an_unknown_account(
+        self, client: TestClient,
+    ):
+        """The profile 404s for the blocked user, and the counts say no more."""
+        alice, bob = self._pair(client)
+        follow(client, alice["access_token"], bob["user_id"])
+        client.post(f"/users/{alice['user_id']}/block",
+                    headers=auth_headers(bob["access_token"]))
+
+        r = remove_follower(client, alice["access_token"], bob["user_id"], params=COUNTS)
+
+        assert r.status_code == 200, r.text
+        assert r.json()["them"] is None
+        assert client.get(f"/users/{bob['user_id']}",
+                          headers=auth_headers(alice["access_token"])).status_code == 404

@@ -86,6 +86,10 @@ only `text/html` responses. Neither affects the security ordering.
   - The record rides a `ContextVar`, which anyio copies into the worker thread
     running a sync endpoint. The clock stops at the last body chunk, so a
     background task is not counted. It skips `/health` and `STATIC_PREFIXES`.
+  - **FCM is never in a request's line.** Pushes are sent by the push worker
+    after the request, in a context with no record (since 2026-10-22,
+    [notifications.md](notifications.md)); until then a write that notified
+    someone carried `ext=fcm.googleapis.com`.
   - Added 2026-10-20, after a Postgres service in another region slowed every
     save for weeks with nothing in the logs. See [decisions.md](../decisions.md).
 - **`STATIC_PREFIXES` lives in `app/middleware/__init__.py`**, shared by the

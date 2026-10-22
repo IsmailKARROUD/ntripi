@@ -19,10 +19,11 @@ timing-safe login and the identical 404 pages. The route TEMPLATE is logged,
 never the path, so no id or username reaches the log.
 
 Outbound calls are timed at the two seams every integration already passes
-through — requests.Session.send (OpenAI, Azure, FCM, Google, Resend, HIBP,
-Jira) and botocore's URLLib3Session.send (R2, Rekognition) — so a new
-integration is timed without anyone remembering to tag it. A client library
-outside those two needs a hook here.
+through — requests.Session.send (OpenAI, Azure, Google, Resend, HIBP, Jira)
+and botocore's URLLib3Session.send (R2, Rekognition) — so a new integration is
+timed without anyone remembering to tag it. A client library outside those two
+needs a hook here. FCM passes through the same seam but is never counted: the
+push worker sends after the request, in a context with no record.
 
 The record rides a ContextVar. anyio copies the context into the worker thread
 that runs a sync endpoint and its dependencies, and the copy holds the same

@@ -16,6 +16,7 @@ import 'package:ntripi/core/cache/image_cache.dart';
 import 'package:ntripi/core/connectivity/connectivity_service.dart';
 import 'package:ntripi/features/profile/data/profile_repository.dart';
 import 'package:ntripi/features/profile/domain/violation.dart';
+import 'package:ntripi/shared/models/follow.dart';
 import 'package:ntripi/shared/models/user.dart';
 
 /// CachedNetworkImage / putFile key the entry by the absolute URL. The server
@@ -73,6 +74,26 @@ class MyProfileNotifier extends AsyncNotifier<User> {
     );
     if (!ref.mounted) return; // disposed mid-request (logout)
     state = next;
+  }
+
+  /// A write answered with the whole profile (accepting the terms): it is the
+  /// state, as a GET of /users/me would give it.
+  void adopt(User user) {
+    if (!ref.mounted) return;
+    state = AsyncData(user);
+  }
+
+  /// A follow write answered with this account's counts — the server's, read
+  /// after its commit. Never a local ±1, which would count twice from a stale
+  /// row.
+  void adoptCounts(UserCounts counts) {
+    if (!ref.mounted) return;
+    if (state case AsyncData(:final value)) {
+      state = AsyncData(value.copyWith(
+        followersCount: counts.followersCount,
+        followingCount: counts.followingCount,
+      ));
+    }
   }
 
   /// Optimistic update after editing the profile.
@@ -167,14 +188,56 @@ class MyProfileNotifier extends AsyncNotifier<User> {
   }
 }
 
+final myViolationsProvider =
+    AsyncNotifierProvider.autoDispose<MyViolationsNotifier, List<Violation>>(
+  MyViolationsNotifier.new,
+);
+
+/// Moderation actions taken against the current user (Account status screen).
+class MyViolationsNotifier extends AsyncNotifier<List<Violation>> {
+  @override
+  Future<List<Violation>> build() =>
+      ref.read(profileRepositoryProvider).getViolations();
+
+  /// An appeal answered with the list as it now stands, its row marked
+  /// pending — so the screen shows it without downloading the list again.
+  void adopt(List<Violation> violations) {
+    if (!ref.mounted) return;
+    state = AsyncData(violations);
+  }
+}
+
 final myProfileProvider =
     AsyncNotifierProvider<MyProfileNotifier, User>(() => MyProfileNotifier());
 
-/// Moderation actions taken against the current user (Account status screen).
-/// Invalidate after filing an appeal so the row's state refreshes.
-final myViolationsProvider = FutureProvider.autoDispose<List<Violation>>((ref) {
-  return ref.read(profileRepositoryProvider).getViolations();
-});
+/// [MyProfileNotifier.adoptCounts] where the profile is loaded. Reading the
+/// notifier of one that is not would build it — the GET this replaces.
+void adoptMyCounts(ProviderContainer container, UserCounts counts) {
+  if (container.exists(myProfileProvider)) {
+    container.read(myProfileProvider.notifier).adoptCounts(counts);
+  }
+}
+
+/// [UserProfileNotifier.updateFollowState] on [userId]'s profile, where it is
+/// loaded — for the same reason as [adoptMyCounts].
+void adoptTheirFollowState(
+  ProviderContainer container,
+  String userId, {
+  bool? isFollowing,
+  bool? followIsPending,
+  bool? followsYou,
+  UserCounts? counts,
+}) {
+  final profile = userProfileProvider(userId);
+  if (container.exists(profile)) {
+    container.read(profile.notifier).updateFollowState(
+          isFollowing: isFollowing,
+          followIsPending: followIsPending,
+          followsYou: followsYou,
+          counts: counts,
+        );
+  }
+}
 
 /// Loads a specific user's public profile by their ID.
 /// We use a family provider so each user ID gets its own cached state.
@@ -199,21 +262,23 @@ class UserProfileNotifier extends AsyncNotifier<User> {
     state = next;
   }
 
-  /// Update follow state locally without a full reload (optimistic update).
-  void updateFollowState({required bool isFollowing, required bool followIsPending}) {
+  /// A follow write between us changed this profile: the follow state it
+  /// left, and this account's counts as its answer carried them — the
+  /// server's, never a local ±1. Null leaves a field as it was.
+  void updateFollowState({
+    bool? isFollowing,
+    bool? followIsPending,
+    bool? followsYou,
+    UserCounts? counts,
+  }) {
+    if (!ref.mounted) return;
     state.whenData((user) {
-      // Only accepted-follow transitions move the count — a pending request or
-      // its cancellation must leave the target's followers count untouched.
-      final delta = (isFollowing && !user.isFollowing)
-          ? 1
-          : (!isFollowing && user.isFollowing)
-              ? -1
-              : 0;
       state = AsyncData(user.copyWith(
         isFollowing: isFollowing,
         followIsPending: followIsPending,
-        followersCount:
-            (user.followersCount + delta).clamp(0, 1 << 31).toInt(),
+        followsYou: followsYou,
+        followersCount: counts?.followersCount,
+        followingCount: counts?.followingCount,
       ));
     });
   }

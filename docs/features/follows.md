@@ -154,16 +154,30 @@ Full columns: [reference/data-model.md](../reference/data-model.md#follows).
 
 | Method | Path | Auth | Response | Errors |
 |---|---|---|---|---|
-| POST | `/users/{user_id}/follow` | **verified email** | `FollowResponse` 201 | 400 `cannot_follow_self`, 404 `user_not_found`, 409 (uncoded) already following / pending |
-| DELETE | `/users/{user_id}/follow` | Bearer | 204 | 404 `not_following` |
-| DELETE | `/users/me/followers/{user_id}` | Bearer | 204 | — (idempotent: nothing to remove is 204 too) |
+| POST | `/users/{user_id}/follow` | **verified email** | `FollowWriteResponse` 201 | 400 `cannot_follow_self`, 404 `user_not_found`, 409 (uncoded) already following / pending |
+| DELETE | `/users/{user_id}/follow` | Bearer | 204; with `?return=counts`, `FollowCounts` 200 | 404 `not_following` |
+| DELETE | `/users/me/followers/{user_id}` | Bearer | 204; with `?return=counts`, `FollowCounts` 200 | — (idempotent: nothing to remove answers too) |
 | GET | `/users/me/follow-requests` | Bearer | `list[FollowRequestItem]` | — |
-| POST | `/users/me/follow-requests/{follow_id}/accept` | Bearer | `FollowResponse` | 404 `follow_request_not_found`, 400 `follow_request_already_accepted` |
+| POST | `/users/me/follow-requests/{follow_id}/accept` | Bearer | `FollowWriteResponse` | 404 `follow_request_not_found`, 400 `follow_request_already_accepted` |
 | DELETE | `/users/me/follow-requests/{follow_id}` | Bearer | 204 | 404 `follow_request_not_found` (missing, **or no longer pending**), **403 `cannot_reject_request`** |
 | GET | `/users/{user_id}/followers` | Bearer | `list[FollowerListItem]` | 404 `user_not_found`, 403 `account_private` |
 | GET | `/users/{user_id}/following` | Bearer | `list[FollowerListItem]` | same |
 
 `FollowResponse` = `{id, follower_id, following_id, status, created_at}`.
+`FollowWriteResponse` = that, then `counts` (since 2026-10-22; a subclass, so
+the key lands after every key installed builds read).
+`FollowCounts` = `{me: UserCounts, them: UserCounts | null}`, `UserCounts` =
+`{followers_count, following_count}`: both accounts' counters as their profiles
+show them right after the write — read back after the commit by
+`user_service.follow_counts`, never computed. **`them` is null wherever
+`GET /users/{id}` would 404 for the caller** — an unknown or suspended account,
+or a block either way — so remove-follower, which answers even when there was
+nothing to remove, never tells a blocked user that the account behind the block
+exists. Follow and accept always carry `counts`; unfollow, remove follower and
+block (`POST /users/{id}/block`, [blocking.md](blocking.md)) answer them only
+with `?return=counts` — asked nothing, they keep their empty 204. Decline and
+unblock change no count and answer as before. The opt-in is
+`dependencies.wants_counts`, built by the shared `return_requested`.
 `FollowRequestItem` = `{follow_id, follower_id, username, display_name,
 avatar_url, requested_at}`.
 Both list endpoints take `limit` (default 20, max 100) / `offset` and return
@@ -194,13 +208,24 @@ Note the follows router has **no prefix** — its paths are literal `/users/…`
   `confirmUnfollow`). Shaped like `confirmAndBlock`: what it needs is captured
   before the first await, so the cache sync happens even if the screen has gone.
   After a success it edits **my** affected list in place with `removeLocally`,
-  invalidates the other person's profile and lists (plus their trips, on an
-  unfollow), and **refetches my own profile for the counts** — never a local
-  `-1`, which would count twice from a stale row. A 404 `not_following` on an
-  unfollow means the row was stale and counts as done.
-- **Following or unfollowing from a profile invalidates my profile and my
-  Following list**, so the list's Following pill never offers to unfollow
-  someone already unfollowed there.
+  **adopts the counts the answer carries** — mine through `adoptMyCounts`, theirs
+  and their `follows_you` / `is_following` through `adoptTheirFollowState`,
+  each only where that profile is loaded — and invalidates only the content no
+  answer carries: their Following list on a removal, their Followers list and
+  trips on an unfollow. Never a local `-1`, which would count twice from a stale
+  row, and since 2026-10-22 no refetch of my profile either. A 404
+  `not_following` on an unfollow means the row was stale and counts as done;
+  nothing was written, so that path re-reads both profiles instead.
+- **Following or unfollowing from a profile adopts both counts** — the
+  `FollowButton` hands its answer to `onChanged`, which sets their tally and
+  follow state (`UserProfileNotifier.updateFollowState(…, counts:)`) and mine
+  (`adoptMyCounts`). My Following list is invalidated on a follow (a new row is
+  content no answer carries) and edited with `removeLocally` on an unfollow, so
+  its Following pill never offers to unfollow someone already unfollowed there.
+- **Accepting a request adopts my new followers count**
+  (`FollowRequestsNotifier.acceptRequest`); until 2026-10-22 nothing refreshed
+  it. Regression test for every flow above:
+  `test/widgets/follow_counts_answer_test.dart`.
 - **Providers** (`features/follows/providers/follow_provider.dart`):
   | Provider | Type | Holds |
   |---|---|---|

@@ -33,6 +33,8 @@ import 'package:ntripi/l10n/app_localizations.dart';
 import 'package:ntripi/shared/models/user.dart';
 import 'package:ntripi/shared/widgets/saving_overlay.dart';
 
+import '../support/held_claim.dart';
+
 const _owner = 'user-1';
 const _waitMessage =
     "Saving your changes… You'll leave edit mode as soon as they're saved.";
@@ -123,18 +125,10 @@ class _GatedRepo extends ItineraryRepository {
 }
 
 /// This device holds the claim; counts how often it is handed back.
-class _HeldClaim extends EditLockNotifier {
-  _HeldClaim(super.arg);
+class _ReleaseCountingClaim extends HeldClaim {
+  _ReleaseCountingClaim(super.arg);
 
   int releases = 0;
-
-  @override
-  EditSession build() {
-    // super.build registers the real teardown, which cancels the detach grace
-    // timer when the container goes.
-    super.build();
-    return const EditSession(token: 'lock-token');
-  }
 
   @override
   Future<EditLockStatus?> peek() async => null;
@@ -162,9 +156,9 @@ class _Harness {
   _Harness(this.repo, this._claim);
 
   final _GatedRepo repo;
-  final _HeldClaim? Function() _claim;
+  final _ReleaseCountingClaim? Function() _claim;
 
-  _HeldClaim get claim => _claim()!;
+  _ReleaseCountingClaim get claim => _claim()!;
 }
 
 Future<_Harness> _pump(WidgetTester tester) async {
@@ -174,7 +168,7 @@ Future<_Harness> _pump(WidgetTester tester) async {
   addTearDown(tester.view.resetDevicePixelRatio);
 
   final repo = _GatedRepo();
-  _HeldClaim? claim;
+  _ReleaseCountingClaim? claim;
   final router = GoRouter(
     initialLocation: '/itineraries/itin-1',
     routes: [
@@ -192,7 +186,7 @@ Future<_Harness> _pump(WidgetTester tester) async {
       isOnlineProvider.overrideWith((ref) => Stream.value(true)),
       translationConfigProvider
           .overrideWith((ref) async => TranslationConfig.disabled),
-      editLockProvider.overrideWith2((id) => claim = _HeldClaim(id)),
+      editLockProvider.overrideWith2((id) => claim = _ReleaseCountingClaim(id)),
     ],
     child: MaterialApp.router(
       localizationsDelegates: AppLocalizations.localizationsDelegates,

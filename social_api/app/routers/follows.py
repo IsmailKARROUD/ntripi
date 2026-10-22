@@ -24,18 +24,23 @@ Security note on follow request routes:
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi.encoders import jsonable_encoder
+from fastapi.responses import JSONResponse, Response
 from sqlalchemy import select, update
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.dependencies import get_current_user, require_verified_email
+from app.dependencies import get_current_user, require_verified_email, wants_counts
 from app.models.follow import Follow, FollowStatus
 from app.models.user import User
-from app.schemas.follow import FollowRequestItem, FollowResponse, FollowerListItem
+from app.schemas.follow import (
+    FollowCounts, FollowRequestItem, FollowResponse, FollowWriteResponse, FollowerListItem,
+)
 from app.services import block_service, edit_lock_service, notification_service
 from app.services.user_service import (
     bump_follow_counters,
     delete_follow,
+    follow_counts,
     get_active_user_or_404,
     get_follow,
     is_accepted_follower,
@@ -44,6 +49,15 @@ from app.services.user_service import (
 from app.errors import ApiError
 
 router = APIRouter(tags=["Follows"])
+
+
+def counts_answer(db: Session, me: User, them_id: uuid.UUID) -> JSONResponse:
+    """`?return=counts` on a write that otherwise answers an empty 204: both
+    accounts' counts after its commit. The block route (users.py) answers with
+    it too — a block severs follows, and it is the same question."""
+    return JSONResponse(content=jsonable_encoder(
+        FollowCounts.model_validate(follow_counts(db, me, them_id)),
+    ))
 
 
 def _require_follow_list_access(target_user: User, current_user: User,
@@ -82,7 +96,7 @@ def _users_as_list_items(user_ids: list[uuid.UUID], db: Session,
 
 @router.post(
     "/users/{user_id}/follow",
-    response_model=FollowResponse,
+    response_model=FollowWriteResponse,
     status_code=status.HTTP_201_CREATED,
     summary="Follow a user",
 )
@@ -90,7 +104,7 @@ def follow_user(
     user_id: uuid.UUID,
     db: Session = Depends(get_db),
     current_user: User = Depends(require_verified_email),  # high-value: verified email required
-) -> FollowResponse:
+) -> FollowWriteResponse:
     """
     Hybrid follow logic:
       - Target is public → create Follow with status='accepted', update counters.
@@ -161,7 +175,10 @@ def follow_user(
 
     db.commit()
     db.refresh(new_follow)
-    return new_follow  # type: ignore[return-value]
+    return FollowWriteResponse(
+        **FollowResponse.model_validate(new_follow).model_dump(),
+        counts=FollowCounts.model_validate(follow_counts(db, current_user, user_id)),
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -177,7 +194,8 @@ def unfollow_user(
     user_id: uuid.UUID,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
-) -> None:
+    wants: str | None = Depends(wants_counts),
+) -> Response:
     """
     Delete the follow record between current_user and the target.
 
@@ -196,6 +214,9 @@ def unfollow_user(
 
     delete_follow(db, follow, current_user, db.get(User, user_id))
     db.commit()
+    if wants:
+        return counts_answer(db, current_user, user_id)
+    return None  # type: ignore[return-value]
 
 
 # ---------------------------------------------------------------------------
@@ -211,7 +232,8 @@ def remove_follower(
     user_id: uuid.UUID,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
-) -> None:
+    wants: str | None = Depends(wants_counts),
+) -> Response:
     """
     Delete user_id's accepted follow of the current user — an unfollow, made
     from the followed side. The removed follower is not notified.
@@ -230,6 +252,11 @@ def remove_follower(
         # every other editor until the TTL (remove_allowed_user does the same).
         edit_lock_service.release_claims_lost_by(db, current_user.id, user_id)
         db.commit()
+    # Answered on the idempotent path too: the counts are true either way, and
+    # `them` stays null for an id the caller could not look up.
+    if wants:
+        return counts_answer(db, current_user, user_id)
+    return None  # type: ignore[return-value]
 
 
 # ---------------------------------------------------------------------------
@@ -280,14 +307,14 @@ def list_follow_requests(
 
 @router.post(
     "/users/me/follow-requests/{follow_id}/accept",
-    response_model=FollowResponse,
+    response_model=FollowWriteResponse,
     summary="Accept a pending follow request",
 )
 def accept_follow_request(
     follow_id: uuid.UUID,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
-) -> FollowResponse:
+) -> FollowWriteResponse:
     """
     Accept a specific pending follow request.
 
@@ -345,7 +372,12 @@ def accept_follow_request(
 
     db.commit()
     db.refresh(follow)
-    return follow  # type: ignore[return-value]
+    return FollowWriteResponse(
+        **FollowResponse.model_validate(follow).model_dump(),
+        # Accepting moves my followers count; the app adopts it from here.
+        counts=FollowCounts.model_validate(
+            follow_counts(db, current_user, follow.follower_id)),
+    )
 
 
 # ---------------------------------------------------------------------------

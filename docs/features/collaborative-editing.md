@@ -62,10 +62,15 @@ server-side; the client renders state and may be stale or hostile.
 - **Revoking also deletes that user's lock row**, in the same transaction
   (`itineraries.py:1162`) — otherwise a removed editor's claim blocks everyone
   until the TTL runs out.
-- **All three editor endpoints call `_touch_itinerary`**, unlike the allowlist.
-  They must: `ItineraryDetail.can_edit` rides in a response whose ETag is
-  `updated_at`, so without the bump a revoked editor's cached detail would keep
-  offering them a pencil.
+- **Granting and revoking leave `updated_at` alone**, like the allowlist
+  (since 2026-10-22; until then both called `_touch_itinerary`).
+  `ItineraryDetail.can_edit` rides in the detail, but the detail GET's cache
+  validator is `"<updated_at>;<body hash>"`
+  ([etag-concurrency.md](etag-concurrency.md)), so a changed `can_edit` already
+  fails a cached copy's 304. Moving the stamp only made the owner reload the
+  trip to learn its new `If-Match`. A revoked editor's next save is refused by
+  the guard all the same. Pinned by `TestTheStampStays`
+  (`test_itinerary_editors.py`).
 - **Editor rights are content only.** Owner-only: delete the itinerary,
   `visibility`, the allowlist, the editor list, and the **cover image** (the
   trip's public face, and every upload spends a paid Rekognition scan).
@@ -326,7 +331,13 @@ showed as editing.
   Regression tests: `test/providers/itinerary_writes_in_flight_test.dart`,
   `test/widgets/edit_mode_exit_while_saving_test.dart`.
 - **`EditorsScreen`** — route `/itineraries/:id/editors`; `editorsProvider`
-  (`AsyncNotifierProvider.family`).
+  (`AsyncNotifierProvider.family`). A grant or a revoke edits the list and
+  downloads nothing — the owner's trip is as it was. An editor who leaves
+  (`EditorAccessRow` → `EditorsNotifier.leave`) sets `can_edit` false on their
+  own copy of the trip (`ItineraryDetailNotifier.editRightsEnded`) and drops it
+  from Shared with me in place; the detail screen leaves edit mode on the
+  form's `true` and reloads nothing. Regression test:
+  `test/providers/editors_notifier_test.dart`.
 - **`sharedWithMeProvider`** stays a **separate provider** from
   `myItinerariesProvider` — two endpoints that fail independently, and the active
   segment decides which must be settled, so a dead `shared-with-me` can never

@@ -172,6 +172,13 @@ New error codes: `tos_required`, `underage`, `dob_required`.
 - **`AcceptTermsScreen`** — **no route**; mounted by `TosGate`
   (`features/auth/presentation/widgets/tos_gate.dart`) inside
   `MaterialApp.router`'s builder.
+- **Accepting adopts the answered profile; nothing re-reads `/users/me`**
+  (since 2026-10-22). `POST /auth/accept-tos` answers `UserPrivateProfile`, and
+  `AuthRepository.acceptTos` returns it as a `User`; the screen hands it to
+  `MyProfileNotifier.adopt`, and the new `tos_current` lowers the gate. The
+  answer is also written into the HTTP cache as `GET /users/me` — without it an
+  app started offline read the old `tos_current: false` from the cache and
+  raised the gate again. Regression test: `test/widgets/tos_gate_test.dart`.
 - **`legalDocumentsProvider`** — `FutureProvider`
   (`features/auth/providers/legal_provider.dart`), subscribed from inside the
   sheet's own route.

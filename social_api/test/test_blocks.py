@@ -450,3 +450,35 @@ def test_the_tos_endpoint_publishes_the_abuse_contact(client):
     assert body["version"]
     assert "@" in body["abuse_contact"]
     assert body["community_guidelines_url"].endswith("/guidelines")
+
+
+# ---------------------------------------------------------------------------
+# A block answers with the counts it moved
+# ---------------------------------------------------------------------------
+
+def test_a_block_asked_for_counts_answers_mine_as_my_profile_shows_them(
+    client, alice, bruno,
+):
+    """The sever moved my following count; the app adopts it from here instead
+    of downloading my profile. Theirs is null: the profile now 404s for me."""
+    _make_public(client, bruno["access_token"])
+    client.post(f"/users/{bruno['user_id']}/follow",
+                headers=auth_headers(alice["access_token"]))
+
+    r = client.post(f"/users/{bruno['user_id']}/block", params={"return": "counts"},
+                    headers=auth_headers(alice["access_token"]))
+
+    assert r.status_code == 200, r.text
+    me = client.get("/users/me", headers=auth_headers(alice["access_token"])).json()
+    assert r.json() == {
+        "me": {"followers_count": me["followers_count"],
+               "following_count": me["following_count"]},
+        "them": None,
+    }
+    assert me["following_count"] == 0
+
+
+def test_a_block_asked_nothing_still_answers_an_empty_204(client, alice, bruno):
+    r = _block(client, alice["access_token"], bruno["user_id"])
+
+    assert (r.status_code, r.content) == (204, b"")

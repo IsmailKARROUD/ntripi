@@ -31,7 +31,7 @@ User _makeUser({
       createdAt: DateTime(2024),
     );
 
-Widget _host({required User user, required FollowStateChanged onChanged}) {
+Widget _host({required User user, required OnFollowChanged onChanged}) {
   FlutterSecureStorage.setMockInitialValues({});
   return ProviderScope(
     child: MaterialApp(
@@ -51,7 +51,7 @@ void main() {
         'Then FollowButton label is "Follow"', (tester) async {
       await tester.pumpWidget(_host(
         user: _makeUser(),
-        onChanged: ({required isFollowing, required followIsPending}) {},
+        onChanged: ({required isFollowing, required followIsPending, required counts}) {},
       ));
       await tester.pump();
 
@@ -63,7 +63,7 @@ void main() {
         'Then FollowButton label is "Following"', (tester) async {
       await tester.pumpWidget(_host(
         user: _makeUser(isFollowing: true),
-        onChanged: ({required isFollowing, required followIsPending}) {},
+        onChanged: ({required isFollowing, required followIsPending, required counts}) {},
       ));
       await tester.pump();
 
@@ -76,7 +76,7 @@ void main() {
       var changed = false;
       await tester.pumpWidget(_host(
         user: _makeUser(isFollowing: true),
-        onChanged: ({required isFollowing, required followIsPending}) =>
+        onChanged: ({required isFollowing, required followIsPending, required counts}) =>
             changed = true,
       ));
       await tester.pump();
@@ -98,7 +98,7 @@ void main() {
         'Then FollowButton label is "Requested"', (tester) async {
       await tester.pumpWidget(_host(
         user: _makeUser(isPrivate: true, followIsPending: true),
-        onChanged: ({required isFollowing, required followIsPending}) {},
+        onChanged: ({required isFollowing, required followIsPending, required counts}) {},
       ));
       await tester.pump();
 
@@ -111,7 +111,7 @@ void main() {
         (tester) async {
       await tester.pumpWidget(_host(
         user: _makeUser(),
-        onChanged: ({required isFollowing, required followIsPending}) {},
+        onChanged: ({required isFollowing, required followIsPending, required counts}) {},
       ));
       await tester.pump();
 

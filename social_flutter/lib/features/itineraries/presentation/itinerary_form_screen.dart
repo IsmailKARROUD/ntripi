@@ -293,7 +293,8 @@ class _ItineraryFormScreenState extends ConsumerState<ItineraryFormScreen> {
       if (widget.mode == ItineraryFormMode.create) {
         // One request with or without a cover. A refused cover fails the whole
         // create, so the catch below keeps the form open with all of it intact.
-        final itinerary =
+        // The trip's screen opens on the create's answer — no GET of it.
+        final id =
             await ref.read(myItinerariesProvider.notifier).addItinerary(
                   data,
                   coverBytes: _pendingImageBytes,
@@ -301,7 +302,7 @@ class _ItineraryFormScreenState extends ConsumerState<ItineraryFormScreen> {
                 );
         if (!mounted) return;
         // justCreated → detail screen opens the first-stop form on top of itself once.
-        context.go('/itineraries/${itinerary.id}', extra: {'justCreated': true});
+        context.go('/itineraries/$id', extra: {'justCreated': true});
       } else {
         // One request: the fields and the owner's cover change, checked under
         // one If-Match. Read before the await — the screen may be gone after.
@@ -392,7 +393,7 @@ class _ItineraryFormScreenState extends ConsumerState<ItineraryFormScreen> {
     try {
       await ref
           .read(editorsProvider(widget.itineraryId!).notifier)
-          .removeEditor(currentUserId);
+          .leave(currentUserId);
       // The server already dropped any claim of ours; this clears the local
       // token and stops the heartbeat. A no-op when we were not holding one.
       await ref.read(editLockProvider(widget.itineraryId!).notifier).release();
@@ -412,8 +413,9 @@ class _ItineraryFormScreenState extends ConsumerState<ItineraryFormScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(l10n.editorsLeft)),
     );
-    // `true` tells the detail screen underneath to leave edit mode and refetch.
-    // View access is untouched, so the trip itself stays open behind us.
+    // `true` tells the detail screen underneath to leave edit mode; its trip
+    // already says can_edit false (leave). View access is untouched, so the
+    // trip itself stays open behind us.
     _close(true);
   }
 

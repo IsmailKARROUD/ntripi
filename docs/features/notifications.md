@@ -144,15 +144,24 @@ Unset, nothing is sent, nothing raises, and the poll is the only channel.
   `push_service.py` is a `requests.post`, shaped like `jira_service.py`, not an
   SDK. It **fails open** like `email_service` and unlike `jira_service`: nobody is
   waiting on it, and a Google outage must not 500 a follow.
-- **Dispatched `after_commit`, NEVER from inside `notify()`.** `notify()` adds its
+- **Queued after commit, NEVER sent from inside `notify()`.** `notify()` adds its
   row to the caller's open transaction, so sending there would push for
   transactions that later roll back — and **a push cannot be un-sent**. `notify()`
   appends a `PendingPush` snapshot to `Session.info["pending_pushes"]`; the
   `after_commit` listener drains it. **An `after_soft_rollback` listener clears the
   queue**, or a rolled-back event would ride out on whatever commits next.
-- **The dispatcher uses its OWN session** (`_session_factory`), not the request's.
-  Pruning a dead token needs a commit, and committing on the request session
-  inside `after_commit` would re-enter the very listener that called it.
+- **Sent by one background worker, never in the request** (since 2026-10-22).
+  The listener hands the batch to `_submit`, which runs it on a module-level
+  `ThreadPoolExecutor(max_workers=1, thread_name_prefix="push")` in an empty
+  `contextvars.Context` — so no follow, rating or save waits on FCM, and the
+  request-timing line never counts it. Until then the listener sent each push
+  itself, between the user's commit and their response. One thread keeps sends
+  in order; tests run the batch inline by patching `_submit`, and
+  `test_a_write_answers_without_waiting_for_its_push` holds a send open to
+  prove the write answers anyway.
+- **The worker uses its OWN session** (`_session_factory`), never the request's.
+  Pruning a dead token needs a commit, and the request's session is not the
+  worker's to use.
 - **`PendingPush` is a snapshot, not the ORM row.** After commit the row's
   attributes are expired and touching one fires a lazy reload on a session
   between transactions. Resolving actor name and itinerary title inside `notify()`
@@ -214,8 +223,9 @@ Unset, nothing is sent, nothing raises, and the poll is the only channel.
   misconfigured key is transient and must never cost a working device its
   registration — unrecoverable without a reinstall. `_post`
   returns `sent` / `dead` / `failed` / `unreachable`; on `unreachable` the whole
-  notification is **abandoned**, because this runs inline in the user's request
-  and that bounds the delay at **one** timeout rather than one per device.
+  notification is **abandoned**, because one worker sends every push in turn:
+  that bounds the delay to the pushes queued behind it at **one** timeout
+  rather than one per device.
 - `validate_credentials` runs at **startup** and **logs, never raises**.
   `json.loads(..., strict=False)` tolerates raw newlines in an env-pasted
   `private_key`.

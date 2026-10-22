@@ -245,10 +245,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                           authorUserId: user.id,
                           authorUsername: user.username,
                           onBlocked: () {
-                            // Blocking severs any follow in BOTH directions and
-                            // rewrites both counters server-side, so the
-                            // viewer's own profile and feed are now stale.
-                            ref.invalidate(myProfileProvider);
+                            // My counts came back with the block itself
+                            // (confirmAndBlock adopts them); the feed changed
+                            // in a way no answer carries.
                             ref.invalidate(feedProvider);
                             // The profile is about to be invisible to us.
                             Navigator.of(context).maybePop();
@@ -352,7 +351,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     message: l10n.hiddenProfileMessage,
                     onAppeal: () => showAppealSheet(
                       context,
-                      ref,
                       targetType: 'user',
                       targetId: user.id,
                     ),
@@ -385,6 +383,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       onChanged: ({
                         required isFollowing,
                         required followIsPending,
+                        required counts,
                       }) {
                         ref
                             .read(userProfileProvider(widget.userId!)
@@ -392,15 +391,24 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                             .updateFollowState(
                               isFollowing: isFollowing,
                               followIsPending: followIsPending,
+                              counts: counts.them,
                             );
-                        // Your own counts and Following list are keep-alive
-                        // caches of this same follow. Left stale, the list's
-                        // Following pill would offer to unfollow someone
-                        // you just unfollowed here.
+                        adoptMyCounts(
+                          ProviderScope.containerOf(context, listen: false),
+                          counts.me,
+                        );
+                        // My Following list is a keep-alive cache of this same
+                        // follow. Left stale, its Following pill would offer to
+                        // unfollow someone just unfollowed here. A new row is
+                        // content no answer carries; a gone one is not.
                         final myId = ref.read(myProfileProvider).value?.id;
-                        ref.invalidate(myProfileProvider);
-                        if (myId != null) {
-                          ref.invalidate(followingProvider(myId));
+                        if (myId == null) return;
+                        final following = followingProvider(myId);
+                        if (isFollowing) {
+                          ref.invalidate(following);
+                        } else if (ref.exists(following)) {
+                          ref.read(following.notifier)
+                              .removeLocally(widget.userId!);
                         }
                       },
                     ),

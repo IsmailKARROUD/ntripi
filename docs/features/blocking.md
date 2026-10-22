@@ -69,7 +69,7 @@ Full columns:
 | Method | Path | Auth | Response | Errors |
 |---|---|---|---|---|
 | GET | `/users/me/blocks` | Bearer | `list[UserSearchResult]`, newest first | — |
-| POST | `/users/{user_id}/block` | Bearer | 204 | 400 `cannot_block_self`, 404 `user_not_found` |
+| POST | `/users/{user_id}/block` | Bearer | 204; with `?return=counts`, `FollowCounts` 200 | 400 `cannot_block_self`, 404 `user_not_found` |
 | DELETE | `/users/{user_id}/block` | Bearer | 204, idempotent | — |
 
 ## Flutter surface
@@ -83,6 +83,14 @@ Full columns:
   | `blockedUsersProvider` | `FutureProvider` | the blocked list |
   | `blockedUserIdsProvider` | `Provider` | id set derived from the list |
 - Block and unblock are offered from `ugc_actions.dart`, alongside reporting.
+- **A block answers with my counts, and the app adopts them** (since
+  2026-10-22). The sever can move my followers and following counts, so
+  `confirmAndBlock` sends `?return=counts` and hands `counts.me` to
+  `adoptMyCounts` — from every surface that blocks, where only a block from a
+  profile used to refresh the counts, by downloading `/users/me`. `counts.them`
+  is null: the blocked profile now 404s for the blocker, and the answer says no
+  more than it does ([follows.md](follows.md)). The blocked list (a new row)
+  and the feed are still invalidated — content no answer carries.
 - **A blocked account reads as gone, not as a cached profile** — `708cc28` fixed
   a case where a stale cache still rendered the profile.
 

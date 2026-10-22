@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ntripi/core/api/api_client.dart';
 import 'package:ntripi/core/connectivity/connectivity_service.dart';
 import 'package:ntripi/features/follows/data/follow_repository.dart';
+import 'package:ntripi/features/profile/providers/profile_provider.dart';
 import 'package:ntripi/shared/models/follow.dart';
 
 /// Provides the FollowRepository singleton.
@@ -78,10 +79,14 @@ class FollowRequestsNotifier extends AsyncNotifier<List<FollowRequestItem>> {
     });
   }
 
-  /// Accept a follow request, then remove it from the list.
+  /// Accept a follow request, then remove it from the list. Accepting is what
+  /// moves my followers count, and the answer carries it.
   Future<void> acceptRequest(String followId) async {
-    await ref.read(followRepositoryProvider).acceptFollowRequest(followId);
+    final accepted =
+        await ref.read(followRepositoryProvider).acceptFollowRequest(followId);
+    if (!ref.mounted) return; // disposed mid-request (logout)
     removeRequest(followId);
+    adoptMyCounts(ref.container, accepted.counts.me);
   }
 
   /// Reject a follow request, then remove it from the list.

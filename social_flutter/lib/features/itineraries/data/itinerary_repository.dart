@@ -24,11 +24,11 @@
 //   A blanket interceptor would keep sending a token the client no longer
 //   holds, onto requests that must not carry one.
 //
-// EVERY CONTENT MUTATION ASKS FOR THE TRIP BACK (`?return=itinerary`):
-//   the answer is the whole trip as a GET would show it, so the save is the
-//   only request — nothing downloads the trip again after it. The server needs
-//   that parameter to answer this way; a backend without it answers the old
-//   shapes, so it deploys first.
+// EVERY CONTENT MUTATION ASKS FOR THE TRIP BACK (`?return=itinerary`), AND
+// SO DOES A CREATE: the answer is the whole trip as a GET would show it, so
+// the save is the only request — nothing downloads the trip again after it. The
+// server needs that parameter to answer this way; a backend without it answers
+// the old shapes, so it deploys first.
 
 import 'dart:convert';
 import 'dart:typed_data';
@@ -139,8 +139,8 @@ class ItineraryRepository {
   /// rejections are mapped as everywhere else, and the trip it answers with
   /// also becomes the cached answer to the trip's GET — the copy a trip shows
   /// offline, which the reload that used to follow every save kept current.
+  /// Keyed by the answered trip's own id: a create has none until it answers.
   Future<TripEditAnswer> _tripEdit(
-    String itineraryId,
     Future<Response<Map<String, dynamic>>> Function() send,
   ) async {
     final Response<Map<String, dynamic>> response;
@@ -152,8 +152,8 @@ class ItineraryRepository {
     final data = response.data!;
     final trip = data['itinerary'];
     if (trip is Map<String, dynamic>) {
-      await cacheAsGet(
-          response.requestOptions, itineraryEndpoint(itineraryId), trip);
+      await cacheAsGet(response.requestOptions,
+          itineraryEndpoint(trip['id'] as String), trip);
     }
     return TripEditAnswer.fromJson(data);
   }
@@ -252,30 +252,34 @@ class ItineraryRepository {
     await _dio.delete(itinerarySaveEndpoint(id));
   }
 
-  // Fire-and-forget: reporting has no client-side state to cache. Auth is
-  // optional server-side, but in-app reports always carry the Bearer token.
-  Future<Itinerary> createItinerary(Map<String, dynamic> data) async {
-    final response =
-        await _dio.post<Map<String, dynamic>>(kItinerariesEndpoint, data: data);
-    return Itinerary.fromJson(response.data!);
-  }
+  /// A create answers like a trip edit — with the trip it made, whose id is
+  /// [TripEditAnswer.createdId] — so its screen opens with no GET.
+  Future<TripEditAnswer> createItinerary(Map<String, dynamic> data) =>
+      _tripEdit(
+        () => _dio.post<Map<String, dynamic>>(
+          kItinerariesEndpoint,
+          data: data,
+          queryParameters: _returnTrip,
+        ),
+      );
 
   /// The New itinerary form's save when a cover was picked: the fields and the
   /// cover in one multipart request, so a refused cover creates nothing.
-  Future<Itinerary> createItineraryWithCover(
+  Future<TripEditAnswer> createItineraryWithCover(
     Map<String, dynamic> data, {
     required Uint8List coverBytes,
     String? coverFilename,
-  }) async {
-    final response = await _dio.post<Map<String, dynamic>>(
-      kItineraryFormEndpoint,
-      data: FormData.fromMap({
-        'fields': jsonEncode(data),
-        'image': _coverPart(coverBytes, coverFilename),
-      }),
-    );
-    return Itinerary.fromJson(response.data!);
-  }
+  }) =>
+      _tripEdit(
+        () => _dio.post<Map<String, dynamic>>(
+          kItineraryFormEndpoint,
+          data: FormData.fromMap({
+            'fields': jsonEncode(data),
+            'image': _coverPart(coverBytes, coverFilename),
+          }),
+          queryParameters: _returnTrip,
+        ),
+      );
 
   /// Header fields: title, description, currency, recommended period — and
   /// `visibility`, which the server accepts only from the owner.
@@ -286,7 +290,6 @@ class ItineraryRepository {
     required String? lockToken,
   }) =>
       _tripEdit(
-        id,
         () => _dio.patch<Map<String, dynamic>>(
           itineraryEndpoint(id),
           data: data,
@@ -309,7 +312,6 @@ class ItineraryRepository {
     required String? lockToken,
   }) =>
       _tripEdit(
-        id,
         () => _dio.patch<Map<String, dynamic>>(
           itineraryFormEndpoint(id),
           data: FormData.fromMap({
@@ -342,7 +344,6 @@ class ItineraryRepository {
     required String? lockToken,
   }) =>
       _tripEdit(
-        itineraryId,
         () => _dio.post<Map<String, dynamic>>(
           itineraryStopsEndpoint(itineraryId),
           data: data,
@@ -359,7 +360,6 @@ class ItineraryRepository {
     required String? lockToken,
   }) =>
       _tripEdit(
-        itineraryId,
         () => _dio.patch<Map<String, dynamic>>(
           itineraryStopEndpoint(itineraryId, stopId),
           data: data,
@@ -375,7 +375,6 @@ class ItineraryRepository {
     required String? lockToken,
   }) =>
       _tripEdit(
-        itineraryId,
         () => _dio.delete<Map<String, dynamic>>(
           itineraryStopEndpoint(itineraryId, stopId),
           queryParameters: _returnTrip,
@@ -410,7 +409,6 @@ class ItineraryRepository {
         'segments_to_delete': segmentIdsToDelete,
     };
     return _tripEdit(
-      itineraryId,
       () => _dio.post<Map<String, dynamic>>(
         itineraryReorderEndpoint(itineraryId),
         data: body,
@@ -432,7 +430,6 @@ class ItineraryRepository {
     required String? lockToken,
   }) =>
       _tripEdit(
-        itineraryId,
         () => _dio.post<Map<String, dynamic>>(
           stopAnnotationsEndpoint(itineraryId, stopId),
           data: data,
@@ -449,7 +446,6 @@ class ItineraryRepository {
     required String? lockToken,
   }) =>
       _tripEdit(
-        itineraryId,
         () => _dio.delete<Map<String, dynamic>>(
           stopAnnotationEndpoint(itineraryId, stopId, annotationId),
           queryParameters: _returnTrip,
@@ -471,7 +467,6 @@ class ItineraryRepository {
       if (type != null) 'type': type.name,
     };
     return _tripEdit(
-      itineraryId,
       () => _dio.patch<Map<String, dynamic>>(
         stopAnnotationEndpoint(itineraryId, stopId, annotationId),
         data: body,
@@ -492,7 +487,6 @@ class ItineraryRepository {
     required String? lockToken,
   }) =>
       _tripEdit(
-        itineraryId,
         () => _dio.post<Map<String, dynamic>>(
           itineraryAnnotationsEndpoint(itineraryId),
           data: data,
@@ -514,7 +508,6 @@ class ItineraryRepository {
       if (type != null) 'type': type.name,
     };
     return _tripEdit(
-      itineraryId,
       () => _dio.patch<Map<String, dynamic>>(
         itineraryAnnotationEndpoint(itineraryId, annotationId),
         data: body,
@@ -531,7 +524,6 @@ class ItineraryRepository {
     required String? lockToken,
   }) =>
       _tripEdit(
-        itineraryId,
         () => _dio.delete<Map<String, dynamic>>(
           itineraryAnnotationEndpoint(itineraryId, annotationId),
           queryParameters: _returnTrip,
@@ -685,7 +677,6 @@ class ItineraryRepository {
     required String? lockToken,
   }) =>
       _tripEdit(
-        itineraryId,
         () => _dio.post<Map<String, dynamic>>(
           itinerarySegmentsEndpoint(itineraryId),
           data: data,
@@ -702,7 +693,6 @@ class ItineraryRepository {
     required String? lockToken,
   }) =>
       _tripEdit(
-        itineraryId,
         () => _dio.patch<Map<String, dynamic>>(
           itinerarySegmentEndpoint(itineraryId, segmentId),
           data: data,
@@ -718,7 +708,6 @@ class ItineraryRepository {
     required String? lockToken,
   }) =>
       _tripEdit(
-        itineraryId,
         () => _dio.delete<Map<String, dynamic>>(
           itinerarySegmentEndpoint(itineraryId, segmentId),
           queryParameters: _returnTrip,
@@ -731,27 +720,64 @@ class ItineraryRepository {
   // ---------------------------------------------------------------------------
 
   /// The answer carries the trip's new aggregate beside the rating, so the trip
-  /// page takes it from there instead of reloading the trip.
-  Future<({MyRating rating, RatingAggregate aggregate})> submitRating(
+  /// page takes it from there instead of reloading the trip — and, with
+  /// [withRatingsPage], the ratings page as it now stands, for a caller that
+  /// has it open.
+  Future<({MyRating rating, RatingAggregate aggregate, RatingsPage? page})>
+      submitRating(
     String itineraryId,
-    MyRating rating,
-  ) async {
+    MyRating rating, {
+    bool withRatingsPage = false,
+  }) async {
     final response = await _dio.post<Map<String, dynamic>>(
       itineraryRatingsEndpoint(itineraryId),
       data: rating.toJson(),
+      queryParameters: withRatingsPage ? _returnRatingsPage : null,
     );
     final data = response.data!;
-    return (rating: MyRating.fromJson(data), aggregate: RatingAggregate.fromJson(data));
+    final page = data['ratings_page'];
+    return (
+      rating: MyRating.fromJson(data),
+      aggregate: RatingAggregate.fromJson(data),
+      page: page is Map<String, dynamic>
+          ? await _ratingsPageAnswer(response, itineraryId, page)
+          : null,
+    );
   }
 
-  /// Asked for it, the delete answers with the trip's aggregate once the rating
-  /// is gone.
-  Future<RatingAggregate> deleteMyRating(String itineraryId) async {
+  /// The delete answers with the trip's aggregate once the rating is gone —
+  /// or, with [withRatingsPage], with the whole ratings page left, which
+  /// carries the aggregate too.
+  Future<({RatingAggregate aggregate, RatingsPage? page})> deleteMyRating(
+    String itineraryId, {
+    bool withRatingsPage = false,
+  }) async {
     final response = await _dio.delete<Map<String, dynamic>>(
       itineraryMyRatingEndpoint(itineraryId),
-      queryParameters: const {'return': 'aggregate'},
+      queryParameters:
+          withRatingsPage ? _returnRatingsPage : const {'return': 'aggregate'},
     );
-    return RatingAggregate.fromJson(response.data!);
+    final data = response.data!;
+    return (
+      aggregate: RatingAggregate.fromJson(data),
+      page: withRatingsPage
+          ? await _ratingsPageAnswer(response, itineraryId, data)
+          : null,
+    );
+  }
+
+  static const _returnRatingsPage = {'return': 'ratings_page'};
+
+  /// A rating write's answered page, which also becomes the cached answer to
+  /// the page's GET — the copy it shows offline, which a reload used to renew.
+  Future<RatingsPage> _ratingsPageAnswer(
+    Response<Map<String, dynamic>> response,
+    String itineraryId,
+    Map<String, dynamic> page,
+  ) async {
+    await cacheAsGet(
+        response.requestOptions, itineraryRatingsEndpoint(itineraryId), page);
+    return RatingsPage.fromJson(page);
   }
 
   Future<RatingsPage> getRatingsPage(

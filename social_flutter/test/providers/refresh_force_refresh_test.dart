@@ -122,13 +122,17 @@ class _FakeFollowRepo implements FollowRepository {
 
   // Unused by the tests but required to satisfy the interface contract.
   @override
-  Future<Follow> followUser(String userId) => throw UnimplementedError();
+  Future<({Follow follow, FollowCounts counts})> followUser(String userId) =>
+      throw UnimplementedError();
   @override
-  Future<void> unfollowUser(String userId) => throw UnimplementedError();
+  Future<FollowCounts> unfollowUser(String userId) => throw UnimplementedError();
   @override
-  Future<void> removeFollower(String userId) => throw UnimplementedError();
+  Future<FollowCounts> removeFollower(String userId) =>
+      throw UnimplementedError();
   @override
-  Future<Follow> acceptFollowRequest(String followId) =>
+  Future<({Follow follow, FollowCounts counts})> acceptFollowRequest(
+    String followId,
+  ) =>
       throw UnimplementedError();
   @override
   Future<void> rejectFollowRequest(String followId) =>

@@ -310,8 +310,8 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
   // stop edit does, so the claim has to happen before the push or Save 428s.
   //
   // A `true` result means the user removed themselves as an editor in there —
-  // the claim and the pencil are both gone, so leave edit mode and refetch so
-  // can_edit stops saying otherwise.
+  // the claim and the pencil are both gone, so leave edit mode. The trip
+  // already says can_edit false (EditorsNotifier.leave), so nothing reloads.
   Future<void> _openDetailsForm() async {
     if (!_editMode) await _enterEditMode();
     if (!mounted || !_editMode) return;
@@ -319,9 +319,6 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
         await context.push<bool>('/itineraries/${widget.itineraryId}/edit');
     if (!mounted || left != true) return;
     _exitEditMode();
-    await ref
-        .read(itineraryDetailProvider(widget.itineraryId).notifier)
-        .refresh();
   }
 
   // Owner tapped the placeholder cover: point them at the Edit details button
@@ -1160,7 +1157,6 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                               message: l10n.hiddenBannerMessage,
                               onAppeal: () => showAppealSheet(
                                 context,
-                                ref,
                                 targetType: 'itinerary',
                                 targetId: itinerary.id,
                               ),

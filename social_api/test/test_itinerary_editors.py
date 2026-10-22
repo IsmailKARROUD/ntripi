@@ -647,6 +647,63 @@ class TestCanEditFlag:
 
 
 # ---------------------------------------------------------------------------
+# Granting and revoking leave the trip's stamp alone
+# ---------------------------------------------------------------------------
+
+class TestTheStampStays:
+    """updated_at is the owner's If-Match: a grant that moved it made the owner
+    reload to learn the new one. can_edit needs no stamp to reach a cache — the
+    detail's validator carries a hash of its body."""
+
+    def _stamp(self, client: TestClient, itin_id: str, hdrs: dict) -> str:
+        return client.get(f"/itineraries/{itin_id}", headers=hdrs).json()["updated_at"]
+
+    def test_a_grant_leaves_the_owners_if_match_valid(self, client: TestClient):
+        owner_hdrs, _, _, bob_id = _cast(client)
+        itin_id = _itinerary(client, owner_hdrs)
+        token = acquire_edit_lock(client, itin_id, owner_hdrs)
+        before, stamp = _etag(client, itin_id, owner_hdrs), self._stamp(client, itin_id, owner_hdrs)
+
+        assert _grant(client, itin_id, owner_hdrs, bob_id).status_code == 201
+
+        assert self._stamp(client, itin_id, owner_hdrs) == stamp
+        saved = client.patch(f"/itineraries/{itin_id}", json={"title": "Still mine"},
+                             headers=edit_headers(owner_hdrs, before, token))
+        assert saved.status_code == 200, saved.text
+
+    def test_a_revoke_leaves_the_owners_if_match_valid(self, client: TestClient):
+        owner_hdrs, _, _, bob_id = _cast(client)
+        itin_id = _itinerary(client, owner_hdrs)
+        _grant(client, itin_id, owner_hdrs, bob_id)
+        token = acquire_edit_lock(client, itin_id, owner_hdrs)
+        before, stamp = _etag(client, itin_id, owner_hdrs), self._stamp(client, itin_id, owner_hdrs)
+
+        assert client.delete(f"/itineraries/{itin_id}/editors/{bob_id}",
+                             headers=owner_hdrs).status_code == 204
+
+        assert self._stamp(client, itin_id, owner_hdrs) == stamp
+        saved = client.patch(f"/itineraries/{itin_id}", json={"title": "Still mine"},
+                             headers=edit_headers(owner_hdrs, before, token))
+        assert saved.status_code == 200, saved.text
+
+    def test_a_revoked_editors_cached_detail_is_not_revalidated(self, client: TestClient):
+        """The pencil must not survive on a 304: the body changed, so its hash
+        did, and the conditional GET answers in full."""
+        owner_hdrs, _, bob_hdrs, bob_id = _cast(client)
+        itin_id = _itinerary(client, owner_hdrs, visibility="public")
+        _grant(client, itin_id, owner_hdrs, bob_id, grant_view=False)
+        cached = client.get(f"/itineraries/{itin_id}", headers=bob_hdrs)
+        assert cached.json()["can_edit"] is True
+
+        client.delete(f"/itineraries/{itin_id}/editors/{bob_id}", headers=owner_hdrs)
+
+        again = client.get(f"/itineraries/{itin_id}",
+                           headers={**bob_hdrs, "If-None-Match": cached.headers["etag"]})
+        assert again.status_code == 200
+        assert again.json()["can_edit"] is False
+
+
+# ---------------------------------------------------------------------------
 # GET /itineraries/shared-with-me
 # ---------------------------------------------------------------------------
 

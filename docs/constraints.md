@@ -156,6 +156,10 @@ discoverable way to learn the constraints. Logged in
   call sites.
 - **A heartbeat or a takeover must never touch `updated_at`** — every open client
   would 412 once a minute.
+- **Nor may granting or revoking edit rights, or the allowlist** — they change
+  what some viewer's GET shows, not the trip; the GET's body-hash validator
+  already refreshes a cached copy, and moving the stamp only made the owner
+  reload (since 2026-10-22).
 - **The lock check sits above the `If-Match` check.** After a takeover the ETag has
   usually moved too, and 412 would send the user to reload into a screen they
   still cannot save from.
@@ -405,14 +409,21 @@ it. A test about the ETag moving backdates the row first (`_backdate` in
   classes stay separate, why `ItineraryDetail` declares `hidden`, the
   recommended-period fields and `can_edit` inline and last, and why
   `ItinerarySummary` gains no `can_edit`.
-- **A new answer shape is opt-in per request.** Asked nothing, every trip edit
+- **A new answer shape is opt-in per request.** Asked nothing, every write
   answers byte for byte as it always has — status, schema, key order, ETag
-  header — so builds already installed keep working; the whole-trip answer
-  comes only with `?return=itinerary`
-  ([itineraries.md](features/itineraries.md)). `test_trip_edit_answers.py` pins
-  both halves on every `EDIT_GUARDED` route. Keys added to an existing answer
-  are appended after it, never inserted — the rating POST's aggregate rides on
-  a subclass of `RatingResponse`, so `GET /ratings/me` is untouched.
+  header — so builds already installed keep working; the new answer comes only
+  with `?return=…`, from the one factory `return_requested`
+  (`app/dependencies.py`), which 422s any value it does not know:
+  `itinerary` on every trip edit and both creates, `aggregate|ratings_page` on
+  `DELETE /ratings/me`, `ratings_page` on `POST /ratings`, `counts` on
+  unfollow, remove follower and block, `violations` on `POST /appeals`
+  ([itineraries.md](features/itineraries.md),
+  [follows.md](features/follows.md)). `test_trip_edit_answers.py` pins both
+  halves on every `EDIT_GUARDED` route and both creates. Keys added to an
+  existing answer are appended after it, never inserted — the rating POST's
+  aggregate and page ride on subclasses of `RatingResponse`, follow and accept
+  append `counts` through `FollowWriteResponse`, so the shapes other routes
+  share are untouched.
 - **Constrained string fields stay `pattern=` regexes, not `Literal`** —
   switching changes the 422 body. (`_VISIBILITY` is the one existing exception.)
 - **Keep `detail` strings stable** — web templates and tests read them.
@@ -441,7 +452,9 @@ block appears a second time anywhere, extract it instead of copying.**
 
 | Helper | Owns |
 |---|---|
-| `services/user_service.py` | `get_active_user_or_404` / `..._by_username_or_404` — **the only** fetch-or-404; `get_follow` / `is_accepted_follower` — **never write an inline Follow query**; `bump_follow_counters` — **the only** way to touch the counters; `delete_follow` — **the only** way to delete a follow row (decrements from the row's status as it was deleted, never as loaded); `public_profile_text` |
+| `services/user_service.py` | `get_active_user_or_404` / `..._by_username_or_404` — **the only** fetch-or-404; `get_follow` / `is_accepted_follower` — **never write an inline Follow query**; `bump_follow_counters` — **the only** way to touch the counters; `delete_follow` — **the only** way to delete a follow row (decrements from the row's status as it was deleted, never as loaded); `follow_counts` — **the only** source of a follow write's `counts` (read after the commit; `them` null where the profile would 404); `public_profile_text` |
+| `app/dependencies.py` | `return_requested(*representations)` — **the one** `?return=` opt-in factory; `wants_counts` |
+| `routers/follows.py` | `counts_answer` — the `?return=counts` answer, which the block route (`users.py`) shares |
 | `services/token_util.py` | `hash_token` / `as_aware_utc` / `new_raw_token` — every opaque-token service |
 | `services/image_service.py` | `process_and_store` — all image uploads |
 | `services/share_service.py` | `build_share_url`, `build_profile_share_url`, `absolute_storage_url`, `absolutize_stored_url`, `default_preview_image_url` |
@@ -450,7 +463,7 @@ block appears a second time anywhere, extract it instead of copying.**
 | `services/itinerary_access.py` | `can_view_itinerary`, `can_edit_itinerary`, `public_listing_criteria`, `visible_rating_criteria`, `recalculate_rating` |
 | `services/translation_service.py` | `REGISTRY` — the one list of translatable fields; `sync_translations` — **every write of translatable text calls it** before the commit; `purge_orphans` — **every delete below the itinerary calls it** after the flush; `source_hash` |
 | `app/middleware/__init__.py` | `STATIC_PREFIXES` |
-| `routers/itineraries.py` (router-private, keep them so) | `_etag_json_response`, `_require_viewable`, `_viewer_detail` — **the one builder of the trip a GET shows**, which every trip edit's answer reuses — `_trip_edit_answer`, `wants_itinerary`, `_two_phase_renumber`, `_require_stops_in_itinerary`, the annotation CRUD helpers |
+| `routers/itineraries.py` (router-private, keep them so) | `_etag_json_response`, `_require_viewable`, `_viewer_detail` — **the one builder of the trip a GET shows**, which every trip edit's and create's answer reuses — `_trip_edit_answer`, `wants_itinerary`, `_ratings_page` — **the one builder of the ratings page**, for the GET and both rating writes — `_two_phase_renumber`, `_require_stops_in_itinerary`, the annotation CRUD helpers |
 | `schemas/itinerary.py` | `_NOTE_TYPE_PATTERN`, `_PLACE_TYPE_PATTERN`, `_VISIBILITY`, `_AnnotationCreateBase` / `_AnnotationUpdateBase` |
 
 ---
@@ -467,7 +480,7 @@ block appears a second time anywhere, extract it instead of copying.**
 | **Never touch `ref` in `State.dispose()`** | `ref` resolves through `BuildContext`, already deactivated by then. Capture the notifier in a field, seeded in `didChangeDependencies` and refreshed by a `ref.watch(…notifier)` in `build` |
 | **Guard `state =` / `ref.invalidate` after an `await` with `if (!ref.mounted) return`** | logout disposes the provider mid-flight and a disposed `Ref` throws |
 | **Never let a background read write `AsyncLoading` or `AsyncError`** | nobody asked for it; blanking a correct badge over one dead request is worse than a stale value |
-| **A trip save adopts the trip from its own answer; nothing downloads the trip after a save** — every save sends `?return=itinerary` and `ItineraryDetailNotifier._adopt` sets the answered trip as the state; a rating adopts the aggregate its answer carries | the reload after every save was a second request the form waited on, and its loading state rebuilt the whole trip view behind the full-screen loader (production, 2026-10-20) |
+| **A write answers with what the screen shows next, and the app never re-downloads after its own write.** Every trip save sends `?return=itinerary` and goes through `ItineraryDetailNotifier._save`, which adopts the answered trip and replaces its row in the Itineraries tab; a create's trip opens from `tripSeedsProvider`; follow writes adopt the counts they answer with (`adoptMyCounts`, `adoptTheirFollowState`), accepting the terms the profile, an appeal the violations list, a rating the aggregate — and the ratings page when it is loaded. An answer that replaces a whole GET body is also written as that GET's cached entry (`cacheAsGet`). **The named exceptions**: content an answer cannot carry (someone's trips or followers after an unfollow or removal, the feed after a block or unblock, a new row in a list); pull-to-refresh and Retry; sign-in, sign-out and token exchanges; invalidating data no open screen shows | the reload after every save was a second request the form waited on, and its loading state rebuilt the whole trip view behind the full-screen loader (production, 2026-10-20); the audit of 2026-10-22 found the same wait after creates, editor grants, follows, blocks, accepting the terms, appeals and ratings |
 | **`*.fromString` degrades unknown values** — `ModerationStatus` → `approved`, `NotificationType` → a generic row, `EditLockState` → `active` | a newer backend must never crash a deployed client |
 | **Never use the `--web-renderer` flag** | removed in Flutter 3.29 |
 | **Never run `dart format`** | the repo predates Dart 3.7 tall style; it reflows whole files |

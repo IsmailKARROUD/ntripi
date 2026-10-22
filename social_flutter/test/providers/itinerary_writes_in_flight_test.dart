@@ -17,6 +17,8 @@ import 'package:ntripi/features/itineraries/domain/trip_edit_answer.dart';
 import 'package:ntripi/features/itineraries/providers/edit_lock_provider.dart';
 import 'package:ntripi/features/itineraries/providers/itinerary_providers.dart';
 
+import '../support/held_claim.dart';
+
 const _itinId = 'itin-1';
 
 Itinerary _trip(DateTime ts) => Itinerary(
@@ -76,17 +78,6 @@ class _GatedRepo extends ItineraryRepository {
       _held(lockToken);
 }
 
-/// A claim held by this device, without the network or the heartbeat.
-class _HeldClaim extends EditLockNotifier {
-  _HeldClaim(super.arg);
-
-  @override
-  EditSession build() {
-    super.build();
-    return const EditSession(token: 'lock-token');
-  }
-}
-
 /// Lets a started write reach its gate.
 Future<void> _settle() => Future<void>.delayed(Duration.zero);
 
@@ -99,7 +90,7 @@ void main() {
     repo = _GatedRepo();
     container = ProviderContainer(overrides: [
       itineraryRepositoryProvider.overrideWithValue(repo),
-      editLockProvider.overrideWith2(_HeldClaim.new),
+      editLockProvider.overrideWith2(HeldClaim.new),
     ]);
     await container.read(itineraryDetailProvider(_itinId).future);
     notifier = container.read(itineraryDetailProvider(_itinId).notifier);

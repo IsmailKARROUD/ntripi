@@ -108,6 +108,34 @@ def bump_follow_counters(db: Session, follower: User | None,
         db.expire(user, [column.key])
 
 
+def _counts(user: User) -> dict[str, int]:
+    return {
+        "followers_count": user.followers_count,
+        "following_count": user.following_count,
+    }
+
+
+def follow_counts(db: Session, me: User, them_id: uuid.UUID) -> dict:
+    """Both accounts' follow counters as their profiles show them now — the
+    shape of schemas.follow.FollowCounts.
+
+    Called after the write's commit, so these are the counters the database
+    holds (commit expired the loaded values): read, never computed — a local
+    ±1 from a stale row would count twice. `them` is None wherever GET
+    /users/{id} would 404 for `me`, block included, so the answer never tells a
+    blocked user that the account behind the block exists.
+    """
+    # Local import: block_service imports this module.
+    from app.services.block_service import is_blocked_either_way
+
+    them = db.get(User, them_id)
+    visible = (
+        them is not None and them.is_active
+        and not is_blocked_either_way(db, me.id, them_id)
+    )
+    return {"me": _counts(me), "them": _counts(them) if visible else None}
+
+
 def delete_follow(db: Session, follow: Follow, follower: User | None,
                   followed: User | None, *,
                   only_if: FollowStatus | None = None) -> bool:

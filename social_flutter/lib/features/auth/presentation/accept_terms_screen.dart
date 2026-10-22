@@ -43,14 +43,14 @@ class _AcceptTermsScreenState extends ConsumerState<AcceptTermsScreen> {
       _errorMessage = null;
     });
     try {
-      await ref.read(authRepositoryProvider).acceptTos(
+      final profile = await ref.read(authRepositoryProvider).acceptTos(
             dateOfBirth: _dateOfBirth,
           );
       // Signed out from the gate mid-request: the widget ref is dead.
       if (!mounted) return;
-      // Refreshing the profile is what lowers the gate: TosGate watches
-      // myProfileProvider, so the new tos_current releases the whole app.
-      ref.invalidate(myProfileProvider);
+      // The answer is the profile with the new tos_current, and adopting it
+      // is what lowers the gate: TosGate watches myProfileProvider.
+      ref.read(myProfileProvider.notifier).adopt(profile);
     } on DioException catch (e) {
       if (!mounted) return;
       setState(() => _errorMessage = extractErrorMessage(e, l10n));

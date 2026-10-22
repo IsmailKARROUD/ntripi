@@ -83,13 +83,23 @@ annotations, ratings, saves, editors — hangs off it.
   value is FastAPI's 422. `test_trip_edit_answers.py` checks every route, as the
   owner and as an editor, against a GET made right after it, and fails on a new
   trip edit until it has a case.
+- **A create answers with the trip it made when asked** (since 2026-10-22).
+  `POST /itineraries/` and `POST /itineraries/form` take the same
+  `?return=itinerary` and answer `ItineraryEditResponse` with 201, the
+  concurrency `ETag`, and `created_id` = the new trip's id, so the trip's
+  screen opens on the answer with no GET. Asked nothing, both answer
+  `ItinerarySummary` as before.
 - **`itinerary` is null only when the save took the caller's view away** — an
   editor's text hidden on the spot by moderation (a minors verdict), which a GET
   answers with 403 too. The owner's view of their hidden trip is an answer like
   any other, `hidden: true` included.
-- **The app never downloads the trip again after a save.** Every save sends
+- **The app never downloads the trip again after a save** — the project-wide
+  rule since 2026-10-22, that a write answers with what the screen shows next
+  ([constraints.md](../constraints.md#frontend)). Every save sends
   `?return=itinerary` and `ItineraryDetailNotifier` adopts the trip it answers
-  with. Until 2026-10-21 each stop, note and rating save was followed by a
+  with; the trip's row in the Itineraries tab is replaced from the same answer,
+  and a create's answer is what the new trip's screen opens on. Until
+  2026-10-21 each stop, note and rating save was followed by a
   forced `GET /itineraries/{id}` that the form waited on, and its reload state
   put the whole trip view behind the full-screen loader; the production log of
   2026-10-20 showed it after every save. **Deploy the backend first**: the app
@@ -121,8 +131,8 @@ column list. Field limits enforced in `schemas/itinerary.py`:
 
 | Method | Path | Auth | Request | Response | Errors |
 |---|---|---|---|---|---|
-| POST | `/itineraries/` | verified email | `ItineraryCreate` | `ItinerarySummary` 201 | 422 `text_moderation_rejected` |
-| POST | `/itineraries/form` | verified email | multipart: `fields` (`ItineraryCreate` as JSON) + `image` (required) | `ItinerarySummary` 201 | 422 (shape), 400 (unprocessable image), 422 `text_moderation_rejected` / `image_moderation_rejected` |
+| POST | `/itineraries/` | verified email | `ItineraryCreate` | `ItinerarySummary` 201; with `?return=itinerary`, `ItineraryEditResponse` 201 + `ETag` | 422 `text_moderation_rejected` |
+| POST | `/itineraries/form` | verified email | multipart: `fields` (`ItineraryCreate` as JSON) + `image` (required) | `ItinerarySummary` 201; with `?return=itinerary`, `ItineraryEditResponse` 201 + `ETag` | 422 (shape), 400 (unprocessable image), 422 `text_moderation_rejected` / `image_moderation_rejected` |
 | GET | `/itineraries/me` | user | — | `list[ItinerarySummary]` | — |
 | GET | `/itineraries/{id}` | user | — | `ItineraryDetail` + `ETag` | 404, 403 `itinerary_access_denied` |
 | PATCH | `/itineraries/{id}` | `require_edit_access` | `ItineraryUpdate` | `ItinerarySummary`; with `?return=itinerary`, `ItineraryEditResponse` + `ETag` | 403 `itinerary_not_owner` (incl. `visibility` from an editor), 428/412, 409 |
@@ -148,11 +158,13 @@ screen, which never send an image.
 
 **The full-trip answer.** Any trip edit — the 18 `EDIT_GUARDED` routes listed in
 [collaborative-editing.md](collaborative-editing.md#test_edit_guard_coveragepy--the-structural-proof),
-these two among them — takes `?return=itinerary` and then answers
-`ItineraryEditResponse` = `{itinerary: ItineraryDetail | null, created_id:
-UUID | null}`, in that order. A query parameter rather than a header, so CORS
-needs nothing new; it is one dependency, `wants_itinerary`, which
-`test_trip_edit_answers.py` requires on every `EDIT_GUARDED` route.
+these two among them — and both creates take `?return=itinerary` and then
+answer `ItineraryEditResponse` = `{itinerary: ItineraryDetail | null,
+created_id: UUID | null}`, in that order. A query parameter rather than a
+header, so CORS needs nothing new; it is one dependency, `wants_itinerary`,
+built by the one opt-in factory every `?return=` answer shares
+(`return_requested`, `app/dependencies.py`), and `test_trip_edit_answers.py`
+requires it on every `EDIT_GUARDED` route and both creates.
 
 `ItinerarySummary` = `{id, user_id, title, cover_image_url,
 total_duration_min, total_cost, currency, visibility, created_at, updated_at,
@@ -177,6 +189,8 @@ registered from the same router under the `/users` prefix.
   | Provider | Type | Holds |
   |---|---|---|
   | `myItinerariesProvider` | `AsyncNotifierProvider` | the owner's list |
+  | `sharedWithMeProvider` | `AsyncNotifierProvider` | trips shared with me ([collaborative-editing.md](collaborative-editing.md)) |
+  | `tripSeedsProvider` | `Provider` | trips created here, until their screen first reads them |
   | `itineraryDetailProvider` | `AsyncNotifierProvider.family` | one detail, keyed by id |
   | `itineraryScopeProvider` | `NotifierProvider` | Mine / Shared segment selection |
   | `userItinerariesProvider` | `AsyncNotifierProvider.family` | another user's list |
@@ -186,20 +200,29 @@ registered from the same router under the `/users` prefix.
   `EditLockLostException`, `ItineraryLockedException`,
   `EditLockRequiredException`. `saveItineraryForm` and `createItineraryWithCover`
   send the form routes; the client no longer calls the `/image` pair. Its 15
-  trip edits go through one helper, `_tripEdit`, which sends
+  trip edits and both creates go through one helper, `_tripEdit`, which sends
   `?return=itinerary` and returns a `TripEditAnswer`
   (`domain/trip_edit_answer.dart`: the parsed trip, `createdId`). The leg
   routes have no client.
-- **Saves adopt the answer, never reload** — every write method of
-  `ItineraryDetailNotifier` hands its answer to `_adopt`, which sets the
-  answered trip as the state: no `GET` follows a save, the trip view is not
-  rebuilt, and the next save's `If-Match` comes from the answered `updated_at`.
-  `addStop` returns the stop the answer's `createdId` names and `moveStop` the
-  moved stop, both found in the answered trip. With no trip in the answer (the
-  caller lost view access), `_adopt` makes the one GET whose 403 puts the screen
-  in its no-access state, and the methods that return a value rethrow that
-  refusal. `refresh()` is left to pull-to-refresh, Retry, and an editor who
-  removed themselves.
+- **Saves adopt the answer, never reload** — all 16 write methods of
+  `ItineraryDetailNotifier` are one call to `_save` (or `_saveTrip`, for the
+  four that hand something back): it runs the request through `_write`, hands
+  the answer to `_adopt`, which sets the answered trip as the state, and to
+  `_syncListRows`. No `GET` follows a save, the trip view is not rebuilt, and the
+  next save's `If-Match` comes from the answered `updated_at`. `addStop` returns
+  the stop the answer's `createdId` names and `moveStop` the moved stop, both
+  found in the answered trip. With no trip in the answer (the caller lost view
+  access), `_adopt` makes the one GET whose 403 puts the screen in its no-access
+  state, and the methods that return a value rethrow that refusal. `refresh()`
+  is left to pull-to-refresh and Retry.
+- **The Itineraries tab follows the answer** — `_syncListRows` replaces the
+  trip's row in `myItinerariesProvider` and `sharedWithMeProvider` with
+  `Itinerary.summary` (the answered trip without tracks, segments and
+  annotations; a Shared row keeps its owner), wherever the list is loaded. No
+  list is downloaded after a save; until 2026-10-22 stop and header saves
+  re-downloaded both lists and segment saves left the totals stale. An answer
+  with no trip takes the row out of Shared with me. Both lists are ordered by
+  `created_at`, so a replaced row keeps its place.
 - **The offline copy stays current** — the reload after a save also refreshed
   the HTTP cache's entry for `GET /itineraries/{id}`, which is what a trip shows
   when the app starts offline. `_tripEdit` writes the answered trip there
@@ -214,7 +237,12 @@ registered from the same router under the `/users` prefix.
   the form evicts the cached image under both the URL from before the save and
   the one after. The create branch calls
   `MyItinerariesNotifier.addItinerary(data, coverBytes:)`, which picks the
-  multipart route when a cover was picked. A refusal of any kind — 412, a lost
+  multipart route when a cover was picked, inserts the new row, puts the
+  answered trip in `tripSeedsProvider` and returns its id.
+  `ItineraryDetailNotifier.build()` takes a seed before falling back to the GET,
+  so the new trip's screen opens at once and with no request; a seed is taken
+  once, and every later build downloads. `tripSeedsProvider` is in
+  `_userScopedProviders`. A refusal of any kind — 412, a lost
   claim, a 422 on the text or the image — leaves the form open with every field
   and the picked image intact; on create that now includes a refused cover,
   which used to create the trip without it.
@@ -235,6 +263,10 @@ registered from the same router under the `/users` prefix.
   with no row pointing at it for a first cover. Unguessable per-upload keys
   ([backlog.md](../backlog.md), share teaser step 2) would let the old object be
   deleted only after the commit.
+- **The lists' offline copies lag a save.** `_syncListRows` replaces a row in
+  memory; the cached `GET /itineraries/me` and `/shared-with-me` bodies stay as
+  last downloaded, so an app started offline shows the rows from then until the
+  next online read. A row is partial, so there is no whole body to write back.
 - **A failed delete after a removal is not retried.** The row is committed
   without the cover and the object stays reachable at its key; the failure is
   logged at ERROR and nothing comes back for it.

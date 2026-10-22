@@ -622,6 +622,14 @@ class RatingsPageResponse(BaseModel):
     ratings: list[RatingWithUser]
 
 
+class RatingSubmitWithPageResponse(RatingSubmitResponse):
+    """POST /ratings?return=ratings_page: the review and the aggregate as
+    always, then the whole ratings page as GET /ratings now shows it — what the
+    app has open when it asks. A subclass, so the page lands after every key the
+    plain answer has."""
+    ratings_page: RatingsPageResponse
+
+
 class ItinerarySummary(BaseModel):
     id: uuid.UUID
     user_id: uuid.UUID

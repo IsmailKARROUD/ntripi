@@ -24,8 +24,11 @@ import 'package:ntripi/features/profile/presentation/widgets/profile_unavailable
 import 'package:ntripi/features/profile/providers/profile_provider.dart';
 import 'package:ntripi/features/reports/presentation/ugc_actions.dart';
 import 'package:ntripi/l10n/app_localizations.dart';
+import 'package:ntripi/shared/models/follow.dart';
 import 'package:ntripi/shared/models/user.dart';
 import 'package:ntripi/shared/widgets/loaders.dart';
+
+import '../support/follow_counts.dart';
 
 // ignore_for_file: invalid_use_of_internal_member
 
@@ -136,7 +139,10 @@ class _RecordingFollowRepo implements FollowRepository {
   final List<String> removed = [];
 
   @override
-  Future<void> removeFollower(String userId) async => removed.add(userId);
+  Future<FollowCounts> removeFollower(String userId) async {
+    removed.add(userId);
+    return kZeroCounts;
+  }
 
   @override
   dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError();

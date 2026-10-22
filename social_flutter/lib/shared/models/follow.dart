@@ -43,6 +43,44 @@ class Follow {
   bool get isAccepted => status == 'accepted';
 }
 
+/// What a follow write that otherwise answers nothing (unfollow, remove
+/// follower, block) sends to be answered with [FollowCounts].
+const kReturnFollowCounts = {'return': 'counts'};
+
+/// One account's follow counters, as its profile shows them.
+class UserCounts {
+  final int followersCount;
+  final int followingCount;
+
+  const UserCounts({required this.followersCount, required this.followingCount});
+
+  factory UserCounts.fromJson(Map<String, dynamic> json) => UserCounts(
+        followersCount: json['followers_count'] as int,
+        followingCount: json['following_count'] as int,
+      );
+}
+
+/// Both accounts' counts as a follow write left them — follow and accept
+/// always carry them, unfollow, remove follower and block when asked
+/// (`?return=counts`). The app adopts them; it never adds or subtracts one,
+/// which would count twice from a stale row.
+class FollowCounts {
+  final UserCounts me;
+
+  /// Null where the other account's profile would not open for this user:
+  /// unknown, suspended, or behind a block either way.
+  final UserCounts? them;
+
+  const FollowCounts({required this.me, this.them});
+
+  factory FollowCounts.fromJson(Map<String, dynamic> json) => FollowCounts(
+        me: UserCounts.fromJson(json['me'] as Map<String, dynamic>),
+        them: json['them'] == null
+            ? null
+            : UserCounts.fromJson(json['them'] as Map<String, dynamic>),
+      );
+}
+
 /// A single item in the "pending follow requests" list.
 /// This is what the backend returns from GET /users/me/follow-requests.
 /// It combines the Follow record data with the follower's profile info

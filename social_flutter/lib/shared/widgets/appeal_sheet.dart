@@ -9,23 +9,26 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ntripi/core/api/api_client.dart';
 import 'package:ntripi/core/ui/app_theme.dart';
+import 'package:ntripi/features/profile/domain/violation.dart';
 import 'package:ntripi/features/profile/providers/profile_provider.dart';
 import 'package:ntripi/l10n/app_localizations.dart';
 import 'package:ntripi/shared/widgets/keyboard_avoidance.dart';
 
 /// Opens the appeal composer for [targetType]/[targetId].
 ///
-/// Returns true when the server accepted the appeal. Refreshes the violations
-/// feed and confirms with a snackbar on success, so callers only await it.
+/// Returns true when the server accepted the appeal. Hands the violations list
+/// it answered with to Account status, and confirms with a snackbar on
+/// success, so callers only await it.
 Future<bool> showAppealSheet(
-  BuildContext context,
-  WidgetRef ref, {
+  BuildContext context, {
   required String targetType,
   required String targetId,
 }) async {
   final l10n = AppLocalizations.of(context)!;
+  // Captured before the await: the caller may be gone when the sheet closes.
+  final container = ProviderScope.containerOf(context, listen: false);
 
-  final submitted = await showModalBottomSheet<bool>(
+  final violations = await showModalBottomSheet<List<Violation>>(
     context: context,
     isScrollControlled: true,
     useSafeArea: true,
@@ -37,19 +40,22 @@ Future<bool> showAppealSheet(
     ),
   );
 
-  if (submitted == true) {
-    ref.invalidate(myViolationsProvider);
-    if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.appealSubmitted)),
-      );
-    }
+  if (violations == null) return false;
+  // The list as it now stands, adopted where Account status is open — reading
+  // the provider anywhere else would build it, which is a GET.
+  if (container.exists(myViolationsProvider)) {
+    container.read(myViolationsProvider.notifier).adopt(violations);
   }
-  return submitted == true;
+  if (context.mounted) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(l10n.appealSubmitted)),
+    );
+  }
+  return true;
 }
 
-/// Bottom sheet holding the appeal explanation. Pops `true` once the server
-/// accepts the appeal.
+/// Bottom sheet holding the appeal explanation. Pops the violations list the
+/// server answered with once it accepts the appeal.
 class AppealSheet extends ConsumerStatefulWidget {
   final String targetType;
   final String targetId;
@@ -91,12 +97,12 @@ class _AppealSheetState extends ConsumerState<AppealSheet> {
       _error = null;
     });
     try {
-      await ref.read(profileRepositoryProvider).submitAppeal(
+      final violations = await ref.read(profileRepositoryProvider).submitAppeal(
             targetType: widget.targetType,
             targetId: widget.targetId,
             reason: reason,
           );
-      if (mounted) Navigator.of(context).pop(true);
+      if (mounted) Navigator.of(context).pop(violations);
     } catch (e) {
       if (mounted) {
         setState(() {

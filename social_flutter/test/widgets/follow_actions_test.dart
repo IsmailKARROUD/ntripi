@@ -19,6 +19,8 @@ import 'package:ntripi/l10n/app_localizations.dart';
 import 'package:ntripi/shared/models/follow.dart';
 import 'package:ntripi/shared/models/user.dart';
 
+import '../support/follow_counts.dart';
+
 const _meId = 'me-1';
 
 final _me = User(
@@ -58,11 +60,11 @@ class _FakeFollowers extends FollowersNotifier {
 /// removeFollower completes only when the test says so, so the screen can be
 /// left while the request is in flight.
 class _SlowFollowRepo implements FollowRepository {
-  final Completer<void> gate = Completer<void>();
+  final Completer<FollowCounts> gate = Completer<FollowCounts>();
   bool called = false;
 
   @override
-  Future<void> removeFollower(String userId) {
+  Future<FollowCounts> removeFollower(String userId) {
     called = true;
     return gate.future;
   }
@@ -149,7 +151,7 @@ void main() {
     await tester.pumpAndSettle();
 
     // Now it lands, against an unmounted caller.
-    repo.gate.complete();
+    repo.gate.complete(kZeroCounts);
     await tester.pumpAndSettle();
 
     expect(tester.takeException(), isNull);

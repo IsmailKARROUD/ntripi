@@ -3,9 +3,12 @@
 // Every trip edit asks for the whole trip back (`?return=itinerary`) and
 // ItineraryDetailNotifier adopts it: nothing downloads the trip again after a
 // save, so the trip view is never rebuilt behind a reload, and the next save
-// carries the answered stamp. A rating's answer carries the trip's new average
-// and count the same way. Run against the real repository on a mocked Dio, so
-// "one request" is an exact assertion rather than an absence of errors.
+// carries the answered stamp. The trip's row in the Itineraries tab follows the
+// same answer, and a create's answer is what the new trip's screen opens on. A
+// rating's answer carries the trip's new average and count the same way — and
+// the ratings page, when it is open. Run against the real repository on a
+// mocked Dio, so "one request" is an exact assertion rather than an absence of
+// errors.
 
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -19,66 +22,27 @@ import 'package:ntripi/features/itineraries/presentation/widgets/itinerary_unava
 import 'package:ntripi/features/itineraries/providers/edit_lock_provider.dart';
 import 'package:ntripi/features/itineraries/providers/itinerary_providers.dart';
 
-const _itinId = 'itin-1';
-const _loadedAt = '2026-10-21T10:00:00.000000Z';
-const _answeredAt = '2026-10-21T10:00:05.123456Z';
+import '../support/held_claim.dart';
+import '../support/recording_dio.dart';
+import '../support/trip_json.dart';
+
 const _returnTrip = {'return': 'itinerary'};
 
-Map<String, dynamic> _stop(String id, String trackId) => {
-      'id': id,
-      'itinerary_id': _itinId,
-      'track_id': trackId,
-      'rank': 'a0',
-      'place_name': 'Harbour',
-      'place_address': null,
-      'lat': null,
-      'lng': null,
-      'map_url': null,
-      'place_type': null,
-      'duration_min': null,
-      'cost': 0.0,
-      'is_free': true,
-      'notes': null,
-      'created_at': '2026-10-21T09:00:00.000000Z',
-      'annotations': <Map<String, dynamic>>[],
-    };
-
 /// The detail as the GET shows it. The answered one differs in title, stamp,
-/// stops and aggregate, so adopting it is visible in every one of them.
-Map<String, dynamic> _trip({bool answered = false}) => {
-      'id': _itinId,
-      'user_id': 'user-1',
-      'title': answered ? 'Answered' : 'Coast walk',
-      'cover_image_url': null,
-      'total_duration_min': 0,
-      'total_cost': 0.0,
-      'currency': 'EUR',
-      'visibility': 'public',
-      'created_at': '2026-10-21T09:00:00.000000Z',
-      'updated_at': answered ? _answeredAt : _loadedAt,
-      'rating_avg': answered ? 3.5 : 4.0,
-      'rating_count': answered ? 2 : 1,
-      'stops_count': answered ? 2 : 1,
-      'description': null,
-      'tracks': [
-        {
-          'id': 't1',
-          'itinerary_id': _itinId,
-          'rank': 'a0',
-          'stops': [_stop('stop-1', 't1')],
-        },
+/// stops, totals and aggregate, so adopting it is visible in every one of them.
+Map<String, dynamic> _trip({bool answered = false}) => tripJson(
+      title: answered ? 'Answered' : 'Coast walk',
+      updatedAt: answered ? kSavedAt : kLoadedAt,
+      totalDurationMin: answered ? 95 : 0,
+      totalCost: answered ? 12.5 : 0.0,
+      ratingAvg: answered ? 3.5 : 4.0,
+      ratingCount: answered ? 2 : 1,
+      tracks: [
+        trackJson('t1', [stopJson('stop-1')]),
         if (answered)
-          {
-            'id': 't2',
-            'itinerary_id': _itinId,
-            'rank': 'b',
-            'stops': [_stop('stop-new', 't2')],
-          },
+          trackJson('t2', [stopJson('stop-new', trackId: 't2')], rank: 'b'),
       ],
-      'segments': <Map<String, dynamic>>[],
-      'annotations': <Map<String, dynamic>>[],
-      'can_edit': true,
-    };
+    );
 
 /// What a test compares: everything adopting the answer changes.
 Map<String, Object?> _shape(Itinerary trip) => {
@@ -90,16 +54,14 @@ Map<String, Object?> _shape(Itinerary trip) => {
       'ratingCount': trip.ratingCount,
     };
 
-/// A claim held by this device, without the network or the heartbeat.
-class _HeldClaim extends EditLockNotifier {
-  _HeldClaim(super.arg);
-
-  @override
-  EditSession build() {
-    super.build();
-    return const EditSession(token: 'lock-token');
-  }
-}
+/// What a list row shows of a trip.
+Map<String, Object?> _row(Itinerary trip) => {
+      'title': trip.title,
+      'updatedAt': trip.updatedAt,
+      'stopsCount': trip.stopsCount,
+      'totals': (trip.totalDurationMin, trip.totalCost),
+      'rating': (trip.ratingAvg, trip.ratingCount),
+    };
 
 /// One of the notifier's trip saves: the request it must send, and the call.
 class _Save {
@@ -113,22 +75,22 @@ class _Save {
 }
 
 final _saves = <_Save>[
-  _Save('addStop', 'POST', itineraryStopsEndpoint(_itinId),
+  _Save('addStop', 'POST', itineraryStopsEndpoint(kTripId),
       (n) => n.addStop({'place_name': 'Cove', 'track_id': 't1'}),
       createdId: 'stop-new'),
-  _Save('updateStop', 'PATCH', itineraryStopEndpoint(_itinId, 'stop-1'),
+  _Save('updateStop', 'PATCH', itineraryStopEndpoint(kTripId, 'stop-1'),
       (n) => n.updateStop('stop-1', {'place_name': 'Old harbour'})),
-  _Save('moveStop', 'PATCH', itineraryStopEndpoint(_itinId, 'stop-1'),
+  _Save('moveStop', 'PATCH', itineraryStopEndpoint(kTripId, 'stop-1'),
       (n) => n.moveStop('stop-1', targetTrackId: 't2')),
-  _Save('deleteStop', 'DELETE', itineraryStopEndpoint(_itinId, 'stop-1'),
+  _Save('deleteStop', 'DELETE', itineraryStopEndpoint(kTripId, 'stop-1'),
       (n) => n.deleteStop('stop-1')),
-  _Save('applyReorder', 'POST', itineraryReorderEndpoint(_itinId),
+  _Save('applyReorder', 'POST', itineraryReorderEndpoint(kTripId),
       (n) => n.applyReorder(trackOrder: ['t1'])),
-  _Save('updateHeader', 'PATCH', itineraryEndpoint(_itinId),
+  _Save('updateHeader', 'PATCH', itineraryEndpoint(kTripId),
       (n) => n.updateHeader({'description': 'Shorter.'})),
-  _Save('saveForm', 'PATCH', itineraryFormEndpoint(_itinId),
+  _Save('saveForm', 'PATCH', itineraryFormEndpoint(kTripId),
       (n) => n.saveForm({'title': 'Answered'})),
-  _Save('createSegment', 'POST', itinerarySegmentsEndpoint(_itinId),
+  _Save('createSegment', 'POST', itinerarySegmentsEndpoint(kTripId),
       (n) => n.createSegment({
             'from_stop_id': 'stop-1',
             'to_stop_id': 'stop-new',
@@ -137,7 +99,7 @@ final _saves = <_Save>[
             ],
           }),
       createdId: 'seg-new'),
-  _Save('updateSegment', 'PATCH', itinerarySegmentEndpoint(_itinId, 'seg-1'),
+  _Save('updateSegment', 'PATCH', itinerarySegmentEndpoint(kTripId, 'seg-1'),
       (n) => n.updateSegment('seg-1', {
             'from_stop_id': 'stop-1',
             'to_stop_id': 'stop-new',
@@ -145,25 +107,25 @@ final _saves = <_Save>[
               {'position': 1, 'mode': 'bus'},
             ],
           })),
-  _Save('deleteSegment', 'DELETE', itinerarySegmentEndpoint(_itinId, 'seg-1'),
+  _Save('deleteSegment', 'DELETE', itinerarySegmentEndpoint(kTripId, 'seg-1'),
       (n) => n.deleteSegment('seg-1')),
-  _Save('addAnnotation', 'POST', stopAnnotationsEndpoint(_itinId, 'stop-1'),
+  _Save('addAnnotation', 'POST', stopAnnotationsEndpoint(kTripId, 'stop-1'),
       (n) => n.addAnnotation('stop-1', {'type': 'info', 'content': 'Go early'}),
       createdId: 'note-new'),
   _Save('updateAnnotation', 'PATCH',
-      stopAnnotationEndpoint(_itinId, 'stop-1', 'note-1'),
+      stopAnnotationEndpoint(kTripId, 'stop-1', 'note-1'),
       (n) => n.updateAnnotation('stop-1', 'note-1', content: 'Go at dawn')),
   _Save('deleteAnnotation', 'DELETE',
-      stopAnnotationEndpoint(_itinId, 'stop-1', 'note-1'),
+      stopAnnotationEndpoint(kTripId, 'stop-1', 'note-1'),
       (n) => n.deleteAnnotation('stop-1', 'note-1')),
-  _Save('addItineraryAnnotation', 'POST', itineraryAnnotationsEndpoint(_itinId),
+  _Save('addItineraryAnnotation', 'POST', itineraryAnnotationsEndpoint(kTripId),
       (n) => n.addItineraryAnnotation({'type': 'info', 'content': 'Bring cash'}),
       createdId: 'trip-note-new'),
   _Save('updateItineraryAnnotation', 'PATCH',
-      itineraryAnnotationEndpoint(_itinId, 'trip-note-1'),
+      itineraryAnnotationEndpoint(kTripId, 'trip-note-1'),
       (n) => n.updateItineraryAnnotation('trip-note-1', content: 'More cash')),
   _Save('deleteItineraryAnnotation', 'DELETE',
-      itineraryAnnotationEndpoint(_itinId, 'trip-note-1'),
+      itineraryAnnotationEndpoint(kTripId, 'trip-note-1'),
       (n) => n.deleteItineraryAnnotation('trip-note-1')),
 ];
 
@@ -176,27 +138,23 @@ void main() {
 
   /// The real repository on a mocked Dio that logs every request it sends.
   void connect() {
-    final dio = Dio(BaseOptions(baseUrl: kApiBaseUrl));
-    adapter = DioAdapter(dio: dio);
-    sent = [];
-    dio.interceptors.add(InterceptorsWrapper(onRequest: (options, handler) {
-      sent.add(options);
-      handler.next(options);
-    }));
+    final api = RecordingDio();
+    adapter = api.adapter;
+    sent = api.sent;
     adapter.onGet(
-        itineraryEndpoint(_itinId), (server) => server.reply(200, _trip()));
+        itineraryEndpoint(kTripId), (server) => server.reply(200, _trip()));
     container = ProviderContainer(overrides: [
-      itineraryRepositoryProvider.overrideWithValue(ItineraryRepository(dio)),
-      editLockProvider.overrideWith2(_HeldClaim.new),
+      itineraryRepositoryProvider.overrideWithValue(ItineraryRepository(api.dio)),
+      editLockProvider.overrideWith2(HeldClaim.new),
     ]);
   }
 
   /// The detail screen's first load, then a clean request log.
   Future<ItineraryDetailNotifier> load() async {
     connect();
-    await container.read(itineraryDetailProvider(_itinId).future);
+    await container.read(itineraryDetailProvider(kTripId).future);
     sent.clear();
-    return container.read(itineraryDetailProvider(_itinId).notifier);
+    return container.read(itineraryDetailProvider(kTripId).notifier);
   }
 
   /// [save]'s route answers with [body] — when it carries the opt-in.
@@ -214,7 +172,7 @@ void main() {
     }
   }
 
-  Itinerary detail() => container.read(itineraryDetailProvider(_itinId)).value!;
+  Itinerary detail() => container.read(itineraryDetailProvider(kTripId)).value!;
 
   tearDown(() => container.dispose());
 
@@ -243,6 +201,79 @@ void main() {
     expect((created.id, created.trackId), ('stop-new', 't2'));
   });
 
+  group('every save leaves its answer in the Itineraries tab, and no list GET',
+      () {
+    /// The Mine list as the tab loaded it, then a clean request log.
+    Future<void> mine() async {
+      adapter.onGet(kMyItinerariesEndpoint,
+          (server) => server.reply(200, [summaryJson(stopsCount: 1)]));
+      await container.read(myItinerariesProvider.future);
+      sent.clear();
+    }
+
+    for (final save in _saves) {
+      test(save.name, () async {
+        final notifier = await load();
+        await mine();
+        answer(save, tripAnswer(_trip(answered: true), createdId: save.createdId));
+
+        await save.run(notifier);
+
+        expect(lines(), ['${save.method} ${save.path}'], reason: 'no list reload');
+        final row = container.read(myItinerariesProvider).value!.single;
+        expect(_row(row), _row(Itinerary.fromJson(_trip(answered: true))));
+        expect(row.tracks, isEmpty, reason: 'a row holds the summary');
+      });
+    }
+
+    test("an editor's save updates their Shared row and keeps whose trip it is",
+        () async {
+      final notifier = await load();
+      adapter.onGet(kSharedWithMeEndpoint, (server) => server.reply(
+          200, [sharedRowJson(summaryJson(stopsCount: 1))]));
+      await container.read(sharedWithMeProvider.future);
+      sent.clear();
+      final update = _saves.firstWhere((s) => s.name == 'updateSegment');
+      answer(update, tripAnswer(_trip(answered: true)));
+
+      await update.run(notifier);
+
+      expect(lines(), ['${update.method} ${update.path}']);
+      final item = container.read(sharedWithMeProvider).value!.single;
+      expect(_row(item.itinerary), _row(Itinerary.fromJson(_trip(answered: true))));
+      expect(item.owner.username, 'tripowner');
+    });
+  });
+
+  test('a create opens its trip with no GET of it', () async {
+    connect();
+    adapter
+      ..onGet(kMyItinerariesEndpoint, (server) => server.reply(200, <Object>[]))
+      ..onPost(
+        kItinerariesEndpoint,
+        (server) => server.reply(
+            201, tripAnswer(_trip(answered: true), createdId: kTripId)),
+        data: Matchers.any,
+        queryParameters: _returnTrip,
+      );
+    await container.read(myItinerariesProvider.future);
+    sent.clear();
+
+    final id = await container
+        .read(myItinerariesProvider.notifier)
+        .addItinerary({'title': 'Answered'});
+    final opened = await container.read(itineraryDetailProvider(id).future);
+
+    expect(lines(), ['POST $kItinerariesEndpoint']);
+    expect(_shape(opened), _shape(Itinerary.fromJson(_trip(answered: true))));
+    expect(container.read(myItinerariesProvider).value!.single.id, id);
+
+    // Taken once: Retry or pull-to-refresh downloads, as it must.
+    container.invalidate(itineraryDetailProvider(id));
+    await container.read(itineraryDetailProvider(id).future);
+    expect(lines().last, 'GET ${itineraryEndpoint(kTripId)}');
+  });
+
   test('the answered stamp is the next If-Match', () async {
     final notifier = await load();
     final update = _saves.firstWhere((s) => s.name == 'updateStop');
@@ -266,14 +297,14 @@ void main() {
     await expectLater(notifier.addStop({'place_name': 'Cove'}),
         throwsA(isA<ItineraryStaleException>()));
 
-    expect(lines(), ['POST ${itineraryStopsEndpoint(_itinId)}']);
+    expect(lines(), ['POST ${itineraryStopsEndpoint(kTripId)}']);
     expect(_shape(detail()), loaded);
     expect(notifier.hasWritesInFlight, isFalse);
   });
 
   group('a save that takes the viewer\'s access away answers no trip', () {
     void refusedOnReload() => adapter.onGet(
-          itineraryEndpoint(_itinId),
+          itineraryEndpoint(kTripId),
           (server) => server.reply(403, {
             'detail': "You don't have access to this itinerary",
             'code': 'itinerary_access_denied',
@@ -289,11 +320,30 @@ void main() {
       await notifier.deleteStop('stop-1');
 
       expect(lines(), [
-        'DELETE ${itineraryStopEndpoint(_itinId, 'stop-1')}',
-        'GET ${itineraryEndpoint(_itinId)}',
+        'DELETE ${itineraryStopEndpoint(kTripId, 'stop-1')}',
+        'GET ${itineraryEndpoint(kTripId)}',
       ]);
-      final state = container.read(itineraryDetailProvider(_itinId));
+      final state = container.read(itineraryDetailProvider(kTripId));
       expect(itineraryUnavailableFrom(state.error!), ItineraryUnavailable.noAccess);
+    });
+
+    test('and Shared with me no longer lists the trip', () async {
+      final notifier = await load();
+      adapter.onGet(kSharedWithMeEndpoint, (server) => server.reply(
+          200, [sharedRowJson(summaryJson(stopsCount: 1))]));
+      await container.read(sharedWithMeProvider.future);
+      sent.clear();
+      answer(_saves.firstWhere((s) => s.name == 'deleteStop'), tripAnswer(null));
+      refusedOnReload();
+
+      await notifier.deleteStop('stop-1');
+
+      expect(container.read(sharedWithMeProvider).value, isEmpty);
+      // The trip's refusal is the one GET; the list is not downloaded again.
+      expect(lines(), [
+        'DELETE ${itineraryStopEndpoint(kTripId, 'stop-1')}',
+        'GET ${itineraryEndpoint(kTripId)}',
+      ]);
     });
 
     test('a save its caller needs a trip back from rethrows that refusal',
@@ -325,11 +375,11 @@ void main() {
 
     /// My rating's first read, then a clean request log.
     Future<MyRatingNotifier> rater() async {
-      adapter.onGet(itineraryMyRatingEndpoint(_itinId),
+      adapter.onGet(itineraryMyRatingEndpoint(kTripId),
           (server) => server.reply(404, {'detail': 'not rated'}));
-      await container.read(myRatingProvider(_itinId).future);
+      await container.read(myRatingProvider(kTripId).future);
       sent.clear();
-      return container.read(myRatingProvider(_itinId).notifier);
+      return container.read(myRatingProvider(kTripId).notifier);
     }
 
     test('submitting one updates the average without a GET', () async {
@@ -337,7 +387,7 @@ void main() {
       final loaded = detail();
       final notifier = await rater();
       adapter.onPost(
-        itineraryRatingsEndpoint(_itinId),
+        itineraryRatingsEndpoint(kTripId),
         (server) => server.reply(
             201, {...myRating, 'rating_avg': 3.5, 'rating_count': 2}),
         data: Matchers.any,
@@ -345,7 +395,7 @@ void main() {
 
       await notifier.submitRating(const MyRating(stars: 3));
 
-      expect(lines(), ['POST ${itineraryRatingsEndpoint(_itinId)}']);
+      expect(lines(), ['POST ${itineraryRatingsEndpoint(kTripId)}']);
       expect((detail().ratingAvg, detail().ratingCount), (3.5, 2));
       // The aggregate never moves updated_at, so neither does the ETag.
       expect(detail().eTag, loaded.eTag);
@@ -355,15 +405,75 @@ void main() {
       await load();
       final notifier = await rater();
       adapter.onDelete(
-        itineraryMyRatingEndpoint(_itinId),
+        itineraryMyRatingEndpoint(kTripId),
         (server) => server.reply(200, {'rating_avg': null, 'rating_count': 0}),
         queryParameters: {'return': 'aggregate'},
       );
 
       await notifier.deleteRating();
 
-      expect(lines(), ['DELETE ${itineraryMyRatingEndpoint(_itinId)}']);
+      expect(lines(), ['DELETE ${itineraryMyRatingEndpoint(kTripId)}']);
       expect(sent.single.queryParameters, {'return': 'aggregate'});
+      expect((detail().ratingAvg, detail().ratingCount), (null, 0));
+    });
+
+    /// The ratings page as GET /ratings shows it, holding [count] reviews.
+    Map<String, dynamic> page(int count, double? avg) => {
+          'rating_avg': avg,
+          'rating_count': count,
+          'distribution': {'five': 0, 'four': 0, 'three': count, 'two': 0, 'one': 0},
+          'ratings': <Map<String, dynamic>>[],
+        };
+
+    /// The ratings page as its screen loaded it, then a clean request log.
+    Future<void> ratingsPageOpen() async {
+      adapter.onGet(itineraryRatingsEndpoint(kTripId),
+          (server) => server.reply(200, page(1, 4.0)));
+      await container.read(ratingsPageProvider(kTripId).future);
+      sent.clear();
+    }
+
+    test('rated from the open ratings page, the page is adopted, not fetched',
+        () async {
+      await load();
+      final notifier = await rater();
+      await ratingsPageOpen();
+      adapter.onPost(
+        itineraryRatingsEndpoint(kTripId),
+        (server) => server.reply(201, {
+          ...myRating,
+          'rating_avg': 3.5,
+          'rating_count': 2,
+          'ratings_page': page(2, 3.5),
+        }),
+        data: Matchers.any,
+        queryParameters: {'return': 'ratings_page'},
+      );
+
+      await notifier.submitRating(const MyRating(stars: 3));
+
+      expect(lines(), ['POST ${itineraryRatingsEndpoint(kTripId)}']);
+      final shown = container.read(ratingsPageProvider(kTripId)).value!;
+      expect((shown.ratingAvg, shown.ratingCount), (3.5, 2));
+      expect((detail().ratingAvg, detail().ratingCount), (3.5, 2));
+    });
+
+    test('deleted from the open ratings page, the page left is adopted',
+        () async {
+      await load();
+      final notifier = await rater();
+      await ratingsPageOpen();
+      adapter.onDelete(
+        itineraryMyRatingEndpoint(kTripId),
+        (server) => server.reply(200, page(0, null)),
+        queryParameters: {'return': 'ratings_page'},
+      );
+
+      await notifier.deleteRating();
+
+      expect(lines(), ['DELETE ${itineraryMyRatingEndpoint(kTripId)}']);
+      final shown = container.read(ratingsPageProvider(kTripId)).value!;
+      expect((shown.ratingAvg, shown.ratingCount), (null, 0));
       expect((detail().ratingAvg, detail().ratingCount), (null, 0));
     });
 
@@ -371,7 +481,7 @@ void main() {
       connect();
       final notifier = await rater();
       adapter.onPost(
-        itineraryRatingsEndpoint(_itinId),
+        itineraryRatingsEndpoint(kTripId),
         (server) => server.reply(
             201, {...myRating, 'rating_avg': 3.5, 'rating_count': 2}),
         data: Matchers.any,
@@ -379,8 +489,8 @@ void main() {
 
       await notifier.submitRating(const MyRating(stars: 3));
 
-      expect(lines(), ['POST ${itineraryRatingsEndpoint(_itinId)}']);
-      expect(container.exists(itineraryDetailProvider(_itinId)), isFalse);
+      expect(lines(), ['POST ${itineraryRatingsEndpoint(kTripId)}']);
+      expect(container.exists(itineraryDetailProvider(kTripId)), isFalse);
     });
   });
 }

@@ -23,6 +23,7 @@ from app.models.content_report import ContentReport
 from app.models.itinerary import Itinerary
 from app.models.moderation_log import ModerationLog
 from app.models.user import User
+from app.schemas.appeal import AppealResponse
 from app.services import appeal_token
 
 
@@ -104,9 +105,10 @@ def _user_row(email: str) -> User:
 
 
 def _submit(client: TestClient, token: str, target_type: str, target_id: str,
-            reason: str = "This was my own photo, not explicit."):
+            reason: str = "This was my own photo, not explicit.", params=None):
     return client.post(
         "/appeals",
+        params=params,
         json={"target_type": target_type, "target_id": target_id, "reason": reason},
         headers=auth_headers(token),
     )
@@ -206,6 +208,32 @@ class TestCooldown:
 # ---------------------------------------------------------------------------
 # Violations feed
 # ---------------------------------------------------------------------------
+
+class TestAppealAnswersWithTheList:
+    """Filed from Account status, an appeal answers with that screen's list, so
+    the app adopts it instead of downloading the list again."""
+
+    def test_asked_for_the_list_the_appeal_answers_with_it(self, client, world):
+        _moderate(client, world["itinerary_id"], world["reporter"]["access_token"], "delete")
+        token = world["author"]["access_token"]
+
+        resp = _submit(client, token, "itinerary", world["itinerary_id"],
+                       params={"return": "violations"})
+
+        assert resp.status_code == 201, resp.text
+        listed = client.get("/appeals/violations", headers=auth_headers(token))
+        assert resp.json() == listed.json()
+        assert resp.json()["violations"][0]["appeal_status"] == "pending"
+
+    def test_asked_nothing_the_appeal_answers_as_it_always_did(self, client, world):
+        _moderate(client, world["itinerary_id"], world["reporter"]["access_token"], "delete")
+
+        resp = _submit(client, world["author"]["access_token"],
+                       "itinerary", world["itinerary_id"])
+
+        assert resp.status_code == 201, resp.text
+        assert list(resp.json()) == list(AppealResponse.model_fields)
+
 
 class TestViolationsFeed:
 

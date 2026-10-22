@@ -18,56 +18,13 @@ import 'package:http_mock_adapter/http_mock_adapter.dart';
 import 'package:ntripi/core/api/api_endpoints.dart';
 import 'package:ntripi/features/itineraries/data/itinerary_repository.dart';
 
-const _itinId = 'itin-1';
+import '../support/recording_dio.dart';
+import '../support/trip_json.dart';
+
 const _etag = '"2026-10-21T10:00:00.000Z"';
 const _token = 'lock-token';
 const _coverUrl = '/uploads/itineraries/itin-1.jpg';
 final _cover = Uint8List.fromList(List<int>.generate(64, (i) => i));
-
-/// An ItinerarySummary, as the create route answers.
-Map<String, dynamic> _summaryJson({String? coverUrl}) => {
-      'id': _itinId,
-      'user_id': 'user-1',
-      'title': 'Coast walk',
-      'cover_image_url': coverUrl,
-      'total_duration_min': 0,
-      'total_cost': 0.0,
-      'currency': 'EUR',
-      'visibility': 'public',
-      'created_at': '2026-10-21T09:00:00.000000Z',
-      'updated_at': '2026-10-21T10:00:05.000000Z',
-      'rating_avg': null,
-      'rating_count': 0,
-      'stops_count': 0,
-    };
-
-/// What the edit route answers when asked for the trip back.
-Map<String, dynamic> _tripAnswer({String? coverUrl}) => {
-      'itinerary': {
-        ..._summaryJson(coverUrl: coverUrl),
-        'description': null,
-        'tracks': <Map<String, dynamic>>[],
-        'segments': <Map<String, dynamic>>[],
-        'annotations': <Map<String, dynamic>>[],
-      },
-      'created_id': null,
-    };
-
-/// A Dio on the mock adapter, plus every request it sent — so "one request" is
-/// an exact assertion, not an absence of errors.
-(Dio, DioAdapter, List<RequestOptions>) _makeDio() {
-  final dio = Dio(BaseOptions(baseUrl: kApiBaseUrl));
-  final adapter = DioAdapter(dio: dio);
-  final sent = <RequestOptions>[];
-  dio.interceptors.add(InterceptorsWrapper(onRequest: (options, handler) {
-    sent.add(options);
-    handler.next(options);
-  }));
-  return (dio, adapter, sent);
-}
-
-List<String> _lines(List<RequestOptions> sent) =>
-    sent.map((o) => '${o.method} ${o.path}').toList();
 
 void main() {
   group('ItineraryRepository.saveItineraryForm', () {
@@ -79,10 +36,12 @@ void main() {
 
     test('Given a new cover, Then fields and image go in one PATCH with both '
         'preconditions', () async {
-      final (dio, adapter, sent) = _makeDio();
+      final api = RecordingDio();
+      final (dio, adapter, sent) = (api.dio, api.adapter, api.sent);
       adapter.onPatch(
-        itineraryFormEndpoint(_itinId),
-        (server) => server.reply(200, _tripAnswer(coverUrl: _coverUrl)),
+        itineraryFormEndpoint(kTripId),
+        (server) => server.reply(
+            200, tripAnswer(tripJson(coverUrl: _coverUrl, updatedAt: kSavedAt))),
         data: FormData.fromMap({
           'fields': jsonEncode(fields),
           'image': MultipartFile.fromBytes(_cover, filename: 'mine.jpg'),
@@ -92,7 +51,7 @@ void main() {
       );
 
       final saved = await ItineraryRepository(dio).saveItineraryForm(
-        _itinId,
+        kTripId,
         fields,
         coverBytes: _cover,
         coverFilename: 'mine.jpg',
@@ -100,19 +59,20 @@ void main() {
         lockToken: _token,
       );
 
-      expect(_lines(sent), ['PATCH ${itineraryFormEndpoint(_itinId)}']);
+      expect(api.lines, ['PATCH ${itineraryFormEndpoint(kTripId)}']);
       expect(sent.single.queryParameters, {'return': 'itinerary'});
       expect(saved.itinerary!.coverImageUrl, _coverUrl);
-      expect(saved.itinerary!.updatedAt,
-          DateTime.parse('2026-10-21T10:00:05.000000Z'));
+      expect(saved.itinerary!.updatedAt, DateTime.parse(kSavedAt));
     });
 
     test('Given a picked cover with no name, Then it is sent as cover.jpg',
         () async {
-      final (dio, adapter, sent) = _makeDio();
+      final api = RecordingDio();
+      final (dio, adapter, sent) = (api.dio, api.adapter, api.sent);
       adapter.onPatch(
-        itineraryFormEndpoint(_itinId),
-        (server) => server.reply(200, _tripAnswer(coverUrl: _coverUrl)),
+        itineraryFormEndpoint(kTripId),
+        (server) => server.reply(
+            200, tripAnswer(tripJson(coverUrl: _coverUrl, updatedAt: kSavedAt))),
         data: FormData.fromMap({
           'fields': jsonEncode(fields),
           'image': MultipartFile.fromBytes(_cover, filename: 'cover.jpg'),
@@ -120,7 +80,7 @@ void main() {
       );
 
       await ItineraryRepository(dio).saveItineraryForm(
-        _itinId, fields, coverBytes: _cover, etag: _etag, lockToken: _token,
+        kTripId, fields, coverBytes: _cover, etag: _etag, lockToken: _token,
       );
 
       final image = (sent.single.data as FormData).files.single;
@@ -129,10 +89,11 @@ void main() {
 
     test('Given a removed cover, Then remove_cover rides along and no image is '
         'sent', () async {
-      final (dio, adapter, sent) = _makeDio();
+      final api = RecordingDio();
+      final (dio, adapter, sent) = (api.dio, api.adapter, api.sent);
       adapter.onPatch(
-        itineraryFormEndpoint(_itinId),
-        (server) => server.reply(200, _tripAnswer()),
+        itineraryFormEndpoint(kTripId),
+        (server) => server.reply(200, tripAnswer(tripJson(updatedAt: kSavedAt))),
         data: FormData.fromMap({
           'fields': jsonEncode(fields),
           'remove_cover': 'true',
@@ -141,26 +102,27 @@ void main() {
       );
 
       final saved = await ItineraryRepository(dio).saveItineraryForm(
-        _itinId, fields, removeCover: true, etag: _etag, lockToken: _token,
+        kTripId, fields, removeCover: true, etag: _etag, lockToken: _token,
       );
 
-      expect(_lines(sent), ['PATCH ${itineraryFormEndpoint(_itinId)}']);
+      expect(api.lines, ['PATCH ${itineraryFormEndpoint(kTripId)}']);
       expect(saved.itinerary!.coverImageUrl, isNull);
     });
 
     test('Given no cover change, Then only the fields part is sent — an '
         "editor's save, with no visibility key", () async {
-      final (dio, adapter, sent) = _makeDio();
+      final api = RecordingDio();
+      final (dio, adapter, sent) = (api.dio, api.adapter, api.sent);
       final editorFields = {'title': 'Edited by a friend', 'currency': 'JPY'};
       adapter.onPatch(
-        itineraryFormEndpoint(_itinId),
-        (server) => server.reply(200, _tripAnswer()),
+        itineraryFormEndpoint(kTripId),
+        (server) => server.reply(200, tripAnswer(tripJson(updatedAt: kSavedAt))),
         data: FormData.fromMap({'fields': jsonEncode(editorFields)}),
         headers: {'If-Match': _etag, kEditLockHeader: _token},
       );
 
       await ItineraryRepository(dio).saveItineraryForm(
-        _itinId, editorFields, etag: _etag, lockToken: _token,
+        kTripId, editorFields, etag: _etag, lockToken: _token,
       );
 
       final form = sent.single.data as FormData;
@@ -171,9 +133,10 @@ void main() {
     });
 
     test('412 throws ItineraryStaleException', () async {
-      final (dio, adapter, _) = _makeDio();
+      final api = RecordingDio();
+      final (dio, adapter) = (api.dio, api.adapter);
       adapter.onPatch(
-        itineraryFormEndpoint(_itinId),
+        itineraryFormEndpoint(kTripId),
         (server) => server.reply(412, {
           'detail': 'itinerary modified, please reload',
           'code': 'itinerary_stale',
@@ -183,16 +146,17 @@ void main() {
 
       expect(
         () => ItineraryRepository(dio).saveItineraryForm(
-          _itinId, fields, coverBytes: _cover, etag: _etag, lockToken: _token,
+          kTripId, fields, coverBytes: _cover, etag: _etag, lockToken: _token,
         ),
         throwsA(isA<ItineraryStaleException>()),
       );
     });
 
     test('409 edit_lock_lost throws EditLockLostException', () async {
-      final (dio, adapter, _) = _makeDio();
+      final api = RecordingDio();
+      final (dio, adapter) = (api.dio, api.adapter);
       adapter.onPatch(
-        itineraryFormEndpoint(_itinId),
+        itineraryFormEndpoint(kTripId),
         (server) => server.reply(409, {
           'detail': 'Your editing session was taken over.',
           'code': 'edit_lock_lost',
@@ -202,7 +166,7 @@ void main() {
 
       expect(
         () => ItineraryRepository(dio).saveItineraryForm(
-          _itinId, fields, etag: _etag, lockToken: _token,
+          kTripId, fields, etag: _etag, lockToken: _token,
         ),
         throwsA(isA<EditLockLostException>()),
       );
@@ -212,15 +176,21 @@ void main() {
   group('ItineraryRepository.createItineraryWithCover', () {
     test('Given a picked cover, Then the trip and its cover go in one POST, '
         'with no preconditions to carry', () async {
-      final (dio, adapter, sent) = _makeDio();
+      final api = RecordingDio();
+      final (dio, adapter, sent) = (api.dio, api.adapter, api.sent);
       final fields = {'title': 'Islands', 'visibility': 'public'};
       adapter.onPost(
         kItineraryFormEndpoint,
-        (server) => server.reply(201, _summaryJson(coverUrl: _coverUrl)),
+        (server) => server.reply(
+            201,
+            tripAnswer(tripJson(coverUrl: _coverUrl, updatedAt: kSavedAt),
+                createdId: kTripId)),
         data: FormData.fromMap({
           'fields': jsonEncode(fields),
           'image': MultipartFile.fromBytes(_cover, filename: 'mine.jpg'),
         }),
+        // Asking for the trip it made, so its screen opens with no GET.
+        queryParameters: {'return': 'itinerary'},
       );
 
       final created = await ItineraryRepository(dio).createItineraryWithCover(
@@ -229,10 +199,11 @@ void main() {
         coverFilename: 'mine.jpg',
       );
 
-      expect(_lines(sent), ['POST $kItineraryFormEndpoint']);
+      expect(api.lines, ['POST $kItineraryFormEndpoint']);
       expect(sent.single.headers.containsKey('If-Match'), isFalse);
       expect(sent.single.headers.containsKey(kEditLockHeader), isFalse);
-      expect(created.coverImageUrl, _coverUrl);
+      expect(created.createdId, kTripId);
+      expect(created.itinerary!.coverImageUrl, _coverUrl);
     });
   });
 }

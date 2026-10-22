@@ -43,12 +43,21 @@ class _FakeAuthRepository extends AuthRepository {
   int acceptCount = 0;
   DateTime? sentDateOfBirth;
 
+  /// Answers as the server does: the profile, now on the current revision.
   @override
-  Future<void> acceptTos({DateTime? dateOfBirth}) async {
+  Future<User> acceptTos({DateTime? dateOfBirth}) async {
     sentDateOfBirth = dateOfBirth;
     acceptCount++;
+    return _user(
+      tosCurrent: true,
+      dateOfBirth: dateOfBirth ?? DateTime(2000, 1, 1),
+    );
   }
 }
+
+/// How often the profile was read — once per test, unless something downloads
+/// it again.
+int _profileReads = 0;
 
 /// Stands in for MyProfileNotifier so the gate reads a known tos_current
 /// without an HTTP round-trip.
@@ -58,7 +67,10 @@ class _FakeProfileNotifier extends MyProfileNotifier {
   final User user;
 
   @override
-  Future<User> build() async => user;
+  Future<User> build() async {
+    _profileReads++;
+    return user;
+  }
 }
 
 Future<void> _pumpGate(
@@ -69,6 +81,7 @@ Future<void> _pumpGate(
   bool hasDob = true,
 }) async {
   FlutterSecureStorage.setMockInitialValues({});
+  _profileReads = 0;
   tester.view.physicalSize = const Size(1080, 2400);
   tester.view.devicePixelRatio = 1.0;
   addTearDown(tester.view.resetPhysicalSize);
@@ -156,6 +169,10 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(repo.acceptCount, 1);
+      // The answer is the profile on the new revision: adopted, it lowers the
+      // gate, and /users/me is not read a second time.
+      expect(find.text(_appContent), findsOneWidget);
+      expect(_profileReads, 1);
     });
 
     testWidgets(

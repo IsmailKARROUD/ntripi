@@ -226,7 +226,7 @@ is deleted or rejected and the row is closed with a note.
 | Method | Path | Auth | Rate | Response |
 |---|---|---|---|---|
 | GET | `/appeals/violations` | Bearer | — | `ViolationsResponse{violations: [ViolationItem]}` |
-| POST | `/appeals` | Bearer | 10/h | `AppealResponse` 201 |
+| POST | `/appeals` | Bearer | 10/h | `AppealResponse` 201; with `?return=violations`, `ViolationsResponse` 201 |
 | GET | `/appeal/{token}` | **none** | — | HTML form, or `token_invalid.html` — **always 200** |
 | POST | `/web/appeal` | none | 10/h | `appeal_done.html` |
 | GET | `/appeal` | none | — | `appeal_request.html` |
@@ -268,7 +268,15 @@ There is no admin client — `/admin` is server-rendered. The user-facing half:
 
 - **`AccountStatusScreen`** — route `/settings/account-status`, the single home
   for violations and appeals. `myViolationsProvider`
-  (`FutureProvider.autoDispose`).
+  (`AsyncNotifierProvider.autoDispose`, `MyViolationsNotifier`).
+- **An appeal answers with the list, which the screen adopts** (since
+  2026-10-22). `ProfileRepository.submitAppeal` sends `?return=violations`; the
+  server answers the Account status list as it now stands — built by the GET's
+  own helper, the appealed row marked pending — and the app adopts it
+  (`MyViolationsNotifier.adopt`) where the screen is open, instead of
+  downloading the list again. Filed from a hidden banner elsewhere, the screen
+  is not open and nothing is adopted. The answer also becomes the list's cached
+  GET (`cacheAsGet`). Regression test: `test/widgets/appeal_sheet_test.dart`.
 - **`SuspendedScreen`** — route `/suspended`, for a banned account.
 - A `moderation_action` notification routes here; **appeals must not get a second
   home**.

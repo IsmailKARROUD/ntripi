@@ -13,6 +13,7 @@ import 'package:ntripi/features/follows/providers/follow_provider.dart';
 import 'package:ntripi/features/itineraries/providers/itinerary_providers.dart';
 import 'package:ntripi/features/profile/providers/profile_provider.dart';
 import 'package:ntripi/l10n/app_localizations.dart';
+import 'package:ntripi/shared/models/follow.dart';
 import 'package:ntripi/shared/models/user.dart';
 import 'package:ntripi/shared/widgets/follow_button.dart';
 
@@ -48,8 +49,9 @@ Future<bool> confirmAndRemoveFollower(
   if (!confirmed || !context.mounted) return false;
   onConfirmed?.call();
 
+  final FollowCounts counts;
   try {
-    await container.read(followRepositoryProvider).removeFollower(userId);
+    counts = await container.read(followRepositoryProvider).removeFollower(userId);
   } on Exception catch (e) {
     if (context.mounted) {
       messenger.showSnackBar(
@@ -66,11 +68,13 @@ Future<bool> confirmAndRemoveFollower(
       container.read(mine.notifier).removeLocally(userId);
     }
   }
-  // Their side: their following count, follows_you, and their Following list,
-  // which still names this account.
-  container.invalidate(userProfileProvider(userId));
+  // Both profiles from the answer: my followers count, and their following
+  // count and follows_you. Their Following list still names this account,
+  // which no answer carries.
+  adoptMyCounts(container, counts.me);
+  adoptTheirFollowState(container, userId,
+      followsYou: false, counts: counts.them);
   container.invalidate(followingProvider(userId));
-  _refreshMyCounts(container);
 
   if (context.mounted) {
     messenger.showSnackBar(
@@ -102,8 +106,9 @@ Future<bool> confirmAndUnfollow(
   if (!confirmed || !context.mounted) return false;
   onConfirmed?.call();
 
+  FollowCounts? counts;
   try {
-    await container.read(followRepositoryProvider).unfollowUser(userId);
+    counts = await container.read(followRepositoryProvider).unfollowUser(userId);
   } on Exception catch (e) {
     if (apiErrorCode(e) != 'not_following') {
       if (context.mounted) {
@@ -122,13 +127,22 @@ Future<bool> confirmAndUnfollow(
       container.read(mine.notifier).removeLocally(userId);
     }
   }
-  // Their side: their followers count, is_following, their Followers list —
-  // and the trips they share with followers only, which are no longer ours
-  // to open.
-  container.invalidate(userProfileProvider(userId));
+  if (counts != null) {
+    // Both profiles from the answer: my following count, and their followers
+    // count and is_following.
+    adoptMyCounts(container, counts.me);
+    adoptTheirFollowState(container, userId,
+        isFollowing: false, followIsPending: false, counts: counts.them);
+  } else {
+    // Already unfollowed elsewhere: nothing was written here, so there is no
+    // answer to adopt, and the profiles are read again.
+    container.invalidate(myProfileProvider);
+    container.invalidate(userProfileProvider(userId));
+  }
+  // Their Followers list, and the trips they share with followers only —
+  // content no answer carries, and no longer ours to open.
   container.invalidate(followersProvider(userId));
   container.invalidate(userItinerariesProvider(userId));
-  _refreshMyCounts(container);
 
   if (context.mounted) {
     messenger.showSnackBar(
@@ -141,7 +155,7 @@ Future<bool> confirmAndUnfollow(
 /// The signed-in user's id, which keys their own cached lists. Usually loaded
 /// before the action began; a deep link can reach a profile first, so wait for
 /// the load the first read started rather than skip the edit. Null only when
-/// that load failed — the counts refetch still corrects the profile.
+/// that load failed, and then there is no list of mine to edit either.
 Future<String?> _myId(ProviderContainer container, User? me) async {
   if (me != null) return me.id;
   try {
@@ -149,12 +163,4 @@ Future<String?> _myId(ProviderContainer container, User? me) async {
   } catch (_) {
     return null;
   }
-}
-
-/// Refetch the signed-in user's own profile for the server's counts, rather
-/// than subtracting one here: a list row can be stale, and a local `-1` on a
-/// follow that had already ended would count it twice. Invalidating keeps the
-/// current value on screen until the new one lands.
-void _refreshMyCounts(ProviderContainer container) {
-  container.invalidate(myProfileProvider);
 }

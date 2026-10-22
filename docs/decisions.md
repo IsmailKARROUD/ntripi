@@ -1658,3 +1658,169 @@ every save. A request header for the opt-in: it would need an entry in CORS's
 explicit `allow_headers` list, where a query parameter needs nothing. Leaving
 the offline copy as of the last download (the owner chose to keep it current):
 a trip edited at home and opened offline later would show without the edits.
+
+### 2026-10-22 — A write answers with what the screen shows next; the app never re-downloads after its own write
+
+**Context.** After `10435ce` made every trip edit answer with the whole trip,
+the owner asked whether the same had been done everywhere time could be saved,
+and whether "fix it in one place" held. An audit of the app's writes found five
+waits after a write:
+- the Itineraries tab's lists downloaded again after a save;
+- an editor grant or revoke reloading the owner's trip, because it moved
+  `updated_at` (next entry);
+- a create downloading the trip it had just made;
+- follows and blocks re-reading `/users/me` for two counters;
+- FCM pushes sent inside the request (the entry after).
+
+It found three smaller re-downloads too: accepting the terms re-read
+`/users/me`, an appeal re-read the Account status list, and a rating made on
+the Ratings page re-read the page. And it found duplication: sixteen save
+methods repeated the same request-and-adopt lines, with `_listsChanged()`
+placed by hand — so segment saves left the tab's totals stale — and
+`_HeldClaim` was copied into five test files.
+
+**Decision.** The owner's, as a project-wide rule: **a write answers with what
+the screen must show next, and the app never re-downloads after its own
+write.** The named exceptions:
+- content an answer cannot carry — someone's trips or followers after an
+  unfollow or removal, the feed after a block or unblock, a new row in the
+  Following list;
+- pull-to-refresh and Retry;
+- sign-in, sign-out and token exchanges;
+- invalidating data no open screen shows, which loads when its screen opens.
+
+Server:
+- `return_requested(*representations)` in `app/dependencies.py` is the one
+  opt-in factory (`?return=…`, pattern-checked, 422 for anything else). Asked
+  nothing, every route answers byte for byte as before.
+- The two creates take `?return=itinerary` and answer
+  `{itinerary, created_id}`, with `created_id` the new trip.
+- Follow and accept always append `counts` (`FollowWriteResponse`, a subclass
+  of `FollowResponse`). Unfollow, remove follower and block answer 200
+  `FollowCounts` when asked with `?return=counts`, 204 otherwise.
+  `user_service.follow_counts` reads both counters after the commit and
+  computes nothing.
+- `POST /ratings?return=ratings_page` appends the page, and
+  `DELETE /ratings/me` takes `aggregate|ratings_page`. One builder,
+  `_ratings_page`, serves the GET and both writes.
+- `POST /appeals?return=violations` answers the Account status list.
+- `POST /auth/accept-tos` already answered the profile.
+
+App:
+- Every trip save goes through `ItineraryDetailNotifier._save`, which also
+  replaces the trip's row in Mine or Shared with me from the answer
+  (`_syncListRows`).
+- A create's trip waits in `tripSeedsProvider`, which the trip's first build
+  takes, so the new trip opens with no GET.
+- Follow writes adopt their counts through `adoptMyCounts` and
+  `adoptTheirFollowState`.
+- Accepting the terms adopts the answered profile, an appeal the answered list,
+  and a rating made with the Ratings page open the answered page.
+- An answer that replaces a whole GET body — the trip, the profile, the
+  violations list, the ratings page — is also written into the HTTP cache as
+  that GET's entry (`cacheAsGet`), as on 2026-10-21.
+
+Three refinements came out of reading the code:
+- **`counts.them` is null wherever `GET /users/{id}` would 404 for the caller**:
+  an unknown or suspended account, or a block in either direction. Remove
+  follower answers even when there was nothing to remove, and a count there
+  would tell a blocked user that the account behind the block still exists.
+- **Asked for the ratings page, `DELETE /ratings/me` checks view access before
+  deleting** (403 `itinerary_access_denied`). The page is the GET's, which
+  refuses, and the refusal writes nothing.
+- **The answered profile is cached as `/users/me`.** Otherwise an offline start
+  after accepting the terms read `tos_current: false` from the cache and
+  raised the gate again.
+
+**Consequences.**
+- Segment saves now update the Itineraries tab's totals.
+- Accepting a follow request now updates my followers count, which nothing
+  refreshed before.
+- A block made from a review or a trip now updates my counts; only a block from
+  a profile refreshed them before.
+- Counts and list rows are partial answers, so their offline copies stay as of
+  the last download.
+- **Deploy the backend first**: the app asks for the new answers and has no
+  fallback.
+- Server tests: `test_trip_edit_answers.py` (creates, ratings page),
+  `test_follows.py` and `test_blocks.py` (counts), `test_appeals.py` (the list).
+- App tests assert the absent GETs exactly: `trip_edit_adoption_test.dart`,
+  `editors_notifier_test.dart`, `follow_counts_answer_test.dart`,
+  `tos_gate_test.dart` and `appeal_sheet_test.dart`.
+- Test support lives in `test/support/`: `HeldClaim`, `RecordingDio`, the trip
+  JSON builders and `kZeroCounts`.
+
+**Alternatives rejected.**
+- A local ±1 on the counts: it counts twice from a stale row, which is why the
+  profile was re-read in the first place.
+- Answering the counts on the 204 routes without being asked: installed builds
+  have always been sent an empty 204 there.
+- Asking for the ratings page on every rating: the app asks only while it holds
+  the page, and otherwise the server would build a page nobody looks at.
+- Writing a new trip straight into the detail provider: reading a family member
+  builds it, which is the GET, and a provider may not change another while it
+  builds — hence the seeds holder.
+
+### 2026-10-22 — Granting or revoking edit rights no longer moves `updated_at`
+
+Supersedes the rule in
+[2026-08-13 — Editors, and an edit lock identified by a rotating token](#2026-08-13--editors-and-an-edit-lock-identified-by-a-rotating-token)'s
+implementation that every editor endpoint calls `_touch_itinerary`.
+
+**Context.** `add_editor` and `remove_editor` bumped `updated_at` so that a
+revoked editor's cached detail would not keep offering them a pencil:
+`can_edit` rides in the detail, whose ETag was `updated_at`. Since
+[2026-09-28 — The detail GET's cache validator carries a body hash](#2026-09-28--the-detail-gets-cache-validator-carries-a-body-hash),
+the validator is `"<updated_at>;<body hash>"`, so a changed `can_edit` already
+fails a cached copy's 304. All the bump still did was move the owner's
+`If-Match`, and the app reloaded the trip after every grant or revoke to learn
+the new stamp.
+
+**Decision.** The editor endpoints leave `updated_at` alone, like the
+allowlist, and the comment in each says why. The app no longer reloads after a
+grant or revoke. An editor who leaves sets `can_edit` false on their own copy
+(`ItineraryDetailNotifier.editRightsEnded`) and drops the trip from Shared with
+me in place, through `EditorsNotifier.leave`.
+
+**Consequences.** The owner's If-Match from before a grant or revoke still
+saves (`TestTheStampStays`), and a revoked editor's conditional GET answers 200
+with `can_edit: false`. Their next save is still refused by the guard, which
+re-derives the right on every write, and `remove_editor` still releases their
+claim.
+
+**Alternatives rejected.** Keeping the bump and answering the grant with the
+new stamp: the stamp would still move under any editor who had the trip open,
+and they would get a 412 for a change to the editor list they cannot see.
+
+### 2026-10-22 — Pushes leave the request
+
+**Context.** Since
+[2026-08-13 — FCM push as a latency improvement, dispatched after commit](#2026-08-13--fcm-push-as-a-latency-improvement-dispatched-after-commit),
+the `after_commit` listener sent each push itself, on the request's thread,
+between the commit and the response. Every follow, accept, rating, save or
+editor grant that notified someone waited on FCM — up to one timeout when it
+did not answer — and the request-timing log counted that time as the
+request's. The backlog's performance list named the rating's push.
+
+**Decision.** The listener still drains the queue after commit, and a rollback
+still clears it. It now hands the batch to one module-level worker
+(`ThreadPoolExecutor(max_workers=1, thread_name_prefix="push")`) through
+`_submit`, which runs it in an empty `contextvars.Context`. The worker opens its
+own session and sends exactly as before.
+
+**Consequences.**
+- No write waits on FCM, and `ext=fcm.googleapis.com` no longer appears in a
+  request's timing line.
+- One thread keeps sends in order. A stalled FCM delays the pushes queued
+  behind it, never a user's write, which is why an unreachable FCM still
+  abandons the rest of that notification's devices.
+- Pushes still queued when the process stops are sent before it exits,
+  within the platform's shutdown grace.
+- Tests run the batch inline through a patched `_submit`. One test proves a
+  follow answers while its push is still blocked.
+
+**Alternatives rejected.**
+- FastAPI `BackgroundTasks`: the `after_commit` listener, and the services
+  that call `notify()`, hold no request to attach a task to.
+- One thread per push: unbounded under a burst, and sends out of order.
+- An external queue: a new dependency for something the poll already backs up.

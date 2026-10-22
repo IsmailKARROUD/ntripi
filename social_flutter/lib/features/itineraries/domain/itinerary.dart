@@ -311,6 +311,15 @@ class Itinerary {
     );
   }
 
+  /// This trip as a list row shows it: the detail-only collections dropped, so
+  /// a save's answer can stand in for the row without a list holding whole
+  /// trips. [stopsCount] is stored, so it outlives the tracks.
+  Itinerary get summary => copyWith(
+        tracks: const [],
+        segments: const [],
+        annotations: const [],
+      );
+
   // ---------------------------------------------------------------------------
   // Visibility helpers
   // ---------------------------------------------------------------------------

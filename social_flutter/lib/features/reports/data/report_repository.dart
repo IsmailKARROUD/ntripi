@@ -2,14 +2,15 @@
 //
 // Both are safety actions the user takes about someone else, so they share a
 // repository. Reports are fire-and-forget (the backend decides what happens);
-// blocks change what the current user can see, so callers invalidate the
-// affected providers afterwards.
+// a block answers with the follow counts it moved, which callers adopt, and
+// changes what the current user can see, which callers invalidate.
 
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ntripi/core/api/api_client.dart';
 import 'package:ntripi/core/api/api_endpoints.dart';
 import 'package:ntripi/features/reports/domain/report_target.dart';
+import 'package:ntripi/shared/models/follow.dart';
 import 'package:ntripi/shared/models/user.dart';
 
 class ReportRepository {
@@ -31,8 +32,14 @@ class ReportRepository {
     });
   }
 
-  Future<void> block(String userId) async {
-    await _dio.post(kBlockEndpoint(userId));
+  /// Blocking severs any follow both ways, so it answers with the signed-in
+  /// user's counts as it left them (`them` is null: the profile is gone).
+  Future<FollowCounts> block(String userId) async {
+    final response = await _dio.post(
+      kBlockEndpoint(userId),
+      queryParameters: kReturnFollowCounts,
+    );
+    return FollowCounts.fromJson(response.data as Map<String, dynamic>);
   }
 
   Future<void> unblock(String userId) async {

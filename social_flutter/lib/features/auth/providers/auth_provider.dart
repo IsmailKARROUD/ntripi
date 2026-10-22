@@ -50,6 +50,8 @@ final authRepositoryProvider = Provider<AuthRepository>((ref) {
 final List<ProviderOrFamily> _userScopedProviders = [
   myProfileProvider,
   myItinerariesProvider,
+  // A trip this account created, not yet opened.
+  tripSeedsProvider,
   sharedWithMeProvider,
   savedItinerariesProvider,
   searchQueryProvider,

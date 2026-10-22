@@ -58,8 +58,8 @@ def _add_editor(client: TestClient, itinerary_id: str, owner_hdrs: dict,
 
 
 def _etag(client: TestClient, itinerary_id: str, hdrs: dict) -> str:
-    """The itinerary's current ETag. Granting an editor bumps updated_at, so a
-    token captured at creation goes stale — only the tests that are ABOUT the
+    """The itinerary's current ETag, read fresh: every save moves updated_at, so
+    a token captured earlier goes stale — only the tests that are ABOUT the
     ETag should be holding an old one."""
     response = client.get(f"/itineraries/{itinerary_id}", headers=hdrs)
     assert response.status_code == 200, response.text

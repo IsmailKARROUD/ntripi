@@ -15,19 +15,20 @@ FAILS OPEN, like email_service and unlike jira_service: nobody is standing in
 front of a dashboard waiting for this, and a Google outage must never 500 a
 user's follow or save. Every failure is logged and swallowed.
 
-THE CALL IS BLOCKING, AND THAT IS CORRECT — same reasoning as
-text_moderation_providers: every write path is a sync `def` endpoint that
-FastAPI runs in a threadpool, so a blocking call with a timeout never touches
-the event loop. Making this async would force those endpoints to `async def`
-and put the sync SQLAlchemy session on the loop, which is the actual hazard.
+THE CALL IS BLOCKING, AND THAT IS CORRECT — it runs on the push worker below,
+never on the event loop and never inside a request. Until 2026-10-22 it ran in
+the request's own thread, between its commit and its response, so every follow,
+rating or save that notified someone waited on FCM (one timeout at worst).
 """
 
 from __future__ import annotations
 
+import contextvars
 import json
 import logging
 import threading
 import uuid
+from concurrent.futures import Future, ThreadPoolExecutor
 from dataclasses import dataclass
 from enum import Enum
 from typing import TYPE_CHECKING, Any
@@ -57,8 +58,8 @@ _SEND_URL = "https://fcm.googleapis.com/v1/projects/{project}/messages:send"
 _DEAD_TOKEN_CODES = {"UNREGISTERED", "INVALID_ARGUMENT"}
 
 # google-auth caches the access token on the Credentials object and knows its
-# own expiry (~1 h), so this is refreshed rarely. Guarded because after_commit
-# runs on whichever threadpool thread served the request.
+# own expiry (~1 h), so this is refreshed rarely. Guarded: sends run on the push
+# worker, but send() is public and may be called from any thread.
 _creds_lock = threading.Lock()
 _creds: Any = None
 
@@ -180,9 +181,8 @@ def _access_token(settings: "Settings") -> str | None:
 def send(db: Session, push: PendingPush, settings: "Settings") -> None:
     """Deliver one notification to every device the recipient has registered.
 
-    `db` is a session of the caller's choosing — the dispatcher hands it a
-    fresh one rather than the request's, so the token pruning below can commit
-    without re-entering the after_commit hook that called us.
+    `db` is a session of the caller's choosing — the push worker hands it its
+    own, never the request's, so the token pruning below can commit.
     """
     if not is_enabled(settings):
         return
@@ -212,10 +212,10 @@ def send(db: Session, push: PendingPush, settings: "Settings") -> None:
         if outcome is _Outcome.dead:
             dead.append(device)
         elif outcome is _Outcome.unreachable:
-            # This whole call runs inline in the user's request, between their
-            # commit and their response. If FCM did not answer for one device it
-            # will not answer for the next, so stopping here bounds the delay at
-            # ONE timeout instead of one per registered device.
+            # One worker sends every push in turn, so a stalled FCM holds up
+            # everyone's notifications queued behind this one. If FCM did not
+            # answer for one device it will not answer for the next: stopping
+            # here bounds that at ONE timeout instead of one per device.
             logger.warning("FCM unreachable — abandoning this notification")
             break
 
@@ -313,20 +313,49 @@ def _post(
 
 # ── Dispatch ────────────────────────────────────────────────────────────────
 #
-# Push is sent AFTER COMMIT and never from inside notify(). notify() adds its
+# Push is queued AFTER COMMIT and never from inside notify(). notify() adds its
 # row to the caller's transaction and does not commit, so sending from there
 # would push for transactions that later roll back — and a push, unlike a row,
 # cannot be rolled back. The listener below is what makes "the event actually
 # happened" the precondition for telling anyone about it.
 #
+# It then hands the batch to ONE background worker, so no request waits on FCM.
+# One thread keeps sends in order and bounds what FCM costs the process: a
+# stalled send delays the pushes behind it, never a user's write.
+#
 # Swappable so tests can hand the dispatcher a session bound to their SQLite
 # fixture instead of the real engine.
 _session_factory = SessionLocal
 
+_executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="push")
+
+
+def _submit(fn, *args) -> Future:
+    """Run `fn(*args)` on the push worker. In an empty context: the request that
+    queued it has finished, so its request-timing record must not count a send
+    it no longer waits for. Tests swap this to run inline."""
+    return _executor.submit(contextvars.Context().run, fn, *args)
+
+
+def _send_batch(pending: list[PendingPush], settings: "Settings") -> None:
+    """Send one commit's pushes, on the worker. Logs, never raises."""
+    try:
+        # A SEPARATE session, deliberately. Pruning a dead token needs a commit,
+        # and the request's session is not this thread's to use.
+        own = _session_factory()
+        try:
+            for push in pending:
+                send(own, push, settings)
+        finally:
+            own.close()
+    except Exception:
+        logger.exception("Push dispatch failed")
+
 
 @event.listens_for(Session, "after_commit")
 def _dispatch_pending_pushes(session: Session) -> None:
-    """Drain and send whatever notify() queued on this session."""
+    """Drain whatever notify() queued on this session and hand it to the push
+    worker."""
     # Popped first, and unconditionally: a send that raises must not leave the
     # queue in place for the next commit on this session to send twice.
     pending: list[PendingPush] = session.info.pop(PENDING_KEY, None) or []
@@ -337,19 +366,11 @@ def _dispatch_pending_pushes(session: Session) -> None:
         settings = get_settings()
         if not is_enabled(settings):
             return
-        # A SEPARATE session, deliberately. Pruning a dead token needs a commit,
-        # and committing on `session` here would re-enter this very listener.
-        # It also keeps a push failure from touching the request's transaction.
-        own = _session_factory()
-        try:
-            for push in pending:
-                send(own, push, settings)
-        finally:
-            own.close()
+        _submit(_send_batch, pending, settings)
     except Exception:
         # An exception escaping after_commit would surface as a 500 on a write
         # that already succeeded — the worst possible outcome for a best-effort
-        # side channel.
+        # side channel. (A submit fails only while the process is shutting down.)
         logger.exception("Push dispatch failed")
 
 

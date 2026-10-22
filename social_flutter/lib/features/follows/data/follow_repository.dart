@@ -15,23 +15,32 @@ class FollowRepository {
   const FollowRepository(this._dio);
 
   /// POST /users/{userId}/follow
-  /// Returns the created Follow record (with status = 'pending' or 'accepted').
-  Future<Follow> followUser(String userId) async {
+  /// Returns the created Follow record (with status = 'pending' or 'accepted')
+  /// and both accounts' counts as the follow left them.
+  Future<({Follow follow, FollowCounts counts})> followUser(String userId) async {
     final response = await _dio.post(followEndpoint(userId));
-    return Follow.fromJson(response.data as Map<String, dynamic>);
+    return _followWrite(response.data as Map<String, dynamic>);
   }
 
   /// DELETE /users/{userId}/follow
-  /// Unfollows or cancels a pending request.
-  Future<void> unfollowUser(String userId) async {
-    await _dio.delete(followEndpoint(userId));
+  /// Unfollows or cancels a pending request; answers both accounts' counts.
+  Future<FollowCounts> unfollowUser(String userId) async {
+    final response = await _dio.delete(
+      followEndpoint(userId),
+      queryParameters: kReturnFollowCounts,
+    );
+    return FollowCounts.fromJson(response.data as Map<String, dynamic>);
   }
 
   /// DELETE /users/me/followers/{userId}
-  /// Ends [userId]'s follow of the signed-in user. Idempotent server-side: a
-  /// follower who already left answers 204 too.
-  Future<void> removeFollower(String userId) async {
-    await _dio.delete(removeFollowerEndpoint(userId));
+  /// Ends [userId]'s follow of the signed-in user and answers both accounts'
+  /// counts. Idempotent server-side: a follower who already left answers too.
+  Future<FollowCounts> removeFollower(String userId) async {
+    final response = await _dio.delete(
+      removeFollowerEndpoint(userId),
+      queryParameters: kReturnFollowCounts,
+    );
+    return FollowCounts.fromJson(response.data as Map<String, dynamic>);
   }
 
   /// GET /users/me/follow-requests
@@ -50,10 +59,23 @@ class FollowRepository {
   }
 
   /// POST /users/me/follow-requests/{followId}/accept
-  Future<Follow> acceptFollowRequest(String followId) async {
+  /// The accepted Follow, and both accounts' counts: accepting is what moves
+  /// the signed-in user's followers count.
+  Future<({Follow follow, FollowCounts counts})> acceptFollowRequest(
+    String followId,
+  ) async {
     final response = await _dio.post(acceptFollowRequestEndpoint(followId));
-    return Follow.fromJson(response.data as Map<String, dynamic>);
+    return _followWrite(response.data as Map<String, dynamic>);
   }
+
+  /// Follow and accept answer the follow with `counts` appended.
+  static ({Follow follow, FollowCounts counts}) _followWrite(
+    Map<String, dynamic> json,
+  ) =>
+      (
+        follow: Follow.fromJson(json),
+        counts: FollowCounts.fromJson(json['counts'] as Map<String, dynamic>),
+      );
 
   /// DELETE /users/me/follow-requests/{followId}
   /// Rejects (deletes) a pending follow request.
