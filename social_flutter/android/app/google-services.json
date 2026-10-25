@@ -14,6 +14,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "29126714665-ma7ilq9omd9g8nh34hs5oufvhhqkakrq.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.ismailkarroud.ntripi",
+            "certificate_hash": "8f75c62d743d8dfba7aae738e35c00beaa18fbe2"
+          }
+        },
+        {
           "client_id": "29126714665-9pgodn1nt1ikf6goo71a6b7634sknna4.apps.googleusercontent.com",
           "client_type": 3
         }
