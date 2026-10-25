@@ -213,8 +213,23 @@ registered from the same router under the `/users` prefix.
   the stop the answer's `createdId` names and `moveStop` the moved stop, both
   found in the answered trip. With no trip in the answer (the caller lost view
   access), `_adopt` makes the one GET whose 403 puts the screen in its no-access
-  state, and the methods that return a value rethrow that refusal. `refresh()`
-  is left to pull-to-refresh and Retry.
+  state, and the methods that return a value rethrow that refusal. That GET
+  goes through `ReloadKeepsContent` like any reload: if it times out instead,
+  the trip stays on screen and the save's caller gets the error. `refresh()` is
+  left to pull-to-refresh and Retry.
+- **A reload keeps the trip on screen** (since 2026-10-25). `refresh()` runs
+  through `ReloadKeepsContent.reloadKeepingContent`
+  (`core/providers/reload_keeps_content.dart`): during a pull the trip stays
+  mounted — scroll position and every opened "view more" with it — and the
+  pull's spinner is the only sign; the answer replaces it in place. A refusal
+  (403, 404) shows the no-access or not-available view; any other failure
+  keeps the trip and the screen says why in a SnackBar (`reportReloads`). A
+  save that lands while the reload is in flight wins over it. Until then the
+  pull put the whole trip behind `NTripiRouteLoader` and a failed one replaced
+  it with the error view. The Itineraries tab's pull and Retry, and the other
+  user's trips on a profile, reload the same way. Regression tests:
+  `test/widgets/trip_reload_keeps_content_test.dart`,
+  `test/providers/reload_keeps_content_test.dart`.
 - **The Itineraries tab follows the answer** — `_syncListRows` replaces the
   trip's row in `myItinerariesProvider` and `sharedWithMeProvider` with
   `Itinerary.summary` (the answered trip without tracks, segments and

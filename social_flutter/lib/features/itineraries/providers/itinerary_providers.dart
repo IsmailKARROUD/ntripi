@@ -15,6 +15,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:ntripi/core/connectivity/connectivity_service.dart';
 import 'package:ntripi/core/providers/locale_provider.dart';
+import 'package:ntripi/core/providers/reload_keeps_content.dart';
 import 'package:ntripi/core/services/geocoding_service.dart';
 import 'package:ntripi/features/feed/domain/feed_item.dart';
 import 'package:ntripi/features/itineraries/data/itinerary_repository.dart';
@@ -34,23 +35,22 @@ import 'package:ntripi/features/itineraries/providers/edit_lock_provider.dart';
 // MyItinerariesNotifier
 // ---------------------------------------------------------------------------
 
-class MyItinerariesNotifier extends AsyncNotifier<List<Itinerary>> {
+class MyItinerariesNotifier extends AsyncNotifier<List<Itinerary>>
+    with ReloadKeepsContent<List<Itinerary>> {
   @override
   Future<List<Itinerary>> build() async {
     return ref.read(itineraryRepositoryProvider).getMyItineraries();
   }
 
-  Future<void> refresh() async {
+  /// Pull-to-refresh and Retry: the list stays on screen while it reloads.
+  Future<ReloadFailure?> refresh() async {
     // Offline: keep cached AsyncData — a forced refresh could only degrade it.
-    if (!isOnlineNowRef(ref)) return;
-    state = const AsyncLoading();
-    final next = await AsyncValue.guard(
+    if (!isOnlineNowRef(ref)) return null;
+    return reloadKeepingContent(
       () => ref
           .read(itineraryRepositoryProvider)
           .getMyItineraries(forceRefresh: true),
     );
-    if (!ref.mounted) return; // disposed mid-request (logout)
-    state = next;
   }
 
   /// Create an itinerary — with its cover in the same request when
@@ -109,23 +109,22 @@ final myItinerariesProvider =
 // a save's answer, or goes when my edit rights do.
 // ---------------------------------------------------------------------------
 
-class SharedWithMeNotifier extends AsyncNotifier<List<FeedItem>> {
+class SharedWithMeNotifier extends AsyncNotifier<List<FeedItem>>
+    with ReloadKeepsContent<List<FeedItem>> {
   @override
   Future<List<FeedItem>> build() async {
     return ref.read(itineraryRepositoryProvider).getSharedWithMe();
   }
 
-  Future<void> refresh() async {
+  /// Pull-to-refresh and Retry: the list stays on screen while it reloads.
+  Future<ReloadFailure?> refresh() async {
     // Offline: keep cached AsyncData — a forced refresh could only degrade it.
-    if (!isOnlineNowRef(ref)) return;
-    state = const AsyncLoading();
-    final next = await AsyncValue.guard(
+    if (!isOnlineNowRef(ref)) return null;
+    return reloadKeepingContent(
       () => ref
           .read(itineraryRepositoryProvider)
           .getSharedWithMe(forceRefresh: true),
     );
-    if (!ref.mounted) return; // disposed mid-request (logout)
-    state = next;
   }
 
   /// [MyItinerariesNotifier.replaceRow] for a trip shared with me. The owner
@@ -208,7 +207,8 @@ final tripSeedsProvider = Provider<TripSeeds>((ref) => TripSeeds());
 typedef _TripSend = Future<TripEditAnswer> Function(
     ItineraryRepository repo, String? lockToken);
 
-class ItineraryDetailNotifier extends AsyncNotifier<Itinerary> {
+class ItineraryDetailNotifier extends AsyncNotifier<Itinerary>
+    with ReloadKeepsContent<Itinerary> {
   // Riverpod 3 removed FamilyAsyncNotifier; the family argument (itinerary id)
   // now arrives via the constructor and is kept in `arg` so method bodies below
   // read identically to the pre-migration code.
@@ -284,18 +284,15 @@ class ItineraryDetailNotifier extends AsyncNotifier<Itinerary> {
   /// answer ([_adopt]) — and never after leaving as an editor, which is
   /// [editRightsEnded]. Forces a fresh server fetch (bypasses the cache
   /// validator) so a 304 with a stale local body can't silently no-op a
-  /// pull-to-refresh.
-  Future<void> refresh() async {
+  /// pull-to-refresh. The trip stays on screen while it reloads.
+  Future<ReloadFailure?> refresh() async {
     // Offline: keep cached AsyncData — a forced refresh could only degrade it.
-    if (!isOnlineNowRef(ref)) return;
-    state = const AsyncLoading();
-    final next = await AsyncValue.guard(
+    if (!isOnlineNowRef(ref)) return null;
+    return reloadKeepingContent(
       () => ref
           .read(itineraryRepositoryProvider)
           .getItinerary(arg, forceRefresh: true),
     );
-    if (!ref.mounted) return; // disposed mid-request (logout)
-    state = next;
   }
 
   /// Adopt a trip edit's answer — the whole trip as the server now has it,
@@ -303,19 +300,25 @@ class ItineraryDetailNotifier extends AsyncNotifier<Itinerary> {
   /// the screen is never rebuilt behind a reload. Ends on what was adopted.
   Future<AsyncValue<Itinerary>> _adopt(TripEditAnswer answer) async {
     final trip = answer.itinerary;
+    if (trip != null) {
+      if (ref.mounted) state = AsyncData(trip); // else disposed mid-request
+      return AsyncData(trip);
+    }
     // No trip: this very save took the viewer's access away (moderation hid an
     // editor's text on the spot), and the GET's refusal is what the screen
     // shows for that — the one request a save can be followed by.
-    final next = trip != null
-        ? AsyncData(trip)
-        : await AsyncValue.guard(
-            () => ref
-                .read(itineraryRepositoryProvider)
-                .getItinerary(arg, forceRefresh: true),
-          );
-    if (!ref.mounted) return next; // disposed mid-request (logout)
-    state = next;
-    return next;
+    final failure = await reloadKeepingContent(
+      () => ref
+          .read(itineraryRepositoryProvider)
+          .getItinerary(arg, forceRefresh: true),
+    );
+    // A GET that failed otherwise left the trip on screen; the save reports it.
+    if (failure != null) return AsyncError(failure.error, failure.stackTrace);
+    if (!ref.mounted) {
+      return AsyncError(
+          StateError('disposed mid-request (logout)'), StackTrace.current);
+    }
+    return state;
   }
 
   /// One trip save — the only way any of them is made. [send] makes the
@@ -668,7 +671,8 @@ final editorsProvider = AsyncNotifierProvider.family<
 // UserItinerariesNotifier
 // ---------------------------------------------------------------------------
 
-class UserItinerariesNotifier extends AsyncNotifier<List<Itinerary>> {
+class UserItinerariesNotifier extends AsyncNotifier<List<Itinerary>>
+    with ReloadKeepsContent<List<Itinerary>> {
   UserItinerariesNotifier(this.arg); // family argument: user id
   final String arg;
 
@@ -677,17 +681,15 @@ class UserItinerariesNotifier extends AsyncNotifier<List<Itinerary>> {
     return ref.read(itineraryRepositoryProvider).getUserItineraries(arg);
   }
 
-  Future<void> refresh() async {
+  /// Pull-to-refresh and Retry: the list stays on screen while it reloads.
+  Future<ReloadFailure?> refresh() async {
     // Offline: keep cached AsyncData — a forced refresh could only degrade it.
-    if (!isOnlineNowRef(ref)) return;
-    state = const AsyncLoading();
-    final next = await AsyncValue.guard(
+    if (!isOnlineNowRef(ref)) return null;
+    return reloadKeepingContent(
       () => ref
           .read(itineraryRepositoryProvider)
           .getUserItineraries(arg, forceRefresh: true),
     );
-    if (!ref.mounted) return; // disposed mid-request (logout)
-    state = next;
   }
 }
 
@@ -760,7 +762,8 @@ final myRatingProvider =
 // RatingsPageNotifier
 // ---------------------------------------------------------------------------
 
-class RatingsPageNotifier extends AsyncNotifier<RatingsPage> {
+class RatingsPageNotifier extends AsyncNotifier<RatingsPage>
+    with ReloadKeepsContent<RatingsPage> {
   RatingsPageNotifier(this.arg); // family argument: itinerary id
   final String arg;
 
@@ -769,17 +772,15 @@ class RatingsPageNotifier extends AsyncNotifier<RatingsPage> {
     return ref.read(itineraryRepositoryProvider).getRatingsPage(arg);
   }
 
-  Future<void> refresh() async {
+  /// Pull-to-refresh and Retry: the page stays on screen while it reloads.
+  Future<ReloadFailure?> refresh() async {
     // Offline: keep cached AsyncData — a forced refresh could only degrade it.
-    if (!isOnlineNowRef(ref)) return;
-    state = const AsyncLoading();
-    final next = await AsyncValue.guard(
+    if (!isOnlineNowRef(ref)) return null;
+    return reloadKeepingContent(
       () => ref
           .read(itineraryRepositoryProvider)
           .getRatingsPage(arg, forceRefresh: true),
     );
-    if (!ref.mounted) return; // disposed mid-request (logout)
-    state = next;
   }
 
   /// A rating write answered with the page as it now stands.

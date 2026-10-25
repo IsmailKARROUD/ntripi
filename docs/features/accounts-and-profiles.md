@@ -177,13 +177,25 @@ itinerary_id, stop_id}]}` — derived from the user's stops, filtered by
   | `profileRepositoryProvider` | `Provider` | `ProfileRepository` |
   | `myProfileProvider` | `AsyncNotifierProvider` | own `UserPrivateProfile` |
   | `userProfileProvider` | `AsyncNotifierProvider.family` | another user's profile |
-  | `myViolationsProvider` | `FutureProvider.autoDispose` | moderation history |
+  | `myViolationsProvider` | `AsyncNotifierProvider.autoDispose` | moderation history |
   | `userLocationsProvider` | `AsyncNotifierProvider.family` | the visited-locations map |
 - **Model** — `User` (`shared/models/user.dart`), manual
   `fromJson`/`toJson`/`copyWith`.
 - Profile screens use the Editorial layout; the map is `flutter_map` +
   OpenStreetMap.
 - The delete flow is Tier-3 destructive: `confirmTypedDestructiveAction()`.
+- **A reload keeps the profile on screen** — the pull reloads the profile, its
+  trips, the places map and (on your own) the follow requests through
+  `ReloadKeepsContent` ([itineraries.md](itineraries.md)): the content stays,
+  an answer replaces it in place, a 404 (deleted, banned, blocked) shows the
+  unavailable view, and any other failure keeps it and says why in a SnackBar.
+  These four reloads are forced since 2026-10-25, so a failure is reported
+  rather than answered from the cache's stored copy.
+- **A refused profile save keeps the form** — `MyProfileNotifier.updateProfile`
+  throws on failure and leaves the profile as it was, so the edit form's catch
+  shows the reason (a moderated bio, a timeout) and every typed field stays.
+  Until 2026-10-25 it wrote the failure into the profile, and the error view
+  replaced the screen, the form and its text with it.
 
 ## Known gaps / TODOs
 

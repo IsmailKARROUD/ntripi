@@ -172,6 +172,13 @@ ratings: [RatingWithUser]}`.
   Adding an enum value wires both screens.
 - **Providers** — `myRatingProvider` and `ratingsPageProvider`, both
   `AsyncNotifierProvider.family` keyed by itinerary id.
+- **A reload keeps the page on screen** — `RatingsPageNotifier.refresh()` goes
+  through `ReloadKeepsContent` ([itineraries.md](itineraries.md)): both screens
+  keep the reviews through a pull, and a failed one keeps them and says why in
+  a SnackBar. A refusal (403 when the trip is no longer yours to see) shows the
+  error in their place: the screens draw from `.value`, which an `AsyncError`
+  still carries, so they test `hasError` alone — until 2026-10-25 they kept
+  showing the reviews over it.
 
 ## Known gaps / TODOs
 

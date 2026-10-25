@@ -48,7 +48,7 @@ class _RecordingRepo extends ProfileRepository {
   String? reason;
 
   @override
-  Future<List<Violation>> getViolations() async {
+  Future<List<Violation>> getViolations({bool forceRefresh = false}) async {
     listReads++;
     return [_hidden()];
   }

@@ -31,6 +31,7 @@ import 'package:ntripi/shared/widgets/loaders.dart';
 import 'package:ntripi/shared/widgets/saving_overlay.dart';
 import 'package:ntripi/core/connectivity/connectivity_service.dart';
 import 'package:ntripi/shared/widgets/offline_gate.dart';
+import 'package:ntripi/shared/widgets/reload_report.dart';
 
 /// One row in the merged list. [owner] is null exactly when the viewer owns the
 /// trip, which is what gates the delete gesture and the card type.
@@ -92,15 +93,14 @@ class _ItineraryListScreenState extends ConsumerState<ItineraryListScreen> {
     }
   }
 
-  /// Refreshes whichever lists the active scope actually shows.
-  Future<void> _refresh(ItineraryScope scope) async {
-    await Future.wait([
-      if (scope != ItineraryScope.shared)
-        ref.read(myItinerariesProvider.notifier).refresh(),
-      if (scope != ItineraryScope.mine)
-        ref.read(sharedWithMeProvider.notifier).refresh(),
-    ]);
-  }
+  /// Refreshes whichever lists the active scope actually shows, and reports a
+  /// failure the rows on screen were kept through.
+  Future<void> _refresh(ItineraryScope scope) => reportReloads(context, [
+        if (scope != ItineraryScope.shared)
+          ref.read(myItinerariesProvider.notifier).refresh(),
+        if (scope != ItineraryScope.mine)
+          ref.read(sharedWithMeProvider.notifier).refresh(),
+      ]);
 
   @override
   Widget build(BuildContext context) {

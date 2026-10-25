@@ -95,16 +95,23 @@ class _SwitchesState extends ConsumerState<_Switches> {
   /// than a sound now and an animation a second later.
   Future<void> _update(_NotifPref pref, bool value) async {
     setState(() => _pending.add(pref));
-    await ref.read(myProfileProvider.notifier).updateProfile(
-          notifyRatings: pref == _NotifPref.ratings ? value : null,
-          notifySaves: pref == _NotifPref.saves ? value : null,
-          notifyFollowAccepted:
-              pref == _NotifPref.followAccepted ? value : null,
-        );
-    // updateProfile is AsyncValue.guard'd and never throws — it writes the
-    // failure into myProfileProvider, which swaps this whole list for an error
-    // message. So still being mounted IS the success test, and a failed save
-    // gets no acknowledgement.
+    try {
+      await ref.read(myProfileProvider.notifier).updateProfile(
+            notifyRatings: pref == _NotifPref.ratings ? value : null,
+            notifySaves: pref == _NotifPref.saves ? value : null,
+            notifyFollowAccepted:
+                pref == _NotifPref.followAccepted ? value : null,
+          );
+    } catch (e) {
+      // A refused save leaves the profile — and so this switch — as it was;
+      // only the reason is news, and a failure gets no acknowledgement.
+      if (!mounted) return;
+      setState(() => _pending.remove(pref));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(extractErrorMessage(e, AppLocalizations.of(context))),
+      ));
+      return;
+    }
     if (!mounted) return;
     setState(() => _pending.remove(pref));
     toggleFeedback(ref);

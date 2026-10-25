@@ -30,6 +30,7 @@ import 'package:ntripi/l10n/app_localizations.dart';
 import 'package:ntripi/shared/widgets/editorial_widgets.dart';
 import 'package:ntripi/shared/widgets/loaders.dart';
 import 'package:ntripi/shared/widgets/offline_gate.dart';
+import 'package:ntripi/shared/widgets/reload_report.dart';
 import 'package:ntripi/core/utils/platform_utils.dart';
 
 enum FollowListType { followers, following }
@@ -152,17 +153,15 @@ class _FollowListScreenState extends ConsumerState<FollowListScreen>
                   children: [
                     // Followers
                     RefreshIndicator(
-                      onRefresh: () async {
+                      // Awaited: unawaited, the spinner ended at once while
+                      // the lists were still on their way.
+                      onRefresh: () => reportReloads(context, [
                         ref
-                            .read(followersProvider(widget.userId)
-                                .notifier)
-                            .refresh();
-                        if (isOwnProfile) {
-                          ref
-                              .read(followRequestsProvider.notifier)
-                              .refresh();
-                        }
-                      },
+                            .read(followersProvider(widget.userId).notifier)
+                            .refresh(),
+                        if (isOwnProfile)
+                          ref.read(followRequestsProvider.notifier).refresh(),
+                      ]),
                       child: _LoadMoreOnScroll(
                         onNearEnd: () => ref
                             .read(followersProvider(widget.userId).notifier)
@@ -181,10 +180,11 @@ class _FollowListScreenState extends ConsumerState<FollowListScreen>
                     ),
                     // Following
                     RefreshIndicator(
-                      onRefresh: () => ref
-                          .read(followingProvider(widget.userId)
-                              .notifier)
-                          .refresh(),
+                      onRefresh: () => reportReloads(context, [
+                        ref
+                            .read(followingProvider(widget.userId).notifier)
+                            .refresh(),
+                      ]),
                       child: _LoadMoreOnScroll(
                         onNearEnd: () => ref
                             .read(followingProvider(widget.userId).notifier)

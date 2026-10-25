@@ -21,14 +21,20 @@ class ProfileRepository {
   const ProfileRepository(this._dio);
 
   /// GET /users/me — own full profile (includes email).
-  Future<User> getMyProfile() async {
-    final response = await _dio.get(kMyProfileEndpoint);
+  Future<User> getMyProfile({bool forceRefresh = false}) async {
+    final response = await _dio.get(
+      kMyProfileEndpoint,
+      options: forceRefresh ? forceRefreshOptions() : null,
+    );
     return User.fromJson(response.data as Map<String, dynamic>);
   }
 
   /// GET /users/{userId} — public profile with follow status.
-  Future<User> getUserProfile(String userId) async {
-    final response = await _dio.get(userProfileEndpoint(userId));
+  Future<User> getUserProfile(String userId, {bool forceRefresh = false}) async {
+    final response = await _dio.get(
+      userProfileEndpoint(userId),
+      options: forceRefresh ? forceRefreshOptions() : null,
+    );
     return User.fromJson(response.data as Map<String, dynamic>);
   }
 
@@ -147,8 +153,11 @@ class ProfileRepository {
   // -------------------------------------------------------------------------
 
   /// GET /appeals/violations — moderation actions against the current user.
-  Future<List<Violation>> getViolations() async {
-    final response = await _dio.get<Map<String, dynamic>>(kViolationsEndpoint);
+  Future<List<Violation>> getViolations({bool forceRefresh = false}) async {
+    final response = await _dio.get<Map<String, dynamic>>(
+      kViolationsEndpoint,
+      options: forceRefresh ? forceRefreshOptions() : null,
+    );
     return _violations(response.data!);
   }
 
@@ -187,9 +196,13 @@ class ProfileRepository {
           .toList();
 
   /// GET /users/{userId}/locations — aggregate stop coords visible to viewer.
-  Future<List<VisitedLocation>> getUserLocations(String userId) async {
+  Future<List<VisitedLocation>> getUserLocations(
+    String userId, {
+    bool forceRefresh = false,
+  }) async {
     final response = await _dio.get<Map<String, dynamic>>(
       userLocationsEndpoint(userId),
+      options: forceRefresh ? forceRefreshOptions() : null,
     );
     final list = (response.data!['locations'] as List).cast<Map<String, dynamic>>();
     return list.map(VisitedLocation.fromJson).toList();

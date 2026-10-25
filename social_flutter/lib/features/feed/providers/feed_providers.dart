@@ -11,6 +11,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ntripi/core/connectivity/connectivity_service.dart';
 import 'package:ntripi/core/providers/locale_provider.dart';
+import 'package:ntripi/core/providers/reload_keeps_content.dart';
 import 'package:ntripi/features/feed/data/feed_repository.dart';
 import 'package:ntripi/features/feed/domain/feed_item.dart';
 
@@ -33,7 +34,8 @@ class FeedSortNotifier extends Notifier<FeedSort> {
 final feedSortProvider =
     NotifierProvider<FeedSortNotifier, FeedSort>(FeedSortNotifier.new);
 
-class FeedNotifier extends AsyncNotifier<List<FeedItem>> {
+class FeedNotifier extends AsyncNotifier<List<FeedItem>>
+    with ReloadKeepsContent<List<FeedItem>> {
   int _offset = 0;
   bool _hasMore = true;
   bool _loadingMore = false;
@@ -91,25 +93,25 @@ class FeedNotifier extends AsyncNotifier<List<FeedItem>> {
     }
   }
 
-  /// Pull-to-refresh / retry — re-fetch page 0, bypassing the HTTP cache.
-  Future<void> refresh() async {
+  /// Pull-to-refresh / retry — re-fetch page 0, bypassing the HTTP cache. The
+  /// cards stay on screen while it reloads.
+  Future<ReloadFailure?> refresh() async {
     // Offline: keep cached AsyncData — a forced refresh could only degrade it.
-    if (!isOnlineNowRef(ref)) return;
-    state = const AsyncLoading();
-    final next = await AsyncValue.guard(() async {
-      final sort = ref.read(feedSortProvider);
-      final first = await ref.read(feedRepositoryProvider).getFeed(
-            sort: sort.value,
+    if (!isOnlineNowRef(ref)) return null;
+    return reloadKeepingContent(
+      () => ref.read(feedRepositoryProvider).getFeed(
+            sort: ref.read(feedSortProvider).value,
             offset: 0,
             lang: ref.read(localeProvider).languageCode,
             forceRefresh: true,
-          );
-      _offset = first.length;
-      _hasMore = first.length == kFeedPageSize;
-      return first;
-    });
-    if (!ref.mounted) return; // disposed mid-request (logout)
-    state = next;
+          ),
+      // Paging restarts only with the page shown: a dropped or failed reload
+      // leaves the loaded pages, and their offset, as they were.
+      onApply: (first) {
+        _offset = first.length;
+        _hasMore = first.length == kFeedPageSize;
+      },
+    );
   }
 }
 

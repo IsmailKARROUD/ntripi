@@ -82,6 +82,7 @@ import 'package:ntripi/shared/widgets/markdown_edit_screen.dart';
 import 'package:ntripi/shared/widgets/appeal_sheet.dart';
 import 'package:ntripi/shared/widgets/moderation_hidden_banner.dart';
 import 'package:ntripi/shared/widgets/offline_gate.dart';
+import 'package:ntripi/shared/widgets/reload_report.dart';
 import 'package:ntripi/shared/widgets/saving_overlay.dart';
 import 'package:ntripi/shared/widgets/shadow_divider.dart';
 import 'package:ntripi/core/utils/platform_utils.dart';
@@ -730,10 +731,12 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                         ),
                         const SizedBox(height: 16),
                         FilledButton(
-                          onPressed: () => ref
-                              .read(itineraryDetailProvider(widget.itineraryId)
-                                  .notifier)
-                              .refresh(),
+                          onPressed: () => reportReloads(context, [
+                            ref
+                                .read(itineraryDetailProvider(widget.itineraryId)
+                                    .notifier)
+                                .refresh(),
+                          ]),
                           child: Text(l10n.retry),
                         ),
                         // No hero here; edit mode's Back goes through the PopScope.
@@ -1073,10 +1076,15 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                           cacheManager: NtripiImageCacheManager(),
                         );
                       }
-                      await ref
-                          .read(itineraryDetailProvider(widget.itineraryId)
-                              .notifier)
-                          .refresh();
+                      if (!context.mounted) return;
+                      // The trip stays on screen, "view more"s open, while it
+                      // reloads; a failure that kept it is a SnackBar.
+                      await reportReloads(context, [
+                        ref
+                            .read(itineraryDetailProvider(widget.itineraryId)
+                                .notifier)
+                            .refresh(),
+                      ]);
                     },
                     child: CustomScrollView(
                       physics: const AlwaysScrollableScrollPhysics(),

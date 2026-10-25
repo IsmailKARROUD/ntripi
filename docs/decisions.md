@@ -1824,3 +1824,109 @@ own session and sends exactly as before.
   that call `notify()`, hold no request to attach a task to.
 - One thread per push: unbounded under a burst, and sends out of order.
 - An external queue: a new dependency for something the poll already backs up.
+
+### 2026-10-25 — A reload never blanks the content on screen
+
+Completes the separate fix that
+[2026-10-21 — A trip save answers with the whole trip, and the app never reloads after it](#2026-10-21--a-trip-save-answers-with-the-whole-trip-and-the-app-never-reloads-after-it)
+left to `refresh()` ("its blanking is a separate fix").
+
+**Context.** Pulling to refresh the trip page swapped the trip for the
+full-screen loader until the new copy landed, and brought it back rebuilt with
+every "view more" closed; a failed reload replaced it with the error view,
+although the copy on screen had been fine a second earlier. Riverpod 3 (3.3.2
+installed) routes every `state =` through `asyncTransition`, which merges the
+previous value into an `AsyncLoading` or `AsyncError` (`copyWithPrevious`), and
+`AsyncValue.when()` defaults to `skipLoadingOnReload: false` and
+`skipError: false`: it still draws the loader and the error view, and the data
+subtree is unmounted either way. Eleven `refresh()` methods wrote
+`AsyncLoading` unconditionally; the two that kept the rows during the load
+(follow requests, notifications) still wrote a failure over them. Reading the
+code found three more of the same:
+- `MyProfileNotifier.updateProfile` wrote a failed save into the profile, so a
+  refused bio replaced the profile screen — the edit form and its typed text
+  included — with the error view, and the form's own catch never ran;
+- Account status pulled with `ref.invalidate`, which returns at once (the
+  spinner ended before the list came back) and let a failed rebuild replace
+  the list;
+- on iOS and Android a forced reload that timed out or got a 5xx was answered
+  by the HTTP cache with its stored copy, as a success — so no failure could be
+  reported, and the copy could be older than the screen, because list rows,
+  follow counts and the rating average are adopted from write answers in
+  memory only.
+
+**Decision.** One mechanism, `ReloadKeepsContent`
+(`core/providers/reload_keeps_content.dart`): a mixin on `AsyncNotifier` whose
+`reloadKeepingContent(fetch, onApply:)` is the only place a notifier writes
+`AsyncLoading` or `AsyncError`.
+- Nothing on screen (no value, or the error view): the loader, then the answer
+  or the error — a first load and Retry, unchanged.
+- Content on screen: it stays mounted. An answer replaces it in place after
+  `onApply` (paging bookkeeping) — unless something else wrote the state while
+  the reload was in flight, and then that newer state stands: the GET may
+  predate a save, a dismissal or a removal answered meanwhile, and applying it
+  would undo the user's own action on screen (on the trip page, put back an
+  old `updated_at`, so the next save 412s). The owner chose this over always
+  applying the answer.
+- A refusal — `refusesContent`, the `kNeverServeStaleFor` statuses
+  401/403/404/410 — replaces the content with the error view: a deleted,
+  blocked or no-longer-shared trip must not stay on screen.
+- Any other failure leaves the content and is returned as a `ReloadFailure`.
+  The screen that started the reload shows it with `reportReloads`
+  (`shared/widgets/reload_report.dart`: a SnackBar of `extractErrorMessage`,
+  only while that screen is mounted); a reload the app starts drops it.
+  `refresh()` never throws, so nothing reaches a `RefreshIndicator` as an
+  error.
+
+All thirteen `refresh()` methods use it, and `MyViolationsNotifier` gains one
+for Account status's pull. `ItineraryDetailNotifier._adopt`'s GET — after a
+save answered with no trip — goes through it too. `updateProfile` throws on
+failure and leaves the profile. Forced reads (`forceRefreshOptions()`) no
+longer fall back to the stored copy on a transient error, and the four reloads
+that were not forced (my profile, a profile, the places map, Account status)
+now are; first loads keep the fallback, which is what shows content offline.
+
+**Consequences.**
+- A pull keeps the scroll position and every opened "view more"; its spinner
+  is the only sign of the reload. A failed pull keeps the content and shows the
+  reason; a refused one shows the screen's error or unavailable view, as
+  before.
+- The two ratings screens draw from `.value`, which an `AsyncError` still
+  carries, so their error check became `hasError` alone: an error state now
+  only ever means "show the error".
+- The follow lists and the notification feed stay scrollable during a pull, so
+  a `loadMore` page requested before a reload landed is dropped (a generation
+  counter) rather than appended to the new first page at the old offset.
+- A notification-settings switch whose save fails shows a SnackBar and stays
+  where it was, instead of the settings list being swapped for an error; the
+  profile edit form's existing catch now runs and keeps the text.
+- A timeout on the GET that follows a save answered with no trip keeps the trip
+  on screen, and the save reports the error to its caller. The refusal that
+  GET exists for still shows the no-access view.
+- The edit-lock status read is forced as well: a failed one now returns
+  nothing rather than a claim that had decayed in the cache, and `peek()`
+  already treated a failure as nothing.
+- Tests: `reload_keeps_content_test.dart` (every notifier held, answered, timed
+  out, 5xx and 404; the in-flight write; the dropped page; `_adopt`;
+  `updateProfile`), `trip_reload_keeps_content_test.dart` (the trip page with an
+  open "view more" through an answered and a failed pull),
+  `cache_error_test.dart` (a forced read is never answered from the cache) and
+  `reload_keeps_content_guard_test.dart`, which fails on a loading or error
+  write, an `AsyncValue.guard` or a `refresh()` outside the mechanism. Its one
+  allowlisted class is `PlaceSearchNotifier`: a new query must not keep
+  showing the previous query's results.
+- The help centre is unchanged: no article describes what a screen shows
+  during a reload, and the "please reload" troubleshooting entry stays true.
+
+**Alternatives rejected.**
+- `skipLoadingOnReload: true` / `skipError: true` at every `when()` call site:
+  31 sites, each a place to forget, and `skipError` would also keep the content
+  over a 403 or 404 — a trip deleted or taken away would stay on screen.
+- A guard copied into each notifier: the two copies that existed already got
+  the failure case wrong.
+- Always applying the reload's answer: simpler, but with the content usable
+  during a reload, the user's own write could be undone on screen.
+- Keeping the cache's stale-on-error fallback for reloads: it hides every failed
+  reload on a phone and can put back a copy older than the screen.
+- Keeping the stored copies of partial answers current by patching cached list
+  bodies: a bigger change that still would not reveal a failed reload.

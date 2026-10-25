@@ -14,6 +14,7 @@ import 'package:ntripi/core/api/api_client.dart';
 import 'package:ntripi/core/api/api_endpoints.dart';
 import 'package:ntripi/core/cache/image_cache.dart';
 import 'package:ntripi/core/connectivity/connectivity_service.dart';
+import 'package:ntripi/core/providers/reload_keeps_content.dart';
 import 'package:ntripi/features/profile/data/profile_repository.dart';
 import 'package:ntripi/features/profile/domain/violation.dart';
 import 'package:ntripi/shared/models/follow.dart';
@@ -58,22 +59,20 @@ final profileRepositoryProvider = Provider<ProfileRepository>((ref) {
 });
 
 /// Loads and manages the current user's own profile.
-class MyProfileNotifier extends AsyncNotifier<User> {
+class MyProfileNotifier extends AsyncNotifier<User>
+    with ReloadKeepsContent<User> {
   @override
   Future<User> build() async {
     return ref.read(profileRepositoryProvider).getMyProfile();
   }
 
-  /// Refresh from server (e.g., after editing the profile).
-  Future<void> refresh() async {
+  /// Pull-to-refresh and Retry: the profile stays on screen while it reloads.
+  Future<ReloadFailure?> refresh() async {
     // Offline: keep cached AsyncData — a forced refresh could only degrade it.
-    if (!isOnlineNowRef(ref)) return;
-    state = const AsyncLoading();
-    final next = await AsyncValue.guard(
-      () => ref.read(profileRepositoryProvider).getMyProfile(),
+    if (!isOnlineNowRef(ref)) return null;
+    return reloadKeepingContent(
+      () => ref.read(profileRepositoryProvider).getMyProfile(forceRefresh: true),
     );
-    if (!ref.mounted) return; // disposed mid-request (logout)
-    state = next;
   }
 
   /// A write answered with the whole profile (accepting the terms): it is the
@@ -96,7 +95,9 @@ class MyProfileNotifier extends AsyncNotifier<User> {
     }
   }
 
-  /// Optimistic update after editing the profile.
+  /// Save a profile edit: the answer is the whole profile, and becomes the
+  /// state. A refusal throws for the caller to show and leaves the profile —
+  /// and the edit form drawn over it, typed text included — as it was.
   Future<void> updateProfile({
     String? displayName,
     String? bio,
@@ -111,24 +112,22 @@ class MyProfileNotifier extends AsyncNotifier<User> {
     bool? notifySaves,
     bool? notifyFollowAccepted,
   }) async {
-    final next = await AsyncValue.guard(
-      () => ref.read(profileRepositoryProvider).updateMyProfile(
-            displayName: displayName,
-            bio: bio,
-            isPrivate: isPrivate,
-            passportCountries: passportCountries,
-            passportCountriesChanged: passportCountriesChanged,
-            residentCountry: residentCountry,
-            clearResidentCountry: clearResidentCountry,
-            languages: languages,
-            languagesChanged: languagesChanged,
-            notifyRatings: notifyRatings,
-            notifySaves: notifySaves,
-            notifyFollowAccepted: notifyFollowAccepted,
-          ),
-    );
+    final user = await ref.read(profileRepositoryProvider).updateMyProfile(
+          displayName: displayName,
+          bio: bio,
+          isPrivate: isPrivate,
+          passportCountries: passportCountries,
+          passportCountriesChanged: passportCountriesChanged,
+          residentCountry: residentCountry,
+          clearResidentCountry: clearResidentCountry,
+          languages: languages,
+          languagesChanged: languagesChanged,
+          notifyRatings: notifyRatings,
+          notifySaves: notifySaves,
+          notifyFollowAccepted: notifyFollowAccepted,
+        );
     if (!ref.mounted) return; // disposed mid-request (logout)
-    state = next;
+    state = AsyncData(user);
   }
 
   /// Upload a new avatar image. State is updated with the returned URL
@@ -147,12 +146,9 @@ class MyProfileNotifier extends AsyncNotifier<User> {
     });
   }
 
-  /// Delete the avatar. Updates state optimistically — do NOT call refresh()
-  /// here. refresh() sets state to AsyncLoading, which makes
-  /// profile_screen.dart's `profileAsync.when(loading: ..., data: ...)` rip
-  /// the ProfileEditForm out of the widget tree mid-_saveEdits. The form's
-  /// State gets disposed, `mounted` becomes false, and the onSaved callback
-  /// that closes the form never fires.
+  /// Delete the avatar. Updates the state in place — never refresh() here: the
+  /// delete changes nothing but the avatar URL, and the app never re-downloads
+  /// after its own write.
   Future<void> deleteAvatar() async {
     await _evictImageCache(state.value?.avatarUrl);
     if (!ref.mounted) return; // disposed mid-request (logout)
@@ -175,8 +171,8 @@ class MyProfileNotifier extends AsyncNotifier<User> {
     });
   }
 
-  /// Delete the cover image. Optimistic local update — see deleteAvatar for
-  /// the reason refresh() must NOT be used here.
+  /// Delete the cover image. Updates the state in place — see deleteAvatar
+  /// for why refresh() is not used here.
   Future<void> deleteCoverImage() async {
     await _evictImageCache(state.value?.coverImageUrl);
     if (!ref.mounted) return; // disposed mid-request (logout)
@@ -194,10 +190,20 @@ final myViolationsProvider =
 );
 
 /// Moderation actions taken against the current user (Account status screen).
-class MyViolationsNotifier extends AsyncNotifier<List<Violation>> {
+class MyViolationsNotifier extends AsyncNotifier<List<Violation>>
+    with ReloadKeepsContent<List<Violation>> {
   @override
   Future<List<Violation>> build() =>
       ref.read(profileRepositoryProvider).getViolations();
+
+  /// Pull-to-refresh: the list stays on screen while it reloads.
+  Future<ReloadFailure?> refresh() async {
+    // Offline: keep cached AsyncData — a forced refresh could only degrade it.
+    if (!isOnlineNowRef(ref)) return null;
+    return reloadKeepingContent(
+      () => ref.read(profileRepositoryProvider).getViolations(forceRefresh: true),
+    );
+  }
 
   /// An appeal answered with the list as it now stands, its row marked
   /// pending — so the screen shows it without downloading the list again.
@@ -241,7 +247,8 @@ void adoptTheirFollowState(
 
 /// Loads a specific user's public profile by their ID.
 /// We use a family provider so each user ID gets its own cached state.
-class UserProfileNotifier extends AsyncNotifier<User> {
+class UserProfileNotifier extends AsyncNotifier<User>
+    with ReloadKeepsContent<User> {
   UserProfileNotifier(this.arg); // family argument: user id
   final String arg;
 
@@ -250,16 +257,16 @@ class UserProfileNotifier extends AsyncNotifier<User> {
     return ref.read(profileRepositoryProvider).getUserProfile(arg);
   }
 
-  Future<void> refresh() async {
+  /// Pull-to-refresh: the profile stays on screen while it reloads, unless
+  /// the account is gone or blocked (404), which replaces it.
+  Future<ReloadFailure?> refresh() async {
     // Offline: keep cached AsyncData — a forced refresh could only degrade it.
-    if (!isOnlineNowRef(ref)) return;
-    final userId = arg;
-    state = const AsyncLoading();
-    final next = await AsyncValue.guard(
-      () => ref.read(profileRepositoryProvider).getUserProfile(userId),
+    if (!isOnlineNowRef(ref)) return null;
+    return reloadKeepingContent(
+      () => ref
+          .read(profileRepositoryProvider)
+          .getUserProfile(arg, forceRefresh: true),
     );
-    if (!ref.mounted) return; // disposed mid-request (logout)
-    state = next;
   }
 
   /// A follow write between us changed this profile: the follow state it

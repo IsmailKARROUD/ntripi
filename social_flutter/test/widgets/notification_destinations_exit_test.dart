@@ -122,21 +122,23 @@ class _FakeProfileRepo extends ProfileRepository {
   final Object? profile;
 
   @override
-  Future<User> getMyProfile() async => _me;
+  Future<User> getMyProfile({bool forceRefresh = false}) async => _me;
 
   @override
-  Future<User> getUserProfile(String userId) async {
+  Future<User> getUserProfile(String userId, {bool forceRefresh = false}) async {
     final answer = profile ?? _them;
     if (answer is User) return answer;
     throw answer;
   }
 
   @override
-  Future<List<VisitedLocation>> getUserLocations(String userId) async =>
+  Future<List<VisitedLocation>> getUserLocations(String userId,
+          {bool forceRefresh = false}) async =>
       const [];
 
   @override
-  Future<List<Violation>> getViolations() async => const [];
+  Future<List<Violation>> getViolations({bool forceRefresh = false}) async =>
+      const [];
 }
 
 class _FakeItineraryRepo extends ItineraryRepository {

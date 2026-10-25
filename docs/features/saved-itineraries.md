@@ -56,6 +56,10 @@ Migration: `7bc2673b9ade`.
 - The bookmark control is hidden for the owner and in edit mode.
 - Saving warms the offline cache for the saved itinerary, so a bookmarked trip is
   readable offline.
+- **Pull-to-refresh and Retry keep the list on screen** — `refresh()` goes
+  through `ReloadKeepsContent` (see [itineraries.md](itineraries.md)): the
+  answer replaces the list in place, and a failed pull keeps it and says why in
+  a SnackBar.
 
 ## Known gaps / TODOs
 

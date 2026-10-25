@@ -190,6 +190,21 @@ Its docstring says the caller "must not have added rows to the session", but
 rejected PATCH commits that write. Harmless in effect; the contract is wrong as
 written. → [features/text-moderation.md](features/text-moderation.md)
 
+### idea — the reloads the app starts with `ref.invalidate` can still blank a screen
+
+A `refresh()` keeps content on screen through any failure but a refusal
+(`ReloadKeepsContent`, 2026-10-25), and the guard test holds every one of them.
+The reloads the app starts after a write whose answer cannot carry the result
+go through `ref.invalidate` instead, outside both: the feed after a block or
+unblock and my Following list after a follow (`profile_screen.dart`),
+someone's Followers list and trips after an unfollow and their Following list
+after a removal (`follow_actions.dart`), and the blocked users list after a
+block or unblock (`ugc_actions.dart`, `blocked_users_screen.dart`). Riverpod keeps the
+old value on screen while such a rebuild runs, but a failed one replaces it
+with the error view. They target screens that are usually closed at that
+moment; giving each provider a `refresh()` and calling it would close the gap.
+→ [constraints.md](constraints.md)
+
 ---
 
 ## Policy calls left by the 2026-09-28 sweep

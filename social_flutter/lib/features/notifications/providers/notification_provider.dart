@@ -15,16 +15,17 @@
 // closes. Undo is therefore real — nothing was sent — where a server-first
 // delete could only be "undone" by re-creating a row the API cannot re-create.
 //
-// Both notifiers carry two reads: a user-initiated one (refresh) that may show
-// a spinner and may fail loudly, and a background one (poll / silentRefresh)
-// driven by NotificationPoller that may do neither. Nobody asked for the
-// background read, so it must never blank a good badge or a loaded feed.
+// Both notifiers carry two reads: a user-initiated one (refresh) whose failure
+// the screen reports, and a background one (poll / silentRefresh) driven by
+// NotificationPoller that reports nothing. Neither blanks a good badge or a
+// loaded feed: refresh keeps the rows through ReloadKeepsContent.
 
 import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ntripi/core/api/api_client.dart';
 import 'package:ntripi/core/connectivity/connectivity_service.dart';
+import 'package:ntripi/core/providers/reload_keeps_content.dart';
 import 'package:ntripi/features/notifications/data/notification_repository.dart';
 import 'package:ntripi/features/notifications/domain/app_notification.dart';
 
@@ -52,7 +53,8 @@ const kNotificationPageSize = 30;
 const _kMarkReadBatch = 200;
 
 /// The notification feed, newest first.
-class NotificationsNotifier extends AsyncNotifier<List<AppNotification>> {
+class NotificationsNotifier extends AsyncNotifier<List<AppNotification>>
+    with ReloadKeepsContent<List<AppNotification>> {
   /// Dismissed rows awaiting their DELETE, keyed by notification id.
   final Map<String, _PendingDelete> _pending = {};
 
@@ -60,6 +62,9 @@ class NotificationsNotifier extends AsyncNotifier<List<AppNotification>> {
   int _offset = 0;
   bool _hasMore = false;
   bool _loadingMore = false;
+  // Moves whenever the rows are replaced from a first page: a page requested
+  // before that was counted against the rows it replaced.
+  int _generation = 0;
 
   /// Whether another page may exist — drives the trailing loader.
   bool get hasMore => _hasMore;
@@ -75,6 +80,7 @@ class NotificationsNotifier extends AsyncNotifier<List<AppNotification>> {
   }
 
   void _resetPaging(List<AppNotification> firstPage) {
+    _generation++;
     _offset = firstPage.length;
     _hasMore = firstPage.length == kNotificationPageSize;
   }
@@ -87,11 +93,15 @@ class NotificationsNotifier extends AsyncNotifier<List<AppNotification>> {
     final current = state.value;
     if (current == null) return;
     _loadingMore = true;
+    final generation = _generation;
     try {
       final page = await ref
           .read(notificationRepositoryProvider)
           .getNotifications(limit: kNotificationPageSize, offset: _offset);
       if (!ref.mounted) return;
+      // A reload replaced the rows while this page loaded; it belongs to the
+      // old ones, and rows never shown must not be marked read.
+      if (generation != _generation) return;
       _offset += page.notifications.length;
       _hasMore = page.notifications.length == kNotificationPageSize;
       // An arrival between pages shifts every row down one; skip what is here.
@@ -121,36 +131,32 @@ class NotificationsNotifier extends AsyncNotifier<List<AppNotification>> {
       ...first,
       ...current.where((n) => !seen.contains(n.id) && n.createdAt.isBefore(boundary)),
     ];
+    _generation++;
     _offset = merged.length;
     return merged;
   }
 
-  Future<void> refresh() async {
+  /// Pull-to-refresh and Retry. A pull draws its own spinner over a list the
+  /// user is still holding, so the rows stay on screen while they reload.
+  Future<ReloadFailure?> refresh() async {
     // Offline: keep cached AsyncData — a forced refresh could only degrade it.
-    if (!isOnlineNowRef(ref)) return;
+    if (!isOnlineNowRef(ref)) return null;
     // Settle the queue first: a reload mid-window would re-show rows that are
     // about to be deleted anyway.
     await flushPending();
-    if (!ref.mounted) return;
-    // Only a state with nothing to show swaps in the skeleton. A pull-to-refresh
-    // draws its own spinner over a list the user is still holding, and blanking
-    // it mid-gesture reads as the feed being wiped. (AsyncValue.copyWithPrevious
-    // is package-internal in Riverpod 3, so this is the supported way to say it.)
-    if (!state.hasValue) state = const AsyncLoading();
-    final next = await AsyncValue.guard(() async {
-      final page = await ref
-          .read(notificationRepositoryProvider)
-          .getNotifications(limit: kNotificationPageSize, forceRefresh: true);
-      // The badge rides along with every page — spending a second request on
-      // what is already in hand is why pulling here never fixed the bell.
-      _pushBadge(page.badge);
-      _resetPaging(page.notifications);
-      return page.notifications;
-    });
-    // Assigning state on a disposed notifier throws; a pull-to-refresh the user
-    // navigated away from must not take the app down with it.
-    if (!ref.mounted) return;
-    state = next;
+    if (!ref.mounted) return null;
+    return reloadKeepingContent(
+      () async {
+        final page = await ref
+            .read(notificationRepositoryProvider)
+            .getNotifications(limit: kNotificationPageSize, forceRefresh: true);
+        // The badge rides along with every page — spending a second request on
+        // what is already in hand is why pulling here never fixed the bell.
+        _pushBadge(page.badge);
+        return page.notifications;
+      },
+      onApply: _resetPaging,
+    );
   }
 
   /// Reload in the background, leaving the current rows on screen throughout.

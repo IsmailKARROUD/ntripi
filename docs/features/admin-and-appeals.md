@@ -277,6 +277,11 @@ There is no admin client — `/admin` is server-rendered. The user-facing half:
   downloading the list again. Filed from a hidden banner elsewhere, the screen
   is not open and nothing is adopted. The answer also becomes the list's cached
   GET (`cacheAsGet`). Regression test: `test/widgets/appeal_sheet_test.dart`.
+- **Pulling Account status keeps the list** — the pull calls
+  `MyViolationsNotifier.refresh()`, through `ReloadKeepsContent`
+  ([itineraries.md](itineraries.md)), and waits for it. It used to call
+  `ref.invalidate`, which returned at once — the spinner ended before the list
+  came back — and let a failed rebuild replace the list with the error view.
 - **`SuspendedScreen`** — route `/suspended`, for a banned account.
 - A `moderation_action` notification routes here; **appeals must not get a second
   home**.

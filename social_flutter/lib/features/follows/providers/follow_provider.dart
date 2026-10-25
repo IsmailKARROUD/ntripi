@@ -3,6 +3,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ntripi/core/api/api_client.dart';
 import 'package:ntripi/core/connectivity/connectivity_service.dart';
+import 'package:ntripi/core/providers/reload_keeps_content.dart';
 import 'package:ntripi/features/follows/data/follow_repository.dart';
 import 'package:ntripi/features/profile/providers/profile_provider.dart';
 import 'package:ntripi/shared/models/follow.dart';
@@ -13,26 +14,23 @@ final followRepositoryProvider = Provider<FollowRepository>((ref) {
 });
 
 /// Manages the list of pending incoming follow requests.
-class FollowRequestsNotifier extends AsyncNotifier<List<FollowRequestItem>> {
+class FollowRequestsNotifier extends AsyncNotifier<List<FollowRequestItem>>
+    with ReloadKeepsContent<List<FollowRequestItem>> {
   @override
   Future<List<FollowRequestItem>> build() async {
     return ref.read(followRepositoryProvider).getFollowRequests();
   }
 
-  Future<void> refresh() async {
+  /// Pull-to-refresh and Retry. A pull draws its own spinner over a list the
+  /// user is still holding, so the requests stay on screen while they reload.
+  Future<ReloadFailure?> refresh() async {
     // Offline: keep cached AsyncData — a forced refresh could only degrade it.
-    if (!isOnlineNowRef(ref)) return;
-    // Only a state with nothing to show swaps in the skeleton. A pull-to-refresh
-    // draws its own spinner over a list the user is still holding, and blanking
-    // it mid-gesture reads as the requests being wiped.
-    if (!state.hasValue) state = const AsyncLoading();
-    final next = await AsyncValue.guard(
+    if (!isOnlineNowRef(ref)) return null;
+    return reloadKeepingContent(
       () => ref
           .read(followRepositoryProvider)
           .getFollowRequests(forceRefresh: true),
     );
-    if (!ref.mounted) return; // disposed mid-request (logout)
-    state = next;
   }
 
   /// Reload in the background, leaving the current list on screen throughout.
@@ -119,7 +117,8 @@ final followRequestsProvider =
 /// One user's followers or following, a page at a time — the same offset
 /// paging as FeedNotifier. The server caps a page, so without [loadMore] a
 /// list silently stopped at its first page.
-abstract class FollowListNotifier extends AsyncNotifier<List<FollowerListItem>> {
+abstract class FollowListNotifier extends AsyncNotifier<List<FollowerListItem>>
+    with ReloadKeepsContent<List<FollowerListItem>> {
   FollowListNotifier(this.arg); // family argument: user id
   final String arg;
 
@@ -128,6 +127,9 @@ abstract class FollowListNotifier extends AsyncNotifier<List<FollowerListItem>> 
   // that overrides build() never shows a loader for pages it cannot fetch.
   bool _hasMore = false;
   bool _loadingMore = false;
+  // Moves with every new first page: a page requested before it was counted
+  // against the list that page replaced.
+  int _generation = 0;
 
   /// Whether another page may exist — drives the trailing load-more indicator.
   bool get hasMore => _hasMore;
@@ -135,6 +137,7 @@ abstract class FollowListNotifier extends AsyncNotifier<List<FollowerListItem>> 
   Future<List<FollowerListItem>> fetchPage(int offset, {bool forceRefresh = false});
 
   List<FollowerListItem> _startFrom(List<FollowerListItem> firstPage) {
+    _generation++;
     _offset = firstPage.length;
     _hasMore = firstPage.length == kFollowListPageSize;
     return firstPage;
@@ -149,9 +152,13 @@ abstract class FollowListNotifier extends AsyncNotifier<List<FollowerListItem>> 
     final current = state.value;
     if (current == null) return;
     _loadingMore = true;
+    final generation = _generation;
     try {
       final next = await fetchPage(_offset);
       if (!ref.mounted) return;
+      // The list stays scrollable during a reload; one that landed meanwhile
+      // started over, and this page's offset belongs to the list it replaced.
+      if (generation != _generation) return;
       _offset += next.length;
       _hasMore = next.length == kFollowListPageSize;
       // Appended to the rows on screen now, not the pre-await snapshot: a row
@@ -185,16 +192,15 @@ abstract class FollowListNotifier extends AsyncNotifier<List<FollowerListItem>> 
 
   /// Re-fetches page 0 and replaces the current state. Called by the
   /// RefreshIndicator (pull-to-refresh). Forces a fresh server fetch so a 304
-  /// with the cached body can't silently no-op the refresh.
-  Future<void> refresh() async {
+  /// with the cached body can't silently no-op the refresh. The rows stay on
+  /// screen while it reloads, and paging starts over only with the page shown.
+  Future<ReloadFailure?> refresh() async {
     // Offline: keep cached AsyncData — a forced refresh could only degrade it.
-    if (!isOnlineNowRef(ref)) return;
-    state = const AsyncLoading();
-    final next = await AsyncValue.guard(
-      () async => _startFrom(await fetchPage(0, forceRefresh: true)),
+    if (!isOnlineNowRef(ref)) return null;
+    return reloadKeepingContent(
+      () => fetchPage(0, forceRefresh: true),
+      onApply: _startFrom,
     );
-    if (!ref.mounted) return;
-    state = next;
   }
 }
 

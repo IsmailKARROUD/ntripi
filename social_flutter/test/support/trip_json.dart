@@ -16,6 +16,7 @@ Map<String, dynamic> stopJson(
   String trackId = 't1',
   String placeName = 'Harbour',
   bool isFree = true,
+  String? notes,
   String createdAt = '2026-10-21T09:00:00.000000Z',
 }) =>
     {
@@ -32,7 +33,7 @@ Map<String, dynamic> stopJson(
       'duration_min': null,
       'cost': 0.0,
       'is_free': isFree,
-      'notes': null,
+      'notes': notes,
       'created_at': createdAt,
       'annotations': <Map<String, dynamic>>[],
     };

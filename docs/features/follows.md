@@ -253,6 +253,14 @@ Note the follows router has **no prefix** — its paths are literal `/users/…`
   your feed" — the feed is public-only, so following never fed it.)
 - **`followRequestsProvider` is keep-alive, so the screen refetches on open** —
   a second visit would otherwise render the first visit's data.
+- **A pull keeps the list on screen** — the requests and both lists reload
+  through `ReloadKeepsContent` ([itineraries.md](itineraries.md)): the rows
+  stay, an answer replaces them, a 403 (a private account no longer followed)
+  or a 404 shows the placeholder, and any other failure keeps them and says
+  why in a SnackBar. The Followers tab's pull now waits for its reloads; it
+  used to fire them and drop the spinner at once. Paging restarts only with
+  the answered first page, and a `loadMore` page requested before a reload
+  landed is dropped rather than appended at the old offset.
 - Unfollowing is a confirm dialog, not an undo snackbar (changed by `bded915`).
 - A private profile can be followed **from its locked view** (`5227f49`).
 - **Models** — `Follow`, `FollowRequestItem`, `FollowerListItem`

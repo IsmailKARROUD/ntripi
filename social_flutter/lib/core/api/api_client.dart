@@ -10,7 +10,7 @@
 //   1. AuthInterceptor    — attaches Bearer token, refreshes on expiry,
 //                           retries once on 401.
 //   2. DioCacheInterceptor — stores GET responses; serves stale on errors,
-//                           except for kNeverServeStaleFor.
+//                           except for kNeverServeStaleFor and reloads.
 //   3. CacheEvictInterceptor — deletes entries the server says are gone.
 //   4. LogInterceptor     — debug-only.
 //
@@ -63,30 +63,52 @@ const kAuthSkippedExtra = 'ntripi_auth_skipped';
 /// privacy bug, not a resilience feature.
 ///
 /// Offline is unaffected: a connection error carries no `Response`, which the
-/// interceptor handles in an earlier branch that always falls back to cache.
+/// interceptor handles in an earlier branch that falls back to cache — for
+/// every request but a reload ([forceRefreshOptions]).
 const List<int> kNeverServeStaleFor = [401, 403, 404, 410];
 
+/// Whether [error] is the server saying the content is gone, or no longer this
+/// account's to see — the answers [kNeverServeStaleFor] lists. A reload that
+/// gets one shows it in place of the content; any other failure leaves what is
+/// on screen as it was (ReloadKeepsContent).
+bool refusesContent(Object? error) =>
+    error is DioException &&
+    kNeverServeStaleFor.contains(error.response?.statusCode);
 
 /// The cache settings every request shares. Per-request options REPLACE the
-/// interceptor's globals rather than merging with them, so each copy had to
-/// restate all of it: without the stale-on-error list an offline or
-/// captive-portal refresh errored out instead of re-serving the cached
-/// response, and without the key builder a refreshed body landed under the
+/// interceptor's globals rather than merging with them, so each copy restates
+/// all of it: without the key builder a refreshed body landed under the
 /// account-less key and never reached the account's own entry.
-CacheOptions _cacheOptions(CachePolicy policy, {CacheStore? store}) =>
+///
+/// [staleOnError] is the fallback that answers a request with its stored copy
+/// when the server cannot be reached or errors — what lets a first load show
+/// content offline or behind a captive portal.
+CacheOptions _cacheOptions(
+  CachePolicy policy, {
+  CacheStore? store,
+  bool staleOnError = true,
+}) =>
     CacheOptions(
       store: store,
       policy: policy,
-      hitCacheOnErrorExcept: kNeverServeStaleFor,
+      hitCacheOnErrorExcept: staleOnError ? kNeverServeStaleFor : null,
       maxStale: const Duration(days: 7),
       priority: CachePriority.normal,
       keyBuilder: ntripiCacheKey,
     );
 
-/// Per-request override that bypasses the dio_cache_interceptor's conditional
-/// GET validator — used for pull-to-refresh / Retry. See original comments.
-Options forceRefreshOptions() =>
-    Options(extra: _cacheOptions(CachePolicy.refresh).toExtra());
+/// Per-request override for a reload — pull-to-refresh, Retry, the live
+/// edit-lock read. It skips the conditional GET's validator, so a 304 against
+/// a stale local body cannot no-op the reload, and it never answers from the
+/// cache when the server cannot be reached or errors: the stored copy came back
+/// as a success, so the failure went unreported, and it could be older than
+/// the screen (rows and counts adopted from write answers are never stored).
+/// The content on screen is what a failed reload keeps (ReloadKeepsContent).
+/// A fresh answer is still stored.
+Options forceRefreshOptions() => Options(
+      extra:
+          _cacheOptions(CachePolicy.refresh, staleOnError: false).toExtra(),
+    );
 
 /// Stores [body] as the cached answer to GET [path] for the account [sent] was
 /// made as — the entry that GET would have left, without making it.

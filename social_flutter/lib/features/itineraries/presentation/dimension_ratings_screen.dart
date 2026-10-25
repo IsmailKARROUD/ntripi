@@ -11,6 +11,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ntripi/core/ui/app_theme.dart';
 import 'package:ntripi/shared/widgets/editorial_widgets.dart';
 import 'package:ntripi/shared/widgets/loaders.dart';
+import 'package:ntripi/shared/widgets/reload_report.dart';
 import 'package:ntripi/features/itineraries/domain/dimension_key.dart';
 import 'package:ntripi/features/itineraries/domain/ratings_page.dart';
 import 'package:ntripi/features/itineraries/presentation/ratings_page_screen.dart';
@@ -78,16 +79,20 @@ class DimensionRatingsScreen extends ConsumerWidget {
         child: ConstrainedBox(
           constraints: BoxConstraints(maxWidth: isDesktopWeb() ? kDesktopMaxWidth : double.infinity),
           child: RefreshIndicator(
-            onRefresh: () =>
-                ref.read(ratingsPageProvider(itineraryId).notifier).refresh(),
+            onRefresh: () => reportReloads(context, [
+              ref.read(ratingsPageProvider(itineraryId).notifier).refresh(),
+            ]),
         child: CustomScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
           slivers: [
-            if (ratingsAsync.isLoading && page == null)
+            // An error is always the answer here: a reload keeps the page
+            // through anything but a refusal (ReloadKeepsContent).
+            if (ratingsAsync.isLoading &&
+                (page == null || ratingsAsync.hasError))
               const SliverFillRemaining(
                 child: Center(child: NTripiRouteLoader()),
               )
-            else if (ratingsAsync.hasError && page == null)
+            else if (ratingsAsync.hasError)
               SliverFillRemaining(
                 child: Center(
                   child: Column(
@@ -99,9 +104,11 @@ class DimensionRatingsScreen extends ConsumerWidget {
                       Text(AppLocalizations.of(context)!.couldNotLoadRatings),
                       const SizedBox(height: 8),
                       TextButton(
-                        onPressed: () => ref
-                            .read(ratingsPageProvider(itineraryId).notifier)
-                            .refresh(),
+                        onPressed: () => reportReloads(context, [
+                          ref
+                              .read(ratingsPageProvider(itineraryId).notifier)
+                              .refresh(),
+                        ]),
                         child: Text(AppLocalizations.of(context)!.retry),
                       ),
                     ],

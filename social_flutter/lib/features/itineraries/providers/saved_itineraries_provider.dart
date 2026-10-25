@@ -13,26 +13,26 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ntripi/core/connectivity/connectivity_service.dart';
+import 'package:ntripi/core/providers/reload_keeps_content.dart';
 import 'package:ntripi/features/itineraries/data/itinerary_repository.dart';
 import 'package:ntripi/features/itineraries/domain/itinerary.dart';
 
-class SavedItinerariesNotifier extends AsyncNotifier<List<Itinerary>> {
+class SavedItinerariesNotifier extends AsyncNotifier<List<Itinerary>>
+    with ReloadKeepsContent<List<Itinerary>> {
   @override
   Future<List<Itinerary>> build() async {
     return ref.read(itineraryRepositoryProvider).getSavedItineraries();
   }
 
-  Future<void> refresh() async {
+  /// Pull-to-refresh and Retry: the list stays on screen while it reloads.
+  Future<ReloadFailure?> refresh() async {
     // Offline: keep cached AsyncData — a forced refresh could only degrade it.
-    if (!isOnlineNowRef(ref)) return;
-    state = const AsyncLoading();
-    final next = await AsyncValue.guard(
+    if (!isOnlineNowRef(ref)) return null;
+    return reloadKeepingContent(
       () => ref
           .read(itineraryRepositoryProvider)
           .getSavedItineraries(forceRefresh: true),
     );
-    if (!ref.mounted) return; // disposed mid-request (logout)
-    state = next;
   }
 
   /// Save an itinerary. Optimistically prepends it so the bookmark fills

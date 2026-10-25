@@ -5,6 +5,8 @@
 // otherwise renders another user's profile (with the follow action row and
 // the locked-content card for private accounts the viewer doesn't follow).
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -46,6 +48,7 @@ import 'package:ntripi/shared/widgets/field_help.dart';
 import 'package:ntripi/shared/widgets/fullscreen_image_viewer.dart';
 import 'package:ntripi/shared/widgets/loaders.dart';
 import 'package:ntripi/shared/widgets/moderation_hidden_banner.dart';
+import 'package:ntripi/shared/widgets/reload_report.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   /// null ⇒ self (signed-in user); non-null ⇒ another user.
@@ -76,9 +79,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   void initState() {
     super.initState();
     if (widget.isSelf) {
-      // Self-only: surface pending follow requests banner on first build.
+      // Self-only: surface pending follow requests banner on first build. Nobody
+      // asked for this reload, so a failure stays silent.
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        ref.read(followRequestsProvider.notifier).refresh();
+        unawaited(ref.read(followRequestsProvider.notifier).refresh());
       });
     }
   }
@@ -140,7 +144,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                           const SizedBox(height: 16),
                           FilledButton(
                             onPressed: () => widget.isSelf
-                                ? ref.read(myProfileProvider.notifier).refresh()
+                                ? reportReloads(context, [
+                                    ref
+                                        .read(myProfileProvider.notifier)
+                                        .refresh(),
+                                  ])
                                 : ref.invalidate(
                                     userProfileProvider(widget.userId!)),
                             child: Text(AppLocalizations.of(context)!.retry),
@@ -200,7 +208,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     return RefreshIndicator(
       // Awaited: fired and forgotten, the spinner vanished at once while the
       // data was still on its way.
-      onRefresh: () => Future.wait([
+      onRefresh: () => reportReloads(context, [
         if (widget.isSelf) ...[
           ref.read(myProfileProvider.notifier).refresh(),
           ref.read(myItinerariesProvider.notifier).refresh(),
