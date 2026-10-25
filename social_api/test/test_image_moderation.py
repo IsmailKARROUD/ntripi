@@ -15,12 +15,15 @@ suite proves the opt-in scan doesn't change existing upload flows.
 
 from __future__ import annotations
 
+import asyncio
 import io
+import json
 import logging
 from datetime import datetime, timedelta, timezone
 from unittest.mock import patch
 
 import pytest
+import requests
 from botocore.exceptions import ClientError
 from fastapi.testclient import TestClient
 from PIL import Image
@@ -121,6 +124,26 @@ def _an_hour_later(monkeypatch) -> None:
     """Move operator_alerts' clock past the cooldown — no sleeping."""
     later = datetime.now(timezone.utc) + timedelta(minutes=61)
     monkeypatch.setattr(operator_alerts, "_now", lambda: later)
+
+
+def _thread_kind() -> str:
+    """Where a send ran: a worker thread has no running event loop."""
+    try:
+        asyncio.get_running_loop()
+    except RuntimeError:
+        return "worker thread"
+    return "event loop"
+
+
+def _http_error() -> requests.HTTPError:
+    """What a provider called through `requests` raises: the request URL, key
+    included, sits in the message, and .response is a Response, not a dict."""
+    response = requests.Response()
+    response.status_code = 403
+    response.url = "https://vision.example/v1/annotate?key=SECRET-KEY-123"
+    return requests.HTTPError(
+        f"403 Client Error: Forbidden for url: {response.url}", response=response,
+    )
 
 
 def _count_logs() -> int:
@@ -387,7 +410,8 @@ class TestOperatorAlerts:
     def test_switched_on_without_credentials_alerts_once_an_hour(
         self, client, monkeypatch, _temp_storage
     ):
-        _enable_moderation(monkeypatch)
+        _enable_moderation(monkeypatch)   # the secret stays set, as "test-secret"
+        monkeypatch.setattr(get_settings(), "MODERATION_AWS_ACCESS_KEY_ID", None)
         monkeypatch.setattr(get_settings(), "MODERATION_AWS_REGION", None)
         monkeypatch.setattr(get_settings(), "OPERATOR_EMAIL", _OPS)
         _stub_rekognition(monkeypatch, labels=[])   # a scan would leave a row
@@ -404,7 +428,10 @@ class TestOperatorAlerts:
         assert _count_logs() == 0
         assert len(alerts) == 1
         assert alerts[0]["subject"] == _NOT_CONFIGURED
-        assert "MODERATION_AWS_REGION" in alerts[0]["html"]
+        html = alerts[0]["html"]
+        assert "MODERATION_AWS_ACCESS_KEY_ID, MODERATION_AWS_REGION" in html
+        assert "MODERATION_AWS_SECRET_ACCESS_KEY" not in html   # set, so not missing
+        assert "test-secret" not in html                         # names, never values
 
         _an_hour_later(monkeypatch)
         assert _upload(client, hdrs, f"/itineraries/{it_id}/image").status_code == 200
@@ -434,10 +461,17 @@ class TestOperatorAlerts:
 
         assert [a["subject"] for a in alerts] == [_NOT_CONFIGURED, _UNAVAILABLE]
 
+    @pytest.mark.parametrize("region, line", [
+        ("eu-west-1", "image moderation unavailable: scan failed (RuntimeError), "
+                      "uploads stored unscanned"),
+        (None, "image moderation not configured: missing MODERATION_AWS_REGION, "
+               "uploads stored unscanned"),
+    ], ids=["scan-failed", "not-configured"])
     def test_unset_operator_email_logs_a_warning_instead(
-        self, client, monkeypatch, _temp_storage, caplog
+        self, client, monkeypatch, _temp_storage, caplog, region, line
     ):
         _enable_moderation(monkeypatch)
+        monkeypatch.setattr(get_settings(), "MODERATION_AWS_REGION", region)
         monkeypatch.setattr(get_settings(), "OPERATOR_EMAIL", None)
         _stub_rekognition(monkeypatch, raises=True)
         alerts = _capture_alerts(monkeypatch)
@@ -455,8 +489,88 @@ class TestOperatorAlerts:
             rec.getMessage() for rec in caplog.records
             if rec.name == "app.services.operator_alerts" and rec.levelno == logging.WARNING
         ]
-        assert len(warnings) == 1
-        assert warnings[0].startswith("image moderation unavailable: scan failed (RuntimeError)")
+        assert warnings == [line]
+
+    @pytest.mark.parametrize("region, status", [
+        ("eu-west-1", "pending"), (None, "approved"),
+    ], ids=["scan-failed", "not-configured"])
+    def test_an_alert_that_breaks_never_fails_the_upload(
+        self, client, monkeypatch, _temp_storage, region, status
+    ):
+        """The alert runs in the fail-open branch: a bug in it must never turn
+        an upload that is being allowed into a 500."""
+        _enable_moderation(monkeypatch)
+        monkeypatch.setattr(get_settings(), "MODERATION_AWS_REGION", region)
+        monkeypatch.setattr(get_settings(), "OPERATOR_EMAIL", _OPS)
+        _stub_rekognition(monkeypatch, raises=True)
+
+        def broken(*args, **kwargs):
+            raise RuntimeError("bug in the alert")
+
+        monkeypatch.setattr(operator_alerts, "notify_operator", broken)
+        alice = register_user(client, "mod_brk", "modbrk@test.com")
+        it_id = _create_itinerary(client, alice["access_token"])
+
+        r = _upload(client, auth_headers(alice["access_token"]), f"/itineraries/{it_id}/image")
+
+        assert r.status_code == 200
+        assert _temp_storage._base.joinpath(f"itineraries/{it_id}.jpg").exists()
+        assert _itinerary_status(it_id) == status
+
+    def test_a_cover_saved_through_the_form_alerts_too(
+        self, client, monkeypatch, _temp_storage
+    ):
+        """The app saves covers through the form routes, which reach the scan
+        from a worker thread through anyio.from_thread — the alert's own hop to
+        a thread must work from there, and the unscanned row must still find
+        its trip."""
+        _enable_moderation(monkeypatch)
+        monkeypatch.setattr(get_settings(), "OPERATOR_EMAIL", _OPS)
+        _stub_rekognition(monkeypatch, raises=True)
+        alerts = _capture_alerts(monkeypatch)
+        token = register_user(client, "mod_form", "modform@test.com")["access_token"]
+
+        trips = []
+        for title in ("Islands", "Coast walk"):
+            r = client.post("/itineraries/form", headers=auth_headers(token), files={
+                "fields": (None, json.dumps({"title": title})),
+                "image": ("cover.jpg", _make_jpeg(), "image/jpeg"),
+            })
+            assert r.status_code == 201, r.text
+            trips.append(r.json()["id"])
+            assert _itinerary_status(trips[-1]) == "pending"
+
+        assert [a["subject"] for a in alerts] == [_UNAVAILABLE]
+        db = TestingSessionLocal()
+        try:
+            rows = db.query(ImageModerationLog).all()
+        finally:
+            db.close()
+        assert {r.action for r in rows} == {"error_allowed"}
+        assert sorted(str(r.target_itinerary_id) for r in rows) == sorted(trips)
+
+    @pytest.mark.parametrize("scan, region, sender", [
+        ({"labels": _SUGGESTIVE}, "eu-west-1", "moderation_service"),
+        ({"raises": True}, "eu-west-1", "operator_alerts"),
+        ({"labels": []}, None, "operator_alerts"),
+    ], ids=["flag-email", "scan-failed-alert", "not-configured-alert"])
+    def test_operator_emails_leave_the_event_loop(
+        self, client, monkeypatch, _temp_storage, scan, region, sender
+    ):
+        """moderate_or_raise runs on the event loop and send_email blocks for
+        up to 10 s: sent from the loop, a slow mail provider stalled every
+        request on the server."""
+        _enable_moderation(monkeypatch)
+        monkeypatch.setattr(get_settings(), "MODERATION_AWS_REGION", region)
+        monkeypatch.setattr(get_settings(), "OPERATOR_EMAIL", _OPS)
+        _stub_rekognition(monkeypatch, **scan)
+        sent_from: list[str] = []
+        monkeypatch.setattr(f"app.services.{sender}.send_email",
+                            lambda to, subject, html: sent_from.append(_thread_kind()))
+        hdrs = auth_headers(register_user(client, "mod_loop", "modloop@test.com")["access_token"])
+
+        assert _upload(client, hdrs, "/users/me/avatar").status_code == 200
+        assert sent_from == ["worker thread"]
 
     def test_a_failed_alert_email_never_fails_the_upload(
         self, client, monkeypatch, _temp_storage
@@ -492,15 +606,14 @@ class TestOperatorAlerts:
         assert _itinerary_status(it_id) == "flagged"
         assert _get_log().action == "flagged"
 
-    @pytest.mark.parametrize("error,code", [
+    @pytest.mark.parametrize("error, code", [
         (ClientError(
             {"Error": {"Code": "UnrecognizedClientException",
                        "Message": "The security token included in the request is invalid."}},
             "DetectModerationLabels",
         ), "UnrecognizedClientException"),
-        # A provider whose HTTP client puts the request URL, key included, in its message.
-        (RuntimeError("GET https://vision.example/v1/annotate?key=SECRET-KEY-123 failed"), None),
-    ], ids=["botocore", "other-provider"])
+        (_http_error(), None),
+    ], ids=["botocore", "requests"])
     def test_alert_names_the_error_never_its_message_or_the_upload(
         self, client, monkeypatch, _temp_storage, error, code
     ):
@@ -525,6 +638,29 @@ class TestOperatorAlerts:
             "mod_priv", "modpriv@test.com",                         # the uploader
         ):
             assert leak not in email
+
+
+class _WithResponse(Exception):
+    def __init__(self, response):
+        super().__init__("a message the alert must never read")
+        self.response = response
+
+
+@pytest.mark.parametrize("error, code", [
+    (ClientError({"Error": {"Code": "ThrottlingException"}}, "DetectModerationLabels"),
+     "ThrottlingException"),
+    (ClientError({"Error": {}}, "DetectModerationLabels"), None),
+    (_WithResponse({"Error": "not a mapping"}), None),
+    (_WithResponse({"Error": {"Code": 403}}), None),
+    (_WithResponse({"Error": {"Code": ""}}), None),
+    (_http_error(), None),
+    (RuntimeError("no response at all"), None),
+], ids=["botocore", "botocore-without-code", "error-not-a-dict", "code-not-a-string",
+        "empty-code", "requests-response-object", "no-response"])
+def test_provider_error_code_reads_only_botocores_shape(error, code):
+    """Duck-typed, so the alert never imports a provider: anything that is not
+    botocore's response["Error"]["Code"] string is no code at all."""
+    assert moderation_service._provider_error_code(error) == code
 
 
 # ---------------------------------------------------------------------------
