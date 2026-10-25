@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:ntripi/core/api/api_client.dart';
 import 'package:ntripi/core/auth/token_manager.dart';
+import 'package:ntripi/core/connectivity/connectivity_service.dart';
 import 'package:ntripi/core/providers/locale_provider.dart';
 import 'package:ntripi/core/providers/theme_mode_provider.dart';
 import 'package:ntripi/core/push/push_gateway.dart';
@@ -47,6 +48,10 @@ Future<void> main() async {
   bareDio = createBareDio();
   final tokenManager = TokenManager(bareDio);
   dio = createDioClient(tokenManager: tokenManager, cacheStore: cacheStore);
+
+  // A kept connection may be dead after a sleep or a network switch.
+  WidgetsBinding.instance.addObserver(apiConnectionPool);
+  networkChanges().listen((_) => apiConnectionPool.retire());
 
   // Before runApp so the background message handler is registered before any
   // push can arrive. Never throws — a missing google-services.json leaves the

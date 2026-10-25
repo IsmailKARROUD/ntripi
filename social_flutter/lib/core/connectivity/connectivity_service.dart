@@ -6,9 +6,10 @@
 // onConnectivityChanged stream and seeds the initial value from a one-shot
 // check at construction. This keeps the connectivity_plus dependency
 // contained to this file — every other consumer just watches a Riverpod
-// stream.
+// stream, or listens to [networkChanges] where there is no ProviderScope yet.
 
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// Streams `true` when the device has any connection, `false` when offline.
@@ -42,4 +43,26 @@ bool isOnlineNowRef(Ref ref) {
   return ref
       .read(isOnlineProvider)
       .maybeWhen(data: (online) => online, orElse: () => true);
+}
+
+/// Fires each time the device moves to another network — Wi-Fi to mobile data
+/// included, which [isOnlineProvider] cannot report because both are online.
+///
+/// A plain stream, not a provider: main.dart listens before there is a
+/// ProviderScope. A platform without the plugin ends it quietly.
+Stream<void> networkChanges() {
+  final connectivity = Connectivity();
+  // Not async*: one waiting in `await for` can't be cancelled until an event.
+  return Stream.fromFuture(connectivity.checkConnectivity())
+      .asyncExpand((initial) {
+        var current = initial.toSet();
+        return connectivity.onConnectivityChanged.where((results) {
+          final next = results.toSet();
+          // The plugin replays the current state to a new listener: no move.
+          final moved = !setEquals(next, current);
+          current = next;
+          return moved;
+        });
+      })
+      .handleError((Object _) {});
 }
