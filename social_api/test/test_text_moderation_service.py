@@ -49,15 +49,6 @@ def author(client, db) -> User:
     return db.query(User).filter(User.username_lower == "writer").one()
 
 
-@pytest.fixture(autouse=True)
-def reset_degradation_throttle():
-    """The cooldown map is module-global; clear it so one test's alert doesn't
-    suppress the next test's."""
-    tms._last_degradation_notice.clear()
-    yield
-    tms._last_degradation_notice.clear()
-
-
 class StubProvider:
     """Returns canned scores, or raises to simulate an outage. Records how many
     times it was called so cache-hit assertions are exact."""
@@ -87,9 +78,11 @@ def _enable(monkeypatch, provider: str = "openai") -> None:
 
 
 def _capture_emails(monkeypatch) -> list[dict]:
+    # Degradation alerts are sent by operator_alerts; conftest resets its
+    # hourly cooldown between tests.
     sent: list[dict] = []
     monkeypatch.setattr(
-        "app.services.text_moderation_service.send_email",
+        "app.services.operator_alerts.send_email",
         lambda to, subject, html: sent.append(
             {"to": to, "subject": subject, "html": html}
         ),

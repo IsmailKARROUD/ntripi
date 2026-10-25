@@ -17,7 +17,10 @@ happens at the Cloudflare edge and has **no app config** — see
 
 - **Disabled by default.** `MODERATION_ENABLED=False`, or **any** missing AWS
   credential, means uploads are stored unscanned exactly as before
-  (`is_enabled`, `moderation_service.py:98`).
+  (`is_enabled`, `moderation_service.py:109`). The two differ only in what the
+  operator hears: switched off is a choice and stays silent; switched on with a
+  credential missing is a misconfiguration and emails the operator, at most
+  once an hour ([Outage alerts](#outage-alerts)).
 - **The scan runs after Pillow processing and before storage**, so rejected bytes
   are never written. It is passed to `process_and_store` as a
   `ModerationContext`; omitting it skips the scan.
@@ -26,8 +29,8 @@ happens at the Cloudflare edge and has **no app config** — see
   |---|---|---|
   | **hard reject** | a `REJECT_CATEGORIES` label ≥ `MODERATION_REJECT_THRESHOLD` (default 80) | `ModerationRejectedError` → **422 `image_moderation_rejected`**; nothing stored |
   | **soft flag** | any label ≥ `MODERATION_FLAG_THRESHOLD` (default 50) | stored, logged, operator emailed |
-  | **fail-open** | an AWS error | **stored**, logged as `error_allowed`, status set `pending` |
-- `REJECT_CATEGORIES` (`moderation_service.py:58`) — `Explicit Nudity`,
+  | **fail-open** | an AWS error | **stored**, logged as `error_allowed`, status set `pending`, operator emailed at most once an hour |
+- `REJECT_CATEGORIES` (`moderation_service.py:65`) — `Explicit Nudity`,
   `Explicit`, `Violence`, `Graphic Violence`, `Visually Disturbing`. Both the
   pre-v7 and v7 Rekognition top-level names are listed so a model upgrade does
   not silently stop rejecting.
@@ -35,6 +38,9 @@ happens at the Cloudflare edge and has **no app config** — see
   upload joins `/admin/flagged` as "Not scanned" (`QUEUE_IMAGE_ACTIONS`), and the
   itinerary stays `pending` — the sweep's text re-check will not approve it while
   that review is outstanding. Until 2026-09-28 nothing reviewed these at all.
+  **It is not silent**: the operator is emailed, at most once an hour. Until
+  2026-10-25 a failed scan only logged, and a closed AWS account failed every
+  scan for days with nobody told.
 - **The cover endpoints never lower `itineraries.moderation_status`.** The column
   also carries text-tier flags and a moderator's `rejected`, and the owner's
   request cannot tell which tier raised it. So `upload_itinerary_image` writes the
@@ -64,6 +70,40 @@ happens at the Cloudflare edge and has **no app config** — see
 - **A bug-report screenshot is never scanned** — it is never served to another
   user, so a hard reject could only drop a real bug report because our own UI
   tripped a classifier.
+
+### Outage alerts
+
+When uploads are being stored unscanned, the operator is told — at most one
+email an hour per situation:
+
+| Situation | When | Subject |
+|---|---|---|
+| `scan_failed` | the scan raised — any exception from the provider call, the fail-open branch | `[Ntripi] Image moderation unavailable — uploads stored unscanned` |
+| `not_configured` | `MODERATION_ENABLED=True` with a credential missing | `[Ntripi] Image moderation not configured — uploads stored unscanned` |
+
+- **Hooked where `moderate_or_raise` decides the outcome, not in the provider
+  client** (`_notify_unscanned`, `moderation_service.py:347`), so replacing
+  Rekognition leaves the alert in place. `MODERATION_ENABLED=False` sends
+  nothing — a choice, not a failure.
+- **The throttle is `operator_alerts.notify_operator`**, shared with text
+  moderation's degradation notices: one email per key per hour, in memory (one
+  uvicorn process), so a restart or deploy re-arms it and the first failure
+  after each deploy emails again. With `OPERATOR_EMAIL` unset it logs a WARNING
+  instead, once an hour. A mail failure is logged and never fails the upload.
+- **What the email carries**: what is happening — a failed scan's uploads wait
+  in `/admin/flagged` as "Not scanned", an unconfigured tier's uploads leave no
+  row at all — that nothing is rejected automatically, the UTC time, and either
+  the exception's class name plus the provider's error code when it gives one
+  (botocore's `response["Error"]["Code"]`, e.g. `UnrecognizedClientException`)
+  or the names of the missing settings.
+- **What it never carries**: the exception message or traceback — a provider's
+  HTTP client can put the request URL, key included, in its message — nor the
+  image, its URL or storage key, the uploader, or any content.
+- **Every operator email leaves the event loop.** `moderate_or_raise` runs on
+  the loop and `send_email` is a blocking `requests.post` with a 10 s timeout,
+  so the flag email and the alert are built on the loop (the flag email reads
+  the uploader's row) and only the send goes to `asyncio.to_thread`. The upload
+  that triggers one still waits for its own send; no other request does.
 
 ### The client pre-check
 
@@ -124,7 +164,7 @@ and leaves the scan record as evidence.
 | `MODERATION_AWS_ACCESS_KEY_ID` / `_SECRET_ACCESS_KEY` / `_REGION` | unset | any missing ⇒ disabled |
 | `MODERATION_REJECT_THRESHOLD` | `80.0` | hard reject → 422 |
 | `MODERATION_FLAG_THRESHOLD` | `50.0` | soft flag → stored + emailed |
-| `OPERATOR_EMAIL` | unset | **unset ⇒ flags are logged and nobody is told** |
+| `OPERATOR_EMAIL` | unset | flag emails, and the [outage alerts](#outage-alerts) — at most one per situation per hour. **Unset ⇒ both are only logged, and nobody is told** |
 
 Thresholds are tunable without a redeploy.
 
@@ -138,6 +178,9 @@ Thresholds are tunable without a redeploy.
   scan sets `itinerary.moderation_status = 'pending'`, and the sweep's re-check
   then re-scans only the **text** fields of that itinerary. A fail-open image is
   never looked at again.
+- **An upload stored while scanning is switched on but not configured leaves no
+  audit row**, so it never reaches `/admin/flagged` and nothing can review it
+  later. The hourly `not_configured` alert is the only trace.
 - `test_image_moderation.py` runs and asserts the disabled-by-default behaviour
   first.
 
@@ -145,7 +188,7 @@ Thresholds are tunable without a redeploy.
 
 - [image-pipeline.md](image-pipeline.md) — where the scan sits
 - [content-reports.md](content-reports.md) — CSAM takedown, and `rejected_csam`
-- [text-moderation.md](text-moderation.md) — the other tier, sharing `moderation_status`
+- [text-moderation.md](text-moderation.md) — the other tier, sharing `moderation_status` and the operator-alert throttle
 - [admin-and-appeals.md](admin-and-appeals.md) — the `/admin/flagged` lane
 - [moderation-sweep is documented in admin-and-appeals.md](admin-and-appeals.md#the-sweep)
 - `../../social_api/docs/media_pipeline_spec.md` — the four-layer strategy

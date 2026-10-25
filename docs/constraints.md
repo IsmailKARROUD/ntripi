@@ -60,9 +60,10 @@ returning 401/403 — the feature is invisible, not merely locked:
 
 ### `OPERATOR_EMAIL` is the one to actually set
 
-Unset, **four alert paths guard on it and silently skip** — `report_service`,
-`moderation_service`, `bug_report_service`, `text_moderation_service` — so the
-queues fill with nobody told.
+Unset, **four alert paths guard on it and skip the email** — `report_service`,
+`moderation_service` (the image flag email), `bug_report_service`, and
+`operator_alerts` (text and image moderation outages) — so the queues fill with
+nobody told.
 
 ### Mailboxes
 
@@ -457,6 +458,7 @@ block appears a second time anywhere, extract it instead of copying.**
 | `routers/follows.py` | `counts_answer` — the `?return=counts` answer, which the block route (`users.py`) shares |
 | `services/token_util.py` | `hash_token` / `as_aware_utc` / `new_raw_token` — every opaque-token service |
 | `services/image_service.py` | `process_and_store` — all image uploads |
+| `services/operator_alerts.py` | `notify_operator` — **the one** throttled operator alert: at most one email per key per hour (in memory), its WARNING line, the `OPERATOR_EMAIL` guard, mail errors swallowed. Text moderation's degradation notices and image moderation's outage alerts; an async caller builds the body first and sends with `asyncio.to_thread`. A per-event email (a flag, a report) is not an alert and is never throttled |
 | `services/share_service.py` | `build_share_url`, `build_profile_share_url`, `absolute_storage_url`, `absolutize_stored_url`, `default_preview_image_url` |
 | `services/app_links.py` | `cta_context` / `store_links` — every share page's call to action; `apple_app_site_association`, `asset_links`; `APP_LINK_PATHS` |
 | `services/ordering.py` | `key_between`, `n_keys_between` |
@@ -573,8 +575,8 @@ excused.
 
 - **Is the in-memory rate limiter's single-instance assumption still safe?** The
   same assumption is recorded in four places (`limiter.py:12`, `main.py:219`,
-  `social_api/README.md:535`, `CLAUDE.md:87`) plus the text-moderation cache
-  (`text_moderation_service.py:80`). Nothing records a threshold at which Redis
+  `social_api/README.md:535`, `CLAUDE.md:87`) plus the operator-alert throttle
+  (`operator_alerts.py:30`). Nothing records a threshold at which Redis
   becomes required, or who would notice.
 - **Should the four client-less backend endpoints be retired?**
   `GET /itineraries/{id}/segments`, the three `/legs` writes, and

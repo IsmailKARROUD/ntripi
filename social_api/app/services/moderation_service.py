@@ -18,7 +18,13 @@ Three outcomes:
 
 Graceful degradation: if the AWS call errors or times out, the upload is
 ALLOWED (logged as 'error_allowed', itinerary marked 'pending') — an AWS outage
-must never block legitimate users.
+must never block legitimate users — and the operator is emailed, at most once
+an hour (operator_alerts). Scanning switched on without its credentials stores
+uploads unscanned too, and emails the same way.
+
+Every operator email is built on the event loop and only sent from a worker
+thread: send_email is a blocking requests.post with a 10 s timeout, and this
+module runs on the loop.
 
 Every scan opportunistically deletes log rows older than LOG_RETENTION (no cron
 — same pattern as report_service.scrub_expired_ip_hashes).
@@ -41,6 +47,7 @@ from sqlalchemy import delete, or_
 from sqlalchemy.orm import Session
 
 from app.models.image_moderation_log import ImageModerationLog
+from app.services import operator_alerts
 from app.services.email_service import send_email
 from app.services.share_service import absolute_storage_url
 
@@ -101,17 +108,12 @@ class ModerationContext:
 
 def is_enabled(settings: "Settings") -> bool:
     """True only when moderation is switched on AND all AWS creds are present.
-    Missing creds while enabled is logged once so misconfiguration is obvious
-    (mirrors the storage factory's fallback warning)."""
+    Missing creds while enabled is logged on every call so misconfiguration is
+    obvious (mirrors the storage factory's fallback warning), and
+    moderate_or_raise emails the operator about it once an hour."""
     if not settings.MODERATION_ENABLED:
         return False
-    missing = [
-        name for name, value in (
-            ("MODERATION_AWS_ACCESS_KEY_ID", settings.MODERATION_AWS_ACCESS_KEY_ID),
-            ("MODERATION_AWS_SECRET_ACCESS_KEY", settings.MODERATION_AWS_SECRET_ACCESS_KEY),
-            ("MODERATION_AWS_REGION", settings.MODERATION_AWS_REGION),
-        ) if not value
-    ]
+    missing = _missing_settings(settings)
     if missing:
         logger.warning(
             "MODERATION_ENABLED=True but missing env vars: %s — skipping scans",
@@ -119,6 +121,17 @@ def is_enabled(settings: "Settings") -> bool:
         )
         return False
     return True
+
+
+def _missing_settings(settings: "Settings") -> list[str]:
+    """Names of the unset settings a scan needs — never their values."""
+    return [
+        name for name, value in (
+            ("MODERATION_AWS_ACCESS_KEY_ID", settings.MODERATION_AWS_ACCESS_KEY_ID),
+            ("MODERATION_AWS_SECRET_ACCESS_KEY", settings.MODERATION_AWS_SECRET_ACCESS_KEY),
+            ("MODERATION_AWS_REGION", settings.MODERATION_AWS_REGION),
+        ) if not value
+    ]
 
 
 # Lazy boto3 client singleton. A module global (not lru_cache) because pydantic
@@ -155,11 +168,17 @@ async def moderate_or_raise(processed: bytes, ctx: ModerationContext) -> None:
     On reject: logs 'rejected', commits (so the audit row survives the router's
     422 rollback), and raises ModerationRejectedError. On flag: logs 'flagged',
     emails the operator, sets ctx.action='flagged'. On approve: logs 'approved'.
-    On AWS error: logs 'error_allowed', sets ctx.action='error_allowed', returns
-    (upload proceeds). ctx.action defaults to 'approved' and is left untouched
-    when moderation is disabled."""
+    On AWS error: logs 'error_allowed', sets ctx.action='error_allowed', alerts
+    the operator (at most hourly), returns (upload proceeds). ctx.action
+    defaults to 'approved' and is left untouched when moderation is disabled —
+    or switched on without its credentials, which alerts the operator too."""
     settings = ctx.settings
     if not is_enabled(settings):
+        if settings.MODERATION_ENABLED:
+            # Switched on but unable to run: a misconfiguration, not a choice.
+            await _notify_unscanned(
+                settings, "not_configured", missing=_missing_settings(settings)
+            )
         return  # ctx.action stays 'approved'; no log row when disabled
 
     image_hash = hashlib.sha256(processed).hexdigest()
@@ -171,11 +190,12 @@ async def moderate_or_raise(processed: bytes, ctx: ModerationContext) -> None:
             Image={"Bytes": processed},
             MinConfidence=settings.MODERATION_FLAG_THRESHOLD,
         )
-    except Exception:
+    except Exception as exc:
         # Fail open: an AWS outage/timeout must never block a legitimate upload.
         logger.exception("Rekognition scan failed — allowing upload (pending review)")
         ctx.action = "error_allowed"
         _log_decision(ctx.db, image_hash=image_hash, ctx=ctx, action="error_allowed", labels=[])
+        await _notify_unscanned(settings, "scan_failed", error=exc)
         return
 
     raw_labels = response.get("ModerationLabels", [])
@@ -196,7 +216,7 @@ async def moderate_or_raise(processed: bytes, ctx: ModerationContext) -> None:
         ctx.action = "flagged"
         _log_decision(ctx.db, image_hash=image_hash, ctx=ctx, action="flagged", labels=labels)
         try:
-            _notify_flagged(ctx, labels)
+            await _notify_flagged(ctx, labels)
         except Exception:
             # A mail outage must never fail the upload the user just made.
             logger.exception("moderation flag notification email failed")
@@ -265,10 +285,13 @@ def _log_decision(
     ))
 
 
-def _notify_flagged(ctx: ModerationContext, labels: list[dict[str, Any]]) -> None:
+async def _notify_flagged(ctx: ModerationContext, labels: list[dict[str, Any]]) -> None:
     """Email the operator about a soft-flagged image (best-effort — caller
     swallows errors). Mirrors report_service.send_report_notification: guard on
-    OPERATOR_EMAIL, escape user text, ship a ready-to-paste resolution snippet."""
+    OPERATOR_EMAIL, escape user text, ship a ready-to-paste resolution snippet.
+    The body is built here, on the event loop, because it reads the uploader's
+    ORM row; only the blocking send goes to a worker thread. Never throttled:
+    each flag is its own item to review."""
     settings = ctx.settings
     if not settings.OPERATOR_EMAIL:
         logger.warning(
@@ -313,8 +336,85 @@ def _notify_flagged(ctx: ModerationContext, labels: list[dict[str, Any]]) -> Non
 {resolution_html}
 """
 
-    send_email(
+    await asyncio.to_thread(
+        send_email,
         settings.OPERATOR_EMAIL,
         subject=f"[Ntripi] Image flagged: {ctx.target_kind}",
         html=body,
     )
+
+
+async def _notify_unscanned(
+    settings: "Settings", situation: str, *,
+    error: Exception | None = None, missing: list[str] | None = None,
+) -> None:
+    """Tell the operator uploads are being stored unscanned: a scan that raised
+    ('scan_failed'), or scanning switched on without its settings
+    ('not_configured'). At most one email an hour per situation
+    (operator_alerts); with OPERATOR_EMAIL unset, a WARNING instead.
+
+    Names the exception's class and the provider's error code, never its
+    message: a provider's message can carry the request URL, key included. Nor
+    the image, its key or its uploader — the alert is about the tier.
+    """
+    try:
+        now = datetime.now(timezone.utc)
+        if situation == "scan_failed":
+            error_name = type(error).__name__
+            code = _provider_error_code(error)
+            described = f"{error_name} {code}" if code else error_name
+            log_line = (
+                f"image moderation unavailable: scan failed ({described}), "
+                "uploads stored unscanned"
+            )
+            subject = "[Ntripi] Image moderation unavailable — uploads stored unscanned"
+            flagged_url = f"{settings.share_base_url}/admin/flagged"
+            code_line = (
+                f"<br><strong>Provider error code:</strong> {html.escape(code)}"
+                if code else ""
+            )
+            body = (
+                "<h2>Image moderation is not running</h2>"
+                "<p>An image scan failed, so uploads are being stored without one. "
+                "Each is logged and waits in "
+                f'<a href="{html.escape(flagged_url)}">/admin/flagged</a> as '
+                "“Not scanned”. Nothing is rejected automatically until scans "
+                "succeed again.</p>"
+                f"<p><strong>Exception:</strong> {html.escape(error_name)}{code_line}</p>"
+            )
+        else:
+            names = ", ".join(missing or ())
+            log_line = (
+                f"image moderation not configured: missing {names}, "
+                "uploads stored unscanned"
+            )
+            subject = "[Ntripi] Image moderation not configured — uploads stored unscanned"
+            body = (
+                "<h2>Image moderation is switched on but cannot run</h2>"
+                "<p><code>MODERATION_ENABLED</code> is True, but these settings are "
+                f"missing: <code>{html.escape(names)}</code>. Uploads are stored "
+                "unscanned and leave no audit row, so they do <strong>not</strong> "
+                "reach /admin/flagged. Nothing is rejected automatically.</p>"
+            )
+        body += (
+            f"<p>Detected at {html.escape(now.isoformat())} (UTC). "
+            "Further notices are suppressed for one hour.</p>"
+        )
+        await asyncio.to_thread(
+            operator_alerts.notify_operator,
+            settings, f"image_moderation:{situation}",
+            subject=subject, body=body, log_line=log_line,
+        )
+    except Exception:
+        # The upload is going ahead; its alert must never be what fails it.
+        logger.exception("image moderation outage alert failed (%s)", situation)
+
+
+def _provider_error_code(error: Exception | None) -> str | None:
+    """The provider's error code when the exception carries one in botocore's
+    shape — exc.response["Error"]["Code"], e.g. 'UnrecognizedClientException'.
+    Duck-typed, so swapping the provider needs no change here."""
+    response = getattr(error, "response", None)
+    detail = response.get("Error") if isinstance(response, dict) else None
+    code = detail.get("Code") if isinstance(detail, dict) else None
+    return code if isinstance(code, str) and code else None

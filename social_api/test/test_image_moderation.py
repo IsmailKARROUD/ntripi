@@ -5,8 +5,9 @@ Covers the three upload endpoints (itinerary cover, avatar, user cover) through
 the shared process_and_store seam. The Rekognition client is stubbed via
 monkeypatching moderation_service._rekognition_client; storage is redirected to
 a per-test temp dir (patched in image_service — the actual save funnel — so
-"file absent on reject" assertions are reliable); operator emails are captured
-by monkeypatching send_email as imported in moderation_service.
+"file absent on reject" assertions are reliable); flag emails are captured
+by monkeypatching send_email as imported in moderation_service, and outage
+alerts by patching it as imported in operator_alerts, which throttles them.
 
 Default behaviour (moderation disabled) is asserted first so the rest of the
 suite proves the opt-in scan doesn't change existing upload flows.
@@ -15,10 +16,12 @@ suite proves the opt-in scan doesn't change existing upload flows.
 from __future__ import annotations
 
 import io
+import logging
 from datetime import datetime, timedelta, timezone
 from unittest.mock import patch
 
 import pytest
+from botocore.exceptions import ClientError
 from fastapi.testclient import TestClient
 from PIL import Image
 
@@ -26,7 +29,7 @@ from conftest import TestingSessionLocal, auth_headers, register_user
 from app.config import get_settings
 from app.models.image_moderation_log import ImageModerationLog
 from app.models.itinerary import Itinerary
-from app.services import moderation_service
+from app.services import moderation_service, operator_alerts
 
 
 # ---------------------------------------------------------------------------
@@ -60,13 +63,18 @@ def _create_itinerary(client: TestClient, token: str, title: str = "Trip") -> st
 
 class _StubRekognition:
     """Stand-in for the boto3 Rekognition client. Returns canned labels or
-    raises, mirroring detect_moderation_labels' signature."""
+    raises (`error`, else a generic outage), mirroring detect_moderation_labels'
+    signature."""
 
-    def __init__(self, labels: list[dict] | None = None, raises: bool = False):
+    def __init__(self, labels: list[dict] | None = None, raises: bool = False,
+                 error: Exception | None = None):
         self._labels = labels or []
         self._raises = raises
+        self._error = error
 
     def detect_moderation_labels(self, *, Image, MinConfidence):  # noqa: N803
+        if self._error is not None:
+            raise self._error
         if self._raises:
             raise RuntimeError("simulated AWS outage")
         return {"ModerationLabels": self._labels}
@@ -82,8 +90,8 @@ def _enable_moderation(monkeypatch, reject: float = 80.0, flag: float = 50.0) ->
     monkeypatch.setattr(s, "MODERATION_FLAG_THRESHOLD", flag)
 
 
-def _stub_rekognition(monkeypatch, labels=None, raises=False) -> None:
-    stub = _StubRekognition(labels=labels, raises=raises)
+def _stub_rekognition(monkeypatch, labels=None, raises=False, error=None) -> None:
+    stub = _StubRekognition(labels=labels, raises=raises, error=error)
     monkeypatch.setattr(moderation_service, "_rekognition_client", lambda settings: stub)
 
 
@@ -94,6 +102,25 @@ def _capture_emails(monkeypatch) -> list[dict]:
         lambda to, subject, html: sent.append({"to": to, "subject": subject, "html": html}),
     )
     return sent
+
+
+def _capture_alerts(monkeypatch) -> list[dict]:
+    sent: list[dict] = []
+    monkeypatch.setattr(
+        "app.services.operator_alerts.send_email",
+        lambda to, subject, html: sent.append({"to": to, "subject": subject, "html": html}),
+    )
+    return sent
+
+
+def _raise_mail_outage(to, subject, html):
+    raise RuntimeError("mail provider down")
+
+
+def _an_hour_later(monkeypatch) -> None:
+    """Move operator_alerts' clock past the cooldown — no sleeping."""
+    later = datetime.now(timezone.utc) + timedelta(minutes=61)
+    monkeypatch.setattr(operator_alerts, "_now", lambda: later)
 
 
 def _count_logs() -> int:
@@ -305,7 +332,199 @@ class TestModerationDegraded:
         assert _itinerary_status(it_id) == "pending"
         log = _get_log()
         assert log.action == "error_allowed"
-        assert sent == []
+        assert sent == []  # no flag email; the outage alert is TestOperatorAlerts'
+
+
+# ---------------------------------------------------------------------------
+# Operator alerts — a scan that cannot run emails OPERATOR_EMAIL, hourly
+# ---------------------------------------------------------------------------
+
+_OPS = "ops@example.com"
+_UNAVAILABLE = "[Ntripi] Image moderation unavailable — uploads stored unscanned"
+_NOT_CONFIGURED = "[Ntripi] Image moderation not configured — uploads stored unscanned"
+_SUGGESTIVE = [{"Name": "Suggestive", "ParentName": "", "Confidence": 60.0}]
+
+
+class TestOperatorAlerts:
+    def test_failed_scan_alerts_once_an_hour(self, client, monkeypatch, _temp_storage):
+        _enable_moderation(monkeypatch)
+        monkeypatch.setattr(get_settings(), "OPERATOR_EMAIL", _OPS)
+        _stub_rekognition(monkeypatch, raises=True)
+        alerts = _capture_alerts(monkeypatch)
+        hdrs = auth_headers(register_user(client, "mod_out", "modout@test.com")["access_token"])
+
+        assert _upload(client, hdrs, "/users/me/avatar").status_code == 200
+        assert _upload(client, hdrs, "/users/me/avatar").status_code == 200
+        assert len(alerts) == 1                     # the second failure is suppressed
+        assert alerts[0]["to"] == _OPS
+        assert alerts[0]["subject"] == _UNAVAILABLE
+        assert "/admin/flagged" in alerts[0]["html"]
+
+        _an_hour_later(monkeypatch)
+        assert _upload(client, hdrs, "/users/me/avatar").status_code == 200
+        assert len(alerts) == 2
+
+    def test_scans_that_answer_send_no_alert(self, client, monkeypatch, _temp_storage):
+        """Clean, flagged and rejected images were all scanned: nothing to say
+        about the tier. The flag still sends its own email."""
+        _enable_moderation(monkeypatch)
+        monkeypatch.setattr(get_settings(), "OPERATOR_EMAIL", _OPS)
+        alerts = _capture_alerts(monkeypatch)
+        flag_emails = _capture_emails(monkeypatch)
+        hdrs = auth_headers(register_user(client, "mod_ans", "modans@test.com")["access_token"])
+
+        for labels, expected in (
+            ([], 200),
+            (_SUGGESTIVE, 200),
+            ([{"Name": "Explicit Nudity", "ParentName": "", "Confidence": 95.0}], 422),
+        ):
+            _stub_rekognition(monkeypatch, labels=labels)
+            assert _upload(client, hdrs, "/users/me/avatar").status_code == expected
+
+        assert alerts == []
+        assert [e["subject"] for e in flag_emails] == ["[Ntripi] Image flagged: avatar"]
+
+    def test_switched_on_without_credentials_alerts_once_an_hour(
+        self, client, monkeypatch, _temp_storage
+    ):
+        _enable_moderation(monkeypatch)
+        monkeypatch.setattr(get_settings(), "MODERATION_AWS_REGION", None)
+        monkeypatch.setattr(get_settings(), "OPERATOR_EMAIL", _OPS)
+        _stub_rekognition(monkeypatch, labels=[])   # a scan would leave a row
+        alerts = _capture_alerts(monkeypatch)
+        alice = register_user(client, "mod_nocfg", "modnocfg@test.com")
+        hdrs = auth_headers(alice["access_token"])
+        it_id = _create_itinerary(client, alice["access_token"])
+
+        for _ in range(2):
+            assert _upload(client, hdrs, f"/itineraries/{it_id}/image").status_code == 200
+        # Stored exactly as before: unscanned, approved, no audit row.
+        assert _temp_storage._base.joinpath(f"itineraries/{it_id}.jpg").exists()
+        assert _itinerary_status(it_id) == "approved"
+        assert _count_logs() == 0
+        assert len(alerts) == 1
+        assert alerts[0]["subject"] == _NOT_CONFIGURED
+        assert "MODERATION_AWS_REGION" in alerts[0]["html"]
+
+        _an_hour_later(monkeypatch)
+        assert _upload(client, hdrs, f"/itineraries/{it_id}/image").status_code == 200
+        assert len(alerts) == 2
+
+    def test_switched_off_sends_nothing(self, client, monkeypatch, _temp_storage):
+        """MODERATION_ENABLED=False is a choice, not a failure."""
+        monkeypatch.setattr(get_settings(), "MODERATION_ENABLED", False)
+        monkeypatch.setattr(get_settings(), "OPERATOR_EMAIL", _OPS)
+        alerts = _capture_alerts(monkeypatch)
+        hdrs = auth_headers(register_user(client, "mod_offa", "modoffa@test.com")["access_token"])
+
+        assert _upload(client, hdrs, "/users/me/avatar").status_code == 200
+        assert alerts == []
+
+    def test_each_situation_has_its_own_hour(self, client, monkeypatch, _temp_storage):
+        _enable_moderation(monkeypatch)
+        monkeypatch.setattr(get_settings(), "OPERATOR_EMAIL", _OPS)
+        alerts = _capture_alerts(monkeypatch)
+        hdrs = auth_headers(register_user(client, "mod_two", "modtwo@test.com")["access_token"])
+
+        monkeypatch.setattr(get_settings(), "MODERATION_AWS_REGION", None)
+        assert _upload(client, hdrs, "/users/me/avatar").status_code == 200
+        monkeypatch.setattr(get_settings(), "MODERATION_AWS_REGION", "eu-west-1")
+        _stub_rekognition(monkeypatch, raises=True)
+        assert _upload(client, hdrs, "/users/me/avatar").status_code == 200
+
+        assert [a["subject"] for a in alerts] == [_NOT_CONFIGURED, _UNAVAILABLE]
+
+    def test_unset_operator_email_logs_a_warning_instead(
+        self, client, monkeypatch, _temp_storage, caplog
+    ):
+        _enable_moderation(monkeypatch)
+        monkeypatch.setattr(get_settings(), "OPERATOR_EMAIL", None)
+        _stub_rekognition(monkeypatch, raises=True)
+        alerts = _capture_alerts(monkeypatch)
+        alice = register_user(client, "mod_noops", "modnoops@test.com")
+        it_id = _create_itinerary(client, alice["access_token"])
+
+        with caplog.at_level(logging.WARNING, logger="app.services.operator_alerts"):
+            r = _upload(client, auth_headers(alice["access_token"]),
+                        f"/itineraries/{it_id}/image")
+
+        assert r.status_code == 200
+        assert _temp_storage._base.joinpath(f"itineraries/{it_id}.jpg").exists()
+        assert alerts == []
+        warnings = [
+            rec.getMessage() for rec in caplog.records
+            if rec.name == "app.services.operator_alerts" and rec.levelno == logging.WARNING
+        ]
+        assert len(warnings) == 1
+        assert warnings[0].startswith("image moderation unavailable: scan failed (RuntimeError)")
+
+    def test_a_failed_alert_email_never_fails_the_upload(
+        self, client, monkeypatch, _temp_storage
+    ):
+        _enable_moderation(monkeypatch)
+        monkeypatch.setattr(get_settings(), "OPERATOR_EMAIL", _OPS)
+        _stub_rekognition(monkeypatch, raises=True)
+        monkeypatch.setattr("app.services.operator_alerts.send_email", _raise_mail_outage)
+        alice = register_user(client, "mod_mailx", "modmailx@test.com")
+        it_id = _create_itinerary(client, alice["access_token"])
+
+        r = _upload(client, auth_headers(alice["access_token"]), f"/itineraries/{it_id}/image")
+
+        assert r.status_code == 200
+        assert _temp_storage._base.joinpath(f"itineraries/{it_id}.jpg").exists()
+        assert _itinerary_status(it_id) == "pending"
+        assert _get_log().action == "error_allowed"
+
+    def test_a_failed_flag_email_never_fails_the_upload(
+        self, client, monkeypatch, _temp_storage
+    ):
+        _enable_moderation(monkeypatch)
+        monkeypatch.setattr(get_settings(), "OPERATOR_EMAIL", _OPS)
+        _stub_rekognition(monkeypatch, labels=_SUGGESTIVE)
+        monkeypatch.setattr("app.services.moderation_service.send_email", _raise_mail_outage)
+        alice = register_user(client, "mod_flagx", "modflagx@test.com")
+        it_id = _create_itinerary(client, alice["access_token"])
+
+        r = _upload(client, auth_headers(alice["access_token"]), f"/itineraries/{it_id}/image")
+
+        assert r.status_code == 200
+        assert _temp_storage._base.joinpath(f"itineraries/{it_id}.jpg").exists()
+        assert _itinerary_status(it_id) == "flagged"
+        assert _get_log().action == "flagged"
+
+    @pytest.mark.parametrize("error,code", [
+        (ClientError(
+            {"Error": {"Code": "UnrecognizedClientException",
+                       "Message": "The security token included in the request is invalid."}},
+            "DetectModerationLabels",
+        ), "UnrecognizedClientException"),
+        # A provider whose HTTP client puts the request URL, key included, in its message.
+        (RuntimeError("GET https://vision.example/v1/annotate?key=SECRET-KEY-123 failed"), None),
+    ], ids=["botocore", "other-provider"])
+    def test_alert_names_the_error_never_its_message_or_the_upload(
+        self, client, monkeypatch, _temp_storage, error, code
+    ):
+        _enable_moderation(monkeypatch)
+        monkeypatch.setattr(get_settings(), "OPERATOR_EMAIL", _OPS)
+        _stub_rekognition(monkeypatch, error=error)
+        alerts = _capture_alerts(monkeypatch)
+        alice = register_user(client, "mod_priv", "modpriv@test.com")
+
+        r = _upload(client, auth_headers(alice["access_token"]), "/users/me/avatar")
+        assert r.status_code == 200
+
+        email = alerts[0]["subject"] + alerts[0]["html"]
+        assert f"<strong>Exception:</strong> {type(error).__name__}" in email
+        assert ("Provider error code" in email) == (code is not None)
+        if code is not None:
+            assert code in email
+        assert "(UTC)" in email
+        for leak in (
+            "security token", "SECRET-KEY-123", "vision.example",   # the message
+            "avatars/", str(alice["user_id"]),                      # the storage key
+            "mod_priv", "modpriv@test.com",                         # the uploader
+        ):
+            assert leak not in email
 
 
 # ---------------------------------------------------------------------------

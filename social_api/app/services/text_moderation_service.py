@@ -43,8 +43,7 @@ from app.errors import ApiError
 from app.database import upsert_insert
 from app.models.text_moderation_cache import TextModerationCache
 from app.models.text_moderation_decision import TextModerationDecision
-from app.services import moderation_policy
-from app.services.email_service import send_email
+from app.services import moderation_policy, operator_alerts
 from app.services.moderation_policy import POLICY_VERSION, PolicyDecision
 from app.services.text_moderation_providers import (
     ProviderUnavailableError, get_provider_chain,
@@ -75,12 +74,6 @@ STATUS_SEVERITY = {
     "hidden": 3,
     "rejected": 4,
 }
-
-# One operator email per hour per degradation level — an outage during a busy
-# hour would otherwise send one email per write. In-memory is sufficient for
-# the same reason slowapi's store is: single-instance deployment.
-_DEGRADATION_COOLDOWN = timedelta(minutes=60)
-_last_degradation_notice: dict[str, datetime] = {}
 
 
 class TextModerationRejectedError(Exception):
@@ -407,19 +400,14 @@ def _write_decision(
 
 def _notify_degraded(settings: "Settings", level: str, provider_name: str | None) -> None:
     """Tell the operator the moderation tier is degraded — falling back to the
-    local wordlist, or scanning nothing at all. Throttled per level so an
-    outage sends one email an hour, not one per write. Best-effort: a mail
-    failure must never surface to the user who just posted."""
+    local wordlist, or scanning nothing at all. operator_alerts throttles it
+    per level, so an outage sends one email an hour, not one per write, and a
+    mail failure never surfaces to the user who just posted."""
     now = datetime.now(timezone.utc)
-    last = _last_degradation_notice.get(level)
-    if last is not None and now - last < _DEGRADATION_COOLDOWN:
-        return
-    _last_degradation_notice[level] = now
-
     if level == "fallback":
-        logger.warning(
-            "text moderation degraded: primary provider unavailable, using %s",
-            provider_name,
+        log_line = (
+            "text moderation degraded: primary provider unavailable, "
+            f"using {provider_name}"
         )
         subject = "[Ntripi] Text moderation degraded — using fallback provider"
         body = (
@@ -429,7 +417,7 @@ def _notify_degraded(settings: "Settings", level: str, provider_name: str | None
             "which is much coarser than the primary classifier.</p>"
         )
     else:
-        logger.warning("text moderation degraded: no provider available, content is pending")
+        log_line = "text moderation degraded: no provider available, content is pending"
         subject = "[Ntripi] Text moderation unavailable — content publishing as pending"
         body = (
             "<h2>Text moderation is not running</h2>"
@@ -442,13 +430,10 @@ def _notify_degraded(settings: "Settings", level: str, provider_name: str | None
         f"<p>Detected at {html.escape(now.isoformat())} (UTC). "
         "Further notices for this level are suppressed for one hour.</p>"
     )
-
-    if not settings.OPERATOR_EMAIL:
-        return  # already logged above; nowhere to send it
-    try:
-        send_email(settings.OPERATOR_EMAIL, subject=subject, html=body)
-    except Exception:
-        logger.exception("text moderation degradation email failed")
+    operator_alerts.notify_operator(
+        settings, f"text_moderation:{level}",
+        subject=subject, body=body, log_line=log_line,
+    )
 
 
 def _as_aware(value: datetime) -> datetime:

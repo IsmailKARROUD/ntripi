@@ -1824,3 +1824,74 @@ own session and sends exactly as before.
   that call `notify()`, hold no request to attach a task to.
 - One thread per push: unbounded under a burst, and sends out of order.
 - An external queue: a new dependency for something the poll already backs up.
+
+### 2026-10-25 — Image moderation tells the operator when it cannot scan
+
+Extends
+[2026-07-27 — Image moderation as a two-tier, fail-open pipeline](#2026-07-27--image-moderation-as-a-two-tier-fail-open-pipeline):
+fail-open stays, and stops being silent.
+
+**Context.** In production every image scan failed for days and nobody knew.
+The AWS account behind Rekognition had been closed, every
+`DetectModerationLabels` call answered `UnrecognizedClientException`, and
+`moderate_or_raise` failed open exactly as designed: a logged traceback, the
+upload stored, an `error_allowed` row waiting in `/admin/flagged` as "Not
+scanned". Nothing told anyone. A log line reaches only someone already reading
+the logs, and a queue only someone who knows it is filling. Text moderation has
+emailed the operator when its provider chain degrades since
+[2026-07-30](#2026-07-30--text-moderation-with-our-own-policy-not-the-providers-verdict),
+at most once an hour per level; images had nothing like it. Scanning switched
+on with a credential missing was quieter still: a WARNING per upload, and every
+upload stored as approved with no row at all.
+
+**Decision.**
+- `moderate_or_raise` emails the operator in two situations, each at most once
+  an hour: a scan that raised (the fail-open branch), and
+  `MODERATION_ENABLED=True` with a credential missing. `MODERATION_ENABLED=False`
+  stays silent — a choice, not a failure. What is stored and logged is
+  unchanged in both.
+- The hook is where `moderate_or_raise` decides the outcome
+  (`_notify_unscanned`), not in the provider client: Rekognition is about to be
+  replaced, and the alert must outlive it. The provider's error code is read
+  from botocore's shape by duck typing, so a new provider needs no change there.
+- The hourly throttle, its WARNING line, the `OPERATOR_EMAIL` guard and the
+  swallowed mail error move out of `text_moderation_service` into
+  `operator_alerts.notify_operator`, which both tiers call. Text's subjects,
+  bodies, levels and WARNING lines are unchanged. The check-and-claim now holds
+  a lock: callers run on threadpool workers, and two could pass the check at
+  once.
+- The alert names the exception's class and the provider's error code, never
+  the message or traceback — a provider's HTTP client can put the request URL,
+  key included, in its message — and never the image, its key, the uploader or
+  any content.
+- Every image-tier operator email, the existing flag email included, is built
+  on the event loop and sent with `asyncio.to_thread`. `moderate_or_raise` runs
+  on the loop and `send_email` is a blocking `requests.post` with a 10 s
+  timeout, so each flag email stalled every request on the server for as long
+  as the mail provider took.
+
+**Consequences.**
+- With the dead key, the first upload emails `ops@` once and the uploads after
+  it in that hour send nothing.
+- The throttle is in memory, like slowapi's store, on the same single-process
+  assumption. A restart or deploy re-arms it, so each deploy during an outage
+  sends one more email.
+- The upload that takes the hour's slot, and each flagged upload, still waits
+  for its own send — at worst Resend's 10 s timeout. The loop never does, so no
+  other request waits with it.
+- An upload stored while scanning is unconfigured still leaves no audit row and
+  never reaches `/admin/flagged`; the alert is its only trace.
+- Text moderation's defensive "degradation email failed" log line is now the
+  helper's, which names the key. `send_email` catches its own errors, so
+  neither line has ever fired.
+
+**Alternatives rejected.**
+- Failing the upload when the scan cannot run: an outage at the provider would
+  block every legitimate user. Fail-open was deliberate on 2026-07-27 and
+  stays; what was missing was telling someone.
+- Refusing to start when the provider is unreachable: a boot cannot know that
+  without spending a paid call on every deploy, and it changes after boot —
+  this key died while the app was running, which a startup check would never
+  have seen. A refused boot would also take the whole app down over a degraded
+  safety layer. The missing-credential case likewise keeps its documented
+  storage behaviour and gains the alert, not a startup refusal.
