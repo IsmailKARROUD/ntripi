@@ -196,7 +196,7 @@ Content you publish is checked automatically before it becomes visible, using se
 
 Text — itinerary titles and descriptions, stop names, addresses and notes, annotations, transport details, review notes, your display name and bio, and the username and name you choose at registration — is sent to OpenAI's moderation service. The request carries the text and the name of the model, and nothing else: no account identifier, no email address, no content identifier. OpenAI cannot tell whose text it is.
 
-Photos are sent to Amazon Web Services' Rekognition service to be checked for explicit and violent imagery. Only the image is sent.
+Photos are sent to an image moderation service to be checked for explicit and violent imagery: Amazon Web Services' Rekognition service, or Google Cloud Vision, which checks them in the European Union. Only the image is sent. Google Cloud Vision processes the image in memory without writing it to disk, and Google does not use it to train or improve Cloud Vision.
 
 Images are stored and served through Cloudflare, which scans images served from our domain against known-illegal-image databases at the point they are served.
 
@@ -226,6 +226,8 @@ OpenAI — text moderation and translation, as described above.
 Microsoft (Azure AI Translator) — translation when OpenAI cannot answer, as described above.
 
 Amazon Web Services — image moderation, as described above.
+
+Google (Cloud Vision) — image moderation, as described above.
 
 Google — sign-in, if you use it. Google receives the fact that you signed in to Ntripi.
 

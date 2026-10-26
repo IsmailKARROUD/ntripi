@@ -13,10 +13,10 @@ Three independent layers can surface child-safety signals:
 | Layer | When it runs | Question it answers | False positives |
 |---|---|---|---|
 | **Cloudflare CSAM Scanning** | serve-time, at the edge | Does this match a known-CSAM hash list? | essentially none |
-| **AWS Rekognition** | upload-time, before storage | Does this look explicit? | yes, routinely |
+| **Upload-time image scan** (AWS Rekognition or Google Cloud Vision, by `MODERATION_PROVIDER`) | upload-time, before storage | Does this look explicit? | yes, routinely |
 | **User reports** (`csam` reason) | any time | A human says so | varies |
 
-Only the first is a hash match, and only it justifies acting on an account on the strength of one signal. Rekognition guesses; a report is an allegation.
+Only the first is a hash match, and only it justifies acting on an account on the strength of one signal. The image scan guesses; a report is an allegation.
 
 **Detection of new, unknown CSAM is out of scope.** Services that attempt it exist and need their own legal review.
 

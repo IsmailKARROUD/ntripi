@@ -9,7 +9,8 @@ what makes the feed eventually correct; this makes it fast.
 ZERO NEW DEPENDENCIES. FCM HTTP v1 wants an OAuth2 bearer token from a service
 account, which is exactly what `google-auth` mints — and that is already
 installed for Google Sign-In. So this is a `requests.post` like every other
-outbound call here, not an SDK.
+outbound call here, not an SDK. The key's parsing and token cache live in
+google_service_account, shared with Cloud Vision image moderation.
 
 FAILS OPEN, like email_service and unlike jira_service: nobody is standing in
 front of a dashboard waiting for this, and a Google outage must never 500 a
@@ -24,9 +25,7 @@ rating or save that notified someone waited on FCM (one timeout at worst).
 from __future__ import annotations
 
 import contextvars
-import json
 import logging
-import threading
 import uuid
 from concurrent.futures import Future, ThreadPoolExecutor
 from dataclasses import dataclass
@@ -40,6 +39,7 @@ from app.config import get_settings
 from app.constants import push_i18n
 from app.database import SessionLocal
 from app.models.device_token import DeviceToken
+from app.services import google_service_account
 
 if TYPE_CHECKING:
     from app.config import Settings
@@ -56,12 +56,6 @@ _SEND_URL = "https://fcm.googleapis.com/v1/projects/{project}/messages:send"
 # FCM's answer when the app was uninstalled or the token was replaced. Either
 # way the row is dead and keeping it wastes a request on every future send.
 _DEAD_TOKEN_CODES = {"UNREGISTERED", "INVALID_ARGUMENT"}
-
-# google-auth caches the access token on the Credentials object and knows its
-# own expiry (~1 h), so this is refreshed rarely. Guarded: sends run on the push
-# worker, but send() is public and may be called from any thread.
-_creds_lock = threading.Lock()
-_creds: Any = None
 
 
 @dataclass(frozen=True)
@@ -104,19 +98,6 @@ def is_enabled(settings: "Settings") -> bool:
     return not missing
 
 
-def _service_account_info(settings: "Settings") -> dict[str, Any]:
-    """Parse FCM_SERVICE_ACCOUNT_JSON. The only parser — the startup check and
-    the send path must agree on what counts as readable.
-
-    `strict=False` because the value reaches us through an env var: a paste that
-    turns the private_key's `\\n` escapes into real line breaks is JSON's
-    "Invalid control character" and nothing else. Tolerating those raw newlines
-    yields a byte-identical key to a correctly-escaped parse, which is why this
-    is safe where rewriting the string would not be.
-    """
-    return json.loads(settings.FCM_SERVICE_ACCOUNT_JSON or "{}", strict=False)
-
-
 def validate_credentials(settings: "Settings") -> None:
     """Log — never raise — if push is configured but the key cannot be used.
 
@@ -127,54 +108,24 @@ def validate_credentials(settings: "Settings") -> None:
     """
     if not is_enabled(settings):
         return
-    try:
-        info = _service_account_info(settings)
-    except json.JSONDecodeError as exc:
-        logger.error("FCM_SERVICE_ACCOUNT_JSON is not valid JSON (%s) — push is off", exc)
-        return
-
-    missing = [k for k in ("client_email", "private_key", "token_uri") if not info.get(k)]
-    if missing:
-        logger.error(
-            "FCM_SERVICE_ACCOUNT_JSON is missing %s — push is off", ", ".join(missing)
-        )
-        return
-
-    # The failure strict=False cannot catch: a paste that dropped the escapes
-    # entirely leaves a single-line PEM that parses fine here and only dies
-    # later, inside google-auth, with nothing pointing back at the env var.
-    key = info["private_key"]
-    if "\n" not in key.strip() or "-----BEGIN" not in key:
-        logger.error(
-            "FCM_SERVICE_ACCOUNT_JSON private_key is not a line-broken PEM — "
-            "the env var likely lost its newlines; push is off"
-        )
+    google_service_account.validate(
+        "FCM_SERVICE_ACCOUNT_JSON", settings.FCM_SERVICE_ACCOUNT_JSON,
+        consequence="push is off", log=logger,
+    )
 
 
 def _access_token(settings: "Settings") -> str | None:
     """A bearer token for the FCM API, minted from the service account and
     reused until it expires. None on any failure — the caller fails open."""
-    global _creds
     try:
-        from google.auth.transport.requests import Request
-        from google.oauth2 import service_account
-
-        with _creds_lock:
-            if _creds is None:
-                info = _service_account_info(settings)
-                _creds = service_account.Credentials.from_service_account_info(
-                    info, scopes=[_SCOPE]
-                )
-            # `valid` is False both before the first refresh and after expiry.
-            if not _creds.valid:
-                _creds.refresh(Request())
-            return _creds.token
+        return google_service_account.access_token(
+            "FCM_SERVICE_ACCOUNT_JSON", settings.FCM_SERVICE_ACCOUNT_JSON, _SCOPE
+        )
     except Exception:
         # Bad JSON, a revoked key, no network. Logged once per send attempt;
-        # the next notification retries from scratch.
+        # the helper dropped the credentials, so the next notification retries
+        # from scratch.
         logger.exception("Could not mint an FCM access token")
-        with _creds_lock:
-            _creds = None  # force a clean rebuild rather than reusing a bad one
         return None
 
 

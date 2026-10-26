@@ -7,7 +7,7 @@
 // which resolves on every platform so `flutter analyze` stays clean.
 //
 // Never-block contract: if the glue script or model is absent, or anything
-// throws, isLikelyNsfw() returns false — the backend Rekognition scan is the
+// throws, isLikelyNsfw() returns false — the backend image scan is the
 // authority.
 
 import 'dart:js_interop';

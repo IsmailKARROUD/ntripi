@@ -1825,6 +1825,7 @@ own session and sends exactly as before.
 - One thread per push: unbounded under a burst, and sends out of order.
 - An external queue: a new dependency for something the poll already backs up.
 
+<<<<<<< HEAD
 ### 2026-10-25 — A reload never blanks the content on screen
 
 Completes the separate fix that
@@ -2003,3 +2004,168 @@ with the link, where the owner wanted the link alone.
   screen.
 - A sheet of the app's own with Copy link and Share via…: the owner preferred
   the phone's own popup with one row added.
+=======
+### 2026-10-25 — Image moderation tells the operator when it cannot scan
+
+Extends
+[2026-07-27 — Image moderation as a two-tier, fail-open pipeline](#2026-07-27--image-moderation-as-a-two-tier-fail-open-pipeline):
+fail-open stays, and stops being silent.
+
+**Context.** In production every image scan failed for days and nobody knew.
+The AWS account behind Rekognition had been closed, every
+`DetectModerationLabels` call answered `UnrecognizedClientException`, and
+`moderate_or_raise` failed open exactly as designed: a logged traceback, the
+upload stored, an `error_allowed` row waiting in `/admin/flagged` as "Not
+scanned". Nothing told anyone. A log line reaches only someone already reading
+the logs, and a queue only someone who knows it is filling. Text moderation has
+emailed the operator when its provider chain degrades since
+[2026-07-30](#2026-07-30--text-moderation-with-our-own-policy-not-the-providers-verdict),
+at most once an hour per level; images had nothing like it. Scanning switched
+on with a credential missing was quieter still: a WARNING per upload, and every
+upload stored as approved with no row at all.
+
+**Decision.**
+- `moderate_or_raise` emails the operator in two situations, each at most once
+  an hour: a scan that raised (the fail-open branch), and
+  `MODERATION_ENABLED=True` with a credential missing. `MODERATION_ENABLED=False`
+  stays silent — a choice, not a failure. What is stored and logged is
+  unchanged in both.
+- The hook is where `moderate_or_raise` decides the outcome
+  (`_notify_unscanned`), not in the provider client: Rekognition is about to be
+  replaced, and the alert must outlive it. The provider's error code is read
+  from botocore's shape by duck typing, so a new provider needs no change there.
+- The hourly throttle, its WARNING line, the `OPERATOR_EMAIL` guard and the
+  swallowed mail error move out of `text_moderation_service` into
+  `operator_alerts.notify_operator`, which both tiers call. Text's subjects,
+  bodies, levels and WARNING lines are unchanged. The check-and-claim now holds
+  a lock: callers run on threadpool workers, and two could pass the check at
+  once.
+- The alert names the exception's class and the provider's error code, never
+  the message or traceback — a provider's HTTP client can put the request URL,
+  key included, in its message — and never the image, its key, the uploader or
+  any content.
+- Every image-tier operator email, the existing flag email included, is built
+  on the event loop and sent with `asyncio.to_thread`. `moderate_or_raise` runs
+  on the loop and `send_email` is a blocking `requests.post` with a 10 s
+  timeout, so each flag email stalled every request on the server for as long
+  as the mail provider took.
+
+**Consequences.**
+- With the dead key, the first upload emails `ops@` once and the uploads after
+  it in that hour send nothing.
+- The throttle is in memory, like slowapi's store, on the same single-process
+  assumption. A restart or deploy re-arms it, so each deploy during an outage
+  sends one more email.
+- The upload that takes the hour's slot, and each flagged upload, still waits
+  for its own send — at worst Resend's 10 s timeout. The loop never does, so no
+  other request waits with it.
+- An upload stored while scanning is unconfigured still leaves no audit row and
+  never reaches `/admin/flagged`; the alert is its only trace.
+- Text moderation's defensive "degradation email failed" log line is now the
+  helper's, which names the key. `send_email` catches its own errors, so
+  neither line has ever fired.
+
+**Alternatives rejected.**
+- Failing the upload when the scan cannot run: an outage at the provider would
+  block every legitimate user. Fail-open was deliberate on 2026-07-27 and
+  stays; what was missing was telling someone.
+- Refusing to start when the provider is unreachable: a boot cannot know that
+  without spending a paid call on every deploy, and it changes after boot —
+  this key died while the app was running, which a startup check would never
+  have seen. A refused boot would also take the whole app down over a degraded
+  safety layer. The missing-credential case likewise keeps its documented
+  storage behaviour and gains the alert, not a startup refusal.
+
+### 2026-10-25 — Image moderation gains Google Cloud Vision; one variable picks the scanner
+
+Extends
+[2026-07-27 — Image moderation as a two-tier, fail-open pipeline](#2026-07-27--image-moderation-as-a-two-tier-fail-open-pipeline)
+and
+[2026-10-25 — Image moderation tells the operator when it cannot scan](#2026-10-25--image-moderation-tells-the-operator-when-it-cannot-scan).
+
+**Context.** The AWS account behind Rekognition was closed, so every image scan
+in production fails: each upload is stored as `error_allowed` and waits in
+`/admin/flagged`, and since the entry above the operator is emailed about it
+once an hour. A new key cannot revive a closed account, and nothing else could
+scan.
+
+**Decision.**
+- Google Cloud Vision SafeSearch becomes a second image scanner beside
+  Rekognition, and `MODERATION_PROVIDER` (`rekognition`, the default, or
+  `google_vision`) picks which one runs. An unknown value refuses startup, like
+  `TEXT_MODERATION_PROVIDER`. `MODERATION_ENABLED` stays the master switch.
+  Rekognition's code, thresholds and variables are unchanged, so a deploy that
+  sets nothing new behaves exactly as before.
+- Each provider sits behind one seam in `moderation_service` (`_PROVIDERS`) that
+  returns a verdict or raises, so `moderate_or_raise` keeps a single reject /
+  flag / approve / fail-open path, and the "not configured" alert names only the
+  selected provider's settings.
+- Cloud Vision is one `requests.post` to `eu-vision.googleapis.com` with
+  `parent=projects/{project_id}/locations/eu`, so images are stored and
+  processed only in the EU. The body carries the image, the feature and
+  `parent`, nothing else. The bearer is minted by google-auth from a key of its
+  own, `MODERATION_GOOGLE_SERVICE_ACCOUNT_JSON`, with the `cloud-vision` scope.
+  The call and its token request get Rekognition's budget: 3 s to connect, 3 s
+  to read, one attempt.
+- The verdict is read on Google's levels: reject on `adult` or `violence` at
+  `MODERATION_GOOGLE_REJECT_LIKELIHOOD` (`VERY_LIKELY`), flag on `adult`,
+  `violence`, `racy` or `medical` at `MODERATION_GOOGLE_FLAG_LIKELIHOOD`
+  (`LIKELY`), `spoof` ignored. Every answer that is not a verdict — an
+  exception, a non-2xx status, a body that is not JSON, a per-image error, a
+  missing annotation, an `UNKNOWN` or omitted `adult` or `violence` — goes to the
+  fail-open branch and is never an approval.
+- For Cloud Vision the alert's error code is Google's `error.status` plus the
+  first `details[].reason` (`PERMISSION_DENIED/SERVICE_DISABLED`), read by
+  `_provider_error_code` beside botocore's shape. The message is never read:
+  Google's names the project and links to its console.
+- `image_moderation_logs.provider` records the scanner on every scan row
+  (`a989b5ce5994`; earlier scan rows backfilled `rekognition`, `rejected_csam`
+  rows NULL). Google labels are stored as `{name, likelihood}`, and one
+  formatter, `label_text`, renders both shapes in the flag email and on the
+  admin pages.
+- The service-account parsing, the PEM check and the cached token move out of
+  `push_service` into `google_service_account`, keyed by variable and scope,
+  with one lock per key. Push's log lines and its fail-open token handling are
+  unchanged.
+- Privacy 2.4 names Google Cloud Vision in §4 and §5, in all six languages,
+  claiming only what Google's data-usage FAQ says; pinned by
+  `test_privacy_names_every_image_moderation_provider`.
+
+**Consequences.**
+- Switching the scanner is a variable change. Production moves to Cloud Vision
+  by setting the key and `MODERATION_PROVIDER=google_vision` once this is
+  deployed, and Rekognition can come back the same way.
+- The two providers' signals are not the same. SafeSearch has no self-harm or
+  gore class of its own, and five levels are coarser than a percentage: by
+  default only `VERY_LIKELY` rejects and `LIKELY` flags.
+- An audit row's labels now come in two shapes, and whatever reads them must
+  handle both — today that is `label_text`. Rekognition's flag email lists its
+  labels as `Suggestive (60%)` instead of `Suggestive: 60.0%`, and a takedown's
+  evidence row no longer renders as `csam_hash_match (0%)`.
+- Rekognition's answer is now read inside the fail-open `try`, so a malformed
+  one fails open instead of returning a 500.
+- The Cloud Vision token is minted inside an upload about once an hour.
+  google-auth still makes up to three attempts on a 5xx from the token
+  endpoint, each bounded to 3 s + 3 s.
+- The translated privacy texts, the 2.4 paragraphs included, still need counsel
+  review; English is authoritative.
+
+**Alternatives rejected.**
+- A fallback chain across providers, as text moderation has: each image would
+  reach a second processor exactly when the first was failing, the audit row's
+  provider would depend on an outage, and with the AWS account closed the second
+  tier would fail too. Text's chain falls back to a free local wordlist; images
+  have no such tier. One variable keeps which processor saw an image a
+  deliberate choice.
+- The `google-cloud-vision` SDK: gRPC and a large dependency, and it bypasses
+  `requests.Session.send`, so a slow scan would never show in the slow-request
+  log.
+- Mapping Google's levels onto percentages, to reuse the `MODERATION_*_THRESHOLD`
+  pair: the audit row would claim a confidence Google never gave.
+- Reusing FCM's service-account key: one key per job, so revoking either never
+  stops the other.
+- Sightengine: its finer gore and self-harm classes did not outweigh EU-only
+  routing being available on its Enterprise plan only.
+- Hive: US-only.
+- OpenAI's image moderation: US.
+>>>>>>> ntripiworktree

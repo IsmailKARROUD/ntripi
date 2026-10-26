@@ -27,6 +27,16 @@ from app.constants.translation_languages import TARGET_LANGUAGES
 # "disabled" is the dev/test default and skips every scan.
 TEXT_MODERATION_PROVIDERS = ("openai", "local", "disabled")
 
+# Accepted values for MODERATION_PROVIDER — the service that scans uploaded
+# images. Also the values image_moderation_logs.provider may hold.
+IMAGE_MODERATION_PROVIDERS = ("rekognition", "google_vision")
+
+# Cloud Vision's SafeSearch likelihoods, lowest first. Google's UNKNOWN is not on
+# the scale: it ranks nothing, so it can neither approve nor reject.
+GOOGLE_LIKELIHOODS = ("VERY_UNLIKELY", "UNLIKELY", "POSSIBLE", "LIKELY", "VERY_LIKELY")
+# The levels a MODERATION_GOOGLE_*_LIKELIHOOD threshold may name.
+GOOGLE_THRESHOLD_LIKELIHOODS = ("POSSIBLE", "LIKELY", "VERY_LIKELY")
+
 # Accepted names in TRANSLATION_PROVIDERS, which a deployment lists in the
 # order they should be tried.
 TRANSLATION_PROVIDER_NAMES = ("openai", "azure")
@@ -179,15 +189,28 @@ class Settings(BaseSettings):
     R2_ENDPOINT: str | None = None
     R2_PUBLIC_URL: str | None = None
 
-    # Image moderation (AWS Rekognition) — scans processed uploads before storage.
-    # Disabled (or missing creds) = uploads are stored unscanned, exactly as before.
-    # Thresholds are 0-100 confidence percentages, tunable without redeploy.
+    # Image moderation — scans processed uploads before storage, with the service
+    # MODERATION_PROVIDER names: "rekognition" (AWS, the default) or
+    # "google_vision" (Google Cloud Vision, called in the EU). Switching is a
+    # config change only. Disabled (or the selected provider's settings missing)
+    # = uploads are stored unscanned, exactly as before.
     MODERATION_ENABLED: bool = False
+    MODERATION_PROVIDER: str = "rekognition"
+    # Rekognition only. Thresholds are 0-100 confidence percentages, tunable
+    # without redeploy.
     MODERATION_AWS_ACCESS_KEY_ID: str | None = None
     MODERATION_AWS_SECRET_ACCESS_KEY: str | None = None
     MODERATION_AWS_REGION: str | None = None
     MODERATION_REJECT_THRESHOLD: float = 80.0  # hard reject: image not stored, 422
     MODERATION_FLAG_THRESHOLD: float = 50.0  # soft flag: stored + logged + operator email
+    # Cloud Vision only. The service-account key as raw JSON, like
+    # FCM_SERVICE_ACCOUNT_JSON but never the same key: one key per job, so
+    # revoking either never stops the other.
+    MODERATION_GOOGLE_SERVICE_ACCOUNT_JSON: str | None = None
+    # SafeSearch likelihoods (POSSIBLE / LIKELY / VERY_LIKELY), not percentages:
+    # Google gives a level, never a confidence.
+    MODERATION_GOOGLE_REJECT_LIKELIHOOD: str = "VERY_LIKELY"  # adult/violence: not stored, 422
+    MODERATION_GOOGLE_FLAG_LIKELIHOOD: str = "LIKELY"  # + racy/medical: stored + operator email
 
     # Known-CSAM hash matching is NOT done here: Cloudflare's CSAM Scanning Tool
     # does it at the edge on served content (dashboard toggle, no app config).
@@ -383,6 +406,31 @@ class Settings(BaseSettings):
                 "TEXT_MODERATION_PROVIDER='openai' requires OPENAI_API_KEY"
             )
         self.report_hide_thresholds  # noqa: B018 — parse now so a typo fails at boot
+        return self
+
+    @model_validator(mode="after")
+    def _validate_image_moderation(self) -> "Settings":
+        """Refuse an image-moderation setup that names something we cannot run:
+        an unknown provider, an unknown likelihood, or a reject level below the
+        flag level — which would reject images it never flags."""
+        if self.MODERATION_PROVIDER not in IMAGE_MODERATION_PROVIDERS:
+            raise ValueError(
+                f"MODERATION_PROVIDER must be one of "
+                f"{', '.join(IMAGE_MODERATION_PROVIDERS)}"
+            )
+        for name in ("MODERATION_GOOGLE_REJECT_LIKELIHOOD", "MODERATION_GOOGLE_FLAG_LIKELIHOOD"):
+            if getattr(self, name) not in GOOGLE_THRESHOLD_LIKELIHOODS:
+                raise ValueError(
+                    f"{name} must be one of {', '.join(GOOGLE_THRESHOLD_LIKELIHOODS)}"
+                )
+        if (
+            GOOGLE_LIKELIHOODS.index(self.MODERATION_GOOGLE_REJECT_LIKELIHOOD)
+            < GOOGLE_LIKELIHOODS.index(self.MODERATION_GOOGLE_FLAG_LIKELIHOOD)
+        ):
+            raise ValueError(
+                "MODERATION_GOOGLE_REJECT_LIKELIHOOD may not be below "
+                "MODERATION_GOOGLE_FLAG_LIKELIHOOD"
+            )
         return self
 
     @model_validator(mode="after")

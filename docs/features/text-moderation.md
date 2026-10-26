@@ -38,7 +38,9 @@ pending`**:
 - **The OpenAI request body carries the text and the model name and nothing
   else** — no user id, email, or content id, ever.
 - The operator is emailed when the chain degrades (fallback, or all-down),
-  throttled to one per hour per level.
+  throttled to one per hour per level by `operator_alerts.notify_operator` —
+  the one throttled operator alert, which image moderation's outage alerts
+  share ([image-moderation.md](image-moderation.md#outage-alerts)).
 - **`score_many(texts)`** is the batch form both providers implement — one
   OpenAI request for a list of texts. Translation uses it to vet machine
   output before caching; it writes no decision row and escalates nothing
@@ -208,13 +210,15 @@ read the queue: `GET /admin/text-flags` and
 
 ## Known gaps / TODOs
 
-- **The decision-row cache is single-instance**, like the rate limiter
-  (`text_moderation_service.py:80`). Horizontal scaling needs a shared store.
+- **The degradation-alert throttle is in memory and single-instance**, like the
+  rate limiter (`operator_alerts.py:30`): a second instance would keep its own
+  hour and send its own email. Horizontal scaling needs a shared store. (The
+  verdict cache, `text_moderation_cache`, is a table and is not affected.)
 - `test_text_moderation_{config,endpoints,policy,service}.py` all run.
 
 ## Related
 
-- [image-moderation.md](image-moderation.md) — shares `moderation_status`
+- [image-moderation.md](image-moderation.md) — shares `moderation_status` and the operator-alert throttle
 - [content-reports.md](content-reports.md) — `legal_escalations`, thresholds
 - [admin-and-appeals.md](admin-and-appeals.md) — the queue, the sweep, `set_preserving_etag`
 - [etag-concurrency.md](etag-concurrency.md) — why moderation writes preserve `updated_at`

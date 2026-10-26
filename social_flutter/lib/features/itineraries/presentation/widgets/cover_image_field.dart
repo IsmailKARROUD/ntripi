@@ -190,7 +190,7 @@ class _CoverImageFieldState extends State<CoverImageField> {
         return;
       }
       // Client-side NSFW pre-check — instant reject before any upload. Returns
-      // false on any failure (backend Rekognition scan is the real authority).
+      // false on any failure (backend image scan is the real authority).
       if (await isLikelyNsfw(bytes)) {
         if (mounted) {
           setState(

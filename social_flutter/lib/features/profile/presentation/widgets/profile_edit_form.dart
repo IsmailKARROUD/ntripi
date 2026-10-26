@@ -101,7 +101,7 @@ class _ProfileEditFormState extends ConsumerState<ProfileEditForm> {
       final raw = await picked.readAsBytes();
       if (!mounted) return;
       // Client-side NSFW pre-check — block before crop/upload. Returns false on
-      // any failure (backend Rekognition scan is the real authority).
+      // any failure (backend image scan is the real authority).
       if (await isLikelyNsfw(raw)) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(

@@ -111,7 +111,7 @@ async def create_bug_report(
             key = f"bug_reports/{report.id}.jpg"
             try:
                 # No ModerationContext: the screenshot is never served to another
-                # user, so a Rekognition reject would only drop a real bug report
+                # user, so an image-scan reject would only drop a real bug report
                 # because our own UI tripped a classifier. EXIF is still stripped.
                 # cache_bust=False — each key is a fresh UUID, never reused.
                 await process_and_store(

@@ -123,7 +123,7 @@ last month's behaviour is worse than none, because the reader follows it.**
 | Document | What it covers |
 |---|---|
 | [image-pipeline.md](features/image-pipeline.md) | Upload paths, Pillow processing, EXIF stripping, the storage abstraction, filesystem vs R2 |
-| [image-moderation.md](features/image-moderation.md) | Rekognition tiers, reject / flag / fail-open, the inert client pre-check |
+| [image-moderation.md](features/image-moderation.md) | The upload-time scan — Rekognition or Cloud Vision, chosen by `MODERATION_PROVIDER` — reject / flag / fail-open, the outage alerts, the inert client pre-check |
 | [text-moderation.md](features/text-moderation.md) | Provider chain, our own policy and `POLICY_VERSION`, the cache, the moderator queue, coverage and deliberate exclusions |
 | [content-reports.md](features/content-reports.md) | Polymorphic reports, distinct-reporter thresholds, legal escalations, the CSAM takedown procedure |
 | [admin-and-appeals.md](features/admin-and-appeals.md) | The `/admin` dashboard and its lanes, the moderation log, appeals, the moderation sweep |

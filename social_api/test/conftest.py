@@ -109,6 +109,19 @@ def reset_rate_limiter():
 
 
 @pytest.fixture(autouse=True)
+def reset_operator_alerts():
+    """Clear operator_alerts' hourly cooldowns before and after each test.
+
+    The map is module-global and shared by text and image moderation, so
+    without this one test's alert would suppress the next test's — in any file.
+    """
+    from app.services import operator_alerts
+    operator_alerts._last_sent.clear()
+    yield
+    operator_alerts._last_sent.clear()
+
+
+@pytest.fixture(autouse=True)
 def no_outbound_email(monkeypatch):
     """Stub the email backend for every test.
 

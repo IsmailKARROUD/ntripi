@@ -461,7 +461,7 @@ def bulk_resolve(
 
 
 # ---------------------------------------------------------------------------
-# Flagged-uploads queue (rows the Rekognition scan soft-flagged at upload time)
+# Flagged-uploads queue (rows the image scan soft-flagged at upload time)
 # ---------------------------------------------------------------------------
 
 def approve_flagged(db: Session, admin: User, log_row: ImageModerationLog, reason: str) -> None:

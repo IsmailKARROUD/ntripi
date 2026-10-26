@@ -12,6 +12,7 @@ Rekognition client, so no network is ever touched.
 
 from __future__ import annotations
 
+import logging
 from datetime import datetime, timedelta, timezone
 
 import pytest
@@ -49,15 +50,6 @@ def author(client, db) -> User:
     return db.query(User).filter(User.username_lower == "writer").one()
 
 
-@pytest.fixture(autouse=True)
-def reset_degradation_throttle():
-    """The cooldown map is module-global; clear it so one test's alert doesn't
-    suppress the next test's."""
-    tms._last_degradation_notice.clear()
-    yield
-    tms._last_degradation_notice.clear()
-
-
 class StubProvider:
     """Returns canned scores, or raises to simulate an outage. Records how many
     times it was called so cache-hit assertions are exact."""
@@ -87,9 +79,11 @@ def _enable(monkeypatch, provider: str = "openai") -> None:
 
 
 def _capture_emails(monkeypatch) -> list[dict]:
+    # Degradation alerts are sent by operator_alerts; conftest resets its
+    # hourly cooldown between tests.
     sent: list[dict] = []
     monkeypatch.setattr(
-        "app.services.text_moderation_service.send_email",
+        "app.services.operator_alerts.send_email",
         lambda to, subject, html: sent.append(
             {"to": to, "subject": subject, "html": html}
         ),
@@ -436,6 +430,34 @@ def test_degradation_alerts_are_throttled(client, db, author, monkeypatch):
         tms.moderate_fields_or_raise({"title": f"Distinct text {index}"}, ctx)
 
     assert len(sent) == 1
+
+
+def test_degradation_alerts_read_as_before(client, db, author, monkeypatch, caplog):
+    """The throttle moved into operator_alerts; the words the operator reads, in
+    the inbox and in the log, did not — one hour per level, both levels."""
+    _enable(monkeypatch)
+    monkeypatch.setattr(get_settings(), "OPERATOR_EMAIL", "ops@ntripi.app")
+    sent = _capture_emails(monkeypatch)
+
+    with caplog.at_level(logging.WARNING, logger="app.services.operator_alerts"):
+        _use_chain(monkeypatch, StubProvider(name="openai", raises=True),
+                   StubProvider({"hate": 0.01}, name="local"))
+        tms.moderate_fields_or_raise({"title": "Ordinary text"}, _ctx(db, author))
+        _use_chain(monkeypatch, StubProvider(name="openai", raises=True))
+        tms.moderate_fields_or_raise({"title": "Other text"}, _ctx(db, author))
+
+    assert [e["subject"] for e in sent] == [
+        "[Ntripi] Text moderation degraded — using fallback provider",
+        "[Ntripi] Text moderation unavailable — content publishing as pending",
+    ]
+    for email in sent:
+        assert "Further notices for this level are suppressed for one hour." in email["html"]
+    assert [
+        rec.getMessage() for rec in caplog.records if rec.name == "app.services.operator_alerts"
+    ] == [
+        "text moderation degraded: primary provider unavailable, using local",
+        "text moderation degraded: no provider available, content is pending",
+    ]
 
 
 def test_degradation_email_contains_no_user_text(client, db, author, monkeypatch):

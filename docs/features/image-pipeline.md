@@ -120,7 +120,9 @@ left as they are. They run sync SQLAlchemy on the loop for a local round trip.
 So does the scan inside `process_and_store` on every path, sync routes included:
 `moderate_or_raise` writes its audit row, and on a reject commits, from the
 loop. **What must stay off the loop is the CPU work**, which `process_and_store`
-hands to `asyncio.to_thread`.
+hands to `asyncio.to_thread`, and the blocking calls: the scan's provider
+request and the operator emails it sends (`send_email` is a `requests.post`
+with a 10 s timeout) go there too.
 
 ## API surface
 
@@ -140,7 +142,7 @@ Errors: **400** (uncoded) `ImageProcessingError`, **422
 `image_moderation_rejected`**.
 
 The cover image is **owner-only, not editor-writable** — it is the trip's public
-face, and every upload spends a paid Rekognition scan.
+face, and every upload spends a paid image scan.
 
 **The app changes an itinerary cover only through the form routes**, which carry
 it with the form's fields under the edit lock and `If-Match`

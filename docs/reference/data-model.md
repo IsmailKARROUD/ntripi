@@ -44,7 +44,7 @@ Conventions that hold everywhere:
 | `legal_escalations` | [content-reports.md](../features/content-reports.md) | CSAM / legal lane |
 | `moderation_log` | [admin-and-appeals.md](../features/admin-and-appeals.md) | operator + automated action audit |
 | `appeals` | [admin-and-appeals.md](../features/admin-and-appeals.md) | user appeal against an action |
-| `image_moderation_logs` | [image-moderation.md](../features/image-moderation.md) | Rekognition verdict + CSAM evidence |
+| `image_moderation_logs` | [image-moderation.md](../features/image-moderation.md) | Image-scan verdict (Rekognition or Cloud Vision) + CSAM evidence |
 | `text_moderation_cache` | [text-moderation.md](../features/text-moderation.md) | verdict cache, keyed by text+model+policy |
 | `text_moderation_decisions` | [text-moderation.md](../features/text-moderation.md) | audit trail *and* moderator queue |
 | `notifications` | [notifications.md](../features/notifications.md) | in-app feed row (structured reference) |
@@ -434,7 +434,8 @@ Actions (17 total):
 | `target_itinerary_id` | UUID | indexed, FK → `itineraries.id` SET NULL |
 | `uploader_user_id` | UUID | indexed, FK → `users.id` SET NULL |
 | `action` | VARCHAR(32) | `approved, flagged, rejected, error_allowed, rejected_csam` |
-| `labels` | JSON | NOT NULL — classifier labels + confidences |
+| `provider` | VARCHAR(32) | nullable, CHECK `ck_moderation_provider` — `rekognition, google_vision`: the `MODERATION_PROVIDER` that scanned. NULL on a takedown's `rejected_csam` row. Added by `a989b5ce5994`, which backfilled `rekognition` on every earlier scan row |
+| `labels` | JSON | NOT NULL — what reached the flag level, in the provider's terms: Rekognition `{name, confidence}`, Cloud Vision `{name, likelihood}`; a takedown's evidence label on `rejected_csam` |
 | `reviewed_at` | TIMESTAMPTZ | nullable |
 
 ### `text_moderation_cache`

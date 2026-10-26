@@ -143,7 +143,7 @@ async def process_and_store(raw_bytes: bytes, key: str,
     # this always runs on the event loop (awaited by an async endpoint, or via
     # anyio.from_thread from a sync one), so a large phone photo would block it
     # for every other in-flight request. The two awaits below already offload
-    # their boto3 work the same way.
+    # their provider and storage I/O the same way.
     processed = await asyncio.to_thread(processor, raw_bytes)
     if moderation is not None:
         # Scan sits after Pillow processing, before storage — rejected bytes

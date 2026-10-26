@@ -508,6 +508,38 @@ class TestFlaggedQueue:
         assert resp.status_code == 200
         assert "Suggestive" in resp.text
 
+    def test_each_providers_labels_render_in_its_own_terms(self, client, scenario):
+        """A Cloud Vision row carries a level, a Rekognition row a confidence —
+        printed as a percentage, Google's level read 0%. A takedown's evidence
+        row carries neither and renders as its name."""
+        import uuid as _uuid
+
+        itinerary_id = _uuid.UUID(scenario["itinerary_id"])
+        db = TestingSessionLocal()
+        try:
+            for action, provider, labels in (
+                ("flagged", "google_vision", [{"name": "racy", "likelihood": "LIKELY"}]),
+                ("flagged", "rekognition", [{"name": "Suggestive", "confidence": 62.5}]),
+                ("rejected_csam", None, [{"name": "csam_hash_match", "provider": "cloudflare",
+                                          "key": "itineraries/x.jpg", "object_present": True}]),
+            ):
+                db.add(ImageModerationLog(
+                    image_hash="d" * 64, target_kind="itinerary_cover",
+                    target_itinerary_id=itinerary_id, action=action, provider=provider,
+                    labels=labels,
+                ))
+            db.commit()
+        finally:
+            db.close()
+
+        queue = client.get("/admin/flagged", auth=ADMIN_BASIC).text
+        page = client.get(f"/admin/itineraries/{itinerary_id}", auth=ADMIN_BASIC).text
+        for text in (queue, page):
+            assert "racy (LIKELY)" in text
+            assert "Suggestive (62%)" in text
+            assert "(0%)" not in text
+        assert "csam_hash_match" in page
+
     def test_approve_clears_the_flag(self, client, scenario):
         log_id = _seed_flagged("itinerary_cover", itinerary_id=scenario["itinerary_id"])
         resp = client.post(

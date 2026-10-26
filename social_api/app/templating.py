@@ -25,6 +25,7 @@ from app.config import get_settings
 from app.i18n import (
     LANG_NAMES, RTL_LANGS, SUPPORTED, plural_translator, resolve_lang, translator,
 )
+from app.services.moderation_service import label_text
 from app.services.seo import alternates_for, canonical_url, switch_language_path
 
 _TEMPLATES_DIR = Path(__file__).parent / "templates"
@@ -55,3 +56,6 @@ templates = Jinja2Templates(
     context_processors=[_i18n_context],
 )
 templates.env.globals["current_year"] = datetime.now().year
+# The admin pages' one rendering of a stored image-scan label — shared with the
+# flag email, so a Cloud Vision level is never printed as a percentage.
+templates.env.filters["scan_label"] = label_text

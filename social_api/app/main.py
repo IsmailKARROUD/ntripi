@@ -50,7 +50,7 @@ from app.routers import (
 # Aliased: `help` is a builtin, and shadowing it inside main is a trap for the
 # next person who reaches for it in a debugger.
 from app.routers import help as help_pages
-from app.services import push_service
+from app.services import moderation_service, push_service
 from app.storage.factory import storage
 
 logger = logging.getLogger(__name__)
@@ -362,8 +362,10 @@ if settings.STORAGE_BACKEND == "filesystem":
 storage()
 
 # Same reasoning, one severity down: a broken service-account key is logged and
-# push stays off, rather than taking the deploy with it.
+# push stays off, rather than taking the deploy with it. Cloud Vision's key gets
+# the same check when it is the selected image scanner.
 push_service.validate_credentials(settings)
+moderation_service.validate_credentials(settings)
 
 # Flutter web build served at /app/.
 _flutter_web_dir = Path("/app/web_build")

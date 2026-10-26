@@ -3,7 +3,7 @@
 //
 // Never-block contract: if the model asset is absent or anything throws, this
 // silently disables itself and isLikelyNsfw() returns false — the backend
-// Rekognition scan remains the authority.
+// image scan remains the authority.
 //
 // The model file (assets/models/nsfw_mobilenet.tflite, ~3 MB) is NOT vendored
 // in the repo; see assets/models/README.md for how to source it. Until it's

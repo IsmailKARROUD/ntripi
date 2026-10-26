@@ -196,7 +196,7 @@ Von Ihnen veröffentlichte Inhalte werden automatisch geprüft, bevor sie sichtb
 
 Text — Titel und Beschreibungen von Reiserouten, Stationsnamen, Adressen und Notizen, Anmerkungen, Verkehrsangaben, Rezensionstexte, Ihr Anzeigename und Ihre Biografie sowie der bei der Registrierung gewählte Benutzer- und Anzeigename — wird an den Moderationsdienst von OpenAI gesendet. Die Anfrage enthält den Text und den Namen des Modells und sonst nichts: keine Kontokennung, keine E-Mail-Adresse, keine Inhaltskennung. OpenAI kann nicht erkennen, von wem der Text stammt.
 
-Fotos werden an den Dienst Rekognition von Amazon Web Services gesendet, um sie auf explizite und gewalttätige Darstellungen zu prüfen. Übermittelt wird nur das Bild.
+Fotos werden an einen Dienst zur Bildmoderation gesendet, um sie auf explizite und gewalttätige Darstellungen zu prüfen: an den Dienst Rekognition von Amazon Web Services oder an Google Cloud Vision, das sie in der Europäischen Union prüft. Übermittelt wird nur das Bild. Google Cloud Vision verarbeitet das Bild im Arbeitsspeicher, ohne es auf einen Datenträger zu schreiben, und Google verwendet es nicht, um Cloud Vision zu trainieren oder zu verbessern.
 
 Bilder werden über Cloudflare gespeichert und ausgeliefert; Cloudflare gleicht Bilder, die von unserer Domain ausgeliefert werden, im Moment der Auslieferung mit Datenbanken bekannter rechtswidriger Bilder ab.
 
@@ -226,6 +226,8 @@ OpenAI — Textmoderation und Übersetzung, wie oben beschrieben.
 Microsoft (Azure AI Translator) — Übersetzung, wenn OpenAI nicht antworten kann, wie oben beschrieben.
 
 Amazon Web Services — Bildmoderation, wie oben beschrieben.
+
+Google (Cloud Vision) — Bildmoderation, wie oben beschrieben.
 
 Google — Anmeldung, sofern Sie sie nutzen. Google erfährt, dass Sie sich bei Ntripi angemeldet haben.
 

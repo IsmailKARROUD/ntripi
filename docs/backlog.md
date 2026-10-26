@@ -60,7 +60,7 @@ is a no-op everywhere.
   are not committed; `load()` fails gracefully. Everything must stay same-origin —
   *"Do **not** switch `nsfw_glue.js` back to a CDN URL."*
 
-The backend Rekognition scan is the actual authority, so this is a cost and UX
+The backend image scan is the actual authority, so this is a cost and UX
 gap, not a safety one. → [features/image-moderation.md](features/image-moderation.md)
 
 ### in-progress — push notifications are code-complete but not provisioned
@@ -399,7 +399,7 @@ make the image reproducible. → [web-and-platform.md](features/web-and-platform
 
 The in-memory store is documented as single-instance-only in **four** places
 (`limiter.py:12`, `main.py:219`, `social_api/README.md:535`, `CLAUDE.md:87`), plus
-the text-moderation cache (`text_moderation_service.py:80`). Nothing records the
+the operator-alert throttle (`operator_alerts.py:30`). Nothing records the
 threshold at which it becomes necessary.
 
 ### idea — reporter reputation weighting
