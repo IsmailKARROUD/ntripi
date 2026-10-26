@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- The app vouches for its site, so Chrome can tell a share page whether
+         the app is installed (navigator.getInstalledRelatedApps); the site's
+         /manifest.webmanifest names the app in return. Same host as the
+         autoVerify intent filter in AndroidManifest.xml. -->
+    <string name="asset_statements" translatable="false">[{\"relation\": [\"delegate_permission/common.handle_all_urls\"], \"target\": {\"namespace\": \"web\", \"site\": \"https://ntripi.app\"}}]</string>
+</resources>

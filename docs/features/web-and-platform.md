@@ -21,18 +21,23 @@ the whole application sits inside.
 | Code order (first added = innermost) | Runtime request order (outermost first) |
 |---|---|
 | `RequestTimingMiddleware` | `ProxyHeadersMiddleware` |
-| `LanguageCookieMiddleware` | `ClientIPHeaderMiddleware` |
-| `ETagMiddleware` | `TrustedHostMiddleware` |
-| `CORSMiddleware` | `ContentSizeLimitMiddleware` |
-| `SecurityHeadersMiddleware` | `SecurityHeadersMiddleware` |
-| `ContentSizeLimitMiddleware` | `CORSMiddleware` |
-| `TrustedHostMiddleware` | `ETagMiddleware` |
-| `ClientIPHeaderMiddleware` | `LanguageCookieMiddleware` |
+| `OpenHostMiddleware` | `ClientIPHeaderMiddleware` |
+| `LanguageCookieMiddleware` | `TrustedHostMiddleware` |
+| `ETagMiddleware` | `ContentSizeLimitMiddleware` |
+| `CORSMiddleware` | `SecurityHeadersMiddleware` |
+| `SecurityHeadersMiddleware` | `CORSMiddleware` |
+| `ContentSizeLimitMiddleware` | `ETagMiddleware` |
+| `TrustedHostMiddleware` | `LanguageCookieMiddleware` |
+| `ClientIPHeaderMiddleware` | `OpenHostMiddleware` |
 | `ProxyHeadersMiddleware` | `RequestTimingMiddleware` → handlers |
 
 `RequestTimingMiddleware` is added **first** and is therefore the innermost
-layer; it rewrites nothing. `LanguageCookieMiddleware` comes next and touches
-only `text/html` responses. Neither affects the security ordering.
+layer; it rewrites nothing. `OpenHostMiddleware` comes next: on `APP_OPEN_HOST`
+it answers everything but `/.well-known/*` with a redirect to `SHARE_BASE_URL`
+(see [app-links.md](app-links.md#opening-the-app-from-the-page)), from inside
+`SecurityHeadersMiddleware` so its redirects carry HSTS, and unset it does
+nothing. `LanguageCookieMiddleware` touches only `text/html` responses. None of
+the three affects the security ordering.
 
 - **`ProxyHeadersMiddleware` is outermost** — it rewrites `X-Forwarded-Proto`
   into the scheme (HSTS needs it) and `X-Forwarded-For` into
@@ -188,6 +193,14 @@ The Flutter half is `kPublicRoutes`, pinned by
 the result in memory — the web Google plugin reads its client id from that tag,
 and the value cannot be baked in at build time.
 
+**A page load under `/app/` that names no file is sent to its hash form**:
+`/app/share/u/name` → 302 `/app/#/share/u/name`, query kept. The web app reads
+only the part after `#` (it is on the hash URL strategy), so the path form
+silently opened its home screen. Only a browser navigation is redirected — an
+`Accept` asking for `text/html` — and the target is always `/app/#…`, so it
+cannot leave the site; the app's own asset requests keep the `index.html`
+fallback.
+
 ### i18n on the web
 
 - **`SUPPORTED = ("en", "fr", "ar", "de", "es", "zh")`**; `RTL_LANGS = ("ar",)`;
@@ -248,6 +261,7 @@ Full columns: [reference/data-model.md](../reference/data-model.md#waitlist).
 | GET | `/appeal`, `/appeal/{token}` · POST `/web/appeal`, `/web/appeal-request` | none | see [admin-and-appeals.md](admin-and-appeals.md) |
 | GET | `/robots.txt`, `/sitemap.xml`, `/llms.txt`, `/llms-full.txt` | none | see [help-centre.md](help-centre.md) |
 | GET | `/.well-known/apple-app-site-association`, `/.well-known/assetlinks.json` | none | the app-link association files; **404 until configured** — see [app-links.md](app-links.md) |
+| GET | `/manifest.webmanifest` | none | names the Android app (`related_applications`) so Chrome can tell a share page it is installed; **404 until `ANDROID_APP_PACKAGE` is set** — see [app-links.md](app-links.md) |
 | POST | `/waitlist/join` | none, **no rate limit** | `{ok: true}` 201 |
 
 The `web` router is registered **last** (`main.py:292`), after every literal
@@ -319,6 +333,21 @@ ProviderScope
   while running opens over the current screen, a link while signed out waits for
   the sign-in. Its landings are the root-level `/u/:username` and
   `/unavailable/:kind` — see [app-links.md](app-links.md).
+- **On the web the address bar shows the screen on top** —
+  `GoRouter.optionURLReflectsImperativeAPIs = true`, set in `main.dart` (it has
+  no effect off the web). go_router's default showed the screen the pushes sit
+  on: a trip opened from the feed left `#/feed` in the bar, a shared profile
+  `#/profile/me`, and a reload landed there. Browser Back and Forward are
+  unchanged — go_router already added a history entry per push. So every route
+  is a URL the app can be started on, which brings two rules, both in the
+  redirect and both in `app_links.dart`: **an editing form is never where the app
+  starts** (`editingRouteLaunchRedirect`: the trip's or a stop's edit form and
+  the add-stop form land on what they edit, the map picker on home — they save
+  only under the edit claim the trip page takes before pushing them), and **a
+  trip or profile URL opened signed out waits through the sign-in**
+  (`signInRedirect` parks it, as a shared link is). Every route is classified
+  one way or the other in `test/core/router/landing_routes_test.dart`, which
+  fails on a new one.
 - **Android's `MainActivity` is `launchMode="singleTask"`**, so a link tapped in
   another app reaches the running instance instead of starting a second copy in
   the caller's task. Flutter's own deep linking is on, stated explicitly in the

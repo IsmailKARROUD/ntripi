@@ -601,14 +601,14 @@ app's light tokens only, so a visitor in dark mode goes from a white page to a
 dark app on sign-in. A dark set belongs in every template at once, not the share
 pages alone. → [features/web-and-platform.md](features/web-and-platform.md)
 
-### idea — an "Open in app" button on iOS
+### planned — turn on the iPhone "Open in Ntripi" (operator rollout)
 
-iOS never opens an app for a link to the current page's own domain, so the share
-pages show **Open in app** on Android only. Serving the association file on a
-second host (`open.ntripi.app`) and linking the button there would make it a
-cross-domain tap — at the cost of a DNS record, a Railway custom domain, a second
-`applinks:` entry, and a page on that host for visitors without the app. →
-[features/app-links.md](features/app-links.md)
+Built on 2026-10-26 and off until configured: add `open.ntripi.app` as a Railway
+custom domain with a proxied Cloudflare CNAME (the Bot Fight skip rule must cover
+its `/.well-known`), check Apple's CDN serves its AASA
+(`app-site-association.cdn-apple.com/a/v1/open.ntripi.app`), ship a build with the
+second `applinks:` entry, then set `APP_OPEN_HOST=open.ntripi.app`. →
+[features/app-links.md](features/app-links.md#opening-the-app-from-the-page)
 
 ### idea — claim `www.ntripi.app` too
 

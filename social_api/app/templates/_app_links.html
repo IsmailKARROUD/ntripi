@@ -31,15 +31,94 @@
 
 {#- In <head>. The platform first. The [hidden] rule is load-bearing: the pages
     style their buttons with `display`, which beats the attribute's UA style and
-    would show the Android-only button everywhere. Then Safari's own "Open" /
-    "Get" banner — it needs the app live in the App Store; app-argument is the
-    URL the installed app is handed. -#}
+    would show the Android-only button everywhere. Then where the reader is
+    (reader_head), and Safari's own "Open" / "Get" banner — it needs the app
+    live in the App Store; app-argument is the URL the installed app is
+    handed. -#}
 {% macro app_links_head(cta) -%}
 {{ platform_head() }}
   <style>[hidden] { display: none !important; }</style>
+{%- if cta.android_package %}
+  <link rel="manifest" href="/manifest.webmanifest">
+{%- endif %}
+{%- if cta.web_app_url or cta.android_package %}
+{{ reader_head(cta) }}
+{%- endif %}
 {%- if cta.ios_app_store_id %}
   <meta name="apple-itunes-app" content="app-id={{ cta.ios_app_store_id }}, app-argument={{ cta.app_argument }}">
 {%- endif %}
+{%- endmacro %}
+
+{#- In <head>, after platform_head: where the reader already is.
+
+    Signed in on this site — the web app keeps cta.session_hint_key in
+    localStorage while a session lasts (social_flutter web_session_hint.dart),
+    and this page shares its origin — the reader goes straight into the web app,
+    before the body is drawn. location.replace, never assign: Back must not
+    land on a page that sends it forward again.
+
+    On Android, Chrome can say whether the Ntripi app is installed, through the
+    manifest above: <html data-app> goes pending, then installed or absent. The
+    app comes first when it is installed, even for a reader signed in on the
+    web, who is otherwise kept waiting no longer than the timer.
+
+    No hint, no answer: the teaser, the same as every crawler gets. Nothing here
+    can open an app — a page cannot without a tap. -#}
+{% macro reader_head(cta) -%}
+  <style>
+    html[data-redirecting] body { visibility: hidden; }
+    html[data-app="pending"] [data-app-open="android"],
+    html[data-app="absent"] [data-app-open="android"],
+    html[data-app="installed"] [data-store],
+    html[data-app="installed"] [data-store-hint],
+    html[data-app="installed"] [data-get-app] { display: none !important; }
+  </style>
+  <script>
+    (function () {
+      var root = document.documentElement;
+      var webApp = {{ cta.web_app_url|tojson }};
+      var session = false;
+      if (webApp) {
+        try {
+          var until = localStorage.getItem({{ cta.session_hint_key|tojson }});
+          // An unreadable end counts as live, as the app's hasLiveRefreshToken does.
+          session = until !== null && !(Date.parse(until) <= Date.now());
+        } catch (e) {}
+      }
+      var enterWebApp = function () { location.replace(webApp); };
+{%- if cta.android_package %}
+      var pkg = {{ cta.android_package|tojson }};
+      if (root.getAttribute('data-platform') === 'android' && navigator.getInstalledRelatedApps) {
+        root.setAttribute('data-app', 'pending');
+        if (session) root.setAttribute('data-redirecting', '');
+        var settled = false;
+        var settle = function (installed) {
+          if (settled) return;
+          settled = true;
+          clearTimeout(timer);
+          // null: Chrome never answered — show what a browser without the check gets.
+          if (installed === null) root.removeAttribute('data-app');
+          else root.setAttribute('data-app', installed ? 'installed' : 'absent');
+          if (session && !installed) enterWebApp();
+          else root.removeAttribute('data-redirecting');
+        };
+        var timer = setTimeout(function () { settle(null); }, 800);
+        try {
+          navigator.getInstalledRelatedApps().then(function (apps) {
+            settle(apps.some(function (app) { return app.id === pkg; }));
+          }, function () { settle(null); });
+        } catch (e) {
+          settle(null);
+        }
+        return;
+      }
+{%- endif %}
+      if (session) {
+        root.setAttribute('data-redirecting', '');
+        enterWebApp();
+      }
+    })();
+  </script>
 {%- endmacro %}
 
 {#- The two download buttons, of which a phone is shown its own only
@@ -78,7 +157,14 @@
   </div>
   <div class="gate-stores">
     {%- if cta.android_intent_url %}
-    <a class="btn btn-tonal" href="{{ cta.android_intent_url }}" data-app-open hidden>{{ _('share_open_in_app') }}</a>
+    <a class="btn btn-tonal" href="{{ cta.android_intent_url }}" data-app-open="android" hidden>{{ _('share_open_in_app') }}</a>
+    {%- endif %}
+    {%- if cta.ios_open_url %}
+    {#- On the second host: iOS opens an app only for a tap on a link to another
+        domain than this page's. Without the app, Safari loads it and comes back
+        here with ?app=missing (middleware/open_host.py), and the note says so. #}
+    <a class="btn btn-tonal" href="{{ cta.ios_open_url }}" rel="nofollow" data-app-open="ios" hidden>{{ _('share_open_in_app') }}</a>
+    <p class="gate-note" data-app-missed hidden>{{ _('share_app_did_not_open') }}</p>
     {%- endif %}
     {{ store_badges(cta) }}
     <p class="gate-note" data-store-hint hidden>{{ _('share_tap_link_again') }}</p>
@@ -86,22 +172,26 @@
 </section>
 {%- endmacro %}
 
-{#- Reveals [data-app-open] on Android only — an intent:// link is meaningless
-    elsewhere, and on iOS a same-domain link never opens an app, so the button
-    could only reload this page. Points [data-get-app] at the visitor's own
-    store. And once that store is live (its URL set, not the waitlist), a phone
-    gets the store first; a laptop never does — it cannot install from a store
-    page. The platform is platform_head's, never re-read from the UA. Without JS
-    everything stays at its safe default: web first, both stores. -#}
+{#- Reveals each "Open in Ntripi" on its own platform only: the intent:// link
+    on Android (reader_head's CSS keeps it hidden while Chrome says the app is
+    missing), the second-host link on an iPhone — or, back from that host with
+    ?app=missing, the note that the app did not open. Points [data-get-app] at
+    the visitor's own store. And once that store is live (its URL set, not the
+    waitlist), a phone gets the store first; a laptop never does — it cannot
+    install from a store page. The platform is platform_head's, never re-read
+    from the UA. Without JS everything stays at its safe default: web first,
+    both stores, no app button. -#}
 {% macro app_links_script(cta) -%}
 <script>
   (function () {
     var platform = document.documentElement.getAttribute('data-platform');
     var android = platform === 'android';
     var ios = platform === 'ios';
-    if (android) {
-      document.querySelectorAll('[data-app-open]').forEach(function (el) { el.hidden = false; });
-    }
+    var reveal = function (selector) {
+      document.querySelectorAll(selector).forEach(function (el) { el.hidden = false; });
+    };
+    if (android) reveal('[data-app-open="android"]');
+    if (ios) reveal(/[?&]app=missing(&|$)/.test(location.search) ? '[data-app-missed]' : '[data-app-open="ios"]');
     var store = android ? {{ cta.play_store_url|tojson }} : ios ? {{ cta.app_store_url|tojson }} : null;
     if (store) {
       document.querySelectorAll('[data-get-app]').forEach(function (el) { el.href = store; });

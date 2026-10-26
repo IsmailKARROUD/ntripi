@@ -74,6 +74,7 @@ import 'package:ntripi/features/reports/domain/report_target.dart';
 import 'package:ntripi/features/reports/presentation/report_content_sheet.dart';
 import 'package:ntripi/features/itineraries/presentation/widgets/parallel_stop_group.dart';
 import 'package:ntripi/features/itineraries/presentation/widgets/segment_card.dart';
+import 'package:ntripi/features/itineraries/presentation/widgets/share_link_action.dart';
 import 'package:ntripi/features/itineraries/presentation/widgets/track_reorder_view.dart';
 import 'package:ntripi/shared/widgets/field_help.dart';
 import 'package:ntripi/shared/widgets/loaders.dart';
@@ -130,6 +131,9 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
   // Anchors the one-time long-press tip at the Edit pencil, the affordance the
   // gesture shortcuts past.
   final GlobalKey _enterEditButtonKey = GlobalKey();
+  // Attached to the Share button: an iPad's share popup and the web's menu
+  // point at it.
+  final GlobalKey _shareButtonKey = GlobalKey();
   bool _longPressHintShown = false; // one-shot guard within this screen's life
   bool _firstStopFormOpened = false; // one-shot guard for the just-created auto-open
   bool _openSoundPlayed = false; // one-shot guard for the open-itinerary cue
@@ -1094,11 +1098,16 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                             enterEditButtonKey: _enterEditButtonKey,
                             onCoverTap: isOwner ? _showAddCoverHint : null,
                             onBack: _leave,
+                            shareButtonKey: _shareButtonKey,
                             onShare: itinerary.visibility !=
                                     ItineraryVisibility.onlyMe
-                                ? () => ref
-                                    .read(shareServiceProvider)
-                                    .shareItinerary(itinerary, l10n)
+                                ? () => shareLink(
+                                      _shareButtonKey.currentContext ?? context,
+                                      ref,
+                                      ref
+                                          .read(shareServiceProvider)
+                                          .itineraryLink(itinerary, l10n),
+                                    )
                                 : null,
                             onReport: mayEdit
                                 ? null
@@ -1779,6 +1788,8 @@ class _CoverHero extends StatefulWidget {
   final GlobalKey editDetailsButtonKey;
   // Attached to the Edit pencil so the long-press tip can point at it.
   final GlobalKey enterEditButtonKey;
+  // Attached to the Share button, which the share popup points at.
+  final GlobalKey shareButtonKey;
   final VoidCallback onBack;
   final VoidCallback? onShare;
   // Viewer-only (non-owner) report action; null hides the flag button.
@@ -1800,6 +1811,7 @@ class _CoverHero extends StatefulWidget {
     required this.editMode,
     required this.editDetailsButtonKey,
     required this.enterEditButtonKey,
+    required this.shareButtonKey,
     required this.onBack,
     this.onShare,
     this.onReport,
@@ -1902,6 +1914,7 @@ class _CoverHeroState extends State<_CoverHero> {
                   const Spacer(),
                   if (widget.onShare != null) ...[
                     _GlassButton(
+                      key: widget.shareButtonKey,
                       icon: Icons.share_rounded,
                       onTap: widget.onShare,
                     ),

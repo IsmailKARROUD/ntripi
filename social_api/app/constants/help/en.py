@@ -141,6 +141,14 @@ RELEASES: tuple[Release, ...] = (
             "**A new cover photo saves with the rest.** Changing a trip's cover "
             "along with its title, currency or best time to visit no longer asks "
             "you to reload — it is all saved at once.",
+            "**Copy just the link.** The share popup has a new **Copy link** "
+            "row that copies the link alone, without the trip's name, stops and "
+            "length. On the web, the share button offers it too.",
+            "**Shared links go where you already are.** Signed in to Ntripi in "
+            "your browser, a shared trip or profile opens straight away instead "
+            "of its preview, and on a phone the page offers **Open in Ntripi**. "
+            "The web app's address bar now shows the page you are on, so a "
+            "reload keeps you there.",
         ),
     ),
     Release(
@@ -1193,11 +1201,12 @@ ARTICLES: tuple[Article, ...] = (
             "as a preview with a way in if they don't."
         ),
         category="sharing",
-        updated="2026-10-19",
+        updated="2026-10-26",
         keywords=(
             "share", "link", "url", "send", "whatsapp", "preview", "copy",
             "publish", "public",
             "open in app",
+            "copy link", "paste",
             "app link",
             "browser",
             "sign in", "account", "see the full trip",
@@ -1216,9 +1225,14 @@ ARTICLES: tuple[Article, ...] = (
                 anchor="get-the-link",
                 heading="Get the link",
                 body=(
-                    "Open the trip and use the share action. Your device's normal "
-                    "share sheet appears, so the link can go to any app — messages, "
-                    "email, notes.\n\n"
+                    "Open the trip and use the share action. Your device's share "
+                    "popup appears, so the link can go to any app — messages, email, "
+                    "notes — with the trip's name, number of stops and length above "
+                    "it. **Copy link**, in that same popup, copies the link alone, "
+                    "ready to paste anywhere.\n\n"
+                    "On the web, the share action offers **Copy link** and **Share "
+                    "via…** — or, in a browser with no share popup, copies the link "
+                    "straight away.\n\n"
                     "If the person you send it to has Ntripi, the link opens the "
                     "trip in the app — after they sign in, if they are signed out. "
                     "If they don't, it opens a preview of the trip in their "
@@ -1261,15 +1275,18 @@ ARTICLES: tuple[Article, ...] = (
                 heading="If a link opens in the browser instead of the app",
                 body=(
                     "A link opens the app only on a phone where Ntripi is "
-                    "installed. Anywhere else it opens the trip's preview in the "
-                    "browser, which offers the app — and **See the full trip**, to "
-                    "sign in and use Ntripi in the browser instead.\n\n"
-                    "Even with the app installed, a link opens in the browser when "
-                    "it is typed or pasted into the address bar, or opened inside "
-                    "another app's built-in browser. On an iPhone, tapping "
-                    "**ntripi.app** at the top right of the app sends links to "
-                    "Safari from then on — press and hold a link and choose to "
-                    "open it in Ntripi to switch back.\n\n"
+                    "installed, and only when it is tapped — in a message, an email "
+                    "or a note. Typed or pasted into the address bar, or opened "
+                    "inside another app's built-in browser, it opens the trip's "
+                    "page in the browser instead.\n\n"
+                    "On Android, when Chrome says the app is installed, that page "
+                    "puts **Open in Ntripi** first. On an iPhone the page offers "
+                    "it as well, and says so if the app did not open. And if you "
+                    "are signed in to Ntripi in that browser, you skip the page and "
+                    "land on the trip on the web.\n\n"
+                    "On an iPhone, tapping **ntripi.app** at the top right of the "
+                    "app sends links to Safari from then on — press and hold a link "
+                    "and choose to open it in Ntripi to switch back.\n\n"
                     "If you are signed out, the app asks you to sign in first, then "
                     "opens the trip."
                 ),

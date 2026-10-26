@@ -84,6 +84,7 @@ PUBLIC_ROUTES = {
     ("GET", "/llms-full.txt"): MACHINE,
     ("GET", "/.well-known/apple-app-site-association"): MACHINE,
     ("GET", "/.well-known/assetlinks.json"): MACHINE,
+    ("GET", "/manifest.webmanifest"): MACHINE,
     ("GET", "/health"): HEALTH,
     ("POST", "/reports"): ANONYMOUS_WRITE,
     ("POST", "/bug-reports"): ANONYMOUS_WRITE,

@@ -161,6 +161,11 @@
     .gate-stores { order: 2; display: flex; flex-direction: column; gap: 10px; }
     {#- A phone whose store is live: the store comes first (app_links_script). #}
     .gate.store-first .gate-stores { order: 0; }
+    {#- Chrome says the app is installed (reader_head): "Open in Ntripi" comes
+        first and leads; the web button steps back to tonal. #}
+    html[data-app="installed"] .gate-stores { order: 0; }
+    html[data-app="installed"] [data-app-open="android"] { background: var(--forest); color: var(--surface); }
+    html[data-app="installed"] .gate-web .btn-primary { background: var(--mist); color: var(--forest); }
     .btn {
       display: flex; align-items: center; justify-content: center; gap: 8px;
       min-height: 52px; padding: 12px 20px; border-radius: 14px;

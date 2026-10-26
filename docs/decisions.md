@@ -1931,40 +1931,75 @@ now are; first loads keep the fallback, which is what shows content offline.
 - Keeping the stored copies of partial answers current by patching cached list
   bodies: a bigger change that still would not reveal a failed reload.
 
-### 2026-10-25 — Clearing a cover never stops a reload or fails a save
+### 2026-10-26 — A shared link opens where the reader already is; Copy link copies the link alone
 
-Follows [2026-10-25 — A reload never blanks the content on screen](#2026-10-25--a-reload-never-blanks-the-content-on-screen).
+Supersedes one consequence of
+[2026-10-18 — Shared links open the app, and say plainly when they can't](#2026-10-18--shared-links-open-the-app-and-say-plainly-when-they-cant):
+"iOS has no in-page **Open in app**".
 
-**Context.** Tests written to cover that change — a pull on a trip with a
-cover — found that the trip page and the Itineraries tab cleared covers with
-`CachedNetworkImage.evictFromCache` before reloading. It awaits the disk
-eviction first, so an image cache that threw put its error into the pull's
-`onRefresh` ahead of the reload: the reload never ran, and the error escaped
-into the RefreshIndicator, which the reload entry rules out. The itinerary form
-cleared the cover the same way after a save, inside the `try` that reports a
-failed save — so a saved form stayed open under an error message.
-
-**Decision.** One helper, `ImageCacheEviction` (`core/cache/image_cache.dart`,
-`imageCacheEvictionProvider`), clears covers for all three: relative URLs made
-absolute, nulls and repeats skipped, and every eviction best-effort — a failure
-is swallowed and costs a stale cover until the next pull. The one-URL eviction
-is injectable (`evictOne`, CachedNetworkImage's by default): the real image
-cache cannot be reached under test — it leaks unawaited errors and never
-answers — so tests pass one they can watch or break. The guard test now also
-checks the screens: every `.refresh()` in `presentation/` sits inside
-`reportReloads(...)` or `unawaited(...)`, so a reload is reported or dropped on
-purpose.
-
-**Consequences.** A pull always reaches its reload, and the form's save is
-reported by the save alone. Tests: `image_cache_eviction_test.dart`, the cover
-cases in `trip_reload_keeps_content_test.dart` and
-`list_tabs_reload_test.dart`. The profile's avatar and cover cache calls
-(`profile_provider.dart`) still go to the image cache directly — logged in
-[backlog.md](backlog.md).
-
+**Context.** The owner reported five confusing behaviours. A share link opened in
+a browser already signed in to the web app showed the teaser and its "free
+account needed" gate: the server-rendered page had no way to know about the
+session, whose tokens flutter_secure_storage keeps encrypted. On a phone with the
+app, the page — reached by pasting the link, which no OS hands to an app — offered
+the app only on Android, as a second button, and on an iPhone not at all. In the
+web app, `/app/share/u/name` opened home (the app reads only the part after
+`#`), and `/app/#/share/u/name` showed the profile under `#/profile/me`: go_router
+never writes a pushed screen into the address bar, so a reload or a copied URL
+lost every pushed trip and profile. And the share sheet's Copy copied the caption
+with the link, where the owner wanted the link alone.
+**Decision.**
+- **Signed in on the web → straight in.** The web app keeps one plain
+  localStorage entry while a session lasts, `ntripi_web_session_until` — the
+  session's end, nothing else — written by `saveTokens` and removed by
+  `clearAllTokens`. Each teaser page reads it in `<head>` and leaves with
+  `location.replace` before the body is drawn.
+- **A phone gets "Open in Ntripi".** On Android, Chrome's installed-app check
+  (`getInstalledRelatedApps`, through `asset_statements` in the app and
+  `/manifest.webmanifest` on the site) puts it first and drops the store badges
+  when the app is installed, and hides it when it is not; an installed app also
+  wins over a web session. On an iPhone it links a second host,
+  `APP_OPEN_HOST` (`open.ntripi.app`), claimed beside `ntripi.app`: a tap across
+  hosts is what iOS hands to an app. Without the app, Safari loads it and the
+  host sends it back to the page with `?app=missing`, which says the app did not
+  open. That host serves its association files and nothing else.
+- **The web address bar shows the screen on top**
+  (`GoRouter.optionURLReflectsImperativeAPIs`). Two rules follow: the app never
+  starts on an editing form (a reload lands on what it edits), and a trip or
+  profile URL opened signed out is parked through the sign-in like a shared
+  link. Every route is classified one way or the other by a test. A page load of
+  `/app/<path>` is redirected to `/app/#/<path>`.
+- **The phone's own share popup gets a Copy link row**, through a method channel
+  (`ntripi/share`): a `ChooserAction` on Android 14+, a first target before it, a
+  `UIActivity` on iOS. The owner chose this over a sheet of the app's own. The
+  web, whose popups take no row, gets a two-item menu — or, with no popup at
+  all, the link copied at once. Sharing passes the tapped button as the popup's
+  origin, which also fixes sharing on iPad.
+**Consequences.**
+- The app gains its first custom native code; a build without it falls back to
+  share_plus without the row.
+- The iPhone button waits on infrastructure: a Railway custom domain, a proxied
+  CNAME, Apple's CDN serving the host's AASA, a build with the second
+  `applinks:` entry, then `APP_OPEN_HOST`.
+- iOS cannot tell a page that an app is installed, so an iPhone signed in on the
+  web goes to the web app when a link is pasted into Safari, and readers without
+  the app see the iPhone button too.
+- A signed-in owner sees their own teaser only in a private window.
+- A `/app/#/…` address still never opens the app; the app's Share and Copy link
+  always hand out the `/share/` form, which does.
+- The help article `share-a-trip-link` and What's New changed in all six
+  languages.
 **Alternatives rejected.**
-- A try/catch at each call site: three copies of one rule, already drifting
-  (one sequential, one parallel, one resolving relative URLs).
-- Clearing the cover beside the reload instead of before it: the answer could
-  land and rebuild the cover before its old copy was dropped, and the new cover
-  would not show — the reason the eviction runs first.
+- A server-side redirect keyed on a cookie the web app sets: the HTML would vary
+  by cookie, and the app's session lives in localStorage anyway.
+- Reading flutter_secure_storage's own localStorage keys from the page: a
+  private format of a plugin, which a plugin update can move.
+- Opening the app from script on page load: browsers refuse an intent or a
+  cross-host navigation without a tap.
+- A custom URL scheme: rejected on 2026-10-18 — any app can register one.
+- The path URL strategy: every `/app/#/…` link already sent, in emails, help
+  pages and share pages, would land on home.
+- Leaving the address bar as it was: a reload and a copied URL keep losing the
+  screen.
+- A sheet of the app's own with Copy link and Share via…: the owner preferred
+  the phone's own popup with one row added.

@@ -34,7 +34,7 @@ class ProfileHeroAndIdentity extends StatelessWidget {
   /// Report / block affordance for someone else's profile. Null on your own.
   final Widget? moreActions;
 
-  /// Opens the OS share sheet for this profile. A callback rather than a
+  /// Shares this profile (share_link_action.dart). A callback rather than a
   /// Widget so this file keeps no dependency on the share feature.
   final VoidCallback? onShare;
 
@@ -52,6 +52,8 @@ class ProfileHeroAndIdentity extends StatelessWidget {
   final void Function(Offset globalPosition)? onAvatarTap;
   // Anchors the "add a profile photo" hint beak at the Edit pencil button.
   final GlobalKey? editButtonKey;
+  // On the Share button, which the share popup points at.
+  final GlobalKey? shareButtonKey;
 
   const ProfileHeroAndIdentity({
     super.key,
@@ -71,6 +73,7 @@ class ProfileHeroAndIdentity extends StatelessWidget {
     this.onHeroTap,
     this.onAvatarTap,
     this.editButtonKey,
+    this.shareButtonKey,
   });
 
   @override
@@ -110,6 +113,7 @@ class ProfileHeroAndIdentity extends StatelessWidget {
               locations: locations,
               onHeroTap: onHeroTap,
               editButtonKey: editButtonKey,
+              shareButtonKey: shareButtonKey,
             ),
           ),
           Positioned(
@@ -183,7 +187,7 @@ class ProfileMapHero extends StatelessWidget {
   /// Report / block affordance for someone else's profile. Null on your own.
   final Widget? moreActions;
 
-  /// Opens the OS share sheet for this profile. Null disables the button.
+  /// Shares this profile. Null disables the button.
   final VoidCallback? onShare;
 
   /// Leaves someone else's profile. Null falls back to a plain pop.
@@ -194,6 +198,7 @@ class ProfileMapHero extends StatelessWidget {
   final List<VisitedLocation> locations;
   final VoidCallback? onHeroTap;
   final GlobalKey? editButtonKey;
+  final GlobalKey? shareButtonKey;
 
   const ProfileMapHero({
     super.key,
@@ -212,6 +217,7 @@ class ProfileMapHero extends StatelessWidget {
     this.locations = const [],
     this.onHeroTap,
     this.editButtonKey,
+    this.shareButtonKey,
   });
 
   String? _resolveCoverUrl() {
@@ -432,6 +438,7 @@ class ProfileMapHero extends StatelessWidget {
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               GlassIconButton(
+                                key: shareButtonKey,
                                 icon: Icons.share_outlined,
                                 tooltip: l10n.shareProfileTooltip,
                                 onTap: onShare,

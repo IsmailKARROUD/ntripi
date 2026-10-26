@@ -16,6 +16,7 @@ Why @lru_cache on get_settings()?
 
 import re
 from functools import lru_cache
+from urllib.parse import urlsplit
 from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -33,6 +34,8 @@ TRANSLATION_PROVIDER_NAMES = ("openai", "azure")
 # A 10-character Team ID, then a reverse-DNS bundle id — Apple's appID form.
 _IOS_APP_ID = re.compile(r"^[A-Z0-9]{10}\.[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)+$")
 _ANDROID_PACKAGE = re.compile(r"^[A-Za-z][A-Za-z0-9_]*(\.[A-Za-z][A-Za-z0-9_]*)+$")
+# A bare host name of two or more labels — no scheme, port or path.
+_HOSTNAME = re.compile(r"^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$")
 
 
 class Settings(BaseSettings):
@@ -113,6 +116,12 @@ class Settings(BaseSettings):
     # waitlist, so launch day is a variable change, not a deploy.
     APP_STORE_URL: str = ""
     PLAY_STORE_URL: str = ""
+    # A second host for the share pages' iPhone "Open in Ntripi" button: iOS
+    # opens an app only for a link to another domain than the page's own.
+    # Runner.entitlements claims it (applinks:open.ntripi.app), and everything
+    # on it but /.well-known goes back to SHARE_BASE_URL (middleware/open_host.py).
+    # Empty = no iPhone button, and the host serves nothing special.
+    APP_OPEN_HOST: str = ""
 
     # Minimum number of ratings an itinerary needs before it can surface in the
     # "Top" discovery feed — stops a single 5-star trip from dominating. Kept as
@@ -476,7 +485,23 @@ class Settings(BaseSettings):
             url = getattr(self, name).strip()
             if url and not url.startswith("https://"):
                 raise ValueError(f"{name} must be an https:// URL")
+        open_host = self.app_open_host
+        if open_host:
+            if not _HOSTNAME.match(open_host):
+                raise ValueError(
+                    f"APP_OPEN_HOST {open_host!r} must be a bare host name, like open.ntripi.app"
+                )
+            # The same host would be a same-domain tap, which iOS never hands to an app.
+            if open_host == (urlsplit(self.share_base_url).hostname or ""):
+                raise ValueError("APP_OPEN_HOST must differ from SHARE_BASE_URL's host")
+            if not self.ios_app_ids:
+                raise ValueError("APP_OPEN_HOST needs IOS_APP_IDS: it only opens the iOS app")
         return self
+
+    @property
+    def app_open_host(self) -> str:
+        """APP_OPEN_HOST lowercased, as a Host header compares; empty = unset."""
+        return self.APP_OPEN_HOST.strip().lower()
 
     @property
     def ios_app_ids(self) -> list[str]:

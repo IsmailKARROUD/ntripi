@@ -1363,6 +1363,15 @@ class AppLocalizationsZh extends AppLocalizations {
   String get shareTooltip => '分享';
 
   @override
+  String get shareCopyLink => '复制链接';
+
+  @override
+  String get shareLinkCopied => '链接已复制';
+
+  @override
+  String get shareVia => '分享到…';
+
+  @override
   String get editDetailsTooltip => '编辑详情和图片';
 
   @override

@@ -265,6 +265,17 @@ external scheduler) **or SLA auto-hide and post-outage re-checks never run.**
   mostly people who cannot open the trip; the router passes `share_private.html`
   nothing about the trip, so it cannot leak — see
   [sharing.md](features/sharing.md#visibility-on-a-public-page).
+- **A share page sends a reader signed in on the web straight into the web app,
+  from one localStorage entry and nothing more.** `ntripi_web_session_until`
+  (the web app's `web_session_hint.dart`; the server's
+  `app_links.WEB_SESSION_HINT_KEY`) holds the session's end — never a token or
+  an account, since every script on the origin can read it — and moves only in
+  `saveTokens` / `clearAllTokens`. The page reads it in `<head>` and leaves with
+  `location.replace`, never `assign`. Change the key on both sides together.
+- **`APP_OPEN_HOST` serves the association files and nothing else**; every other
+  path there redirects to `SHARE_BASE_URL` (`middleware/open_host.py`). A second
+  copy of the site would hold its own localStorage, where the share pages could
+  not see the reader's session.
 - **A reader without an account reaches the teaser and nothing else.** A public
   trip's share page shows its title, cover, rating and description; a profile's,
   its display name, @username and avatar — the same to a person, a chat crawler
@@ -487,6 +498,8 @@ block appears a second time anywhere, extract it instead of copying.**
 | **Never run `dart format`** | the repo predates Dart 3.7 tall style; it reflows whole files |
 | **Every "view more" is `ExpandableText`** (`shared/widgets/expandable_text.dart`) — never re-inline a `TextPainter` overflow check, and never place one under `IntrinsicHeight` | a check that measures with less than `Text` renders with — no inherited style, no text scaler — says "fits" while the text is ellipsised, and the rest is unreachable; the two private copies it replaced had done exactly that. Its `LayoutBuilder` throws on an intrinsic query |
 | **A screen opened from outside the app is never alone, and always has a way out.** A notification tap enters through `GoRouter.pushOverHome` / `openFromOutside` (`core/router/navigation_ext.dart`), never `go()`; so does a shared link, through `appLinkOnEnter` and `landHome` (`core/router/app_links.dart`), parked rather than dropped while splash is up or nobody is signed in; every screen `notificationRoute` can open leaves through `popOr`, in every state | `go()` left the tapped screen alone on its navigator — a back arrow that did nothing, an Android back that closed the app — and destroyed the screen the user had left. `tap_routing_test.dart` and `notification_destinations_exit_test.dart` hold the two halves, and the second fails until a new destination has a case |
+| **On the web every screen is a URL the app can start on, and the app never starts on an editing form.** The address bar shows the screen on top (`GoRouter.optionURLReflectsImperativeAPIs`, `main.dart`); a reload or a pasted address on a form that saves under an edit claim lands on what it edits (`editingRouteLaunchRedirect`), and a trip or profile URL opened signed out is parked through the sign-in (`signInRedirect`). `test/core/router/landing_routes_test.dart` classifies every route as one or the other | the bar used to show the screen beneath the pushes — `#/profile/me` over a shared profile — so a reload or a copied URL lost the screen; showing the screen on top made forms reachable on a fresh start, where they hold no claim and their Save could only fail (2026-10-26) |
+| **Share a link only through `shareLink` / `ShareService`**, never share_plus directly | the phone builds' share popup carries a Copy link row only through the `ntripi/share` channel; share_plus alone has no way to add it |
 
 ### Surfaces and chrome
 

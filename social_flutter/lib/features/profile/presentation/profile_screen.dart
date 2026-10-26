@@ -21,7 +21,7 @@ import 'package:ntripi/features/feed/providers/feed_providers.dart';
 import 'package:ntripi/features/follows/presentation/follow_actions.dart';
 import 'package:ntripi/features/follows/providers/follow_provider.dart';
 import 'package:ntripi/features/notifications/presentation/widgets/notification_bell.dart';
-import 'package:ntripi/features/itineraries/data/share_service.dart';
+import 'package:ntripi/features/itineraries/presentation/widgets/share_link_action.dart';
 import 'package:ntripi/features/itineraries/presentation/widgets/itinerary_summary_card.dart';
 import 'package:ntripi/features/itineraries/presentation/widgets/markdown_notes_editor.dart';
 import 'package:ntripi/features/itineraries/providers/itinerary_providers.dart';
@@ -74,6 +74,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   bool _isEditing = false;
   // Anchor for the "add a profile photo" hint that points at the Edit pencil.
   final GlobalKey _editButtonKey = GlobalKey();
+  // On the Share button, which the share popup points at.
+  final GlobalKey _shareButtonKey = GlobalKey();
 
   @override
   void initState() {
@@ -280,7 +282,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         ),
                   onShare: widget.isSelf
                       ? null
-                      : () => ShareService().shareProfile(user, l10n),
+                      : () => shareLink(
+                            _shareButtonKey.currentContext ?? context,
+                            ref,
+                            ref.read(shareServiceProvider).profileLink(user, l10n),
+                          ),
+                  shareButtonKey: _shareButtonKey,
                   onBack: widget.isSelf ? null : _leave,
                   locations: heroLocations,
                   editButtonKey: _editButtonKey,
