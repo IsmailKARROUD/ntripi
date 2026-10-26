@@ -2169,3 +2169,65 @@ scan.
 - Hive: US-only.
 - OpenAI's image moderation: US.
 >>>>>>> ntripiworktree
+
+### 2026-10-25 — The app keeps its connection to the API open for two minutes
+
+**Context.** A request needs an open, encrypted connection to ntripi.app, and
+opening one costs a TCP and a TLS handshake: from Belgium, through Cloudflare's
+Brussels edge, 90–125 ms to the first byte on a new connection against
+40–60 ms on one already open (2026-10-24). Dio's own adapter
+(`IOHttpClientAdapter`, dio 5.10.0) closes an unused connection after 3 s — it
+overrides dart:io's 15 s default — and the app never set its own. So nearly
+every save, every 30 s lock heartbeat and every 60 s notification poll opened
+a new connection, and `bareDio` (token refresh, logout, the retry after a 401)
+kept a pool of its own.
+
+**Decision.** `createDioClient` and `createBareDio` both install one adapter,
+`apiConnectionPool` (`core/api/api_connection_pool_io.dart`), whose
+`HttpClient` keeps an unused connection for `kApiConnectionIdleTimeout`, 120 s.
+That is longer than the heartbeat and the poll, so either keeps the connection
+warm, and shorter than Cloudflare's HTTP/1.1 keep-alive (400 s, not
+configurable), so the app always closes first. `main.dart` retires the pool
+when the app is hidden and when the device moves to another network
+(`networkChanges()`, `core/connectivity/connectivity_service.dart`): later
+requests open a new connection, and requests under way finish on theirs, which
+then close. Retiring sets the old client's `idleTimeout` to zero instead of
+closing it. The value is a constant in code, because it follows Cloudflare's
+limit, which is the same for every build. The web is unchanged: the browser
+keeps its own connections.
+
+**Consequences.**
+- A save, heartbeat or poll within two minutes of the previous request skips
+  the handshake: about 50 ms on good Wi-Fi, more on mobile data, where each
+  round trip is slower. While the app is open and signed in, the poll keeps one
+  connection open the whole time.
+- After every return to the app and every network switch, the first request
+  opens a new connection, which is what any request after a 3 s pause did
+  before.
+- dart:io drops a pooled connection only when its socket reports closing. It
+  never checks one before reusing it and never retries a request. Before, the
+  pool was almost always empty when the app left the screen or the network
+  changed; with two minutes and the 60 s poll, it almost never is. Retiring at
+  those two moments is what keeps a connection that died meanwhile (the phone
+  asleep, the app suspended, another network) from failing the next save.
+- Still possible: a connection the network drops silently while the app is
+  open, with no network change reported, fails the request sent down it.
+- The server's timing line cannot show the gain, because it starts after the
+  handshake. On a phone, DevTools' Network tab shows two saves a minute apart
+  on the same local port.
+
+**Alternatives rejected.**
+- **400 s, Cloudflare's own limit**: both ends would close an idle connection
+  at the same moment, and a request sent then fails instead of being slow.
+- **An env var or a `--dart-define`**: the value follows Cloudflare's limit,
+  which is the same for every build.
+- **`HttpClient.close()` to retire the pool**: even with `force: false` it
+  cancels a request still opening its connection, so a save tapped just before
+  leaving the app would fail. `api_connection_pool_test.dart` fails if retiring
+  closes the client.
+- **Retrying a request that fails on a reused connection, as OkHttp does**: a
+  POST cannot safely be sent twice, and Dio does not say whether a connection
+  was reused.
+- **The same timeout for the geocoding, People API and link-preview clients**:
+  their servers' idle limits are unknown, and a client that keeps a connection
+  longer than its server can lose a request to the server's close.

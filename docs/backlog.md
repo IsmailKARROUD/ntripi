@@ -718,6 +718,15 @@ lines will rank:
   `/itineraries/me` or `/shared-with-me` after a save, of `/users/me` after a
   follow write or accepting the terms, of `/appeals/violations` after an
   appeal, or of `…/ratings` after a rating from that page.
+- ~~**A new connection for most requests**~~ — **done 2026-10-25.** Dio's
+  adapter closed an unused connection after 3 s, so nearly every save, every
+  lock heartbeat and every notification poll paid a TCP and TLS handshake:
+  90–125 ms to the first byte from Belgium, against 40–60 ms on a connection
+  already open. The app now keeps it for two minutes and starts over after
+  leaving the app or changing network ([decisions.md](decisions.md)). The
+  server's timing line cannot show it, because it starts after the handshake.
+  To check on a phone: DevTools' Network tab shows two saves a minute apart on
+  the same local port.
 - **The phone** — the closing animation of the form or dialog. (The trip
   screen no longer redraws behind a reload.)
 

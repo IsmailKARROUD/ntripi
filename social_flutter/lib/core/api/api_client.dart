@@ -24,6 +24,7 @@ import 'package:dio_cache_interceptor/dio_cache_interceptor.dart';
 import 'package:flutter/widgets.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:ntripi/core/api/api_connection_pool.dart';
 import 'package:ntripi/core/api/api_endpoints.dart';
 import 'package:ntripi/core/api/api_error_codes.dart';
 import 'package:ntripi/core/api/cache_evict_interceptor.dart';
@@ -45,6 +46,11 @@ CacheStore? httpCacheStore;
 /// (calling /auth/refresh through the AuthInterceptor would recurse) and by
 /// AuthRepository for /auth/logout. Initialised alongside [dio] in main.dart.
 late final Dio bareDio;
+
+/// The connections [dio] and [bareDio] travel on, kept open between requests
+/// (api_connection_pool_io.dart). One pool, so the token refresh bareDio sends
+/// before a request opens the connection that request then reuses.
+final apiConnectionPool = ApiConnectionPool();
 
 /// Marker on `RequestOptions.extra` set by the AuthInterceptor when an
 /// expired-token request is allowed through unauthenticated because we're
@@ -166,7 +172,7 @@ Dio createBareDio() {
       sendTimeout: const Duration(seconds: 30),
       headers: {'Content-Type': 'application/json'},
     ),
-  );
+  )..httpClientAdapter = apiConnectionPool;
 }
 
 /// Create and configure the main Dio client.
@@ -183,7 +189,7 @@ Dio createDioClient({
       sendTimeout: const Duration(seconds: 30),
       headers: {'Content-Type': 'application/json'},
     ),
-  );
+  )..httpClientAdapter = apiConnectionPool;
 
   // The interceptor needs a Dio that DOESN'T have AuthInterceptor for the
   // retry-after-refresh path — otherwise we'd deadlock on Dio's

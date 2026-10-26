@@ -357,6 +357,20 @@ ProviderScope
   (`.removeViewInsets`), so a tab's own Scaffold has nothing left to lift and
   keeps the default. A root-level route has no shell above it and lifts itself.
   The full contract is in [constraints.md](../constraints.md#keyboard).
+- **Every request to the API shares one connection pool**
+  (`core/api/api_connection_pool_io.dart`). `createDioClient` and
+  `createBareDio` both install `apiConnectionPool`, which keeps an unused
+  connection open for 120 s (`kApiConnectionIdleTimeout`). Dio's own adapter
+  closed it after 3 s, so most requests paid a TCP and TLS handshake. The
+  timeout stays below Cloudflare's 400 s keep-alive, so the app always closes
+  first. `main.dart` retires the pool when the app is hidden and when the device
+  moves to another network (`networkChanges()`, in
+  `core/connectivity/connectivity_service.dart`): later requests open a new
+  connection, and requests under way finish on theirs. dart:io never checks a
+  pooled connection before reusing it, and one kept through a sleep or a
+  network switch may be dead. The web build hands requests to the browser, which
+  keeps its own connections. See
+  [decisions.md](../decisions.md#2026-10-25--the-app-keeps-its-connection-to-the-api-open-for-two-minutes).
 - The app is **locked to portrait**.
 - **Build-time config is `--dart-define`**: `API_BASE_URL`, `SHARE_BASE_URL`,
   `GOOGLE_MAPS_EMBED_API_KEY`.
@@ -370,6 +384,10 @@ ProviderScope
   constant, against the project's own "no hardcoded values" rule. See
   [constraints.md](../constraints.md#known-deviations) and
   [backlog.md](../backlog.md).
+- **A pooled connection the network drops silently while the app is open**,
+  with no network change reported, still fails the request sent down it:
+  dart:io never retries, and the pool is retired only when the app is hidden or
+  the network changes.
 - **`POST /waitlist/join` has no rate limit** while every other public POST does.
 - **`waitlist.platform` is written and read nowhere** — no admin lane, no export.
 - `WaitlistJoinBody` is the only inline router schema.
