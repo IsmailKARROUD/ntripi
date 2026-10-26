@@ -26,11 +26,12 @@ from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
+from starlette.datastructures import Headers
 from starlette.exceptions import HTTPException
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 from starlette.requests import Request
-from starlette.responses import Response
+from starlette.responses import RedirectResponse, Response
 from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
 
 from app.config import get_settings
@@ -39,6 +40,7 @@ from app.limiter import limiter
 from app.middleware.client_ip import ClientIPHeaderMiddleware
 from app.middleware.etag import ETagMiddleware
 from app.middleware.language import LanguageCookieMiddleware
+from app.middleware.open_host import OpenHostMiddleware
 from app.middleware.request_timing import RequestTimingMiddleware, install_outbound_hooks
 from app.middleware.security_headers import SecurityHeadersMiddleware
 from app.routers import (
@@ -102,6 +104,8 @@ class _SPAStaticFiles(StaticFiles):
             response = await super().get_response(path, scope)
         except HTTPException as exc:
             if exc.status_code == 404:
+                if _is_navigation(scope):
+                    return _hash_redirect(scope)
                 return self._index_response()
             raise
         # html=True resolves "/" (and explicit index.html) to the file on disk —
@@ -110,6 +114,22 @@ class _SPAStaticFiles(StaticFiles):
         if actual_path and Path(actual_path).name == "index.html":
             return self._index_response()
         return response
+
+
+def _is_navigation(scope) -> bool:
+    """A browser loading a page, not the app fetching an asset: only a page
+    load asks for HTML first."""
+    return scope.get("method") == "GET" and "text/html" in Headers(scope=scope).get("accept", "")
+
+
+def _hash_redirect(scope) -> RedirectResponse:
+    """/app/share/u/name → /app/#/share/u/name. The web app reads only the part
+    after '#', so a path under /app/ would otherwise open its home screen."""
+    raw = scope.get("raw_path") or scope["path"].encode("utf-8")
+    route = raw.decode("latin-1").removeprefix("/app")
+    query = scope.get("query_string", b"").decode("latin-1")
+    # Always /app/#…: the fragment can never take the browser to another site.
+    return RedirectResponse(f"/app/#{route}" + (f"?{query}" if query else ""), status_code=302)
 
 
 # ---------------------------------------------------------------------------
@@ -239,11 +259,15 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_response)
 # ---------------------------------------------------------------------------
 # Desired request order: ProxyHeaders → ClientIPHeader → TrustedHost →
 #   ContentSizeLimit → SecurityHeaders → CORS → ETag → LanguageCookie →
-#   RequestTiming → handlers
+#   OpenHost → RequestTiming → handlers
 
 # Request timing (innermost; rewrites nothing). Outbound HTTP is timed per host.
 install_outbound_hooks()
 app.add_middleware(RequestTimingMiddleware)
+
+# APP_OPEN_HOST serves its association files and sends everything else back to
+# SHARE_BASE_URL. Inside SecurityHeaders, so its redirects carry HSTS.
+app.add_middleware(OpenHostMiddleware)
 
 # Language cookie + Vary: Accept-Language on HTML (touches only text/html
 # responses, never the JSON API, so it does not affect the security stack

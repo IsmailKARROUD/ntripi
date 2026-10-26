@@ -7,6 +7,7 @@ import 'package:ntripi/core/providers/locale_provider.dart';
 import 'package:ntripi/core/ui/app_theme.dart';
 import 'package:ntripi/features/feed/domain/feed_item.dart';
 import 'package:ntripi/features/itineraries/presentation/widgets/itinerary_summary_card.dart';
+import 'package:ntripi/features/itineraries/presentation/widgets/share_link_action.dart';
 import 'package:ntripi/features/itineraries/providers/itinerary_providers.dart';
 import 'package:ntripi/features/profile/providers/profile_provider.dart';
 import 'package:ntripi/features/translation/domain/translation.dart';
@@ -33,14 +34,21 @@ class FeedCard extends ConsumerWidget {
           displayName: owner.displayName,
           username: owner.username,
           avatarUrl: owner.avatarUrl,
-          // Share the itinerary via the OS share sheet (reuses ShareService).
-          trailing: IconButton(
-            icon: Icon(Icons.share_rounded, size: 20, color: nt.text2),
-            visualDensity: VisualDensity.compact,
-            tooltip: l10n.shareTooltip,
-            onPressed: () => ref
-                .read(shareServiceProvider)
-                .shareItinerary(item.itinerary, l10n),
+          // The Builder's context is the button itself, which the share
+          // popup points at (an iPad, the web's menu).
+          trailing: Builder(
+            builder: (button) => IconButton(
+              icon: Icon(Icons.share_rounded, size: 20, color: nt.text2),
+              visualDensity: VisualDensity.compact,
+              tooltip: l10n.shareTooltip,
+              onPressed: () => shareLink(
+                button,
+                ref,
+                ref
+                    .read(shareServiceProvider)
+                    .itineraryLink(item.itinerary, l10n),
+              ),
+            ),
           ),
         ),
         // Reuse the shared card unchanged; feed cards don't offer delete.

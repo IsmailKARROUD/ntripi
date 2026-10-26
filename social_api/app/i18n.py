@@ -358,6 +358,16 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "es": "Se necesita una cuenta gratuita",
         "zh": "需要免费账号",
     },
+    # On an iPhone back from APP_OPEN_HOST: Safari loaded the "Open in Ntripi"
+    # link, so the app is not installed, or this device sends links to Safari.
+    "share_app_did_not_open": {
+        "en": "The Ntripi app didn't open on this device. You can get it below, or carry on in your browser.",
+        "fr": "L'application Ntripi ne s'est pas ouverte sur cet appareil. Vous pouvez la télécharger ci-dessous ou continuer dans votre navigateur.",
+        "ar": "لم يُفتح تطبيق Ntripi على هذا الجهاز. يمكنك تنزيله أدناه أو الاستمرار في المتصفح.",
+        "de": "Die Ntripi-App wurde auf diesem Gerät nicht geöffnet. Sie können sie unten herunterladen oder im Browser weitermachen.",
+        "es": "La aplicación Ntripi no se abrió en este dispositivo. Puedes descargarla abajo o seguir en tu navegador.",
+        "zh": "Ntripi 应用没有在此设备上打开。你可以在下方下载，或继续在浏览器中查看。",
+    },
     # Shown under the store buttons only once a store is live: installing from
     # the page does not carry the link into the app (no deferred deep linking).
     "share_tap_link_again": {

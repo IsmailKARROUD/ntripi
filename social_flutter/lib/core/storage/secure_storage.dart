@@ -20,6 +20,9 @@ import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:ntripi/core/storage/web_session_hint.dart';
+import 'package:ntripi/core/storage/web_session_hint_io.dart'
+    if (dart.library.js_interop) 'package:ntripi/core/storage/web_session_hint_web.dart';
 
 const _kAccessTokenKey = 'ntripi_access_token';
 const _kRefreshTokenKey = 'ntripi_refresh_token';
@@ -28,6 +31,11 @@ const _kRefreshExpiresAtKey = 'ntripi_refresh_expires_at';
 const _storage = FlutterSecureStorage(
   aOptions: AndroidOptions(encryptedSharedPreferences: true),
 );
+
+/// What tells the share pages, on the web, that somebody is signed in here —
+/// see web_session_hint.dart. A seam for tests.
+@visibleForTesting
+WebSessionHint webSessionHint = platformWebSessionHint();
 
 // ---------------------------------------------------------------------------
 // Access token (mobile JWT)
@@ -94,6 +102,18 @@ Future<void> saveTokens({
     key: _kRefreshExpiresAtKey,
     value: refreshExpiresAt.toUtc().toIso8601String(),
   );
+  webSessionHint.mark(refreshExpiresAt);
+}
+
+/// Brings the share pages' hint in line with the session already stored — for
+/// a session that began before the hint existed, which no saveTokens has
+/// touched since. Called once at launch on the web.
+Future<void> syncWebSessionHint() async {
+  if (await hasLiveRefreshToken()) {
+    webSessionHint.mark(await readRefreshExpiresAt());
+  } else {
+    webSessionHint.clear();
+  }
 }
 
 /// Bumped every time the tokens are wiped, whoever wiped them.
@@ -109,6 +129,7 @@ Future<void> clearAllTokens() async {
   await _storage.delete(key: _kAccessTokenKey);
   await _storage.delete(key: _kRefreshTokenKey);
   await _storage.delete(key: _kRefreshExpiresAtKey);
+  webSessionHint.clear();
   sessionEnded.value++;
 }
 

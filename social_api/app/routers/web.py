@@ -14,6 +14,7 @@ Routes:
   GET  /robots.txt           → keeps /admin out of search indexes
   GET  /.well-known/apple-app-site-association → iOS universal links
   GET  /.well-known/assetlinks.json            → Android app links
+  GET  /manifest.webmanifest → lets Chrome tell a share page the Android app is installed
   GET  /appeal/{token}       → Moderation appeal form (link from email)
   POST /web/appeal
   GET  /appeal               → Request an appeal link by email (suspended users)
@@ -275,7 +276,7 @@ def robots_txt(settings: Settings = Depends(get_settings)) -> PlainTextResponse:
 # keeps opening in the browser. Unconfigured, both 404 like any unknown path.
 # ---------------------------------------------------------------------------
 
-def _association_file(content) -> JSONResponse:
+def _association_file(content, media_type: str = "application/json") -> JSONResponse:
     if content is None:
         raise ApiError(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -283,7 +284,11 @@ def _association_file(content) -> JSONResponse:
         )
     # Identical for every visitor and keyed by nothing but the URL, so public
     # caching is safe; ETagMiddleware keeps an endpoint-set Cache-Control.
-    return JSONResponse(content, headers={"Cache-Control": "public, max-age=3600"})
+    return JSONResponse(
+        content,
+        media_type=media_type,
+        headers={"Cache-Control": "public, max-age=3600"},
+    )
 
 
 @router.get("/.well-known/apple-app-site-association", include_in_schema=False)
@@ -296,6 +301,16 @@ def apple_app_site_association(
 @router.get("/.well-known/assetlinks.json", include_in_schema=False)
 def assetlinks_json(settings: Settings = Depends(get_settings)) -> JSONResponse:
     return _association_file(app_links.asset_links(settings))
+
+
+# The share pages link it so Chrome on Android can say whether the app is
+# installed (navigator.getInstalledRelatedApps). Same rules as the two above:
+# built from settings, 404 until an Android app is set.
+@router.get("/manifest.webmanifest", include_in_schema=False)
+def web_manifest(settings: Settings = Depends(get_settings)) -> JSONResponse:
+    return _association_file(
+        app_links.web_manifest(settings), media_type="application/manifest+json"
+    )
 
 
 # ---------------------------------------------------------------------------

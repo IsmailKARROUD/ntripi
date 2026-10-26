@@ -8,6 +8,12 @@
 // SHARE_BASE_URL claims links nobody sends; a prefix the router does not map
 // opens the app on go_router's error page; and without singleTask a link tapped
 // in Gmail starts a second copy of the app instead of reaching this one.
+//
+// Two more contracts with the server live here. iOS claims a second host,
+// open.<share host>, which the share pages' iPhone button links (the server's
+// APP_OPEN_HOST must name it). And the Android app vouches for the share host
+// in asset_statements, which is what lets Chrome tell a share page the app is
+// installed.
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -29,6 +35,7 @@ Set<String> _releaseShareHosts() => {
 
 void main() {
   final manifest = _read('android/app/src/main/AndroidManifest.xml');
+  final strings = _read('android/app/src/main/res/values/strings.xml');
   final entitlements = _read('ios/Runner/Runner.entitlements');
   final infoPlist = _read('ios/Runner/Info.plist');
 
@@ -69,12 +76,46 @@ void main() {
         matches(RegExp(r'flutter_deeplinking_enabled"\s+android:value="true"')));
   });
 
-  test('iOS claims the same host', () {
+  test('iOS claims the same host, and the second one its button links', () {
     final host = _releaseShareHosts().single;
     expect(entitlements, contains('com.apple.developer.associated-domains'));
-    expect(entitlements, contains('<string>applinks:$host</string>'));
+    // A tap from a page on one host to a link on the other is what iOS hands
+    // to an app; the server's APP_OPEN_HOST must be this second one.
+    expect(
+      {
+        for (final m in RegExp(r'<string>applinks:([^<]+)</string>')
+            .allMatches(entitlements))
+          m.group(1)!,
+      },
+      {host, 'open.$host'},
+    );
     expect(infoPlist,
         matches(RegExp(r'<key>FlutterDeepLinkingEnabled</key>\s*<true/>')));
+  });
+
+  test('the Android app vouches for the share host to Chrome', () {
+    final host = _releaseShareHosts().single;
+    expect(
+      manifest,
+      matches(RegExp(r'android:name="asset_statements"\s+'
+          r'android:resource="@string/asset_statements"')),
+    );
+    final statement = RegExp(r'<string name="asset_statements"[^>]*>(.*?)</string>')
+        .firstMatch(strings)!
+        .group(1)!
+        .replaceAll(r'\"', '"');
+    expect(statement, contains('"namespace": "web"'));
+    expect(statement, contains('"site": "https://$host"'));
+  });
+
+  test('the share popup\'s Copy link answers this app alone', () {
+    for (final component in ['CopyLinkReceiver', 'CopyLinkActivity']) {
+      expect(
+        manifest,
+        matches(RegExp('android:name="\\.$component"\\s+android:exported="false"')),
+        reason: '$component must be declared, and never started by another app',
+      );
+    }
   });
 
   test('every path the app claims opens something in it', () {

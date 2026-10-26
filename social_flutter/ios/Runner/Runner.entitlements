@@ -7,6 +7,7 @@
 	<key>com.apple.developer.associated-domains</key>
 	<array>
 		<string>applinks:ntripi.app</string>
+		<string>applinks:open.ntripi.app</string>
 	</array>
 </dict>
 </plist>

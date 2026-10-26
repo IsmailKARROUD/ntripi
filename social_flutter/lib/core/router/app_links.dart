@@ -20,8 +20,15 @@
 //   * otherwise — opened over the current screen (openFromOutside).
 //
 // The claimed paths are one contract across four places — the manifest, the
-// entitlements (host only), the server's apple-app-site-association, and
+// entitlements (hosts only), the server's apple-app-site-association, and
 // [appLinkLocation] — held together by test/app_links_native_config_test.dart.
+//
+// On the web every screen has a URL of its own (main.dart reflects pushed
+// screens in the address bar), so any of them can be where the app starts — a
+// reload, a pasted address. Two rules follow, both applied by the router's
+// redirect: an editing form is never where the app starts
+// ([editingRouteLanding]), and a trip or profile reached signed out waits
+// through the sign-in like a shared link ([parkableLocation]).
 
 import 'package:flutter/foundation.dart';
 import 'package:go_router/go_router.dart';
@@ -37,10 +44,7 @@ final _uuid = RegExp(
 /// Scheme and host are ignored: the platform has already decided the link is
 /// ours, and the web build sees the same paths under `/app/#`.
 String? appLinkLocation(Uri uri) {
-  final segments = [
-    for (final segment in uri.pathSegments)
-      if (segment.isNotEmpty) segment,
-  ];
+  final segments = _segments(uri);
   if (segments.length < 2 || segments.first != 'share') return null;
   final target = segments.length > 2 ? segments[2] : '';
   return switch (segments[1]) {
@@ -56,16 +60,58 @@ String? appLinkLocation(Uri uri) {
   };
 }
 
+List<String> _segments(Uri uri) => [
+      for (final segment in uri.pathSegments)
+        if (segment.isNotEmpty) segment,
+    ];
+
+/// The trip or profile [uri] opens, when a signed-out visitor reaches it — a
+/// URL copied from the web's address bar — so the sign-in lands on it, as on a
+/// shared link. Null for anything else.
+String? parkableLocation(Uri uri) {
+  final segments = _segments(uri);
+  if (segments.length != 2) return null;
+  final target = segments[1];
+  return switch (segments.first) {
+    'itineraries' when _uuid.hasMatch(target) => '/itineraries/$target',
+    'u' => '/u/${Uri.encodeComponent(target)}',
+    // Never /profile/me: that is home, which every sign-in lands on anyway.
+    'profile' when _uuid.hasMatch(target) => '/profile/$target',
+    _ => null,
+  };
+}
+
+/// Where the app starts when [uri], its first location, is an editing screen
+/// — on the web, a reload or a pasted address: the page that screen edits, or
+/// home. Those forms save only under the edit claim the trip page takes before
+/// pushing them, and a fresh start holds none, so the form would open with a
+/// Save that could only fail. Null for every other screen.
+String? editingRouteLanding(Uri uri) {
+  final segments = _segments(uri);
+  // It hands a picked place back to the form that pushed it; alone, to nobody.
+  if (segments case ['map-picker']) return '/profile/me';
+  if (segments.length < 3 || segments.first != 'itineraries') return null;
+  final trip = '/itineraries/${segments[1]}';
+  return switch (segments.sublist(2)) {
+    ['edit'] || ['stops', 'new'] => trip,
+    ['stops', final stop, 'edit'] => '$trip/stops/$stop',
+    _ => null,
+  };
+}
+
 /// What a parked link opens.
 enum ParkedLinkKind { trip, profile }
 
-/// The kind of [location] — one of [appLinkLocation]'s answers — or null.
+/// The kind of [location] — one of [appLinkLocation]'s or
+/// [parkableLocation]'s answers — or null.
 ParkedLinkKind? parkedLinkKind(String? location) {
   if (location == null) return null;
   if (location.startsWith('/itineraries/') || location == '/unavailable/trip') {
     return ParkedLinkKind.trip;
   }
-  if (location.startsWith('/u/') || location == '/unavailable/profile') {
+  if (location.startsWith('/u/') ||
+      (location.startsWith('/profile/') && location != '/profile/me') ||
+      location == '/unavailable/profile') {
     return ParkedLinkKind.profile;
   }
   return null;
@@ -97,6 +143,23 @@ String? appLinkLaunchRedirect(GoRouterState state) {
   if (location == null) return null;
   parkAppLink(location);
   return '/splash';
+}
+
+/// The redirect's step for an editing form the app is starting on — a reload
+/// or a pasted address on the web: the page it edits ([editingRouteLanding]).
+/// Only while nothing is on [router]'s screen, so the same form pushed in the
+/// app, under the claim the trip page took, goes through.
+String? editingRouteLaunchRedirect(GoRouter router, GoRouterState state) {
+  if (router.routerDelegate.currentConfiguration.isNotEmpty) return null;
+  return editingRouteLanding(state.uri);
+}
+
+/// The redirect's answer for a signed-out visitor to [uri]: the sign-in, with
+/// the trip or profile [uri] names parked for after it, as a shared link is.
+String signInRedirect(Uri uri) {
+  final waiting = parkableLocation(uri);
+  if (waiting != null) parkAppLink(waiting);
+  return '/login';
 }
 
 /// The router's `onEnter`: decides where a shared link goes (see the top of

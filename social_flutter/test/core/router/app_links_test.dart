@@ -8,8 +8,11 @@
 // skip splash and its session restore; while running as a go(), which would
 // replace the whole stack and destroy the screen the user was on.
 // app_links.dart intercepts both. The router below has the app's kinds of
-// route and an async redirect like the app's, wired to the same two hooks the
+// route and an async redirect like the app's, wired to the same hooks the
 // app's router uses; links are delivered the way the engine delivers them.
+//
+// On the web every screen has a URL of its own, so the app can start on any of
+// them: the last groups hold where it then lands.
 
 import 'dart:async';
 
@@ -45,6 +48,8 @@ GoRouter _router({
   String initialLocation = '/splash',
   Widget? splash,
   bool signedIn = true,
+  // The app's sign-in guard, asked at every navigation; null leaves it out.
+  bool Function()? session,
 }) {
   final root = GlobalKey<NavigatorState>();
   GoRoute page(String path, {GlobalKey<NavigatorState>? parent}) => GoRoute(
@@ -54,15 +59,23 @@ GoRouter _router({
           body: Center(child: Text('at ${state.uri.path}')),
         ),
       );
-  return GoRouter(
+  late final GoRouter router;
+  router = GoRouter(
     navigatorKey: root,
     initialLocation: initialLocation,
     onEnter: appLinkOnEnter(hasSession: () async => signedIn),
     redirect: (_, state) async {
       final launch = appLinkLaunchRedirect(state);
       if (launch != null) return launch;
+      final landing = editingRouteLaunchRedirect(router, state);
+      if (landing != null) return landing;
       // Async and slow like the app's, which awaits two secure-storage reads.
       await Future<void>.delayed(const Duration(milliseconds: 30));
+      if (session != null &&
+          !session() &&
+          !const ['/splash', '/login'].contains(state.matchedLocation)) {
+        return signInRedirect(state.uri);
+      }
       return null;
     },
     routes: [
@@ -79,10 +92,29 @@ GoRouter _router({
         ],
       ),
       page('/itineraries/:id', parent: root),
+      page('/itineraries/:id/edit', parent: root),
+      page('/itineraries/:id/stops/new', parent: root),
+      page('/itineraries/:id/stops/:stopId', parent: root),
+      page('/itineraries/:id/stops/:stopId/edit', parent: root),
+      page('/map-picker', parent: root),
+      page('/profile/:userId', parent: root),
       page('/u/:username', parent: root),
       page('/unavailable/:kind', parent: root),
     ],
   );
+  return router;
+}
+
+/// The app started on [location] — on the web, a reload or a pasted address.
+Future<GoRouter> _startAt(
+  WidgetTester tester,
+  String location, {
+  bool Function()? session,
+}) async {
+  final router = _router(initialLocation: location, session: session);
+  await tester.pumpWidget(MaterialApp.router(routerConfig: router));
+  await tester.pumpAndSettle();
+  return router;
 }
 
 Future<GoRouter> _pumpAt(
@@ -323,6 +355,150 @@ void main() {
       landHome(router);
       await tester.pumpAndSettle();
       expect(find.text('at $_trip'), findsOneWidget);
+    });
+  });
+
+  group('parkableLocation', () {
+    test('a trip or a profile waits for the sign-in', () {
+      expect(parkableLocation(Uri.parse(_trip)), _trip);
+      expect(parkableLocation(Uri.parse('/u/amina.d_2')), '/u/amina.d_2');
+      expect(parkableLocation(Uri.parse('/profile/$_id')), '/profile/$_id');
+      expect(parkedLinkKind('/profile/$_id'), ParkedLinkKind.profile);
+    });
+
+    test('nothing else does — home least of all', () {
+      for (final location in [
+        '/profile/me',
+        '/feed',
+        '/itineraries/new',
+        '/itineraries/$_id/edit',
+        '/itineraries/3fa85f64',
+        '/settings/help',
+      ]) {
+        expect(parkableLocation(Uri.parse(location)), isNull,
+            reason: location);
+      }
+      expect(parkedLinkKind('/profile/me'), isNull);
+    });
+  });
+
+  group('editingRouteLanding', () {
+    test('an editing form lands on what it edits', () {
+      const stop = '3fa85f64-0000-4562-b3fc-2c963f66afa6';
+      expect(editingRouteLanding(Uri.parse('$_trip/edit')), _trip);
+      expect(editingRouteLanding(Uri.parse('$_trip/stops/new')), _trip);
+      expect(editingRouteLanding(Uri.parse('$_trip/stops/$stop/edit')),
+          '$_trip/stops/$stop');
+      // It hands a place back to the form that pushed it; alone, to nobody.
+      expect(editingRouteLanding(Uri.parse('/map-picker')), '/profile/me');
+    });
+
+    test('every other screen is a place to start', () {
+      for (final location in [
+        _trip,
+        '/itineraries/new',
+        '$_trip/stops/3fa85f64-0000-4562-b3fc-2c963f66afa6',
+        '$_trip/ratings',
+        '$_trip/editors',
+        '/profile/me',
+        '/u/aminad',
+      ]) {
+        expect(editingRouteLanding(Uri.parse(location)), isNull,
+            reason: location);
+      }
+    });
+  });
+
+  group('A reload never starts the app on an editing form', () {
+    testWidgets(
+        'Given a reload on the trip\'s edit form, When the app starts, '
+        'Then the trip opens instead', (tester) async {
+      await _startAt(tester, '$_trip/edit');
+
+      expect(find.text('at $_trip'), findsOneWidget);
+    });
+
+    testWidgets(
+        'Given a reload on a stop\'s edit form, When the app starts, '
+        'Then that stop\'s page opens instead', (tester) async {
+      const stop = '/stops/3fa85f64-0000-4562-b3fc-2c963f66afa6';
+      await _startAt(tester, '$_trip$stop/edit');
+
+      expect(find.text('at $_trip$stop'), findsOneWidget);
+    });
+
+    testWidgets(
+        'Given a reload on the map picker, When the app starts, '
+        'Then home opens instead', (tester) async {
+      await _startAt(tester, '/map-picker');
+
+      expect(find.text('at /profile/me'), findsOneWidget);
+    });
+
+    testWidgets(
+        'Given the app running, When the trip page pushes its edit form, '
+        'Then the form opens — the claim was taken first', (tester) async {
+      final router = await _pumpAt(tester, '/feed');
+
+      unawaited(router.push('$_trip/edit'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('at $_trip/edit'), findsOneWidget);
+    });
+  });
+
+  group('A trip or profile URL opened signed out waits for the sign-in', () {
+    for (final location in [_trip, '/u/aminad', '/profile/$_id']) {
+      testWidgets(
+          'Given nobody signed in, When the app starts on $location, '
+          'Then the sign-in lands on it, over home', (tester) async {
+        var signedIn = false;
+        final router =
+            await _startAt(tester, location, session: () => signedIn);
+        expect(find.text('at /login'), findsOneWidget);
+        expect(parkedAppLink.value, location);
+
+        // What every sign-in path does once it holds a session.
+        signedIn = true;
+        landHome(router);
+        await tester.pumpAndSettle();
+
+        expect(find.text('at $location'), findsOneWidget);
+        await _back(tester, router);
+        expect(find.text('at /profile/me'), findsOneWidget);
+      });
+    }
+
+    testWidgets(
+        'Given nobody signed in, When the app starts on a tab, '
+        'Then the sign-in waits for nothing', (tester) async {
+      await _startAt(tester, '/feed', session: () => false);
+
+      expect(find.text('at /login'), findsOneWidget);
+      expect(takeParkedAppLink(), isNull);
+    });
+  });
+
+  group('The web address bar shows the screen on top', () {
+    setUp(() => GoRouter.optionURLReflectsImperativeAPIs = true);
+    tearDown(() => GoRouter.optionURLReflectsImperativeAPIs = false);
+
+    testWidgets(
+        'Given a session and a trip link that started the app, '
+        'When splash opens it over home, Then the URL is the trip\'s, '
+        'and home\'s again after Back', (tester) async {
+      _launchedBy(tester, _tripLink);
+      FlutterSecureStorage.setMockInitialValues({
+        'ntripi_refresh_token': 'refresh',
+        'ntripi_refresh_expires_at': '2100-01-01T00:00:00Z',
+      });
+      final router = await _launchThroughSplash(tester);
+
+      expect(find.text('at $_trip'), findsOneWidget);
+      expect(router.routeInformationProvider.value.uri.path, _trip);
+
+      await _back(tester, router);
+      expect(router.routeInformationProvider.value.uri.path, '/profile/me');
     });
   });
 

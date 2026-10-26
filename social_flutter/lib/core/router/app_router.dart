@@ -59,7 +59,9 @@ const kPublicRoutes = [
   '/suspended',
 ];
 
-final appRouter = GoRouter(
+// Typed, not inferred: the redirect asks the router itself whether anything is
+// on screen yet, and an inferred type would depend on its own initializer.
+final GoRouter appRouter = GoRouter(
   navigatorKey: navigatorKey,
   initialLocation: '/splash',
   // A shared link that arrives while the app is running opens over the screen
@@ -70,10 +72,16 @@ final appRouter = GoRouter(
     final launch = appLinkLaunchRedirect(state);
     if (launch != null) return launch;
 
+    // The app never starts on an editing form — on the web, a reload or a
+    // pasted address could start it anywhere.
+    final landing = editingRouteLaunchRedirect(appRouter, state);
+    if (landing != null) return landing;
+
     final hasAuth = await hasLiveRefreshToken();
     final isPublic = kPublicRoutes.contains(state.matchedLocation);
 
-    if (!hasAuth && !isPublic) return '/login';
+    // A trip or a profile waits through the sign-in, like a shared link.
+    if (!hasAuth && !isPublic) return signInRedirect(state.uri);
     if (hasAuth &&
         (state.matchedLocation == '/login' ||
             state.matchedLocation == '/register')) {

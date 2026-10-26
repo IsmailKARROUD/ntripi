@@ -99,6 +99,8 @@ RELEASES: tuple[Release, ...] = (
             "**Los enlaces a viajes privados no muestran nada en una conversación.** La vista previa de un viaje compartido con seguidores o con personas concretas ya no muestra su título, su foto de portada ni su propietario; solo que es un viaje privado en Ntripi.",
             "**Las páginas compartidas muestran una vista previa.** Sin cuenta, un enlace muestra el título, la foto de portada, la valoración y la descripción de un viaje —o el nombre y la foto de un perfil— con el aspecto de la aplicación. El resto está a un inicio de sesión gratuito, y la pantalla de inicio de sesión dice qué te espera.",
             "**Una nueva foto de portada se guarda con lo demás.** Cambiar la portada de un viaje a la vez que su título, su moneda o su mejor época para viajar ya no te pide recargar: todo se guarda de una vez.",
+            "**Copia solo el enlace.** El menú de compartir tiene una nueva opción, **Copiar enlace**, que copia el enlace sin el nombre del viaje, sus paradas ni su duración. En la web, el botón de compartir también la ofrece.",
+            "**Los enlaces compartidos llevan adonde ya estás.** Con la sesión iniciada en Ntripi en tu navegador, un viaje o un perfil compartido se abre directamente en lugar de su vista previa, y en un teléfono la página ofrece **Abrir en Ntripi**. La barra de direcciones de la aplicación web muestra ahora la página en la que estás, así que al recargar sigues ahí.",
         ),
     ),
     Release(
@@ -884,7 +886,9 @@ Un viaje que no es público solo genera una tarjeta neutra que dice que es un vi
             Block(
                 anchor="get-the-link",
                 heading="Conseguir el enlace",
-                body="""Abre el viaje y usa la acción de compartir. Aparece el menú de compartir habitual de tu dispositivo, así que el enlace puede ir a cualquier aplicación: mensajes, correo, notas.
+                body="""Abre el viaje y usa la acción de compartir. Aparece el menú de compartir de tu dispositivo, así que el enlace puede ir a cualquier aplicación —mensajes, correo, notas— precedido del nombre del viaje, su número de paradas y su duración. **Copiar enlace**, en ese mismo menú, copia solo el enlace, listo para pegarlo donde quieras.
+
+En la web, la acción de compartir ofrece **Copiar enlace** y **Compartir con…**, o, en un navegador sin menú de compartir, copia el enlace directamente.
 
 Si la persona a la que se lo envías tiene Ntripi, el enlace abre el viaje en la aplicación, tras iniciar sesión si no la tiene iniciada. Si no la tiene, abre una vista previa del viaje en su navegador, con una sola forma de entrar: **Ver el itinerario completo**, que inicia su sesión —o le crea una cuenta gratuita— y lo abre.""",
             ),
@@ -907,9 +911,11 @@ Un enlace a un perfil funciona igual: sin cuenta muestra el nombre, el @usuario 
             Block(
                 anchor="opens-in-browser",
                 heading="Si un enlace se abre en el navegador en lugar de en la aplicación",
-                body="""Un enlace solo abre la aplicación en un teléfono donde Ntripi está instalado. En cualquier otro sitio abre la vista previa del viaje en el navegador, que ofrece la aplicación y **Ver el itinerario completo** para iniciar sesión y usar Ntripi en el navegador.
+                body="""Un enlace solo abre la aplicación en un teléfono donde Ntripi está instalado, y solo cuando se toca: en un mensaje, un correo o una nota. Escrito o pegado en la barra de direcciones, o abierto dentro del navegador integrado de otra aplicación, abre la página del viaje en el navegador.
 
-Aunque tengas la aplicación, un enlace se abre en el navegador si se escribe o se pega en la barra de direcciones, o si se abre dentro del navegador integrado de otra aplicación. En un iPhone, tocar **ntripi.app** arriba a la derecha de la aplicación hace que, a partir de entonces, los enlaces se abran en Safari: mantén pulsado un enlace y elige abrirlo en Ntripi para volver.
+En Android, cuando Chrome indica que la aplicación está instalada, esa página pone **Abrir en Ntripi** en primer lugar. En un iPhone también lo ofrece, y te avisa si la aplicación no se abrió. Y si has iniciado sesión en Ntripi en ese navegador, te saltas la página y llegas directamente al viaje en la web.
+
+En un iPhone, tocar **ntripi.app** arriba a la derecha de la aplicación hace que, a partir de entonces, los enlaces se abran en Safari: mantén pulsado un enlace y elige abrirlo en Ntripi para volver.
 
 Si no has iniciado sesión, la aplicación te pide que la inicies primero y luego abre el viaje.""",
             ),
@@ -932,13 +938,15 @@ Lo que no puedes deshacer es una captura de pantalla, así que trata publicar co
             "publicar",
             "público",
             "abrir en la aplicación",
+            "copiar enlace",
+            "pegar",
             "navegador",
             "iniciar sesión",
             "cuenta",
             "ver el itinerario completo",
         ),
         related=("share-an-itinerary-privately", "trip-cover-photos"),
-        updated="2026-10-19",
+        updated="2026-10-26",
         cta="Construye algo que merezca la pena enviar.",
     ),
     Article(

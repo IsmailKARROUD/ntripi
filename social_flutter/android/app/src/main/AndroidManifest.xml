@@ -52,6 +52,23 @@
               android:value="true"
               />
         </activity>
+        <!-- The share popup's Copy link row (ShareLinkChooser.kt): a popup
+             action on Android 14+, the first target before that. Started only
+             by this app's own chooser, never by another app. -->
+        <receiver
+            android:name=".CopyLinkReceiver"
+            android:exported="false" />
+        <activity
+            android:name=".CopyLinkActivity"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:noHistory="true"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+        <!-- The app vouches for ntripi.app, so Chrome can tell a share page
+             the app is installed and put "Open in Ntripi" first. -->
+        <meta-data
+            android:name="asset_statements"
+            android:resource="@string/asset_statements" />
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
         <meta-data
