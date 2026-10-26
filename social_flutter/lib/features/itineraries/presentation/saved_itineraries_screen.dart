@@ -12,6 +12,7 @@ import 'package:ntripi/features/itineraries/presentation/widgets/itinerary_summa
 import 'package:ntripi/features/itineraries/providers/saved_itineraries_provider.dart';
 import 'package:ntripi/l10n/app_localizations.dart';
 import 'package:ntripi/shared/widgets/loaders.dart';
+import 'package:ntripi/shared/widgets/reload_report.dart';
 
 /// Below this count the list is short enough to scan without a search bar.
 const _kSearchThreshold = 10;
@@ -67,8 +68,9 @@ class _SavedItinerariesScreenState
                     ),
                     const SizedBox(height: 16),
                     FilledButton(
-                      onPressed: () =>
-                          ref.read(savedItinerariesProvider.notifier).refresh(),
+                      onPressed: () => reportReloads(context, [
+                        ref.read(savedItinerariesProvider.notifier).refresh(),
+                      ]),
                       child: Text(l10n.retry),
                     ),
                   ],
@@ -94,8 +96,9 @@ class _SavedItinerariesScreenState
     final showSearch = items.length > _kSearchThreshold;
 
     return RefreshIndicator(
-      onRefresh: () =>
-          ref.read(savedItinerariesProvider.notifier).refresh(),
+      onRefresh: () => reportReloads(context, [
+        ref.read(savedItinerariesProvider.notifier).refresh(),
+      ]),
       child: CustomScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
         slivers: [

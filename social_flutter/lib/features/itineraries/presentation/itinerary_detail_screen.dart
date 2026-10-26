@@ -74,6 +74,7 @@ import 'package:ntripi/features/reports/domain/report_target.dart';
 import 'package:ntripi/features/reports/presentation/report_content_sheet.dart';
 import 'package:ntripi/features/itineraries/presentation/widgets/parallel_stop_group.dart';
 import 'package:ntripi/features/itineraries/presentation/widgets/segment_card.dart';
+import 'package:ntripi/features/itineraries/presentation/widgets/share_link_action.dart';
 import 'package:ntripi/features/itineraries/presentation/widgets/track_reorder_view.dart';
 import 'package:ntripi/shared/widgets/field_help.dart';
 import 'package:ntripi/shared/widgets/loaders.dart';
@@ -82,6 +83,7 @@ import 'package:ntripi/shared/widgets/markdown_edit_screen.dart';
 import 'package:ntripi/shared/widgets/appeal_sheet.dart';
 import 'package:ntripi/shared/widgets/moderation_hidden_banner.dart';
 import 'package:ntripi/shared/widgets/offline_gate.dart';
+import 'package:ntripi/shared/widgets/reload_report.dart';
 import 'package:ntripi/shared/widgets/saving_overlay.dart';
 import 'package:ntripi/shared/widgets/shadow_divider.dart';
 import 'package:ntripi/core/utils/platform_utils.dart';
@@ -129,6 +131,9 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
   // Anchors the one-time long-press tip at the Edit pencil, the affordance the
   // gesture shortcuts past.
   final GlobalKey _enterEditButtonKey = GlobalKey();
+  // Attached to the Share button: an iPad's share popup and the web's menu
+  // point at it.
+  final GlobalKey _shareButtonKey = GlobalKey();
   bool _longPressHintShown = false; // one-shot guard within this screen's life
   bool _firstStopFormOpened = false; // one-shot guard for the just-created auto-open
   bool _openSoundPlayed = false; // one-shot guard for the open-itinerary cue
@@ -730,10 +735,12 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                         ),
                         const SizedBox(height: 16),
                         FilledButton(
-                          onPressed: () => ref
-                              .read(itineraryDetailProvider(widget.itineraryId)
-                                  .notifier)
-                              .refresh(),
+                          onPressed: () => reportReloads(context, [
+                            ref
+                                .read(itineraryDetailProvider(widget.itineraryId)
+                                    .notifier)
+                                .refresh(),
+                          ]),
                           child: Text(l10n.retry),
                         ),
                         // No hero here; edit mode's Back goes through the PopScope.
@@ -1062,21 +1069,20 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                       // Offline: skip entirely — evicting the cover would
                       // delete an image the device can't re-download.
                       if (!isOnlineNow(ref)) return;
-                      // R2 reuses the same key on cover replacement, so the
-                      // URL string never changes. Evict CachedNetworkImage's
-                      // disk + memory entry for the current cover URL so a
-                      // pull-to-refresh actually shows the new image when
-                      // the owner has replaced it from another device.
-                      if (coverUrl != null) {
-                        await CachedNetworkImage.evictFromCache(
-                          coverUrl,
-                          cacheManager: NtripiImageCacheManager(),
-                        );
-                      }
+                      // A cover replaced from another device keeps its URL:
+                      // clear the cached copy first so the reload shows it.
                       await ref
-                          .read(itineraryDetailProvider(widget.itineraryId)
-                              .notifier)
-                          .refresh();
+                          .read(imageCacheEvictionProvider)
+                          .evict([coverUrl]);
+                      if (!context.mounted) return;
+                      // The trip stays on screen, "view more"s open, while it
+                      // reloads; a failure that kept it is a SnackBar.
+                      await reportReloads(context, [
+                        ref
+                            .read(itineraryDetailProvider(widget.itineraryId)
+                                .notifier)
+                            .refresh(),
+                      ]);
                     },
                     child: CustomScrollView(
                       physics: const AlwaysScrollableScrollPhysics(),
@@ -1092,11 +1098,16 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                             enterEditButtonKey: _enterEditButtonKey,
                             onCoverTap: isOwner ? _showAddCoverHint : null,
                             onBack: _leave,
+                            shareButtonKey: _shareButtonKey,
                             onShare: itinerary.visibility !=
                                     ItineraryVisibility.onlyMe
-                                ? () => ref
-                                    .read(shareServiceProvider)
-                                    .shareItinerary(itinerary, l10n)
+                                ? () => shareLink(
+                                      _shareButtonKey.currentContext ?? context,
+                                      ref,
+                                      ref
+                                          .read(shareServiceProvider)
+                                          .itineraryLink(itinerary, l10n),
+                                    )
                                 : null,
                             onReport: mayEdit
                                 ? null
@@ -1777,6 +1788,8 @@ class _CoverHero extends StatefulWidget {
   final GlobalKey editDetailsButtonKey;
   // Attached to the Edit pencil so the long-press tip can point at it.
   final GlobalKey enterEditButtonKey;
+  // Attached to the Share button, which the share popup points at.
+  final GlobalKey shareButtonKey;
   final VoidCallback onBack;
   final VoidCallback? onShare;
   // Viewer-only (non-owner) report action; null hides the flag button.
@@ -1798,6 +1811,7 @@ class _CoverHero extends StatefulWidget {
     required this.editMode,
     required this.editDetailsButtonKey,
     required this.enterEditButtonKey,
+    required this.shareButtonKey,
     required this.onBack,
     this.onShare,
     this.onReport,
@@ -1900,6 +1914,7 @@ class _CoverHeroState extends State<_CoverHero> {
                   const Spacer(),
                   if (widget.onShare != null) ...[
                     _GlassButton(
+                      key: widget.shareButtonKey,
                       icon: Icons.share_rounded,
                       onTap: widget.onShare,
                     ),

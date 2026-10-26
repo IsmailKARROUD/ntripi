@@ -67,10 +67,11 @@ class _FakeProfileRepo extends ProfileRepository {
   final Object byHandle;
 
   @override
-  Future<User> getMyProfile() async => _me;
+  Future<User> getMyProfile({bool forceRefresh = false}) async => _me;
 
   @override
-  Future<User> getUserProfile(String identifier) async {
+  Future<User> getUserProfile(String identifier,
+      {bool forceRefresh = false}) async {
     if (identifier != 'aminad') return identifier == _me.id ? _me : _them;
     final answer = byHandle;
     if (answer is User) return answer;
@@ -78,11 +79,13 @@ class _FakeProfileRepo extends ProfileRepository {
   }
 
   @override
-  Future<List<VisitedLocation>> getUserLocations(String userId) async =>
+  Future<List<VisitedLocation>> getUserLocations(String userId,
+          {bool forceRefresh = false}) async =>
       const [];
 
   @override
-  Future<List<Violation>> getViolations() async => const [];
+  Future<List<Violation>> getViolations({bool forceRefresh = false}) async =>
+      const [];
 }
 
 class _FakeItineraryRepo extends ItineraryRepository {

@@ -1,17 +1,22 @@
+import 'dart:async';
+
 import 'package:dio_cache_interceptor_hive_store/dio_cache_interceptor_hive_store.dart';
 import 'package:feedback/feedback.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:ntripi/core/api/api_client.dart';
 import 'package:ntripi/core/auth/token_manager.dart';
+import 'package:ntripi/core/connectivity/connectivity_service.dart';
 import 'package:ntripi/core/providers/locale_provider.dart';
 import 'package:ntripi/core/providers/theme_mode_provider.dart';
 import 'package:ntripi/core/push/push_gateway.dart';
 import 'package:ntripi/core/push/push_service.dart';
 import 'package:ntripi/core/router/app_router.dart';
+import 'package:ntripi/core/storage/secure_storage.dart';
 import 'package:ntripi/features/auth/presentation/widgets/tos_gate.dart';
 import 'package:ntripi/core/ui/app_theme.dart';
 import 'package:ntripi/features/bug_report/presentation/bug_report_localizations.dart';
@@ -23,6 +28,14 @@ import 'package:ntripi/l10n/app_localizations.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // The web's address bar shows the screen on top — a pushed trip or profile
+  // included — so a reload stays on it and a copied URL opens it. go_router's
+  // default shows the screen the pushes sit on. No effect off the web.
+  GoRouter.optionURLReflectsImperativeAPIs = true;
+
+  // A session from before the share pages' hint existed gets one now.
+  if (kIsWeb) unawaited(syncWebSessionHint());
 
   // Lock the app to portrait — landscape layouts are unsupported.
   await SystemChrome.setPreferredOrientations(
@@ -47,6 +60,10 @@ Future<void> main() async {
   bareDio = createBareDio();
   final tokenManager = TokenManager(bareDio);
   dio = createDioClient(tokenManager: tokenManager, cacheStore: cacheStore);
+
+  // A kept connection may be dead after a sleep or a network switch.
+  WidgetsBinding.instance.addObserver(apiConnectionPool);
+  networkChanges().listen((_) => apiConnectionPool.retire());
 
   // Before runApp so the background message handler is registered before any
   // push can arrive. Never throws — a missing google-services.json leaves the

@@ -14,6 +14,7 @@ import 'package:ntripi/features/profile/providers/profile_provider.dart';
 import 'package:ntripi/l10n/app_localizations.dart';
 import 'package:ntripi/shared/widgets/appeal_sheet.dart';
 import 'package:ntripi/shared/widgets/loaders.dart';
+import 'package:ntripi/shared/widgets/reload_report.dart';
 
 class AccountStatusScreen extends ConsumerWidget {
   const AccountStatusScreen({super.key});
@@ -74,7 +75,10 @@ class AccountStatusScreen extends ConsumerWidget {
             );
           }
           return RefreshIndicator(
-            onRefresh: () async => ref.invalidate(myViolationsProvider),
+            // Not ref.invalidate: that returned at once, so the spinner ended
+            // before the list came back, and a failed rebuild replaced it.
+            onRefresh: () => reportReloads(
+                context, [ref.read(myViolationsProvider.notifier).refresh()]),
             child: ListView.separated(
               padding: const EdgeInsets.all(16),
               itemCount: violations.length,

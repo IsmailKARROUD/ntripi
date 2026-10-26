@@ -22,6 +22,7 @@ import 'package:ntripi/l10n/app_localizations.dart';
 import 'package:ntripi/shared/widgets/editorial_widgets.dart';
 import 'package:ntripi/shared/widgets/loaders.dart';
 import 'package:ntripi/shared/widgets/offline_gate.dart';
+import 'package:ntripi/shared/widgets/reload_report.dart';
 
 class NotificationsScreen extends ConsumerStatefulWidget {
   const NotificationsScreen({super.key});
@@ -192,7 +193,7 @@ class _Feed extends ConsumerWidget {
     final notifier = ref.watch(notificationsProvider.notifier);
 
     return RefreshIndicator(
-      onRefresh: () => notifier.refresh(),
+      onRefresh: () => reportReloads(context, [notifier.refresh()]),
       child: NotificationListener<ScrollNotification>(
         // Older rows are paged in as the list nears its end — the feed used to
         // stop at the first page with no way to reach the rest.
@@ -384,7 +385,8 @@ class _EmptyView extends ConsumerWidget {
     final nt = context.nt;
     final l10n = AppLocalizations.of(context)!;
     return RefreshableCenter(
-      onRefresh: () => ref.read(notificationsProvider.notifier).refresh(),
+      onRefresh: () => reportReloads(
+          context, [ref.read(notificationsProvider.notifier).refresh()]),
       child: Padding(
         padding: const EdgeInsets.all(24),
         child: Column(
@@ -414,7 +416,8 @@ class _ErrorView extends ConsumerWidget {
     final nt = context.nt;
     final l10n = AppLocalizations.of(context)!;
     return RefreshableCenter(
-      onRefresh: () => ref.read(notificationsProvider.notifier).refresh(),
+      onRefresh: () => reportReloads(
+          context, [ref.read(notificationsProvider.notifier).refresh()]),
       child: Padding(
         padding: const EdgeInsets.all(24),
         child: Column(
@@ -427,7 +430,8 @@ class _ErrorView extends ConsumerWidget {
             ),
             const SizedBox(height: 16),
             FilledButton(
-              onPressed: () => ref.read(notificationsProvider.notifier).refresh(),
+              onPressed: () => reportReloads(
+                  context, [ref.read(notificationsProvider.notifier).refresh()]),
               child: Text(l10n.retry),
             ),
           ],

@@ -108,6 +108,11 @@ page.
     under it by a sort change, and never throws — it runs from the scroll
     listener.
   - `feedSortProvider` — `NotifierProvider`, the Top/Recent toggle.
+  - **A pull keeps the cards on screen** — `refresh()` goes through
+    `ReloadKeepsContent` ([itineraries.md](itineraries.md)): the answer replaces
+    page 0 in place and restarts paging; a failed pull keeps the cards and says
+    why in a SnackBar. A sort or language change still shows the loader — that
+    is a new list, not a reload of the one on screen.
   - `feedProvider` also watches the app language and sends it as `lang` on
     every page and refresh, so a language change refetches page 0 under its own
     cache key.

@@ -105,6 +105,36 @@ class TestFlutterWebMount:
         assert resp.status_code == 200
         assert "Flutter SPA" in resp.text
 
+    def test_a_page_load_under_app_opens_that_route(self, tmp_path):
+        """The web app reads only the part after '#': a browser loading
+        /app/share/u/name is sent to /app/#/share/u/name instead of home."""
+        (tmp_path / "index.html").write_text("<!DOCTYPE html><html><body>SPA</body></html>")
+        test_app = FastAPI()
+        test_app.mount("/app", _SPAStaticFiles(directory=str(tmp_path), html=True), name="fw")
+        with TestClient(test_app) as c:
+            page = {"accept": "text/html,application/xhtml+xml,*/*;q=0.8"}
+            resp = c.get("/app/share/u/IsZi", headers=page, follow_redirects=False)
+            assert resp.status_code == 302
+            assert resp.headers["location"] == "/app/#/share/u/IsZi"
+            resp = c.get("/app/itineraries/abc?x=1", headers=page, follow_redirects=False)
+            assert resp.headers["location"] == "/app/#/itineraries/abc?x=1"
+            # The fragment keeps even a // path on this site.
+            resp = c.get("/app//evil.example", headers=page, follow_redirects=False)
+            assert resp.headers["location"].startswith("/app/#/")
+            # The app's own root is the app, not a redirect.
+            assert c.get("/app/", headers=page, follow_redirects=False).status_code == 200
+
+    def test_a_missing_asset_still_gets_the_index_fallback(self, tmp_path):
+        """Only a page load is redirected; the app's own fetches are not."""
+        (tmp_path / "index.html").write_text("<!DOCTYPE html><html><body>SPA</body></html>")
+        test_app = FastAPI()
+        test_app.mount("/app", _SPAStaticFiles(directory=str(tmp_path), html=True), name="fw")
+        with TestClient(test_app) as c:
+            resp = c.get("/app/assets/missing.json", headers={"accept": "*/*"},
+                         follow_redirects=False)
+        assert resp.status_code == 200
+        assert "SPA" in resp.text
+
     def test_app_returns_404_when_build_missing(self, client: TestClient):
         """/app/ returns 404 in dev when the Flutter build directory is absent."""
         assert not Path("/app/web_build").exists(), (

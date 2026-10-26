@@ -14,6 +14,7 @@
 
 import 'dart:async';
 
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -22,6 +23,8 @@ import 'package:ntripi/core/ui/confirm_dialog.dart';
 import 'package:ntripi/features/follows/providers/follow_provider.dart';
 import 'package:ntripi/features/itineraries/domain/itinerary.dart';
 import 'package:ntripi/features/itineraries/providers/itinerary_providers.dart';
+import 'package:ntripi/features/profile/data/profile_repository.dart';
+import 'package:ntripi/features/profile/domain/visited_location.dart';
 import 'package:ntripi/features/profile/presentation/profile_screen.dart';
 import 'package:ntripi/features/profile/providers/profile_provider.dart';
 import 'package:ntripi/l10n/app_localizations.dart';
@@ -104,6 +107,64 @@ class _FakeMyProfile extends MyProfileNotifier {
   }
 }
 
+/// A profile save the server refuses — the real notifier now throws, leaving
+/// the profile as it was.
+class _FakeMyProfileRefusingSave extends _FakeMyProfile {
+  _FakeMyProfileRefusingSave() : super(_testUser);
+
+  @override
+  Future<void> updateProfile({
+    String? displayName,
+    String? bio,
+    String? avatarUrl,
+    bool clearAvatarUrl = false,
+    String? coverImageUrl,
+    bool clearCoverImageUrl = false,
+    bool? isPrivate,
+    List<String>? passportCountries,
+    bool passportCountriesChanged = false,
+    String? residentCountry,
+    bool clearResidentCountry = false,
+    List<String>? languages,
+    bool languagesChanged = false,
+    bool? notifyRatings,
+    bool? notifySaves,
+    bool? notifyFollowAccepted,
+  }) async {
+    final sent = RequestOptions(path: '/users/me');
+    throw DioException(
+      requestOptions: sent,
+      type: DioExceptionType.badResponse,
+      response: Response(
+        requestOptions: sent,
+        statusCode: 422,
+        data: {'code': 'text_moderation_rejected', 'detail': 'Rejected.'},
+      ),
+    );
+  }
+}
+
+/// The profile's own reads — what a reload of it sends — answered with the
+/// test user, or failed with [failWith].
+class _FakeProfileRepo extends ProfileRepository {
+  _FakeProfileRepo({this.failWith}) : super(Dio());
+
+  final Object? failWith;
+
+  @override
+  Future<User> getMyProfile({bool forceRefresh = false}) async {
+    if (failWith != null) throw failWith!;
+    return _testUser;
+  }
+
+  @override
+  Future<List<VisitedLocation>> getUserLocations(
+    String userId, {
+    bool forceRefresh = false,
+  }) async =>
+      const [];
+}
+
 class _FakeMyProfileLoading extends MyProfileNotifier {
   @override
   Future<User> build() => Completer<User>().future; // never completes
@@ -145,6 +206,7 @@ Widget _buildScreen({
   List<Itinerary>? itineraries,
   List<FollowRequestItem>? requests,
   MyProfileNotifier Function()? profileNotifier,
+  ProfileRepository? profileRepo,
 }) {
   FlutterSecureStorage.setMockInitialValues({});
   return ProviderScope(
@@ -158,6 +220,8 @@ Widget _buildScreen({
           () => _FakeFollowRequests(requests ?? [])),
       myItinerariesProvider.overrideWith(
           () => _FakeMyItineraries(itineraries ?? [])),
+      if (profileRepo != null)
+        profileRepositoryProvider.overrideWithValue(profileRepo),
     ],
     child: MaterialApp(
       localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -348,6 +412,63 @@ void main() {
 
         expect(find.text('Retry'), findsOneWidget);
       });
+
+      testWidgets(
+          'Given profile fetch fails, When Retry is tapped, '
+          'Then the profile loads in place of the error', (tester) async {
+        tester.view.physicalSize = const Size(1080, 1920);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        await tester.pumpWidget(_buildScreen(
+          profileNotifier: _FakeMyProfileError.new,
+          profileRepo: _FakeProfileRepo(),
+        ));
+        await tester.pump();
+
+        await tester.tap(find.text('Retry'));
+        await tester.pump();
+        await tester.pump();
+
+        expect(find.text('Ismail duo'), findsOneWidget);
+        expect(find.text('Retry'), findsNothing);
+      });
+
+      testWidgets(
+          'Given the profile on screen, When a pull fails, '
+          'Then it stays and the reason shows in a SnackBar', (tester) async {
+        tester.view.physicalSize = const Size(1080, 1920);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        await tester.pumpWidget(_buildScreen(
+          profileRepo: _FakeProfileRepo(
+            failWith: DioException(
+              requestOptions: RequestOptions(path: '/users/me'),
+              type: DioExceptionType.receiveTimeout,
+            ),
+          ),
+        ));
+        await tester.pump();
+        await tester.pump();
+
+        // Past the indicator's arming distance: a quarter of the page.
+        await tester.fling(find.byType(RefreshIndicator).first,
+            const Offset(0, 1000), 1000);
+        await tester.pump();
+        await tester.pump(const Duration(seconds: 1));
+        await tester.pump(const Duration(seconds: 1));
+
+        expect(find.text('Ismail duo'), findsOneWidget);
+        expect(find.byType(SnackBar), findsOneWidget);
+        expect(
+          find.text(
+              'No internet connection. Please check your network and try again.'),
+          findsOneWidget,
+        );
+      });
     });
 
     // ── Settings sheet ───────────────────────────────────────────────────
@@ -489,6 +610,35 @@ void main() {
 
         // After save, edit mode exits (Cancel disappears)
         expect(find.text('Cancel'), findsNothing);
+      });
+
+      testWidgets(
+          'Given edit mode, When the save is refused, '
+          'Then the form stays with what was typed, and says why',
+          (tester) async {
+        tester.view.physicalSize = const Size(1080, 1920);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        await tester.pumpWidget(_buildScreen(
+            profileNotifier: _FakeMyProfileRefusingSave.new));
+        await tester.pump();
+        await tester.pump();
+
+        await tester.tap(find.byTooltip('Edit profile'));
+        await tester.pump();
+
+        await tester.enterText(find.byType(TextField).first, 'Typed name');
+        await tester.tap(find.text('Save'));
+        await tester.pump();
+        await tester.pump();
+
+        // The refusal used to replace the whole screen, form and text included,
+        // with the error view.
+        expect(find.text('Cancel'), findsOneWidget);
+        expect(find.text('Typed name'), findsOneWidget);
+        expect(find.byType(SnackBar), findsOneWidget);
       });
     });
 

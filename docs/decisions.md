@@ -1825,6 +1825,186 @@ own session and sends exactly as before.
 - One thread per push: unbounded under a burst, and sends out of order.
 - An external queue: a new dependency for something the poll already backs up.
 
+<<<<<<< HEAD
+### 2026-10-25 — A reload never blanks the content on screen
+
+Completes the separate fix that
+[2026-10-21 — A trip save answers with the whole trip, and the app never reloads after it](#2026-10-21--a-trip-save-answers-with-the-whole-trip-and-the-app-never-reloads-after-it)
+left to `refresh()` ("its blanking is a separate fix").
+
+**Context.** Pulling to refresh the trip page swapped the trip for the
+full-screen loader until the new copy landed, and brought it back rebuilt with
+every "view more" closed; a failed reload replaced it with the error view,
+although the copy on screen had been fine a second earlier. Riverpod 3 (3.3.2
+installed) routes every `state =` through `asyncTransition`, which merges the
+previous value into an `AsyncLoading` or `AsyncError` (`copyWithPrevious`), and
+`AsyncValue.when()` defaults to `skipLoadingOnReload: false` and
+`skipError: false`: it still draws the loader and the error view, and the data
+subtree is unmounted either way. Eleven `refresh()` methods wrote
+`AsyncLoading` unconditionally; the two that kept the rows during the load
+(follow requests, notifications) still wrote a failure over them. Reading the
+code found three more of the same:
+- `MyProfileNotifier.updateProfile` wrote a failed save into the profile, so a
+  refused bio replaced the profile screen — the edit form and its typed text
+  included — with the error view, and the form's own catch never ran;
+- Account status pulled with `ref.invalidate`, which returns at once (the
+  spinner ended before the list came back) and let a failed rebuild replace
+  the list;
+- on iOS and Android a forced reload that timed out or got a 5xx was answered
+  by the HTTP cache with its stored copy, as a success — so no failure could be
+  reported, and the copy could be older than the screen, because list rows,
+  follow counts and the rating average are adopted from write answers in
+  memory only.
+
+**Decision.** One mechanism, `ReloadKeepsContent`
+(`core/providers/reload_keeps_content.dart`): a mixin on `AsyncNotifier` whose
+`reloadKeepingContent(fetch, onApply:)` is the only place a notifier writes
+`AsyncLoading` or `AsyncError`.
+- Nothing on screen (no value, or the error view): the loader, then the answer
+  or the error — a first load and Retry, unchanged.
+- Content on screen: it stays mounted. An answer replaces it in place after
+  `onApply` (paging bookkeeping) — unless something else wrote the state while
+  the reload was in flight, and then that newer state stands: the GET may
+  predate a save, a dismissal or a removal answered meanwhile, and applying it
+  would undo the user's own action on screen (on the trip page, put back an
+  old `updated_at`, so the next save 412s). The owner chose this over always
+  applying the answer.
+- A refusal — `refusesContent`, the `kNeverServeStaleFor` statuses
+  401/403/404/410 — replaces the content with the error view: a deleted,
+  blocked or no-longer-shared trip must not stay on screen.
+- Any other failure leaves the content and is returned as a `ReloadFailure`.
+  The screen that started the reload shows it with `reportReloads`
+  (`shared/widgets/reload_report.dart`: a SnackBar of `extractErrorMessage`,
+  only while that screen is mounted); a reload the app starts drops it.
+  `refresh()` never throws, so nothing reaches a `RefreshIndicator` as an
+  error.
+
+All thirteen `refresh()` methods use it, and `MyViolationsNotifier` gains one
+for Account status's pull. `ItineraryDetailNotifier._adopt`'s GET — after a
+save answered with no trip — goes through it too. `updateProfile` throws on
+failure and leaves the profile. Forced reads (`forceRefreshOptions()`) no
+longer fall back to the stored copy on a transient error, and the four reloads
+that were not forced (my profile, a profile, the places map, Account status)
+now are; first loads keep the fallback, which is what shows content offline.
+
+**Consequences.**
+- A pull keeps the scroll position and every opened "view more"; its spinner
+  is the only sign of the reload. A failed pull keeps the content and shows the
+  reason; a refused one shows the screen's error or unavailable view, as
+  before.
+- The two ratings screens draw from `.value`, which an `AsyncError` still
+  carries, so their error check became `hasError` alone: an error state now
+  only ever means "show the error".
+- The follow lists and the notification feed stay scrollable during a pull, so
+  a `loadMore` page requested before a reload landed is dropped (a generation
+  counter) rather than appended to the new first page at the old offset.
+- A notification-settings switch whose save fails shows a SnackBar and stays
+  where it was, instead of the settings list being swapped for an error; the
+  profile edit form's existing catch now runs and keeps the text.
+- A timeout on the GET that follows a save answered with no trip keeps the trip
+  on screen, and the save reports the error to its caller. The refusal that
+  GET exists for still shows the no-access view.
+- The edit-lock status read is forced as well: a failed one now returns
+  nothing rather than a claim that had decayed in the cache, and `peek()`
+  already treated a failure as nothing.
+- Tests: `reload_keeps_content_test.dart` (every notifier held, answered, timed
+  out, 5xx and 404; the in-flight write; the dropped page; `_adopt`;
+  `updateProfile`), `trip_reload_keeps_content_test.dart` (the trip page with an
+  open "view more" through an answered and a failed pull),
+  `cache_error_test.dart` (a forced read is never answered from the cache) and
+  `reload_keeps_content_guard_test.dart`, which fails on a loading or error
+  write, an `AsyncValue.guard` or a `refresh()` outside the mechanism. Its one
+  allowlisted class is `PlaceSearchNotifier`: a new query must not keep
+  showing the previous query's results.
+- The help centre is unchanged: no article describes what a screen shows
+  during a reload, and the "please reload" troubleshooting entry stays true.
+
+**Alternatives rejected.**
+- `skipLoadingOnReload: true` / `skipError: true` at every `when()` call site:
+  31 sites, each a place to forget, and `skipError` would also keep the content
+  over a 403 or 404 — a trip deleted or taken away would stay on screen.
+- A guard copied into each notifier: the two copies that existed already got
+  the failure case wrong.
+- Always applying the reload's answer: simpler, but with the content usable
+  during a reload, the user's own write could be undone on screen.
+- Keeping the cache's stale-on-error fallback for reloads: it hides every failed
+  reload on a phone and can put back a copy older than the screen.
+- Keeping the stored copies of partial answers current by patching cached list
+  bodies: a bigger change that still would not reveal a failed reload.
+
+### 2026-10-26 — A shared link opens where the reader already is; Copy link copies the link alone
+
+Supersedes one consequence of
+[2026-10-18 — Shared links open the app, and say plainly when they can't](#2026-10-18--shared-links-open-the-app-and-say-plainly-when-they-cant):
+"iOS has no in-page **Open in app**".
+
+**Context.** The owner reported five confusing behaviours. A share link opened in
+a browser already signed in to the web app showed the teaser and its "free
+account needed" gate: the server-rendered page had no way to know about the
+session, whose tokens flutter_secure_storage keeps encrypted. On a phone with the
+app, the page — reached by pasting the link, which no OS hands to an app — offered
+the app only on Android, as a second button, and on an iPhone not at all. In the
+web app, `/app/share/u/name` opened home (the app reads only the part after
+`#`), and `/app/#/share/u/name` showed the profile under `#/profile/me`: go_router
+never writes a pushed screen into the address bar, so a reload or a copied URL
+lost every pushed trip and profile. And the share sheet's Copy copied the caption
+with the link, where the owner wanted the link alone.
+**Decision.**
+- **Signed in on the web → straight in.** The web app keeps one plain
+  localStorage entry while a session lasts, `ntripi_web_session_until` — the
+  session's end, nothing else — written by `saveTokens` and removed by
+  `clearAllTokens`. Each teaser page reads it in `<head>` and leaves with
+  `location.replace` before the body is drawn.
+- **A phone gets "Open in Ntripi".** On Android, Chrome's installed-app check
+  (`getInstalledRelatedApps`, through `asset_statements` in the app and
+  `/manifest.webmanifest` on the site) puts it first and drops the store badges
+  when the app is installed, and hides it when it is not; an installed app also
+  wins over a web session. On an iPhone it links a second host,
+  `APP_OPEN_HOST` (`open.ntripi.app`), claimed beside `ntripi.app`: a tap across
+  hosts is what iOS hands to an app. Without the app, Safari loads it and the
+  host sends it back to the page with `?app=missing`, which says the app did not
+  open. That host serves its association files and nothing else.
+- **The web address bar shows the screen on top**
+  (`GoRouter.optionURLReflectsImperativeAPIs`). Two rules follow: the app never
+  starts on an editing form (a reload lands on what it edits), and a trip or
+  profile URL opened signed out is parked through the sign-in like a shared
+  link. Every route is classified one way or the other by a test. A page load of
+  `/app/<path>` is redirected to `/app/#/<path>`.
+- **The phone's own share popup gets a Copy link row**, through a method channel
+  (`ntripi/share`): a `ChooserAction` on Android 14+, a first target before it, a
+  `UIActivity` on iOS. The owner chose this over a sheet of the app's own. The
+  web, whose popups take no row, gets a two-item menu — or, with no popup at
+  all, the link copied at once. Sharing passes the tapped button as the popup's
+  origin, which also fixes sharing on iPad.
+**Consequences.**
+- The app gains its first custom native code; a build without it falls back to
+  share_plus without the row.
+- The iPhone button waits on infrastructure: a Railway custom domain, a proxied
+  CNAME, Apple's CDN serving the host's AASA, a build with the second
+  `applinks:` entry, then `APP_OPEN_HOST`.
+- iOS cannot tell a page that an app is installed, so an iPhone signed in on the
+  web goes to the web app when a link is pasted into Safari, and readers without
+  the app see the iPhone button too.
+- A signed-in owner sees their own teaser only in a private window.
+- A `/app/#/…` address still never opens the app; the app's Share and Copy link
+  always hand out the `/share/` form, which does.
+- The help article `share-a-trip-link` and What's New changed in all six
+  languages.
+**Alternatives rejected.**
+- A server-side redirect keyed on a cookie the web app sets: the HTML would vary
+  by cookie, and the app's session lives in localStorage anyway.
+- Reading flutter_secure_storage's own localStorage keys from the page: a
+  private format of a plugin, which a plugin update can move.
+- Opening the app from script on page load: browsers refuse an intent or a
+  cross-host navigation without a tap.
+- A custom URL scheme: rejected on 2026-10-18 — any app can register one.
+- The path URL strategy: every `/app/#/…` link already sent, in emails, help
+  pages and share pages, would land on home.
+- Leaving the address bar as it was: a reload and a copied URL keep losing the
+  screen.
+- A sheet of the app's own with Copy link and Share via…: the owner preferred
+  the phone's own popup with one row added.
+=======
 ### 2026-10-25 — Image moderation tells the operator when it cannot scan
 
 Extends
@@ -1988,3 +2168,66 @@ scan.
   routing being available on its Enterprise plan only.
 - Hive: US-only.
 - OpenAI's image moderation: US.
+>>>>>>> ntripiworktree
+
+### 2026-10-25 — The app keeps its connection to the API open for two minutes
+
+**Context.** A request needs an open, encrypted connection to ntripi.app, and
+opening one costs a TCP and a TLS handshake: from Belgium, through Cloudflare's
+Brussels edge, 90–125 ms to the first byte on a new connection against
+40–60 ms on one already open (2026-10-24). Dio's own adapter
+(`IOHttpClientAdapter`, dio 5.10.0) closes an unused connection after 3 s — it
+overrides dart:io's 15 s default — and the app never set its own. So nearly
+every save, every 30 s lock heartbeat and every 60 s notification poll opened
+a new connection, and `bareDio` (token refresh, logout, the retry after a 401)
+kept a pool of its own.
+
+**Decision.** `createDioClient` and `createBareDio` both install one adapter,
+`apiConnectionPool` (`core/api/api_connection_pool_io.dart`), whose
+`HttpClient` keeps an unused connection for `kApiConnectionIdleTimeout`, 120 s.
+That is longer than the heartbeat and the poll, so either keeps the connection
+warm, and shorter than Cloudflare's HTTP/1.1 keep-alive (400 s, not
+configurable), so the app always closes first. `main.dart` retires the pool
+when the app is hidden and when the device moves to another network
+(`networkChanges()`, `core/connectivity/connectivity_service.dart`): later
+requests open a new connection, and requests under way finish on theirs, which
+then close. Retiring sets the old client's `idleTimeout` to zero instead of
+closing it. The value is a constant in code, because it follows Cloudflare's
+limit, which is the same for every build. The web is unchanged: the browser
+keeps its own connections.
+
+**Consequences.**
+- A save, heartbeat or poll within two minutes of the previous request skips
+  the handshake: about 50 ms on good Wi-Fi, more on mobile data, where each
+  round trip is slower. While the app is open and signed in, the poll keeps one
+  connection open the whole time.
+- After every return to the app and every network switch, the first request
+  opens a new connection, which is what any request after a 3 s pause did
+  before.
+- dart:io drops a pooled connection only when its socket reports closing. It
+  never checks one before reusing it and never retries a request. Before, the
+  pool was almost always empty when the app left the screen or the network
+  changed; with two minutes and the 60 s poll, it almost never is. Retiring at
+  those two moments is what keeps a connection that died meanwhile (the phone
+  asleep, the app suspended, another network) from failing the next save.
+- Still possible: a connection the network drops silently while the app is
+  open, with no network change reported, fails the request sent down it.
+- The server's timing line cannot show the gain, because it starts after the
+  handshake. On a phone, DevTools' Network tab shows two saves a minute apart
+  on the same local port.
+
+**Alternatives rejected.**
+- **400 s, Cloudflare's own limit**: both ends would close an idle connection
+  at the same moment, and a request sent then fails instead of being slow.
+- **An env var or a `--dart-define`**: the value follows Cloudflare's limit,
+  which is the same for every build.
+- **`HttpClient.close()` to retire the pool**: even with `force: false` it
+  cancels a request still opening its connection, so a save tapped just before
+  leaving the app would fail. `api_connection_pool_test.dart` fails if retiring
+  closes the client.
+- **Retrying a request that fails on a reused connection, as OkHttp does**: a
+  POST cannot safely be sent twice, and Dio does not say whether a connection
+  was reused.
+- **The same timeout for the geocoding, People API and link-preview clients**:
+  their servers' idle limits are unknown, and a client that keeps a connection
+  longer than its server can lose a request to the server's close.

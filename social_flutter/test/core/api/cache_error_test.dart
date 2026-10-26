@@ -1,4 +1,5 @@
-// test/core/api/cache_error_test.dart — the cache must not answer a 404.
+// test/core/api/cache_error_test.dart — the cache must not answer a 404, nor
+// a reload.
 //
 // The regression this pins down: the interceptor was configured with
 // `hitCacheOnErrorExcept: []`, which dio_cache_interceptor reads as "fall back
@@ -185,6 +186,66 @@ void main() {
       // interceptor's earlier branch and never consults kNeverServeStaleFor.
       expect(second.statusCode, 304);
       expect((second.data as Map)['username'], 'aminad');
+    });
+  });
+
+  // A reload keeps what is on screen through a failure and reports it
+  // (ReloadKeepsContent). The stored copy answered in its place came back as a
+  // success — so nothing was reported — and could be older than the screen.
+  group('a reload is never answered from the cache', () {
+    test(
+        'Given a cached profile, When a reload gets a 500, '
+        'Then the caller gets the 500 and a first load still finds the entry',
+        () async {
+      final stack = _makeStack([_profile200, () => _error(500)]);
+
+      await stack.dio.get(_path);
+      await expectLater(
+        stack.dio.get(_path, options: forceRefreshOptions()),
+        throwsA(isA<DioException>().having(
+          (e) => e.response?.statusCode,
+          'statusCode',
+          500,
+        )),
+      );
+
+      expect(await stack.store.exists(_keyFor(stack.dio)), isTrue);
+      final firstLoad = await stack.dio.get(_path);
+      expect(firstLoad.statusCode, 304);
+      expect((firstLoad.data as Map)['username'], 'aminad');
+    });
+
+    test(
+        'Given a cached profile, When a reload cannot reach the server, '
+        'Then the caller gets the connection error', () async {
+      final store = MemCacheStore();
+      final dio = Dio(BaseOptions(baseUrl: 'https://api.test'));
+      dio.interceptors.add(
+        DioCacheInterceptor(
+          options: CacheOptions(
+            store: store,
+            policy: CachePolicy.request,
+            hitCacheOnErrorExcept: kNeverServeStaleFor,
+            maxStale: const Duration(days: 7),
+          ),
+        ),
+      );
+      dio.interceptors.add(CacheEvictInterceptor(store));
+
+      var offline = false;
+      dio.httpClientAdapter = _OfflineAfterFirst(() => offline);
+
+      await dio.get(_path);
+      offline = true;
+
+      await expectLater(
+        dio.get(_path, options: forceRefreshOptions()),
+        throwsA(isA<DioException>().having(
+          (e) => e.type,
+          'type',
+          DioExceptionType.connectionError,
+        )),
+      );
     });
   });
 }

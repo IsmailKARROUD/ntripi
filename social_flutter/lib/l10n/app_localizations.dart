@@ -2626,6 +2626,24 @@ abstract class AppLocalizations {
   /// **'Share'**
   String get shareTooltip;
 
+  /// No description provided for @shareCopyLink.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy link'**
+  String get shareCopyLink;
+
+  /// No description provided for @shareLinkCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Link copied'**
+  String get shareLinkCopied;
+
+  /// No description provided for @shareVia.
+  ///
+  /// In en, this message translates to:
+  /// **'Share via…'**
+  String get shareVia;
+
   /// No description provided for @editDetailsTooltip.
   ///
   /// In en, this message translates to:

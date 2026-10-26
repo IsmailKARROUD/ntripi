@@ -5,6 +5,8 @@
 // otherwise renders another user's profile (with the follow action row and
 // the locked-content card for private accounts the viewer doesn't follow).
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -19,7 +21,7 @@ import 'package:ntripi/features/feed/providers/feed_providers.dart';
 import 'package:ntripi/features/follows/presentation/follow_actions.dart';
 import 'package:ntripi/features/follows/providers/follow_provider.dart';
 import 'package:ntripi/features/notifications/presentation/widgets/notification_bell.dart';
-import 'package:ntripi/features/itineraries/data/share_service.dart';
+import 'package:ntripi/features/itineraries/presentation/widgets/share_link_action.dart';
 import 'package:ntripi/features/itineraries/presentation/widgets/itinerary_summary_card.dart';
 import 'package:ntripi/features/itineraries/presentation/widgets/markdown_notes_editor.dart';
 import 'package:ntripi/features/itineraries/providers/itinerary_providers.dart';
@@ -46,6 +48,7 @@ import 'package:ntripi/shared/widgets/field_help.dart';
 import 'package:ntripi/shared/widgets/fullscreen_image_viewer.dart';
 import 'package:ntripi/shared/widgets/loaders.dart';
 import 'package:ntripi/shared/widgets/moderation_hidden_banner.dart';
+import 'package:ntripi/shared/widgets/reload_report.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   /// null ⇒ self (signed-in user); non-null ⇒ another user.
@@ -71,14 +74,17 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   bool _isEditing = false;
   // Anchor for the "add a profile photo" hint that points at the Edit pencil.
   final GlobalKey _editButtonKey = GlobalKey();
+  // On the Share button, which the share popup points at.
+  final GlobalKey _shareButtonKey = GlobalKey();
 
   @override
   void initState() {
     super.initState();
     if (widget.isSelf) {
-      // Self-only: surface pending follow requests banner on first build.
+      // Self-only: surface pending follow requests banner on first build. Nobody
+      // asked for this reload, so a failure stays silent.
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        ref.read(followRequestsProvider.notifier).refresh();
+        unawaited(ref.read(followRequestsProvider.notifier).refresh());
       });
     }
   }
@@ -140,7 +146,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                           const SizedBox(height: 16),
                           FilledButton(
                             onPressed: () => widget.isSelf
-                                ? ref.read(myProfileProvider.notifier).refresh()
+                                ? reportReloads(context, [
+                                    ref
+                                        .read(myProfileProvider.notifier)
+                                        .refresh(),
+                                  ])
                                 : ref.invalidate(
                                     userProfileProvider(widget.userId!)),
                             child: Text(AppLocalizations.of(context)!.retry),
@@ -200,7 +210,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     return RefreshIndicator(
       // Awaited: fired and forgotten, the spinner vanished at once while the
       // data was still on its way.
-      onRefresh: () => Future.wait([
+      onRefresh: () => reportReloads(context, [
         if (widget.isSelf) ...[
           ref.read(myProfileProvider.notifier).refresh(),
           ref.read(myItinerariesProvider.notifier).refresh(),
@@ -272,7 +282,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         ),
                   onShare: widget.isSelf
                       ? null
-                      : () => ShareService().shareProfile(user, l10n),
+                      : () => shareLink(
+                            _shareButtonKey.currentContext ?? context,
+                            ref,
+                            ref.read(shareServiceProvider).profileLink(user, l10n),
+                          ),
+                  shareButtonKey: _shareButtonKey,
                   onBack: widget.isSelf ? null : _leave,
                   locations: heroLocations,
                   editButtonKey: _editButtonKey,

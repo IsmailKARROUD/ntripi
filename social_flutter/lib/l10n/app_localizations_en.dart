@@ -1429,6 +1429,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get shareTooltip => 'Share';
 
   @override
+  String get shareCopyLink => 'Copy link';
+
+  @override
+  String get shareLinkCopied => 'Link copied';
+
+  @override
+  String get shareVia => 'Share via…';
+
+  @override
   String get editDetailsTooltip => 'Edit details & image';
 
   @override

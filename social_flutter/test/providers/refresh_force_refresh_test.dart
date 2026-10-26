@@ -21,7 +21,13 @@ import 'package:ntripi/features/itineraries/data/itinerary_repository.dart';
 import 'package:ntripi/features/itineraries/domain/itinerary.dart';
 import 'package:ntripi/features/itineraries/domain/ratings_page.dart';
 import 'package:ntripi/features/itineraries/providers/itinerary_providers.dart';
+import 'package:ntripi/features/profile/data/profile_repository.dart';
+import 'package:ntripi/features/profile/domain/violation.dart';
+import 'package:ntripi/features/profile/domain/visited_location.dart';
+import 'package:ntripi/features/profile/providers/profile_provider.dart';
+import 'package:ntripi/features/profile/providers/user_locations_provider.dart';
 import 'package:ntripi/shared/models/follow.dart';
+import 'package:ntripi/shared/models/user.dart';
 
 // ---------------------------------------------------------------------------
 // Fakes — each one records the forceRefresh flag per call so tests can assert
@@ -137,6 +143,51 @@ class _FakeFollowRepo implements FollowRepository {
   @override
   Future<void> rejectFollowRequest(String followId) =>
       throw UnimplementedError();
+}
+
+class _FakeProfileRepo extends ProfileRepository {
+  _FakeProfileRepo() : super(Dio());
+
+  final List<bool> getMyProfileCalls = [];
+  final List<bool> getUserProfileCalls = [];
+  final List<bool> getUserLocationsCalls = [];
+  final List<bool> getViolationsCalls = [];
+
+  User _user(String id) => User(
+        id: id,
+        username: 'someone',
+        isPrivate: false,
+        followersCount: 0,
+        followingCount: 0,
+        createdAt: DateTime.utc(2026, 1, 1),
+      );
+
+  @override
+  Future<User> getMyProfile({bool forceRefresh = false}) async {
+    getMyProfileCalls.add(forceRefresh);
+    return _user('me');
+  }
+
+  @override
+  Future<User> getUserProfile(String userId, {bool forceRefresh = false}) async {
+    getUserProfileCalls.add(forceRefresh);
+    return _user(userId);
+  }
+
+  @override
+  Future<List<VisitedLocation>> getUserLocations(
+    String userId, {
+    bool forceRefresh = false,
+  }) async {
+    getUserLocationsCalls.add(forceRefresh);
+    return const [];
+  }
+
+  @override
+  Future<List<Violation>> getViolations({bool forceRefresh = false}) async {
+    getViolationsCalls.add(forceRefresh);
+    return const [];
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -275,6 +326,64 @@ void main() {
       await container.read(followingProvider(_userId).notifier).refresh();
 
       expect(fakeRepo.getFollowingCalls, [false, true]);
+    });
+  });
+
+  // Their conditional GET fell back to the stored copy on a failure, which
+  // hid it: these four reloads joined the forced ones with ReloadKeepsContent.
+  group('Profile notifiers — .refresh() forces a fresh server fetch', () {
+    late _FakeProfileRepo fakeRepo;
+    late ProviderContainer container;
+
+    setUp(() {
+      fakeRepo = _FakeProfileRepo();
+      container = ProviderContainer(overrides: [
+        profileRepositoryProvider.overrideWithValue(fakeRepo),
+      ]);
+    });
+
+    tearDown(() => container.dispose());
+
+    test(
+        'Given MyProfileNotifier, '
+        'When build() runs then refresh() is called, '
+        'Then build uses forceRefresh:false and refresh uses true', () async {
+      await container.read(myProfileProvider.future);
+      await container.read(myProfileProvider.notifier).refresh();
+
+      expect(fakeRepo.getMyProfileCalls, [false, true]);
+    });
+
+    test(
+        'Given UserProfileNotifier, '
+        'When build() runs then refresh() is called, '
+        'Then build uses forceRefresh:false and refresh uses true', () async {
+      await container.read(userProfileProvider(_userId).future);
+      await container.read(userProfileProvider(_userId).notifier).refresh();
+
+      expect(fakeRepo.getUserProfileCalls, [false, true]);
+    });
+
+    test(
+        'Given UserLocationsNotifier, '
+        'When build() runs then refresh() is called, '
+        'Then build uses forceRefresh:false and refresh uses true', () async {
+      await container.read(userLocationsProvider(_userId).future);
+      await container.read(userLocationsProvider(_userId).notifier).refresh();
+
+      expect(fakeRepo.getUserLocationsCalls, [false, true]);
+    });
+
+    test(
+        'Given MyViolationsNotifier, '
+        'When build() runs then refresh() is called, '
+        'Then build uses forceRefresh:false and refresh uses true', () async {
+      // autoDispose: held open the way its screen holds it.
+      container.listen(myViolationsProvider, (_, _) {});
+      await container.read(myViolationsProvider.future);
+      await container.read(myViolationsProvider.notifier).refresh();
+
+      expect(fakeRepo.getViolationsCalls, [false, true]);
     });
   });
 }

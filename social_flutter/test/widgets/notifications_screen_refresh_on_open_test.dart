@@ -225,4 +225,80 @@ void main() {
 
     expect(find.textContaining('Actor n2'), findsOneWidget);
   });
+
+  // A pull and Retry are the reads the user asks for — the loud ones. A failure
+  // with rows on screen keeps them and says why; with nothing on screen, the
+  // error view is the answer.
+  group('a reload the user asks for', () {
+    Future<void> pull(WidgetTester tester) async {
+      await tester.fling(
+          find.byType(RefreshIndicator), const Offset(0, 320), 1000);
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets(
+        'Given a loaded feed, When a pull fails, '
+        'Then the rows stay and the reason shows in a SnackBar',
+        (tester) async {
+      final repo = _RecordingRepo(rows: [_old]);
+      final container = _container(repo);
+      addTearDown(container.dispose);
+      await tester.pumpWidget(_screen(container));
+      await tester.pumpAndSettle();
+
+      repo.failFeed = true;
+      await pull(tester);
+
+      expect(find.textContaining('Actor n1'), findsOneWidget);
+      expect(find.byType(SnackBar), findsOneWidget);
+      expect(find.text('An error occurred. Please try again.'), findsOneWidget);
+    });
+
+    testWidgets(
+        'Given an empty feed, When it is pulled, '
+        'Then a notification that arrived shows', (tester) async {
+      final repo = _RecordingRepo(rows: []);
+      final container = _container(repo);
+      addTearDown(container.dispose);
+      await tester.pumpWidget(_screen(container));
+      await tester.pumpAndSettle();
+
+      repo.rows = [_fresh];
+      await pull(tester);
+
+      expect(find.textContaining('Actor n2'), findsOneWidget);
+    });
+
+    testWidgets(
+        'Given the feed failed to load, When Retry is tapped, '
+        'Then the rows load in place of the error', (tester) async {
+      final repo = _RecordingRepo(rows: [_old])..failFeed = true;
+      final container = _container(repo);
+      addTearDown(container.dispose);
+      await tester.pumpWidget(_screen(container));
+      await tester.pumpAndSettle();
+
+      repo.failFeed = false;
+      await tester.tap(find.widgetWithText(FilledButton, 'Retry'));
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('Actor n1'), findsOneWidget);
+      expect(find.byType(SnackBar), findsNothing);
+    });
+
+    testWidgets(
+        'Given the feed failed to load, When the error is pulled down, '
+        'Then the rows load', (tester) async {
+      final repo = _RecordingRepo(rows: [_old])..failFeed = true;
+      final container = _container(repo);
+      addTearDown(container.dispose);
+      await tester.pumpWidget(_screen(container));
+      await tester.pumpAndSettle();
+
+      repo.failFeed = false;
+      await pull(tester);
+
+      expect(find.textContaining('Actor n1'), findsOneWidget);
+    });
+  });
 }

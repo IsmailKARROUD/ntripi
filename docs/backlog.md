@@ -190,6 +190,32 @@ Its docstring says the caller "must not have added rows to the session", but
 rejected PATCH commits that write. Harmless in effect; the contract is wrong as
 written. → [features/text-moderation.md](features/text-moderation.md)
 
+### idea — the profile's image cache calls can fail a write that landed
+
+`MyProfileNotifier`'s avatar and cover uploads seed the image cache with the new
+bytes (`_refreshImageCache`: evict, then `putFile`) after the upload landed, and
+its deletes clear the cache (`_evictImageCache`) before the delete is sent —
+both straight through `CachedNetworkImage`/`NtripiImageCacheManager`. A cache
+that throws turns a landed upload into an error the edit form reports, and
+stops a delete before it is sent. Itinerary covers already go through the
+best-effort `ImageCacheEviction` (2026-10-25); the profile's calls could do the
+same, with the seed best-effort too. → [features/accounts-and-profiles.md](features/accounts-and-profiles.md)
+
+### idea — the reloads the app starts with `ref.invalidate` can still blank a screen
+
+A `refresh()` keeps content on screen through any failure but a refusal
+(`ReloadKeepsContent`, 2026-10-25), and the guard test holds every one of them.
+The reloads the app starts after a write whose answer cannot carry the result
+go through `ref.invalidate` instead, outside both: the feed after a block or
+unblock and my Following list after a follow (`profile_screen.dart`),
+someone's Followers list and trips after an unfollow and their Following list
+after a removal (`follow_actions.dart`), and the blocked users list after a
+block or unblock (`ugc_actions.dart`, `blocked_users_screen.dart`). Riverpod keeps the
+old value on screen while such a rebuild runs, but a failed one replaces it
+with the error view. They target screens that are usually closed at that
+moment; giving each provider a `refresh()` and calling it would close the gap.
+→ [constraints.md](constraints.md)
+
 ---
 
 ## Policy calls left by the 2026-09-28 sweep
@@ -575,14 +601,14 @@ app's light tokens only, so a visitor in dark mode goes from a white page to a
 dark app on sign-in. A dark set belongs in every template at once, not the share
 pages alone. → [features/web-and-platform.md](features/web-and-platform.md)
 
-### idea — an "Open in app" button on iOS
+### planned — turn on the iPhone "Open in Ntripi" (operator rollout)
 
-iOS never opens an app for a link to the current page's own domain, so the share
-pages show **Open in app** on Android only. Serving the association file on a
-second host (`open.ntripi.app`) and linking the button there would make it a
-cross-domain tap — at the cost of a DNS record, a Railway custom domain, a second
-`applinks:` entry, and a page on that host for visitors without the app. →
-[features/app-links.md](features/app-links.md)
+Built on 2026-10-26 and off until configured: add `open.ntripi.app` as a Railway
+custom domain with a proxied Cloudflare CNAME (the Bot Fight skip rule must cover
+its `/.well-known`), check Apple's CDN serves its AASA
+(`app-site-association.cdn-apple.com/a/v1/open.ntripi.app`), ship a build with the
+second `applinks:` entry, then set `APP_OPEN_HOST=open.ntripi.app`. →
+[features/app-links.md](features/app-links.md#opening-the-app-from-the-page)
 
 ### idea — claim `www.ntripi.app` too
 
@@ -692,6 +718,15 @@ lines will rank:
   `/itineraries/me` or `/shared-with-me` after a save, of `/users/me` after a
   follow write or accepting the terms, of `/appeals/violations` after an
   appeal, or of `…/ratings` after a rating from that page.
+- ~~**A new connection for most requests**~~ — **done 2026-10-25.** Dio's
+  adapter closed an unused connection after 3 s, so nearly every save, every
+  lock heartbeat and every notification poll paid a TCP and TLS handshake:
+  90–125 ms to the first byte from Belgium, against 40–60 ms on a connection
+  already open. The app now keeps it for two minutes and starts over after
+  leaving the app or changing network ([decisions.md](decisions.md)). The
+  server's timing line cannot show it, because it starts after the handshake.
+  To check on a phone: DevTools' Network tab shows two saves a minute apart on
+  the same local port.
 - **The phone** — the closing animation of the form or dialog. (The trip
   screen no longer redraws behind a reload.)
 

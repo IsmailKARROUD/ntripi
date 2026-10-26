@@ -7,10 +7,12 @@
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ntripi/core/connectivity/connectivity_service.dart';
+import 'package:ntripi/core/providers/reload_keeps_content.dart';
 import 'package:ntripi/features/profile/domain/visited_location.dart';
 import 'package:ntripi/features/profile/providers/profile_provider.dart';
 
-class UserLocationsNotifier extends AsyncNotifier<List<VisitedLocation>> {
+class UserLocationsNotifier extends AsyncNotifier<List<VisitedLocation>>
+    with ReloadKeepsContent<List<VisitedLocation>> {
   UserLocationsNotifier(this.arg); // family argument: user id
   final String arg;
 
@@ -19,16 +21,15 @@ class UserLocationsNotifier extends AsyncNotifier<List<VisitedLocation>> {
     return ref.read(profileRepositoryProvider).getUserLocations(arg);
   }
 
-  Future<void> refresh() async {
+  /// Pull-to-refresh on the profile: the map stays on screen while it reloads.
+  Future<ReloadFailure?> refresh() async {
     // Offline: keep cached AsyncData — a forced refresh could only degrade it.
-    if (!isOnlineNowRef(ref)) return;
-    final userId = arg;
-    state = const AsyncLoading();
-    final next = await AsyncValue.guard(
-      () => ref.read(profileRepositoryProvider).getUserLocations(userId),
+    if (!isOnlineNowRef(ref)) return null;
+    return reloadKeepingContent(
+      () => ref
+          .read(profileRepositoryProvider)
+          .getUserLocations(arg, forceRefresh: true),
     );
-    if (!ref.mounted) return; // disposed mid-request (logout)
-    state = next;
   }
 }
 

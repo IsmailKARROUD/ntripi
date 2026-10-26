@@ -262,8 +262,11 @@ hot restart was the only way to see a new row.
   `silentRefresh()`.** Nobody asked for the quiet one, so it **may not show a
   spinner and may not write `AsyncError`**: a failed `silentRefresh` keeps the
   loaded feed, exactly as a failed `poll` keeps the last good badge. `refresh()`
-  only swaps in the skeleton when `!state.hasValue`, so pull-to-refresh keeps the
-  list under the user's finger.
+  reloads through `ReloadKeepsContent` like every reload
+  ([itineraries.md](itineraries.md)): the rows stay under the user's finger
+  through the pull, a failed pull keeps them and says why in a SnackBar, and a
+  row dismissed during the pull stays dismissed. Until 2026-10-25 it kept the
+  rows during the load but let a failure replace them with the error view.
 - **The badge has only `poll()`** — no forced variant. The three user actions that
   change it (`markAllRead`, `clearAll`, a committed delete) invalidate the
   provider outright, and a feed load hands its badge over via `setBadge`.
@@ -373,7 +376,10 @@ project that holds the Sign-In OAuth clients. FCM carries no per-message charge.
 ## Flutter surface
 
 - **Screens** — `NotificationsScreen` (`/notifications`),
-  `NotificationSettingsScreen` (`/settings/notifications`).
+  `NotificationSettingsScreen` (`/settings/notifications`). A switch whose save
+  fails shows the reason in a SnackBar and stays where it was;
+  `updateProfile` used to write the failure into the profile, which swapped the
+  whole settings list for an error message.
 - **Providers** (`features/notifications/providers/notification_provider.dart`):
   | Provider | Type | Holds |
   |---|---|---|

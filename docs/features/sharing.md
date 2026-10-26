@@ -79,6 +79,13 @@ shared link.
 
 ### The way in
 
+**A reader signed in to Ntripi in that browser never sees the teaser**: the
+page's `<head>` finds the web app's session entry in localStorage and sends them
+straight to the trip or profile in the web app — unless Chrome on Android says
+the app is installed, which puts **Open in Ntripi** first instead. Crawlers and
+everyone else get the page. Details in
+[app-links.md](app-links.md#a-reader-already-signed-in-on-the-web).
+
 Every page but not-found carries the same gate (`_app_links.html`
 `teaser_gate`), built from `app_links.cta_context()`:
 
@@ -89,8 +96,9 @@ Every page but not-found carries the same gate (`_app_links.html`
   line above the form saying what is waiting (`ParkedLinkNotice`) — and lands on
   it after. One neutral label because the page cannot know whether the visitor
   already has an account.
-- **The store buttons**, then **Open in app** on Android. **A phone is shown its
-  own store only** — Google Play on Android, the App Store on an iPhone or an
+- **Open in Ntripi** on a phone — first on Android when Chrome says the app is
+  installed, under the web button on an iPhone (through `APP_OPEN_HOST`) — then
+  **the store buttons**. **A phone is shown its own store only** — Google Play on Android, the App Store on an iPhone or an
   iPad — decided once in `<head>` by `platform_head`; a laptop, an unknown device
   and a browser without JavaScript get both, and both are always in the HTML.
   Before launch the stores are the homepage waitlist, so the web button leads.
@@ -176,10 +184,34 @@ the paths the apps claim — see [app-links.md](app-links.md).
 
 ## Flutter surface
 
-- **`shareServiceProvider`** (`features/itineraries/providers/itinerary_providers.dart`)
-  → the share-sheet wrapper, built on `share_plus`.
-- The share action is offered from `ItineraryDetailScreen` and `FeedCard`, and
-  **never from `SharedItineraryCard`** — an editor's row has no share action.
+- **Every Share button calls `shareLink`**
+  (`features/itineraries/presentation/widgets/share_link_action.dart`) with a
+  `ShareLink` from `ShareService.itineraryLink` / `profileLink`
+  (`features/itineraries/data/share_service.dart`, behind
+  `shareServiceProvider`): the URL alone, a caption (the trip's name, number of
+  stops and length; for a profile, "{name} on Ntripi"), and a subject.
+- **On a phone: the phone's own share popup, with one row added — Copy link.**
+  Other apps, and the popup's own Copy, get the caption and the link; the new
+  row copies the link alone. share_plus cannot add a row, so the phone builds
+  answer a method channel, `ntripi/share` — the app's first custom native code:
+  `ShareLinkChooser.kt` (a `ChooserAction` on Android 14+, a `LabeledIntent`
+  first target before it, both copying through `CopyLinkReceiver` /
+  `CopyLinkActivity`, which are not exported) and `AppDelegate.swift`
+  (`CopyLinkActivity`, a `UIActivity` in the action list). iOS reports the row
+  being picked and the app says "Link copied"; Android confirms a copy itself
+  (13+) or by toast. A build without the channel falls back to share_plus,
+  without the row.
+- The popup points at the tapped button — `sharePositionOrigin`, which an iPad
+  needs (without it the share did nothing on iPad): the trip's and the profile's
+  hero buttons carry a key for it, the feed card passes its own context.
+- **On the web**, whose share popups take no extra row: a two-item menu at the
+  button, **Copy link** and **Share via…** (the browser's popup), or — where the
+  browser has none, most desktops, where share_plus would open an email draft —
+  the link copied at once with "Link copied".
+- The share action is offered from `ItineraryDetailScreen`, `FeedCard` and
+  another user's profile, and **never from `SharedItineraryCard`** — an editor's
+  row has no share action. Every link it hands out is the `/share/` form, the
+  one that opens the app.
 - `SHARE_BASE_URL` reaches the client as a `--dart-define`.
 - **`ParkedLinkNotice`** (`features/auth/presentation/widgets/`) — the line above
   the sign-in and sign-up forms while a shared link waits for the sign-in. It

@@ -18,6 +18,7 @@ import 'package:ntripi/l10n/app_localizations.dart';
 import 'package:ntripi/shared/widgets/editorial_widgets.dart';
 import 'package:ntripi/shared/widgets/loaders.dart';
 import 'package:ntripi/shared/widgets/offline_gate.dart';
+import 'package:ntripi/shared/widgets/reload_report.dart';
 import 'package:ntripi/core/utils/platform_utils.dart';
 
 class FollowRequestsScreen extends ConsumerStatefulWidget {
@@ -90,8 +91,9 @@ class _FollowRequestsScreenState extends ConsumerState<FollowRequestsScreen> {
                   loading: () =>
                       const Center(child: NTripiSkeleton()),
                   error: (error, _) => RefreshableCenter(
-                    onRefresh: () =>
-                        ref.read(followRequestsProvider.notifier).refresh(),
+                    onRefresh: () => reportReloads(context, [
+                      ref.read(followRequestsProvider.notifier).refresh(),
+                    ]),
                     child: Padding(
                       padding: const EdgeInsets.all(24),
                       child: Column(
@@ -104,9 +106,9 @@ class _FollowRequestsScreenState extends ConsumerState<FollowRequestsScreen> {
                           ),
                           const SizedBox(height: 16),
                           FilledButton(
-                            onPressed: () => ref
-                                .read(followRequestsProvider.notifier)
-                                .refresh(),
+                            onPressed: () => reportReloads(context, [
+                              ref.read(followRequestsProvider.notifier).refresh(),
+                            ]),
                             child: Text(AppLocalizations.of(context)!.retry),
                           ),
                         ],
@@ -119,8 +121,9 @@ class _FollowRequestsScreenState extends ConsumerState<FollowRequestsScreen> {
                       // the user wants to ask again, and the RefreshIndicator
                       // below it is unreachable from here.
                       return RefreshableCenter(
-                        onRefresh: () =>
-                            ref.read(followRequestsProvider.notifier).refresh(),
+                        onRefresh: () => reportReloads(context, [
+                          ref.read(followRequestsProvider.notifier).refresh(),
+                        ]),
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
@@ -137,8 +140,9 @@ class _FollowRequestsScreenState extends ConsumerState<FollowRequestsScreen> {
                     }
 
                     return RefreshIndicator(
-                      onRefresh: () =>
-                          ref.read(followRequestsProvider.notifier).refresh(),
+                      onRefresh: () => reportReloads(context, [
+                        ref.read(followRequestsProvider.notifier).refresh(),
+                      ]),
                       child: ListView(
                         padding: const EdgeInsets.only(top: 16, bottom: 80),
                         children: [

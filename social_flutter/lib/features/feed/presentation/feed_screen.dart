@@ -12,6 +12,7 @@ import 'package:ntripi/features/feed/presentation/widgets/feed_card.dart';
 import 'package:ntripi/features/feed/providers/feed_providers.dart';
 import 'package:ntripi/l10n/app_localizations.dart';
 import 'package:ntripi/shared/widgets/loaders.dart';
+import 'package:ntripi/shared/widgets/reload_report.dart';
 
 class FeedScreen extends ConsumerStatefulWidget {
   const FeedScreen({super.key});
@@ -64,7 +65,8 @@ class _FeedScreenState extends ConsumerState<FeedScreen> {
               maxWidth: isDesktopWeb() ? kDesktopMaxWidth : double.infinity,
             ),
             child: RefreshIndicator(
-              onRefresh: () => ref.read(feedProvider.notifier).refresh(),
+              onRefresh: () => reportReloads(
+                  context, [ref.read(feedProvider.notifier).refresh()]),
               child: CustomScrollView(
                 controller: _scrollController,
                 physics: const AlwaysScrollableScrollPhysics(),
@@ -212,7 +214,8 @@ class _FeedScreenState extends ConsumerState<FeedScreen> {
           ),
           const SizedBox(height: 16),
           FilledButton(
-            onPressed: () => ref.read(feedProvider.notifier).refresh(),
+            onPressed: () => reportReloads(
+                context, [ref.read(feedProvider.notifier).refresh()]),
             child: Text(l10n.retry),
           ),
         ],
