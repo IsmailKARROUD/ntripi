@@ -1,7 +1,7 @@
 """Validators for user-supplied image URL fields (avatar / cover).
 
-The two-tier moderation pipeline (client NSFWJS pre-check + backend AWS
-Rekognition) only runs on *uploaded* images that pass through
+The two-tier moderation pipeline (client NSFWJS pre-check + the backend image
+scan) only runs on *uploaded* images that pass through
 process_and_store(). A pasted external URL would be stored verbatim,
 bypassing every scan. So PATCH /users/me accepts only URLs that point back
 at our own storage (i.e. an image we already processed + scanned) or null;

@@ -38,7 +38,7 @@ and stale.
   cover-crop (destroying a portrait capture) and reject anything under 600 px. It
   preserves aspect, downscales to a 1600 px long side, and relaxes the minimum to
   200 px via `_decode_and_validate(min_dimension=…)`.
-- **No Rekognition scan** — it is never served to another user, so a hard reject
+- **No image scan** — it is never served to another user, so a hard reject
   could only drop a real bug report because our own UI tripped a classifier.
   **`process_and_store` still strips EXIF.**
 - Key is `bug_reports/{report.id}.jpg`, `cache_bust=False`.

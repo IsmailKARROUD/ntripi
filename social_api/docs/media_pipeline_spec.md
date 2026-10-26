@@ -2,7 +2,7 @@
 
 **Status:** implemented in code; awaiting the operator steps in §5.
 **Storage:** Cloudflare R2 behind a proxied custom domain.
-**Child-safety layer:** Cloudflare CSAM Scanning Tool (serve-time) + AWS Rekognition (upload-time) + user reports.
+**Child-safety layer:** Cloudflare CSAM Scanning Tool (serve-time) + an upload-time image classifier (AWS Rekognition or Google Cloud Vision, chosen by `MODERATION_PROVIDER`) + user reports.
 
 ---
 
@@ -20,7 +20,7 @@ Concretely, three things remain yours:
 | File the CyberTipline report | ❌ | ✅ within 24h of the notice |
 | Preserve evidence | ❌ | ✅ automatic (`rejected_csam` rows) |
 
-**Accepted risk this design takes on:** because detection is serve-time and the digest is daily, a matched image *will* have been stored and possibly served before you learn of it. Upload-time hash matching (PhotoDNA) is the only thing that prevents that, and it was consciously traded away for operational simplicity. Rekognition still rejects overtly explicit uploads before storage; it is a guessing classifier, not a hash match.
+**Accepted risk this design takes on:** because detection is serve-time and the digest is daily, a matched image *will* have been stored and possibly served before you learn of it. Upload-time hash matching (PhotoDNA) is the only thing that prevents that, and it was consciously traded away for operational simplicity. The upload-time image scan still rejects overtly explicit uploads before storage; it is a guessing classifier, not a hash match.
 
 ---
 
@@ -33,7 +33,7 @@ Concretely, three things remain yours:
      ▲                  │  2 Pillow: crop + resize     │               │
      │                  │     re-encode JPEG q85       │               │
      │                  │     → strips EXIF/GPS        │               │
-     │                  │  3 Rekognition scan          │               │
+     │                  │  3 image scan                │               │
      │                  │     reject ⇒ 422, not stored │               │
      │                  │  4 storage().save(key)       │               │
      │                  │  5 persist public URL in DB  │               │
@@ -51,7 +51,7 @@ Concretely, three things remain yours:
 
 1. `_decode_and_validate` — ≤10 MB, JPEG/PNG/WEBP only, ≥600×600, convert to RGB.
 2. `process_cover_image` (1200×630) or `process_avatar_image` (800×800) — cover-crop, LANCZOS resize, re-encode as JPEG q85. **Re-encoding is how EXIF and GPS coordinates are stripped**; the bytes that reach storage are a new image built in memory.
-3. `moderation_service.moderate_or_raise` — Rekognition `DetectModerationLabels` on the processed bytes. Hard reject ⇒ `ModerationRejectedError` ⇒ 422, nothing written. Soft flag ⇒ stored, logged, operator emailed. AWS error ⇒ stored as `pending` (fail-open).
+3. `moderation_service.moderate_or_raise` — the image scan on the processed bytes, by the provider `MODERATION_PROVIDER` names: Rekognition `DetectModerationLabels`, or Google Cloud Vision SafeSearch at its EU endpoint. Hard reject ⇒ `ModerationRejectedError` ⇒ 422, nothing written. Soft flag ⇒ stored, logged, operator emailed. A failed scan ⇒ stored as `pending` (fail-open), operator emailed at most once an hour.
 4. `storage().save(key, bytes, "image/jpeg")` — R2 `put_object` with `ContentType: image/jpeg` and `CacheControl: public, max-age=3600`.
 5. The returned public URL is persisted (`users.avatar_url`, `users.cover_image_url`, `itineraries.cover_image_url`). Avatar and user-cover URLs get a `?v=<ms>` suffix because their keys are stable per user.
 
@@ -67,7 +67,7 @@ Concretely, three things remain yours:
 
 ### Why not presigned direct-to-R2 uploads
 
-Presigned URLs would move the upload off the API — and take four guarantees with it. EXIF/GPS stripping, format and dimension validation, the pre-storage Rekognition scan, and the guarantee that only well-formed JPEGs ever enter the bucket all live in the API path. Restoring them behind presigned uploads means R2 event notifications → a queue → a worker that re-processes and re-uploads, with a window where the original unscanned bytes are live and publicly addressable. That is strictly more infrastructure for a solo operator, and strictly weaker safety. Images are capped at 10 MB, so the API round-trip is not a bottleneck worth that trade.
+Presigned URLs would move the upload off the API — and take four guarantees with it. EXIF/GPS stripping, format and dimension validation, the pre-storage image scan, and the guarantee that only well-formed JPEGs ever enter the bucket all live in the API path. Restoring them behind presigned uploads means R2 event notifications → a queue → a worker that re-processes and re-uploads, with a window where the original unscanned bytes are live and publicly addressable. That is strictly more infrastructure for a solo operator, and strictly weaker safety. Images are capped at 10 MB, so the API round-trip is not a bottleneck worth that trade.
 
 ---
 
@@ -76,8 +76,8 @@ Presigned URLs would move the upload off the API — and take four guarantees wi
 ### Layer 1 — client pre-check (UX only)
 NSFWJS (web) / TFLite (mobile) in `lib/core/moderation/`. Advisory; fails open; never authoritative.
 
-### Layer 2 — upload-time classifier (AWS Rekognition)
-`app/services/moderation_service.py`. Runs before storage, so a hard reject is never written to R2. Catches **new** explicit material a hash list has never seen — but it guesses, so it never acts on an account by itself. `MODERATION_ENABLED=False` by default.
+### Layer 2 — upload-time classifier (AWS Rekognition or Google Cloud Vision)
+`app/services/moderation_service.py`, with the provider `MODERATION_PROVIDER` picks (`rekognition` by default, or `google_vision`, which checks images in the EU). Runs before storage, so a hard reject is never written to R2. Catches **new** explicit material a hash list has never seen — but it guesses, so it never acts on an account by itself. `MODERATION_ENABLED=False` by default.
 
 ### Layer 3 — serve-time hash matching (Cloudflare CSAM Scanning Tool)
 Zero application code. Requirements: `STORAGE_BACKEND=r2`, and `R2_PUBLIC_URL` pointing at a **proxied** custom domain. A `pub-*.r2.dev` URL bypasses the zone entirely and the scanner sees nothing — the storage factory logs a warning if it detects one.

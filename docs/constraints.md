@@ -27,12 +27,13 @@ code, with links to the feature that exercises each rule.
 
 ### Startup validators that **raise**
 
-Eight misconfigurations refuse to boot rather than degrade silently:
+Nine misconfigurations refuse to boot rather than degrade silently:
 
 | Validator | Refuses | Why |
 |---|---|---|
 | `SECRET_KEY` `Field(min_length=32)` | a key under 32 chars | a weak or placeholder signing key must never reach traffic. `openssl rand -hex 32` |
 | `_validate_text_moderation` | an unknown `TEXT_MODERATION_PROVIDER`; `openai` with no `OPENAI_API_KEY`; an unparseable `REPORT_HIDE_THRESHOLDS`, or one naming a category that is not in `constants/report_reasons.py` | a silent downgrade to the wordlist is worse than not booting; a typo'd category silently disabled auto-hide for the real one |
+| `_validate_image_moderation` | an unknown `MODERATION_PROVIDER`; a `MODERATION_GOOGLE_*_LIKELIHOOD` that is not `POSSIBLE`, `LIKELY` or `VERY_LIKELY`; a reject level below the flag level | a provider name nothing can run would scan nothing, and a reject level under the flag level rejects images it never flags. A missing provider credential is not refused — it emails the operator instead ([image-moderation.md](features/image-moderation.md)) |
 | `_validate_sweep_deadline` | with `SWEEP_IN_PROCESS`, `MODERATION_SLA_HOURS × 60 + SWEEP_INTERVAL_MINUTES > 24 × 60` | a report can wait the SLA plus one whole interval before a run sees it — past 24h the deadline the SLA exists for is breached |
 | `_validate_notification_retention` | `NOTIFICATION_MAX_AGE_DAYS < NOTIFICATION_RETENTION_DAYS` | it would silently shorten the read window |
 | `_validate_edit_lock_windows` | `TTL <= IDLE`; `IDLE < 2 × HEARTBEAT`; `HEARTBEAT < 5` | a claim that became takeable before it read as inactive would be stolen from someone the UI still showed as editing |
@@ -207,6 +208,9 @@ discoverable way to learn the constraints. Logged in
 | **Bump `POLICY_VERSION` whenever you touch a threshold** | it is part of the cache key; stale verdicts would survive |
 | **Automated writes only ever RAISE severity** (`approved < pending < flagged < hidden < rejected`) | a clean caption edit must not clear an unresolved image flag. Moderator and appeal paths assign directly to lower it |
 | **Send nothing but the text to a provider** | no user id, email, or content id, ever |
+| **Send Cloud Vision nothing but the image, the feature and `parent`** | the same rule for images: no user id, email, storage key or URL |
+| **Read an absent SafeSearch category as `UNKNOWN`, and an `UNKNOWN` `adult` or `violence` as a failed scan** | proto3 JSON omits an enum left at zero, and Google's zero is `UNKNOWN`; reading it as unlikely would approve an image nobody classified |
+| **Never map Cloud Vision's likelihoods onto percentages** | the audit row would claim a confidence Google never gave |
 | **Scan account text BEFORE `create_user`** | it commits, so a later 422 could not undo the account |
 | **Never let a verdict reject a Google-supplied profile name** | drop the name instead — the user cannot edit what Google sent |
 | **Always call `escalate_if_flagged` after consuming `ctx.escalate`** | hiding without the `legal_escalations` row keeps a CSAM signal out of `/admin/legal` |
@@ -230,7 +234,8 @@ external scheduler) **or SLA auto-hide and post-outage re-checks never run.**
 ## Privacy and GDPR
 
 - **Data minimisation in provider payloads** — the OpenAI request body carries the
-  text and the model name and nothing else.
+  text and the model name and nothing else; the Cloud Vision request carries the
+  image, the SafeSearch feature and `parent` (the EU location) and nothing else.
 - **A translation engine receives the texts, the target language and what it
   needs to process them — never a user id, an email, a content id or a field
   name.** OpenAI gets the texts under opaque keys (`t0`, `t1`, …) with
@@ -245,7 +250,8 @@ external scheduler) **or SLA auto-hide and post-outage re-checks never run.**
   languages, before it receives any.** An undisclosed processor is a GDPR breach
   and a store-label mismatch, so a new one ships behind its config flag until
   the policy that names it is deployed — translation's engines are pinned by
-  `test_privacy_names_every_translation_engine`.
+  `test_privacy_names_every_translation_engine`, and every `MODERATION_PROVIDER`
+  value by `test_privacy_names_every_image_moderation_provider`.
 - **Account deletion is a hard delete** with a documented set of `SET NULL`
   evidence columns, and it erases the account's stored images too — except while
   the account is under an open legal escalation, and except taken-down or
@@ -458,6 +464,8 @@ block appears a second time anywhere, extract it instead of copying.**
 | `routers/follows.py` | `counts_answer` — the `?return=counts` answer, which the block route (`users.py`) shares |
 | `services/token_util.py` | `hash_token` / `as_aware_utc` / `new_raw_token` — every opaque-token service |
 | `services/image_service.py` | `process_and_store` — all image uploads |
+| `services/google_service_account.py` | **the one** home of a Google service-account key read from an env var: `parse` (`strict=False`, and why), `validate` (the startup check — logs, never raises), `access_token` (the token cache, keyed by variable and scope, one lock per key). FCM push and Cloud Vision each hold their own key through it |
+| `services/moderation_service.py` | `label_text` — **the one** rendering of a stored image-scan label (a level for Cloud Vision, a percentage for Rekognition): the flag email, and both admin pages through the `scan_label` filter |
 | `services/operator_alerts.py` | `notify_operator` — **the one** throttled operator alert: at most one email per key per hour (in memory), its WARNING line, the `OPERATOR_EMAIL` guard, mail errors swallowed. Text moderation's degradation notices and image moderation's outage alerts; an async caller builds the body first and sends with `asyncio.to_thread`. A per-event email (a flag, a report) is not an alert and is never throttled |
 | `services/share_service.py` | `build_share_url`, `build_profile_share_url`, `absolute_storage_url`, `absolutize_stored_url`, `default_preview_image_url` |
 | `services/app_links.py` | `cta_context` / `store_links` — every share page's call to action; `apple_app_site_association`, `asset_links`; `APP_LINK_PATHS` |

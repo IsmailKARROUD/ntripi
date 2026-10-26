@@ -60,7 +60,7 @@ is a no-op everywhere.
   are not committed; `load()` fails gracefully. Everything must stay same-origin —
   *"Do **not** switch `nsfw_glue.js` back to a CDN URL."*
 
-The backend Rekognition scan is the actual authority, so this is a cost and UX
+The backend image scan is the actual authority, so this is a cost and UX
 gap, not a safety one. → [features/image-moderation.md](features/image-moderation.md)
 
 ### in-progress — push notifications are code-complete but not provisioned

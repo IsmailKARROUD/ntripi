@@ -142,7 +142,7 @@ Errors: **400** (uncoded) `ImageProcessingError`, **422
 `image_moderation_rejected`**.
 
 The cover image is **owner-only, not editor-writable** — it is the trip's public
-face, and every upload spends a paid Rekognition scan.
+face, and every upload spends a paid image scan.
 
 **The app changes an itinerary cover only through the form routes**, which carry
 it with the form's fields under the edit lock and `If-Match`

@@ -11,6 +11,7 @@ agreement are defensible.
 import pytest
 from fastapi.testclient import TestClient
 
+from app.config import IMAGE_MODERATION_PROVIDERS
 from app.constants.guidelines import GUIDELINES_VERSION, get_guidelines
 from app.constants.privacy import PRIVACY_VERSION, get_privacy
 from app.constants.tos import TOS_VERSION, get_tos
@@ -18,6 +19,12 @@ from app.i18n import SUPPORTED, TRANSLATIONS
 
 ACCESSORS = {"tos": get_tos, "privacy": get_privacy, "guidelines": get_guidelines}
 NON_ENGLISH = [c for c in SUPPORTED if c != "en"]
+
+# How Privacy §5 names the processor behind each MODERATION_PROVIDER value.
+IMAGE_MODERATION_PROCESSORS = {
+    "rekognition": "Amazon Web Services",
+    "google_vision": "Google (Cloud Vision)",
+}
 
 
 class TestDocumentBodies:
@@ -54,6 +61,17 @@ class TestDocumentBodies:
         assert "Microsoft (Azure AI Translator)" in body or (
             "Microsoft（Azure AI Translator）" in body
         )
+
+    @pytest.mark.parametrize("lang", SUPPORTED)
+    @pytest.mark.parametrize("provider", IMAGE_MODERATION_PROVIDERS)
+    def test_privacy_names_every_image_moderation_provider(self, lang, provider):
+        # MODERATION_PROVIDER may select either scanner, so every one is named,
+        # in every language. A provider added to config with no entry above
+        # fails here until the policy names it.
+        body = get_privacy(lang)
+        name = IMAGE_MODERATION_PROCESSORS[provider]
+        # Chinese sets the parentheses full-width, as for its other processors.
+        assert name in body or name.replace(" (", "（").replace(")", "）") in body
 
     def test_tos_keeps_the_ratings_retention_clause(self):
         # privacy.py and migration e493ea56a71b both cite the ToS as the

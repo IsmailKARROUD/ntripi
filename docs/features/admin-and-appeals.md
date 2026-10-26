@@ -211,7 +211,11 @@ bulk `delete` shares `soft_delete_itinerary`'s side effects — the author's
 notification and appeal email — which it skipped until 2026-09-28.
 
 **The flagged queue** (`/admin/flagged`) lists soft-flagged scans and uploads the
-provider never saw (`error_allowed`, shown as "Not scanned"). *Approve* clears the
+provider never saw (`error_allowed`, shown as "Not scanned"). Labels render in
+the scanning provider's terms through the `scan_label` filter
+(`moderation_service.label_text`) — `racy (LIKELY)` for Cloud Vision,
+`Suggestive (62%)` for Rekognition — here and in the itinerary page's image
+scans. *Approve* clears the
 image, not the itinerary: it lowers `flagged` to `approved` only when no other
 text flag or queued image stands on it, and leaves `pending` for the sweep.
 *Remove* first hashes the object at the key and compares it with the scan's

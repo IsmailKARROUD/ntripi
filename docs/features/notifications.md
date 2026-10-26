@@ -226,9 +226,12 @@ Unset, nothing is sent, nothing raises, and the poll is the only channel.
   notification is **abandoned**, because one worker sends every push in turn:
   that bounds the delay to the pushes queued behind it at **one** timeout
   rather than one per device.
-- `validate_credentials` runs at **startup** and **logs, never raises**.
-  `json.loads(..., strict=False)` tolerates raw newlines in an env-pasted
-  `private_key`.
+- `validate_credentials` runs at **startup** and **logs, never raises**. The key
+  is parsed, checked and turned into a token by `google_service_account` —
+  `parse` (`json.loads(..., strict=False)` tolerates raw newlines in an
+  env-pasted `private_key`), `validate`, and `access_token`, whose cache is keyed
+  by variable and scope. Cloud Vision image moderation uses the same helper with
+  a key of its own ([image-moderation.md](image-moderation.md)).
 - Payload: `notification{title, body?}`, `data` (values stringified, `None`s
   dropped, `actor_id` null on moderation rows), `android.priority=high`,
   `apns.payload.aps.sound=default`. **Badge count deliberately not set.**
@@ -466,4 +469,5 @@ project that holds the Sign-In OAuth clients. FCM carries no per-message charge.
 - [authentication.md](authentication.md) — sign-out must delete the device token
 - [app-links.md](app-links.md) — the other way in from outside the app, sharing splash's landing and `openFromOutside`
 - [etag-concurrency.md](etag-concurrency.md) — why the unconditional refetch is cheap
+- [image-moderation.md](image-moderation.md) — Cloud Vision, the other holder of a Google service-account key through `google_service_account`
 - [reference/data-model.md](../reference/data-model.md#notifications)

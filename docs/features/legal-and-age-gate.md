@@ -18,7 +18,7 @@ for one.
 | Document | Version | Date |
 |---|---|---|
 | Terms of Service | **3.1** | 2026-08-08 |
-| Privacy Policy | **2.3** | 2026-10-07 |
+| Privacy Policy | **2.4** | 2026-10-25 |
 | Community Guidelines | **1.1** | 2026-08-06 |
 
 - **Bodies live in `app/constants/legal/<lang>.py`, one module per *language*
@@ -54,7 +54,15 @@ for one.
   moderation **and translation**" rather than gaining a section, because §5 and
   §11 are cited by number in the bodies, six times over.
   `test_privacy_names_every_translation_engine` fails a language that drops
-  Microsoft.
+  Microsoft. Image moderation (2.4) named Google Cloud Vision beside Amazon
+  Web Services' Rekognition: §4's photo paragraph names both, and says Cloud
+  Vision checks images in the EU and in memory, without writing them to disk,
+  and that Google does not use them to train or improve it. The disk and
+  training claims are only what Google's Cloud Vision data-usage FAQ says; the
+  EU one is the `eu` location the call names. §5 gained a
+  `Google (Cloud Vision)` line. Either can be switched on by
+  `MODERATION_PROVIDER`, so `test_privacy_names_every_image_moderation_provider`
+  fails a language that does not name every value.
 
 ### Acceptance
 
@@ -198,7 +206,8 @@ New error codes: `tos_required`, `underage`, `dob_required`.
 - **App Store privacy nutrition label and Play Data safety both need the DOB
   declared** — outstanding.
 - **The six-language translations still need counsel review**, and English is
-  authoritative in the meantime — the 2.3 translation paragraphs included.
+  authoritative in the meantime — the 2.3 translation paragraphs and the 2.4
+  image-moderation paragraphs included.
 - **ToS §12's list of service categories names neither push notifications nor
   translation.** It defers to the Privacy Policy for the list, and changing ToS
   text needs a `TOS_VERSION` bump, which sends every user through the
@@ -218,6 +227,7 @@ New error codes: `tos_required`, `underage`, `dob_required`.
 - [web-and-platform.md](web-and-platform.md) — the server-rendered legal pages
 - [reference/error-codes.md](../reference/error-codes.md#registration-tos-and-age-gate)
 - [translations.md](translations.md) — the two engines Privacy §4 and §5 disclose
+- [image-moderation.md](image-moderation.md) — the two image scanners Privacy §4 and §5 disclose
 
 ## OPEN QUESTIONS
 

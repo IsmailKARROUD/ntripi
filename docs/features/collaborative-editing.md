@@ -73,7 +73,7 @@ server-side; the client renders state and may be stale or hostile.
   (`test_itinerary_editors.py`).
 - **Editor rights are content only.** Owner-only: delete the itinerary,
   `visibility`, the allowlist, the editor list, and the **cover image** (the
-  trip's public face, and every upload spends a paid Rekognition scan).
+  trip's public face, and every upload spends a paid image scan).
 - **The Edit itinerary form's save goes through the guard, cover included.**
   `PATCH /itineraries/{id}/form` depends on `require_edit_access`, so its 404,
   403, 428, 409 and 412 are answered before anything is scanned or stored, and

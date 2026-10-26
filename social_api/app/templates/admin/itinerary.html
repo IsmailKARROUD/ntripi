@@ -182,7 +182,7 @@
         </td>
         <td class="snippet muted">
           {% for label in scan.labels %}
-            {{ label.get('name') }} ({{ '%.0f'|format(label.get('confidence', 0)) }}%){% if not loop.last %}, {% endif %}
+            {{ label | scan_label }}{% if not loop.last %}, {% endif %}
           {% else %}
             —
           {% endfor %}

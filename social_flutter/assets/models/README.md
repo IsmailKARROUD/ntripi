@@ -3,7 +3,7 @@
 The client-side NSFW pre-check on **iOS/Android** loads a TensorFlow Lite model
 from this directory. The model binary is **not committed** (it's ~3 MB and must
 be sourced/verified separately). Until it's added, the mobile pre-check is a
-no-op — every image is allowed through to the backend AWS Rekognition scan,
+no-op — every image is allowed through to the backend image scan,
 which is the actual authority (never-block contract in
 `lib/core/moderation/nsfw_precheck_io.dart`).
 

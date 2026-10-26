@@ -1,5 +1,5 @@
 // Cross-platform NSFW image pre-check — the fast/free client tier of the
-// two-tier moderation pipeline (the backend AWS Rekognition scan is the
+// two-tier moderation pipeline (the backend image scan is the
 // un-bypassable authority). This gives the user instant feedback and drops
 // obvious NSFW uploads before they ever hit the network.
 //

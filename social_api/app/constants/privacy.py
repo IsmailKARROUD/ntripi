@@ -17,8 +17,8 @@ The bodies live in app/constants/legal/<lang>.py; English is authoritative.
 
 from app.constants import legal
 
-PRIVACY_VERSION = "2.3"
-PRIVACY_DATE = "2026-10-07"
+PRIVACY_VERSION = "2.4"
+PRIVACY_DATE = "2026-10-25"
 
 
 def get_privacy(lang: str = "en") -> str:

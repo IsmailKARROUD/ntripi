@@ -6,9 +6,10 @@ audit trail for automated image moderation — plus one per operator CSAM takedo
 ('rejected_csam'). Rows are retained 90 days, then deleted opportunistically on
 the next scan (no cron — same pattern as the content-report IP-hash scrub);
 'rejected_csam' rows are the exception and are never purged, because the object
-is deleted in the same action and this row is the only surviving evidence. Only
-label names + confidences are stored, never the raw provider response (data
-minimization: cleaner to migrate providers later).
+is deleted in the same action and this row is the only surviving evidence. Each
+scan row names the provider that scanned; only what reached the flag level is
+stored, in that provider's own terms, never the raw provider response (data
+minimization).
 
 Both FKs are SET NULL + nullable so a log row survives itinerary or account
 deletion. target_kind / action are constrained strings (String + CheckConstraint),
@@ -24,6 +25,7 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
+from app.config import IMAGE_MODERATION_PROVIDERS
 from app.database import Base
 
 # Single source of truth for the enum values — kept in sync with the check
@@ -38,6 +40,7 @@ MODERATION_ACTIONS = (
 )
 
 _ACTIONS_SQL = ",".join(f"'{action}'" for action in MODERATION_ACTIONS)
+_PROVIDERS_SQL = ",".join(f"'{provider}'" for provider in IMAGE_MODERATION_PROVIDERS)
 
 
 class ImageModerationLog(Base):
@@ -50,6 +53,11 @@ class ImageModerationLog(Base):
         CheckConstraint(
             f"action IN ({_ACTIONS_SQL})",
             name="ck_moderation_action",
+        ),
+        # NULL passes: a takedown's 'rejected_csam' row was never scanned.
+        CheckConstraint(
+            f"provider IN ({_PROVIDERS_SQL})",
+            name="ck_moderation_provider",
         ),
     )
 
@@ -85,7 +93,14 @@ class ImageModerationLog(Base):
 
     action: Mapped[str] = mapped_column(String(32), nullable=False)
 
-    # list[{"name": str, "confidence": float}] — never the full AWS response.
+    # The MODERATION_PROVIDER that scanned; NULL on a takedown's 'rejected_csam'
+    # row, which no scan wrote.
+    provider: Mapped[str | None] = mapped_column(String(32), nullable=True)
+
+    # What reached the flag level, in the provider's own terms — never its full
+    # response: Rekognition list[{"name", "confidence": float}], Cloud Vision
+    # list[{"name", "likelihood": "LIKELY"}]. A Google level is never turned
+    # into a percentage: the row would claim a confidence Google never gave.
     labels: Mapped[list] = mapped_column(JSON, default=list, nullable=False)
 
     # Set when an operator clears this flagged row from the dashboard queue

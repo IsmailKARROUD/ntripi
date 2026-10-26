@@ -196,7 +196,7 @@ Ntripi 是本服务的运营方，也是此处所述个人数据的控制者。�
 
 文本——行程标题与描述、站点名称、地址与备注、批注、交通信息、评论文字、您的显示名称与简介，以及注册时选择的用户名和名称——会发送至 OpenAI 的审核服务。该请求仅包含文本和模型名称，别无其他：没有账户标识、没有电子邮箱、没有内容标识。OpenAI 无从得知文本属于谁。
 
-照片会发送至 Amazon Web Services 的 Rekognition 服务，以检测色情露骨与暴力影像。仅发送图片本身。
+照片会发送至图片审核服务，以检测色情露骨与暴力影像：Amazon Web Services 的 Rekognition 服务，或在欧盟境内进行审核的 Google Cloud Vision。仅发送图片本身。Google Cloud Vision 在内存中处理图片，不会将其写入磁盘；Google 也不会使用该图片训练或改进 Cloud Vision。
 
 图片通过 Cloudflare 存储与分发；Cloudflare 会在图片从我们域名分发的那一刻，将其与已知违法图片数据库进行比对。
 
@@ -226,6 +226,8 @@ OpenAI — 文本审核与翻译，如上所述。
 Microsoft（Azure AI Translator）— 在 OpenAI 无法响应时进行翻译，如上所述。
 
 Amazon Web Services — 图片审核，如上所述。
+
+Google（Cloud Vision）— 图片审核，如上所述。
 
 Google — 登录服务（若您使用）。Google 会获知您登录了 Ntripi 这一事实。
 
