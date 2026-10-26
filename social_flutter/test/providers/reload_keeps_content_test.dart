@@ -29,7 +29,9 @@ import 'package:ntripi/features/follows/data/follow_repository.dart';
 import 'package:ntripi/features/follows/providers/follow_provider.dart';
 import 'package:ntripi/features/itineraries/data/itinerary_repository.dart';
 import 'package:ntripi/features/itineraries/domain/itinerary.dart';
+import 'package:ntripi/features/itineraries/domain/my_rating.dart';
 import 'package:ntripi/features/itineraries/domain/ratings_page.dart';
+import 'package:ntripi/features/itineraries/presentation/widgets/itinerary_unavailable_view.dart';
 import 'package:ntripi/features/itineraries/providers/edit_lock_provider.dart';
 import 'package:ntripi/features/itineraries/providers/itinerary_providers.dart';
 import 'package:ntripi/features/itineraries/providers/saved_itineraries_provider.dart';
@@ -627,6 +629,210 @@ void main() {
           data: Matchers.any);
       await container.read(myProfileProvider.notifier).updateProfile(bio: 'y');
       expect(container.read(myProfileProvider).value!.username, 'after');
+    });
+
+    test('with nothing on screen, a Retry that succeeds shows the content',
+        () async {
+      container.listen(savedItinerariesProvider, (_, _) {});
+      api.adapter.onGet(kSavedItinerariesEndpoint,
+          (server) => server.reply(500, {'detail': 'Internal Server Error'}));
+      await expectLater(container.read(savedItinerariesProvider.future),
+          throwsA(isA<DioException>()));
+
+      api.adapter.onGet(kSavedItinerariesEndpoint,
+          (server) => server.reply(200, _summaries('After')));
+      expect(
+          await container.read(savedItinerariesProvider.notifier).refresh(),
+          isNull);
+
+      final after = container.read(savedItinerariesProvider);
+      expect((after.isLoading, after.hasError), (false, false));
+      expect(_title(after.value), 'After');
+    });
+
+    test('a refusal replaces the content even when a write landed meanwhile',
+        () async {
+      final trip = itineraryEndpoint(kTripId);
+      container.listen(itineraryDetailProvider(kTripId), (_, _) {});
+      api.adapter.onGet(
+          trip, (server) => server.reply(200, tripJson(title: 'Before')));
+      await container.read(itineraryDetailProvider(kTripId).future);
+
+      api.adapter.onGet(
+        trip,
+        (server) => server.reply(403, {
+          'detail': "You don't have access to this itinerary",
+          'code': 'itinerary_access_denied',
+        }),
+      );
+      final reply = api.hold(trip);
+      final notifier = container.read(itineraryDetailProvider(kTripId).notifier);
+      final reload = notifier.refresh();
+      await _settle();
+      // A rating answered meanwhile moves the loaded trip's aggregate.
+      notifier.adoptRatingAggregate(const RatingAggregate(avg: 5.0, count: 1));
+      reply.complete();
+
+      expect(await reload, isNull);
+      final after = container.read(itineraryDetailProvider(kTripId));
+      expect(after.hasError, isTrue);
+      expect(itineraryUnavailableFrom(after.error!),
+          ItineraryUnavailable.noAccess);
+    });
+
+    test('a reload whose notifier went mid-request writes nothing and throws '
+        'nothing', () async {
+      container.listen(savedItinerariesProvider, (_, _) {});
+      api.adapter.onGet(kSavedItinerariesEndpoint,
+          (server) => server.reply(200, _summaries('Before')));
+      await container.read(savedItinerariesProvider.future);
+
+      final reply = api.hold(kSavedItinerariesEndpoint);
+      final reload =
+          container.read(savedItinerariesProvider.notifier).refresh();
+      await _settle();
+      // Sign-out resets every user-scoped provider while a request is out.
+      api.adapter.onGet(kSavedItinerariesEndpoint,
+          (server) => server.reply(200, _summaries('Rebuilt')));
+      container.invalidate(savedItinerariesProvider);
+      await container.read(savedItinerariesProvider.future);
+      reply.complete();
+
+      expect(await reload, isNull);
+      expect(_title(container.read(savedItinerariesProvider).value), 'Rebuilt');
+    });
+
+    test('a notification page requested before a reload landed is dropped, '
+        'and its rows are not marked read', () async {
+      void page(int offset, List<String> ids) => api.adapter.onGet(
+            kNotificationsEndpoint,
+            (server) => server.reply(200, _notifications(ids)),
+            queryParameters: {'limit': kNotificationPageSize, 'offset': offset},
+          );
+
+      container.listen(notificationsProvider, (_, _) {});
+      page(0, [for (var i = 0; i < kNotificationPageSize; i++) 'n$i']);
+      await container.read(notificationsProvider.future);
+      final notifier = container.read(notificationsProvider.notifier);
+      expect(notifier.hasMore, isTrue);
+
+      page(kNotificationPageSize, ['old-next']);
+      final nextPage = api.hold(kNotificationsEndpoint);
+      final more = notifier.loadMore();
+      await _settle();
+
+      page(0, ['fresh']);
+      expect(await notifier.refresh(), isNull);
+
+      nextPage.complete();
+      await more;
+
+      expect(
+        container.read(notificationsProvider).value!.map((n) => n.id),
+        ['fresh'],
+      );
+      expect(notifier.hasMore, isFalse);
+      // The dropped page's rows were never shown: nothing marks them read.
+      expect(api.sent.where((o) => o.path == kNotificationsReadEndpoint),
+          isEmpty);
+    });
+
+    test('the feed restarts paging only with a page it shows', () async {
+      final feed = RegExp(r'^/itineraries/feed\?');
+      container.listen(feedProvider, (_, _) {});
+      api.adapter.onGet(
+        feed,
+        (server) => server.reply(200, [
+          for (var i = 0; i < kFeedPageSize; i++)
+            sharedRowJson(summaryJson(id: 'trip-$i')),
+        ]),
+      );
+      await container.read(feedProvider.future);
+      final notifier = container.read(feedProvider.notifier);
+      expect(notifier.hasMore, isTrue);
+
+      // A failed reload leaves the loaded pages, and their paging, as they were.
+      api.adapter.onGet(feed,
+          (server) => server.reply(500, {'detail': 'Internal Server Error'}));
+      expect(await notifier.refresh(), isNotNull);
+      expect(container.read(feedProvider).value, hasLength(kFeedPageSize));
+      expect(notifier.hasMore, isTrue);
+
+      // An answered one starts over from its own page.
+      api.adapter.onGet(feed, (server) => server.reply(200, _feedRows('After')));
+      expect(await notifier.refresh(), isNull);
+      expect(_rowTitle(container.read(feedProvider).value), 'After');
+      expect(notifier.hasMore, isFalse);
+    });
+
+    test(
+        'a save whose trip provider goes before its answer lands reports that '
+        'to the save, instead of throwing on the dead provider', () async {
+      final trip = itineraryEndpoint(kTripId);
+      // Its own container, disposed mid-request below.
+      final scope = _container(api);
+      scope.listen(itineraryDetailProvider(kTripId), (_, _) {});
+      api.adapter.onGet(
+          trip, (server) => server.reply(200, tripJson(title: 'Before')));
+      await scope.read(itineraryDetailProvider(kTripId).future);
+
+      // An answer with no trip: adopting it means a GET through the mechanism.
+      api.adapter.onPatch(
+        trip,
+        (server) => server.reply(200, tripAnswer(null)),
+        data: Matchers.any,
+        queryParameters: {'return': 'itinerary'},
+      );
+      final answer = api.hold(trip, method: 'PATCH');
+      final save = scope
+          .read(itineraryDetailProvider(kTripId).notifier)
+          .updateHeader({'description': 'Shorter.'});
+      await _settle();
+      scope.dispose();
+      answer.complete();
+
+      await expectLater(save, throwsA(isA<StateError>()));
+      // Nothing was asked of a provider that is gone.
+      expect(api.lines.where((line) => line == 'GET $trip'), hasLength(1));
+    });
+
+    test(
+        'a background reload that merges in older rows also drops a page '
+        'requested before it', () async {
+      void page(int offset, List<String> ids) => api.adapter.onGet(
+            kNotificationsEndpoint,
+            (server) => server.reply(200, _notifications(ids)),
+            queryParameters: {'limit': kNotificationPageSize, 'offset': offset},
+          );
+      List<String> ids(String prefix) =>
+          [for (var i = 0; i < kNotificationPageSize; i++) '$prefix$i'];
+
+      container.listen(notificationsProvider, (_, _) {});
+      page(0, ids('n'));
+      await container.read(notificationsProvider.future);
+      final notifier = container.read(notificationsProvider.notifier);
+      page(kNotificationPageSize, ids('q'));
+      await notifier.loadMore();
+      expect(container.read(notificationsProvider).value,
+          hasLength(2 * kNotificationPageSize));
+
+      // The third page goes out first and is held...
+      page(2 * kNotificationPageSize, ['old-next']);
+      final nextPage = api.hold(kNotificationsEndpoint);
+      final more = notifier.loadMore();
+      await _settle();
+
+      // ...while the poller's reload lands with a full first page, which keeps
+      // the loaded pages older than it and starts the paging over.
+      page(0, ids('m'));
+      await notifier.silentRefresh();
+
+      nextPage.complete();
+      await more;
+
+      final rows = container.read(notificationsProvider).value!;
+      expect(rows.map((n) => n.id), isNot(contains('old-next')));
+      expect(rows.take(kNotificationPageSize).map((n) => n.id), ids('m'));
     });
   });
 }

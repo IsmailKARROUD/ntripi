@@ -211,4 +211,43 @@ void main() {
     // Nobody asked for that read, so its failure is not news worth showing.
     expect(find.textContaining('Display ada'), findsOneWidget);
   });
+
+  testWidgets(
+      'Given a loaded list, '
+      'When a pull fails, '
+      'Then the rows stay and the reason shows in a SnackBar', (tester) async {
+    final repo = _FakeFollowRepo(rows: [_request('ada')]);
+    final container = _container(repo);
+    addTearDown(container.dispose);
+    await tester.pumpWidget(_screen(container));
+    await tester.pumpAndSettle();
+
+    repo.fail = true;
+    await _pullToRefresh(tester);
+
+    // The user asked for this read: its failure is theirs to hear about.
+    expect(find.textContaining('Display ada'), findsOneWidget);
+    expect(find.byType(SnackBar), findsOneWidget);
+    expect(find.text('An error occurred. Please try again.'), findsOneWidget);
+  });
+
+  testWidgets(
+      'Given the list failed to load, '
+      'When Retry is tapped, '
+      'Then the requests load in its place', (tester) async {
+    final repo = _FakeFollowRepo()..fail = true;
+    final container = _container(repo);
+    addTearDown(container.dispose);
+    await tester.pumpWidget(_screen(container));
+    await tester.pumpAndSettle();
+
+    repo.fail = false;
+    repo.rows = [_request('ada')];
+    await tester.tap(find.widgetWithText(FilledButton, 'Retry'));
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('Display ada'), findsOneWidget);
+    // The error view said it; a recovered Retry has nothing to report.
+    expect(find.byType(SnackBar), findsNothing);
+  });
 }

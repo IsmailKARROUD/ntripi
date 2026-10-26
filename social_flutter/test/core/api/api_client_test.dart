@@ -210,4 +210,59 @@ void main() {
       });
     });
   });
+
+  // A reload that gets one of these replaces the content with the error view;
+  // any other failure leaves the content on screen (ReloadKeepsContent).
+  group('refusesContent', () {
+    DioException answered(int status) => DioException.badResponse(
+          statusCode: status,
+          requestOptions: requestOptions,
+          response: Response(requestOptions: requestOptions, statusCode: status),
+        );
+
+    for (final status in kNeverServeStaleFor) {
+      test(
+          'Given the server answered $status, '
+          'When refusesContent called, '
+          'Then the content is refused', () {
+        expect(refusesContent(answered(status)), isTrue);
+      });
+    }
+
+    for (final status in [400, 408, 409, 422, 429, 500, 502, 503]) {
+      test(
+          'Given the server answered $status, '
+          'When refusesContent called, '
+          'Then the content stays', () {
+        expect(refusesContent(answered(status)), isFalse);
+      });
+    }
+
+    test(
+        'Given no answer at all (offline, a timeout), '
+        'When refusesContent called, '
+        'Then the content stays', () {
+      for (final type in [
+        DioExceptionType.connectionError,
+        DioExceptionType.connectionTimeout,
+        DioExceptionType.receiveTimeout,
+        DioExceptionType.sendTimeout,
+      ]) {
+        expect(
+          refusesContent(DioException(requestOptions: requestOptions, type: type)),
+          isFalse,
+          reason: '$type',
+        );
+      }
+    });
+
+    test(
+        'Given an error that is not an HTTP answer, '
+        'When refusesContent called, '
+        'Then the content stays', () {
+      expect(refusesContent(const FormatException('bad body')), isFalse);
+      expect(refusesContent(StateError('parse')), isFalse);
+      expect(refusesContent(null), isFalse);
+    });
+  });
 }

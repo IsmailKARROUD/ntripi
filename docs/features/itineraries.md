@@ -229,7 +229,16 @@ registered from the same router under the `/users` prefix.
   it with the error view. The Itineraries tab's pull and Retry, and the other
   user's trips on a profile, reload the same way. Regression tests:
   `test/widgets/trip_reload_keeps_content_test.dart`,
+  `test/widgets/list_tabs_reload_test.dart`,
   `test/providers/reload_keeps_content_test.dart`.
+- **A pull clears the covers first, best-effort** — a cover keeps its storage
+  key when replaced (no `?v=`), so the trip page and the Itineraries tab drop
+  the cached copies before reloading, through `ImageCacheEviction`
+  (`core/cache/image_cache.dart`, `imageCacheEvictionProvider`). An image
+  cache that cannot be cleared leaves a stale cover; it never stops the reload
+  and never escapes into the pull. Until 2026-10-25 each screen called
+  `CachedNetworkImage.evictFromCache` itself, and a throw there skipped the
+  reload and surfaced from the RefreshIndicator.
 - **The Itineraries tab follows the answer** — `_syncListRows` replaces the
   trip's row in `myItinerariesProvider` and `sharedWithMeProvider` with
   `Itinerary.summary` (the answered trip without tracks, segments and
@@ -249,8 +258,10 @@ registered from the same router under the `/users` prefix.
   `ItineraryDetailNotifier.saveForm(data, coverBytes:, removeCover:)`, which runs
   through `_write` (the only reader of the claim token) and adopts the answered
   trip, cover URL and `updatedAt` (so the ETag) included. After a cover change
-  the form evicts the cached image under both the URL from before the save and
-  the one after. The create branch calls
+  the form clears the cached image under both the URL from before the save and
+  the one after, through the same best-effort `ImageCacheEviction`: a cache
+  that cannot be cleared no longer turns the saved form into a reported
+  failure. The create branch calls
   `MyItinerariesNotifier.addItinerary(data, coverBytes:)`, which picks the
   multipart route when a cover was picked, inserts the new row, puts the
   answered trip in `tripSeedsProvider` and returns its id.

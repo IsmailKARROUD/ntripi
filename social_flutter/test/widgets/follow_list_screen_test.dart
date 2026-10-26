@@ -10,6 +10,8 @@
 // All HTTP + secure-storage calls are prevented by faking the Riverpod
 // notifiers that the screen depends on.
 
+import 'dart:async';
+
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -126,6 +128,46 @@ class _RecordingFollowRepo implements FollowRepository {
   final Object? failWith;
   final List<String> removed = [];
   final List<String> unfollowed = [];
+
+  /// What a reload of either list answers: these rows, or [listFailure];
+  /// held while [listGate] is open.
+  List<FollowerListItem> listRows = const [];
+  Object? listFailure;
+  Completer<void>? listGate;
+  final List<String> listReads = [];
+
+  Future<List<FollowerListItem>> _list(String which) async {
+    listReads.add(which);
+    if (listGate != null) await listGate!.future;
+    if (listFailure != null) throw listFailure!;
+    return listRows;
+  }
+
+  @override
+  Future<List<FollowerListItem>> getFollowers(
+    String userId, {
+    int limit = kFollowListPageSize,
+    int offset = 0,
+    bool forceRefresh = false,
+  }) =>
+      _list('followers');
+
+  @override
+  Future<List<FollowerListItem>> getFollowing(
+    String userId, {
+    int limit = kFollowListPageSize,
+    int offset = 0,
+    bool forceRefresh = false,
+  }) =>
+      _list('following');
+
+  @override
+  Future<List<FollowRequestItem>> getFollowRequests({
+    bool forceRefresh = false,
+  }) async {
+    listReads.add('requests');
+    return const [];
+  }
 
   @override
   Future<FollowCounts> removeFollower(String userId) async {
@@ -947,6 +989,115 @@ void main() {
         await tester.pump();
 
         expect(find.text('@ismauo'), findsOneWidget);
+      });
+    });
+
+    // ── A pull ───────────────────────────────────────────────────────────
+
+    // Either tab keeps its rows through a pull: an answer replaces them, a
+    // refusal (a private account no longer followed) shows the placeholder,
+    // and any other failure keeps them and says why.
+    group('a pull', () {
+      // Past the indicator's arming distance: a quarter of the list's height.
+      Future<void> pull(WidgetTester tester) => tester.fling(
+          find.byType(RefreshIndicator).hitTestable().first,
+          const Offset(0, 1000),
+          1000);
+
+      Future<void> pumpList(
+        WidgetTester tester,
+        _RecordingFollowRepo repo, {
+        FollowListType type = FollowListType.followers,
+        String userId = _ownUserId,
+      }) async {
+        tester.view.physicalSize = const Size(1080, 1920);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+        await tester.pumpWidget(_buildScreen(
+          userId: userId,
+          type: type,
+          followers: [_follower1],
+          following: [_following1],
+          repo: repo,
+        ));
+        await tester.pumpAndSettle();
+      }
+
+      testWidgets(
+          'Given your followers, When pulled, '
+          'Then the spinner stays until both reloads have answered',
+          (tester) async {
+        final repo = _RecordingFollowRepo()..listRows = [_follower2];
+        await pumpList(tester, repo);
+        final gate = Completer<void>();
+        addTearDown(() {
+          if (!gate.isCompleted) gate.complete();
+        });
+        repo.listGate = gate;
+
+        await pull(tester);
+        await tester.pump();
+        await tester.pump(const Duration(seconds: 1));
+
+        // Awaited now: it used to fire both reloads and drop the spinner.
+        expect(find.byType(RefreshProgressIndicator), findsOneWidget);
+        expect(repo.listReads, containsAll(['followers', 'requests']));
+        expect(find.text('Yacine Coulibaly'), findsOneWidget);
+
+        gate.complete();
+        await tester.pumpAndSettle();
+
+        expect(find.byType(RefreshProgressIndicator), findsNothing);
+        expect(find.text('Lina Bensaïd'), findsOneWidget);
+        expect(find.text('Yacine Coulibaly'), findsNothing);
+      });
+
+      testWidgets(
+          'Given your followers, When a pull fails, '
+          'Then the rows stay and the reason shows in a SnackBar',
+          (tester) async {
+        final repo = _RecordingFollowRepo()
+          ..listFailure = _apiError(500, 'internal_error');
+        await pumpList(tester, repo);
+
+        await pull(tester);
+        await tester.pumpAndSettle();
+
+        expect(find.text('Yacine Coulibaly'), findsOneWidget);
+        expect(find.byType(SnackBar), findsOneWidget);
+        expect(find.text('Server said no.'), findsOneWidget);
+      });
+
+      testWidgets(
+          'Given who you follow, When a pull fails, '
+          'Then the rows stay and the reason shows in a SnackBar',
+          (tester) async {
+        final repo = _RecordingFollowRepo()
+          ..listFailure = _apiError(500, 'internal_error');
+        await pumpList(tester, repo, type: FollowListType.following);
+
+        await pull(tester);
+        await tester.pumpAndSettle();
+
+        expect(repo.listReads, ['following']);
+        expect(find.text('Amina Diallo'), findsOneWidget);
+        expect(find.text('Server said no.'), findsOneWidget);
+      });
+
+      testWidgets(
+          'Given a private account you no longer follow, When pulled, '
+          'Then its placeholder replaces the rows', (tester) async {
+        final repo = _RecordingFollowRepo()
+          ..listFailure = _apiError(403, 'account_private');
+        await pumpList(tester, repo, userId: _otherUserId);
+
+        await pull(tester);
+        await tester.pumpAndSettle();
+
+        // A refusal is the answer, not a failure to report over the rows.
+        expect(find.text('Yacine Coulibaly'), findsNothing);
+        expect(find.byType(SnackBar), findsNothing);
       });
     });
   });

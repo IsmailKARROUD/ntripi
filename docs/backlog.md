@@ -190,6 +190,17 @@ Its docstring says the caller "must not have added rows to the session", but
 rejected PATCH commits that write. Harmless in effect; the contract is wrong as
 written. → [features/text-moderation.md](features/text-moderation.md)
 
+### idea — the profile's image cache calls can fail a write that landed
+
+`MyProfileNotifier`'s avatar and cover uploads seed the image cache with the new
+bytes (`_refreshImageCache`: evict, then `putFile`) after the upload landed, and
+its deletes clear the cache (`_evictImageCache`) before the delete is sent —
+both straight through `CachedNetworkImage`/`NtripiImageCacheManager`. A cache
+that throws turns a landed upload into an error the edit form reports, and
+stops a delete before it is sent. Itinerary covers already go through the
+best-effort `ImageCacheEviction` (2026-10-25); the profile's calls could do the
+same, with the seed best-effort too. → [features/accounts-and-profiles.md](features/accounts-and-profiles.md)
+
 ### idea — the reloads the app starts with `ref.invalidate` can still blank a screen
 
 A `refresh()` keeps content on screen through any failure but a refusal

@@ -1065,17 +1065,11 @@ class _ItineraryDetailScreenState extends ConsumerState<ItineraryDetailScreen> {
                       // Offline: skip entirely — evicting the cover would
                       // delete an image the device can't re-download.
                       if (!isOnlineNow(ref)) return;
-                      // R2 reuses the same key on cover replacement, so the
-                      // URL string never changes. Evict CachedNetworkImage's
-                      // disk + memory entry for the current cover URL so a
-                      // pull-to-refresh actually shows the new image when
-                      // the owner has replaced it from another device.
-                      if (coverUrl != null) {
-                        await CachedNetworkImage.evictFromCache(
-                          coverUrl,
-                          cacheManager: NtripiImageCacheManager(),
-                        );
-                      }
+                      // A cover replaced from another device keeps its URL:
+                      // clear the cached copy first so the reload shows it.
+                      await ref
+                          .read(imageCacheEvictionProvider)
+                          .evict([coverUrl]);
                       if (!context.mounted) return;
                       // The trip stays on screen, "view more"s open, while it
                       // reloads; a failure that kept it is a SnackBar.

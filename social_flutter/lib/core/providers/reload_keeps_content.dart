@@ -46,6 +46,9 @@ mixin ReloadKeepsContent<T> on AsyncNotifier<T> {
     Future<T> Function() fetch, {
     void Function(T value)? onApply,
   }) async {
+    // A caller that awaited something first (a save's own request) can find
+    // the provider gone — and reading `state` then would throw.
+    if (!ref.mounted) return null;
     final started = state;
     final hadContent = _showsContent(started);
     if (!hadContent) state = AsyncLoading<T>();

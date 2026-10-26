@@ -17,7 +17,9 @@ class RecordingDio {
     dio.interceptors.add(
       InterceptorsWrapper(onRequest: (options, handler) async {
         sent.add(options);
-        final held = _held.indexWhere((h) => _matches(h.path, options.path));
+        final held = _held.indexWhere((h) =>
+            _matches(h.path, options.path) &&
+            (h.method == null || h.method == options.method));
         if (held >= 0) await _held.removeAt(held).gate.future;
         handler.next(options);
       }),
@@ -27,14 +29,16 @@ class RecordingDio {
   final Dio dio;
   late final DioAdapter adapter;
 
-  final List<({Pattern path, Completer<void> gate})> _held = [];
+  final List<({Pattern path, String? method, Completer<void> gate})> _held =
+      [];
 
   /// Holds the next request to [path] — exact for a String, any match for a
-  /// RegExp — until the returned completer completes. Its reply is whatever
-  /// the adapter answers that route with at that moment.
-  Completer<void> hold(Pattern path) {
+  /// RegExp — and, given a [method], only that method, until the returned
+  /// completer completes. Its reply is whatever the adapter answers that route
+  /// with at that moment.
+  Completer<void> hold(Pattern path, {String? method}) {
     final gate = Completer<void>();
-    _held.add((path: path, gate: gate));
+    _held.add((path: path, method: method, gate: gate));
     return gate;
   }
 

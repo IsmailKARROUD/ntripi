@@ -9,8 +9,11 @@
 // (lib/core/providers/reload_keeps_content.dart) is the one place those rules
 // live. So no class writes AsyncLoading or AsyncError into its state, or uses
 // AsyncValue.guard, outside it, and every refresh() reloads through
-// reloadKeepingContent. An exception may still be right — with its reason,
-// here.
+// reloadKeepingContent. On the screen side, every reload a screen starts is
+// either reported (reportReloads: a pull or a Retry, whose failure is the
+// user's to hear about) or fired on purpose without (unawaited: a reload the
+// app starts, which fails silently). An exception may still be right — with
+// its reason, here.
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -89,17 +92,36 @@ String _codeOnly(String source) {
   return out.toString();
 }
 
-/// The index of the brace closing the one at [open].
-int _closing(String code, int open) {
+/// The index of the bracket closing the one at [open] — a brace, or with
+/// [pair] `'()'` a parenthesis.
+int _closing(String code, int open, [String pair = '{}']) {
   var depth = 0;
   for (var k = open; k < code.length; k++) {
-    if (code[k] == '{') {
+    if (code[k] == pair[0]) {
       depth++;
-    } else if (code[k] == '}' && --depth == 0) {
+    } else if (code[k] == pair[1] && --depth == 0) {
       return k;
     }
   }
   return code.length - 1;
+}
+
+final _reloadCall = RegExp(r'\.refresh\(\s*\)');
+final _reportingCall = RegExp(r'\b(?:reportReloads|unawaited)\s*\(');
+
+/// The lines of [source] with a `.refresh()` outside every reportReloads(...)
+/// and unawaited(...) call — a reload nobody reports and nobody chose to drop.
+List<int> _unreportedReloads(String source) {
+  final code = _codeOnly(source);
+  final spans = [
+    for (final call in _reportingCall.allMatches(code))
+      (start: call.end - 1, end: _closing(code, call.end - 1, '()')),
+  ];
+  return [
+    for (final reload in _reloadCall.allMatches(code))
+      if (!spans.any((s) => s.start < reload.start && reload.end <= s.end))
+        '\n'.allMatches(code.substring(0, reload.start)).length + 1,
+  ];
 }
 
 /// What one source says, class by class: who writes a loading or error state
@@ -180,6 +202,39 @@ void main() {
             'ReloadKeepsContent.reloadKeepingContent is how.');
     // The scan must still see the notifiers it exists for.
     expect(where((s) => s.refreshers), hasLength(greaterThanOrEqualTo(14)));
+  });
+
+  test('every reload a screen starts is reported, or dropped on purpose', () {
+    final unreported = [
+      for (final entry in _sources().entries)
+        if (entry.key.contains('/presentation/'))
+          for (final line in _unreportedReloads(entry.value))
+            '${entry.key}:$line',
+    ];
+    expect(unreported, isEmpty,
+        reason: 'refresh() hands back the failure it kept the content '
+            'through. A pull or a Retry passes it to reportReloads(context, '
+            '[...]), which shows it in a SnackBar; a reload the app starts '
+            'itself wraps it in unawaited(...), which says its failure is '
+            'meant to stay silent.');
+  });
+
+  test('the reload scan tells a reported reload from a dropped one', () {
+    const sample = '''
+Widget build(BuildContext context) => Column(children: [
+      RefreshIndicator(onRefresh: () => reportReloads(context, [
+            ref.read(a.notifier).refresh(),
+            ref.read(b.notifier).refresh(),
+          ])),
+      FilledButton(onPressed: () => ref.read(c.notifier).refresh()),
+    ]);
+void initState() {
+  // ref.read(d.notifier).refresh(); is prose here.
+  unawaited(ref.read(e.notifier).refresh());
+  ref.refresh(someProvider);
+}
+''';
+    expect(_unreportedReloads(sample), [6]);
   });
 
   test('the scan sees past comments and strings, and finds what it looks for',

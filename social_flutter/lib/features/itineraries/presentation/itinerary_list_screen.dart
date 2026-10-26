@@ -10,12 +10,10 @@
 
 import 'dart:async';
 
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ntripi/core/api/api_client.dart';
-import 'package:ntripi/core/api/api_endpoints.dart';
 import 'package:ntripi/core/cache/image_cache.dart';
 import 'package:ntripi/core/services/sfx_service.dart';
 import 'package:ntripi/core/ui/app_theme.dart';
@@ -146,18 +144,11 @@ class _ItineraryListScreenState extends ConsumerState<ItineraryListScreen> {
                   // Offline: skip entirely — evicting covers would delete
                   // images the device can't re-download.
                   if (!isOnlineNow(ref)) return;
-                  // Evict CachedNetworkImage entries so a pull-to-refresh
-                  // shows updated cover images replaced from another device.
-                  await Future.wait([
-                    for (final row in rows)
-                      if (row.itinerary.coverImageUrl != null)
-                        CachedNetworkImage.evictFromCache(
-                          row.itinerary.coverImageUrl!.startsWith('/')
-                              ? '$kApiBaseUrl${row.itinerary.coverImageUrl}'
-                              : row.itinerary.coverImageUrl!,
-                          cacheManager: NtripiImageCacheManager(),
-                        ),
-                  ]);
+                  // Covers replaced from another device keep their URLs:
+                  // clear the cached copies first so the reload shows them.
+                  await ref.read(imageCacheEvictionProvider).evict(
+                      [for (final row in rows) row.itinerary.coverImageUrl]);
+                  if (!mounted) return;
                   await _refresh(scope);
                 },
                 child: ListView(

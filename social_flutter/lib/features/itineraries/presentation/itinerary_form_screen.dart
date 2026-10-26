@@ -27,7 +27,6 @@
 import 'dart:async';
 import 'dart:typed_data';
 
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -37,7 +36,6 @@ import 'package:ntripi/core/services/currency.dart';
 import 'package:ntripi/core/services/sfx_service.dart';
 import 'package:ntripi/core/ui/app_theme.dart';
 import 'package:ntripi/core/ui/destructive_actions.dart';
-import 'package:ntripi/core/api/api_endpoints.dart';
 import 'package:ntripi/features/itineraries/domain/itinerary.dart';
 import 'package:ntripi/features/itineraries/domain/recommended_period.dart';
 import 'package:ntripi/features/itineraries/presentation/widgets/cover_image_field.dart';
@@ -226,21 +224,6 @@ class _ItineraryFormScreenState extends ConsumerState<ItineraryFormScreen> {
     super.dispose();
   }
 
-  // The R2 storage key never changes between uploads (always itineraries/{id}.jpg),
-  // so CachedNetworkImage's disk cache would keep serving the old bytes.
-  // evictFromCache clears both the on-disk file (DefaultCacheManager) and the
-  // in-memory ImageCache entry, forcing the next render to refetch. Given the
-  // URL from before the save and the one after: a removal has no URL after.
-  Future<void> _evictCoverImageCache(Iterable<String?> urls) async {
-    for (final url in {...urls.whereType<String>()}) {
-      final absUrl = url.startsWith('/') ? '$kApiBaseUrl$url' : url;
-      await CachedNetworkImage.evictFromCache(
-        absUrl,
-        cacheManager: NtripiImageCacheManager(),
-      );
-    }
-  }
-
   // Every way out of the form. A cold entry straight to its URL (a web reload)
   // has nothing underneath, and pop() then throws a GoError — an Error, which
   // `on Exception` in _save does not catch, so a successful save left the form
@@ -309,6 +292,7 @@ class _ItineraryFormScreenState extends ConsumerState<ItineraryFormScreen> {
         final id = widget.itineraryId!;
         final notifier = ref.read(itineraryDetailProvider(id).notifier);
         final coverBefore = ref.read(itineraryDetailProvider(id)).value?.coverImageUrl;
+        final eviction = ref.read(imageCacheEvictionProvider);
         final coverChanged = _removeExistingImage || _pendingImageBytes != null;
         final updated = await notifier.saveForm(
           data,
@@ -316,8 +300,10 @@ class _ItineraryFormScreenState extends ConsumerState<ItineraryFormScreen> {
           coverFilename: _pendingImageFilename,
           removeCover: _removeExistingImage,
         );
+        // The cover's key never changes on a replacement: the URL from before
+        // the save and the one after (a removal has none) both go stale.
         if (coverChanged) {
-          await _evictCoverImageCache([coverBefore, updated.coverImageUrl]);
+          await eviction.evict([coverBefore, updated.coverImageUrl]);
         }
         if (!mounted) return;
         _close();

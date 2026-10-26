@@ -1930,3 +1930,41 @@ now are; first loads keep the fallback, which is what shows content offline.
   reload on a phone and can put back a copy older than the screen.
 - Keeping the stored copies of partial answers current by patching cached list
   bodies: a bigger change that still would not reveal a failed reload.
+
+### 2026-10-25 — Clearing a cover never stops a reload or fails a save
+
+Follows [2026-10-25 — A reload never blanks the content on screen](#2026-10-25--a-reload-never-blanks-the-content-on-screen).
+
+**Context.** Tests written to cover that change — a pull on a trip with a
+cover — found that the trip page and the Itineraries tab cleared covers with
+`CachedNetworkImage.evictFromCache` before reloading. It awaits the disk
+eviction first, so an image cache that threw put its error into the pull's
+`onRefresh` ahead of the reload: the reload never ran, and the error escaped
+into the RefreshIndicator, which the reload entry rules out. The itinerary form
+cleared the cover the same way after a save, inside the `try` that reports a
+failed save — so a saved form stayed open under an error message.
+
+**Decision.** One helper, `ImageCacheEviction` (`core/cache/image_cache.dart`,
+`imageCacheEvictionProvider`), clears covers for all three: relative URLs made
+absolute, nulls and repeats skipped, and every eviction best-effort — a failure
+is swallowed and costs a stale cover until the next pull. The one-URL eviction
+is injectable (`evictOne`, CachedNetworkImage's by default): the real image
+cache cannot be reached under test — it leaks unawaited errors and never
+answers — so tests pass one they can watch or break. The guard test now also
+checks the screens: every `.refresh()` in `presentation/` sits inside
+`reportReloads(...)` or `unawaited(...)`, so a reload is reported or dropped on
+purpose.
+
+**Consequences.** A pull always reaches its reload, and the form's save is
+reported by the save alone. Tests: `image_cache_eviction_test.dart`, the cover
+cases in `trip_reload_keeps_content_test.dart` and
+`list_tabs_reload_test.dart`. The profile's avatar and cover cache calls
+(`profile_provider.dart`) still go to the image cache directly — logged in
+[backlog.md](backlog.md).
+
+**Alternatives rejected.**
+- A try/catch at each call site: three copies of one rule, already drifting
+  (one sequential, one parallel, one resolving relative URLs).
+- Clearing the cover beside the reload instead of before it: the answer could
+  land and rebuild the cover before its old copy was dropped, and the new cover
+  would not show — the reason the eviction runs first.
