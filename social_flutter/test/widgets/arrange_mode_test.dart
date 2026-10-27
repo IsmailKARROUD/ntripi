@@ -239,6 +239,37 @@ void main() {
     expect(find.text(l10n.orderSavedMessage), findsOneWidget);
   });
 
+  testWidgets(
+      'with a stop picked, a tap on another stop picks that one instead and '
+      'moves nothing; a tap on the picked one puts it down', (tester) async {
+    final api = RecordingDio();
+    final l10n = await _pump(tester, api, _trip());
+    await _arrange(tester, l10n);
+
+    await tester.tap(_inArrangement(find.text('Museum')));
+    await tester.pumpAndSettle();
+    expect(_selected(tester), ['Museum']);
+
+    // Right after it in its own track, where a placing tap changed nothing and
+    // only seemed to put Museum down.
+    await tester.tap(_inArrangement(find.text('Market')));
+    await tester.pumpAndSettle();
+    expect(find.text(l10n.arrangeMovingStop('Market')), findsOneWidget);
+    expect(_selected(tester), ['Market']);
+
+    // In another track, which could take it.
+    await tester.tap(_inArrangement(find.text('Harbour')));
+    await tester.pumpAndSettle();
+    expect(find.text(l10n.arrangeMovingStop('Harbour')), findsOneWidget);
+    expect(_selected(tester), ['Harbour']);
+
+    await tester.tap(_inArrangement(find.text('Harbour')));
+    await tester.pumpAndSettle();
+    expect(_selected(tester), isEmpty);
+    expect(find.text(l10n.arrangeHint), findsOneWidget);
+    expect(_saveEnabled(tester), isFalse, reason: 'nothing moved');
+  });
+
   testWidgets("a track's number drags the whole track to another place",
       (tester) async {
     final api = RecordingDio();

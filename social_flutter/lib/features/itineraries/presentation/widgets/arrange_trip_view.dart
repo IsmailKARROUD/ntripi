@@ -7,13 +7,15 @@
 // and "move" read as the same word. Nothing here saves: every move hands a new
 // TripArrangement to [onChanged], and the screen sends it on Save.
 //
-// TWO WAYS TO MOVE, ONE SET OF TARGETS:
+// TWO WAYS TO MOVE:
 //   Drag: a chip's ⠿ handle drags at once (so it never scrolls the page), and
-//   holding a chip drags it too; a track's number drags the whole track. Tap:
-//   tap a chip or a number to pick it, then tap where it goes. Either way the
-//   targets are the same — a gap between tracks (a track of its own; a track
-//   moves there whole), a track (its last alternative), or a stop (before it,
-//   which inside its own track is a reorder).
+//   holding a chip drags it too; a track's number drags the whole track. It
+//   drops on a gap between tracks (a track of its own; a track moves there
+//   whole), on a track (its last alternative), or on a stop (before it, which
+//   inside its own track is a reorder).
+//   Tap: tap a chip or a number to pick it, then tap a gap or a track — the
+//   same two targets. A tap on another chip or number picks that one instead:
+//   a second tap says what to move, never where.
 //
 // Transit links are checked live against the layout as it stands: what a move
 // would break is marked under its track and summed up above the list, so the
@@ -131,15 +133,12 @@ class _ArrangeTripViewState extends State<ArrangeTripView> {
     setState(() => _picked = moving);
   }
 
-  void _tapStop(Stop stop, ArrangedTrack row) {
+  // A second stop tapped is a change of mind about what moves, never where to.
+  void _tapStop(Stop stop) {
     final picked = _picked;
-    if (picked is _MovingStop) {
-      if (picked.stopId == stop.id) return _pick(null);
-      if (_arrangement.accepts(row.key, picked.stopId)) {
-        return _toRow(picked, row.key, beforeStopId: stop.id);
-      }
-    }
-    _pick(_MovingStop(stop.id));
+    _pick(picked is _MovingStop && picked.stopId == stop.id
+        ? null
+        : _MovingStop(stop.id));
   }
 
   void _tapTrack(ArrangedTrack row) {
@@ -472,7 +471,7 @@ class _ArrangeTripViewState extends State<ArrangeTripView> {
               onDraggableCanceled: (_, _) => _dragEnded(),
               child: GestureDetector(
                 behavior: HitTestBehavior.opaque,
-                onTap: () => _tapStop(stop, row),
+                onTap: () => _tapStop(stop),
                 child: body(handle),
               ),
             ),

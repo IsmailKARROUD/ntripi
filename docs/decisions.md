@@ -2306,3 +2306,40 @@ like every other save.
 - **Dragging alternatives inside the full-size cards**: a track shows one
   alternative at a time (the others are a swipe away), and a stop that cannot be
   seen cannot be dragged.
+
+### 2026-10-27 — In arrange mode, a tap on another stop picks it instead
+
+**Context.** The arrange-mode entry above made a tap on another stop a
+destination: with a stop picked, tapping a second one put the picked stop in
+front of it, as dropping it there does. People read the second tap the other
+way — as a change of mind about which stop to move. Where the picked stop
+already stood right in front of the one tapped (Museum before Market), the move
+changed nothing and only cleared the pick, so the tap seemed to do nothing but
+unselect; anywhere else it silently moved a stop the user had stopped thinking
+about.
+
+**Decision.** A tap picks; it never places a stop onto another. With a stop
+picked, a tap on another stop picks that one instead, as a tap on a track's
+number already did, and a tap on the picked stop puts it down. A tap places on
+two kinds of target only: a gap between tracks (**New track here**) and a
+track — its free space or its **Add as alternative** tag — which takes the stop
+as its last alternative. A drag keeps all three targets: dropped on a stop, a
+stop goes in front of it. This supersedes the 2026-10-27 arrange-mode entry's
+"another stop takes it in front of itself" for taps.
+
+**Consequences.**
+- By tap, a stop can no longer be put in front of a particular alternative;
+  inside its own track, a tap on the track's free space sends it last. Precise
+  ordering of alternatives is a drag.
+- A stop and a track's number, the two things a tap picks, now behave alike: a
+  tap on one picks it, on the picked one puts it down, on any other switches.
+- Regression test: `test/widgets/arrange_mode_test.dart`, "with a stop picked,
+  a tap on another stop picks that one instead and moves nothing".
+
+**Alternatives rejected.**
+- **Switching only when the tapped stop's track could not take the picked
+  one**, as a full track already did: one gesture meaning two things depending
+  on a count the user is not looking at.
+- **Tap targets between the chips while a stop is picked**, to keep putting a
+  stop in front of a particular alternative by tap: more targets on every row
+  of a compact view, for a precision the drag already gives.

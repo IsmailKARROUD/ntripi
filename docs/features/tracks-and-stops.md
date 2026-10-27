@@ -192,8 +192,11 @@ trip edit.
   holding the chip drags too, and a tap picks it for a second tap on where it
   goes; a track's number moves the whole track the same two ways. Targets: a
   gap between tracks (a track of its own; a stop alone in its track moves the
-  track instead), a track (its last alternative), a stop (in front of it —
-  inside its own track, a reorder). A full track (`Track.maxParallelStops`)
+  track instead), a track (its last alternative — by tap, its free space or its
+  **Add as alternative** tag), and for a drag only a stop (in front of it —
+  inside its own track, a reorder). A tap on another stop or number picks that
+  one instead — a second tap says what to move, never where — and a tap on the
+  picked one puts it down. A full track (`Track.maxParallelStops`)
   refuses with "Full 4/4". There are no reorder or move buttons on the stop
   cards; `+ // stop` is the only one left.
 - **Lifting moves nothing; a drag opens its targets once it is under way.**
