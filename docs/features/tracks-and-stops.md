@@ -196,6 +196,19 @@ trip edit.
   inside its own track, a reorder). A full track (`Track.maxParallelStops`)
   refuses with "Full 4/4". There are no reorder or move buttons on the stop
   cards; `+ // stop` is the only one left.
+- **Lifting moves nothing; a drag opens its targets once it is under way.**
+  Until a drag has travelled past the touch slop nothing on the list changes:
+  the faded copy left in the stop's place keeps the chip's size, a tap's pick
+  stays drawn, and no gap, tag or edge auto-scroll appears. A stop held still
+  and let go therefore stays where it is — its own chip catches it and changes
+  nothing — even under a finger that trembles. (Targets used to open at the
+  lift, which pushed the rows down under a still finger; the next tremble
+  dropped the stop wherever that landed.) A handle drag starts past the slop,
+  so its targets open at once. Every drag ends through `onDragCompleted` /
+  `onDraggableCanceled`, never `onDragEnd`, which Flutter skips once the dragged
+  widget has been rebuilt away: a row's hover tint did that, and the view stayed
+  stuck mid-drag — the stop highlighted, every target open. The stop or track
+  being moved is announced as selected to screen readers.
 - **Nothing saves until Save.** The arrangement is `TripArrangement`
   (`domain/trip_arrangement.dart`, immutable, every move a pure function); the
   header's ✕ and **Save** replace its button while arranging, everything above

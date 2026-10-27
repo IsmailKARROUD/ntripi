@@ -19,6 +19,7 @@
 // would break is marked under its track and summed up above the list, so the
 // confirmation on Save never comes as a surprise.
 
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:ntripi/core/services/segment_orphan_service.dart';
@@ -68,9 +69,14 @@ class _ArrangeTripViewState extends State<ArrangeTripView> {
   _Moving? _picked;
   // Being dragged right now.
   _Moving? _dragging;
+  // A drag opens its targets only once past the slop: opened at the lift, they
+  // moved the list under a finger held still, and a tremble dropped it there.
+  Offset _dragTravel = Offset.zero;
+  bool _dragTravelled = false;
   EdgeDraggingAutoScroller? _autoScroller;
 
-  _Moving? get _moving => _dragging ?? _picked;
+  /// What the rows offer targets for: a drag under way, else a pick.
+  _Moving? get _moving => _dragTravelled ? _dragging : _picked;
 
   TripArrangement get _arrangement => widget.arrangement;
 
@@ -145,12 +151,23 @@ class _ArrangeTripViewState extends State<ArrangeTripView> {
 
   // ── Dragging ─────────────────────────────────────────────────────────────
 
+  // Lifting changes nothing around the lifted stop or track: a pick stays drawn
+  // until the drag is under way.
   void _dragStarted(_Moving moving) => setState(() {
         _dragging = moving;
-        _picked = null;
+        _dragTravel = Offset.zero;
+        _dragTravelled = false;
       });
 
   void _dragUpdated(DragUpdateDetails details) {
+    if (!_dragTravelled) {
+      _dragTravel += details.delta;
+      if (_dragTravel.distance <= kTouchSlop) return;
+      setState(() {
+        _dragTravelled = true;
+        _picked = null;
+      });
+    }
     final scrollable = Scrollable.maybeOf(context);
     if (scrollable == null) return;
     // ReorderableList's own scalar; the rect reaches 48 px either side of the
@@ -160,9 +177,14 @@ class _ArrangeTripViewState extends State<ArrangeTripView> {
         center: details.globalPosition, width: 1, height: 96));
   }
 
+  // Never onDragEnd: Flutter skips it once the dragged widget is rebuilt.
   void _dragEnded() {
     _autoScroller?.stopAutoScroll();
-    if (mounted) setState(() => _dragging = null);
+    if (!mounted) return;
+    setState(() {
+      _dragging = null;
+      _dragTravelled = false;
+    });
   }
 
   // ── Build ────────────────────────────────────────────────────────────────
@@ -268,7 +290,9 @@ class _ArrangeTripViewState extends State<ArrangeTripView> {
         moving is _MovingStop && _arrangement.rowOf(moving.stopId) != index;
     final takes = fromElsewhere && _rowTakes(moving, row);
     final full = fromElsewhere && !takes;
-    final trackMoving = moving is _MovingTrack && moving.rowKey == row.key;
+    final dragging = _dragging;
+    // Dimmed from the lift on: a dimmed track moves nothing under the finger.
+    final lifted = dragging is _MovingTrack && dragging.rowKey == row.key;
     final picked = _picked;
     final rowStops = {for (final s in row.stops) s.id};
     final breaks = [
@@ -286,13 +310,14 @@ class _ArrangeTripViewState extends State<ArrangeTripView> {
         onTap: _rowTakes(picked, row)
             ? () => _toRow(picked! as _MovingStop, row.key)
             : null,
-        child: Container(
-          color: candidates.isNotEmpty ? nt.mist : null,
+        // Always a box: one added mid-drag rebuilt the dragged chip away.
+        child: ColoredBox(
+          color: candidates.isNotEmpty ? nt.mist : Colors.transparent,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Opacity(
-                opacity: trackMoving && _dragging != null ? 0.35 : 1,
+                opacity: lifted ? 0.35 : 1,
                 child: Padding(
                   padding: const EdgeInsetsDirectional.fromSTEB(4, 8, 10, 8),
                   child: Row(
@@ -359,6 +384,7 @@ class _ArrangeTripViewState extends State<ArrangeTripView> {
     final moving = _MovingTrack(row.key);
     return Semantics(
       button: true,
+      selected: isPicked,
       label: l10n.arrangeMoveTrack(index + 1),
       excludeSemantics: true,
       child: Draggable<_Moving>(
@@ -373,7 +399,8 @@ class _ArrangeTripViewState extends State<ArrangeTripView> {
         childWhenDragging: Opacity(opacity: 0.35, child: visual),
         onDragStarted: () => _dragStarted(moving),
         onDragUpdate: _dragUpdated,
-        onDragEnd: (_) => _dragEnded(),
+        onDragCompleted: _dragEnded,
+        onDraggableCanceled: (_, _) => _dragEnded(),
         child: GestureDetector(
           behavior: HitTestBehavior.opaque,
           onTap: () => _tapTrack(row),
@@ -389,57 +416,64 @@ class _ArrangeTripViewState extends State<ArrangeTripView> {
     final name = _name(stop, l10n);
     final payload = _MovingStop(stop.id);
 
-    Widget body({required bool withHandle}) => _StopChip(
+    Widget body(Widget? handle) => _StopChip(
           name: name,
           placeType: stop.placeType,
           picked: picked,
-          handle: !withHandle
-              ? null
-              : Semantics(
-                  button: true,
-                  label: l10n.arrangeMoveStop(name),
-                  excludeSemantics: true,
-                  // Starts at once, unlike the long press on the chip itself,
-                  // so dragging from here never scrolls the page instead.
-                  child: Draggable<_Moving>(
-                    data: payload,
-                    feedback: _DragProxy(child: body(withHandle: false)),
-                    childWhenDragging: const _HandleIcon(),
-                    onDragStarted: () => _dragStarted(payload),
-                    onDragUpdate: _dragUpdated,
-                    onDragEnd: (_) => _dragEnded(),
-                    child: const _HandleIcon(),
-                  ),
-                ),
+          handle: handle,
         );
+    final handle = Semantics(
+      button: true,
+      label: l10n.arrangeMoveStop(name),
+      excludeSemantics: true,
+      // Starts at once, unlike the long press on the chip itself, so dragging
+      // from here never scrolls the page instead.
+      child: Draggable<_Moving>(
+        data: payload,
+        feedback: _DragProxy(child: body(null)),
+        childWhenDragging: const _HandleIcon(),
+        onDragStarted: () => _dragStarted(payload),
+        onDragUpdate: _dragUpdated,
+        onDragCompleted: _dragEnded,
+        onDraggableCanceled: (_, _) => _dragEnded(),
+        child: const _HandleIcon(),
+      ),
+    );
 
     return DragTarget<_Moving>(
+      // Its own stop too, and a drop leaves it be: refused, it fell through to
+      // the track, which put it last.
       onWillAcceptWithDetails: (d) =>
           d.data is _MovingStop &&
-          (d.data as _MovingStop).stopId != stop.id &&
           _arrangement.accepts(row.key, (d.data as _MovingStop).stopId),
-      onAcceptWithDetails: (d) =>
-          _toRow(d.data as _MovingStop, row.key, beforeStopId: stop.id),
+      onAcceptWithDetails: (d) {
+        final moving = d.data as _MovingStop;
+        if (moving.stopId == stop.id) return;
+        _toRow(moving, row.key, beforeStopId: stop.id);
+      },
       builder: (context, candidates, _) => Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Where the dragged stop would land: before this one.
-          if (candidates.isNotEmpty) const _InsertMarker(),
+          // Where another dragged stop would land: before this one.
+          if (candidates.any((m) => m is _MovingStop && m.stopId != stop.id))
+            const _InsertMarker(),
           // Flexible: on a narrow screen the chip ellipsises its name instead
           // of overflowing the track.
           Flexible(
             child: LongPressDraggable<_Moving>(
               data: payload,
-              feedback: _DragProxy(child: body(withHandle: false)),
+              feedback: _DragProxy(child: body(null)),
+              // The chip's own size, handle and all: nothing near it moves.
               childWhenDragging:
-                  Opacity(opacity: 0.35, child: body(withHandle: false)),
+                  Opacity(opacity: 0.35, child: body(const _HandleIcon())),
               onDragStarted: () => _dragStarted(payload),
               onDragUpdate: _dragUpdated,
-              onDragEnd: (_) => _dragEnded(),
+              onDragCompleted: _dragEnded,
+              onDraggableCanceled: (_, _) => _dragEnded(),
               child: GestureDetector(
                 behavior: HitTestBehavior.opaque,
                 onTap: () => _tapStop(stop, row),
-                child: body(withHandle: true),
+                child: body(handle),
               ),
             ),
           ),
@@ -647,41 +681,46 @@ class _StopChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final nt = context.nt;
     final type = placeType;
-    return Container(
-      constraints: const BoxConstraints(maxWidth: 220),
-      padding: EdgeInsetsDirectional.fromSTEB(handle == null ? 10 : 0, 0, 10, 0),
-      decoration: BoxDecoration(
-        color: picked ? nt.mist : nt.surface,
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(
-          color: picked ? nt.forest : nt.border,
-          width: picked ? 1.5 : 1,
+    return Semantics(
+      selected: picked,
+      child: Container(
+        constraints: const BoxConstraints(maxWidth: 220),
+        padding:
+            EdgeInsetsDirectional.fromSTEB(handle == null ? 10 : 0, 0, 10, 0),
+        decoration: BoxDecoration(
+          color: picked ? nt.mist : nt.surface,
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(
+            color: picked ? nt.forest : nt.border,
+            width: picked ? 1.5 : 1,
+          ),
         ),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (handle != null) handle!,
-          if (type != null) ...[
-            Icon(type.icon, size: 14, color: type.color(nt)),
-            const SizedBox(width: 4),
-          ],
-          Flexible(
-            child: Padding(
-              padding: EdgeInsets.symmetric(vertical: handle == null ? 8 : 0),
-              child: Text(
-                name,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: nt.bark,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (handle != null) handle!,
+            if (type != null) ...[
+              Icon(type.icon, size: 14, color: type.color(nt)),
+              const SizedBox(width: 4),
+            ],
+            Flexible(
+              child: Padding(
+                padding:
+                    EdgeInsets.symmetric(vertical: handle == null ? 8 : 0),
+                child: Text(
+                  name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: nt.bark,
+                  ),
                 ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

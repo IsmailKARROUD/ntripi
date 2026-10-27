@@ -6,7 +6,10 @@
 // whole layout — and the transport it breaks — in one request, and adopts the
 // answer, so nothing downloads the trip again. Leaving asks before discarding,
 // and a save refused for a lost claim keeps the arrangement to save again.
+// Every drag ends clean: let go where it was, a stop changes nothing, and after
+// any drop nothing is left picked or offered as a target.
 
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -140,6 +143,30 @@ Finder get _save => find.ancestor(
 bool _saveEnabled(WidgetTester tester) =>
     tester.widget<FilledButton>(_save).onPressed != null;
 
+/// The stops a screen reader hears as selected: the one being moved, which is
+/// the one drawn picked.
+List<String> _selected(WidgetTester tester) => [
+      for (final name in ['Harbour', 'Museum', 'Market', 'Beach'])
+        if (isSemantics(isSelected: true).matches(
+            tester.getSemantics(_inArrangement(find.text(name))), {}))
+          name,
+    ];
+
+/// The faded copy a lifted stop leaves in its place.
+Finder _fadedCopy(String name) => find.ancestor(
+      of: _inArrangement(find.text(name)),
+      matching: find.byWidgetPredicate((w) => w is Opacity && w.opacity < 1),
+    );
+
+/// A stop's ⠿ handle, which drags at once.
+Finder _handleOf(String name) => find.descendant(
+      of: find.ancestor(
+        of: _inArrangement(find.text(name)),
+        matching: find.byWidgetPredicate((w) => w is LongPressDraggable),
+      ),
+      matching: find.byIcon(Icons.drag_indicator_rounded),
+    );
+
 void main() {
   // Past the first-visit long-press tip, which would take the first tap.
   setUp(() => FlutterSecureStorage.setMockInitialValues(
@@ -247,6 +274,134 @@ void main() {
         {
           'track_id': 't1',
           'stop_ids': ['s1'],
+        },
+        {
+          'track_id': 't2',
+          'stop_ids': ['s2', 's3'],
+        },
+      ],
+    });
+  });
+
+  testWidgets(
+      'a stop held still and let go stays put and unpicked, with nothing '
+      'moving under the finger, so a stop tapped next is the only one picked',
+      (tester) async {
+    final api = RecordingDio();
+    final l10n = await _pump(tester, api, _trip());
+    await _arrange(tester, l10n);
+    final around = {
+      for (final name in ['Harbour', 'Market', 'Beach'])
+        name: tester.getRect(_inArrangement(find.text(name))),
+    };
+
+    // Museum, the first of its track's two: let go in place, it must not go
+    // last. A finger held still still trembles.
+    final hold = await tester
+        .startGesture(tester.getCenter(_inArrangement(find.text('Museum'))));
+    await tester.pump(kLongPressTimeout + kPressTimeout);
+    await hold.moveBy(const Offset(1, 2));
+    await tester.pump();
+    expect(_fadedCopy('Museum'), findsOneWidget, reason: 'lifted');
+    expect(find.text(l10n.arrangeNewTrackHere), findsNothing);
+    for (final MapEntry(key: name, value: rect) in around.entries) {
+      expect(tester.getRect(_inArrangement(find.text(name))), rect,
+          reason: '$name moved under the finger');
+    }
+    await hold.up();
+    await tester.pumpAndSettle();
+
+    expect(_selected(tester), isEmpty);
+    expect(find.text(l10n.arrangeNewTrackHere), findsNothing);
+    expect(_saveEnabled(tester), isFalse, reason: 'nothing moved');
+
+    await tester.tap(_inArrangement(find.text('Beach')));
+    await tester.pumpAndSettle();
+    expect(find.text(l10n.arrangeMovingStop('Beach')), findsOneWidget);
+    expect(_selected(tester), ['Beach']);
+  });
+
+  testWidgets(
+      'a held stop stays lifted while its own track lights up under it, and '
+      'dropped on the track it goes last', (tester) async {
+    final api = RecordingDio();
+    final l10n = await _pump(tester, api, _trip());
+    _answersSave(api, _answer([
+      trackJson('t1', [_s1()], rank: 'a'),
+      trackJson('t2', [_s3(), _s2()], rank: 'b'),
+      trackJson('t3', [_s4()], rank: 'c'),
+    ]));
+    await _arrange(tester, l10n);
+
+    final hold = await tester
+        .startGesture(tester.getCenter(_inArrangement(find.text('Museum'))));
+    await tester.pump(kLongPressTimeout + kPressTimeout);
+    await hold.moveBy(const Offset(40, 0)); // under way: the targets open
+    await tester.pump();
+    // The free end of its own track, which takes its own stop.
+    await hold.moveTo(tester.getCenter(_inArrangement(find.text('Museum'))) +
+        const Offset(500, 0));
+    await tester.pump();
+    expect(_fadedCopy('Museum'), findsOneWidget, reason: 'still lifted');
+    await hold.up();
+    await tester.pumpAndSettle();
+
+    expect(_selected(tester), isEmpty);
+    expect(find.text(l10n.arrangeNewTrackHere), findsNothing);
+
+    api.sent.clear();
+    await tester.tap(_save);
+    await tester.pumpAndSettle();
+    expect(api.sent.single.data, {
+      'layout': [
+        {
+          'track_id': 't1',
+          'stop_ids': ['s1'],
+        },
+        {
+          'track_id': 't2',
+          'stop_ids': ['s3', 's2'],
+        },
+        {
+          'track_id': 't3',
+          'stop_ids': ['s4'],
+        },
+      ],
+    });
+  });
+
+  testWidgets(
+      "a stop dragged by its handle onto another track's stop goes before it, "
+      'and the drop leaves nothing picked or offered', (tester) async {
+    final api = RecordingDio();
+    final l10n = await _pump(tester, api, _trip());
+    _answersSave(api, _answer([
+      trackJson('t1', [stopJson('s4', trackId: 't1', placeName: 'Beach'), _s1()]),
+      trackJson('t2', [_s2(), _s3()], rank: 'b'),
+    ]));
+    await _arrange(tester, l10n);
+
+    final drag =
+        await tester.startGesture(tester.getCenter(_handleOf('Beach')));
+    await drag.moveBy(const Offset(0, -30)); // past the slop: it lifts
+    await tester.pump();
+    await drag.moveTo(tester.getCenter(_inArrangement(find.text('Harbour'))));
+    await tester.pump();
+    await drag.up();
+    await tester.pumpAndSettle();
+
+    expect(_selected(tester), isEmpty);
+    expect(find.text(l10n.arrangeNewTrackHere), findsNothing);
+    expect(find.text(l10n.arrangeAddAsAlternative), findsNothing);
+
+    api.sent.clear();
+    await tester.tap(_save);
+    await tester.pumpAndSettle();
+    expect(api.sent.single.data, {
+      'layout': [
+        {
+          'track_id': 't1',
+          'stop_ids': ['s4', 's1'],
         },
         {
           'track_id': 't2',
